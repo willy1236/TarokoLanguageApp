@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'core/constants/app_colors.dart';
 import 'screens/auth/login_screen.dart';
 
 void main() {
@@ -22,14 +23,14 @@ class KariTrukuApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         brightness: Brightness.dark,
-        scaffoldBackgroundColor: const Color(0xFF020617),
-        primaryColor: const Color(0xFFEA580C),
+        scaffoldBackgroundColor: AppColors.background,
+        primaryColor: AppColors.primary,
         fontFamily: 'Noto Sans TC',
         useMaterial3: true,
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFEA580C),
-          secondary: Color(0xFF1E293B),
-          surface: Color(0xFF0F172A),
+          primary: AppColors.primary,
+          secondary: AppColors.surfaceVariant,
+          surface: AppColors.surface,
         ),
       ),
       initialRoute: '/login',
@@ -64,7 +65,7 @@ class _MainContainerState extends State<MainContainer> {
     return Scaffold(
       extendBody: true,
       appBar: !showNavBar ? null : AppBar(
-        backgroundColor: const Color(0xFF0F172A).withAlpha(204), // 0.8 opacity
+              backgroundColor: AppColors.surface.withAlpha(204), // 0.8 opacity
         surfaceTintColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
@@ -113,7 +114,7 @@ class _MainContainerState extends State<MainContainer> {
               right: MediaQuery.of(context).size.width * 0.1 - 20,
               child: FloatingActionButton(
                 onPressed: () => setState(() => _communityView = 'publish'),
-                backgroundColor: const Color(0xFFEA580C),
+                backgroundColor: AppColors.primary,
                 elevation: 12,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                 child: const Icon(Icons.add, color: Colors.white, size: 28),
@@ -124,7 +125,7 @@ class _MainContainerState extends State<MainContainer> {
       bottomNavigationBar: !showNavBar ? null : Container(
         height: 90,
         decoration: BoxDecoration(
-          color: const Color(0xFF0F172A).withAlpha(242), // 0.95 opacity
+                color: AppColors.surface.withAlpha(242), // 0.95 opacity
           border: const Border(top: BorderSide(color: Colors.white12, width: 0.5)),
         ),
         child: BottomNavigationBar(
@@ -137,7 +138,7 @@ class _MainContainerState extends State<MainContainer> {
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.transparent,
           elevation: 0,
-          selectedItemColor: const Color(0xFFEA580C),
+                selectedItemColor: AppColors.primary,
           unselectedItemColor: Colors.grey[600],
           selectedLabelStyle: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold),
           unselectedLabelStyle: const TextStyle(fontSize: 10),
@@ -167,7 +168,7 @@ class HomeScreen extends StatelessWidget {
         Container(
           padding: const EdgeInsets.all(20),
           decoration: BoxDecoration(
-            color: const Color(0xFF0F172A),
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(color: Colors.white10),
           ),
@@ -180,7 +181,14 @@ class HomeScreen extends StatelessWidget {
                   const Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Mhuway su!', style: TextStyle(color: Color(0xFFEA580C), fontWeight: FontWeight.w900, fontSize: 12)),
+                      Text(
+                        'Mhuway su!',
+                        style: TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w900,
+                          fontSize: 12,
+                        ),
+                      ),
                       Text('Kating, 歡迎學習', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
                     ],
                   ),
@@ -191,7 +199,13 @@ class HomeScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: const [
                   Text('每日學習進度', style: TextStyle(color: Colors.white70, fontSize: 11)),
-                  Text('85%', style: TextStyle(color: Color(0xFFEA580C), fontWeight: FontWeight.bold)),
+                  Text(
+                    '85%',
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),
@@ -213,7 +227,11 @@ class HomeScreen extends StatelessWidget {
           mainAxisSpacing: 15,
           childAspectRatio: 1.5,
           children: [
-            _buildQuickCard('每日練習', Icons.book_rounded, const Color(0xFFFB7185)), // Fixed rose color
+            _buildQuickCard(
+              '每日練習',
+              Icons.book_rounded,
+              AppColors.rose,
+            ), // Fixed rose color
             _buildQuickCard('檢定衝刺', Icons.verified_rounded, Colors.indigoAccent),
           ],
         ),
@@ -223,7 +241,7 @@ class HomeScreen extends StatelessWidget {
         Container(
           height: 180,
           decoration: BoxDecoration(
-            color: const Color(0xFF0F172A),
+            color: AppColors.surface,
             borderRadius: BorderRadius.circular(20),
             image: const DecorationImage(image: NetworkImage('https://images.unsplash.com/photo-1544965850-6f8a66788f9b?w=800'), fit: BoxFit.cover),
           ),
@@ -278,7 +296,11 @@ class _LearningScreenState extends State<LearningScreen> {
             const Text('族語學習中心', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
             Container(
               padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(color: const Color(0xFF1E293B), borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.white10)),
+              decoration: BoxDecoration(
+                color: AppColors.surfaceVariant,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white10),
+              ),
               child: const Icon(Icons.settings_outlined, color: Colors.grey, size: 22),
             ),
           ],
@@ -286,7 +308,11 @@ class _LearningScreenState extends State<LearningScreen> {
         const SizedBox(height: 25),
         Container(
           padding: const EdgeInsets.all(5),
-          decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(14), border: Border.all(color: Colors.white12)),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: Colors.white12),
+          ),
           child: Row(
             children: [
               _buildTab('日常練習', _activeTab == 0, () => setState(() => _activeTab = 0)),
@@ -297,7 +323,11 @@ class _LearningScreenState extends State<LearningScreen> {
         const SizedBox(height: 30),
         Container(
           padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.white10)),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(color: Colors.white10),
+          ),
           child: Column(children: [
             const Row(children: [Icon(Icons.stars, color: Colors.orange, size: 30), SizedBox(width: 12), Text('Truku 等級：初級', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))]),
             const SizedBox(height: 20),
@@ -332,7 +362,10 @@ class _LearningScreenState extends State<LearningScreen> {
         onTap: o,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(color: a ? const Color(0xFF1E293B) : Colors.transparent, borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(
+            color: a ? AppColors.surfaceVariant : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
           child: Center(child: Text(l, style: TextStyle(color: a ? Colors.white : Colors.grey, fontWeight: FontWeight.bold, fontSize: 14))),
         ),
       ),
@@ -341,7 +374,11 @@ class _LearningScreenState extends State<LearningScreen> {
 
   Widget _buildPathItem(IconData i, String t, Color c) {
     return Container(
-      decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
       child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [Icon(i, color: c, size: 32), const SizedBox(height: 12), Text(t, style: const TextStyle(fontWeight: FontWeight.bold))]),
     );
   }
@@ -365,7 +402,7 @@ class MediaScreen extends StatelessWidget {
             hintText: '搜尋影音資源...',
             prefixIcon: const Icon(Icons.search, color: Colors.grey),
             filled: true,
-            fillColor: const Color(0xFF0F172A),
+            fillColor: AppColors.surface,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
           ),
         ),
@@ -403,7 +440,7 @@ class MediaScreen extends StatelessWidget {
         AspectRatio(
           aspectRatio: 16/9,
           child: Container(
-            color: const Color(0xFF0F172A),
+              color: AppColors.surface,
             child: const Center(child: Icon(Icons.play_circle_fill, size: 80, color: Colors.white70)),
           ),
         ),
@@ -451,14 +488,17 @@ class CommunityScreen extends StatelessWidget {
             hintText: '搜尋貼文...',
             prefixIcon: const Icon(Icons.search),
             filled: true,
-            fillColor: const Color(0xFF0F172A),
+            fillColor: AppColors.surface,
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(16), borderSide: BorderSide.none),
           ),
         ),
         const SizedBox(height: 20),
         Container(
           padding: const EdgeInsets.all(4),
-          decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(14)),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(14),
+          ),
           child: Row(children: [
             _buildTab('論壇討論', isForum, () => onModeChange(true)),
             _buildTab('活動發布', !isForum, () => onModeChange(false)),
@@ -482,7 +522,10 @@ class CommunityScreen extends StatelessWidget {
         onTap: o,
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
-          decoration: BoxDecoration(color: a ? const Color(0xFF1E293B) : Colors.transparent, borderRadius: BorderRadius.circular(10)),
+          decoration: BoxDecoration(
+            color: a ? AppColors.surfaceVariant : Colors.transparent,
+            borderRadius: BorderRadius.circular(10),
+          ),
           child: Center(child: Text(l, style: TextStyle(color: a ? Colors.white : Colors.grey, fontWeight: FontWeight.bold, fontSize: 13))),
         ),
       ),
@@ -492,7 +535,11 @@ class CommunityScreen extends StatelessWidget {
   Widget _buildPost(String a, String t, String c, String i) {
     return Container(
       padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white10)),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.white10),
+      ),
       child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
         Row(children: [const CircleAvatar(radius: 16), const SizedBox(width: 10), Text(a, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))]),
         const SizedBox(height: 15),
@@ -510,9 +557,20 @@ class CommunityScreen extends StatelessWidget {
       onTap: () => onViewChange('details'),
       child: Container(
         padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(24), border: Border.all(color: Colors.orange.withAlpha(51))), // ~0.2 opacity
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: Colors.orange.withAlpha(51)),
+        ), // ~0.2 opacity
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Text('# 祭典活動', style: TextStyle(color: Color(0xFFFB7185), fontSize: 10, fontWeight: FontWeight.bold)),
+            const Text(
+              '# 祭典活動',
+              style: TextStyle(
+                color: AppColors.rose,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           const SizedBox(height: 12),
           Text(t, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
           const SizedBox(height: 15),
@@ -539,14 +597,56 @@ class CommunityScreen extends StatelessWidget {
           ])),
         ])),
         Positioned(top: 50, left: 20, child: CircleAvatar(backgroundColor: Colors.black45, child: IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => onViewChange('list')))),
-        Positioned(bottom: 0, left: 0, right: 0, child: Container(padding: const EdgeInsets.fromLTRB(20, 16, 20, 40), color: const Color(0xFF0F172A), child: ElevatedButton(onPressed: (){}, style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFB91C1C), foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(vertical: 16), shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16))), child: const Text('立即報名參與 Register Now', style: TextStyle(fontWeight: FontWeight.bold))))),
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: Container(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
+              color: AppColors.surface,
+              child: ElevatedButton(
+                onPressed: () {},
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.dangerDark,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+                child: const Text(
+                  '立即報名參與 Register Now',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+          ),
       ]),
     );
   }
 
   Widget _buildPublish(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(backgroundColor: Colors.transparent, leading: TextButton(onPressed: () => onViewChange('list'), child: const Text('取消', style: TextStyle(color: Colors.grey))), title: const Text('發布活動'), actions: [TextButton(onPressed: () => onViewChange('list'), child: const Text('發布', style: TextStyle(color: Color(0xFFEA580C), fontWeight: FontWeight.bold)))]),
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        leading: TextButton(
+          onPressed: () => onViewChange('list'),
+          child: const Text('取消', style: TextStyle(color: Colors.grey)),
+        ),
+        title: const Text('發布活動'),
+        actions: [
+          TextButton(
+            onPressed: () => onViewChange('list'),
+            child: const Text(
+              '發布',
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+        ],
+      ),
       body: Padding(padding: const EdgeInsets.all(24), child: Column(children: const [
         TextField(decoration: InputDecoration(labelText: '活動標題 Subject', labelStyle: TextStyle(fontSize: 12))),
         SizedBox(height: 20),
@@ -575,11 +675,11 @@ class ProfileScreen extends StatelessWidget {
         ])),
         const SizedBox(height: 35),
         Row(children: [
-          _buildStatBox('12', '連續學習', const Color(0xFFFB923C)),
+            _buildStatBox('12', '連續學習', AppColors.orangeLight),
           const SizedBox(width: 12),
-          _buildStatBox('120', '已學單字', const Color(0xFF60A5FA)),
+            _buildStatBox('120', '已學單字', AppColors.blueLight),
           const SizedBox(width: 12),
-          _buildStatBox('05', '社群貢獻', const Color(0xFF4ADE80)),
+            _buildStatBox('05', '社群貢獻', AppColors.greenLight),
         ]),
         const SizedBox(height: 35),
         const Padding(
@@ -587,13 +687,25 @@ class ProfileScreen extends StatelessWidget {
           child: Text('學習紀錄 | LEARNING', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900, color: Colors.grey, letterSpacing: 2)),
         ),
         Container(
-          decoration: BoxDecoration(color: const Color(0xFF0F172A), borderRadius: BorderRadius.circular(20), border: Border.all(color: Colors.white10)),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white10),
+          ),
           child: Column(children: [
-            _buildMenuItem(Icons.access_time_filled_rounded, '我的學習進度', const Color(0xFF3B82F6)),
+              _buildMenuItem(
+                Icons.access_time_filled_rounded,
+                '我的學習進度',
+                AppColors.blue,
+              ),
             _buildDivider(),
-            _buildMenuItem(Icons.star_rounded, '我的收藏', const Color(0xFFF59E0B)),
+              _buildMenuItem(Icons.star_rounded, '我的收藏', AppColors.amber),
             _buildDivider(),
-            _buildMenuItem(Icons.military_tech_rounded, '我參與的活動', const Color(0xFFA855F7)),
+              _buildMenuItem(
+                Icons.military_tech_rounded,
+                '我參與的活動',
+                AppColors.purple,
+              ),
             _buildDivider(),
             _buildMenuItem(Icons.settings_rounded, '帳號設定', Colors.grey[600]!),
             _buildDivider(),
@@ -609,7 +721,7 @@ class ProfileScreen extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 24),
         decoration: BoxDecoration(
-          color: const Color(0xFF0F172A),
+          color: AppColors.surface,
           borderRadius: BorderRadius.circular(22),
           border: Border.all(color: Colors.white.withAlpha(13)), // ~0.05 opacity
           boxShadow: [BoxShadow(color: Colors.black.withAlpha(51), blurRadius: 8, offset: const Offset(0, 4))],
@@ -636,7 +748,7 @@ class ProfileScreen extends StatelessWidget {
     return ListTile(
       leading: const Icon(
         Icons.logout_rounded,
-        color: Color(0xFFEF4444),
+        color: AppColors.danger,
         size: 22,
       ),
       title: const Text(
@@ -644,7 +756,7 @@ class ProfileScreen extends StatelessWidget {
         style: TextStyle(
           fontSize: 15,
           fontWeight: FontWeight.bold,
-          color: Color(0xFFEF4444),
+          color: AppColors.danger,
         ),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 20),

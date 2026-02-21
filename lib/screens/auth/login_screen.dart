@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../../core/constants/app_colors.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -39,13 +40,13 @@ class _LoginScreenState extends State<LoginScreen> {
                   width: 80,
                   height: 80,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEA580C).withAlpha(30),
+                    color: AppColors.primary.withAlpha(30),
                     borderRadius: BorderRadius.circular(24),
                   ),
                   child: const Icon(
                     Icons.language_rounded,
                     size: 44,
-                    color: Color(0xFFEA580C),
+                    color: AppColors.primary,
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -82,7 +83,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       color: Colors.white38,
                     ),
                     filled: true,
-                    fillColor: const Color(0xFF1E293B),
+                    fillColor: AppColors.surfaceVariant,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -118,7 +119,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           setState(() => _obscurePassword = !_obscurePassword),
                     ),
                     filled: true,
-                    fillColor: const Color(0xFF1E293B),
+                    fillColor: AppColors.surfaceVariant,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -151,7 +152,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: ElevatedButton(
                     onPressed: _handleLogin,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFEA580C),
+                      backgroundColor: AppColors.primary,
                       foregroundColor: Colors.white,
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
@@ -196,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: const Text(
                         '立即註冊',
                         style: TextStyle(
-                          color: Color(0xFFEA580C),
+                          color: AppColors.primary,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
