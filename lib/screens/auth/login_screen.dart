@@ -24,7 +24,7 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _handleLogin() {
-    Navigator.pushReplacementNamed(context, '/');
+    Navigator.pushReplacementNamed(context, '/home');
   }
 
   @override

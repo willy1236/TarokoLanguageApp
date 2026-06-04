@@ -17,6 +17,13 @@
 | `lib/screens/auth/login_screen.dart` | 完整依設計稿重構 |
 | `pubspec.yaml` | 已加入 `google_fonts: ^6.2.1` |
 
+### ✅ 已完成（Phase 1）
+| 檔案 | 狀態 |
+|---|---|
+| `lib/screens/splash/splash_screen.dart` | SplashScreen，2.5 秒後跳轉 /login |
+| `lib/shared/widgets/truku_bottom_tab.dart` | 6-tab 自訂 SVG 亮色底部導覽 |
+| `lib/main.dart` | initialRoute `/splash`，ProfileScreen 改為 overlay |
+
 ### ❌ 尚未遷移（lib/main.dart 內的舊版畫面）
 - `MainContainer`（導航架構需重設計）
 - `HomeScreen`（版面完全不同，需重寫）
@@ -123,10 +130,10 @@ label: 10px, active 600, inactive 400
 ```
 
 ### 驗收條件
-- [ ] 6-tab BottomNavigationBar，使用自訂 SVG icon
-- [ ] 亮色（creamLight）底色 Tab Bar
-- [ ] ProfileScreen 改為首頁 avatar 觸發的 Stack overlay
-- [ ] SplashScreen 作為 initialRoute，停留 2.5 秒後自動跳轉 `/login`
+- [x] 6-tab BottomNavigationBar，使用自訂 SVG icon
+- [x] 亮色（creamLight）底色 Tab Bar
+- [x] ProfileScreen 改為首頁 avatar 觸發的 Stack overlay
+- [x] SplashScreen 作為 initialRoute，停留 2.5 秒後自動跳轉 `/login`
 
 ---
 
