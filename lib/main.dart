@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/learn/learn_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 
@@ -79,7 +80,7 @@ class _MainContainerState extends State<MainContainer> {
             index: _currentIndex,
             children: [
               _OldHomeTab(onNavigate: _navigate),
-              const _OldLearningTab(),
+              const LearnScreen(),
               const _PlaceholderTab('影音 · Culture', AppColors.midnight),
               const _PlaceholderTab('視訊 · Video Call', AppColors.midnight),
               const _PlaceholderTab('廣場 · Plaza', AppColors.creamLight),
@@ -249,87 +250,6 @@ class _OldHomeTab extends StatelessWidget {
   }
 }
 
-// ─── 舊版學習中心（Phase 3 完整重寫）────────────────────────────────────────
-
-class _OldLearningTab extends StatefulWidget {
-  const _OldLearningTab();
-
-  @override
-  State<_OldLearningTab> createState() => _OldLearningTabState();
-}
-
-class _OldLearningTabState extends State<_OldLearningTab> {
-  int _activeTab = 0;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 120),
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Text('族語學習中心', style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white)),
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceVariant,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.white10),
-              ),
-              child: const Icon(Icons.settings_outlined, color: Colors.grey, size: 22),
-            ),
-          ],
-        ),
-        const SizedBox(height: 25),
-        Container(
-          padding: const EdgeInsets.all(5),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: Colors.white12),
-          ),
-          child: Row(children: [
-            _tab('日常練習', _activeTab == 0, () => setState(() => _activeTab = 0)),
-            _tab('考試準備', _activeTab == 1, () => setState(() => _activeTab = 1)),
-          ]),
-        ),
-        const SizedBox(height: 30),
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white10),
-          ),
-          child: const Column(children: [
-            Row(children: [Icon(Icons.stars, color: Colors.orange, size: 30), SizedBox(width: 12), Text('Truku 等級：初級', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold))]),
-            SizedBox(height: 20),
-            Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [Text('當前進度', style: TextStyle(fontSize: 12, color: Colors.grey)), Text('65%', style: TextStyle(fontSize: 12))]),
-            SizedBox(height: 8),
-            ClipRRect(borderRadius: BorderRadius.all(Radius.circular(10)), child: LinearProgressIndicator(value: 0.65, minHeight: 8)),
-          ]),
-        ),
-      ],
-    );
-  }
-
-  Widget _tab(String l, bool a, VoidCallback o) {
-    return Expanded(
-      child: GestureDetector(
-        onTap: o,
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 12),
-          decoration: BoxDecoration(
-            color: a ? AppColors.surfaceVariant : Colors.transparent,
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Center(child: Text(l, style: TextStyle(color: a ? Colors.white : Colors.grey, fontWeight: FontWeight.bold, fontSize: 14))),
-        ),
-      ),
-    );
-  }
-}
 
 // ─── 個人中心（Phase 7 完整重寫，目前保留舊版暗色樣式）──────────────────────
 
