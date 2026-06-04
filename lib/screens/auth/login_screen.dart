@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../shared/widgets/truku_painters.dart';
+import '../../shared/widgets/truku_widgets.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,204 +12,404 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController();
+  final _accountController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
 
   @override
   void dispose() {
-    _emailController.dispose();
+    _accountController.dispose();
     _passwordController.dispose();
     super.dispose();
   }
 
   void _handleLogin() {
-    // 略過驗證，直接跳轉主頁
     Navigator.pushReplacementNamed(context, '/');
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+      resizeToAvoidBottomInset: true,
+      body: Stack(
+        children: [
+          // 漸層背景：midnight → primaryDeep → primary
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    AppColors.midnight,
+                    AppColors.primaryDeep,
+                    AppColors.primary,
+                  ],
+                  stops: [0.0, 0.55, 1.0],
+                ),
+              ),
+            ),
+          ),
+
+          // 織紋紋理
+          Positioned.fill(
+            child: CustomPaint(
+              painter: TrukuWeavePainter(
+                color: AppColors.gold,
+                opacity: 0.12,
+              ),
+            ),
+          ),
+
+          // 山脈剪影（底部）
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 200,
+            child: Opacity(
+              opacity: 0.7,
+              child: CustomPaint(
+                painter: TrukuMountainsPainter(
+                  color: const Color(0xFF0E0604),
+                  opacity: 0.8,
+                ),
+              ),
+            ),
+          ),
+
+          // 主要內容
+          SafeArea(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo / 標題
-                Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary.withAlpha(30),
-                    borderRadius: BorderRadius.circular(24),
-                  ),
-                  child: const Icon(
-                    Icons.language_rounded,
-                    size: 44,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'KARI TRUKU',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 4,
-                    color: Colors.white,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  '太魯閣族語傳承',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.grey,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 48),
+                // Logo 區（上半）
+                const SizedBox(height: 56),
+                _buildLogoSection(),
 
-                // Email 輸入框
-                TextField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: '電子郵件',
-                    hintStyle: const TextStyle(color: Colors.white38),
-                    prefixIcon: const Icon(
-                      Icons.email_outlined,
-                      color: Colors.white38,
-                    ),
-                    filled: true,
-                    fillColor: AppColors.surfaceVariant,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 18,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
+                // 彈性間距
+                const Expanded(child: SizedBox()),
 
-                // 密碼輸入框
-                TextField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  style: const TextStyle(color: Colors.white),
-                  decoration: InputDecoration(
-                    hintText: '密碼',
-                    hintStyle: const TextStyle(color: Colors.white38),
-                    prefixIcon: const Icon(
-                      Icons.lock_outline_rounded,
-                      color: Colors.white38,
-                    ),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword
-                            ? Icons.visibility_off_rounded
-                            : Icons.visibility_rounded,
-                        color: Colors.white38,
-                      ),
-                      onPressed: () =>
-                          setState(() => _obscurePassword = !_obscurePassword),
-                    ),
-                    filled: true,
-                    fillColor: AppColors.surfaceVariant,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 20,
-                      vertical: 18,
-                    ),
-                  ),
+                // 表單區（下半）
+                SingleChildScrollView(
+                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+                  child: _buildFormSection(),
                 ),
-                const SizedBox(height: 12),
-
-                // 忘記密碼
-                Align(
-                  alignment: Alignment.centerRight,
-                  child: TextButton(
-                    onPressed: () {},
-                    child: const Text(
-                      '忘記密碼？',
-                      style: TextStyle(color: Colors.white38, fontSize: 13),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // 登入按鈕
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: _handleLogin,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      elevation: 6,
-                      textStyle: const TextStyle(
-                        fontSize: 17,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    child: const Text('登入'),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // 分隔線
-                Row(
-                  children: [
-                    Expanded(child: Divider(color: Colors.white12)),
-                    const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 16),
-                      child: Text(
-                        '或',
-                        style: TextStyle(color: Colors.white38, fontSize: 13),
-                      ),
-                    ),
-                    Expanded(child: Divider(color: Colors.white12)),
-                  ],
-                ),
-                const SizedBox(height: 24),
-
-                // 註冊提示
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      '還沒有帳號？',
-                      style: TextStyle(color: Colors.white38),
-                    ),
-                    TextButton(
-                      onPressed: () {},
-                      child: const Text(
-                        '立即註冊',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                const SizedBox(height: 52),
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLogoSection() {
+    return Column(
+      children: [
+        // Logo 框（暫以圖示代替圖片）
+        Container(
+          width: 100,
+          height: 100,
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: AppColors.gold.withValues(alpha: 0.55),
+              width: 1.5,
+            ),
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: const Icon(
+            Icons.language_rounded,
+            size: 52,
+            color: AppColors.gold,
+          ),
+        ),
+        const SizedBox(height: 14),
+        Text(
+          'Kari Truku · Lnglungan',
+          style: GoogleFonts.crimsonPro(
+            fontStyle: FontStyle.italic,
+            fontSize: 13,
+            color: AppColors.gold,
+            letterSpacing: 2.5,
+          ),
+        ),
+        const SizedBox(height: 10),
+        const TrukuChain(count: 5, size: 8, color: AppColors.gold, gap: 5),
+      ],
+    );
+  }
+
+  Widget _buildFormSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 問候語
+        Text(
+          'MHUWAY SU · 歡迎回來',
+          style: GoogleFonts.crimsonPro(
+            fontStyle: FontStyle.italic,
+            fontSize: 11,
+            color: AppColors.gold,
+            letterSpacing: 3.5,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '登入，繼續說我們的話',
+          style: GoogleFonts.notoSerifTc(
+            fontSize: 20,
+            fontWeight: FontWeight.w600,
+            color: AppColors.creamLight,
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // 帳號輸入框
+        _buildInputField(
+          controller: _accountController,
+          labelTriku: 'HANGAN · 帳號',
+          hint: 'yudaw.bakan',
+          prefixIcon: const Icon(Icons.person_outline_rounded, size: 17, color: AppColors.cream),
+          isGold: true,
+        ),
+        const SizedBox(height: 12),
+
+        // 密碼輸入框
+        _buildInputField(
+          controller: _passwordController,
+          labelTriku: 'PASWAD · 密碼',
+          hint: '••••••••',
+          prefixIcon: const Icon(Icons.lock_outline_rounded, size: 17, color: AppColors.cream),
+          obscureText: _obscurePassword,
+          suffixIcon: GestureDetector(
+            onTap: () => setState(() => _obscurePassword = !_obscurePassword),
+            child: Icon(
+              _obscurePassword
+                  ? Icons.visibility_off_rounded
+                  : Icons.visibility_rounded,
+              size: 18,
+              color: AppColors.cream.withValues(alpha: 0.7),
+            ),
+          ),
+          isGold: false,
+        ),
+        const SizedBox(height: 10),
+
+        // 忘記密碼
+        Align(
+          alignment: Alignment.centerRight,
+          child: GestureDetector(
+            onTap: () {},
+            child: Text(
+              '忘記密碼？',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.cream.withValues(alpha: 0.7),
+                letterSpacing: 0.6,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 18),
+
+        // 登入按鈕
+        SizedBox(
+          width: double.infinity,
+          height: 52,
+          child: ElevatedButton(
+            onPressed: _handleLogin,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: AppColors.gold,
+              foregroundColor: AppColors.ink,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+              elevation: 0,
+              shadowColor: AppColors.gold.withValues(alpha: 0.25),
+            ),
+            child: Text(
+              '登　入',
+              style: GoogleFonts.notoSerifTc(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 4,
+                color: AppColors.ink,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 20),
+
+        // OR 分隔
+        Row(
+          children: [
+            Expanded(child: Divider(color: AppColors.cream.withValues(alpha: 0.2), height: 1)),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              child: Text(
+                'OR',
+                style: TextStyle(
+                  fontSize: 10,
+                  color: AppColors.cream.withValues(alpha: 0.55),
+                  letterSpacing: 2,
+                ),
+              ),
+            ),
+            Expanded(child: Divider(color: AppColors.cream.withValues(alpha: 0.2), height: 1)),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        // 第三方登入
+        Row(
+          children: [
+            _buildSocialButton(
+              icon: const Icon(Icons.apple, color: AppColors.creamLight, size: 20),
+              label: 'Apple',
+            ),
+            const SizedBox(width: 10),
+            _buildSocialButton(
+              icon: const TrukuDiamond(size: 18, color: AppColors.gold, filled: true, strokeWidth: 1.2),
+              label: '部落帳號',
+            ),
+            const SizedBox(width: 10),
+            _buildSocialButton(
+              icon: const Icon(Icons.g_mobiledata_rounded, color: AppColors.creamLight, size: 24),
+              label: 'Google',
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+
+        // 註冊提示
+        Center(
+          child: GestureDetector(
+            onTap: () {},
+            child: RichText(
+              text: TextSpan(
+                style: TextStyle(
+                  fontSize: 13,
+                  color: AppColors.cream.withValues(alpha: 0.85),
+                  letterSpacing: 0.5,
+                ),
+                children: [
+                  const TextSpan(text: '還沒有帳號？'),
+                  TextSpan(
+                    text: '　立即註冊',
+                    style: GoogleFonts.notoSerifTc(
+                      color: AppColors.gold,
+                      fontWeight: FontWeight.w600,
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String labelTriku,
+    required String hint,
+    required Widget prefixIcon,
+    Widget? suffixIcon,
+    bool obscureText = false,
+    bool isGold = false,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.creamLight.withValues(alpha: 0.08),
+        border: Border.all(
+          color: isGold
+              ? AppColors.gold.withValues(alpha: 0.30)
+              : AppColors.cream.withValues(alpha: 0.18),
+        ),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            labelTriku,
+            style: TextStyle(
+              fontSize: 10,
+              color: isGold
+                  ? AppColors.gold
+                  : AppColors.cream.withValues(alpha: 0.65),
+              letterSpacing: 2.5,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              prefixIcon,
+              const SizedBox(width: 10),
+              Expanded(
+                child: TextField(
+                  controller: controller,
+                  obscureText: obscureText,
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: AppColors.creamLight,
+                    letterSpacing: obscureText ? 5 : 0.8,
+                  ),
+                  decoration: InputDecoration(
+                    isDense: true,
+                    contentPadding: EdgeInsets.zero,
+                    border: InputBorder.none,
+                    hintText: hint,
+                    hintStyle: TextStyle(
+                      color: AppColors.cream.withValues(alpha: 0.35),
+                      fontSize: 15,
+                    ),
+                    suffixIcon: suffixIcon != null
+                        ? Padding(
+                            padding: const EdgeInsets.only(left: 8),
+                            child: suffixIcon,
+                          )
+                        : null,
+                    suffixIconConstraints: const BoxConstraints(),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSocialButton({required Widget icon, required String label}) {
+    return Expanded(
+      child: Container(
+        height: 52,
+        decoration: BoxDecoration(
+          color: AppColors.creamLight.withValues(alpha: 0.05),
+          border: Border.all(
+            color: AppColors.cream.withValues(alpha: 0.18),
+          ),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            icon,
+            const SizedBox(height: 3),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 9,
+                color: AppColors.cream.withValues(alpha: 0.8),
+                letterSpacing: 0.8,
+              ),
+            ),
+          ],
         ),
       ),
     );

@@ -1,6 +1,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
 import 'screens/auth/login_screen.dart';
 
@@ -25,12 +26,20 @@ class KariTrukuApp extends StatelessWidget {
         brightness: Brightness.dark,
         scaffoldBackgroundColor: AppColors.background,
         primaryColor: AppColors.primary,
-        fontFamily: 'Noto Sans TC',
         useMaterial3: true,
         colorScheme: const ColorScheme.dark(
           primary: AppColors.primary,
           secondary: AppColors.surfaceVariant,
           surface: AppColors.surface,
+        ),
+        textTheme: GoogleFonts.notoSansTcTextTheme(
+          const TextTheme(
+            bodyMedium: TextStyle(color: AppColors.creamLight),
+          ),
+        ),
+        progressIndicatorTheme: const ProgressIndicatorThemeData(
+          color: AppColors.gold,
+          linearTrackColor: Colors.white10,
         ),
       ),
       initialRoute: '/login',
