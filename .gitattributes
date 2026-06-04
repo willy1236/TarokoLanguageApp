@@ -1,0 +1,22 @@
+# 1. 排除 Flutter 自動產生的 build 產出物與暫存資料夾
+build/** linguist-vendored
+.dart_tool/** linguist-vendored
+
+# 2. 排除各平台原生開發資料夾
+android/** linguist-vendored
+ios/** linguist-vendored
+windows/** linguist-vendored
+macos/** linguist-vendored
+linux/** linguist-vendored
+web/** linguist-vendored
+
+# 3. 排除由 build_runner 自動生成的程式碼（例如 Freezed, JsonSerializable, Riverpod 等）
+*.g.dart linguist-generated
+*.freezed.dart linguist-generated
+*.mocks.dart linguist-generated
+
+# 4. 排除外掛、模組與本機快取
+.pub-cache/** linguist-vendored
+
+# 5. 排除專案中不屬於原始碼的資料夾（例如設計稿、資源等）
+claude-design-src/** linguist-vendored
