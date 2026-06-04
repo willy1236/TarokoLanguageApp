@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/community/community_screen.dart';
 import 'screens/culture/culture_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/learn/learn_screen.dart';
@@ -84,7 +85,7 @@ class _MainContainerState extends State<MainContainer> {
               HomeScreen(onShowProfile: () => setState(() => _showProfile = true)),
               const LearnScreen(),
               const CultureScreen(),
-              const _PlaceholderTab('視訊 · Video Call', AppColors.midnight),
+              const CommunityScreen(),
               const _PlaceholderTab('廣場 · Plaza', AppColors.creamLight),
               const _PlaceholderTab('活動 · Events', AppColors.creamLight),
             ],

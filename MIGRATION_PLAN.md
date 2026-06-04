@@ -44,9 +44,16 @@
 | `lib/screens/culture/culture_screen.dart` | CultureScreen，暗色主題，Hero 區、分頁切換、分類 chips、影片格、文章列表 |
 | `lib/main.dart` | IndexedStack index 2 → CultureScreen，移除 _PlaceholderTab |
 
+### ✅ 已完成（Phase 5）
+| 檔案 | 狀態 |
+|---|---|
+| `lib/screens/community/community_screen.dart` | CommunityScreen，亮色主題，1on1 暗色大卡、主題 chips、耆老列表、最近通話 |
+| `lib/screens/community/video_waiting_screen.dart` | VideoWaitingScreen，暗色，脈衝動畫 AnimationController，TrukuDiamond 中央 |
+| `lib/screens/community/video_call_screen.dart` | VideoCallScreen，全屏暗色，計時器、自拍小窗、底部控制列（靜音/鏡頭/筆記/結束） |
+| `lib/main.dart` | IndexedStack index 3 → CommunityScreen，移除 _PlaceholderTab |
+
 ### ❌ 尚未遷移（lib/main.dart 內的舊版畫面）
 - `HomeScreen`（版面完全不同，需重寫，Phase 2）
-- `CommunityScreen`、`VideoCallScreen`（Phase 5）
 - `ProfileScreen`（需重寫，Phase 7）
 
 ### 新畫面（設計稿有、Flutter 完全未建）
@@ -379,8 +386,8 @@ label: 10px, active 600, inactive 400
 - 錄音指示紅點
 
 ### 驗收條件
-- [ ] VideoWaitingScreen 脈衝動畫流暢
-- [ ] VideoCallScreen 全屏佈局，控制按鈕功能佈局正確
+- [x] VideoWaitingScreen 脈衝動畫流暢
+- [x] VideoCallScreen 全屏佈局，控制按鈕功能佈局正確
 
 ---
 
