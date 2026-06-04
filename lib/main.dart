@@ -7,6 +7,8 @@ import 'screens/community/community_screen.dart';
 import 'screens/culture/culture_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/learn/learn_screen.dart';
+import 'screens/plaza/events_screen.dart';
+import 'screens/plaza/plaza_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 
@@ -86,8 +88,8 @@ class _MainContainerState extends State<MainContainer> {
               const LearnScreen(),
               const CultureScreen(),
               const CommunityScreen(),
-              const _PlaceholderTab('廣場 · Plaza', AppColors.creamLight),
-              const _PlaceholderTab('活動 · Events', AppColors.creamLight),
+              const PlazaScreen(),
+              const EventsScreen(),
             ],
           ),
 
@@ -127,25 +129,6 @@ class _MainContainerState extends State<MainContainer> {
               currentIndex: _currentIndex,
               onTap: _navigate,
             ),
-    );
-  }
-}
-
-// ─── 佔位分頁（Phase 2–6 逐步替換）──────────────────────────────────────────
-
-class _PlaceholderTab extends StatelessWidget {
-  final String label;
-  final Color bg;
-  const _PlaceholderTab(this.label, this.bg);
-
-  @override
-  Widget build(BuildContext context) {
-    final textColor = bg == AppColors.creamLight ? AppColors.fog : AppColors.fog;
-    return Container(
-      color: bg,
-      child: Center(
-        child: Text(label, style: TextStyle(color: textColor, fontSize: 16)),
-      ),
     );
   }
 }

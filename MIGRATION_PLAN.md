@@ -52,6 +52,14 @@
 | `lib/screens/community/video_call_screen.dart` | VideoCallScreen，全屏暗色，計時器、自拍小窗、底部控制列（靜音/鏡頭/筆記/結束） |
 | `lib/main.dart` | IndexedStack index 3 → CommunityScreen，移除 _PlaceholderTab |
 
+### ✅ 已完成（Phase 6）
+| 檔案 | 狀態 |
+|---|---|
+| `lib/screens/plaza/plaza_screen.dart` | PlazaScreen，亮色主題，動態/活動分頁，近期活動小卡、貼文列表、精選活動卡 |
+| `lib/screens/plaza/events_screen.dart` | EventsScreen，亮色主題，篩選 chips、精選大卡、活動清單 |
+| `lib/screens/plaza/compose_screen.dart` | ComposeScreen，動態/活動類型切換、文字輸入、標籤選擇、工具列 |
+| `lib/main.dart` | IndexedStack index 4 → PlazaScreen，index 5 → EventsScreen，移除 _PlaceholderTab |
+
 ### ❌ 尚未遷移（lib/main.dart 內的舊版畫面）
 - `HomeScreen`（版面完全不同，需重寫，Phase 2）
 - `ProfileScreen`（需重寫，Phase 7）
@@ -408,8 +416,8 @@ label: 10px, active 600, inactive 400
 - 頂部 AppBar：取消 / 發布
 
 ### 驗收條件
-- [ ] PlazaScreen 分頁切換正常
-- [ ] ComposeScreen 基本表單可輸入
+- [x] PlazaScreen 分頁切換正常
+- [x] ComposeScreen 基本表單可輸入
 
 ---
 
