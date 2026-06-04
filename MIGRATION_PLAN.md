@@ -38,9 +38,14 @@
 | `lib/screens/learn/lesson_card_screen.dart` | LessonCardScreen，深色主卡 + 播放按鈕 + 例句左邊框 |
 | `lib/main.dart` | IndexedStack index 1 → LearnScreen，移除 _OldLearningTab |
 
+### ✅ 已完成（Phase 4）
+| 檔案 | 狀態 |
+|---|---|
+| `lib/screens/culture/culture_screen.dart` | CultureScreen，暗色主題，Hero 區、分頁切換、分類 chips、影片格、文章列表 |
+| `lib/main.dart` | IndexedStack index 2 → CultureScreen，移除 _PlaceholderTab |
+
 ### ❌ 尚未遷移（lib/main.dart 內的舊版畫面）
 - `HomeScreen`（版面完全不同，需重寫，Phase 2）
-- `MediaScreen`（需重寫，對應 CultureScreen，Phase 4）
 - `CommunityScreen`、`VideoCallScreen`（Phase 5）
 - `ProfileScreen`（需重寫，Phase 7）
 
@@ -343,10 +348,10 @@ label: 10px, active 600, inactive 400
 每格：縮圖（條紋占位）+ 右側標題/副標/時長
 
 ### 驗收條件
-- [ ] 暗色主題全畫面
-- [ ] Hero 區有兩層漸層疊加
-- [ ] 分頁切換 gold 底線高亮
-- [ ] chips 橫向可捲動，active 狀態正確
+- [x] 暗色主題全畫面
+- [x] Hero 區有兩層漸層疊加
+- [x] 分頁切換 gold 底線高亮
+- [x] chips 橫向可捲動，active 狀態正確
 
 ---
 
