@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/home/home_screen.dart';
 import 'screens/learn/learn_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
@@ -79,7 +80,7 @@ class _MainContainerState extends State<MainContainer> {
           IndexedStack(
             index: _currentIndex,
             children: [
-              _OldHomeTab(onNavigate: _navigate),
+              HomeScreen(onShowProfile: () => setState(() => _showProfile = true)),
               const LearnScreen(),
               const _PlaceholderTab('影音 · Culture', AppColors.midnight),
               const _PlaceholderTab('視訊 · Video Call', AppColors.midnight),
@@ -87,26 +88,6 @@ class _MainContainerState extends State<MainContainer> {
               const _PlaceholderTab('活動 · Events', AppColors.creamLight),
             ],
           ),
-
-          // Avatar 按鈕（首頁分頁、無 profile overlay 時顯示）
-          if (_currentIndex == 0 && !_showProfile)
-            Positioned(
-              top: 56,
-              right: 16,
-              child: GestureDetector(
-                onTap: () => setState(() => _showProfile = true),
-                child: Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.primary,
-                    border: Border.all(color: AppColors.gold, width: 2),
-                  ),
-                  child: const Icon(Icons.person, color: AppColors.creamLight),
-                ),
-              ),
-            ),
 
           // ProfileScreen overlay
           if (_showProfile)
@@ -162,89 +143,6 @@ class _PlaceholderTab extends StatelessWidget {
       color: bg,
       child: Center(
         child: Text(label, style: TextStyle(color: textColor, fontSize: 16)),
-      ),
-    );
-  }
-}
-
-// ─── 舊版首頁（Phase 2 完整重寫）────────────────────────────────────────────
-
-class _OldHomeTab extends StatelessWidget {
-  final Function(int) onNavigate;
-  const _OldHomeTab({required this.onNavigate});
-
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(16, 20, 16, 120),
-      children: [
-        Container(
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white10),
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: const [
-                  CircleAvatar(radius: 28, backgroundImage: NetworkImage('https://picsum.photos/id/64/100/100')),
-                  SizedBox(width: 15),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Mhuway su!', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.w900, fontSize: 12)),
-                      Text('Kating, 歡迎學習', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
-                    ],
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
-                  Text('每日學習進度', style: TextStyle(color: Colors.white70, fontSize: 11)),
-                  Text('85%', style: TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold)),
-                ],
-              ),
-              const SizedBox(height: 8),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(10),
-                child: const LinearProgressIndicator(value: 0.85, minHeight: 6, backgroundColor: Colors.white10),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 30),
-        const Text('族語學習路徑', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 15),
-        GridView.count(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: 2,
-          crossAxisSpacing: 15,
-          mainAxisSpacing: 15,
-          childAspectRatio: 1.5,
-          children: [
-            _quickCard('每日練習', Icons.book_rounded, AppColors.rose),
-            _quickCard('檢定衝刺', Icons.verified_rounded, Colors.indigoAccent),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _quickCard(String t, IconData i, Color c) {
-    return Container(
-      decoration: BoxDecoration(
-        color: c.withValues(alpha: 0.10),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: c.withValues(alpha: 0.20)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [Icon(i, color: c, size: 28), const SizedBox(height: 8), Text(t, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13))],
       ),
     );
   }

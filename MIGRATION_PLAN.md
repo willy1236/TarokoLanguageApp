@@ -6,7 +6,7 @@
 
 ---
 
-## 現況快照（2025-06-04）
+## 現況快照（2026-06-04）
 
 ### ✅ 已完成（Phase 0）
 | 檔案 | 狀態 |
@@ -24,18 +24,28 @@
 | `lib/shared/widgets/truku_bottom_tab.dart` | 6-tab 自訂 SVG 亮色底部導覽 |
 | `lib/main.dart` | initialRoute `/splash`，ProfileScreen 改為 overlay |
 
+### ✅ 已完成（Phase 2）
+| 檔案 | 狀態 |
+|---|---|
+| `lib/screens/home/home_screen.dart` | HomeScreen 亮色主題，頂色條、標頭、今日進度卡、5 張 ModeCard |
+| `lib/shared/widgets/mode_card.dart` | ModeCard + ModeIcon（lesson/film/comm/plaza/event 自訂 SVG）|
+| `lib/main.dart` | IndexedStack index 0 → HomeScreen，移除 _OldHomeTab |
+
+### ✅ 已完成（Phase 3）
+| 檔案 | 狀態 |
+|---|---|
+| `lib/screens/learn/learn_screen.dart` | LearnScreen + UnitRow，5 個狀態（current/done/partial/locked/open） |
+| `lib/screens/learn/lesson_card_screen.dart` | LessonCardScreen，深色主卡 + 播放按鈕 + 例句左邊框 |
+| `lib/main.dart` | IndexedStack index 1 → LearnScreen，移除 _OldLearningTab |
+
 ### ❌ 尚未遷移（lib/main.dart 內的舊版畫面）
-- `MainContainer`（導航架構需重設計）
-- `HomeScreen`（版面完全不同，需重寫）
-- `LearningScreen`（需重寫）
-- `MediaScreen`（需重寫，對應 CultureScreen）
-- `CommunityScreen`（需重寫）
-- `ProfileScreen`（需重寫，且改為從首頁進入而非 Tab）
+- `HomeScreen`（版面完全不同，需重寫，Phase 2）
+- `MediaScreen`（需重寫，對應 CultureScreen，Phase 4）
+- `CommunityScreen`、`VideoCallScreen`（Phase 5）
+- `ProfileScreen`（需重寫，Phase 7）
 
 ### 新畫面（設計稿有、Flutter 完全未建）
-SplashScreen、LearnListScreen、LessonCardScreen、QuizScreen、
-VideoWaitingScreen、VideoCallScreen、PlazaScreen、
-ComposeScreen、EventsScreen、ShopScreen、RewardScreen
+QuizScreen、PlazaScreen、ComposeScreen、EventsScreen、ShopScreen、RewardScreen
 
 ---
 
@@ -200,10 +210,10 @@ label: 10px, active 600, inactive 400
 - event（日曆）: rect + 橫線 + 兩條豎線 + 勾
 
 ### 驗收條件
-- [ ] SplashScreen 2.5 秒後自動跳轉
-- [ ] HomeScreen 亮色主題，5 張 ModeCard 正確排列
-- [ ] 點擊 Avatar 出現 ProfileScreen overlay（帶返回按鈕）
-- [ ] 今日進度卡顯示正確（暗色，七格進度）
+- [x] SplashScreen 2.5 秒後自動跳轉
+- [x] HomeScreen 亮色主題，5 張 ModeCard 正確排列
+- [x] 點擊 Avatar 出現 ProfileScreen overlay（帶返回按鈕）
+- [x] 今日進度卡顯示正確（暗色，七格進度）
 
 ---
 
@@ -291,10 +301,10 @@ label: 10px, active 600, inactive 400
 - 「我會了 →」：primary 底 creamLight 字，Noto Serif TC 14px 600
 
 ### 驗收條件
-- [ ] LearnScreen 亮色主題，primary hero，5 個 UnitRow 含狀態區分
-- [ ] UnitRow 菱形框有進度 strokeDasharray
-- [ ] LessonCardScreen 深色主卡，Crimson Pro 56px 族語詞
-- [ ] 例句左邊框樣式正確
+- [x] LearnScreen 亮色主題，primary hero，5 個 UnitRow 含狀態區分
+- [x] UnitRow 菱形框有進度 strokeDasharray
+- [x] LessonCardScreen 深色主卡，Crimson Pro 56px 族語詞
+- [x] 例句左邊框樣式正確
 
 ---
 
