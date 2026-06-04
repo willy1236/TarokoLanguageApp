@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1600, initial-scale=1" />
+  <title>語見太魯閣 — Kari Truku</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;600;700&family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400;1,500;1,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    html, body { margin: 0; padding: 0; background: #1C0F0D; font-family: 'Noto Sans TC', system-ui, sans-serif; }
+    * { box-sizing: border-box; }
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); opacity: 0.4; }
+      50% { transform: scale(1.4); opacity: 0; }
+    }
+  </style>
+
+  <template id="__bundler_thumbnail">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+      <rect width="100" height="100" fill="#7A1F1A"/>
+      <path d="M50 22 L78 50 L50 78 L22 50 Z" fill="none" stroke="#C9A961" stroke-width="2"/>
+      <path d="M50 34 L66 50 L50 66 L34 50 Z" fill="#C9A961" fill-opacity="0.3" stroke="#C9A961" stroke-width="1.5"/>
+      <circle cx="50" cy="50" r="2" fill="#C9A961"/>
+    </svg>
+  </template>
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="design-tokens.jsx"></script>
+  <script type="text/babel" src="screens-login.jsx"></script>
+  <script type="text/babel" src="screens-home.jsx"></script>
+  <script type="text/babel" src="screens-learn.jsx"></script>
+  <script type="text/babel" src="screens-learn-hub.jsx"></script>
+  <script type="text/babel" src="screens-exam-sim.jsx"></script>
+  <script type="text/babel" src="screens-exam-parts.jsx"></script>
+  <script type="text/babel" src="screens-compose-video.jsx"></script>
+  <script type="text/babel" src="screens-compose-article.jsx"></script>
+  <script type="text/babel" src="screens-article-list.jsx"></script>
+  <script type="text/babel" src="screens-rest.jsx"></script>
+  <script type="text/babel" src="screens-quiz.jsx"></script>
+  <script type="text/babel" src="screens-mode.jsx"></script>
+  <script type="text/babel" src="screens-video.jsx"></script>
+  <script type="text/babel" src="screens-article.jsx"></script>
+  <script type="text/babel" src="screens-shop.jsx"></script>
+  <script type="text/babel" src="screens-reward.jsx"></script>
+
+  <script type="text/babel">
+    const { DesignCanvas, DCSection, DCArtboard } = window;
+    const { IOSDevice } = window;
+
+    function PhoneFrame({ children, dark = false }) {
+      return <IOSDevice width={402} height={874} dark={dark}>{children}</IOSDevice>;
+    }
+
+    function App() {
+      return (
+        <DesignCanvas
+          title="語見太魯閣 · Kari Truku"
+          subtitle="太魯閣族年輕人的族語學習與文化交流 App · 11 個畫面"
+        >
+          <DCSection id="flow" title="主要流程">
+            <DCArtboard id="splash" label="01 啟動畫面 · Splash" width={402} height={874}>
+              <PhoneFrame dark={true}>
+                <window.SplashScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="login" label="02 登入 · Login" width={402} height={874}>
+              <PhoneFrame dark={true}>
+                <window.LoginScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="login-reward" label="02b 登入獎勵 · +10 小米" width={402} height={874}>
+              <PhoneFrame dark={true}>
+                <window.LoginRewardScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="home" label="03 首頁 · 4 模式入口" width={402} height={874}>
+              <PhoneFrame>
+                <window.HomeScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="learn-hub" label="04 族語學習 · 選擇模式" width={402} height={874}>
+              <PhoneFrame>
+                <window.LearnHubScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="learn" label="04a 日常學習 · 單元列表" width={402} height={874}>
+              <PhoneFrame>
+                <window.LearnScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="exam-prep" label="04b 考試準備 · 歷屆試題" width={402} height={874}>
+              <PhoneFrame>
+                <window.ExamPrepScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="exam-p1" label="04c 第一部分 · 是非題" width={402} height={874}>
+              <PhoneFrame>
+                <window.ExamPart1 />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="exam-p2" label="04d 第二部分 · 選擇題(一)" width={402} height={874}>
+              <PhoneFrame>
+                <window.ExamPart2 />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="exam-p3" label="04e 第三部分 · 選擇題(二)" width={402} height={874}>
+              <PhoneFrame>
+                <window.ExamPart3 />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="exam-p4" label="04f 第四部分 · 配合題" width={402} height={874}>
+              <PhoneFrame>
+                <window.ExamPart4 />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="mode" label="05 選擇模式 · 學習 / 答題" width={402} height={874}>
+              <PhoneFrame>
+                <window.LearnModePickScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="lesson" label="06 單字卡 · 發音學習" width={402} height={874}>
+              <PhoneFrame>
+                <window.LessonCardScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="lesson-reward" label="06b 完成獎勵 · +10 小米" width={402} height={874}>
+              <PhoneFrame>
+                <window.LessonRewardScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="quiz" label="07 答題式單字卡 · Quiz" width={402} height={874}>
+              <PhoneFrame>
+                <window.QuizScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="culture" label="08 文化影音 · Lnglungan" width={402} height={874}>
+              <PhoneFrame dark={true}>
+                <window.CultureScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="video" label="09 影片播放 · Player" width={402} height={874}>
+              <PhoneFrame dark={true}>
+                <window.VideoPlayerScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="compose-video" label="09b 發布影片 · Smpung" width={402} height={874}>
+              <PhoneFrame>
+                <window.ComposeVideoScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="article" label="10 文章閱讀 · Patas" width={402} height={874}>
+              <PhoneFrame>
+                <window.ArticleScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="article-list" label="10a 文章列表 · Patas Kari" width={402} height={874}>
+              <PhoneFrame dark={true}>
+                <window.ArticleListScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="compose-article" label="10b 發布文章 · Patas" width={402} height={874}>
+              <PhoneFrame>
+                <window.ComposeArticleScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="comm" label="11 互動專區 · Pgkala" width={402} height={874}>
+              <PhoneFrame>
+                <window.CommunityScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="vwait" label="12 視訊配對 · Smtrung" width={402} height={874}>
+              <PhoneFrame dark={true}>
+                <window.VideoWaitingScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="vcall" label="13 視訊中 · Pgkala" width={402} height={874}>
+              <PhoneFrame dark={true}>
+                <window.VideoCallScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="plaza" label="14 廣場 · Alang" width={402} height={874}>
+              <PhoneFrame>
+                <window.PlazaScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="compose" label="15 發布 · Smpung" width={402} height={874}>
+              <PhoneFrame>
+                <window.ComposeScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="events" label="16 活動列表 · Smratuc" width={402} height={874}>
+              <PhoneFrame>
+                <window.EventsScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="compose-event" label="17 發布活動 · Smratuc" width={402} height={874}>
+              <PhoneFrame>
+                <window.ComposeEventScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="profile" label="18 個人頁面 · Hangan" width={402} height={874}>
+              <PhoneFrame>
+                <window.ProfileScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+            <DCArtboard id="shop" label="19 小米商店 · Sapah" width={402} height={874}>
+              <PhoneFrame>
+                <window.ShopScreen />
+              </PhoneFrame>
+            </DCArtboard>
+
+          </DCSection>
+        </DesignCanvas>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>
