@@ -60,9 +60,13 @@
 | `lib/screens/plaza/compose_screen.dart` | ComposeScreen，動態/活動類型切換、文字輸入、標籤選擇、工具列 |
 | `lib/main.dart` | IndexedStack index 4 → PlazaScreen，index 5 → EventsScreen，移除 _PlaceholderTab |
 
-### ❌ 尚未遷移（lib/main.dart 內的舊版畫面）
-- `HomeScreen`（版面完全不同，需重寫，Phase 2）
-- `ProfileScreen`（需重寫，Phase 7）
+### ✅ 已完成（Phase 7）
+| 檔案 | 狀態 |
+|---|---|
+| `lib/screens/profile/profile_screen.dart` | ProfileScreen，亮色主題，Hero 漸層卡、統計三格、大頭貼選擇、帳號/偏好/其他設定、登出 |
+| `lib/screens/shop/shop_screen.dart` | ShopScreen，亮色主題，Hero 餘額卡、分類 chips、精選大卡 2 欄、彩徽/金徽 3 欄格 |
+| `lib/shared/widgets/reward_overlay.dart` | RewardOverlay，半透明暗色 Dialog、elasticOut 動畫、數字跳動、光芒旋轉、逛商店/繼續按鈕 |
+| `lib/main.dart` | _ProfileTab 移除，ProfileScreen overlay 接入，/shop 路由新增 |
 
 ### 新畫面（設計稿有、Flutter 完全未建）
 QuizScreen、PlazaScreen、ComposeScreen、EventsScreen、ShopScreen、RewardScreen
@@ -446,9 +450,9 @@ label: 10px, active 600, inactive 400
 - 確認按鈕
 
 ### 驗收條件
-- [ ] ProfileScreen 改為亮色 overlay 模式
-- [ ] ShopScreen 小米幣餘額顯示
-- [ ] RewardScreen 動畫彈窗
+- [x] ProfileScreen 改為亮色 overlay 模式
+- [x] ShopScreen 小米幣餘額顯示
+- [x] RewardScreen 動畫彈窗
 
 ---
 
