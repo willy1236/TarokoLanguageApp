@@ -7,7 +7,9 @@ class LearnService {
     final json = await ApiClient.get('/api/levels');
     final list = json['levels'] as List<dynamic>? ?? (json['data'] as List<dynamic>? ?? []);
     return list
-        .map((e) => LevelInfo.fromJson(e as Map<String, dynamic>))
+        .cast<Map<String, dynamic>>()
+        .where((e) => e['level'] != null)
+        .map(LevelInfo.fromJson)
         .toList();
   }
 
