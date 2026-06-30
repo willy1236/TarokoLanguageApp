@@ -43,6 +43,9 @@ dependencies:
   http: ^1.2.2
   flutter_secure_storage: ^9.2.2
 
+  # 測驗題目發音播放
+  audioplayers: ^6.1.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

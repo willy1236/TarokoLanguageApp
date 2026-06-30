@@ -1,90 +1,110 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
+import '../../models/level_info.dart';
+import '../../services/learn_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'lesson_card_screen.dart';
 
-// ── 單元資料 ──────────────────────────────────────────────────────────────────
-
-class _UnitData {
-  final String num;
-  final String zh;
-  final String truku;
-  final int words;
-  final int done;
-  final bool locked;
-  final bool current;
-
-  const _UnitData({
-    required this.num,
-    required this.zh,
-    required this.truku,
-    required this.words,
-    required this.done,
-    this.locked = false,
-    this.current = false,
-  });
-}
-
 // ── LearnScreen ───────────────────────────────────────────────────────────────
 
-class LearnScreen extends StatelessWidget {
+class LearnScreen extends StatefulWidget {
   const LearnScreen({super.key});
 
-  static const _units = [
-    _UnitData(num: '01', zh: '日常問候', truku: 'Smbarux', words: 12, done: 12),
-    _UnitData(num: '02', zh: '家人稱謂', truku: 'Lutut', words: 18, done: 14, current: true),
-    _UnitData(num: '03', zh: '部落地景', truku: 'Dgiyaq Alang', words: 16, done: 0),
-    _UnitData(num: '04', zh: '狩獵與山林', truku: 'Mhuma Bgihur', words: 24, done: 0, locked: true),
-    _UnitData(num: '05', zh: '織布與染色', truku: 'Tminun', words: 20, done: 0, locked: true),
-  ];
+  @override
+  State<LearnScreen> createState() => _LearnScreenState();
+}
+
+class _LearnScreenState extends State<LearnScreen> {
+  late Future<List<LevelInfo>> _levelsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _levelsFuture = LearnService.fetchLevels();
+  }
+
+  Future<void> _reload() async {
+    setState(() {
+      _levelsFuture = LearnService.fetchLevels();
+    });
+    await _levelsFuture;
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          _buildHero(),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+      body: FutureBuilder<List<LevelInfo>>(
+        future: _levelsFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const _LearnLoading();
+          }
+          if (snapshot.hasError) {
+            return _LearnError(error: snapshot.error, onRetry: _reload);
+          }
+          final levels = snapshot.data ?? const [];
+          return RefreshIndicator(
+            onRefresh: _reload,
+            child: ListView(
+              padding: EdgeInsets.zero,
               children: [
+                _buildHero(levels),
                 Padding(
-                  padding: const EdgeInsets.only(left: 4, bottom: 16),
-                  child: Row(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const TrukuDiamond(size: 14, color: AppColors.primary, filled: true),
-                      const SizedBox(width: 8),
-                      Text(
-                        '初階課程',
-                        style: GoogleFonts.notoSerifTc(
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.ink,
-                          letterSpacing: 1.44,
+                      Padding(
+                        padding: const EdgeInsets.only(left: 4, bottom: 16),
+                        child: Row(
+                          children: [
+                            const TrukuDiamond(
+                                size: 14, color: AppColors.primary, filled: true),
+                            const SizedBox(width: 8),
+                            Text(
+                              '課程級別',
+                              style: GoogleFonts.notoSerifTc(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.ink,
+                                letterSpacing: 1.44,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
+                      if (levels.isEmpty)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 24),
+                          child: Text(
+                            '目前沒有可學習的級別',
+                            style: GoogleFonts.notoSansTc(
+                                fontSize: 14, color: AppColors.fog),
+                          ),
+                        )
+                      else
+                        for (int i = 0; i < levels.length; i++) ...[
+                          if (i > 0) const SizedBox(height: 12),
+                          _LevelRow(level: levels[i]),
+                        ],
                     ],
                   ),
                 ),
-                for (int i = 0; i < _units.length; i++) ...[
-                  if (i > 0) const SizedBox(height: 12),
-                  _UnitRow(unit: _units[i]),
-                ],
+                const SizedBox(height: 120),
               ],
             ),
-          ),
-          const SizedBox(height: 120),
-        ],
+          );
+        },
       ),
     );
   }
 
-  Widget _buildHero() {
+  Widget _buildHero(List<LevelInfo> levels) {
+    final totalWords = levels.fold<int>(0, (sum, l) => sum + l.wordCount);
     return Container(
       color: AppColors.primary,
       child: Stack(
@@ -131,7 +151,7 @@ class LearnScreen extends StatelessWidget {
                     RichText(
                       text: TextSpan(children: [
                         TextSpan(
-                          text: '26',
+                          text: '$totalWords',
                           style: GoogleFonts.notoSerifTc(
                             fontSize: 18,
                             color: AppColors.gold,
@@ -139,7 +159,7 @@ class LearnScreen extends StatelessWidget {
                           ),
                         ),
                         TextSpan(
-                          text: '　已學單字',
+                          text: '　可學單字',
                           style: GoogleFonts.notoSerifTc(
                             fontSize: 13,
                             color: AppColors.creamLight.withValues(alpha: 0.85),
@@ -151,7 +171,7 @@ class LearnScreen extends StatelessWidget {
                     RichText(
                       text: TextSpan(children: [
                         TextSpan(
-                          text: '2/5',
+                          text: '${levels.length}',
                           style: GoogleFonts.notoSerifTc(
                             fontSize: 18,
                             color: AppColors.gold,
@@ -159,7 +179,7 @@ class LearnScreen extends StatelessWidget {
                           ),
                         ),
                         TextSpan(
-                          text: '　完成單元',
+                          text: '　個級別',
                           style: GoogleFonts.notoSerifTc(
                             fontSize: 13,
                             color: AppColors.creamLight.withValues(alpha: 0.85),
@@ -178,43 +198,96 @@ class LearnScreen extends StatelessWidget {
   }
 }
 
-// ── UnitRow ───────────────────────────────────────────────────────────────────
-
-class _UnitRow extends StatelessWidget {
-  final _UnitData unit;
-
-  const _UnitRow({required this.unit});
-
-  double get _pct => unit.words > 0 ? unit.done / unit.words : 0.0;
+class _LearnLoading extends StatelessWidget {
+  const _LearnLoading();
 
   @override
   Widget build(BuildContext context) {
-    return Opacity(
-      opacity: unit.locked ? 0.5 : 1.0,
-      child: GestureDetector(
-        onTap: unit.locked
-            ? null
-            : () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (_) => const LessonCardScreen()),
-                ),
-        child: Container(
-          decoration: BoxDecoration(
-            color: unit.current ? AppColors.ink : AppColors.cream,
-            borderRadius: BorderRadius.circular(16),
-            border: unit.current
-                ? null
-                : Border.all(color: AppColors.creamDeep, width: 1),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            children: [
-              _buildDiamond(),
-              const SizedBox(width: 14),
-              Expanded(child: _buildTextArea()),
-              _buildIcon(),
+    return const Center(
+      child: CircularProgressIndicator(color: AppColors.primary),
+    );
+  }
+}
+
+class _LearnError extends StatelessWidget {
+  final Object? error;
+  final VoidCallback onRetry;
+
+  const _LearnError({required this.error, required this.onRetry});
+
+  bool get _isUnauthorized => error is ApiException && (error as ApiException).isUnauthorized;
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _isUnauthorized ? '請先登入' : '載入失敗，請稍後再試',
+              style: GoogleFonts.notoSerifTc(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink,
+              ),
+            ),
+            if (!_isUnauthorized && error != null) ...[
+              const SizedBox(height: 8),
+              Text(
+                error is ApiException ? (error as ApiException).message : '$error',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.notoSansTc(fontSize: 13, color: AppColors.fog),
+              ),
             ],
-          ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: onRetry,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.creamLight,
+              ),
+              child: const Text('重試'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── LevelRow ──────────────────────────────────────────────────────────────────
+
+class _LevelRow extends StatelessWidget {
+  final LevelInfo level;
+
+  const _LevelRow({required this.level});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => LessonCardScreen(level: level.level)),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.creamDeep, width: 1),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            _buildDiamond(),
+            const SizedBox(width: 14),
+            Expanded(child: _buildTextArea()),
+            CustomPaint(
+              size: const Size(20, 20),
+              painter: _ChevronPainter(color: AppColors.primary),
+            ),
+          ],
         ),
       ),
     );
@@ -229,15 +302,7 @@ class _UnitRow extends StatelessWidget {
         children: [
           CustomPaint(
             size: const Size(52, 52),
-            painter: _UnitDiamondPainter(isCurrent: unit.current, pct: _pct),
-          ),
-          Text(
-            unit.num,
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: unit.current ? AppColors.creamLight : AppColors.primary,
-            ),
+            painter: const _LevelDiamondPainter(),
           ),
         ],
       ),
@@ -249,75 +314,38 @@ class _UnitRow extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          unit.truku.toUpperCase(),
-          style: GoogleFonts.crimsonPro(
-            fontSize: 11,
-            fontStyle: FontStyle.italic,
-            color: unit.current ? AppColors.gold : AppColors.fog,
-            letterSpacing: 1.65,
-          ),
-        ),
-        const SizedBox(height: 2),
-        Text(
-          unit.zh,
+          level.level,
           style: GoogleFonts.notoSerifTc(
             fontSize: 17,
             fontWeight: FontWeight.w600,
-            color: unit.current ? AppColors.creamLight : AppColors.ink,
+            color: AppColors.ink,
             letterSpacing: 0.85,
           ),
         ),
         const SizedBox(height: 4),
         Text(
-          _progressLabel(),
-          style: TextStyle(
+          '${level.wordCount} 個單字',
+          style: const TextStyle(
             fontSize: 11,
-            color: unit.current
-                ? AppColors.creamLight.withValues(alpha: 0.7)
-                : AppColors.fog,
+            color: AppColors.fog,
             letterSpacing: 0.55,
           ),
         ),
       ],
     );
   }
-
-  String _progressLabel() {
-    if (unit.locked) return '完成上一單元解鎖';
-    if (unit.done == unit.words) return '✓ 全部完成 · ${unit.words} 句';
-    return '${unit.done} / ${unit.words} 句';
-  }
-
-  Widget _buildIcon() {
-    if (unit.locked) {
-      return CustomPaint(
-        size: const Size(20, 20),
-        painter: _LockIconPainter(),
-      );
-    }
-    return CustomPaint(
-      size: const Size(20, 20),
-      painter: _ChevronPainter(
-        color: unit.current ? AppColors.gold : AppColors.primary,
-      ),
-    );
-  }
 }
 
 // ── Painters ──────────────────────────────────────────────────────────────────
 
-class _UnitDiamondPainter extends CustomPainter {
-  final bool isCurrent;
-  final double pct;
-
-  const _UnitDiamondPainter({required this.isCurrent, required this.pct});
+class _LevelDiamondPainter extends CustomPainter {
+  const _LevelDiamondPainter();
 
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
 
-    // M26 4 L48 26 L26 48 L4 26 Z scaled from 52×52
     final path = Path()
       ..moveTo(w * 26 / 52, h * 4 / 52)
       ..lineTo(w * 48 / 52, h * 26 / 52)
@@ -325,84 +353,18 @@ class _UnitDiamondPainter extends CustomPainter {
       ..lineTo(w * 4 / 52, h * 26 / 52)
       ..close();
 
-    if (isCurrent) {
-      canvas.drawPath(
-        path,
-        Paint()
-          ..color = AppColors.primary
-          ..style = PaintingStyle.fill,
-      );
-    }
-
     canvas.drawPath(
       path,
       Paint()
-        ..color = isCurrent ? AppColors.gold : AppColors.primary
+        ..color = AppColors.primary
         ..style = PaintingStyle.stroke
         ..strokeWidth = 1.5
         ..strokeJoin = StrokeJoin.round,
     );
-
-    if (pct > 0 && pct < 1) {
-      final metrics = path.computeMetrics().toList();
-      if (metrics.isNotEmpty) {
-        final progressPath =
-            metrics.first.extractPath(0, metrics.first.length * pct);
-        canvas.drawPath(
-          progressPath,
-          Paint()
-            ..color = AppColors.gold
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 2.0
-            ..strokeJoin = StrokeJoin.round
-            ..strokeCap = StrokeCap.round,
-        );
-      }
-    }
   }
 
   @override
-  bool shouldRepaint(_UnitDiamondPainter old) =>
-      old.isCurrent != isCurrent || old.pct != pct;
-}
-
-class _LockIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final paint = Paint()
-      ..color = AppColors.fog
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    // rect x=4 y=9 w=12 h=9 rx=1.5
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(w * 4 / 20, h * 9 / 20, w * 12 / 20, h * 9 / 20),
-        Radius.circular(w * 1.5 / 20),
-      ),
-      paint,
-    );
-
-    // M7 9 V6 arc(r=3) to (13,6) V9
-    final shackle = Path()
-      ..moveTo(w * 7 / 20, h * 9 / 20)
-      ..lineTo(w * 7 / 20, h * 6 / 20)
-      ..arcToPoint(
-        Offset(w * 13 / 20, h * 6 / 20),
-        radius: Radius.circular(w * 3 / 20),
-        largeArc: false,
-        clockwise: false,
-      )
-      ..lineTo(w * 13 / 20, h * 9 / 20);
-    canvas.drawPath(shackle, paint);
-  }
-
-  @override
-  bool shouldRepaint(_LockIconPainter old) => false;
+  bool shouldRepaint(_LevelDiamondPainter old) => false;
 }
 
 class _ChevronPainter extends CustomPainter {
@@ -415,7 +377,6 @@ class _ChevronPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // M7 4 L13 10 L7 16
     final path = Path()
       ..moveTo(w * 7 / 20, h * 4 / 20)
       ..lineTo(w * 13 / 20, h * 10 / 20)

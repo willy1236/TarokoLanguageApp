@@ -1,34 +1,173 @@
+import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
+import '../../models/quiz_models.dart';
+import '../../services/learn_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 
-class LessonCardScreen extends StatelessWidget {
-  const LessonCardScreen({super.key});
+enum _Phase { loading, error, quiz, result }
+
+class LessonCardScreen extends StatefulWidget {
+  final String level;
+
+  const LessonCardScreen({super.key, required this.level});
+
+  @override
+  State<LessonCardScreen> createState() => _LessonCardScreenState();
+}
+
+class _LessonCardScreenState extends State<LessonCardScreen> {
+  final _player = AudioPlayer();
+
+  _Phase _phase = _Phase.loading;
+  Object? _error;
+  QuizSession? _session;
+  int _currentIndex = 0;
+  int? _selectedOptionId;
+  final List<QuizAnswer> _answers = [];
+  QuizResult? _result;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  @override
+  void dispose() {
+    _player.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    setState(() => _phase = _Phase.loading);
+    try {
+      final session = await LearnService.startQuiz(widget.level);
+      setState(() {
+        _session = session;
+        _currentIndex = 0;
+        _selectedOptionId = null;
+        _answers.clear();
+        _result = null;
+        _phase = _Phase.quiz;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e;
+        _phase = _Phase.error;
+      });
+    }
+  }
+
+  QuizQuestion get _currentQuestion => _session!.questions[_currentIndex];
+
+  Future<void> _play({double rate = 1.0}) async {
+    final url = _currentQuestion.promptAudioUrl;
+    if (url == null) return;
+    await _player.stop();
+    await _player.setPlaybackRate(rate);
+    await _player.play(UrlSource(url));
+  }
+
+  void _selectOption(int optionId) {
+    setState(() => _selectedOptionId = optionId);
+  }
+
+  Future<void> _confirmAndNext() async {
+    final selected = _selectedOptionId;
+    if (selected == null) return;
+    _answers.add(QuizAnswer(
+      questionId: _currentQuestion.questionId,
+      selectedOptionId: selected,
+    ));
+
+    if (_currentIndex < _session!.questions.length - 1) {
+      setState(() {
+        _currentIndex += 1;
+        _selectedOptionId = null;
+      });
+      return;
+    }
+
+    setState(() => _phase = _Phase.loading);
+    try {
+      final result = await LearnService.submitQuiz(_session!.sessionId, _answers);
+      setState(() {
+        _result = result;
+        _phase = _Phase.result;
+      });
+    } catch (e) {
+      setState(() {
+        _error = e;
+        _phase = _Phase.error;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.only(bottom: 40),
+      body: SafeArea(
+        bottom: false,
+        child: Builder(builder: (context) {
+          switch (_phase) {
+            case _Phase.loading:
+              return const Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              );
+            case _Phase.error:
+              return _buildError();
+            case _Phase.result:
+              return _buildResult();
+            case _Phase.quiz:
+              return _buildQuiz();
+          }
+        }),
+      ),
+    );
+  }
+
+  bool get _isUnauthorized =>
+      _error is ApiException && (_error as ApiException).isUnauthorized;
+
+  Widget _buildError() {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
           children: [
-            _buildProgressBar(context),
-            _buildUnitLabel(),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
-              child: Column(
-                children: [
-                  _buildMainCard(),
-                  const SizedBox(height: 14),
-                  _buildExampleCard(),
-                  const SizedBox(height: 16),
-                  _buildBottomButtons(context),
-                ],
+            GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: CustomPaint(
+                  size: const Size(24, 24),
+                  painter: _BackArrowPainter(),
+                ),
               ),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              _isUnauthorized ? '請先登入' : '載入失敗，請稍後再試',
+              style: GoogleFonts.notoSerifTc(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink,
+              ),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _load,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.creamLight,
+              ),
+              child: const Text('重試'),
             ),
           ],
         ),
@@ -36,9 +175,85 @@ class LessonCardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProgressBar(BuildContext context) {
+  Widget _buildResult() {
+    final result = _result!;
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '${widget.level} · 測驗完成',
+              style: GoogleFonts.crimsonPro(
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+                color: AppColors.fog,
+                letterSpacing: 2.0,
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              '${result.score} / ${result.total}',
+              style: GoogleFonts.notoSerifTc(
+                fontSize: 40,
+                fontWeight: FontWeight.w700,
+                color: AppColors.primary,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildBottomButton(
+                  label: '重新測驗',
+                  primary: false,
+                  onTap: _load,
+                ),
+                const SizedBox(width: 10),
+                _buildBottomButton(
+                  label: '返回 →',
+                  primary: true,
+                  onTap: () => Navigator.pop(context),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQuiz() {
+    final total = _session!.questions.length;
+    return SingleChildScrollView(
+      padding: const EdgeInsets.only(bottom: 40),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildProgressBar(total),
+          _buildUnitLabel(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+            child: Column(
+              children: [
+                _buildMainCard(),
+                const SizedBox(height: 14),
+                _buildOptions(),
+                const SizedBox(height: 16),
+                _buildBottomButtons(),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressBar(int total) {
+    final widthFactor = total == 0 ? 0.0 : (_currentIndex + 1) / total;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 0),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
       child: Row(
         children: [
           GestureDetector(
@@ -57,7 +272,7 @@ class LessonCardScreen extends StatelessWidget {
                 color: AppColors.creamDeep,
                 child: FractionallySizedBox(
                   alignment: Alignment.centerLeft,
-                  widthFactor: 0.6,
+                  widthFactor: widthFactor,
                   child: Container(
                     decoration: const BoxDecoration(
                       gradient: LinearGradient(
@@ -71,7 +286,7 @@ class LessonCardScreen extends StatelessWidget {
           ),
           const SizedBox(width: 12),
           Text(
-            '9 / 15',
+            '${_currentIndex + 1} / $total',
             style: GoogleFonts.jetBrainsMono(
               fontSize: 12,
               color: AppColors.fog,
@@ -90,7 +305,7 @@ class LessonCardScreen extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'UNIT 02 · LUTUT',
+            'LEVEL · ${widget.level.toUpperCase()}',
             style: GoogleFonts.crimsonPro(
               fontSize: 12,
               fontStyle: FontStyle.italic,
@@ -100,7 +315,7 @@ class LessonCardScreen extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            '家人稱謂',
+            widget.level,
             style: GoogleFonts.notoSerifTc(
               fontSize: 18,
               fontWeight: FontWeight.w500,
@@ -114,6 +329,7 @@ class LessonCardScreen extends StatelessWidget {
   }
 
   Widget _buildMainCard() {
+    final question = _currentQuestion;
     return Container(
       decoration: BoxDecoration(
         color: AppColors.ink,
@@ -152,7 +368,7 @@ class LessonCardScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  '聆聽 · 跟讀',
+                  '聆聽 · 選出正確答案',
                   style: GoogleFonts.notoSansTc(
                     fontSize: 11,
                     color: AppColors.gold,
@@ -162,39 +378,20 @@ class LessonCardScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: 200),
+                  constraints: const BoxConstraints(minHeight: 140),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
-                        'Tama',
+                        question.prompt,
                         style: GoogleFonts.crimsonPro(
-                          fontSize: 56,
+                          fontSize: 44,
                           fontStyle: FontStyle.italic,
                           fontWeight: FontWeight.w500,
                           color: AppColors.creamLight,
                           letterSpacing: 1.12,
                           height: 1.05,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '爸爸',
-                        style: GoogleFonts.notoSerifTc(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.gold,
-                          letterSpacing: 3.3,
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-                      Text(
-                        '[ˈta.ma] · n. 父親；對男性長輩的稱呼',
-                        style: GoogleFonts.jetBrainsMono(
-                          fontSize: 11,
-                          color: AppColors.creamLight.withValues(alpha: 0.5),
-                          letterSpacing: 0.55,
                         ),
                       ),
                     ],
@@ -204,45 +401,51 @@ class LessonCardScreen extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Container(
-                        height: 56,
-                        decoration: BoxDecoration(
-                          color: AppColors.gold,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            CustomPaint(
-                              size: const Size(20, 20),
-                              painter: _SpeakerIconPainter(color: AppColors.ink),
-                            ),
-                            const SizedBox(width: 10),
-                            Text(
-                              '播放發音',
-                              style: GoogleFonts.notoSerifTc(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.ink,
-                                letterSpacing: 1.5,
+                      child: GestureDetector(
+                        onTap: () => _play(),
+                        child: Container(
+                          height: 56,
+                          decoration: BoxDecoration(
+                            color: AppColors.gold,
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              CustomPaint(
+                                size: const Size(20, 20),
+                                painter: _SpeakerIconPainter(color: AppColors.ink),
                               ),
-                            ),
-                          ],
+                              const SizedBox(width: 10),
+                              Text(
+                                '播放發音',
+                                style: GoogleFonts.notoSerifTc(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.ink,
+                                  letterSpacing: 1.5,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                     const SizedBox(width: 10),
-                    Container(
-                      width: 56,
-                      height: 56,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(14),
-                        border: Border.all(color: AppColors.gold, width: 1),
-                      ),
-                      child: Center(
-                        child: CustomPaint(
-                          size: const Size(24, 24),
-                          painter: _SlowIconPainter(),
+                    GestureDetector(
+                      onTap: () => _play(rate: 0.6),
+                      child: Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.gold, width: 1),
+                        ),
+                        child: Center(
+                          child: CustomPaint(
+                            size: const Size(24, 24),
+                            painter: _SlowIconPainter(),
+                          ),
                         ),
                       ),
                     ),
@@ -256,100 +459,120 @@ class LessonCardScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildExampleCard() {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-      decoration: BoxDecoration(
-        color: AppColors.cream,
-        borderRadius: BorderRadius.circular(14),
-        border: const Border(
-          left: BorderSide(color: AppColors.primary, width: 3),
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'EXAMPLE · 例句',
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColors.fog,
-              letterSpacing: 1.65,
-            ),
+  Widget _buildOptions() {
+    final question = _currentQuestion;
+    return Column(
+      children: [
+        for (final option in question.options) ...[
+          _OptionTile(
+            label: option.displayText(question.direction),
+            selected: option.id == _selectedOptionId,
+            onTap: () => _selectOption(option.id),
           ),
-          const SizedBox(height: 6),
-          Text(
-            'Mhuway su, tama.',
-            style: GoogleFonts.crimsonPro(
-              fontSize: 17,
-              fontStyle: FontStyle.italic,
-              fontWeight: FontWeight.w500,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '爸爸，謝謝你。',
-            style: TextStyle(
-              fontSize: 14,
-              color: AppColors.inkSoft,
-              letterSpacing: 0.7,
-            ),
-          ),
+          const SizedBox(height: 10),
         ],
-      ),
+      ],
     );
   }
 
-  Widget _buildBottomButtons(BuildContext context) {
+  Widget _buildBottomButtons() {
+    final isLast = _currentIndex == _session!.questions.length - 1;
     return Row(
       children: [
-        Expanded(
-          child: Container(
-            height: 50,
-            decoration: BoxDecoration(
-              color: AppColors.creamLight,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: AppColors.creamDeep, width: 1.5),
-            ),
-            child: Center(
-              child: Text(
-                '再聽一次',
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.inkSoft,
-                  letterSpacing: 1.4,
-                ),
-              ),
-            ),
-          ),
+        _buildBottomButton(
+          label: '再聽一次',
+          primary: false,
+          onTap: () => _play(),
         ),
         const SizedBox(width: 10),
-        Expanded(
-          child: GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              height: 50,
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Text(
-                  '我會了 →',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.creamLight,
-                    letterSpacing: 1.4,
-                  ),
-                ),
+        _buildBottomButton(
+          label: isLast ? '完成測驗 →' : '下一題 →',
+          primary: true,
+          onTap: _selectedOptionId == null ? null : _confirmAndNext,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBottomButton({
+    required String label,
+    required bool primary,
+    required VoidCallback? onTap,
+  }) {
+    final disabled = primary && onTap == null;
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          height: 50,
+          decoration: BoxDecoration(
+            color: primary
+                ? (disabled ? AppColors.creamDeep : AppColors.primary)
+                : AppColors.creamLight,
+            borderRadius: BorderRadius.circular(12),
+            border: primary
+                ? null
+                : Border.all(color: AppColors.creamDeep, width: 1.5),
+          ),
+          child: Center(
+            child: Text(
+              label,
+              style: GoogleFonts.notoSerifTc(
+                fontSize: 14,
+                fontWeight: primary ? FontWeight.w600 : FontWeight.w500,
+                color: primary
+                    ? (disabled ? AppColors.fog : AppColors.creamLight)
+                    : AppColors.inkSoft,
+                letterSpacing: 1.4,
               ),
             ),
           ),
         ),
-      ],
+      ),
+    );
+  }
+}
+
+// ── OptionTile ────────────────────────────────────────────────────────────────
+
+class _OptionTile extends StatelessWidget {
+  final String label;
+  final bool selected;
+  final VoidCallback onTap;
+
+  const _OptionTile({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.cream : AppColors.creamLight,
+          borderRadius: BorderRadius.circular(14),
+          border: Border(
+            left: BorderSide(
+              color: selected ? AppColors.primary : AppColors.creamDeep,
+              width: 3,
+            ),
+          ),
+        ),
+        child: Text(
+          label,
+          style: GoogleFonts.crimsonPro(
+            fontSize: 17,
+            fontStyle: FontStyle.italic,
+            fontWeight: FontWeight.w500,
+            color: selected ? AppColors.primary : AppColors.inkSoft,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -362,7 +585,6 @@ class _BackArrowPainter extends CustomPainter {
     final w = size.width;
     final h = size.height;
 
-    // M15 4 L7 12 L15 20 in 24×24
     final path = Path()
       ..moveTo(w * 15 / 24, h * 4 / 24)
       ..lineTo(w * 7 / 24, h * 12 / 24)
@@ -399,7 +621,6 @@ class _SpeakerIconPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    // Speaker cone body
     final body = Path()
       ..moveTo(w * 11 / 20, h * 5 / 20)
       ..lineTo(w * 6 / 20, h * 8 / 20)
@@ -410,7 +631,6 @@ class _SpeakerIconPainter extends CustomPainter {
       ..close();
     canvas.drawPath(body, paint);
 
-    // Wave arcs
     final arc1 = Path()
       ..moveTo(w * 13 / 20, h * 8 / 20)
       ..quadraticBezierTo(w * 15 / 20, h * 10 / 20, w * 13 / 20, h * 12 / 20);
@@ -438,21 +658,18 @@ class _SlowIconPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    // circle cx=12 cy=13 r=7 in 24×24
     canvas.drawCircle(
       Offset(w * 12 / 24, h * 13 / 24),
       w * 7 / 24,
       paint,
     );
 
-    // clock hands M12 9v4l2 2
     final hands = Path()
       ..moveTo(w * 12 / 24, h * 9 / 24)
       ..lineTo(w * 12 / 24, h * 13 / 24)
       ..lineTo(w * 14 / 24, h * 15 / 24);
     canvas.drawPath(hands, paint);
 
-    // top bar M9 3h6
     canvas.drawLine(
       Offset(w * 9 / 24, h * 3 / 24),
       Offset(w * 15 / 24, h * 3 / 24),
