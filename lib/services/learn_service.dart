@@ -8,14 +8,15 @@ class LearnService {
     final list = json['levels'] as List<dynamic>? ?? (json['data'] as List<dynamic>? ?? []);
     return list
         .cast<Map<String, dynamic>>()
-        .where((e) => e['level'] != null)
+        .where((e) => e['code'] != null || e['label'] != null || e['level'] != null)
         .map(LevelInfo.fromJson)
         .toList();
   }
 
   static Future<QuizSession> startQuiz(String level) async {
     final json = await ApiClient.post('/api/quiz/start', {'level': level});
-    return QuizSession.fromJson(json);
+    final data = (json['data'] as Map<String, dynamic>?) ?? json;
+    return QuizSession.fromJson(data);
   }
 
   static Future<QuizResult> submitQuiz(
