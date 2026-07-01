@@ -88,7 +88,10 @@ class _MainContainerState extends State<MainContainer> {
     try {
       final user = await UserService.fetchMe();
       if (mounted) setState(() => _displayName = user.displayName);
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('Failed to fetch displayName: $e');
+      debugPrintStack(stackTrace: st);
+    }
   }
 
   void _navigate(int index) => setState(() {
