@@ -485,8 +485,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
-    if (confirmed != true) return;
+    if (confirmed != true) {
+      controller.dispose();
+      return;
+    }
     final newName = controller.text.trim();
+    controller.dispose();
     if (newName.isEmpty || newName == _user?.displayName) return;
     try {
       final updated = await UserService.updateMe(displayName: newName);
