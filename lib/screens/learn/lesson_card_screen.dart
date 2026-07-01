@@ -46,6 +46,17 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
     setState(() => _phase = _Phase.loading);
     try {
       final session = await LearnService.startQuiz(widget.level);
+      if (session.questions.isEmpty) {
+        setState(() {
+          _error = ApiException(
+            statusCode: 0,
+            code: 'NO_QUESTIONS',
+            message: '此級別目前沒有可用的題目，請稍後再試',
+          );
+          _phase = _Phase.error;
+        });
+        return;
+      }
       setState(() {
         _session = session;
         _currentIndex = 0;
