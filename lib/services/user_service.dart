@@ -7,4 +7,9 @@ class UserService {
     final data = await ApiClient.get(ApiConfig.me);
     return UserModel.fromJson(data);
   }
+
+  static Future<UserModel> updateMe({required String displayName}) async {
+    final data = await ApiClient.patch(ApiConfig.me, {'display_name': displayName});
+    return UserModel.fromJson(data);
+  }
 }

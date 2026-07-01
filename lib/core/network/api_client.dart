@@ -49,6 +49,19 @@ class ApiClient {
     return _handle(resp);
   }
 
+  static Future<Map<String, dynamic>> patch(
+    String path, [
+    Map<String, dynamic>? body,
+  ]) async {
+    final token = await AuthService.currentToken();
+    final resp = await http.patch(
+      Uri.parse(ApiConfig.baseUrl + path),
+      headers: _headers(token),
+      body: body == null ? null : jsonEncode(body),
+    );
+    return _handle(resp);
+  }
+
   static Map<String, String> _headers(String? token) => {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',

@@ -446,16 +446,49 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── 帳號設定 ──────────────────────────────────────────────────────────────
 
   Widget _buildAccountSection() {
-    final rows = [
-      (label: '中文姓名', value: _user?.displayName ?? 'Apyang Imiq', truku: false, editable: true),
-      (label: '族語名字', value: _user?.displayName ?? 'Sayun Lowking', truku: true, editable: true),
-      (label: '部落', value: '銅門 Dowmung', truku: false, editable: true),
-      (label: '電子信箱', value: _user?.email ?? 'apyang@truku.org', truku: false, editable: false),
-    ];
     return _section(
       'HANGAN · 帳號',
-      rows.map((r) => _settingRow(r.label, r.value, truku: r.truku, editable: r.editable)).toList(),
+      [
+        _settingRow(
+          '中文姓名',
+          _user?.displayName ?? 'Apyang Imiq',
+          editable: true,
+          onTap: _editDisplayName,
+        ),
+        _settingRow('族語名字', _user?.displayName ?? 'Sayun Lowking', truku: true, editable: false),
+        _settingRow('部落', '銅門 Dowmung', editable: false),
+        _settingRow('電子信箱', _user?.email ?? 'apyang@truku.org', editable: false),
+      ],
     );
+  }
+
+  Future<void> _editDisplayName() async {
+    final controller = TextEditingController(text: _user?.displayName ?? '');
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('修改姓名'),
+        content: TextField(
+          controller: controller,
+          autofocus: true,
+          decoration: const InputDecoration(labelText: '中文姓名'),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('儲存'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    final newName = controller.text.trim();
+    if (newName.isEmpty || newName == _user?.displayName) return;
+    try {
+      final updated = await UserService.updateMe(displayName: newName);
+      if (mounted) setState(() => _user = updated);
+    } catch (_) {}
   }
 
   // ── 偏好設定 ──────────────────────────────────────────────────────────────
@@ -580,36 +613,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _settingRow(String label, String value, {bool truku = false, bool editable = true}) {
+  Widget _settingRow(String label, String value, {bool truku = false, bool editable = true, VoidCallback? onTap}) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: TextStyle(fontSize: 11, color: AppColors.fog, letterSpacing: 1)),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: (truku
-                            ? GoogleFonts.crimsonPro(fontStyle: FontStyle.italic)
-                            : GoogleFonts.notoSerifTc())
-                        .copyWith(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                      letterSpacing: 0.5,
+        GestureDetector(
+          onTap: editable ? onTap : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: TextStyle(fontSize: 11, color: AppColors.fog, letterSpacing: 1)),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: (truku
+                              ? GoogleFonts.crimsonPro(fontStyle: FontStyle.italic)
+                              : GoogleFonts.notoSerifTc())
+                          .copyWith(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ink,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              if (editable)
-                CustomPaint(size: const Size(16, 16), painter: _EditPenPainter()),
-            ],
+                  ],
+                ),
+                if (editable)
+                  CustomPaint(size: const Size(16, 16), painter: _EditPenPainter()),
+              ],
+            ),
           ),
         ),
         const Divider(height: 1, color: AppColors.creamDeep, indent: 16, endIndent: 16),
