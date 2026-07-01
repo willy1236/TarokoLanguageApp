@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../services/auth_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 
@@ -15,6 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _accountController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _loggingIn = false;
 
   @override
   void dispose() {
@@ -25,6 +27,34 @@ class _LoginScreenState extends State<LoginScreen> {
 
   void _handleLogin() {
     Navigator.pushReplacementNamed(context, '/home');
+  }
+
+  Future<void> _handleGoogleLogin() async {
+    if (_loggingIn) return;
+    setState(() => _loggingIn = true);
+    try {
+      await AuthService.signInWithGoogle();
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, '/home');
+    } on AuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('登入發生未預期錯誤：$e')),
+      );
+    } finally {
+      if (mounted) setState(() => _loggingIn = false);
+    }
+  }
+
+  void _showSoon(String name) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('$name 登入即將推出')),
+    );
   }
 
   @override
@@ -213,7 +243,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
         const SizedBox(height: 18),
 
-        // 登入按鈕
+        // 登入按鈕（帳密版本暫時保留，導向 /home）
         SizedBox(
           width: double.infinity,
           height: 52,
@@ -267,16 +297,28 @@ class _LoginScreenState extends State<LoginScreen> {
             _buildSocialButton(
               icon: const Icon(Icons.apple, color: AppColors.creamLight, size: 20),
               label: 'Apple',
+              onTap: () => _showSoon('Apple'),
             ),
             const SizedBox(width: 10),
             _buildSocialButton(
               icon: const TrukuDiamond(size: 18, color: AppColors.gold, filled: true, strokeWidth: 1.2),
               label: '部落帳號',
+              onTap: () => _showSoon('部落帳號'),
             ),
             const SizedBox(width: 10),
             _buildSocialButton(
-              icon: const Icon(Icons.g_mobiledata_rounded, color: AppColors.creamLight, size: 24),
+              icon: _loggingIn
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.gold,
+                      ),
+                    )
+                  : const Icon(Icons.g_mobiledata_rounded, color: AppColors.creamLight, size: 24),
               label: 'Google',
+              onTap: _loggingIn ? null : _handleGoogleLogin,
             ),
           ],
         ),
@@ -385,31 +427,39 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildSocialButton({required Widget icon, required String label}) {
+  Widget _buildSocialButton({
+    required Widget icon,
+    required String label,
+    VoidCallback? onTap,
+  }) {
     return Expanded(
-      child: Container(
-        height: 52,
-        decoration: BoxDecoration(
-          color: AppColors.creamLight.withValues(alpha: 0.05),
-          border: Border.all(
-            color: AppColors.cream.withValues(alpha: 0.18),
-          ),
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            icon,
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 9,
-                color: AppColors.cream.withValues(alpha: 0.8),
-                letterSpacing: 0.8,
-              ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          height: 52,
+          decoration: BoxDecoration(
+            color: AppColors.creamLight.withValues(alpha: 0.05),
+            border: Border.all(
+              color: AppColors.cream.withValues(alpha: 0.18),
             ),
-          ],
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              icon,
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 9,
+                  color: AppColors.cream.withValues(alpha: 0.8),
+                  letterSpacing: 0.8,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

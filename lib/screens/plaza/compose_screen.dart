@@ -360,7 +360,7 @@ class _ComposeScreenState extends State<ComposeScreen> {
           const Spacer(),
           ValueListenableBuilder(
             valueListenable: _controller,
-            builder: (_, val, __) => Text(
+            builder: (_, val, _) => Text(
               '${val.text.length} / 500',
               style: GoogleFonts.jetBrainsMono(
                 fontSize: 11,

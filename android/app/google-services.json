@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "230831538559",
+    "project_id": "extreme-quasar-494406-v7",
+    "storage_bucket": "extreme-quasar-494406-v7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:230831538559:android:27c8692ed5dea049109a4a",
+        "android_client_info": {
+          "package_name": "tw.idv.willy1236.truku"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "230831538559-3quakpe7lkqcnn65r3q5pfa2c8rlh4o4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.idv.willy1236.truku",
+            "certificate_hash": "3a0fdcbbd87563cc842a44421a9b9ed6d424f87e"
+          }
+        },
+        {
+          "client_id": "230831538559-lpapf80b5lqugmjlsl12c1ag96rpfpgu.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.idv.willy1236.truku",
+            "certificate_hash": "7c598347d80c68b49765fdf872bcb13ecb42624f"
+          }
+        },
+        {
+          "client_id": "230831538559-l8j9lo5t6s5sajcrd457b537cjn3d3er.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCuVOZZJEImEownPFtIDvZPeZp2R4muM9w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "230831538559-l8j9lo5t6s5sajcrd457b537cjn3d3er.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
