@@ -186,7 +186,7 @@ class _PlazaScreenState extends State<PlazaScreen> {
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
             itemCount: _miniEvents.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (_, i) => _MiniEventCard(event: _miniEvents[i]),
           ),
         ),
