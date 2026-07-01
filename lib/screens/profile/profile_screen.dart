@@ -2,7 +2,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../shop/shop_screen.dart';
 
@@ -16,6 +18,20 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   int _selectedBadge = 0;
+  UserModel? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUser();
+  }
+
+  Future<void> _fetchUser() async {
+    try {
+      final user = await UserService.fetchMe();
+      if (mounted) setState(() => _user = user);
+    } catch (_) {}
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +120,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'SAYUN LOWKING',
+                            _user?.displayName?.toUpperCase() ?? 'SAYUN LOWKING',
                             style: GoogleFonts.crimsonPro(
                               fontStyle: FontStyle.italic,
                               fontSize: 11,
@@ -114,7 +130,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Apyang Imiq',
+                            _user?.displayName ?? 'Apyang Imiq',
                             style: GoogleFonts.notoSerifTc(
                               fontSize: 22,
                               fontWeight: FontWeight.w600,
@@ -124,7 +140,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '銅門部落 · 加入 124 天',
+                            '銅門部落 · 加入 ${_user?.joinedDays ?? 124} 天',
                             style: TextStyle(
                               fontSize: 12,
                               color: AppColors.creamLight.withValues(alpha: 0.85),
@@ -169,9 +185,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               border: Border.all(color: AppColors.gold, width: 2),
             ),
             child: ClipOval(
-              child: Center(
-                child: Icon(Icons.person, size: 52, color: AppColors.gold.withValues(alpha: 0.7)),
-              ),
+              child: _user?.avatarUrl != null
+                  ? Image.network(
+                      _user!.avatarUrl!,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, e, st) =>
+                          Center(child: Icon(Icons.person, size: 52, color: AppColors.gold.withValues(alpha: 0.7))),
+                    )
+                  : Center(child: Icon(Icons.person, size: 52, color: AppColors.gold.withValues(alpha: 0.7))),
             ),
           ),
           Positioned(
@@ -423,11 +446,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── 帳號設定 ──────────────────────────────────────────────────────────────
 
   Widget _buildAccountSection() {
-    const rows = [
-      (label: '中文姓名', value: 'Apyang Imiq', truku: false, editable: true),
-      (label: '族語名字', value: 'Sayun Lowking', truku: true, editable: true),
+    final rows = [
+      (label: '中文姓名', value: _user?.displayName ?? 'Apyang Imiq', truku: false, editable: true),
+      (label: '族語名字', value: _user?.displayName ?? 'Sayun Lowking', truku: true, editable: true),
       (label: '部落', value: '銅門 Dowmung', truku: false, editable: true),
-      (label: '電子信箱', value: 'apyang@truku.org', truku: false, editable: false),
+      (label: '電子信箱', value: _user?.email ?? 'apyang@truku.org', truku: false, editable: false),
     ];
     return _section(
       'HANGAN · 帳號',
