@@ -495,7 +495,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final updated = await UserService.updateMe(displayName: newName);
       if (mounted) setState(() => _user = updated);
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('Failed to update display name: $e');
+      debugPrintStack(stackTrace: st);
+    }
   }
 
   // ── 偏好設定 ──────────────────────────────────────────────────────────────
