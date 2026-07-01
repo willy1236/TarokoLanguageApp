@@ -81,7 +81,16 @@ class AuthService {
 
   static Future<bool> isLoggedIn() async {
     final token = await _storage.read(key: _tokenKey);
-    return token != null;
+    if (token == null) return false;
+    final expiresAt = await _storage.read(key: _expiresKey);
+    if (expiresAt == null) return true;
+    final expiry = DateTime.tryParse(expiresAt);
+    if (expiry == null) return true;
+    if (DateTime.now().isAfter(expiry)) {
+      await signOut();
+      return false;
+    }
+    return true;
   }
 
   static String _parseError(String body) {

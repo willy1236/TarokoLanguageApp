@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../services/auth_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../shop/shop_screen.dart';
 
@@ -483,7 +484,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       child: Column(
         children: [
           GestureDetector(
-            onTap: () => Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false),
+            onTap: () async {
+              await AuthService.signOut();
+              if (context.mounted) {
+                Navigator.pushNamedAndRemoveUntil(context, '/login', (_) => false);
+              }
+            },
             child: Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 14),

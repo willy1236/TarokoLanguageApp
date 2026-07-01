@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../services/auth_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 
@@ -20,8 +21,11 @@ class _SplashScreenState extends State<SplashScreen> {
       statusBarColor: Colors.transparent,
       statusBarIconBrightness: Brightness.light,
     ));
-    Future.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted) Navigator.pushReplacementNamed(context, '/login');
+    Future.delayed(const Duration(milliseconds: 2500), () async {
+      if (!mounted) return;
+      final loggedIn = await AuthService.isLoggedIn();
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(context, loggedIn ? '/home' : '/login');
     });
   }
 
