@@ -126,7 +126,10 @@ class _MainContainerState extends State<MainContainer> {
           if (_showProfile)
             Positioned.fill(
               child: ProfileScreen(
-                onClose: () => setState(() => _showProfile = false),
+                onClose: () {
+                  setState(() => _showProfile = false);
+                  _fetchDisplayName();
+                },
               ),
             ),
         ],
