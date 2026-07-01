@@ -14,6 +14,7 @@ import 'screens/plaza/plaza_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/splash/splash_screen.dart';
+import 'services/user_service.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 
 Future<void> main() async {
@@ -75,6 +76,20 @@ class MainContainer extends StatefulWidget {
 class _MainContainerState extends State<MainContainer> {
   int _currentIndex = 0;
   bool _showProfile = false;
+  String? _displayName;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDisplayName();
+  }
+
+  Future<void> _fetchDisplayName() async {
+    try {
+      final user = await UserService.fetchMe();
+      if (mounted) setState(() => _displayName = user.displayName);
+    } catch (_) {}
+  }
 
   void _navigate(int index) => setState(() {
         _currentIndex = index;
@@ -92,7 +107,10 @@ class _MainContainerState extends State<MainContainer> {
           IndexedStack(
             index: _currentIndex,
             children: [
-              HomeScreen(onShowProfile: () => setState(() => _showProfile = true)),
+              HomeScreen(
+                displayName: _displayName,
+                onShowProfile: () => setState(() => _showProfile = true),
+              ),
               const LearnScreen(),
               const CultureScreen(),
               const CommunityScreen(),
