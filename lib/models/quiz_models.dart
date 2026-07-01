@@ -7,23 +7,18 @@
 
 class QuizOption {
   final int id;
-  final String? truku;
-  final String? zh;
+  final String text;
 
-  const QuizOption({required this.id, this.truku, this.zh});
+  const QuizOption({required this.id, required this.text});
 
   factory QuizOption.fromJson(Map<String, dynamic> json) {
     return QuizOption(
-      id: json['id'] as int,
-      truku: json['truku'] as String?,
-      zh: json['zh'] as String?,
+      id: json['option_id'] as int,
+      text: json['text'] as String? ?? '',
     );
   }
 
-  /// 依方向取得這個選項該顯示的文字（與 prompt 相反語言）
-  String displayText(String direction) {
-    return direction == 'zh_to_truku' ? (truku ?? '') : (zh ?? '');
-  }
+  String displayText(String direction) => text;
 }
 
 class QuizQuestion {
