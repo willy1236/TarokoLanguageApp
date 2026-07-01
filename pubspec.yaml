@@ -49,6 +49,8 @@ dependencies:
 dev_dependencies:
   flutter_test:
     sdk: flutter
+  integration_test:
+    sdk: flutter
 
 # jni 1.0.0 的 Android build.gradle source set 設定有問題，
 # 導致 JniPlugin.java 沒被編進 classes.jar，造成 Android 編譯失敗。
