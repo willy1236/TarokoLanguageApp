@@ -30,7 +30,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final user = await UserService.fetchMe();
       if (mounted) setState(() => _user = user);
-    } catch (_) {}
+    } catch (e, st) {
+      debugPrint('Failed to fetch user: $e');
+      debugPrintStack(stackTrace: st);
+    }
   }
 
   @override
