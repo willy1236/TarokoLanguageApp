@@ -213,6 +213,13 @@ Content-Type: application/json
 3. 驗證用戶餘額：`users.coins >= avatar_catalog.price`
 4. 驗證用戶尚未擁有此頭像：`NOT EXISTS (SELECT 1 FROM user_owned_avatars WHERE uid=? AND avatar_id=?)`
 5. 驗證解鎖條件（如有）：依 `unlock_condition` 內容檢查是否滿足
+   > **待決議（暫不實作）**：`unlock_condition` 目前僅為純文字描述（如「完成每日任務累積 30 天」），
+   > 前後端都還沒有任何機制真的去判斷條件是否達成。前端現況：只要 `unlockCondition != null`
+   > 且使用者尚未擁有該頭像，一律顯示為鎖定，唯一的解鎖方式是後端直接把該頭像寫入
+   > `user_owned_avatars`（等同人工發放）。若未來要做到「條件達成自動解鎖」，需要另外討論：
+   > (a) 是否要把 `unlock_condition` 從純文字改為結構化欄位（如 `{"type":"streak_days","value":30}`），
+   > (b) 對應的使用者進度資料要從哪個系統取得（例如簽到/任務系統），
+   > (c) 由後端或前端負責即時判斷。此決議延後，目前僅支援後端手動解鎖。
 6. 執行購買：
    - `UPDATE users SET coins = coins - ? WHERE uid = ?`
    - `INSERT INTO user_owned_avatars (uid, avatar_id) VALUES (?, ?)`
