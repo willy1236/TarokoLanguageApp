@@ -101,7 +101,16 @@ class ShopService {
     }
 
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
-    return UserModel.fromJson(data);
+    final updated = UserModel.fromJson(data);
+
+    // PATCH /api/me 是既有端點，即使後端尚未支援 avatarId 欄位，也可能靜默忽略並回傳 200。
+    // 若回傳的 avatarId 與請求的不一致，代表後端其實沒有真的套用這次更換，
+    // 不可視為成功，否則會誤導使用者「已配戴」但其實沒有持久化。
+    if (updated.avatarId != avatarId) {
+      throw ShopFeatureUnavailableException('更換頭像功能尚未開放');
+    }
+
+    return updated;
   }
 
   static String _parseError(String body) {

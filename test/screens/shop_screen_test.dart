@@ -84,6 +84,16 @@ void main() {
     expect(find.text('完成每日任務累積 30 天'), findsWidgets);
   });
 
+  testWidgets('coins 為 0（真實後端預設值）時，未擁有且未鎖定的頭像仍應顯示可點擊的「兌換」按鈕', (tester) async {
+    await pumpShop(tester, ownedAvatarIds: const [], coins: 0);
+
+    await tester.tap(find.text('頭像 Lukus').last);
+    await tester.pump();
+
+    // 即使 coins 不足，兌換按鈕仍必須渲染，讓兌換流程可被觸及／測試。
+    expect(find.text('兌換'), findsWidgets);
+  });
+
   testWidgets('點擊兌換按鈕呼叫尚未存在的後端端點時顯示「功能尚未開放」', (tester) async {
     await pumpShop(tester, ownedAvatarIds: const [], coins: 1000);
 

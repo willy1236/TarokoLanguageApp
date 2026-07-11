@@ -99,6 +99,32 @@ void main() {
         throwsA(isA<ShopFeatureUnavailableException>()),
       );
     });
+
+    test(
+      '後端回 200 但 avatarId 未變更（PATCH /api/me 靜默忽略未支援欄位）時，'
+      '應視為失敗並拋出 ShopFeatureUnavailableException，而非回傳假成功的 UserModel',
+      () async {
+        final client = MockClient((request) async {
+          return http.Response.bytes(
+            utf8.encode(
+              jsonEncode({
+                'uid': 'u1',
+                'display_name': '小明',
+                // 後端忽略了 avatarId，回傳的仍是舊值（或 null），與請求的 'a1' 不一致。
+                'avatar_id': 'old_avatar',
+              }),
+            ),
+            200,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        });
+
+        await expectLater(
+          runWithClient(client, () => ShopService.equipAvatar('a1')),
+          throwsA(isA<ShopFeatureUnavailableException>()),
+        );
+      },
+    );
   });
 }
 

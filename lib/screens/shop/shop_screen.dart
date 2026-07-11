@@ -589,14 +589,17 @@ class _ShopScreenState extends State<ShopScreen> {
     final isGold = item.rarity == 'gold';
     final owned = user.ownedAvatarIds.contains(item.id);
     final locked = !owned && item.unlockCondition != null ? item.unlockCondition : null;
-    final canAfford = user.coins >= item.price;
 
     String? actionLabel;
     VoidCallback? onAction;
     if (owned) {
       actionLabel = '配戴';
       onAction = () => _equipAvatar(item);
-    } else if (locked == null && canAfford) {
+    } else if (locked == null) {
+      // 兌換按鈕永遠顯示（只要未擁有且未鎖定），不因 coins < price 而隱藏。
+      // 目前真實後端不回傳 coins 欄位（預設為 0），若以 canAfford 當作顯示條件，
+      // 按鈕會永遠不出現，導致整個兌換流程在正式環境中不可測試/不可觸及。
+      // 點擊後仍會走正常兌換流程，未實作端點時會顯示「功能尚未開放」。
       actionLabel = '兌換';
       onAction = () => _purchaseAvatar(item);
     }
