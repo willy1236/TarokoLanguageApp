@@ -2,7 +2,10 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/avatar_catalog.dart';
+import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../shop/shop_screen.dart';
 
@@ -15,7 +18,54 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  int _selectedBadge = 0;
+  UserModel? _user;
+  bool _loadingUser = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    try {
+      final user = await ShopService.fetchMe();
+      if (!mounted) return;
+      setState(() {
+        _user = user;
+        _loadingUser = false;
+      });
+    } catch (_) {
+      // 讀取失敗時退回空白/預設 UserModel，避免整個個人頁面崩潰。
+      if (!mounted) return;
+      setState(() {
+        _user = const UserModel(uid: '');
+        _loadingUser = false;
+      });
+    }
+  }
+
+  Future<void> _equipAvatar(AvatarCatalogItem item) async {
+    try {
+      final updated = await ShopService.equipAvatar(item.id);
+      if (!mounted) return;
+      setState(() {
+        _user = updated.avatarId == item.id
+            ? updated
+            : updated.copyWith(avatarId: item.id);
+      });
+    } on ShopFeatureUnavailableException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('功能尚未開放')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('配戴失敗，請稍後再試')),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -169,9 +219,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               border: Border.all(color: AppColors.gold, width: 2),
             ),
             child: ClipOval(
-              child: Center(
-                child: Icon(Icons.person, size: 52, color: AppColors.gold.withValues(alpha: 0.7)),
-              ),
+              child: Center(child: _buildAvatarContent()),
             ),
           ),
           Positioned(
@@ -191,6 +239,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildAvatarContent() {
+    final user = _user;
+    final avatarId = user?.avatarId;
+    if (avatarId != null) {
+      AvatarCatalogItem? item;
+      for (final a in kAvatarCatalog) {
+        if (a.id == avatarId) {
+          item = a;
+          break;
+        }
+      }
+      if (item != null) {
+        return Image.asset(
+          item.assetPath,
+          width: 80,
+          height: 80,
+          fit: BoxFit.cover,
+          errorBuilder: (_, _, _) =>
+              Icon(Icons.person, size: 52, color: AppColors.gold.withValues(alpha: 0.7)),
+        );
+      }
+    }
+    final avatarUrl = user?.avatarUrl;
+    if (avatarUrl != null) {
+      return Image.network(
+        avatarUrl,
+        width: 80,
+        height: 80,
+        fit: BoxFit.cover,
+        errorBuilder: (_, _, _) =>
+            Icon(Icons.person, size: 52, color: AppColors.gold.withValues(alpha: 0.7)),
+      );
+    }
+    return Icon(Icons.person, size: 52, color: AppColors.gold.withValues(alpha: 0.7));
   }
 
   Widget _statCell(String value, String label) {
@@ -229,7 +313,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ── 大頭貼選擇 ────────────────────────────────────────────────────────────
 
+  /// 前往商店頁面；商店頁目前不會 pop 回更新後的 UserModel（見 Task 4 報告），
+  /// 因此回到本頁後一律重新呼叫 fetchMe() 以取得最新的 avatarId/ownedAvatarIds。
+  Future<void> _openShop() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<UserModel?>(builder: (_) => const ShopScreen()),
+    );
+    if (!mounted) return;
+    _loadUser();
+  }
+
   Widget _buildBadgeSection() {
+    final ownedIds = _user?.ownedAvatarIds ?? const <String>[];
+    final ownedItems = <AvatarCatalogItem>[
+      for (final id in ownedIds)
+        for (final a in kAvatarCatalog)
+          if (a.id == id) a,
+    ];
+    final currentAvatarId = _user?.avatarId;
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Column(
@@ -250,9 +352,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ),
               ),
               GestureDetector(
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(builder: (_) => const ShopScreen()),
-                ),
+                onTap: _openShop,
                 child: Text(
                   '前往商店 →',
                   style: TextStyle(fontSize: 11, color: AppColors.primary, letterSpacing: 1),
@@ -276,75 +376,105 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: TextStyle(fontSize: 11, color: AppColors.fog, letterSpacing: 1),
                 ),
                 const SizedBox(height: 10),
-                SizedBox(
-                  height: 64,
-                  child: ListView.separated(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: 6,
-                    separatorBuilder: (_, _) => const SizedBox(width: 8),
-                    itemBuilder: (context, i) {
-                      if (i == 5) {
-                        return Container(
-                          width: 56,
-                          height: 56,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.gold.withValues(alpha: 0.5),
-                              width: 1.5,
-                            ),
-                            color: AppColors.gold.withValues(alpha: 0.06),
-                          ),
-                          child: const Icon(Icons.add, color: AppColors.primary, size: 20),
-                        );
-                      }
-                      final selected = i == _selectedBadge;
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedBadge = i),
-                        child: Stack(
-                          children: [
-                            Container(
+                if (_loadingUser)
+                  const SizedBox(
+                    height: 64,
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                      ),
+                    ),
+                  )
+                else if (ownedItems.isEmpty)
+                  SizedBox(
+                    height: 64,
+                    child: Center(
+                      child: Text(
+                        '尚未擁有任何頭像，前往商店兌換吧',
+                        style: TextStyle(fontSize: 11, color: AppColors.fog, letterSpacing: 0.5),
+                      ),
+                    ),
+                  )
+                else
+                  SizedBox(
+                    height: 64,
+                    child: ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: ownedItems.length + 1,
+                      separatorBuilder: (_, _) => const SizedBox(width: 8),
+                      itemBuilder: (context, i) {
+                        if (i == ownedItems.length) {
+                          return GestureDetector(
+                            onTap: _openShop,
+                            child: Container(
                               width: 56,
                               height: 56,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                color: selected ? AppColors.primary : Colors.transparent,
                                 border: Border.all(
-                                  color: selected ? AppColors.gold : AppColors.creamDeep,
-                                  width: selected ? 2.0 : 1.5,
+                                  color: AppColors.gold.withValues(alpha: 0.5),
+                                  width: 1.5,
                                 ),
+                                color: AppColors.gold.withValues(alpha: 0.06),
                               ),
-                              child: Center(
-                                child: Icon(
-                                  Icons.face_rounded,
-                                  size: 34,
-                                  color: selected
-                                      ? AppColors.gold
-                                      : AppColors.fog,
-                                ),
-                              ),
+                              child: const Icon(Icons.add, color: AppColors.primary, size: 20),
                             ),
-                            if (selected)
-                              Positioned(
-                                bottom: -2,
-                                right: -2,
-                                child: Container(
-                                  width: 18,
-                                  height: 18,
-                                  decoration: BoxDecoration(
-                                    shape: BoxShape.circle,
-                                    color: AppColors.gold,
-                                    border: Border.all(color: AppColors.creamLight, width: 1.5),
+                          );
+                        }
+                        final item = ownedItems[i];
+                        final selected = item.id == currentAvatarId;
+                        return GestureDetector(
+                          onTap: () => _equipAvatar(item),
+                          child: Stack(
+                            children: [
+                              Container(
+                                width: 56,
+                                height: 56,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  color: selected ? AppColors.primary : Colors.transparent,
+                                  border: Border.all(
+                                    color: selected ? AppColors.gold : AppColors.creamDeep,
+                                    width: selected ? 2.0 : 1.5,
                                   ),
-                                  child: const Icon(Icons.check, size: 10, color: AppColors.ink),
+                                ),
+                                child: ClipOval(
+                                  child: Image.asset(
+                                    item.assetPath,
+                                    width: 56,
+                                    height: 56,
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (_, _, _) => Icon(
+                                      Icons.face_rounded,
+                                      size: 34,
+                                      color: selected ? AppColors.gold : AppColors.fog,
+                                    ),
+                                  ),
                                 ),
                               ),
-                          ],
-                        ),
-                      );
-                    },
+                              if (selected)
+                                Positioned(
+                                  bottom: -2,
+                                  right: -2,
+                                  child: Container(
+                                    width: 18,
+                                    height: 18,
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      color: AppColors.gold,
+                                      border: Border.all(color: AppColors.creamLight, width: 1.5),
+                                    ),
+                                    child: const Icon(Icons.check, size: 10, color: AppColors.ink),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
                   ),
-                ),
                 const SizedBox(height: 12),
                 const Divider(height: 1, color: AppColors.creamDeep),
                 const SizedBox(height: 12),
@@ -390,9 +520,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                     GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const ShopScreen()),
-                      ),
+                      onTap: _openShop,
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
                         decoration: BoxDecoration(
