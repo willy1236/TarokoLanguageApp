@@ -125,6 +125,33 @@ void main() {
         );
       },
     );
+
+    test('送出的 PATCH body 使用 avatar_id（snake_case），並在後端確認一致時成功', () async {
+      Map<String, dynamic>? sentBody;
+      final client = MockClient((request) async {
+        sentBody = jsonDecode(request.body) as Map<String, dynamic>;
+        return http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
+              'uid': 'u1',
+              'display_name': '小明',
+              'avatar_id': 'a1',
+            }),
+          ),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+
+      final user = await runWithClient(
+        client,
+        () => ShopService.equipAvatar('a1'),
+      );
+
+      expect(sentBody, containsPair('avatar_id', 'a1'));
+      expect(sentBody, isNot(contains('avatarId')));
+      expect(user.avatarId, 'a1');
+    });
   });
 }
 

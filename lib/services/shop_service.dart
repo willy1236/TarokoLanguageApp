@@ -2,7 +2,7 @@
 //
 // 後端目前只有 GET /api/me，尚未提供頭像商店相關端點：
 //   - POST /api/shop/avatars/{id}/purchase（尚未存在）
-//   - PATCH /api/me 帶 avatarId（尚未存在）
+//   - PATCH /api/me 帶 avatar_id（尚未存在）
 // 呼叫這兩支時若後端回 404 或連線失敗，一律拋出 [ShopFeatureUnavailableException]，
 // 讓呼叫端（Task 3、Task 4 的 UI）可以辨識並顯示「功能尚未開放」，而不是誤判為一般錯誤。
 //
@@ -75,7 +75,7 @@ class ShopService {
     return UserModel.fromJson(data);
   }
 
-  /// 呼叫 PATCH /api/me 帶 avatarId（尚未存在的行為）。
+  /// 呼叫 PATCH /api/me 帶 avatar_id（尚未存在的行為）。
   /// 404 或連線失敗時拋出 [ShopFeatureUnavailableException]。
   static Future<UserModel> equipAvatar(String avatarId) async {
     final token = await AuthService.currentToken();
@@ -87,7 +87,7 @@ class ShopService {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({'avatarId': avatarId}),
+        body: jsonEncode({'avatar_id': avatarId}),
       );
     } on SocketException {
       throw ShopFeatureUnavailableException('更換頭像功能尚未開放');

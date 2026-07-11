@@ -250,7 +250,7 @@ Authorization: Bearer <JWT token>
 Content-Type: application/json
 
 {
-  "avatarId": "avatar_general_05"
+  "avatar_id": "avatar_general_05"
 }
 ```
 
@@ -259,13 +259,13 @@ Content-Type: application/json
 ```json
 {
   "display_name": "新暱稱",
-  "avatarId": "avatar_general_02"
+  "avatar_id": "avatar_general_02"
 }
 ```
 
 **請求欄位**（均可選）：
 - `display_name` (string)：新暱稱（選擇性）
-- `avatarId` (string)：要配戴的頭像 ID（選擇性；若為 null 則清除配戴）
+- `avatar_id` (string)：要配戴的頭像 ID（選擇性；若為 null 則清除配戴）
 
 **回應格式**（200 OK）：
 ```json
@@ -289,8 +289,8 @@ Content-Type: application/json
 1. 驗證 JWT → 取得 `uid`
 2. 若 body 含 `display_name`：
    - `UPDATE users SET display_name = ? WHERE uid = ?`
-3. 若 body 含 `avatarId`：
-   - 驗證 `avatarId` 非 null 時：`SELECT 1 FROM user_owned_avatars WHERE uid = ? AND avatar_id = ?`
+3. 若 body 含 `avatar_id`：
+   - 驗證 `avatar_id` 非 null 時：`SELECT 1 FROM user_owned_avatars WHERE uid = ? AND avatar_id = ?`
    - 若查詢無結果 → 回傳 403 AVATAR_NOT_OWNED
    - `UPDATE users SET avatar_id = ? WHERE uid = ?`
 4. 回傳更新後的 UserModel
@@ -304,8 +304,8 @@ Content-Type: application/json
 | 其他驗證失敗 | 400 | `{"error":{"message":"Invalid request"}}` |
 
 **特殊情況**：
-- 若 `avatarId` 為 null 或空字串，應清除當前配戴（`UPDATE users SET avatar_id = NULL`）
-- 若只更新 `display_name` 不涉及 `avatarId`，不需額外驗證
+- 若 `avatar_id` 為 null 或空字串，應清除當前配戴（`UPDATE users SET avatar_id = NULL`）
+- 若只更新 `display_name` 不涉及 `avatar_id`，不需額外驗證
 - 若既有欄位無異動，仍應回 200（幂等）
 
 ---
@@ -363,7 +363,7 @@ CREATE TABLE user_owned_avatar_frames (
 1. **端點路徑** ✓
    - `GET /api/me` ← 既有端點，新增回傳欄位 `avatar_id`、`owned_avatar_ids`、`coins`
    - `POST /api/shop/avatars/{id}/purchase` ← 新增端點
-   - `PATCH /api/me` ← 既有端點，新增可選欄位 `avatarId`
+   - `PATCH /api/me` ← 既有端點，新增可選欄位 `avatar_id`
 
 2. **JSON 欄位命名** ✓
    - 前端期待的 snake_case 鍵名（來自 `lib/models/user_model.dart`）：
@@ -401,7 +401,7 @@ describe('Avatar Shop API', () => {
     expect(response.coins).toBe(coinsBeforeStr - 200);
   });
 
-  test('PATCH /api/me 可更新 avatarId', async () => {
+  test('PATCH /api/me 可更新 avatar_id', async () => {
     // 先確保已擁有
     await purchaseAvatar(token, 'avatar_general_02');
     
@@ -409,7 +409,7 @@ describe('Avatar Shop API', () => {
     expect(response.avatar_id).toBe('avatar_general_02');
   });
 
-  test('PATCH /api/me 驗證 avatarId 在已擁有清單中', async () => {
+  test('PATCH /api/me 驗證 avatar_id 在已擁有清單中', async () => {
     // 嘗試配戴未擁有的頭像
     const response = await equipAvatar(token, 'avatar_general_99');
     expect(response.status).toBe(403);
@@ -440,7 +440,7 @@ describe('Avatar Shop API', () => {
 
 - [ ] `GET /api/me` 回傳 `avatar_id`、`owned_avatar_ids`、`coins`
 - [ ] `POST /api/shop/avatars/{id}/purchase` 存在且支援路徑參數
-- [ ] `PATCH /api/me` 支援 body 內 `avatarId` 欄位
+- [ ] `PATCH /api/me` 支援 body 內 `avatar_id` 欄位
 - [ ] 所有回應均使用 snake_case 鍵名
 - [ ] 錯誤回應統一格式 `{"error":{"message":"...", "code":"..."}}`
 - [ ] 小米幣扣款邏輯正確（購買時實時扣款）
