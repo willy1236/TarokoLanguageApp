@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/avatar_catalog.dart';
+import '../../models/user_model.dart';
+import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 
 class ShopScreen extends StatefulWidget {
@@ -10,9 +13,103 @@ class ShopScreen extends StatefulWidget {
   State<ShopScreen> createState() => _ShopScreenState();
 }
 
+/// 分類 chip 索引常數，讓 `_selectedCategory` 的比對有名字可讀。
+const int _catAll = 0;
+const int _catColored = 1;
+const int _catGold = 2;
+const int _catFeatured = 3;
+const int _catOwned = 4;
+const int _catAvatar = 5;
+
 class _ShopScreenState extends State<ShopScreen> {
-  int _selectedCategory = 0;
-  final List<String> _categories = ['全部', '彩徽 Btasil', '金徽 GOLD', '限定', '已擁有'];
+  int _selectedCategory = _catAll;
+  final List<String> _categories = [
+    '全部',
+    '彩徽 Btasil',
+    '金徽 GOLD',
+    '限定',
+    '已擁有',
+    '頭像 Lukus',
+  ];
+
+  UserModel? _user;
+  bool _loadingUser = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    try {
+      final user = await ShopService.fetchMe();
+      if (!mounted) return;
+      setState(() {
+        _user = user;
+        _loadingUser = false;
+      });
+    } catch (_) {
+      // 讀取失敗時退回空白/預設 UserModel，避免整個商店頁面崩潰。
+      if (!mounted) return;
+      setState(() {
+        _user = const UserModel(uid: '');
+        _loadingUser = false;
+      });
+    }
+  }
+
+  Future<void> _purchaseAvatar(AvatarCatalogItem item) async {
+    try {
+      final updated = await ShopService.purchaseAvatar(item.id);
+      if (!mounted) return;
+      setState(() {
+        _user = updated.ownedAvatarIds.contains(item.id)
+            ? updated
+            : updated.copyWith(
+                ownedAvatarIds: [...updated.ownedAvatarIds, item.id],
+              );
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('兌換成功')),
+      );
+    } on ShopFeatureUnavailableException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('功能尚未開放')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('兌換失敗，請稍後再試')),
+      );
+    }
+  }
+
+  Future<void> _equipAvatar(AvatarCatalogItem item) async {
+    try {
+      final updated = await ShopService.equipAvatar(item.id);
+      if (!mounted) return;
+      setState(() {
+        _user = updated.avatarId == item.id
+            ? updated
+            : updated.copyWith(avatarId: item.id);
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已配戴')),
+      );
+    } on ShopFeatureUnavailableException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('功能尚未開放')),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('配戴失敗，請稍後再試')),
+      );
+    }
+  }
 
   final List<_Badge> _featured = const [
     _Badge(name: '金徽·愛心', truku: 'Lukus Lhang', price: 280, rare: 'GOLD', isGold: true),
@@ -40,22 +137,46 @@ class _ShopScreenState extends State<ShopScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_loadingUser) {
+      return const Scaffold(
+        backgroundColor: AppColors.creamLight,
+        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      );
+    }
+
+    final user = _user ?? const UserModel(uid: '');
+    final showFeatured = _selectedCategory == _catAll || _selectedCategory == _catFeatured;
+    final showColored = _selectedCategory == _catAll || _selectedCategory == _catColored || _selectedCategory == _catOwned;
+    final showGold = _selectedCategory == _catAll || _selectedCategory == _catGold || _selectedCategory == _catOwned;
+    final showAvatars = _selectedCategory == _catAll || _selectedCategory == _catAvatar || _selectedCategory == _catOwned;
+
+    final onlyOwned = _selectedCategory == _catOwned;
+    final coloredList = onlyOwned ? _colored.where((b) => b.owned).toList() : _colored;
+    final goldList = onlyOwned ? _gold.where((b) => b.owned).toList() : _gold;
+    final avatarList = onlyOwned
+        ? kAvatarCatalog.where((a) => user.ownedAvatarIds.contains(a.id)).toList()
+        : kAvatarCatalog;
+
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: _buildHero(context)),
+          SliverToBoxAdapter(child: _buildHero(context, user)),
           SliverToBoxAdapter(child: _buildCategories()),
-          SliverToBoxAdapter(child: _buildFeaturedSection()),
-          SliverToBoxAdapter(child: _buildBadgeSection('彩徽', 'btasil · 共 20 款', _colored, false)),
-          SliverToBoxAdapter(child: _buildBadgeSection('金徽', 'rsuhug · 稀有款式', _gold, true)),
+          if (showFeatured) SliverToBoxAdapter(child: _buildFeaturedSection()),
+          if (showColored && coloredList.isNotEmpty)
+            SliverToBoxAdapter(child: _buildBadgeSection('彩徽', 'btasil · 共 20 款', coloredList, false)),
+          if (showGold && goldList.isNotEmpty)
+            SliverToBoxAdapter(child: _buildBadgeSection('金徽', 'rsuhug · 稀有款式', goldList, true)),
+          if (showAvatars && avatarList.isNotEmpty)
+            SliverToBoxAdapter(child: _buildAvatarSection(avatarList, user)),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
     );
   }
 
-  Widget _buildHero(BuildContext context) {
+  Widget _buildHero(BuildContext context, UserModel user) {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -136,7 +257,7 @@ class _ShopScreenState extends State<ShopScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '320',
+                              '${user.coins}',
                               style: GoogleFonts.notoSerifTc(
                                 fontSize: 30,
                                 fontWeight: FontWeight.w700,
@@ -423,91 +544,74 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   Widget _buildBadgeCard(_Badge badge, bool isGold) {
-    return Opacity(
-      opacity: badge.locked != null ? 0.55 : 1.0,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: isGold ? const Color(0xFF2A1A15) : AppColors.cream,
-          border: Border.all(color: isGold ? AppColors.gold.withValues(alpha: 0.31) : AppColors.creamDeep),
-        ),
-        child: Stack(
-          children: [
-            if (badge.owned)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: const Color(0xFF5BC97D)),
-                  child: Text('已擁有', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: AppColors.ink, letterSpacing: 1)),
-                ),
-              ),
-            if (badge.locked != null)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.black.withValues(alpha: 0.5)),
-                  child: Icon(Icons.lock_outline_rounded, size: 10, color: AppColors.gold),
-                ),
-              ),
-            Column(
-              children: [
-                Center(
-                  child: Container(
-                    width: 64,
-                    height: 64,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isGold ? AppColors.gold.withValues(alpha: 0.1) : AppColors.creamDeep,
-                    ),
-                    child: Icon(
-                      Icons.face_rounded,
-                      size: 44,
-                      color: isGold ? AppColors.gold : AppColors.fog,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  badge.name,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isGold ? AppColors.creamLight : AppColors.ink,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 2),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.grain, size: 13, color: isGold ? AppColors.gold : AppColors.primary),
-                    const SizedBox(width: 2),
-                    Text(
-                      '${badge.price}',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: isGold ? AppColors.gold : AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-                if (badge.locked != null) ...[
-                  const SizedBox(height: 4),
-                  Text(badge.locked!, textAlign: TextAlign.center, style: TextStyle(fontSize: 9, color: AppColors.fog, letterSpacing: 0.5)),
-                ],
-              ],
-            ),
-          ],
-        ),
+    return _ShopItemCard(
+      name: badge.name,
+      subtitle: badge.truku,
+      price: badge.price,
+      isGold: isGold,
+      owned: badge.owned,
+      lockedText: badge.locked,
+      icon: Icons.face_rounded,
+    );
+  }
+
+  Widget _buildAvatarSection(List<AvatarCatalogItem> avatars, UserModel user) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '頭像 Lukus',
+            style: GoogleFonts.notoSerifTc(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.ink, letterSpacing: 1),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'lukus · 共 ${kAvatarCatalog.length} 款',
+            style: GoogleFonts.crimsonPro(fontStyle: FontStyle.italic, fontSize: 10, color: AppColors.fog, letterSpacing: 2),
+          ),
+          const SizedBox(height: 10),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 3,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            childAspectRatio: 0.72,
+            children: avatars.map((a) => _buildAvatarCard(a, user)).toList(),
+          ),
+        ],
       ),
+    );
+  }
+
+  Widget _buildAvatarCard(AvatarCatalogItem item, UserModel user) {
+    final isGold = item.rarity == 'gold';
+    final owned = user.ownedAvatarIds.contains(item.id);
+    final locked = !owned && item.unlockCondition != null ? item.unlockCondition : null;
+    final canAfford = user.coins >= item.price;
+
+    String? actionLabel;
+    VoidCallback? onAction;
+    if (owned) {
+      actionLabel = '配戴';
+      onAction = () => _equipAvatar(item);
+    } else if (locked == null && canAfford) {
+      actionLabel = '兌換';
+      onAction = () => _purchaseAvatar(item);
+    }
+
+    return _ShopItemCard(
+      name: item.name,
+      subtitle: item.rarity.toUpperCase(),
+      price: item.price,
+      isGold: isGold,
+      owned: owned,
+      lockedText: locked,
+      assetPath: item.assetPath,
+      icon: Icons.face_rounded,
+      actionLabel: actionLabel,
+      onAction: onAction,
     );
   }
 }
@@ -530,4 +634,154 @@ class _Badge {
     this.owned = false,
     this.locked,
   });
+}
+
+/// 共用卡片：徽章與頭像兩種商品都用這個 widget 呈現 owned / locked / price 三種視覺狀態，
+/// 避免重複的圓形圖示 + 名稱 + 價格排版程式碼。
+///
+/// - [owned] 為 true：右上角顯示「已擁有」標籤；若提供 [actionLabel]（例如「配戴」）則額外顯示按鈕。
+/// - [lockedText] 非 null：整張卡片降低透明度、右上角顯示鎖頭圖示、底部顯示解鎖條件文字，不可互動。
+/// - 其餘情況（未擁有且未鎖定）：顯示價格；若提供 [actionLabel]（例如「兌換」）則顯示按鈕。
+class _ShopItemCard extends StatelessWidget {
+  final String name;
+  final String subtitle;
+  final int price;
+  final bool isGold;
+  final bool owned;
+  final String? lockedText;
+  final String? assetPath;
+  final IconData icon;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const _ShopItemCard({
+    required this.name,
+    required this.subtitle,
+    required this.price,
+    required this.isGold,
+    required this.icon,
+    this.owned = false,
+    this.lockedText,
+    this.assetPath,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: lockedText != null ? 0.55 : 1.0,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: isGold ? const Color(0xFF2A1A15) : AppColors.cream,
+          border: Border.all(color: isGold ? AppColors.gold.withValues(alpha: 0.31) : AppColors.creamDeep),
+        ),
+        child: Stack(
+          children: [
+            if (owned)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: const Color(0xFF5BC97D)),
+                  child: Text('已擁有', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: AppColors.ink, letterSpacing: 1)),
+                ),
+              ),
+            if (lockedText != null)
+              Positioned(
+                top: 0,
+                right: 0,
+                child: Container(
+                  width: 18,
+                  height: 18,
+                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.black.withValues(alpha: 0.5)),
+                  child: Icon(Icons.lock_outline_rounded, size: 10, color: AppColors.gold),
+                ),
+              ),
+            Column(
+              children: [
+                Center(
+                  child: Container(
+                    width: 64,
+                    height: 64,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isGold ? AppColors.gold.withValues(alpha: 0.1) : AppColors.creamDeep,
+                    ),
+                    child: ClipOval(child: _buildAvatarImage()),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  name,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.notoSerifTc(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isGold ? AppColors.creamLight : AppColors.ink,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.grain, size: 13, color: isGold ? AppColors.gold : AppColors.primary),
+                    const SizedBox(width: 2),
+                    Text(
+                      '$price',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: isGold ? AppColors.gold : AppColors.primary,
+                      ),
+                    ),
+                  ],
+                ),
+                if (lockedText != null) ...[
+                  const SizedBox(height: 4),
+                  Text(lockedText!, textAlign: TextAlign.center, style: TextStyle(fontSize: 9, color: AppColors.fog, letterSpacing: 0.5)),
+                ],
+                if (lockedText == null && actionLabel != null) ...[
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: onAction,
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(10),
+                        color: AppColors.gold,
+                      ),
+                      child: Text(
+                        actionLabel!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.ink),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAvatarImage() {
+    if (assetPath == null) {
+      return Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog);
+    }
+    return Image.asset(
+      assetPath!,
+      width: 64,
+      height: 64,
+      fit: BoxFit.cover,
+      errorBuilder: (_, _, _) => Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog),
+    );
+  }
 }
