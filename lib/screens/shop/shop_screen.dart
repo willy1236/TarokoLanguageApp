@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
 import '../../shared/widgets/truku_painters.dart';
+import '../../services/shop_service.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -12,6 +14,7 @@ class ShopScreen extends StatefulWidget {
 
 class _ShopScreenState extends State<ShopScreen> {
   int _selectedCategory = 0;
+  int _millet = 0;
   final List<String> _categories = ['全部', '彩徽 Btasil', '金徽 GOLD', '限定', '已擁有'];
 
   final List<_Badge> _featured = const [
@@ -37,6 +40,48 @@ class _ShopScreenState extends State<ShopScreen> {
     _Badge(name: '金徽·笑', truku: 'Mngangah', price: 260, isGold: true),
     _Badge(name: '金徽·食', truku: 'Mkan', price: 200, isGold: true),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBalance();
+  }
+
+  Future<void> _loadBalance() async {
+    try {
+      final millet = await ShopService.fetchBalance();
+      if (mounted) setState(() => _millet = millet);
+    } catch (_) {
+      // The exchange request will display a user-facing error if it also fails.
+    }
+  }
+
+  String? _productNameFor(_Badge badge) {
+    switch (badge.truku) {
+      case 'Lukus Lhang': return '金徽·愛心';
+      case 'Lukus Btasil': return '青徽·愛戀';
+      case 'Lhang': return '紅徽';
+      case 'Mngangah' when badge.price == 120: return '綠徽·笑';
+      case 'Smbabuy': return '金徽·靜';
+      case 'Mqaras': return badge.isGold ? '金徽·喜' : null;
+      default: return null;
+    }
+  }
+
+  Future<void> _exchange(_Badge badge) async {
+    final productName = _productNameFor(badge);
+    if (productName == null) return;
+    try {
+      final millet = await ShopService.exchange(productName: productName, cost: badge.price);
+      if (!mounted) return;
+      setState(() => _millet = millet);
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('兌換成功')));
+    } on ApiException catch (error) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (_) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('兌換失敗，請稍後再試')));
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -136,7 +181,7 @@ class _ShopScreenState extends State<ShopScreen> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              '320',
+                              '$_millet',
                               style: GoogleFonts.notoSerifTc(
                                 fontSize: 30,
                                 fontWeight: FontWeight.w700,
@@ -301,7 +346,9 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   Widget _buildFeaturedCard(_Badge badge) {
-    return Container(
+    return GestureDetector(
+      onTap: () => _exchange(badge),
+      child: Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
@@ -371,6 +418,7 @@ class _ShopScreenState extends State<ShopScreen> {
           ),
         ],
       ),
+    ),
     );
   }
 
@@ -415,7 +463,10 @@ class _ShopScreenState extends State<ShopScreen> {
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
             childAspectRatio: 0.72,
-            children: badges.map((b) => _buildBadgeCard(b, isGold)).toList(),
+            children: badges
+                .where((badge) => _productNameFor(badge) != null)
+                .map((badge) => _buildBadgeCard(badge, isGold))
+                .toList(),
           ),
         ],
       ),
@@ -423,7 +474,9 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   Widget _buildBadgeCard(_Badge badge, bool isGold) {
-    return Opacity(
+    return GestureDetector(
+      onTap: () => _exchange(badge),
+      child: Opacity(
       opacity: badge.locked != null ? 0.55 : 1.0,
       child: Container(
         padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
@@ -508,6 +561,7 @@ class _ShopScreenState extends State<ShopScreen> {
           ],
         ),
       ),
+    );
     );
   }
 }
