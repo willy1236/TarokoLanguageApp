@@ -56,12 +56,17 @@ class _CultureScreenState extends State<CultureScreen> {
         slivers: [
           SliverToBoxAdapter(child: _buildHero()),
           SliverToBoxAdapter(child: _buildTabBar()),
-          SliverToBoxAdapter(child: _buildChips()),
-          SliverToBoxAdapter(child: _buildVideoSectionHeader()),
-          SliverToBoxAdapter(child: _buildVideoGrid()),
-          SliverToBoxAdapter(child: _buildSectionHeader('族人寫的文章', 'patas kari · 共 18 篇')),
-          SliverToBoxAdapter(child: _buildFeaturedArticle()),
-          SliverToBoxAdapter(child: _buildArticleList()),
+          if (_tabIndex == 0) ...[
+            SliverToBoxAdapter(child: _buildChips()),
+            SliverToBoxAdapter(child: _buildVideoSectionHeader()),
+            SliverToBoxAdapter(child: _buildVideoGrid()),
+          ] else ...[
+            SliverToBoxAdapter(
+              child: _buildSectionHeader('族人寫的文章', 'patas kari · 共 18 篇'),
+            ),
+            SliverToBoxAdapter(child: _buildFeaturedArticle()),
+            SliverToBoxAdapter(child: _buildArticleList()),
+          ],
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
       ),
