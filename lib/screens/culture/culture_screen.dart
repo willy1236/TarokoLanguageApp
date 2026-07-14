@@ -2,7 +2,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
+import '../../models/video_models.dart';
+import '../../services/video_service.dart';
 import '../../shared/widgets/truku_painters.dart';
+import 'video_detail_screen.dart';
 
 class CultureScreen extends StatefulWidget {
   const CultureScreen({super.key});
@@ -14,21 +18,33 @@ class CultureScreen extends StatefulWidget {
 class _CultureScreenState extends State<CultureScreen> {
   int _tabIndex = 0; // 0=影音, 1=文章
   int _chipIndex = 0;
+  String _sort = 'latest'; // latest | popular
+  late Future<VideoListResponse> _videosFuture;
 
-  static const _chips = ['全部', '口述歷史', '織布傳統', '祭儀', '部落音樂', '美食'];
-
-  static const _videos = [
-    _VideoItem('苧麻怎麼種', 'Yudaw', '6:20', '織布', true),
-    _VideoItem('溪流命名史', 'Pisaw', '8:14', '地景', false),
-    _VideoItem('小米播種祭', 'Sayun', '15:02', '祭儀', true),
-    _VideoItem('老人家的歌', 'Bakan', '4:36', '音樂', false),
-  ];
+  static final _chips = ['全部', ...VideoCategory.all.map(VideoCategory.label)];
 
   static const _articles = [
     _ArticleItem('走過立霧溪——一條河的族語名字', 'Pisaw', '5 分鐘', '486', '地景', true),
     _ArticleItem('Gaya 不是規矩，是呼吸的方式', 'Yudaw', '12 分鐘', '892', '文化', false),
     _ArticleItem('阿公教我打獵那天說的話', 'Watan', '7 分鐘', '634', '口述', true),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _videosFuture = _fetchVideos();
+  }
+
+  String? get _selectedCategory =>
+      _chipIndex == 0 ? null : VideoCategory.all[_chipIndex - 1];
+
+  Future<VideoListResponse> _fetchVideos() {
+    return VideoService.fetchVideos(category: _selectedCategory, sort: _sort);
+  }
+
+  void _reloadVideos() {
+    setState(() => _videosFuture = _fetchVideos());
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,7 +55,7 @@ class _CultureScreenState extends State<CultureScreen> {
           SliverToBoxAdapter(child: _buildHero()),
           SliverToBoxAdapter(child: _buildTabBar()),
           SliverToBoxAdapter(child: _buildChips()),
-          SliverToBoxAdapter(child: _buildSectionHeader('最新影片', 'patas hngak · 共 24 部')),
+          SliverToBoxAdapter(child: _buildVideoSectionHeader()),
           SliverToBoxAdapter(child: _buildVideoGrid()),
           SliverToBoxAdapter(child: _buildSectionHeader('族人寫的文章', 'patas kari · 共 18 篇')),
           SliverToBoxAdapter(child: _buildFeaturedArticle()),
@@ -254,7 +270,10 @@ class _CultureScreenState extends State<CultureScreen> {
           return Padding(
             padding: EdgeInsets.only(right: i < _chips.length - 1 ? 8 : 0),
             child: GestureDetector(
-              onTap: () => setState(() => _chipIndex = i),
+              onTap: () {
+                setState(() => _chipIndex = i);
+                _reloadVideos();
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
@@ -326,19 +345,121 @@ class _CultureScreenState extends State<CultureScreen> {
     );
   }
 
-  // ── Video Grid ────────────────────────────────────────────────────────────
+  // ── Video Section ────────────────────────────────────────────────────────
+
+  Widget _buildVideoSectionHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _sort == 'popular' ? '熱門影片' : '最新影片',
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.cream,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'patas hngak',
+                style: GoogleFonts.crimsonPro(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 10,
+                  color: AppColors.fog,
+                  letterSpacing: 3.6,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              _sortLabel('latest', '最新'),
+              const SizedBox(width: 10),
+              _sortLabel('popular', '熱門'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sortLabel(String value, String label) {
+    final active = _sort == value;
+    return GestureDetector(
+      onTap: () {
+        if (_sort == value) return;
+        setState(() => _sort = value);
+        _reloadVideos();
+      },
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+          color: active ? AppColors.gold : AppColors.fog,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
 
   Widget _buildVideoGrid() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.78,
-        children: _videos.map((v) => _VideoCard(item: v)).toList(),
+      child: FutureBuilder<VideoListResponse>(
+        future: _videosFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.gold),
+              ),
+            );
+          }
+          if (snapshot.hasError) {
+            final message = snapshot.error is ApiException
+                ? (snapshot.error as ApiException).message
+                : '影片載入失敗，請稍後再試';
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Text(
+                  message,
+                  style: TextStyle(color: AppColors.fog, fontSize: 13),
+                ),
+              ),
+            );
+          }
+          final videos = snapshot.data!.videos;
+          if (videos.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Text(
+                  '目前沒有影片',
+                  style: TextStyle(color: AppColors.fog, fontSize: 13),
+                ),
+              ),
+            );
+          }
+          return GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.78,
+            children: videos.map((v) => _VideoCard(video: v)).toList(),
+          );
+        },
       ),
     );
   }
@@ -533,126 +654,161 @@ class _PlayButton extends StatelessWidget {
 }
 
 class _VideoCard extends StatelessWidget {
-  final _VideoItem item;
-  const _VideoCard({required this.item});
+  final VideoSummary video;
+  const _VideoCard({required this.video});
+
+  static String _formatDuration(int? sec) {
+    if (sec == null) return '--:--';
+    final m = sec ~/ 60;
+    final s = sec % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.midnightSoft,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.cream.withValues(alpha: 0.06)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 100,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: item.primaryTheme
-                          ? [AppColors.primary, AppColors.primaryDeep]
-                          : [AppColors.moss, AppColors.mossDeep],
-                    ),
-                  ),
-                ),
-                CustomPaint(
-                  painter: TrukuWeavePainter(
-                    color: AppColors.gold,
-                    opacity: 0.3,
-                    scale: 0.5,
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      item.tag,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppColors.gold,
-                        letterSpacing: 2.4,
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => VideoDetailScreen(videoId: video.id),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.midnightSoft,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.cream.withValues(alpha: 0.06)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 100,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (video.thumbnailUrl != null)
+                    Image.network(
+                      video.thumbnailUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _fallbackBackground(),
+                    )
+                  else
+                    _fallbackBackground(),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        VideoCategory.label(video.category),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppColors.gold,
+                          letterSpacing: 2.4,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Text(
-                      item.duration,
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 10,
-                        color: AppColors.creamLight,
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text(
+                        _formatDuration(video.durationSec),
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 10,
+                          color: AppColors.creamLight,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.black.withValues(alpha: 0.5),
-                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withValues(alpha: 0.5),
+                        border: Border.all(
+                            color: AppColors.gold.withValues(alpha: 0.5)),
+                      ),
+                      child: const Center(
+                        child: _PlayIcon(size: 12, color: AppColors.gold),
+                      ),
                     ),
-                    child: const Center(
-                      child: _PlayIcon(size: 12, color: AppColors.gold),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    video.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.creamLight,
+                      letterSpacing: 1.0,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.creamLight,
-                    letterSpacing: 1.0,
+                  const SizedBox(height: 3),
+                  Text(
+                    '${video.viewCount} 次觀看',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.fog,
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '@${item.author}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.fog,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _fallbackBackground() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.moss, AppColors.mossDeep],
+            ),
+          ),
+        ),
+        CustomPaint(
+          painter: TrukuWeavePainter(
+            color: AppColors.gold,
+            opacity: 0.3,
+            scale: 0.5,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -765,12 +921,6 @@ class _ArticleCard extends StatelessWidget {
 }
 
 // ─── Data Models ──────────────────────────────────────────────────────────────
-
-class _VideoItem {
-  final String title, author, duration, tag;
-  final bool primaryTheme;
-  const _VideoItem(this.title, this.author, this.duration, this.tag, this.primaryTheme);
-}
 
 class _ArticleItem {
   final String title, author, readTime, views, category;
