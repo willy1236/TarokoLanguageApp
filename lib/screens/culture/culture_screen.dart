@@ -43,7 +43,9 @@ class _CultureScreenState extends State<CultureScreen> {
   }
 
   void _reloadVideos() {
-    setState(() => _videosFuture = _fetchVideos());
+    setState(() {
+      _videosFuture = _fetchVideos();
+    });
   }
 
   @override
