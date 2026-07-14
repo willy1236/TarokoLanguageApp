@@ -27,12 +27,15 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
-  static Future<Map<String, dynamic>> get(String path) async {
+  static Future<Map<String, dynamic>> get(
+    String path, {
+    Map<String, String>? query,
+  }) async {
     final token = await AuthService.currentToken();
-    final resp = await http.get(
-      Uri.parse(ApiConfig.baseUrl + path),
-      headers: _headers(token),
+    final uri = Uri.parse(ApiConfig.baseUrl + path).replace(
+      queryParameters: query,
     );
+    final resp = await http.get(uri, headers: _headers(token));
     return _handle(resp);
   }
 
