@@ -94,25 +94,15 @@ class _CultureScreenState extends State<CultureScreen> {
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // 縮圖背景（有精選影片時）／漸層底色
+              // 縮圖背景（有精選影片時）／漸層底色 + 裝飾占位圖案
               if (featured?.thumbnailUrl != null)
                 Image.network(
                   featured!.thumbnailUrl!,
                   fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => _heroFallbackBackground(),
+                  errorBuilder: (_, _, _) => _heroFallbackDecoration(),
                 )
               else
-                _heroFallbackBackground(),
-              // 條紋占位
-              CustomPaint(painter: _StripePainter()),
-              // 織紋
-              CustomPaint(
-                painter: TrukuWeavePainter(
-                  color: AppColors.gold,
-                  opacity: 0.25,
-                  scale: 1.0,
-                ),
-              ),
+                _heroFallbackDecoration(),
               // 漸層遮罩
               Container(
                 decoration: const BoxDecoration(
@@ -218,15 +208,29 @@ class _CultureScreenState extends State<CultureScreen> {
     );
   }
 
-  Widget _heroFallbackBackground() {
-    return const DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [AppColors.mossDeep, AppColors.midnight],
+  // 沒有真實縮圖時的裝飾占位背景（漸層 + 條紋 + 織紋）
+  Widget _heroFallbackDecoration() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [AppColors.mossDeep, AppColors.midnight],
+            ),
+          ),
         ),
-      ),
+        CustomPaint(painter: _StripePainter()),
+        CustomPaint(
+          painter: TrukuWeavePainter(
+            color: AppColors.gold,
+            opacity: 0.25,
+            scale: 1.0,
+          ),
+        ),
+      ],
     );
   }
 
