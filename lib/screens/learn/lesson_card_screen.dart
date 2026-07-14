@@ -135,12 +135,29 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
 
   QuizQuestion get _currentQuestion => _session!.questions[_currentIndex];
 
+  // 修正後端音檔 URL 裡未正確轉義的 %（不是合法 %XX 跳脫序列時，
+  // audioplayers/Uri.parse 會直接丟 ArgumentError: Illegal percent encoding in URI）。
+  // 只補救裸露的 %，已經是合法 %XX 的部分不動，避免重複編碼。
+  static String _sanitizeAudioUrl(String raw) {
+    return raw.replaceAllMapped(
+      RegExp(r'%(?![0-9A-Fa-f]{2})'),
+      (_) => '%25',
+    );
+  }
+
   Future<void> _play({double rate = 1.0}) async {
     final url = _currentQuestion.promptAudioUrl;
     if (url == null) return;
-    await _player.stop();
-    await _player.setPlaybackRate(rate);
-    await _player.play(UrlSource(url));
+    try {
+      await _player.stop();
+      await _player.setPlaybackRate(rate);
+      await _player.play(UrlSource(_sanitizeAudioUrl(url)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('發音播放失敗，請稍後再試')),
+      );
+    }
   }
 
   void _selectOption(int optionId) {
