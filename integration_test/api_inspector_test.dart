@@ -67,6 +67,16 @@ void main() {
       ApiConfig.listeningSubmit,
       body: {'session_id': '__test__', 'answers': []},
     ));
+    test('GET /api/videos', () => _inspect('GET', ApiConfig.videos));
+    test('GET /api/videos?sort=popular', () => _inspect(
+      'GET',
+      '${ApiConfig.videos}?sort=popular',
+    ));
+    test('GET /api/videos/1', () => _inspect('GET', ApiConfig.videoDetail(1)));
+    test('GET /api/videos/999999 (測 404 格式)', () => _inspect(
+      'GET',
+      ApiConfig.videoDetail(999999),
+    ));
   });
 }
 
