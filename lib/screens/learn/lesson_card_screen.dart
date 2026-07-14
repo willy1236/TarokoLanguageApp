@@ -29,6 +29,8 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
   int? _selectedOptionId;
   final List<QuizAnswer> _answers = [];
   QuizResult? _result;
+  // 續接舊 session 時，實際測驗的 level 可能跟 widget.level（使用者這次點的）不同
+  String? _effectiveLevel;
 
   @override
   void initState() {
@@ -57,21 +59,79 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
         });
         return;
       }
-      setState(() {
-        _session = session;
-        _currentIndex = 0;
-        _selectedOptionId = null;
-        _answers.clear();
-        _result = null;
-        _phase = _Phase.quiz;
-      });
+
+      if (session.conflictingLevel != null) {
+        final shouldContinue =
+            await _showConflictDialog(session.level, session.conflictingLevel!);
+        if (!mounted) return;
+        if (!shouldContinue) {
+          Navigator.pop(context);
+          return;
+        }
+      }
+
+      _applySession(session);
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e;
         _phase = _Phase.error;
       });
     }
   }
+
+  void _applySession(QuizSession session) {
+    // 找第一題還沒作答的位置（續接時據此跳到未完成的題目，而非重回第一題）
+    final firstUnanswered =
+        session.questions.indexWhere((q) => q.selectedOptionId == null);
+    final startIndex =
+        firstUnanswered == -1 ? session.questions.length - 1 : firstUnanswered;
+
+    final restoredAnswers = <QuizAnswer>[
+      for (final q in session.questions.take(startIndex))
+        if (q.selectedOptionId != null)
+          QuizAnswer(questionId: q.questionId, selectedOptionId: q.selectedOptionId!),
+    ];
+
+    setState(() {
+      _session = session;
+      _effectiveLevel = session.level;
+      _currentIndex = startIndex;
+      _selectedOptionId = session.questions[startIndex].selectedOptionId;
+      _answers
+        ..clear()
+        ..addAll(restoredAnswers);
+      _result = null;
+      _phase = _Phase.quiz;
+    });
+  }
+
+  Future<bool> _showConflictDialog(String oldLevel, String wantedLevel) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('有未完成的測驗'),
+        content: Text(
+          '你還有未完成的「$oldLevel」測驗，要繼續完成，還是先返回？\n'
+          '（目前尚不支援直接放棄舊測驗，需完成後才能開始「$wantedLevel」）',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('返回'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('繼續「$oldLevel」測驗'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
+  }
+
+  String get _displayLevel => _effectiveLevel ?? widget.level;
 
   QuizQuestion get _currentQuestion => _session!.questions[_currentIndex];
 
@@ -85,6 +145,14 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
 
   void _selectOption(int optionId) {
     setState(() => _selectedOptionId = optionId);
+    final session = _session;
+    if (session == null) return;
+    // 即時落地，中途退出下次仍能續接；失敗不擋 UI，本地選取狀態已更新。
+    LearnService.answerQuestion(
+      sessionId: session.sessionId,
+      questionId: _currentQuestion.questionId,
+      selectedOptionId: optionId,
+    ).catchError((_) {});
   }
 
   Future<void> _confirmAndNext() async {
@@ -195,7 +263,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '${widget.level} · 測驗完成',
+              '$_displayLevel · 測驗完成',
               style: GoogleFonts.crimsonPro(
                 fontSize: 12,
                 fontStyle: FontStyle.italic,
@@ -316,7 +384,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'LEVEL · ${widget.level.toUpperCase()}',
+            'LEVEL · ${_displayLevel.toUpperCase()}',
             style: GoogleFonts.crimsonPro(
               fontSize: 12,
               fontStyle: FontStyle.italic,
@@ -326,7 +394,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            widget.level,
+            _displayLevel,
             style: GoogleFonts.notoSerifTc(
               fontSize: 18,
               fontWeight: FontWeight.w500,
