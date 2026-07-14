@@ -20,6 +20,7 @@ class _CultureScreenState extends State<CultureScreen> {
   int _chipIndex = 0;
   String _sort = 'latest'; // latest | popular
   late Future<VideoListResponse> _videosFuture;
+  late Future<VideoSummary?> _featuredFuture;
 
   static final _chips = ['全部', ...VideoCategory.all.map(VideoCategory.label)];
 
@@ -33,6 +34,14 @@ class _CultureScreenState extends State<CultureScreen> {
   void initState() {
     super.initState();
     _videosFuture = _fetchVideos();
+    _featuredFuture = _fetchFeatured();
+  }
+
+  // TODO(video): 後端目前無「精選」欄位/endpoint（見 GitHub issue），
+  // 暫用熱門第一名頂替本週精選。
+  Future<VideoSummary?> _fetchFeatured() async {
+    final res = await VideoService.fetchVideos(sort: 'popular', pageSize: 1);
+    return res.videos.isEmpty ? null : res.videos.first;
   }
 
   String? get _selectedCategory =>
@@ -76,116 +85,147 @@ class _CultureScreenState extends State<CultureScreen> {
   // ── Hero ──────────────────────────────────────────────────────────────────
 
   Widget _buildHero() {
-    return SizedBox(
-      height: 360,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 漸層底色
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [AppColors.mossDeep, AppColors.midnight],
+    return FutureBuilder<VideoSummary?>(
+      future: _featuredFuture,
+      builder: (context, snapshot) {
+        final featured = snapshot.data;
+        return SizedBox(
+          height: 360,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 縮圖背景（有精選影片時）／漸層底色
+              if (featured?.thumbnailUrl != null)
+                Image.network(
+                  featured!.thumbnailUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _heroFallbackBackground(),
+                )
+              else
+                _heroFallbackBackground(),
+              // 條紋占位
+              CustomPaint(painter: _StripePainter()),
+              // 織紋
+              CustomPaint(
+                painter: TrukuWeavePainter(
+                  color: AppColors.gold,
+                  opacity: 0.25,
+                  scale: 1.0,
+                ),
               ),
-            ),
-          ),
-          // 條紋占位
-          CustomPaint(painter: _StripePainter()),
-          // 織紋
-          CustomPaint(
-            painter: TrukuWeavePainter(
-              color: AppColors.gold,
-              opacity: 0.25,
-              scale: 1.0,
-            ),
-          ),
-          // 漸層遮罩
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: [0.0, 0.5, 1.0],
-                colors: [Colors.transparent, Colors.transparent, AppColors.midnight],
+              // 漸層遮罩
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.0, 0.5, 1.0],
+                    colors: [Colors.transparent, Colors.transparent, AppColors.midnight],
+                  ),
+                ),
               ),
-            ),
+              // 頂部 nav
+              Positioned(
+                top: 60,
+                left: 20,
+                right: 20,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'LNGLUNGAN',
+                      style: GoogleFonts.crimsonPro(
+                        fontStyle: FontStyle.italic,
+                        fontSize: 13,
+                        color: AppColors.gold,
+                        letterSpacing: 4.0,
+                      ),
+                    ),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withValues(alpha: 0.4),
+                        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+                      ),
+                      child: const Center(
+                        child: _SearchIcon(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              // Hero info
+              Positioned(
+                bottom: 24,
+                left: 20,
+                right: 20,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      featured != null ? '本週精選 · 熱門' : '本週精選',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 11,
+                        color: AppColors.gold,
+                        letterSpacing: 4.0,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      featured?.title ?? '太魯閣族影音',
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.creamLight,
+                        letterSpacing: 1.0,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      featured != null
+                          ? '${VideoCategory.label(featured.category)}　|　${featured.viewCount} 次觀看'
+                          : '精選內容載入中…',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.creamLight.withValues(alpha: 0.7),
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _PlayButton(
+                      label: '立即觀看',
+                      onTap: featured == null
+                          ? null
+                          : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      VideoDetailScreen(videoId: featured.id),
+                                ),
+                              );
+                            },
+                    ),
+                  ],
+                ),
+              ),
+            ],
           ),
-          // 頂部 nav
-          Positioned(
-            top: 60,
-            left: 20,
-            right: 20,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'LNGLUNGAN',
-                  style: GoogleFonts.crimsonPro(
-                    fontStyle: FontStyle.italic,
-                    fontSize: 13,
-                    color: AppColors.gold,
-                    letterSpacing: 4.0,
-                  ),
-                ),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black.withValues(alpha: 0.4),
-                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
-                  ),
-                  child: const Center(
-                    child: _SearchIcon(),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Hero info
-          Positioned(
-            bottom: 24,
-            left: 20,
-            right: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '本週精選 · GAYA',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
-                    color: AppColors.gold,
-                    letterSpacing: 4.0,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '紋面的故事——\n祖母的最後一道線',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.creamLight,
-                    letterSpacing: 1.0,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '口述 · Bakan Nawi　|　12 分鐘',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.creamLight.withValues(alpha: 0.7),
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _PlayButton(label: '立即觀看'),
-              ],
-            ),
-          ),
-        ],
+        );
+      },
+    );
+  }
+
+  Widget _heroFallbackBackground() {
+    return const DecoratedBox(
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [AppColors.mossDeep, AppColors.midnight],
+        ),
       ),
     );
   }
@@ -627,12 +667,13 @@ class _CultureScreenState extends State<CultureScreen> {
 
 class _PlayButton extends StatelessWidget {
   final String label;
-  const _PlayButton({required this.label});
+  final VoidCallback? onTap;
+  const _PlayButton({required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
