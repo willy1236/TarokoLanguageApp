@@ -30,7 +30,7 @@ import 'auth_service.dart';
 class ShopService {
   /// 呼叫 GET /api/shop/avatars（尚未存在的端點），取得後端算好的完整頭像目錄
   /// （含 image_url／is_owned）。路由還不存在時拋 [ShopFeatureUnavailableException]，
-  /// 呼叫端應 fallback 使用本地 kAvatarCatalog。
+  /// 呼叫端不應 fallback 顯示本地清單，應直接不顯示頭像相關內容。
   static Future<List<AvatarShopItem>> fetchAvatarCatalog() async {
     final token = await AuthService.currentToken();
     late final http.Response resp;

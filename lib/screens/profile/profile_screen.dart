@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/avatar_catalog.dart';
+import '../../models/avatar_shop_item.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/shop_service.dart';
@@ -21,10 +21,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
   UserModel? _user;
   bool _loadingUser = true;
 
+  // 後端 GET /api/shop/avatars 的目錄（含 image_url）；id → item，供渲染頭貼用。
+  // null 代表尚未取得或功能未開放，此時**不做本地素材 fallback**，直接顯示預設圖示，
+  // 誠實反映「後端圖檔尚未上傳 GCS」的現況。
+  Map<String, AvatarShopItem> _avatarCatalogById = const {};
+
   @override
   void initState() {
     super.initState();
     _loadUser();
+    _loadAvatarCatalog();
   }
 
   Future<void> _loadUser() async {
@@ -45,19 +51,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _equipAvatar(AvatarCatalogItem item) async {
+  Future<void> _loadAvatarCatalog() async {
     try {
-      final updated = await ShopService.equipAvatar(item.id);
+      final avatars = await ShopService.fetchAvatarCatalog();
       if (!mounted) return;
       setState(() {
-        _user = updated.avatarId == item.id
+        _avatarCatalogById = {for (final a in avatars) a.id: a};
+      });
+    } catch (_) {
+      // 功能尚未開放或發生錯誤：維持空 map，頭貼一律顯示預設圖示。
+    }
+  }
+
+  Future<void> _equipAvatar(String avatarId) async {
+    try {
+      final updated = await ShopService.equipAvatar(avatarId);
+      if (!mounted) return;
+      setState(() {
+        _user = updated.avatarId == avatarId
             ? updated
-            : updated.copyWith(avatarId: item.id);
+            : updated.copyWith(avatarId: avatarId);
       });
     } on ShopFeatureUnavailableException {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('功能尚未開放')),
+      );
+    } on ShopApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
       );
     } catch (_) {
       if (!mounted) return;
@@ -245,16 +268,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final user = _user;
     final avatarId = user?.avatarId;
     if (avatarId != null) {
-      AvatarCatalogItem? item;
-      for (final a in kAvatarCatalog) {
-        if (a.id == avatarId) {
-          item = a;
-          break;
-        }
-      }
-      if (item != null) {
-        return Image.asset(
-          item.assetPath,
+      // 使用者已選用內建頭像：不 fallback 回 avatarUrl（那會誤導成「顯示的是登入帳號
+      // 頭像」，跟實際配戴狀態不符），拿不到 image_url 就顯示預設圖示。
+      final imageUrl = _avatarCatalogById[avatarId]?.imageUrl;
+      if (imageUrl != null) {
+        return Image.network(
+          imageUrl,
           width: 80,
           height: 80,
           fit: BoxFit.cover,
@@ -262,6 +281,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               Icon(Icons.person, size: 52, color: AppColors.gold.withValues(alpha: 0.7)),
         );
       }
+      return Icon(Icons.person, size: 52, color: AppColors.gold.withValues(alpha: 0.7));
     }
     final avatarUrl = user?.avatarUrl;
     if (avatarUrl != null) {
@@ -325,11 +345,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildBadgeSection() {
     final ownedIds = _user?.ownedAvatarIds ?? const <String>[];
-    final ownedItems = <AvatarCatalogItem>[
-      for (final id in ownedIds)
-        for (final a in kAvatarCatalog)
-          if (a.id == id) a,
-    ];
     final currentAvatarId = _user?.avatarId;
 
     return Padding(
@@ -387,7 +402,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                     ),
                   )
-                else if (ownedItems.isEmpty)
+                else if (ownedIds.isEmpty)
                   SizedBox(
                     height: 64,
                     child: Center(
@@ -402,10 +417,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     height: 64,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      itemCount: ownedItems.length + 1,
+                      itemCount: ownedIds.length + 1,
                       separatorBuilder: (_, _) => const SizedBox(width: 8),
                       itemBuilder: (context, i) {
-                        if (i == ownedItems.length) {
+                        if (i == ownedIds.length) {
                           return GestureDetector(
                             onTap: _openShop,
                             child: Container(
@@ -423,10 +438,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                             ),
                           );
                         }
-                        final item = ownedItems[i];
-                        final selected = item.id == currentAvatarId;
+                        final id = ownedIds[i];
+                        final selected = id == currentAvatarId;
+                        final imageUrl = _avatarCatalogById[id]?.imageUrl;
                         return GestureDetector(
-                          onTap: () => _equipAvatar(item),
+                          onTap: () => _equipAvatar(id),
                           child: Stack(
                             children: [
                               Container(
@@ -441,17 +457,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                   ),
                                 ),
                                 child: ClipOval(
-                                  child: Image.asset(
-                                    item.assetPath,
-                                    width: 56,
-                                    height: 56,
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (_, _, _) => Icon(
-                                      Icons.face_rounded,
-                                      size: 34,
-                                      color: selected ? AppColors.gold : AppColors.fog,
-                                    ),
-                                  ),
+                                  child: imageUrl == null
+                                      ? Icon(
+                                          Icons.face_rounded,
+                                          size: 34,
+                                          color: selected ? AppColors.gold : AppColors.fog,
+                                        )
+                                      : Image.network(
+                                          imageUrl,
+                                          width: 56,
+                                          height: 56,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (_, _, _) => Icon(
+                                            Icons.face_rounded,
+                                            size: 34,
+                                            color: selected ? AppColors.gold : AppColors.fog,
+                                          ),
+                                        ),
                                 ),
                               ),
                               if (selected)

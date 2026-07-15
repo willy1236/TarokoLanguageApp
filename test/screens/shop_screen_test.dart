@@ -23,30 +23,76 @@ void main() {
     return null;
   });
 
+  /// 模擬 GET /api/shop/avatars 的回應：一款一般（可能已擁有）、一款一般未擁有、
+  /// 一款金頭像（有 unlock_condition，未擁有時應顯示鎖定文字而非按鈕）。
+  List<Map<String, dynamic>> avatarCatalogJson(List<String> ownedAvatarIds) {
+    return [
+      {
+        'id': 'avatar_general_01',
+        'name': '頭像 1',
+        'price': 50,
+        'rarity': 'common',
+        'unlock_condition': null,
+        'image_url': null,
+        'is_owned': ownedAvatarIds.contains('avatar_general_01'),
+      },
+      {
+        'id': 'avatar_general_02',
+        'name': '頭像 2',
+        'price': 50,
+        'rarity': 'common',
+        'unlock_condition': null,
+        'image_url': null,
+        'is_owned': ownedAvatarIds.contains('avatar_general_02'),
+      },
+      {
+        'id': 'avatar_general_10',
+        'name': '頭像 10',
+        'price': 500,
+        'rarity': 'gold',
+        'unlock_condition': '完成每日任務累積 30 天',
+        'image_url': null,
+        'is_owned': ownedAvatarIds.contains('avatar_general_10'),
+      },
+    ];
+  }
+
   Future<void> pumpShop(
     WidgetTester tester, {
     required List<String> ownedAvatarIds,
     required int millet,
   }) async {
     final client = MockClient((request) async {
-      expect(request.url.toString(), ApiConfig.baseUrl + ApiConfig.meEndpoint);
-      return http.Response.bytes(
-        utf8.encode(
-          jsonEncode({
-            'uid': 'u1',
-            'display_name': '小明',
-            'owned_avatar_ids': ownedAvatarIds,
-            'millet': millet,
-          }),
-        ),
-        200,
-        headers: {'content-type': 'application/json; charset=utf-8'},
-      );
+      final url = request.url.toString();
+      if (url == ApiConfig.baseUrl + ApiConfig.meEndpoint) {
+        return http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
+              'uid': 'u1',
+              'display_name': '小明',
+              'owned_avatar_ids': ownedAvatarIds,
+              'millet': millet,
+            }),
+          ),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }
+      if (url == ApiConfig.baseUrl + ApiConfig.shopAvatars) {
+        return http.Response.bytes(
+          utf8.encode(
+            jsonEncode({'avatars': avatarCatalogJson(ownedAvatarIds)}),
+          ),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }
+      return http.Response('Not Found', 404);
     });
 
     await http.runWithClient(() async {
       await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
-      // fetchMe() 是非同步呼叫，先 pump 讓 initState 內的 Future 有機會執行。
+      // fetchMe()／fetchAvatarCatalog() 是非同步呼叫，先 pump 讓 initState 內的 Future 有機會執行。
       await tester.pump();
       await tester.pump();
     }, () => client);
@@ -67,7 +113,7 @@ void main() {
     expect(find.text('金徽'), findsNothing);
   });
 
-  testWidgets('頭像卡片依 owned/locked/purchasable 顯示對應狀態', (tester) async {
+  testWidgets('頭像卡片依 owned/locked/purchasable 顯示對應狀態（資料來自 GET /api/shop/avatars）', (tester) async {
     await pumpShop(tester, ownedAvatarIds: ['avatar_general_01'], millet: 1000);
 
     await tester.tap(find.text('頭像 Lukus').last);
@@ -110,5 +156,39 @@ void main() {
     }, () => client);
 
     expect(find.text('功能尚未開放'), findsOneWidget);
+  });
+
+  testWidgets('GET /api/shop/avatars 拿不到（功能尚未開放）時不顯示頭像區塊，只顯示基本介面', (tester) async {
+    final client = MockClient((request) async {
+      final url = request.url.toString();
+      if (url == ApiConfig.baseUrl + ApiConfig.meEndpoint) {
+        return http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
+              'uid': 'u1',
+              'display_name': '小明',
+              'owned_avatar_ids': <String>[],
+              'millet': 1000,
+            }),
+          ),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }
+      // GET /api/shop/avatars 尚未部署：路由不存在，回純文字 404。
+      return http.Response('Not Found', 404);
+    });
+
+    await http.runWithClient(() async {
+      await tester.pumpWidget(const MaterialApp(home: ShopScreen()));
+      await tester.pump();
+      await tester.pump();
+    }, () => client);
+
+    // 沒有 fallback 用本地清單：完全不顯示「頭像 Lukus」區塊標題與任何兌換/配戴按鈕，
+    // 但商店其餘基本介面（分類 chip）仍正常顯示。
+    expect(find.text('頭像 Lukus'), findsOneWidget); // 僅分類 chip，不含區塊標題
+    expect(find.text('兌換'), findsNothing);
+    expect(find.text('配戴'), findsNothing);
   });
 }

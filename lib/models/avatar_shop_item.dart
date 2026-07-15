@@ -1,10 +1,8 @@
 // 對應 GET /api/shop/avatars 回傳的單一頭像目錄項目
 // 規格參考：Truku_backend#1 GET /api/shop/avatars（回傳完整頭像目錄，含 image_url／is_owned）
 //
-// 跟 lib/core/constants/avatar_catalog.dart 的 AvatarCatalogItem 不同：
-// 這個是「後端算好的」項目（is_owned 是伺服器依登入使用者算的，不是前端自己比對
-// ownedAvatarIds），image_url 目前後端一律回 NULL（圖檔尚未上傳 GCS），此時前端
-// 應 fallback 用本地 assets/images/avatars/ 素材（見 AvatarCatalogItem.assetPath）。
+// image_url 目前後端一律回 NULL（圖檔尚未上傳 GCS）。前端**不做本地素材 fallback**，
+// image_url 為 null 時直接顯示預設圖示，誠實反映現況，不用假圖片掩蓋。
 
 class AvatarShopItem {
   final String id;

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/avatar_catalog.dart';
+import '../../models/avatar_shop_item.dart';
 import '../../models/user_model.dart';
 import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_painters.dart';
@@ -35,10 +35,16 @@ class _ShopScreenState extends State<ShopScreen> {
   UserModel? _user;
   bool _loadingUser = true;
 
+  // 後端 GET /api/shop/avatars 的目錄（含 image_url／is_owned）；null 代表尚未取得
+  // 或功能尚未開放。**不做本地清單 fallback**：抓不到就不顯示頭像區塊，只顯示
+  // 商店其餘的基本介面（餘額卡、徽章區），避免顯示跟後端擁有狀態對不上的假資料。
+  List<AvatarShopItem>? _serverAvatars;
+
   @override
   void initState() {
     super.initState();
     _loadUser();
+    _loadAvatarCatalog();
   }
 
   Future<void> _loadUser() async {
@@ -59,15 +65,25 @@ class _ShopScreenState extends State<ShopScreen> {
     }
   }
 
-  Future<void> _purchaseAvatar(AvatarCatalogItem item) async {
+  Future<void> _loadAvatarCatalog() async {
     try {
-      final updated = await ShopService.purchaseAvatar(item.id);
+      final avatars = await ShopService.fetchAvatarCatalog();
+      if (!mounted) return;
+      setState(() => _serverAvatars = avatars);
+    } catch (_) {
+      // 功能尚未開放或發生錯誤：維持 null，頭像區塊不顯示，不影響商店頁面其他部分。
+    }
+  }
+
+  Future<void> _purchaseAvatar(String avatarId) async {
+    try {
+      final updated = await ShopService.purchaseAvatar(avatarId);
       if (!mounted) return;
       setState(() {
-        _user = updated.ownedAvatarIds.contains(item.id)
+        _user = updated.ownedAvatarIds.contains(avatarId)
             ? updated
             : updated.copyWith(
-                ownedAvatarIds: [...updated.ownedAvatarIds, item.id],
+                ownedAvatarIds: [...updated.ownedAvatarIds, avatarId],
               );
       });
       ScaffoldMessenger.of(context).showSnackBar(
@@ -78,6 +94,11 @@ class _ShopScreenState extends State<ShopScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('功能尚未開放')),
       );
+    } on ShopApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
@@ -86,14 +107,14 @@ class _ShopScreenState extends State<ShopScreen> {
     }
   }
 
-  Future<void> _equipAvatar(AvatarCatalogItem item) async {
+  Future<void> _equipAvatar(String avatarId) async {
     try {
-      final updated = await ShopService.equipAvatar(item.id);
+      final updated = await ShopService.equipAvatar(avatarId);
       if (!mounted) return;
       setState(() {
-        _user = updated.avatarId == item.id
+        _user = updated.avatarId == avatarId
             ? updated
-            : updated.copyWith(avatarId: item.id);
+            : updated.copyWith(avatarId: avatarId);
       });
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('已配戴')),
@@ -102,6 +123,11 @@ class _ShopScreenState extends State<ShopScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('功能尚未開放')),
+      );
+    } on ShopApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
       );
     } catch (_) {
       if (!mounted) return;
@@ -153,9 +179,21 @@ class _ShopScreenState extends State<ShopScreen> {
     final onlyOwned = _selectedCategory == _catOwned;
     final coloredList = onlyOwned ? _colored.where((b) => b.owned).toList() : _colored;
     final goldList = onlyOwned ? _gold.where((b) => b.owned).toList() : _gold;
-    final avatarList = onlyOwned
-        ? kAvatarCatalog.where((a) => user.ownedAvatarIds.contains(a.id)).toList()
-        : kAvatarCatalog;
+    // 沒有本地 fallback：_serverAvatars 為 null（尚未取得或功能未開放）時 allAvatars
+    // 直接是空清單，下面 avatarList.isNotEmpty 判斷會讓整個頭像區塊不顯示。
+    final allAvatars = (_serverAvatars ?? const <AvatarShopItem>[])
+        .map((a) => _AvatarDisplayItem(
+              id: a.id,
+              name: a.name,
+              price: a.price,
+              rarity: a.rarity,
+              unlockCondition: a.unlockCondition,
+              owned: a.isOwned,
+              imageUrl: a.imageUrl,
+            ))
+        .toList();
+    final avatarList =
+        onlyOwned ? allAvatars.where((a) => a.owned).toList() : allAvatars;
 
     return Scaffold(
       backgroundColor: AppColors.creamLight,
@@ -169,7 +207,7 @@ class _ShopScreenState extends State<ShopScreen> {
           if (showGold && goldList.isNotEmpty)
             SliverToBoxAdapter(child: _buildBadgeSection('金徽', 'rsuhug · 稀有款式', goldList, true)),
           if (showAvatars && avatarList.isNotEmpty)
-            SliverToBoxAdapter(child: _buildAvatarSection(avatarList, user)),
+            SliverToBoxAdapter(child: _buildAvatarSection(avatarList)),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
@@ -555,7 +593,7 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 
-  Widget _buildAvatarSection(List<AvatarCatalogItem> avatars, UserModel user) {
+  Widget _buildAvatarSection(List<_AvatarDisplayItem> avatars) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
       child: Column(
@@ -567,7 +605,7 @@ class _ShopScreenState extends State<ShopScreen> {
           ),
           const SizedBox(height: 2),
           Text(
-            'lukus · 共 ${kAvatarCatalog.length} 款',
+            'lukus · 共 ${avatars.length} 款',
             style: GoogleFonts.crimsonPro(fontStyle: FontStyle.italic, fontSize: 10, color: AppColors.fog, letterSpacing: 2),
           ),
           const SizedBox(height: 10),
@@ -578,30 +616,30 @@ class _ShopScreenState extends State<ShopScreen> {
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
             childAspectRatio: 0.72,
-            children: avatars.map((a) => _buildAvatarCard(a, user)).toList(),
+            children: avatars.map((a) => _buildAvatarCard(a)).toList(),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildAvatarCard(AvatarCatalogItem item, UserModel user) {
+  Widget _buildAvatarCard(_AvatarDisplayItem item) {
     final isGold = item.rarity == 'gold';
-    final owned = user.ownedAvatarIds.contains(item.id);
+    final owned = item.owned;
     final locked = !owned && item.unlockCondition != null ? item.unlockCondition : null;
 
     String? actionLabel;
     VoidCallback? onAction;
     if (owned) {
       actionLabel = '配戴';
-      onAction = () => _equipAvatar(item);
+      onAction = () => _equipAvatar(item.id);
     } else if (locked == null) {
       // 兌換按鈕永遠顯示（只要未擁有且未鎖定），不因 millet < price 而隱藏。
       // 目前真實後端不回傳 millet 欄位（預設為 0），若以 canAfford 當作顯示條件，
       // 按鈕會永遠不出現，導致整個兌換流程在正式環境中不可測試/不可觸及。
       // 點擊後仍會走正常兌換流程，未實作端點時會顯示「功能尚未開放」。
       actionLabel = '兌換';
-      onAction = () => _purchaseAvatar(item);
+      onAction = () => _purchaseAvatar(item.id);
     }
 
     return _ShopItemCard(
@@ -611,12 +649,33 @@ class _ShopScreenState extends State<ShopScreen> {
       isGold: isGold,
       owned: owned,
       lockedText: locked,
-      assetPath: item.assetPath,
+      imageUrl: item.imageUrl,
       icon: Icons.face_rounded,
       actionLabel: actionLabel,
       onAction: onAction,
     );
   }
+}
+
+/// 統一頭像卡片渲染所需欄位（來源固定是伺服器 [AvatarShopItem]；沒有本地清單來源）。
+class _AvatarDisplayItem {
+  final String id;
+  final String name;
+  final int price;
+  final String rarity;
+  final String? unlockCondition;
+  final bool owned;
+  final String? imageUrl;
+
+  const _AvatarDisplayItem({
+    required this.id,
+    required this.name,
+    required this.price,
+    required this.rarity,
+    this.unlockCondition,
+    required this.owned,
+    this.imageUrl,
+  });
 }
 
 class _Badge {
@@ -652,7 +711,7 @@ class _ShopItemCard extends StatelessWidget {
   final bool isGold;
   final bool owned;
   final String? lockedText;
-  final String? assetPath;
+  final String? imageUrl;
   final IconData icon;
   final String? actionLabel;
   final VoidCallback? onAction;
@@ -665,7 +724,7 @@ class _ShopItemCard extends StatelessWidget {
     required this.icon,
     this.owned = false,
     this.lockedText,
-    this.assetPath,
+    this.imageUrl,
     this.actionLabel,
     this.onAction,
   });
@@ -775,12 +834,14 @@ class _ShopItemCard extends StatelessWidget {
     );
   }
 
+  // 不使用本地素材 fallback：只有 image_url 時才顯示圖片，否則顯示預設圖示，
+  // 誠實反映「後端圖檔尚未上傳 GCS」的現況，不用假圖片掩蓋。
   Widget _buildAvatarImage() {
-    if (assetPath == null) {
+    if (imageUrl == null) {
       return Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog);
     }
-    return Image.asset(
-      assetPath!,
+    return Image.network(
+      imageUrl!,
       width: 64,
       height: 64,
       fit: BoxFit.cover,
