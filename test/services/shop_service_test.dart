@@ -54,7 +54,7 @@ void main() {
   });
 
   group('ShopService.purchaseAvatar', () {
-    test('404 時拋出 ShopFeatureUnavailableException', () async {
+    test('路由不存在的 404（純文字 body）時拋出 ShopFeatureUnavailableException', () async {
       final client = MockClient((request) async {
         return http.Response('Not Found', 404);
       });
@@ -74,6 +74,58 @@ void main() {
         runWithClient(client, () => ShopService.purchaseAvatar('a1')),
         throwsA(isA<ShopFeatureUnavailableException>()),
       );
+    });
+
+    test(
+      '路由已存在但業務邏輯拒絕（帶正式 error.code 的 404）時拋出 ShopApiException，'
+      '而非誤判為功能尚未開放',
+      () async {
+        final client = MockClient((request) async {
+          return http.Response.bytes(
+            utf8.encode(
+              jsonEncode({
+                'error': {
+                  'code': 'AVATAR_NOT_FOUND',
+                  'message': '頭像不存在',
+                },
+              }),
+            ),
+            404,
+            headers: {'content-type': 'application/json; charset=utf-8'},
+          );
+        });
+
+        try {
+          await runWithClient(client, () => ShopService.purchaseAvatar('a1'));
+          fail('應該要拋出例外');
+        } on ShopApiException catch (e) {
+          expect(e.code, 'AVATAR_NOT_FOUND');
+        }
+      },
+    );
+
+    test('餘額不足（400 INSUFFICIENT_BALANCE）時拋出 ShopApiException', () async {
+      final client = MockClient((request) async {
+        return http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
+              'error': {
+                'code': 'INSUFFICIENT_BALANCE',
+                'message': '小米幣不足',
+              },
+            }),
+          ),
+          400,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+
+      try {
+        await runWithClient(client, () => ShopService.purchaseAvatar('a1'));
+        fail('應該要拋出例外');
+      } on ShopApiException catch (e) {
+        expect(e.code, 'INSUFFICIENT_BALANCE');
+      }
     });
   });
 

@@ -1,10 +1,18 @@
 // 頭像兌換／更換 API 呼叫骨架（issue #12）
 //
 // 後端目前只有 GET /api/me，尚未提供頭像商店相關端點：
+//   - GET /api/shop/avatars（尚未存在）
 //   - POST /api/shop/avatars/{id}/purchase（尚未存在）
 //   - PATCH /api/me 帶 avatar_id（尚未存在）
-// 呼叫這兩支時若後端回 404 或連線失敗，一律拋出 [ShopFeatureUnavailableException]，
-// 讓呼叫端（Task 3、Task 4 的 UI）可以辨識並顯示「功能尚未開放」，而不是誤判為一般錯誤。
+//
+// 錯誤分流原則：路由真的還不存在時，Express 預設 404 回的是純文字（如
+// "Cannot GET /api/shop/avatars"），不是 app 的 JSON 錯誤格式 {error:{code,message}}；
+// 一旦後端部署完成，路由存在但業務邏輯拒絕時，才會回傳帶 code 的正式錯誤（例如
+// AVATAR_NOT_FOUND／INSUFFICIENT_BALANCE／ALREADY_OWNED／UNLOCK_CONDITION_NOT_MET／
+// AVATAR_NOT_OWNED，見 Truku_backend#1）。因此用「body 能否解析出 error.code」來分流：
+//   - 解析得到 code → 路由已存在，是真正的業務錯誤 → 拋 [ShopApiException]（帶 code）
+//   - 解析不到（純文字/HTML/連線失敗）→ 路由還不存在 → 拋 [ShopFeatureUnavailableException]
+// 讓呼叫端可以分別處理「功能尚未開放」與「這次操作真的被拒絕」兩種情境。
 //
 // HTTP 呼叫模式沿用 lib/services/auth_service.dart：
 //   - 用 package:http 的 http.get/post/patch
@@ -37,16 +45,13 @@ class ShopService {
       throw ShopFeatureUnavailableException('無法連線到伺服器');
     }
 
-    if (resp.statusCode != 200) {
-      throw ShopFeatureUnavailableException(_parseError(resp.body));
-    }
+    _throwIfError(resp, unavailableMessage: '無法取得使用者資料');
 
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
     return UserModel.fromJson(data);
   }
 
   /// 呼叫 POST /api/shop/avatars/{id}/purchase（尚未存在的端點）。
-  /// 404 或連線失敗時拋出 [ShopFeatureUnavailableException]。
   static Future<UserModel> purchaseAvatar(String avatarId) async {
     final token = await AuthService.currentToken();
     late final http.Response resp;
@@ -64,19 +69,13 @@ class ShopService {
       throw ShopFeatureUnavailableException('頭像商店功能尚未開放');
     }
 
-    if (resp.statusCode == 404) {
-      throw ShopFeatureUnavailableException('頭像商店功能尚未開放');
-    }
-    if (resp.statusCode != 200) {
-      throw ShopFeatureUnavailableException(_parseError(resp.body));
-    }
+    _throwIfError(resp, unavailableMessage: '頭像商店功能尚未開放');
 
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
     return UserModel.fromJson(data);
   }
 
   /// 呼叫 PATCH /api/me 帶 avatar_id（尚未存在的行為）。
-  /// 404 或連線失敗時拋出 [ShopFeatureUnavailableException]。
   static Future<UserModel> equipAvatar(String avatarId) async {
     final token = await AuthService.currentToken();
     late final http.Response resp;
@@ -93,12 +92,7 @@ class ShopService {
       throw ShopFeatureUnavailableException('更換頭像功能尚未開放');
     }
 
-    if (resp.statusCode == 404) {
-      throw ShopFeatureUnavailableException('更換頭像功能尚未開放');
-    }
-    if (resp.statusCode != 200) {
-      throw ShopFeatureUnavailableException(_parseError(resp.body));
-    }
+    _throwIfError(resp, unavailableMessage: '更換頭像功能尚未開放');
 
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
     final updated = UserModel.fromJson(data);
@@ -113,12 +107,27 @@ class ShopService {
     return updated;
   }
 
-  static String _parseError(String body) {
+  /// 非 200 時分流拋出：body 能解析出 error.code → [ShopApiException]（真正的業務錯誤）；
+  /// 否則（純文字/HTML，代表路由還不存在）→ [ShopFeatureUnavailableException]。
+  static void _throwIfError(
+    http.Response resp, {
+    required String unavailableMessage,
+  }) {
+    if (resp.statusCode == 200) return;
+    final apiError = _tryParseApiError(resp.body);
+    if (apiError != null) throw apiError;
+    throw ShopFeatureUnavailableException(unavailableMessage);
+  }
+
+  static ShopApiException? _tryParseApiError(String body) {
     try {
       final j = jsonDecode(body);
-      return j['error']?['message'] ?? '請求失敗';
+      final error = j['error'] as Map<String, dynamic>?;
+      final code = error?['code'] as String?;
+      if (code == null) return null;
+      return ShopApiException(code, error?['message'] as String? ?? '請求失敗');
     } catch (_) {
-      return '請求失敗';
+      return null;
     }
   }
 }
@@ -128,6 +137,18 @@ class ShopService {
 class ShopFeatureUnavailableException implements Exception {
   final String message;
   ShopFeatureUnavailableException(this.message);
+  @override
+  String toString() => message;
+}
+
+/// 後端路由已存在、回傳正式 {error:{code,message}} 格式的業務錯誤時拋出（見
+/// Truku_backend#1：AVATAR_NOT_FOUND／INSUFFICIENT_BALANCE／ALREADY_OWNED／
+/// UNLOCK_CONDITION_NOT_MET／AVATAR_NOT_OWNED 等），呼叫端可依 [code] 判斷後續行為，
+/// 不應與「功能尚未開放」混為一談。
+class ShopApiException implements Exception {
+  final String code;
+  final String message;
+  ShopApiException(this.code, this.message);
   @override
   String toString() => message;
 }
