@@ -28,90 +28,100 @@ class ModeData {
 class ModeCard extends StatelessWidget {
   final ModeData mode;
   final bool large;
+  final VoidCallback? onTap;
 
-  const ModeCard({super.key, required this.mode, this.large = false});
+  const ModeCard({
+    super.key,
+    required this.mode,
+    this.large = false,
+    this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      clipBehavior: Clip.hardEdge,
-      constraints: BoxConstraints(minHeight: large ? 150 : 170),
-      decoration: BoxDecoration(
-        color: mode.bg,
-        borderRadius: BorderRadius.circular(20),
-        border: mode.bg == AppColors.creamLight
-            ? Border.all(color: AppColors.creamDeep, width: 1.5)
-            : null,
-      ),
-      child: Stack(
-        children: [
-          // 背景織紋
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.12,
-              child: CustomPaint(
-                painter: TrukuWeavePainter(
-                  color: mode.accent,
-                  opacity: 1.0,
-                  scale: 0.6,
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        clipBehavior: Clip.hardEdge,
+        constraints: BoxConstraints(minHeight: large ? 150 : 170),
+        decoration: BoxDecoration(
+          color: mode.bg,
+          borderRadius: BorderRadius.circular(20),
+          border: mode.bg == AppColors.creamLight
+              ? Border.all(color: AppColors.creamDeep, width: 1.5)
+              : null,
+        ),
+        child: Stack(
+          children: [
+            // 背景織紋
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.12,
+                child: CustomPaint(
+                  painter: TrukuWeavePainter(
+                    color: mode.accent,
+                    opacity: 1.0,
+                    scale: 0.6,
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // 內容
-          Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 頂部：icon 左，Truku 名右
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    ModeIcon(name: mode.icon, color: mode.accent),
-                    Text(
-                      mode.truku.toUpperCase(),
-                      style: GoogleFonts.crimsonPro(
-                        fontStyle: FontStyle.italic,
-                        fontSize: 11,
-                        color: mode.accent,
-                        letterSpacing: 2.6,
+            // 內容
+            Padding(
+              padding: const EdgeInsets.all(18),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // 頂部：icon 左，Truku 名右
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ModeIcon(name: mode.icon, color: mode.accent),
+                      Text(
+                        mode.truku.toUpperCase(),
+                        style: GoogleFonts.crimsonPro(
+                          fontStyle: FontStyle.italic,
+                          fontSize: 11,
+                          color: mode.accent,
+                          letterSpacing: 2.6,
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  SizedBox(height: large ? 44 : 58),
+
+                  // 底部：中文名 + 副標
+                  Text(
+                    mode.zh,
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: large ? 26 : 22,
+                      fontWeight: FontWeight.w600,
+                      color: mode.fg,
+                      letterSpacing: 1.0,
+                      height: 1.1,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Opacity(
+                    opacity: 0.7,
+                    child: Text(
+                      mode.sub,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: mode.fg,
+                        letterSpacing: 0.5,
                       ),
                     ),
-                  ],
-                ),
-
-                SizedBox(height: large ? 44 : 58),
-
-                // 底部：中文名 + 副標
-                Text(
-                  mode.zh,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: large ? 26 : 22,
-                    fontWeight: FontWeight.w600,
-                    color: mode.fg,
-                    letterSpacing: 1.0,
-                    height: 1.1,
                   ),
-                ),
-                const SizedBox(height: 4),
-                Opacity(
-                  opacity: 0.7,
-                  child: Text(
-                    mode.sub,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: mode.fg,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
