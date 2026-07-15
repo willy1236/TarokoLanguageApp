@@ -216,6 +216,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
   Widget _buildHero(BuildContext context, UserModel user) {
     return Container(
+      clipBehavior: Clip.hardEdge,
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -270,7 +271,7 @@ class _ShopScreenState extends State<ShopScreen> {
                     children: [
                       Container(
                         width: 64,
-                        height: 64,
+                        height: 52,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
@@ -395,7 +396,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
   Widget _buildCategories() {
     return SizedBox(
-      height: 52,
+      height: 64,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
@@ -768,7 +769,7 @@ class _ShopItemCard extends StatelessWidget {
                 Center(
                   child: Container(
                     width: 64,
-                    height: 64,
+                    height: 52,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isGold ? AppColors.gold.withValues(alpha: 0.1) : AppColors.creamDeep,
@@ -843,7 +844,7 @@ class _ShopItemCard extends StatelessWidget {
     return Image.network(
       imageUrl!,
       width: 64,
-      height: 64,
+      height: 52,
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) => Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog),
     );
