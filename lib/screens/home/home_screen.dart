@@ -186,9 +186,9 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               children: [
                 ModeCard(
-                  mode: _modes[0],
+                  mode: _modes[3],
                   large: true,
-                  onTap: () => _onModeTap(_modes[0]),
+                  onTap: () => _onModeTap(_modes[3]),
                 ),
                 const SizedBox(height: 12),
                 Row(
@@ -213,8 +213,8 @@ class HomeScreen extends StatelessWidget {
                   children: [
                     Expanded(
                       child: ModeCard(
-                        mode: _modes[3],
-                        onTap: () => _onModeTap(_modes[3]),
+                        mode: _modes[0],
+                        onTap: () => _onModeTap(_modes[0]),
                       ),
                     ),
                     const SizedBox(width: 12),
