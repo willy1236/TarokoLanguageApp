@@ -16,6 +16,8 @@ import 'screens/shop/shop_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 
+final navigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
@@ -34,6 +36,7 @@ class KariTrukuApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'KARI TRUKU',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
