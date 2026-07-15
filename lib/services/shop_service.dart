@@ -23,10 +23,38 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../core/constants/api.dart';
+import '../models/avatar_shop_item.dart';
 import '../models/user_model.dart';
 import 'auth_service.dart';
 
 class ShopService {
+  /// 呼叫 GET /api/shop/avatars（尚未存在的端點），取得後端算好的完整頭像目錄
+  /// （含 image_url／is_owned）。路由還不存在時拋 [ShopFeatureUnavailableException]，
+  /// 呼叫端應 fallback 使用本地 kAvatarCatalog。
+  static Future<List<AvatarShopItem>> fetchAvatarCatalog() async {
+    final token = await AuthService.currentToken();
+    late final http.Response resp;
+    try {
+      resp = await http.get(
+        Uri.parse(ApiConfig.baseUrl + ApiConfig.shopAvatars),
+        headers: {
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+    } on SocketException {
+      throw ShopFeatureUnavailableException('頭像商店功能尚未開放');
+    }
+
+    _throwIfError(resp, unavailableMessage: '頭像商店功能尚未開放');
+
+    final data = jsonDecode(resp.body) as Map<String, dynamic>;
+    final list = data['avatars'] as List<dynamic>? ?? [];
+    return list
+        .map((e) => AvatarShopItem.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   /// 呼叫既有 GET /api/me，解析為 [UserModel]。
   /// 後端目前不會回傳 avatar_id/owned_avatar_ids/millet，這些欄位會是 UserModel 的預設值
   /// （這是預期行為，不是 bug，見 user_model.dart 註解）。

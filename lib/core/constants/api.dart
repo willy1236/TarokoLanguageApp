@@ -19,6 +19,7 @@ class ApiConfig {
 
   // 頭像兌換／更換（issue #12，後端尚未提供，client 端先行備妥骨架）
   static const String meEndpoint = me;
+  static const String shopAvatars = '/api/shop/avatars';
   static String avatarPurchaseEndpoint(String avatarId) =>
       '/api/shop/avatars/$avatarId/purchase';
 }

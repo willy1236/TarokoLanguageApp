@@ -23,6 +23,78 @@ void main() {
     return null;
   });
 
+  group('ShopService.fetchAvatarCatalog', () {
+    test('路由不存在的 404（純文字 body）時拋出 ShopFeatureUnavailableException', () async {
+      final client = MockClient((request) async {
+        expect(
+          request.url.toString(),
+          ApiConfig.baseUrl + ApiConfig.shopAvatars,
+        );
+        return http.Response('Cannot GET /api/shop/avatars', 404);
+      });
+
+      await expectLater(
+        runWithClient(client, () => ShopService.fetchAvatarCatalog()),
+        throwsA(isA<ShopFeatureUnavailableException>()),
+      );
+    });
+
+    test('連線失敗時拋出 ShopFeatureUnavailableException', () async {
+      final client = MockClient((request) async {
+        throw const SocketException('connection failed');
+      });
+
+      await expectLater(
+        runWithClient(client, () => ShopService.fetchAvatarCatalog()),
+        throwsA(isA<ShopFeatureUnavailableException>()),
+      );
+    });
+
+    test('解析 GET /api/shop/avatars 回應為 AvatarShopItem 清單', () async {
+      final client = MockClient((request) async {
+        return http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
+              'avatars': [
+                {
+                  'id': 'avatar_general_01',
+                  'name': '頭像 1',
+                  'price': 50,
+                  'rarity': 'common',
+                  'unlock_condition': null,
+                  'image_url': null,
+                  'is_owned': true,
+                },
+                {
+                  'id': 'avatar_general_10',
+                  'name': '頭像 10',
+                  'price': 500,
+                  'rarity': 'gold',
+                  'unlock_condition': '完成每日任務累積 30 天',
+                  'image_url': null,
+                  'is_owned': false,
+                },
+              ],
+            }),
+          ),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      });
+
+      final avatars = await runWithClient(
+        client,
+        () => ShopService.fetchAvatarCatalog(),
+      );
+
+      expect(avatars, hasLength(2));
+      expect(avatars[0].id, 'avatar_general_01');
+      expect(avatars[0].isOwned, isTrue);
+      expect(avatars[1].rarity, 'gold');
+      expect(avatars[1].unlockCondition, '完成每日任務累積 30 天');
+    });
+  });
+
   group('ShopService.fetchMe', () {
     test('解析 GET /api/me 回應，缺少的欄位使用預設值', () async {
       final client = MockClient((request) async {
