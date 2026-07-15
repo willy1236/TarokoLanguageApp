@@ -20,7 +20,7 @@ import 'auth_service.dart';
 
 class ShopService {
   /// 呼叫既有 GET /api/me，解析為 [UserModel]。
-  /// 後端目前不會回傳 avatarId/ownedAvatarIds/coins，這些欄位會是 UserModel 的預設值
+  /// 後端目前不會回傳 avatar_id/owned_avatar_ids/millet，這些欄位會是 UserModel 的預設值
   /// （這是預期行為，不是 bug，見 user_model.dart 註解）。
   static Future<UserModel> fetchMe() async {
     final token = await AuthService.currentToken();
@@ -103,8 +103,8 @@ class ShopService {
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
     final updated = UserModel.fromJson(data);
 
-    // PATCH /api/me 是既有端點，即使後端尚未支援 avatarId 欄位，也可能靜默忽略並回傳 200。
-    // 若回傳的 avatarId 與請求的不一致，代表後端其實沒有真的套用這次更換，
+    // PATCH /api/me 是既有端點，即使後端尚未支援 avatar_id 欄位，也可能靜默忽略並回傳 200。
+    // 若回傳的 avatar_id 與請求的不一致，代表後端其實沒有真的套用這次更換，
     // 不可視為成功，否則會誤導使用者「已配戴」但其實沒有持久化。
     if (updated.avatarId != avatarId) {
       throw ShopFeatureUnavailableException('更換頭像功能尚未開放');
