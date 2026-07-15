@@ -10,7 +10,7 @@ void main() {
         'avatar_url': 'https://example.com/pic.png',
         'avatar_id': 'avatar_01',
         'owned_avatar_ids': ['avatar_01', 'avatar_02'],
-        'coins': 150,
+        'millet': 150,
       };
 
       final user = UserModel.fromJson(json);
@@ -20,7 +20,7 @@ void main() {
       expect(user.avatarUrl, 'https://example.com/pic.png');
       expect(user.avatarId, 'avatar_01');
       expect(user.ownedAvatarIds, ['avatar_01', 'avatar_02']);
-      expect(user.coins, 150);
+      expect(user.millet, 150);
     });
 
     test('容忍後端目前實際回傳的 map（僅 uid/display_name/avatar_url，無頭像/幣別欄位）', () {
@@ -37,7 +37,7 @@ void main() {
       expect(user.avatarUrl, 'https://lh3.googleusercontent.com/a/xyz');
       expect(user.avatarId, isNull);
       expect(user.ownedAvatarIds, isEmpty);
-      expect(user.coins, 0);
+      expect(user.millet, 0);
     });
 
     test('容忍 uid 以外全部欄位缺失或為 null', () {
@@ -54,7 +54,7 @@ void main() {
       expect(user.avatarUrl, isNull);
       expect(user.avatarId, isNull);
       expect(user.ownedAvatarIds, <String>[]);
-      expect(user.coins, 0);
+      expect(user.millet, 0);
     });
 
     test('uid 為數字型別時也能轉為 String', () {
@@ -74,7 +74,7 @@ void main() {
         avatarUrl: 'url',
         avatarId: 'avatar_05',
         ownedAvatarIds: ['avatar_05'],
-        coins: 30,
+        millet: 30,
       );
 
       final json = user.toJson();
@@ -85,7 +85,7 @@ void main() {
         'avatar_url': 'url',
         'avatar_id': 'avatar_05',
         'owned_avatar_ids': ['avatar_05'],
-        'coins': 30,
+        'millet': 30,
       });
 
       final roundTripped = UserModel.fromJson(json);
@@ -94,7 +94,7 @@ void main() {
       expect(roundTripped.avatarUrl, user.avatarUrl);
       expect(roundTripped.avatarId, user.avatarId);
       expect(roundTripped.ownedAvatarIds, user.ownedAvatarIds);
-      expect(roundTripped.coins, user.coins);
+      expect(roundTripped.millet, user.millet);
     });
   });
 
@@ -103,18 +103,18 @@ void main() {
       uid: '1',
       displayName: 'Bob',
       avatarUrl: 'url',
-      coins: 10,
+      millet: 10,
     );
 
     test('未傳入的欄位維持原值', () {
-      final copy = base.copyWith(coins: 20);
+      final copy = base.copyWith(millet: 20);
 
       expect(copy.uid, base.uid);
       expect(copy.displayName, base.displayName);
       expect(copy.avatarUrl, base.avatarUrl);
       expect(copy.avatarId, base.avatarId);
       expect(copy.ownedAvatarIds, base.ownedAvatarIds);
-      expect(copy.coins, 20);
+      expect(copy.millet, 20);
     });
 
     test('可更新頭像相關欄位', () {
@@ -127,7 +127,7 @@ void main() {
       expect(copy.ownedAvatarIds, ['avatar_09']);
       // 其餘欄位不受影響
       expect(copy.uid, base.uid);
-      expect(copy.coins, base.coins);
+      expect(copy.millet, base.millet);
     });
   });
 }

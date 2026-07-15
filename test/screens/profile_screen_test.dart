@@ -48,7 +48,7 @@ void main() {
       'uid': 'u1',
       'avatar_id': item.id,
       'owned_avatar_ids': [item.id],
-      'coins': 0,
+      'millet': 0,
     });
 
     final heroImageFinder = find.byWidgetPredicate(
@@ -65,7 +65,7 @@ void main() {
     await pumpProfile(tester, {
       'uid': 'u1',
       'avatar_url': 'https://example.com/avatar.png',
-      'coins': 0,
+      'millet': 0,
     });
 
     // 測試環境下 TestWidgetsFlutterBinding 會讓所有 HttpClient 請求回傳 400，
@@ -84,7 +84,7 @@ void main() {
   testWidgets('avatarId 與 avatarUrl 皆為 null 時維持 Icons.person 佔位圖示', (tester) async {
     await pumpProfile(tester, {
       'uid': 'u1',
-      'coins': 0,
+      'millet': 0,
     });
 
     expect(find.byIcon(Icons.person), findsOneWidget);

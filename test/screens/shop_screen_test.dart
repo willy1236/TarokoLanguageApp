@@ -26,7 +26,7 @@ void main() {
   Future<void> pumpShop(
     WidgetTester tester, {
     required List<String> ownedAvatarIds,
-    required int coins,
+    required int millet,
   }) async {
     final client = MockClient((request) async {
       expect(request.url.toString(), ApiConfig.baseUrl + ApiConfig.meEndpoint);
@@ -36,7 +36,7 @@ void main() {
             'uid': 'u1',
             'display_name': '小明',
             'owned_avatar_ids': ownedAvatarIds,
-            'coins': coins,
+            'millet': millet,
           }),
         ),
         200,
@@ -53,7 +53,7 @@ void main() {
   }
 
   testWidgets('切換到「頭像 Lukus」分類會過濾出頭像清單，且徽章分類消失', (tester) async {
-    await pumpShop(tester, ownedAvatarIds: ['avatar_general_01'], coins: 1000);
+    await pumpShop(tester, ownedAvatarIds: ['avatar_general_01'], millet: 1000);
 
     // 預設「全部」分類同時看得到彩徽區塊與頭像區塊。
     expect(find.text('彩徽'), findsOneWidget);
@@ -68,7 +68,7 @@ void main() {
   });
 
   testWidgets('頭像卡片依 owned/locked/purchasable 顯示對應狀態', (tester) async {
-    await pumpShop(tester, ownedAvatarIds: ['avatar_general_01'], coins: 1000);
+    await pumpShop(tester, ownedAvatarIds: ['avatar_general_01'], millet: 1000);
 
     await tester.tap(find.text('頭像 Lukus').last);
     await tester.pump();
@@ -84,18 +84,18 @@ void main() {
     expect(find.text('完成每日任務累積 30 天'), findsWidgets);
   });
 
-  testWidgets('coins 為 0（真實後端預設值）時，未擁有且未鎖定的頭像仍應顯示可點擊的「兌換」按鈕', (tester) async {
-    await pumpShop(tester, ownedAvatarIds: const [], coins: 0);
+  testWidgets('millet 為 0（真實後端預設值）時，未擁有且未鎖定的頭像仍應顯示可點擊的「兌換」按鈕', (tester) async {
+    await pumpShop(tester, ownedAvatarIds: const [], millet: 0);
 
     await tester.tap(find.text('頭像 Lukus').last);
     await tester.pump();
 
-    // 即使 coins 不足，兌換按鈕仍必須渲染，讓兌換流程可被觸及／測試。
+    // 即使 millet 不足，兌換按鈕仍必須渲染，讓兌換流程可被觸及／測試。
     expect(find.text('兌換'), findsWidgets);
   });
 
   testWidgets('點擊兌換按鈕呼叫尚未存在的後端端點時顯示「功能尚未開放」', (tester) async {
-    await pumpShop(tester, ownedAvatarIds: const [], coins: 1000);
+    await pumpShop(tester, ownedAvatarIds: const [], millet: 1000);
 
     await tester.tap(find.text('頭像 Lukus').last);
     await tester.pump();

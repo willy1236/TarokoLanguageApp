@@ -49,7 +49,7 @@ void main() {
       expect(user.displayName, '小明');
       expect(user.avatarId, isNull);
       expect(user.ownedAvatarIds, isEmpty);
-      expect(user.coins, 0);
+      expect(user.millet, 0);
     });
   });
 
