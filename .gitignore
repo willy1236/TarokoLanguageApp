@@ -43,3 +43,7 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Auto-generated plugin registrants (regenerated on every build)
+**/GeneratedPluginRegistrant.swift
+**/generated_plugin_registrant.*

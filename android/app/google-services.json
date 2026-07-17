@@ -22,6 +22,14 @@
           }
         },
         {
+          "client_id": "230831538559-49l4k4de9sd5pfamlp7a6b5foip83fkf.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.idv.willy1236.truku",
+            "certificate_hash": "6872d66add2a1eeb552edbae8933f704658f0483"
+          }
+        },
+        {
           "client_id": "230831538559-lpapf80b5lqugmjlsl12c1ag96rpfpgu.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
