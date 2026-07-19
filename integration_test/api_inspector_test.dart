@@ -67,6 +67,7 @@ void main() {
       ApiConfig.listeningSubmit,
       body: {'session_id': '__test__', 'answers': []},
     ));
+    test('GET /api/shop/items', () => _inspect('GET', ApiConfig.shopItems));
   });
 }
 

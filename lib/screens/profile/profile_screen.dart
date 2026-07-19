@@ -2,7 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../models/avatar_shop_item.dart';
+import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/shop_service.dart';
@@ -21,16 +21,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   UserModel? _user;
   bool _loadingUser = true;
 
-  // 後端 GET /api/shop/avatars 的目錄（含 image_url）；id → item，供渲染頭貼用。
-  // null 代表尚未取得或功能未開放，此時**不做本地素材 fallback**，直接顯示預設圖示，
-  // 誠實反映「後端圖檔尚未上傳 GCS」的現況。
-  Map<String, AvatarShopItem> _avatarCatalogById = const {};
+  // 後端 GET /api/shop/items 的合併目錄（頭像＋頭像框，含 image_url）；id → item，
+  // 供渲染頭貼／頭像框用。空 map 代表尚未取得或功能未開放，此時直接顯示預設圖示。
+  Map<String, ShopItem> _itemCatalogById = const {};
 
   @override
   void initState() {
     super.initState();
     _loadUser();
-    _loadAvatarCatalog();
+    _loadItemCatalog();
   }
 
   Future<void> _loadUser() async {
@@ -51,12 +50,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _loadAvatarCatalog() async {
+  Future<void> _loadItemCatalog() async {
     try {
-      final avatars = await ShopService.fetchAvatarCatalog();
+      final items = await ShopService.fetchShopItems();
       if (!mounted) return;
       setState(() {
-        _avatarCatalogById = {for (final a in avatars) a.id: a};
+        _itemCatalogById = {for (final i in items) i.id: i};
       });
     } catch (_) {
       // 功能尚未開放或發生錯誤：維持空 map，頭貼一律顯示預設圖示。
@@ -90,6 +89,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<void> _equipFrame(String frameId) async {
+    try {
+      final updated = await ShopService.equipFrame(frameId);
+      if (!mounted) return;
+      setState(() {
+        _user = updated.frameId == frameId
+            ? updated
+            : updated.copyWith(frameId: frameId);
+      });
+    } on ShopFeatureUnavailableException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('功能尚未開放')),
+      );
+    } on ShopApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('配戴失敗，請稍後再試')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,6 +127,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               _buildHero(),
               _buildBadgeSection(),
+              _buildFrameSection(),
               _buildAccountSection(),
               _buildPreferencesSection(),
               _buildOtherSection(),
@@ -228,11 +255,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildAvatar() {
+    // 頭像框疊加在頭像外圍：frame_id 對應圖 + avatar_id 對應圖，框在外、頭像在中間
+    // 疊加顯示（見 頭像商店.md §5）。無 frame_id 時維持純頭像圓形。
+    final frameId = _user?.frameId;
+    final frameImageUrl = frameId != null ? _itemCatalogById[frameId]?.imageUrl : null;
     return SizedBox(
-      width: 80,
-      height: 80,
+      width: 96,
+      height: 96,
       child: Stack(
+        alignment: Alignment.center,
         children: [
+          if (frameImageUrl != null)
+            Image.network(
+              frameImageUrl,
+              width: 96,
+              height: 96,
+              fit: BoxFit.contain,
+              errorBuilder: (_, _, _) => const SizedBox.shrink(),
+            ),
           Container(
             width: 80,
             height: 80,
@@ -246,8 +286,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           Positioned(
-            bottom: -2,
-            right: -2,
+            bottom: 6,
+            right: 6,
             child: Container(
               width: 26,
               height: 26,
@@ -270,7 +310,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     if (avatarId != null) {
       // 使用者已選用內建頭像：不 fallback 回 avatarUrl（那會誤導成「顯示的是登入帳號
       // 頭像」，跟實際配戴狀態不符），拿不到 image_url 就顯示預設圖示。
-      final imageUrl = _avatarCatalogById[avatarId]?.imageUrl;
+      final imageUrl = _itemCatalogById[avatarId]?.imageUrl;
       if (imageUrl != null) {
         return Image.network(
           imageUrl,
@@ -413,89 +453,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   )
                 else
-                  SizedBox(
-                    height: 64,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: ownedIds.length + 1,
-                      separatorBuilder: (_, _) => const SizedBox(width: 8),
-                      itemBuilder: (context, i) {
-                        if (i == ownedIds.length) {
-                          return GestureDetector(
-                            onTap: _openShop,
-                            child: Container(
-                              width: 56,
-                              height: 56,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.gold.withValues(alpha: 0.5),
-                                  width: 1.5,
-                                ),
-                                color: AppColors.gold.withValues(alpha: 0.06),
-                              ),
-                              child: const Icon(Icons.add, color: AppColors.primary, size: 20),
-                            ),
-                          );
-                        }
-                        final id = ownedIds[i];
-                        final selected = id == currentAvatarId;
-                        final imageUrl = _avatarCatalogById[id]?.imageUrl;
-                        return GestureDetector(
-                          onTap: () => _equipAvatar(id),
-                          child: Stack(
-                            children: [
-                              Container(
-                                width: 56,
-                                height: 56,
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: selected ? AppColors.primary : Colors.transparent,
-                                  border: Border.all(
-                                    color: selected ? AppColors.gold : AppColors.creamDeep,
-                                    width: selected ? 2.0 : 1.5,
-                                  ),
-                                ),
-                                child: ClipOval(
-                                  child: imageUrl == null
-                                      ? Icon(
-                                          Icons.face_rounded,
-                                          size: 34,
-                                          color: selected ? AppColors.gold : AppColors.fog,
-                                        )
-                                      : Image.network(
-                                          imageUrl,
-                                          width: 56,
-                                          height: 56,
-                                          fit: BoxFit.cover,
-                                          errorBuilder: (_, _, _) => Icon(
-                                            Icons.face_rounded,
-                                            size: 34,
-                                            color: selected ? AppColors.gold : AppColors.fog,
-                                          ),
-                                        ),
-                                ),
-                              ),
-                              if (selected)
-                                Positioned(
-                                  bottom: -2,
-                                  right: -2,
-                                  child: Container(
-                                    width: 18,
-                                    height: 18,
-                                    decoration: BoxDecoration(
-                                      shape: BoxShape.circle,
-                                      color: AppColors.gold,
-                                      border: Border.all(color: AppColors.creamLight, width: 1.5),
-                                    ),
-                                    child: const Icon(Icons.check, size: 10, color: AppColors.ink),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
+                  _buildPickerRow(
+                    ownedIds: ownedIds,
+                    selectedId: currentAvatarId,
+                    onSelect: _equipAvatar,
+                    placeholderIcon: Icons.face_rounded,
                   ),
                 const SizedBox(height: 12),
                 const Divider(height: 1, color: AppColors.creamDeep),
@@ -566,6 +528,184 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFrameSection() {
+    final ownedIds = _user?.ownedFrameIds ?? const <String>[];
+    final currentFrameId = _user?.frameId;
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.baseline,
+            textBaseline: TextBaseline.alphabetic,
+            children: [
+              Text(
+                'RANGI · 頭像框',
+                style: GoogleFonts.crimsonPro(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 10,
+                  color: AppColors.fog,
+                  letterSpacing: 3,
+                ),
+              ),
+              GestureDetector(
+                onTap: _openShop,
+                child: Text(
+                  '前往商店 →',
+                  style: TextStyle(fontSize: 11, color: AppColors.primary, letterSpacing: 1),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: AppColors.cream,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: AppColors.creamDeep),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '從擁有的頭像框中選一個配戴，與頭貼各自獨立',
+                  style: TextStyle(fontSize: 11, color: AppColors.fog, letterSpacing: 1),
+                ),
+                const SizedBox(height: 10),
+                if (_loadingUser)
+                  const SizedBox(
+                    height: 64,
+                    child: Center(
+                      child: SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                      ),
+                    ),
+                  )
+                else if (ownedIds.isEmpty)
+                  SizedBox(
+                    height: 64,
+                    child: Center(
+                      child: Text(
+                        '尚未擁有任何頭像框，前往商店兌換吧',
+                        style: TextStyle(fontSize: 11, color: AppColors.fog, letterSpacing: 0.5),
+                      ),
+                    ),
+                  )
+                else
+                  _buildPickerRow(
+                    ownedIds: ownedIds,
+                    selectedId: currentFrameId,
+                    onSelect: _equipFrame,
+                    placeholderIcon: Icons.circle_outlined,
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// 共用的橫向選擇列：頭貼與頭像框選擇器都用這個 widget 呈現「已擁有清單 + 加號跳轉商店」，
+  /// 避免重複的圓形圖示 + 已選 checkmark 排版程式碼。
+  Widget _buildPickerRow({
+    required List<String> ownedIds,
+    required String? selectedId,
+    required void Function(String id) onSelect,
+    required IconData placeholderIcon,
+  }) {
+    return SizedBox(
+      height: 64,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: ownedIds.length + 1,
+        separatorBuilder: (_, _) => const SizedBox(width: 8),
+        itemBuilder: (context, i) {
+          if (i == ownedIds.length) {
+            return GestureDetector(
+              onTap: _openShop,
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: AppColors.gold.withValues(alpha: 0.5),
+                    width: 1.5,
+                  ),
+                  color: AppColors.gold.withValues(alpha: 0.06),
+                ),
+                child: const Icon(Icons.add, color: AppColors.primary, size: 20),
+              ),
+            );
+          }
+          final id = ownedIds[i];
+          final selected = id == selectedId;
+          final imageUrl = _itemCatalogById[id]?.imageUrl;
+          return GestureDetector(
+            onTap: () => onSelect(id),
+            child: Stack(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: selected ? AppColors.primary : Colors.transparent,
+                    border: Border.all(
+                      color: selected ? AppColors.gold : AppColors.creamDeep,
+                      width: selected ? 2.0 : 1.5,
+                    ),
+                  ),
+                  child: ClipOval(
+                    child: imageUrl == null
+                        ? Icon(
+                            placeholderIcon,
+                            size: 34,
+                            color: selected ? AppColors.gold : AppColors.fog,
+                          )
+                        : Image.network(
+                            imageUrl,
+                            width: 56,
+                            height: 56,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, _, _) => Icon(
+                              placeholderIcon,
+                              size: 34,
+                              color: selected ? AppColors.gold : AppColors.fog,
+                            ),
+                          ),
+                  ),
+                ),
+                if (selected)
+                  Positioned(
+                    bottom: -2,
+                    right: -2,
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.gold,
+                        border: Border.all(color: AppColors.creamLight, width: 1.5),
+                      ),
+                      child: const Icon(Icons.check, size: 10, color: AppColors.ink),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
       ),
     );
   }

@@ -1,15 +1,15 @@
-// 頭像兌換／更換 API 呼叫骨架（issue #12）
+// 頭像商店 API 呼叫（issue #12）
 //
-// 後端目前只有 GET /api/me，尚未提供頭像商店相關端點：
-//   - GET /api/shop/avatars（尚未存在）
-//   - POST /api/shop/avatars/{id}/purchase（尚未存在）
-//   - PATCH /api/me 帶 avatar_id（尚未存在）
+// 端點（見 Truku_backend 說明文件/API/頭像商店.md v2.0）：
+//   - GET /api/shop/items（可選 ?type=avatar|frame）：頭像／頭像框合併目錄
+//   - POST /api/shop/items/{id}/purchase：頭像與頭像框走同一支，後端依 type 自動判斷
+//   - PATCH /api/me 帶 avatar_id／frame_id：切換配戴，各自獨立
 //
-// 錯誤分流原則：路由真的還不存在時，Express 預設 404 回的是純文字（如
-// "Cannot GET /api/shop/avatars"），不是 app 的 JSON 錯誤格式 {error:{code,message}}；
-// 一旦後端部署完成，路由存在但業務邏輯拒絕時，才會回傳帶 code 的正式錯誤（例如
-// AVATAR_NOT_FOUND／INSUFFICIENT_BALANCE／ALREADY_OWNED／UNLOCK_CONDITION_NOT_MET／
-// AVATAR_NOT_OWNED，見 Truku_backend#1）。因此用「body 能否解析出 error.code」來分流：
+// 錯誤分流原則：路由真的不存在時，Express 預設 404 回的是純文字（如
+// "Cannot GET /api/shop/items"），不是 app 的 JSON 錯誤格式 {error:{code,message}}；
+// 路由存在但業務邏輯拒絕時，才會回傳帶 code 的正式錯誤（ITEM_NOT_FOUND／
+// INVALID_TYPE／INSUFFICIENT_BALANCE／ALREADY_OWNED／UNLOCK_CONDITION_NOT_MET／
+// AVATAR_NOT_OWNED／FRAME_NOT_OWNED）。因此用「body 能否解析出 error.code」來分流：
 //   - 解析得到 code → 路由已存在，是真正的業務錯誤 → 拋 [ShopApiException]（帶 code）
 //   - 解析不到（純文字/HTML/連線失敗）→ 路由還不存在 → 拋 [ShopFeatureUnavailableException]
 // 讓呼叫端可以分別處理「功能尚未開放」與「這次操作真的被拒絕」兩種情境。
@@ -23,20 +23,22 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../core/constants/api.dart';
-import '../models/avatar_shop_item.dart';
+import '../models/shop_item.dart';
 import '../models/user_model.dart';
 import 'auth_service.dart';
 
 class ShopService {
-  /// 呼叫 GET /api/shop/avatars（尚未存在的端點），取得後端算好的完整頭像目錄
-  /// （含 image_url／is_owned）。路由還不存在時拋 [ShopFeatureUnavailableException]，
-  /// 呼叫端不應 fallback 顯示本地清單，應直接不顯示頭像相關內容。
-  static Future<List<AvatarShopItem>> fetchAvatarCatalog() async {
+  /// 呼叫 GET /api/shop/items，取得後端算好的頭像／頭像框合併目錄
+  /// （含 image_url／is_owned）。可選 [type]（'avatar'|'frame'）過濾，不帶則兩種都回。
+  static Future<List<ShopItem>> fetchShopItems({String? type}) async {
     final token = await AuthService.currentToken();
+    final uri = Uri.parse(ApiConfig.baseUrl + ApiConfig.shopItems).replace(
+      queryParameters: type != null ? {'type': type} : null,
+    );
     late final http.Response resp;
     try {
       resp = await http.get(
-        Uri.parse(ApiConfig.baseUrl + ApiConfig.shopAvatars),
+        uri,
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
@@ -49,15 +51,13 @@ class ShopService {
     _throwIfError(resp, unavailableMessage: '頭像商店功能尚未開放');
 
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
-    final list = data['avatars'] as List<dynamic>? ?? [];
+    final list = data['items'] as List<dynamic>? ?? [];
     return list
-        .map((e) => AvatarShopItem.fromJson(e as Map<String, dynamic>))
+        .map((e) => ShopItem.fromJson(e as Map<String, dynamic>))
         .toList();
   }
 
   /// 呼叫既有 GET /api/me，解析為 [UserModel]。
-  /// 後端目前不會回傳 avatar_id/owned_avatar_ids/millet，這些欄位會是 UserModel 的預設值
-  /// （這是預期行為，不是 bug，見 user_model.dart 註解）。
   static Future<UserModel> fetchMe() async {
     final token = await AuthService.currentToken();
     late final http.Response resp;
@@ -79,15 +79,14 @@ class ShopService {
     return UserModel.fromJson(data);
   }
 
-  /// 呼叫 POST /api/shop/avatars/{id}/purchase（尚未存在的端點）。
-  static Future<UserModel> purchaseAvatar(String avatarId) async {
+  /// 呼叫 POST /api/shop/items/{id}/purchase。頭像與頭像框走同一支端點，
+  /// 後端依 item_catalog.type 自動判斷，呼叫端不需分開處理。
+  static Future<UserModel> purchaseItem(String itemId) async {
     final token = await AuthService.currentToken();
     late final http.Response resp;
     try {
       resp = await http.post(
-        Uri.parse(
-          ApiConfig.baseUrl + ApiConfig.avatarPurchaseEndpoint(avatarId),
-        ),
+        Uri.parse(ApiConfig.baseUrl + ApiConfig.itemPurchaseEndpoint(itemId)),
         headers: {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
@@ -103,8 +102,29 @@ class ShopService {
     return UserModel.fromJson(data);
   }
 
-  /// 呼叫 PATCH /api/me 帶 avatar_id（尚未存在的行為）。
+  /// 呼叫 PATCH /api/me 帶 avatar_id，切換配戴中的內建頭像。
   static Future<UserModel> equipAvatar(String avatarId) async {
+    final updated = await _patchMe({'avatar_id': avatarId});
+
+    // PATCH /api/me 若靜默忽略未知欄位並回傳 200，回傳的 avatar_id 會跟請求不一致，
+    // 不可視為成功，否則會誤導使用者「已配戴」但其實沒有持久化。
+    if (updated.avatarId != avatarId) {
+      throw ShopFeatureUnavailableException('更換頭像功能尚未開放');
+    }
+    return updated;
+  }
+
+  /// 呼叫 PATCH /api/me 帶 frame_id，切換配戴中的頭像框；與 avatar_id 各自獨立。
+  static Future<UserModel> equipFrame(String frameId) async {
+    final updated = await _patchMe({'frame_id': frameId});
+
+    if (updated.frameId != frameId) {
+      throw ShopFeatureUnavailableException('更換頭像框功能尚未開放');
+    }
+    return updated;
+  }
+
+  static Future<UserModel> _patchMe(Map<String, dynamic> body) async {
     final token = await AuthService.currentToken();
     late final http.Response resp;
     try {
@@ -114,25 +134,16 @@ class ShopService {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({'avatar_id': avatarId}),
+        body: jsonEncode(body),
       );
     } on SocketException {
-      throw ShopFeatureUnavailableException('更換頭像功能尚未開放');
+      throw ShopFeatureUnavailableException('更換功能尚未開放');
     }
 
-    _throwIfError(resp, unavailableMessage: '更換頭像功能尚未開放');
+    _throwIfError(resp, unavailableMessage: '更換功能尚未開放');
 
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
-    final updated = UserModel.fromJson(data);
-
-    // PATCH /api/me 是既有端點，即使後端尚未支援 avatar_id 欄位，也可能靜默忽略並回傳 200。
-    // 若回傳的 avatar_id 與請求的不一致，代表後端其實沒有真的套用這次更換，
-    // 不可視為成功，否則會誤導使用者「已配戴」但其實沒有持久化。
-    if (updated.avatarId != avatarId) {
-      throw ShopFeatureUnavailableException('更換頭像功能尚未開放');
-    }
-
-    return updated;
+    return UserModel.fromJson(data);
   }
 
   /// 非 200 時分流拋出：body 能解析出 error.code → [ShopApiException]（真正的業務錯誤）；
@@ -170,9 +181,9 @@ class ShopFeatureUnavailableException implements Exception {
 }
 
 /// 後端路由已存在、回傳正式 {error:{code,message}} 格式的業務錯誤時拋出（見
-/// Truku_backend#1：AVATAR_NOT_FOUND／INSUFFICIENT_BALANCE／ALREADY_OWNED／
-/// UNLOCK_CONDITION_NOT_MET／AVATAR_NOT_OWNED 等），呼叫端可依 [code] 判斷後續行為，
-/// 不應與「功能尚未開放」混為一談。
+/// 頭像商店.md：ITEM_NOT_FOUND／INVALID_TYPE／INSUFFICIENT_BALANCE／ALREADY_OWNED／
+/// UNLOCK_CONDITION_NOT_MET／AVATAR_NOT_OWNED／FRAME_NOT_OWNED 等），
+/// 呼叫端可依 [code] 判斷後續行為，不應與「功能尚未開放」混為一談。
 class ShopApiException implements Exception {
   final String code;
   final String message;

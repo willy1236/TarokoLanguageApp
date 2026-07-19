@@ -17,9 +17,9 @@ class ApiConfig {
 
   static const String health = '/api/health';
 
-  // 頭像兌換／更換（issue #12，後端尚未提供，client 端先行備妥骨架）
+  // 頭像商店（issue #12，頭像／頭像框合併目錄，見 頭像商店.md v2.0）
   static const String meEndpoint = me;
-  static const String shopAvatars = '/api/shop/avatars';
-  static String avatarPurchaseEndpoint(String avatarId) =>
-      '/api/shop/avatars/$avatarId/purchase';
+  static const String shopItems = '/api/shop/items';
+  static String itemPurchaseEndpoint(String itemId) =>
+      '/api/shop/items/$itemId/purchase';
 }
