@@ -15,5 +15,7 @@ class ApiConfig {
   static const String listeningStart = '/api/listening/start';
   static const String listeningSubmit = '/api/listening/submit';
 
+  static const String historyList = '/api/history';
+
   static const String health = '/api/health';
 }
