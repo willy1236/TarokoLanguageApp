@@ -13,6 +13,7 @@ class ApiConfig {
   static const String quizSubmit = '/api/quiz/submit';
 
   static const String listeningStart = '/api/listening/start';
+  static const String listeningAnswer = '/api/listening/answer';
   static const String listeningSubmit = '/api/listening/submit';
 
   static const String health = '/api/health';
