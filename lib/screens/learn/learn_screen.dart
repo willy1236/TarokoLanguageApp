@@ -7,6 +7,7 @@ import '../../services/learn_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'lesson_card_screen.dart';
+import 'listening_mode_screen.dart';
 
 // ── LearnScreen ───────────────────────────────────────────────────────────────
 
@@ -53,6 +54,10 @@ class _LearnScreenState extends State<LearnScreen> {
               padding: EdgeInsets.zero,
               children: [
                 _buildHero(levels),
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                  child: _ListeningEntryCard(),
+                ),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                   child: Column(
@@ -249,6 +254,62 @@ class _LearnError extends StatelessWidget {
                 foregroundColor: AppColors.creamLight,
               ),
               child: const Text('重試'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── ListeningEntryCard ───────────────────────────────────────────────────────
+
+class _ListeningEntryCard extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ListeningModeScreen()),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.ink,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        child: Row(
+          children: [
+            const Icon(Icons.headphones, color: AppColors.gold, size: 28),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '聽力測驗',
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.creamLight,
+                      letterSpacing: 0.85,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '聽發音，選出正確答案',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.mist,
+                      letterSpacing: 0.55,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            CustomPaint(
+              size: const Size(20, 20),
+              painter: _ChevronPainter(color: AppColors.gold),
             ),
           ],
         ),
