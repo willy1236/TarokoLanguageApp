@@ -158,7 +158,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
                 alignment: Alignment.centerLeft,
                 child: CustomPaint(
                   size: const Size(24, 24),
-                  painter: _BackArrowPainter(),
+                  painter: const BackArrowPainter(),
                 ),
               ),
             ),
@@ -271,7 +271,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
             onTap: () => Navigator.pop(context),
             child: CustomPaint(
               size: const Size(24, 24),
-              painter: _BackArrowPainter(),
+              painter: const BackArrowPainter(),
             ),
           ),
           const SizedBox(width: 12),
@@ -425,7 +425,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
                             children: [
                               CustomPaint(
                                 size: const Size(20, 20),
-                                painter: _SpeakerIconPainter(color: AppColors.ink),
+                                painter: SpeakerIconPainter(color: AppColors.ink),
                               ),
                               const SizedBox(width: 10),
                               Text(
@@ -455,7 +455,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
                         child: Center(
                           child: CustomPaint(
                             size: const Size(24, 24),
-                            painter: _SlowIconPainter(),
+                            painter: const SlowIconPainter(),
                           ),
                         ),
                       ),
@@ -588,106 +588,3 @@ class _OptionTile extends StatelessWidget {
   }
 }
 
-// ── Painters ──────────────────────────────────────────────────────────────────
-
-class _BackArrowPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final path = Path()
-      ..moveTo(w * 15 / 24, h * 4 / 24)
-      ..lineTo(w * 7 / 24, h * 12 / 24)
-      ..lineTo(w * 15 / 24, h * 20 / 24);
-
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.ink
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_BackArrowPainter old) => false;
-}
-
-class _SpeakerIconPainter extends CustomPainter {
-  final Color color;
-
-  const _SpeakerIconPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final paint = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    final body = Path()
-      ..moveTo(w * 11 / 20, h * 5 / 20)
-      ..lineTo(w * 6 / 20, h * 8 / 20)
-      ..lineTo(w * 3 / 20, h * 8 / 20)
-      ..lineTo(w * 3 / 20, h * 12 / 20)
-      ..lineTo(w * 6 / 20, h * 12 / 20)
-      ..lineTo(w * 11 / 20, h * 15 / 20)
-      ..close();
-    canvas.drawPath(body, paint);
-
-    final arc1 = Path()
-      ..moveTo(w * 13 / 20, h * 8 / 20)
-      ..quadraticBezierTo(w * 15 / 20, h * 10 / 20, w * 13 / 20, h * 12 / 20);
-    canvas.drawPath(arc1, paint);
-
-    final arc2 = Path()
-      ..moveTo(w * 15 / 20, h * 6 / 20)
-      ..quadraticBezierTo(w * 18 / 20, h * 10 / 20, w * 15 / 20, h * 14 / 20);
-    canvas.drawPath(arc2, paint);
-  }
-
-  @override
-  bool shouldRepaint(_SpeakerIconPainter old) => old.color != color;
-}
-
-class _SlowIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-    final paint = Paint()
-      ..color = AppColors.gold
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    canvas.drawCircle(
-      Offset(w * 12 / 24, h * 13 / 24),
-      w * 7 / 24,
-      paint,
-    );
-
-    final hands = Path()
-      ..moveTo(w * 12 / 24, h * 9 / 24)
-      ..lineTo(w * 12 / 24, h * 13 / 24)
-      ..lineTo(w * 14 / 24, h * 15 / 24);
-    canvas.drawPath(hands, paint);
-
-    canvas.drawLine(
-      Offset(w * 9 / 24, h * 3 / 24),
-      Offset(w * 15 / 24, h * 3 / 24),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_SlowIconPainter old) => false;
-}
