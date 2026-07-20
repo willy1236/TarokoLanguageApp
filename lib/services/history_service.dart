@@ -9,7 +9,7 @@ class HistoryService {
     int pageSize = 20,
   }) async {
     final json = await ApiClient.get(ApiConfig.historyList, {
-      if (type != null) 'type': type,
+      'type': ?type,
       'page': '$page',
       'page_size': '$pageSize',
     });
