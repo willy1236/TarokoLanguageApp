@@ -61,8 +61,9 @@ const List<ModeData> _modes = [
 
 class HomeScreen extends StatelessWidget {
   final VoidCallback? onShowProfile;
+  final String? displayName;
 
-  const HomeScreen({super.key, this.onShowProfile});
+  const HomeScreen({super.key, this.onShowProfile, this.displayName});
 
   @override
   Widget build(BuildContext context) {
@@ -117,7 +118,7 @@ class HomeScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'Mhuway su · 你好',
+                            'Embiyax su hug · 你好',
                             style: GoogleFonts.crimsonPro(
                               fontStyle: FontStyle.italic,
                               fontSize: 13,
@@ -127,7 +128,7 @@ class HomeScreen extends StatelessWidget {
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            'Yudaw，今天學什麼？',
+                            '${displayName ?? 'Yudaw'}，今天學什麼？',
                             style: GoogleFonts.notoSerifTc(
                               fontSize: 24,
                               fontWeight: FontWeight.w600,

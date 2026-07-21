@@ -2,7 +2,9 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../shop/shop_screen.dart';
 
@@ -16,6 +18,23 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   int _selectedBadge = 0;
+  UserModel? _user;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchUser();
+  }
+
+  Future<void> _fetchUser() async {
+    try {
+      final user = await UserService.fetchMe();
+      if (mounted) setState(() => _user = user);
+    } catch (e, st) {
+      debugPrint('Failed to fetch user: $e');
+      debugPrintStack(stackTrace: st);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -104,7 +123,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            'SAYUN LOWKING',
+                            _user?.displayName?.toUpperCase() ?? 'SAYUN LOWKING',
                             style: GoogleFonts.crimsonPro(
                               fontStyle: FontStyle.italic,
                               fontSize: 11,
@@ -114,7 +133,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'Apyang Imiq',
+                            _user?.displayName ?? 'Apyang Imiq',
                             style: GoogleFonts.notoSerifTc(
                               fontSize: 22,
                               fontWeight: FontWeight.w600,
@@ -124,7 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '銅門部落 · 加入 124 天',
+                            '銅門部落 · 加入 ${_user?.joinedDays ?? 124} 天',
                             style: TextStyle(
                               fontSize: 12,
                               color: AppColors.creamLight.withValues(alpha: 0.85),
@@ -169,9 +188,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
               border: Border.all(color: AppColors.gold, width: 2),
             ),
             child: ClipOval(
-              child: Center(
-                child: Icon(Icons.person, size: 52, color: AppColors.gold.withValues(alpha: 0.7)),
-              ),
+              child: _user?.avatarUrl != null
+                  ? Image.network(
+                      _user!.avatarUrl!,
+                      width: 80,
+                      height: 80,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, e, st) =>
+                          Center(child: Icon(Icons.person, size: 52, color: AppColors.gold.withValues(alpha: 0.7))),
+                    )
+                  : Center(child: Icon(Icons.person, size: 52, color: AppColors.gold.withValues(alpha: 0.7))),
             ),
           ),
           Positioned(
@@ -423,16 +449,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── 帳號設定 ──────────────────────────────────────────────────────────────
 
   Widget _buildAccountSection() {
-    const rows = [
-      (label: '中文姓名', value: 'Apyang Imiq', truku: false, editable: true),
-      (label: '族語名字', value: 'Sayun Lowking', truku: true, editable: true),
-      (label: '部落', value: '銅門 Dowmung', truku: false, editable: true),
-      (label: '電子信箱', value: 'apyang@truku.org', truku: false, editable: false),
-    ];
     return _section(
       'HANGAN · 帳號',
-      rows.map((r) => _settingRow(r.label, r.value, truku: r.truku, editable: r.editable)).toList(),
+      [
+        _settingRow(
+          '中文姓名',
+          _user?.displayName ?? 'Apyang Imiq',
+          editable: true,
+          onTap: _editDisplayName,
+        ),
+        _settingRow('族語名字', _user?.displayName ?? 'Sayun Lowking', truku: true, editable: false),
+        _settingRow('部落', '銅門 Dowmung', editable: false),
+        _settingRow('電子信箱', _user?.email ?? 'apyang@truku.org', editable: false),
+      ],
     );
+  }
+
+  Future<void> _editDisplayName() async {
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _RenameDialog(initialValue: _user?.displayName ?? ''),
+    );
+    if (newName == null || newName.isEmpty || newName == _user?.displayName) return;
+    try {
+      final updated = await UserService.updateMe(displayName: newName);
+      if (mounted) setState(() => _user = updated);
+    } catch (e, st) {
+      debugPrint('Failed to update display name: $e');
+      debugPrintStack(stackTrace: st);
+    }
   }
 
   // ── 偏好設定 ──────────────────────────────────────────────────────────────
@@ -557,36 +602,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _settingRow(String label, String value, {bool truku = false, bool editable = true}) {
+  Widget _settingRow(String label, String value, {bool truku = false, bool editable = true, VoidCallback? onTap}) {
     return Column(
       children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(label, style: TextStyle(fontSize: 11, color: AppColors.fog, letterSpacing: 1)),
-                  const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style: (truku
-                            ? GoogleFonts.crimsonPro(fontStyle: FontStyle.italic)
-                            : GoogleFonts.notoSerifTc())
-                        .copyWith(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                      letterSpacing: 0.5,
+        GestureDetector(
+          onTap: editable ? onTap : null,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(label, style: TextStyle(fontSize: 11, color: AppColors.fog, letterSpacing: 1)),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: (truku
+                              ? GoogleFonts.crimsonPro(fontStyle: FontStyle.italic)
+                              : GoogleFonts.notoSerifTc())
+                          .copyWith(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ink,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              if (editable)
-                CustomPaint(size: const Size(16, 16), painter: _EditPenPainter()),
-            ],
+                  ],
+                ),
+                if (editable)
+                  CustomPaint(size: const Size(16, 16), painter: _EditPenPainter()),
+              ],
+            ),
           ),
         ),
         const Divider(height: 1, color: AppColors.creamDeep, indent: 16, endIndent: 16),
@@ -657,6 +705,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         const Divider(height: 1, color: AppColors.creamDeep, indent: 16, endIndent: 16),
+      ],
+    );
+  }
+}
+
+class _RenameDialog extends StatefulWidget {
+  final String initialValue;
+  const _RenameDialog({required this.initialValue});
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialValue);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('修改姓名'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        decoration: const InputDecoration(labelText: '中文姓名'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: const Text('儲存'),
+        ),
       ],
     );
   }
