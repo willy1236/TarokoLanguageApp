@@ -466,32 +466,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _editDisplayName() async {
-    final controller = TextEditingController(text: _user?.displayName ?? '');
-    final confirmed = await showDialog<bool>(
+    final newName = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('修改姓名'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          decoration: const InputDecoration(labelText: '中文姓名'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('取消')),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('儲存'),
-          ),
-        ],
-      ),
+      builder: (ctx) => _RenameDialog(initialValue: _user?.displayName ?? ''),
     );
-    if (confirmed != true) {
-      controller.dispose();
-      return;
-    }
-    final newName = controller.text.trim();
-    controller.dispose();
-    if (newName.isEmpty || newName == _user?.displayName) return;
+    if (newName == null || newName.isEmpty || newName == _user?.displayName) return;
     try {
       final updated = await UserService.updateMe(displayName: newName);
       if (mounted) setState(() => _user = updated);
@@ -726,6 +705,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ),
         const Divider(height: 1, color: AppColors.creamDeep, indent: 16, endIndent: 16),
+      ],
+    );
+  }
+}
+
+class _RenameDialog extends StatefulWidget {
+  final String initialValue;
+  const _RenameDialog({required this.initialValue});
+
+  @override
+  State<_RenameDialog> createState() => _RenameDialogState();
+}
+
+class _RenameDialogState extends State<_RenameDialog> {
+  late final TextEditingController _controller =
+      TextEditingController(text: widget.initialValue);
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('修改姓名'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        decoration: const InputDecoration(labelText: '中文姓名'),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, _controller.text.trim()),
+          child: const Text('儲存'),
+        ),
       ],
     );
   }
