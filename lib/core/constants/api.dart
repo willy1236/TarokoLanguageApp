@@ -16,4 +16,7 @@ class ApiConfig {
   static const String listeningSubmit = '/api/listening/submit';
 
   static const String health = '/api/health';
+
+  static const String articles = '/api/articles';
+  static String articleDetail(int id) => '/api/articles/$id';
 }
