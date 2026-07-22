@@ -10,6 +10,7 @@ class ApiConfig {
 
   static const String levels = '/api/levels';
   static const String quizStart = '/api/quiz/start';
+  static const String quizAnswer = '/api/quiz/answer';
   static const String quizSubmit = '/api/quiz/submit';
 
   static const String listeningStart = '/api/listening/start';
