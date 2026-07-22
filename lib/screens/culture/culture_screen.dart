@@ -37,10 +37,10 @@ class _CultureScreenState extends State<CultureScreen> {
     _featuredFuture = _fetchFeatured();
   }
 
-  // TODO(video): 後端目前無「精選」欄位/endpoint（見 GitHub issue），
-  // 暫用熱門第一名頂替本週精選。
+  // 後端無獨立「精選」欄位/endpoint，改用本週熱門第一名頂替本週精選。
   Future<VideoSummary?> _fetchFeatured() async {
-    final res = await VideoService.fetchVideos(sort: 'popular', pageSize: 1);
+    final res =
+        await VideoService.fetchVideos(sort: 'weekly_popular', pageSize: 1);
     return res.videos.isEmpty ? null : res.videos.first;
   }
 
@@ -176,7 +176,7 @@ class _CultureScreenState extends State<CultureScreen> {
                     const SizedBox(height: 6),
                     Text(
                       featured != null
-                          ? '${VideoCategory.label(featured.category)}　|　${featured.viewCount} 次觀看'
+                          ? '${VideoCategory.label(featured.category)}　|　本週 ${featured.weeklyViewCount} 次觀看'
                           : '精選內容載入中…',
                       style: TextStyle(
                         fontSize: 12,

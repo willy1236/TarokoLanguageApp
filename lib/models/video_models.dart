@@ -34,6 +34,7 @@ class VideoSummary {
   final int? durationSec;
   final String? thumbnailUrl;
   final int viewCount;
+  final int weeklyViewCount;
   final DateTime? publishedAt;
 
   const VideoSummary({
@@ -44,6 +45,7 @@ class VideoSummary {
     this.durationSec,
     this.thumbnailUrl,
     required this.viewCount,
+    required this.weeklyViewCount,
     this.publishedAt,
   });
 
@@ -56,6 +58,7 @@ class VideoSummary {
       durationSec: json['duration_sec'] as int?,
       thumbnailUrl: json['thumbnail_url'] as String?,
       viewCount: json['view_count'] as int? ?? 0,
+      weeklyViewCount: json['weekly_view_count'] as int? ?? 0,
       publishedAt: json['published_at'] != null
           ? DateTime.tryParse(json['published_at'] as String)
           : null,
@@ -75,6 +78,7 @@ class VideoDetail extends VideoSummary {
     super.durationSec,
     super.thumbnailUrl,
     required super.viewCount,
+    required super.weeklyViewCount,
     super.publishedAt,
     required this.hlsUrl,
     this.originalSizeMb,
@@ -89,6 +93,7 @@ class VideoDetail extends VideoSummary {
       durationSec: json['duration_sec'] as int?,
       thumbnailUrl: json['thumbnail_url'] as String?,
       viewCount: json['view_count'] as int? ?? 0,
+      weeklyViewCount: json['weekly_view_count'] as int? ?? 0,
       publishedAt: json['published_at'] != null
           ? DateTime.tryParse(json['published_at'] as String)
           : null,
