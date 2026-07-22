@@ -14,6 +14,7 @@ import 'screens/plaza/plaza_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/splash/splash_screen.dart';
+import 'services/user_service.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
@@ -76,6 +77,23 @@ class MainContainer extends StatefulWidget {
 class _MainContainerState extends State<MainContainer> {
   int _currentIndex = 0;
   bool _showProfile = false;
+  String? _displayName;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDisplayName();
+  }
+
+  Future<void> _fetchDisplayName() async {
+    try {
+      final user = await UserService.fetchMe();
+      if (mounted) setState(() => _displayName = user.displayName);
+    } catch (e, st) {
+      debugPrint('Failed to fetch displayName: $e');
+      debugPrintStack(stackTrace: st);
+    }
+  }
 
   void _navigate(int index) => setState(() {
     _currentIndex = index;
@@ -94,6 +112,7 @@ class _MainContainerState extends State<MainContainer> {
             index: _currentIndex,
             children: [
               HomeScreen(
+                displayName: _displayName,
                 onShowProfile: () => setState(() => _showProfile = true),
                 onNavigateToTab: _navigate,
               ),
@@ -109,7 +128,10 @@ class _MainContainerState extends State<MainContainer> {
           if (_showProfile)
             Positioned.fill(
               child: ProfileScreen(
-                onClose: () => setState(() => _showProfile = false),
+                onClose: () {
+                  setState(() => _showProfile = false);
+                  _fetchDisplayName();
+                },
               ),
             ),
         ],
