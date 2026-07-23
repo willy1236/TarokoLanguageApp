@@ -100,17 +100,28 @@ class ReviewCard extends StatelessWidget {
                   ),
                 ),
               if (promptAudioUrl != null)
-                GestureDetector(
-                  onTap: () => _play(promptAudioUrl),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    margin: promptText == null ? null : const EdgeInsets.only(left: 8),
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.gold,
-                    ),
-                    child: const Icon(Icons.volume_up, size: 18, color: AppColors.ink),
+                Padding(
+                  padding: promptText == null ? EdgeInsets.zero : const EdgeInsets.only(left: 8),
+                  child: Column(
+                    children: [
+                      GestureDetector(
+                        onTap: () => _play(promptAudioUrl),
+                        child: Container(
+                          width: 36,
+                          height: 36,
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: AppColors.gold,
+                          ),
+                          child: const Icon(Icons.volume_up, size: 18, color: AppColors.ink),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        '原題發音',
+                        style: TextStyle(fontSize: 10, color: AppColors.fog),
+                      ),
+                    ],
                   ),
                 ),
             ],
@@ -157,17 +168,28 @@ class ReviewCard extends StatelessWidget {
                 ),
               ),
               if (detailAudioUrl != null)
-                GestureDetector(
-                  onTap: () => _play(detailAudioUrl),
-                  child: Container(
-                    width: 32,
-                    height: 32,
-                    margin: const EdgeInsets.only(left: 8),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: AppColors.gold),
-                    ),
-                    child: const Icon(Icons.play_arrow, size: 16, color: AppColors.primary),
+                Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Column(
+                    children: [
+                      GestureDetector(
+                        onTap: () => _play(detailAudioUrl),
+                        child: Container(
+                          width: 32,
+                          height: 32,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(color: AppColors.gold),
+                          ),
+                          child: const Icon(Icons.play_arrow, size: 16, color: AppColors.primary),
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      const Text(
+                        '標準發音',
+                        style: TextStyle(fontSize: 10, color: AppColors.fog),
+                      ),
+                    ],
                   ),
                 ),
             ],
