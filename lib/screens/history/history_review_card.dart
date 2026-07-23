@@ -3,6 +3,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/audio_url.dart';
 
 class ReviewCard extends StatelessWidget {
   final int order;
@@ -32,10 +33,17 @@ class ReviewCard extends StatelessWidget {
     required this.player,
   });
 
-  Future<void> _play(String? url) async {
+  Future<void> _play(BuildContext context, String? url) async {
     if (url == null) return;
-    await player.stop();
-    await player.play(UrlSource(url));
+    try {
+      await player.stop();
+      await player.play(UrlSource(sanitizeAudioUrl(url)));
+    } catch (_) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('發音播放失敗，請稍後再試')),
+      );
+    }
   }
 
   @override
@@ -105,7 +113,7 @@ class ReviewCard extends StatelessWidget {
                   child: Column(
                     children: [
                       GestureDetector(
-                        onTap: () => _play(promptAudioUrl),
+                        onTap: () => _play(context, promptAudioUrl),
                         child: Container(
                           width: 36,
                           height: 36,
@@ -173,7 +181,7 @@ class ReviewCard extends StatelessWidget {
                   child: Column(
                     children: [
                       GestureDetector(
-                        onTap: () => _play(detailAudioUrl),
+                        onTap: () => _play(context, detailAudioUrl),
                         child: Container(
                           width: 32,
                           height: 32,

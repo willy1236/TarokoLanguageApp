@@ -56,6 +56,8 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
   int _currentIndex = 0;
   int? _selectedOptionId;
   final Map<String, int> _answeredOptions = {};
+  // 續接舊 session 時，實際測驗的 level 可能跟 widget.level（使用者這次點的）不同
+  String? _effectiveLevel;
 
   @override
   void initState() {
@@ -109,6 +111,7 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
 
       setState(() {
         _session = session;
+        _effectiveLevel = session.level;
         _currentIndex = startIndex;
         _selectedOptionId = _answeredOptions[_currentQuestionOf(session, startIndex).questionId];
         _phase = _ListenPhase.quiz;
@@ -145,6 +148,8 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
     );
     return result ?? false;
   }
+
+  String get _displayLevel => _effectiveLevel ?? widget.level;
 
   ListeningQuestion _currentQuestionOf(ListeningSession session, int index) =>
       session.questions[index];
@@ -229,7 +234,7 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
         MaterialPageRoute(
           builder: (_) => ListeningCorrectionScreen(
             result: result,
-            level: widget.level,
+            level: _displayLevel,
           ),
         ),
       );
@@ -393,7 +398,7 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'LISTENING · ${widget.level.toUpperCase()}',
+            'LISTENING · ${_displayLevel.toUpperCase()}',
             style: GoogleFonts.crimsonPro(
               fontSize: 12,
               fontStyle: FontStyle.italic,
@@ -403,7 +408,7 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
           ),
           const SizedBox(height: 4),
           Text(
-            '聽力測驗 · ${widget.level}',
+            '聽力測驗 · $_displayLevel',
             style: GoogleFonts.notoSerifTc(
               fontSize: 18,
               fontWeight: FontWeight.w500,
