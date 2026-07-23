@@ -46,6 +46,9 @@ dependencies:
   # 測驗題目發音播放
   audioplayers: ^6.8.1
 
+  # 文章模組：Markdown 內文渲染（flutter_markdown 已停止維護，改用維護中的 fork）
+  flutter_markdown_plus: ^1.0.12
+
   # 影音模組：HLS 串流播放（better_player 已停止維護，改用維護中的 fork）
   better_player_plus: ^1.0.9
 

@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../models/article_models.dart';
 import '../../models/video_models.dart';
+import '../../services/article_service.dart';
 import '../../services/video_service.dart';
 import '../../shared/widgets/truku_painters.dart';
+import 'article_detail_screen.dart';
 import 'video_detail_screen.dart';
 
 class CultureScreen extends StatefulWidget {
@@ -24,17 +27,37 @@ class _CultureScreenState extends State<CultureScreen> {
 
   static final _chips = ['全部', ...VideoCategory.all.map(VideoCategory.label)];
 
-  static const _articles = [
-    _ArticleItem('走過立霧溪——一條河的族語名字', 'Pisaw', '5 分鐘', '486', '地景', true),
-    _ArticleItem('Gaya 不是規矩，是呼吸的方式', 'Yudaw', '12 分鐘', '892', '文化', false),
-    _ArticleItem('阿公教我打獵那天說的話', 'Watan', '7 分鐘', '634', '口述', true),
+  int _articleChipIndex = 0;
+  String _articleSort = 'latest'; // latest | popular | weekly_popular
+  late Future<ArticleListResponse> _articlesFuture;
+
+  static final _articleChipLabels = [
+    '全部',
+    ...ArticleCategory.all.map(ArticleCategory.label),
   ];
 
   @override
   void initState() {
     super.initState();
+    _articlesFuture = _fetchArticles();
     _videosFuture = _fetchVideos();
     _featuredFuture = _fetchFeatured();
+  }
+
+  String? get _selectedArticleCategory =>
+      _articleChipIndex == 0 ? null : ArticleCategory.all[_articleChipIndex - 1];
+
+  Future<ArticleListResponse> _fetchArticles() {
+    return ArticleService.fetchArticles(
+      category: _selectedArticleCategory,
+      sort: _articleSort,
+    );
+  }
+
+  void _reloadArticles() {
+    setState(() {
+      _articlesFuture = _fetchArticles();
+    });
   }
 
   // 後端無獨立「精選」欄位/endpoint，改用本週熱門第一名頂替本週精選。
@@ -70,11 +93,7 @@ class _CultureScreenState extends State<CultureScreen> {
             SliverToBoxAdapter(child: _buildVideoSectionHeader()),
             SliverToBoxAdapter(child: _buildVideoGrid()),
           ] else ...[
-            SliverToBoxAdapter(
-              child: _buildSectionHeader('族人寫的文章', 'patas kari · 共 18 篇'),
-            ),
-            SliverToBoxAdapter(child: _buildFeaturedArticle()),
-            SliverToBoxAdapter(child: _buildArticleList()),
+            SliverToBoxAdapter(child: _buildArticleSection()),
           ],
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
@@ -515,154 +534,298 @@ class _CultureScreenState extends State<CultureScreen> {
     );
   }
 
-  // ── Featured Article ──────────────────────────────────────────────────────
+  // ── Article Section ──────────────────────────────────────────────────────
 
-  Widget _buildFeaturedArticle() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.midnightSoft,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.cream.withValues(alpha: 0.06)),
-        ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
+  Widget _buildArticleSection() {
+    return FutureBuilder<ArticleListResponse>(
+      future: _articlesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return Padding(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
+            child: _buildSectionHeader('族人寫的文章', 'patas kari'),
+          );
+        }
+        if (snapshot.hasError) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader('族人寫的文章', 'patas kari'),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      snapshot.error is ApiException
+                          ? (snapshot.error as ApiException).message
+                          : '文章載入失敗，請稍後再試',
+                      style: TextStyle(color: AppColors.fog, fontSize: 13),
+                    ),
+                    const SizedBox(height: 8),
+                    OutlinedButton(
+                      onPressed: _reloadArticles,
+                      child: const Text('重試'),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          );
+        }
+        final articles = snapshot.data!.articles;
+        if (articles.isEmpty) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildSectionHeader('族人寫的文章', 'patas kari'),
+              _buildArticleChips(),
+              _buildArticleSortRow(),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                child: Text('目前沒有文章', style: TextStyle(color: AppColors.fog, fontSize: 13)),
+              ),
+            ],
+          );
+        }
+        final featured = articles.first;
+        final rest = articles.skip(1).toList();
+        return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // 圖片區
-            SizedBox(
-              height: 120,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  Container(
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [AppColors.primary, AppColors.primaryDeep],
-                      ),
-                    ),
+            _buildSectionHeader('族人寫的文章', 'patas kari · 共 ${snapshot.data!.total} 篇'),
+            _buildArticleChips(),
+            _buildArticleSortRow(),
+            _buildFeaturedArticle(featured),
+            _buildArticleList(rest),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildArticleChips() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      child: Row(
+        children: List.generate(_articleChipLabels.length, (i) {
+          final active = _articleChipIndex == i;
+          return Padding(
+            padding: EdgeInsets.only(right: i < _articleChipLabels.length - 1 ? 8 : 0),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _articleChipIndex = i;
+                  _articlesFuture = _fetchArticles();
+                });
+              },
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                decoration: BoxDecoration(
+                  color: active ? AppColors.primary : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                  border: active
+                      ? null
+                      : Border.all(color: AppColors.cream.withValues(alpha: 0.19)),
+                ),
+                child: Text(
+                  _articleChipLabels[i],
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: active ? AppColors.creamLight : AppColors.cream,
+                    letterSpacing: 2.0,
                   ),
-                  CustomPaint(
-                    painter: TrukuWeavePainter(
-                      color: AppColors.gold,
-                      opacity: 0.25,
-                      scale: 0.7,
-                    ),
-                  ),
-                  Positioned(
-                    top: 12,
-                    left: 12,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.gold,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        '編輯精選',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: AppColors.ink,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 2.8,
-                        ),
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    bottom: 14,
-                    left: 16,
-                    right: 16,
-                    child: Text(
-                      '苧麻記事——\n祖母教我織布的那年夏天',
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: 19,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.creamLight,
-                        letterSpacing: 1.0,
-                        height: 1.25,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-            // 作者列
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-              child: Row(
-                children: [
-                  Container(
-                    width: 28,
-                    height: 28,
-                    decoration: const BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        colors: [AppColors.moss, AppColors.mossDeep],
-                      ),
-                    ),
-                    child: Center(
-                      child: Text(
-                        'S',
-                        style: GoogleFonts.notoSerifTc(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildArticleSortRow() {
+    const options = [
+      ('latest', '最新'),
+      ('popular', '熱門'),
+      ('weekly_popular', '本週熱門'),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      child: Row(
+        children: options.map((opt) {
+          final active = _articleSort == opt.$1;
+          return Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  _articleSort = opt.$1;
+                  _articlesFuture = _fetchArticles();
+                });
+              },
+              child: Text(
+                opt.$2,
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: active ? FontWeight.w600 : FontWeight.normal,
+                  color: active ? AppColors.gold : AppColors.fog,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ── Featured Article ──────────────────────────────────────────────────────
+
+  Widget _buildFeaturedArticle(ArticleSummary article) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
+      child: GestureDetector(
+        onTap: () => _openArticle(article.id),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.midnightSoft,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: AppColors.cream.withValues(alpha: 0.06)),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 圖片區
+              SizedBox(
+                height: 120,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    if (article.coverImageUrl != null)
+                      Image.network(
+                        article.coverImageUrl!,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) =>
+                            _articleCoverPlaceholder(),
+                      )
+                    else
+                      _articleCoverPlaceholder(),
+                    Positioned(
+                      top: 12,
+                      left: 12,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
                           color: AppColors.gold,
+                          borderRadius: BorderRadius.circular(4),
                         ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Sayun Lowking',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.cream,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 1),
-                        Text(
-                          '8 分鐘 · 1.2k 閱讀 · 3 天前',
+                        child: Text(
+                          ArticleCategory.label(article.category),
                           style: TextStyle(
                             fontSize: 10,
-                            color: AppColors.fog,
-                            letterSpacing: 1.2,
+                            color: AppColors.ink,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 2.8,
                           ),
                         ),
-                      ],
+                      ),
                     ),
-                  ),
-                  const _ArrowIcon(),
-                ],
+                    Positioned(
+                      bottom: 14,
+                      left: 16,
+                      right: 16,
+                      child: Text(
+                        article.title,
+                        style: GoogleFonts.notoSerifTc(
+                          fontSize: 19,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.creamLight,
+                          letterSpacing: 1.0,
+                          height: 1.25,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+              // 摘要 / 統計列
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        article.summary ?? '這篇文章還沒有摘要，點進去看看內容吧',
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.fog,
+                          letterSpacing: 1.0,
+                          height: 1.4,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    const _ArrowIcon(),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
+  Widget _articleCoverPlaceholder() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.primary, AppColors.primaryDeep],
+            ),
+          ),
+        ),
+        CustomPaint(
+          painter: TrukuWeavePainter(
+            color: AppColors.gold,
+            opacity: 0.25,
+            scale: 0.7,
+          ),
+        ),
+      ],
+    );
+  }
+
   // ── Article List ──────────────────────────────────────────────────────────
 
-  Widget _buildArticleList() {
+  Widget _buildArticleList(List<ArticleSummary> articles) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
-        children: _articles
+        children: articles
             .map((a) => Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: _ArticleCard(item: a),
+                  child: _ArticleCard(item: a, onTap: () => _openArticle(a.id)),
                 ))
             .toList(),
       ),
+    );
+  }
+
+  void _openArticle(int id) {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ArticleDetailScreen(articleId: id)),
     );
   }
 }
@@ -866,118 +1029,121 @@ class _VideoCard extends StatelessWidget {
 }
 
 class _ArticleCard extends StatelessWidget {
-  final _ArticleItem item;
-  const _ArticleCard({required this.item});
+  final ArticleSummary item;
+  final VoidCallback onTap;
+  const _ArticleCard({required this.item, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.midnightSoft,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.cream.withValues(alpha: 0.06)),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 64,
-            height: 64,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: item.primaryTheme
-                    ? [AppColors.moss, AppColors.mossDeep]
-                    : [
-                        AppColors.primary.withValues(alpha: 0.25),
-                        AppColors.ink
-                      ],
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.midnightSoft,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.cream.withValues(alpha: 0.06)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 64,
+              height: 64,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(8),
+                gradient: const LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.moss, AppColors.mossDeep],
+                ),
               ),
+              child: item.coverImageUrl != null
+                  ? Image.network(
+                      item.coverImageUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          _thumbnailPlaceholder(),
+                    )
+                  : _thumbnailPlaceholder(),
             ),
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                CustomPaint(
-                  size: const Size(64, 64),
-                  painter: TrukuWeavePainter(
-                    color: AppColors.gold,
-                    opacity: 0.4,
-                    scale: 0.4,
-                  ),
-                ),
-                Text(
-                  '文',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.gold,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: AppColors.gold.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                  child: Text(
-                    item.category,
-                    style: TextStyle(
-                      fontSize: 9,
-                      color: AppColors.gold,
-                      letterSpacing: 2.8,
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      ArticleCategory.label(item.category),
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: AppColors.gold,
+                        letterSpacing: 2.8,
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  item.title,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.creamLight,
-                    letterSpacing: 0.5,
-                    height: 1.35,
+                  const SizedBox(height: 4),
+                  Text(
+                    item.title,
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.creamLight,
+                      letterSpacing: 0.5,
+                      height: 1.35,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '@${item.author} · ${item.readTime} · ${item.views} 閱讀',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: AppColors.fog,
-                    letterSpacing: 1.2,
+                  const SizedBox(height: 4),
+                  Text(
+                    '${item.viewCount} 閱讀 · 本週 ${item.weeklyViewCount}',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: AppColors.fog,
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          const _ArrowIcon(),
-        ],
+            const SizedBox(width: 8),
+            const _ArrowIcon(),
+          ],
+        ),
       ),
     );
   }
-}
 
-// ─── Data Models ──────────────────────────────────────────────────────────────
-
-class _ArticleItem {
-  final String title, author, readTime, views, category;
-  final bool primaryTheme;
-  const _ArticleItem(this.title, this.author, this.readTime, this.views, this.category, this.primaryTheme);
+  Widget _thumbnailPlaceholder() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        CustomPaint(
+          size: const Size(64, 64),
+          painter: TrukuWeavePainter(
+            color: AppColors.gold,
+            opacity: 0.4,
+            scale: 0.4,
+          ),
+        ),
+        Text(
+          '文',
+          style: GoogleFonts.notoSerifTc(
+            fontSize: 22,
+            fontWeight: FontWeight.w600,
+            color: AppColors.gold,
+          ),
+        ),
+      ],
+    );
+  }
 }
 
 // ─── Painters / Icons ─────────────────────────────────────────────────────────
