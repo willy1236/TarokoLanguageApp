@@ -21,6 +21,8 @@ class ApiException implements Exception {
   });
 
   bool get isUnauthorized => statusCode == 401;
+  bool get isSessionNotFound => code == 'SESSION_NOT_FOUND';
+  bool get isSessionNotCompleted => code == 'SESSION_NOT_COMPLETED';
 
   @override
   String toString() => message;
@@ -45,6 +47,19 @@ class ApiClient {
   ]) async {
     final token = await AuthService.currentToken();
     final resp = await http.post(
+      Uri.parse(ApiConfig.baseUrl + path),
+      headers: _headers(token),
+      body: body == null ? null : jsonEncode(body),
+    );
+    return _handle(resp);
+  }
+
+  static Future<Map<String, dynamic>> patch(
+    String path, [
+    Map<String, dynamic>? body,
+  ]) async {
+    final token = await AuthService.currentToken();
+    final resp = await http.patch(
       Uri.parse(ApiConfig.baseUrl + path),
       headers: _headers(token),
       body: body == null ? null : jsonEncode(body),

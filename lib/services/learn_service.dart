@@ -1,3 +1,4 @@
+import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/level_info.dart';
 import '../models/quiz_models.dart';
@@ -17,6 +18,19 @@ class LearnService {
     final json = await ApiClient.post('/api/quiz/start', {'level': level});
     final data = (json['data'] as Map<String, dynamic>?) ?? json;
     return QuizSession.fromJson(data);
+  }
+
+  // 單題即時儲存作答，讓中途退出仍能在下次 /quiz/start 續接時還原。
+  static Future<void> answerQuestion({
+    required String sessionId,
+    required String questionId,
+    required int selectedOptionId,
+  }) async {
+    await ApiClient.patch(ApiConfig.quizAnswer, {
+      'session_id': sessionId,
+      'question_id': questionId,
+      'selected_option_id': selectedOptionId,
+    });
   }
 
   static Future<QuizResult> submitQuiz(

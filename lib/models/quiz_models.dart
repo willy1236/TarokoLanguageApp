@@ -28,6 +28,7 @@ class QuizQuestion {
   final String prompt;
   final String? promptAudioUrl;
   final List<QuizOption> options;
+  final int? selectedOptionId; // 續接時還原先前已作答的選項
 
   const QuizQuestion({
     required this.questionId,
@@ -36,6 +37,7 @@ class QuizQuestion {
     required this.prompt,
     required this.promptAudioUrl,
     required this.options,
+    this.selectedOptionId,
   });
 
   factory QuizQuestion.fromJson(Map<String, dynamic> json) {
@@ -45,6 +47,7 @@ class QuizQuestion {
       direction: json['direction'] as String,
       prompt: json['prompt'] as String? ?? '',
       promptAudioUrl: json['prompt_audio_url'] as String?,
+      selectedOptionId: json['selected_option_id'] as int?,
       options: (json['options'] as List<dynamic>? ?? [])
           .map((e) => QuizOption.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -54,22 +57,34 @@ class QuizQuestion {
 
 class QuizSession {
   final String sessionId;
+  final String level;
   final List<QuizQuestion> questions;
   final bool resumed;
+  final int totalQuestions;
+  // 若使用者請求的 level 跟續接的舊 session 不同，這裡是使用者「原本想要」的 level；
+  // 此時 [level] 是舊 session 實際的 level（回傳的 questions 也屬於舊 level）。
+  final String? conflictingLevel;
 
   const QuizSession({
     required this.sessionId,
+    required this.level,
     required this.questions,
     required this.resumed,
+    required this.totalQuestions,
+    this.conflictingLevel,
   });
 
   factory QuizSession.fromJson(Map<String, dynamic> json) {
+    final questions = (json['questions'] as List<dynamic>? ?? [])
+        .map((e) => QuizQuestion.fromJson(e as Map<String, dynamic>))
+        .toList();
     return QuizSession(
       sessionId: json['session_id'] as String,
+      level: json['level'] as String? ?? '',
       resumed: json['resumed'] as bool? ?? false,
-      questions: (json['questions'] as List<dynamic>? ?? [])
-          .map((e) => QuizQuestion.fromJson(e as Map<String, dynamic>))
-          .toList(),
+      conflictingLevel: json['conflicting_level'] as String?,
+      totalQuestions: json['total_questions'] as int? ?? questions.length,
+      questions: questions,
     );
   }
 }

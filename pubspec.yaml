@@ -49,6 +49,9 @@ dependencies:
   # 文章模組：Markdown 內文渲染（flutter_markdown 已停止維護，改用維護中的 fork）
   flutter_markdown_plus: ^1.0.12
 
+  # 影音模組：HLS 串流播放（better_player 已停止維護，改用維護中的 fork）
+  better_player_plus: ^1.0.9
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -83,8 +86,6 @@ flutter:
   # assets:
   #   - images/a_dot_burr.jpeg
   #   - images/a_dot_ham.jpeg
-  assets:
-    - assets/images/frames/
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

@@ -4,9 +4,12 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/article_models.dart';
+import '../../models/video_models.dart';
 import '../../services/article_service.dart';
+import '../../services/video_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import 'article_detail_screen.dart';
+import 'video_detail_screen.dart';
 
 class CultureScreen extends StatefulWidget {
   const CultureScreen({super.key});
@@ -18,15 +21,11 @@ class CultureScreen extends StatefulWidget {
 class _CultureScreenState extends State<CultureScreen> {
   int _tabIndex = 0; // 0=影音, 1=文章
   int _chipIndex = 0;
+  String _sort = 'latest'; // latest | popular
+  late Future<VideoListResponse> _videosFuture;
+  late Future<VideoSummary?> _featuredFuture;
 
-  static const _chips = ['全部', '口述歷史', '織布傳統', '祭儀', '部落音樂', '美食'];
-
-  static const _videos = [
-    _VideoItem('苧麻怎麼種', 'Yudaw', '6:20', '織布', true),
-    _VideoItem('溪流命名史', 'Pisaw', '8:14', '地景', false),
-    _VideoItem('小米播種祭', 'Sayun', '15:02', '祭儀', true),
-    _VideoItem('老人家的歌', 'Bakan', '4:36', '音樂', false),
-  ];
+  static final _chips = ['全部', ...VideoCategory.all.map(VideoCategory.label)];
 
   int _articleChipIndex = 0;
   String _articleSort = 'latest'; // latest | popular | weekly_popular
@@ -41,6 +40,8 @@ class _CultureScreenState extends State<CultureScreen> {
   void initState() {
     super.initState();
     _articlesFuture = _fetchArticles();
+    _videosFuture = _fetchVideos();
+    _featuredFuture = _fetchFeatured();
   }
 
   String? get _selectedArticleCategory =>
@@ -59,6 +60,26 @@ class _CultureScreenState extends State<CultureScreen> {
     });
   }
 
+  // 後端無獨立「精選」欄位/endpoint，改用本週熱門第一名頂替本週精選。
+  Future<VideoSummary?> _fetchFeatured() async {
+    final res =
+        await VideoService.fetchVideos(sort: 'weekly_popular', pageSize: 1);
+    return res.videos.isEmpty ? null : res.videos.first;
+  }
+
+  String? get _selectedCategory =>
+      _chipIndex == 0 ? null : VideoCategory.all[_chipIndex - 1];
+
+  Future<VideoListResponse> _fetchVideos() {
+    return VideoService.fetchVideos(category: _selectedCategory, sort: _sort);
+  }
+
+  void _reloadVideos() {
+    setState(() {
+      _videosFuture = _fetchVideos();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -67,10 +88,13 @@ class _CultureScreenState extends State<CultureScreen> {
         slivers: [
           SliverToBoxAdapter(child: _buildHero()),
           SliverToBoxAdapter(child: _buildTabBar()),
-          SliverToBoxAdapter(child: _buildChips()),
-          SliverToBoxAdapter(child: _buildSectionHeader('最新影片', 'patas hngak · 共 24 部')),
-          SliverToBoxAdapter(child: _buildVideoGrid()),
-          SliverToBoxAdapter(child: _buildArticleSection()),
+          if (_tabIndex == 0) ...[
+            SliverToBoxAdapter(child: _buildChips()),
+            SliverToBoxAdapter(child: _buildVideoSectionHeader()),
+            SliverToBoxAdapter(child: _buildVideoGrid()),
+          ] else ...[
+            SliverToBoxAdapter(child: _buildArticleSection()),
+          ],
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
       ),
@@ -80,117 +104,152 @@ class _CultureScreenState extends State<CultureScreen> {
   // ── Hero ──────────────────────────────────────────────────────────────────
 
   Widget _buildHero() {
-    return SizedBox(
-      height: 360,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 漸層底色
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [AppColors.mossDeep, AppColors.midnight],
+    return FutureBuilder<VideoSummary?>(
+      future: _featuredFuture,
+      builder: (context, snapshot) {
+        final featured = snapshot.data;
+        return SizedBox(
+          height: 360,
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              // 縮圖背景（有精選影片時）／漸層底色 + 裝飾占位圖案
+              if (featured?.thumbnailUrl != null)
+                Image.network(
+                  featured!.thumbnailUrl!,
+                  fit: BoxFit.cover,
+                  errorBuilder: (_, _, _) => _heroFallbackDecoration(),
+                )
+              else
+                _heroFallbackDecoration(),
+              // 漸層遮罩
+              Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: [0.0, 0.5, 1.0],
+                    colors: [Colors.transparent, Colors.transparent, AppColors.midnight],
+                  ),
+                ),
               ),
-            ),
-          ),
-          // 條紋占位
-          CustomPaint(painter: _StripePainter()),
-          // 織紋
-          CustomPaint(
-            painter: TrukuWeavePainter(
-              color: AppColors.gold,
-              opacity: 0.25,
-              scale: 1.0,
-            ),
-          ),
-          // 漸層遮罩
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: [0.0, 0.5, 1.0],
-                colors: [Colors.transparent, Colors.transparent, AppColors.midnight],
+              // 頂部 nav
+              Positioned(
+                top: 60,
+                left: 20,
+                right: 20,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'LNGLUNGAN',
+                      style: GoogleFonts.crimsonPro(
+                        fontStyle: FontStyle.italic,
+                        fontSize: 13,
+                        color: AppColors.gold,
+                        letterSpacing: 4.0,
+                      ),
+                    ),
+                    Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withValues(alpha: 0.4),
+                        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+                      ),
+                      child: const Center(
+                        child: _SearchIcon(),
+                      ),
+                    ),
+                  ],
+                ),
               ),
+              // Hero info
+              Positioned(
+                bottom: 24,
+                left: 20,
+                right: 20,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      featured != null ? '本週精選 · 熱門' : '本週精選',
+                      style: GoogleFonts.jetBrainsMono(
+                        fontSize: 11,
+                        color: AppColors.gold,
+                        letterSpacing: 4.0,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      featured?.title ?? '太魯閣族影音',
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.creamLight,
+                        letterSpacing: 1.0,
+                        height: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      featured != null
+                          ? '${VideoCategory.label(featured.category)}　|　本週 ${featured.weeklyViewCount} 次觀看'
+                          : '精選內容載入中…',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: AppColors.creamLight.withValues(alpha: 0.7),
+                        letterSpacing: 1.2,
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    _PlayButton(
+                      label: '立即觀看',
+                      onTap: featured == null
+                          ? null
+                          : () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute(
+                                  builder: (_) =>
+                                      VideoDetailScreen(videoId: featured.id),
+                                ),
+                              );
+                            },
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // 沒有真實縮圖時的裝飾占位背景（漸層 + 條紋 + 織紋）
+  Widget _heroFallbackDecoration() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+              colors: [AppColors.mossDeep, AppColors.midnight],
             ),
           ),
-          // 頂部 nav
-          Positioned(
-            top: 60,
-            left: 20,
-            right: 20,
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'LNGLUNGAN',
-                  style: GoogleFonts.crimsonPro(
-                    fontStyle: FontStyle.italic,
-                    fontSize: 13,
-                    color: AppColors.gold,
-                    letterSpacing: 4.0,
-                  ),
-                ),
-                Container(
-                  width: 36,
-                  height: 36,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.black.withValues(alpha: 0.4),
-                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
-                  ),
-                  child: const Center(
-                    child: _SearchIcon(),
-                  ),
-                ),
-              ],
-            ),
+        ),
+        CustomPaint(painter: _StripePainter()),
+        CustomPaint(
+          painter: TrukuWeavePainter(
+            color: AppColors.gold,
+            opacity: 0.25,
+            scale: 1.0,
           ),
-          // Hero info
-          Positioned(
-            bottom: 24,
-            left: 20,
-            right: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '本週精選 · GAYA',
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 11,
-                    color: AppColors.gold,
-                    letterSpacing: 4.0,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '紋面的故事——\n祖母的最後一道線',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.creamLight,
-                    letterSpacing: 1.0,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '口述 · Bakan Nawi　|　12 分鐘',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.creamLight.withValues(alpha: 0.7),
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                _PlayButton(label: '立即觀看'),
-              ],
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
@@ -281,7 +340,10 @@ class _CultureScreenState extends State<CultureScreen> {
           return Padding(
             padding: EdgeInsets.only(right: i < _chips.length - 1 ? 8 : 0),
             child: GestureDetector(
-              onTap: () => setState(() => _chipIndex = i),
+              onTap: () {
+                setState(() => _chipIndex = i);
+                _reloadVideos();
+              },
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                 decoration: BoxDecoration(
@@ -353,19 +415,121 @@ class _CultureScreenState extends State<CultureScreen> {
     );
   }
 
-  // ── Video Grid ────────────────────────────────────────────────────────────
+  // ── Video Section ────────────────────────────────────────────────────────
+
+  Widget _buildVideoSectionHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _sort == 'popular' ? '熱門影片' : '最新影片',
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.cream,
+                  letterSpacing: 1.5,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'patas hngak',
+                style: GoogleFonts.crimsonPro(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 10,
+                  color: AppColors.fog,
+                  letterSpacing: 3.6,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              _sortLabel('latest', '最新'),
+              const SizedBox(width: 10),
+              _sortLabel('popular', '熱門'),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _sortLabel(String value, String label) {
+    final active = _sort == value;
+    return GestureDetector(
+      onTap: () {
+        if (_sort == value) return;
+        setState(() => _sort = value);
+        _reloadVideos();
+      },
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+          color: active ? AppColors.gold : AppColors.fog,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
 
   Widget _buildVideoGrid() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
-      child: GridView.count(
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        crossAxisCount: 2,
-        crossAxisSpacing: 12,
-        mainAxisSpacing: 12,
-        childAspectRatio: 0.78,
-        children: _videos.map((v) => _VideoCard(item: v)).toList(),
+      child: FutureBuilder<VideoListResponse>(
+        future: _videosFuture,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.gold),
+              ),
+            );
+          }
+          if (snapshot.hasError) {
+            final message = snapshot.error is ApiException
+                ? (snapshot.error as ApiException).message
+                : '影片載入失敗，請稍後再試';
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Text(
+                  message,
+                  style: TextStyle(color: AppColors.fog, fontSize: 13),
+                ),
+              ),
+            );
+          }
+          final videos = snapshot.data!.videos;
+          if (videos.isEmpty) {
+            return Padding(
+              padding: const EdgeInsets.symmetric(vertical: 40),
+              child: Center(
+                child: Text(
+                  '目前沒有影片',
+                  style: TextStyle(color: AppColors.fog, fontSize: 13),
+                ),
+              ),
+            );
+          }
+          return GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 2,
+            crossAxisSpacing: 12,
+            mainAxisSpacing: 12,
+            childAspectRatio: 0.78,
+            children: videos.map((v) => _VideoCard(video: v)).toList(),
+          );
+        },
       ),
     );
   }
@@ -670,12 +834,13 @@ class _CultureScreenState extends State<CultureScreen> {
 
 class _PlayButton extends StatelessWidget {
   final String label;
-  const _PlayButton({required this.label});
+  final VoidCallback? onTap;
+  const _PlayButton({required this.label, this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
-      onTap: () {},
+      onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
         decoration: BoxDecoration(
@@ -704,126 +869,161 @@ class _PlayButton extends StatelessWidget {
 }
 
 class _VideoCard extends StatelessWidget {
-  final _VideoItem item;
-  const _VideoCard({required this.item});
+  final VideoSummary video;
+  const _VideoCard({required this.video});
+
+  static String _formatDuration(int? sec) {
+    if (sec == null) return '--:--';
+    final m = sec ~/ 60;
+    final s = sec % 60;
+    return '$m:${s.toString().padLeft(2, '0')}';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.midnightSoft,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.cream.withValues(alpha: 0.06)),
-      ),
-      clipBehavior: Clip.antiAlias,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 100,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                      colors: item.primaryTheme
-                          ? [AppColors.primary, AppColors.primaryDeep]
-                          : [AppColors.moss, AppColors.mossDeep],
-                    ),
-                  ),
-                ),
-                CustomPaint(
-                  painter: TrukuWeavePainter(
-                    color: AppColors.gold,
-                    opacity: 0.3,
-                    scale: 0.5,
-                  ),
-                ),
-                Positioned(
-                  top: 8,
-                  left: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: Text(
-                      item.tag,
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppColors.gold,
-                        letterSpacing: 2.4,
+    return GestureDetector(
+      onTap: () {
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (_) => VideoDetailScreen(videoId: video.id),
+          ),
+        );
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.midnightSoft,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.cream.withValues(alpha: 0.06)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              height: 100,
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  if (video.thumbnailUrl != null)
+                    Image.network(
+                      video.thumbnailUrl!,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => _fallbackBackground(),
+                    )
+                  else
+                    _fallbackBackground(),
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        VideoCategory.label(video.category),
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: AppColors.gold,
+                          letterSpacing: 2.4,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Positioned(
-                  bottom: 8,
-                  right: 8,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.7),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Text(
-                      item.duration,
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: 10,
-                        color: AppColors.creamLight,
+                  Positioned(
+                    bottom: 8,
+                    right: 8,
+                    child: Container(
+                      padding:
+                          const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.7),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text(
+                        _formatDuration(video.durationSec),
+                        style: GoogleFonts.jetBrainsMono(
+                          fontSize: 10,
+                          color: AppColors.creamLight,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                Center(
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.black.withValues(alpha: 0.5),
-                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                  Center(
+                    child: Container(
+                      width: 36,
+                      height: 36,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: Colors.black.withValues(alpha: 0.5),
+                        border: Border.all(
+                            color: AppColors.gold.withValues(alpha: 0.5)),
+                      ),
+                      child: const Center(
+                        child: _PlayIcon(size: 12, color: AppColors.gold),
+                      ),
                     ),
-                    child: const Center(
-                      child: _PlayIcon(size: 12, color: AppColors.gold),
+                  ),
+                ],
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    video.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.creamLight,
+                      letterSpacing: 1.0,
                     ),
                   ),
-                ),
-              ],
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.title,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.creamLight,
-                    letterSpacing: 1.0,
+                  const SizedBox(height: 3),
+                  Text(
+                    '${video.viewCount} 次觀看',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.fog,
+                      letterSpacing: 1.2,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '@${item.author}',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.fog,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _fallbackBackground() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const DecoratedBox(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.moss, AppColors.mossDeep],
+            ),
+          ),
+        ),
+        CustomPaint(
+          painter: TrukuWeavePainter(
+            color: AppColors.gold,
+            opacity: 0.3,
+            scale: 0.5,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -944,14 +1144,6 @@ class _ArticleCard extends StatelessWidget {
       ],
     );
   }
-}
-
-// ─── Data Models ──────────────────────────────────────────────────────────────
-
-class _VideoItem {
-  final String title, author, duration, tag;
-  final bool primaryTheme;
-  const _VideoItem(this.title, this.author, this.duration, this.tag, this.primaryTheme);
 }
 
 // ─── Painters / Icons ─────────────────────────────────────────────────────────
