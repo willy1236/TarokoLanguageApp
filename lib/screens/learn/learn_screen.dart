@@ -7,8 +7,8 @@ import '../../services/learn_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../history/history_screen.dart';
-import 'lesson_card_screen.dart';
 import 'listening_mode_screen.dart';
+import 'vocab_level_screen.dart';
 
 // ── LearnScreen ───────────────────────────────────────────────────────────────
 
@@ -57,65 +57,38 @@ class _LearnScreenState extends State<LearnScreen> {
                 _buildHero(levels),
                 Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-                  child: _ListeningEntryCard(),
-                ),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Padding(
-                        padding: const EdgeInsets.only(left: 4, bottom: 16),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                const TrukuDiamond(
-                                    size: 14, color: AppColors.primary, filled: true),
-                                const SizedBox(width: 8),
-                                Text(
-                                  '課程級別',
-                                  style: GoogleFonts.notoSerifTc(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.ink,
-                                    letterSpacing: 1.44,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            GestureDetector(
-                              onTap: () => Navigator.push(
-                                context,
-                                MaterialPageRoute(builder: (_) => const HistoryScreen()),
-                              ),
-                              child: Text(
-                                '測驗紀錄 →',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.primary,
-                                  letterSpacing: 1,
-                                ),
-                              ),
-                            ),
-                          ],
+                      _QuizEntryCard(
+                        icon: Icons.menu_book,
+                        title: '單字測驗',
+                        subtitle: '選級別，測驗詞彙',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const VocabLevelScreen()),
                         ),
                       ),
-                      if (levels.isEmpty)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 24),
-                          child: Text(
-                            '目前沒有可學習的級別',
-                            style: GoogleFonts.notoSansTc(
-                                fontSize: 14, color: AppColors.fog),
-                          ),
-                        )
-                      else
-                        for (int i = 0; i < levels.length; i++) ...[
-                          if (i > 0) const SizedBox(height: 12),
-                          _LevelRow(level: levels[i]),
-                        ],
+                      const SizedBox(height: 12),
+                      _QuizEntryCard(
+                        icon: Icons.headphones,
+                        title: '聽力測驗',
+                        subtitle: '聽發音，選出正確答案',
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ListeningModeScreen()),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _QuizEntryCard(
+                        icon: Icons.history,
+                        title: '測驗紀錄',
+                        subtitle: '查看歷史測驗結果',
+                        tone: _CardTone.primary,
+                        onTap: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -282,198 +255,73 @@ class _LearnError extends StatelessWidget {
   }
 }
 
-// ── ListeningEntryCard ───────────────────────────────────────────────────────
+// ── QuizEntryCard ─────────────────────────────────────────────────────────────
 
-class _ListeningEntryCard extends StatelessWidget {
+enum _CardTone { dark, primary }
+
+class _QuizEntryCard extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+  final _CardTone tone;
+
+  const _QuizEntryCard({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.tone = _CardTone.dark,
+  });
+
   @override
   Widget build(BuildContext context) {
+    final isDark = tone == _CardTone.dark;
+    final iconColor = isDark ? AppColors.gold : AppColors.creamLight;
+    final titleColor = AppColors.creamLight;
+    final subtitleColor = isDark ? AppColors.mist : AppColors.creamLight.withValues(alpha: 0.75);
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const ListeningModeScreen()),
-      ),
+      onTap: onTap,
       child: Container(
+        width: double.infinity,
         decoration: BoxDecoration(
-          color: AppColors.ink,
+          color: isDark ? AppColors.ink : AppColors.primary,
           borderRadius: BorderRadius.circular(16),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         child: Row(
           children: [
-            const Icon(Icons.headphones, color: AppColors.gold, size: 28),
+            Icon(icon, color: iconColor, size: 28),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    '聽力測驗',
+                    title,
                     style: GoogleFonts.notoSerifTc(
                       fontSize: 16,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.creamLight,
+                      color: titleColor,
                       letterSpacing: 0.85,
                     ),
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '聽發音，選出正確答案',
-                    style: const TextStyle(
+                    subtitle,
+                    style: TextStyle(
                       fontSize: 11,
-                      color: AppColors.mist,
+                      color: subtitleColor,
                       letterSpacing: 0.55,
                     ),
                   ),
                 ],
               ),
             ),
-            CustomPaint(
-              size: const Size(20, 20),
-              painter: _ChevronPainter(color: AppColors.gold),
-            ),
+            TrukuChevron(color: iconColor),
           ],
         ),
       ),
     );
   }
-}
-
-// ── LevelRow ──────────────────────────────────────────────────────────────────
-
-class _LevelRow extends StatelessWidget {
-  final LevelInfo level;
-
-  const _LevelRow({required this.level});
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => LessonCardScreen(level: level.level)),
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          color: AppColors.cream,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.creamDeep, width: 1),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-        child: Row(
-          children: [
-            _buildDiamond(),
-            const SizedBox(width: 14),
-            Expanded(child: _buildTextArea()),
-            CustomPaint(
-              size: const Size(20, 20),
-              painter: _ChevronPainter(color: AppColors.primary),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildDiamond() {
-    return SizedBox(
-      width: 52,
-      height: 52,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          CustomPaint(
-            size: const Size(52, 52),
-            painter: const _LevelDiamondPainter(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTextArea() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          level.level,
-          style: GoogleFonts.notoSerifTc(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
-            color: AppColors.ink,
-            letterSpacing: 0.85,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '${level.wordCount} 個單字',
-          style: const TextStyle(
-            fontSize: 11,
-            color: AppColors.fog,
-            letterSpacing: 0.55,
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Painters ──────────────────────────────────────────────────────────────────
-
-class _LevelDiamondPainter extends CustomPainter {
-  const _LevelDiamondPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final path = Path()
-      ..moveTo(w * 26 / 52, h * 4 / 52)
-      ..lineTo(w * 48 / 52, h * 26 / 52)
-      ..lineTo(w * 26 / 52, h * 48 / 52)
-      ..lineTo(w * 4 / 52, h * 26 / 52)
-      ..close();
-
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.primary
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..strokeJoin = StrokeJoin.round,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_LevelDiamondPainter old) => false;
-}
-
-class _ChevronPainter extends CustomPainter {
-  final Color color;
-
-  const _ChevronPainter({required this.color});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    final path = Path()
-      ..moveTo(w * 7 / 20, h * 4 / 20)
-      ..lineTo(w * 13 / 20, h * 10 / 20)
-      ..lineTo(w * 7 / 20, h * 16 / 20);
-
-    canvas.drawPath(
-      path,
-      Paint()
-        ..color = color
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 2.0
-        ..strokeCap = StrokeCap.round
-        ..strokeJoin = StrokeJoin.round,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_ChevronPainter old) => old.color != color;
 }
