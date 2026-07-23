@@ -18,6 +18,12 @@ class ApiConfig {
 
   static const String health = '/api/health';
 
+  // 頭像商店（issue #12，頭像／頭像框合併目錄，見 頭像商店.md v2.0）
+  static const String meEndpoint = me;
+  static const String shopItems = '/api/shop/items';
+  static String itemPurchaseEndpoint(String itemId) =>
+      '/api/shop/items/$itemId/purchase';
+
   static const String videos = '/api/videos';
   static String videoDetail(int id) => '/api/videos/$id';
 }
