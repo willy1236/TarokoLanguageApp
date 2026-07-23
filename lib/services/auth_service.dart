@@ -17,23 +17,32 @@ class AuthService {
   static const _expiresKey = 'session_expires_at';
 
   static final FirebaseAuth _auth = FirebaseAuth.instance;
-  static final GoogleSignIn _googleSignIn = GoogleSignIn();
+  static final GoogleSignIn _googleSignIn = GoogleSignIn.instance;
+  static Future<void>? _googleSignInInit;
+
+  static Future<void> _ensureGoogleSignInInitialized() {
+    return _googleSignInInit ??= _googleSignIn.initialize();
+  }
 
   /// 走 Google 登入完整流程，成功回 user JSON。
   /// 失敗 throw [AuthException]。
   static Future<Map<String, dynamic>> signInWithGoogle() async {
+    await _ensureGoogleSignInInitialized();
+
     // 1. Google Sign-In SDK 拿 GoogleSignInAccount + idToken
-    final googleUser = await _googleSignIn.signIn();
-    if (googleUser == null) {
-      throw AuthException('使用者取消登入');
+    final GoogleSignInAccount googleUser;
+    try {
+      googleUser = await _googleSignIn.authenticate();
+    } on GoogleSignInException catch (e) {
+      if (e.code == GoogleSignInExceptionCode.canceled) {
+        throw AuthException('使用者取消登入');
+      }
+      throw AuthException('Google 登入失敗：${e.description ?? e.code}');
     }
-    final googleAuth = await googleUser.authentication;
+    final googleAuth = googleUser.authentication;
 
     // 2. 用 Google credential 換 Firebase user
-    final credential = GoogleAuthProvider.credential(
-      accessToken: googleAuth.accessToken,
-      idToken: googleAuth.idToken,
-    );
+    final credential = GoogleAuthProvider.credential(idToken: googleAuth.idToken);
     final userCred = await _auth.signInWithCredential(credential);
     final firebaseToken = await userCred.user?.getIdToken();
     if (firebaseToken == null) {
