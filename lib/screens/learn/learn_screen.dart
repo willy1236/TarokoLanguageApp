@@ -6,6 +6,7 @@ import '../../models/level_info.dart';
 import '../../services/learn_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
+import '../history/history_screen.dart';
 import 'lesson_card_screen.dart';
 import 'listening_mode_screen.dart';
 
@@ -66,17 +67,36 @@ class _LearnScreenState extends State<LearnScreen> {
                       Padding(
                         padding: const EdgeInsets.only(left: 4, bottom: 16),
                         child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const TrukuDiamond(
-                                size: 14, color: AppColors.primary, filled: true),
-                            const SizedBox(width: 8),
-                            Text(
-                              '課程級別',
-                              style: GoogleFonts.notoSerifTc(
-                                fontSize: 18,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.ink,
-                                letterSpacing: 1.44,
+                            Row(
+                              children: [
+                                const TrukuDiamond(
+                                    size: 14, color: AppColors.primary, filled: true),
+                                const SizedBox(width: 8),
+                                Text(
+                                  '課程級別',
+                                  style: GoogleFonts.notoSerifTc(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.ink,
+                                    letterSpacing: 1.44,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            GestureDetector(
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                              ),
+                              child: Text(
+                                '測驗紀錄 →',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: AppColors.primary,
+                                  letterSpacing: 1,
+                                ),
                               ),
                             ),
                           ],

@@ -10,11 +10,23 @@ class ApiConfig {
 
   static const String levels = '/api/levels';
   static const String quizStart = '/api/quiz/start';
+  static const String quizAnswer = '/api/quiz/answer';
   static const String quizSubmit = '/api/quiz/submit';
 
   static const String listeningStart = '/api/listening/start';
   static const String listeningAnswer = '/api/listening/answer';
   static const String listeningSubmit = '/api/listening/submit';
 
+  static const String historyList = '/api/history';
+
   static const String health = '/api/health';
+
+  // 頭像商店（issue #12，頭像／頭像框合併目錄，見 頭像商店.md v2.0）
+  static const String meEndpoint = me;
+  static const String shopItems = '/api/shop/items';
+  static String itemPurchaseEndpoint(String itemId) =>
+      '/api/shop/items/$itemId/purchase';
+
+  static const String videos = '/api/videos';
+  static String videoDetail(int id) => '/api/videos/$id';
 }
