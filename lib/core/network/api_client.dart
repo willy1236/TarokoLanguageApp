@@ -7,6 +7,7 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../constants/api.dart';
+import '../../main.dart';
 import '../../services/auth_service.dart';
 
 class ApiException implements Exception {
@@ -74,10 +75,30 @@ class ApiClient {
 
   static Map<String, dynamic> _handle(http.Response resp) {
     if (resp.statusCode < 200 || resp.statusCode >= 300) {
-      throw _parseError(resp);
+      final error = _parseError(resp);
+      if (error.isUnauthorized) {
+        _forceLogout();
+      }
+      throw error;
     }
     if (resp.body.isEmpty) return <String, dynamic>{};
     return jsonDecode(resp.body) as Map<String, dynamic>;
+  }
+
+  static bool _loggingOut = false;
+
+  /// JWT 失效（401）時清 token 並導回登入畫面。
+  /// 用 _loggingOut 防止同時多個請求 401 時重複觸發。
+  static void _forceLogout() {
+    if (_loggingOut) return;
+    _loggingOut = true;
+    AuthService.signOut().whenComplete(() {
+      _loggingOut = false;
+      final nav = navigatorKey.currentState;
+      if (nav != null) {
+        nav.pushNamedAndRemoveUntil('/login', (route) => false);
+      }
+    });
   }
 
   static ApiException _parseError(http.Response resp) {

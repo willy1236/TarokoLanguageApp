@@ -17,15 +17,17 @@ import 'screens/splash/splash_screen.dart';
 import 'services/user_service.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 
+final navigatorKey = GlobalKey<NavigatorState>();
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  SystemChrome.setSystemUIOverlayStyle(
+    const SystemUiOverlayStyle(
+      statusBarColor: Colors.transparent,
+      statusBarIconBrightness: Brightness.light,
+    ),
   );
-  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    statusBarColor: Colors.transparent,
-    statusBarIconBrightness: Brightness.light,
-  ));
   runApp(const KariTrukuApp());
 }
 
@@ -35,6 +37,7 @@ class KariTrukuApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       title: 'KARI TRUKU',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -48,9 +51,7 @@ class KariTrukuApp extends StatelessWidget {
           surface: AppColors.surface,
         ),
         textTheme: GoogleFonts.notoSansTcTextTheme(
-          const TextTheme(
-            bodyMedium: TextStyle(color: AppColors.creamLight),
-          ),
+          const TextTheme(bodyMedium: TextStyle(color: AppColors.creamLight)),
         ),
       ),
       initialRoute: '/splash',
@@ -95,9 +96,9 @@ class _MainContainerState extends State<MainContainer> {
   }
 
   void _navigate(int index) => setState(() {
-        _currentIndex = index;
-        _showProfile = false;
-      });
+    _currentIndex = index;
+    _showProfile = false;
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -113,6 +114,7 @@ class _MainContainerState extends State<MainContainer> {
               HomeScreen(
                 displayName: _displayName,
                 onShowProfile: () => setState(() => _showProfile = true),
+                onNavigateToTab: _navigate,
               ),
               const LearnScreen(),
               const CultureScreen(),
@@ -136,10 +138,7 @@ class _MainContainerState extends State<MainContainer> {
       ),
       bottomNavigationBar: _showProfile
           ? null
-          : TrukuBottomTab(
-              currentIndex: _currentIndex,
-              onTap: _navigate,
-            ),
+          : TrukuBottomTab(currentIndex: _currentIndex, onTap: _navigate),
     );
   }
 }
