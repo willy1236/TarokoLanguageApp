@@ -16,6 +16,8 @@ class ApiConfig {
   static const String listeningStart = '/api/listening/start';
   static const String listeningSubmit = '/api/listening/submit';
 
+  static const String historyList = '/api/history';
+
   static const String health = '/api/health';
 
   // 頭像商店（issue #12，頭像／頭像框合併目錄，見 頭像商店.md v2.0）

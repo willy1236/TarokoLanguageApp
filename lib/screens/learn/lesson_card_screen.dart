@@ -7,6 +7,7 @@ import '../../models/quiz_models.dart';
 import '../../services/learn_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
+import '../history/history_screen.dart';
 
 enum _Phase { loading, error, quiz, result }
 
@@ -313,6 +314,22 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
                   onTap: () => Navigator.pop(context),
                 ),
               ],
+            ),
+            const SizedBox(height: 16),
+            GestureDetector(
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const HistoryScreen()),
+              ),
+              child: Text(
+                '查看測驗紀錄 →',
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                  color: AppColors.primary,
+                  letterSpacing: 1,
+                ),
+              ),
             ),
           ],
         ),

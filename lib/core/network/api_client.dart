@@ -21,6 +21,8 @@ class ApiException implements Exception {
   });
 
   bool get isUnauthorized => statusCode == 401;
+  bool get isSessionNotFound => code == 'SESSION_NOT_FOUND';
+  bool get isSessionNotCompleted => code == 'SESSION_NOT_COMPLETED';
 
   @override
   String toString() => message;
