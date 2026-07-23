@@ -31,8 +31,8 @@ dependencies:
   flutter:
     sdk: flutter
 
-  cupertino_icons: ^1.0.8
-  google_fonts: ^6.2.1
+  cupertino_icons: ^1.0.9
+  google_fonts: ^8.2.0
 
   # Firebase + Google Sign-In（後端用 firebase-admin 驗 ID token 換系統 JWT）
   firebase_core: ^3.6.0
@@ -41,7 +41,7 @@ dependencies:
 
   # Backend 通訊與 token 儲存
   http: ^1.2.2
-  flutter_secure_storage: ^9.2.2
+  flutter_secure_storage: ^10.3.1
 
   # 測驗題目發音播放
   audioplayers: ^6.8.1
@@ -50,19 +50,13 @@ dependencies:
   flutter_markdown_plus: ^1.0.12
 
   # 影音模組：HLS 串流播放（better_player 已停止維護，改用維護中的 fork）
-  better_player_plus: ^1.0.9
+  better_player_plus: ^1.3.4
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
   integration_test:
     sdk: flutter
-
-# jni 1.0.0 的 Android build.gradle source set 設定有問題，
-# 導致 JniPlugin.java 沒被編進 classes.jar，造成 Android 編譯失敗。
-# 釘住舊版 path_provider_android（沒有 jni 依賴）繞過此問題。
-dependency_overrides:
-  path_provider_android: 2.2.22
 
   # The "flutter_lints" package below contains a set of recommended lints to
   # encourage good coding practices. The lint set provided by the package is
