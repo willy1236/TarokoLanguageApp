@@ -110,22 +110,33 @@ class _LoginScreenState extends State<LoginScreen> {
 
           // 主要內容
           SafeArea(
-            child: Column(
-              children: [
-                // Logo 區（上半）
-                const SizedBox(height: 56),
-                _buildLogoSection(),
-
-                // 彈性間距
-                const Expanded(child: SizedBox()),
-
-                // 表單區（下半）
-                SingleChildScrollView(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-                  child: _buildFormSection(),
-                ),
-                const SizedBox(height: 52),
-              ],
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: constraints.maxHeight,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        children: [
+                          // Logo 區（上半）
+                          const SizedBox(height: 56),
+                          _buildLogoSection(),
+
+                          // 彈性間距
+                          const Expanded(child: SizedBox()),
+
+                          // 表單區（下半）
+                          _buildFormSection(),
+                          const SizedBox(height: 52),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],

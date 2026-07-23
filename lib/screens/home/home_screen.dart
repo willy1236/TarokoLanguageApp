@@ -59,11 +59,31 @@ const List<ModeData> _modes = [
   ),
 ];
 
+// ModeData.key → MainContainer 的分頁 index（見 lib/main.dart 的 IndexedStack 順序）
+const Map<String, int> _modeTabIndex = {
+  'learn': 1,
+  'culture': 2,
+  'video': 3, // 視訊功能在「交流」分頁（CommunityScreen）內
+  'plaza': 4,
+  'event': 5,
+};
+
 class HomeScreen extends StatelessWidget {
   final VoidCallback? onShowProfile;
+  final void Function(int tabIndex)? onNavigateToTab;
   final String? displayName;
 
-  const HomeScreen({super.key, this.onShowProfile, this.displayName});
+  const HomeScreen({
+    super.key,
+    this.onShowProfile,
+    this.onNavigateToTab,
+    this.displayName,
+  });
+
+  void _onModeTap(ModeData mode) {
+    final index = _modeTabIndex[mode.key];
+    if (index != null) onNavigateToTab?.call(index);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -171,21 +191,45 @@ class HomeScreen extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
             child: Column(
               children: [
-                ModeCard(mode: _modes[0], large: true),
+                ModeCard(
+                  mode: _modes[3],
+                  large: true,
+                  onTap: () => _onModeTap(_modes[3]),
+                ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: ModeCard(mode: _modes[1])),
+                    Expanded(
+                      child: ModeCard(
+                        mode: _modes[1],
+                        onTap: () => _onModeTap(_modes[1]),
+                      ),
+                    ),
                     const SizedBox(width: 12),
-                    Expanded(child: ModeCard(mode: _modes[2])),
+                    Expanded(
+                      child: ModeCard(
+                        mode: _modes[2],
+                        onTap: () => _onModeTap(_modes[2]),
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 Row(
                   children: [
-                    Expanded(child: ModeCard(mode: _modes[3])),
+                    Expanded(
+                      child: ModeCard(
+                        mode: _modes[0],
+                        onTap: () => _onModeTap(_modes[0]),
+                      ),
+                    ),
                     const SizedBox(width: 12),
-                    Expanded(child: ModeCard(mode: _modes[4])),
+                    Expanded(
+                      child: ModeCard(
+                        mode: _modes[4],
+                        onTap: () => _onModeTap(_modes[4]),
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -258,11 +302,7 @@ class _TodayProgressCard extends StatelessWidget {
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(
-                            Icons.grain,
-                            size: 18,
-                            color: AppColors.gold,
-                          ),
+                          Icon(Icons.grain, size: 18, color: AppColors.gold),
                           const SizedBox(width: 4),
                           Text(
                             '320',
