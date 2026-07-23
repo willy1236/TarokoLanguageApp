@@ -8,11 +8,14 @@ class HistoryService {
     int page = 1,
     int pageSize = 20,
   }) async {
-    final json = await ApiClient.get(ApiConfig.historyList, {
-      'type': ?type,
-      'page': '$page',
-      'page_size': '$pageSize',
-    });
+    final json = await ApiClient.get(
+      ApiConfig.historyList,
+      query: {
+        'type': ?type,
+        'page': '$page',
+        'page_size': '$pageSize',
+      },
+    );
     return HistoryListResult.fromJson(json);
   }
 

@@ -46,6 +46,21 @@ void main() {
   group('API Inspector', () {
     test('GET /api/health', () => _inspect('GET', ApiConfig.health));
     test('GET /api/me', () => _inspect('GET', ApiConfig.me));
+    test('PATCH /api/me (display_name 回傳格式測試，測完自動還原)', () async {
+      if (_token == null) {
+        markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+        return;
+      }
+      final original = await _fetchDisplayName();
+      await _inspect(
+        'PATCH',
+        ApiConfig.me,
+        body: {'display_name': 'API Inspector Test'},
+      );
+      if (original != null) {
+        await _inspect('PATCH', ApiConfig.me, body: {'display_name': original});
+      }
+    });
     test('GET /api/levels', () => _inspect('GET', ApiConfig.levels));
     test('POST /api/quiz/start', () => _inspect(
       'POST',
@@ -67,7 +82,29 @@ void main() {
       ApiConfig.listeningSubmit,
       body: {'session_id': '__test__', 'answers': []},
     ));
+    test('GET /api/shop/items', () => _inspect('GET', ApiConfig.shopItems));
+    test('GET /api/videos', () => _inspect('GET', ApiConfig.videos));
+    test('GET /api/videos?sort=popular', () => _inspect(
+      'GET',
+      '${ApiConfig.videos}?sort=popular',
+    ));
+    test('GET /api/videos/1', () => _inspect('GET', ApiConfig.videoDetail(1)));
+    test('GET /api/videos/999999 (測 404 格式)', () => _inspect(
+      'GET',
+      ApiConfig.videoDetail(999999),
+    ));
   });
+}
+
+Future<String?> _fetchDisplayName() async {
+  final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.me}');
+  final response = await http.get(uri, headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $_token',
+  });
+  if (response.statusCode != 200) return null;
+  final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+  return decoded['display_name'] as String?;
 }
 
 Future<void> _inspect(
@@ -87,14 +124,21 @@ Future<void> _inspect(
   };
 
   final http.Response response;
-  if (method == 'GET') {
-    response = await http.get(uri, headers: headers);
-  } else {
-    response = await http.post(
-      uri,
-      headers: headers,
-      body: body != null ? jsonEncode(body) : null,
-    );
+  switch (method) {
+    case 'GET':
+      response = await http.get(uri, headers: headers);
+    case 'PATCH':
+      response = await http.patch(
+        uri,
+        headers: headers,
+        body: body != null ? jsonEncode(body) : null,
+      );
+    default:
+      response = await http.post(
+        uri,
+        headers: headers,
+        body: body != null ? jsonEncode(body) : null,
+      );
   }
 
   String prettyBody;
