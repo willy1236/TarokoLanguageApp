@@ -96,23 +96,20 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       }
 
       _answeredOptions.clear();
-      var firstUnanswered = 0;
-      for (var i = 0; i < session.questions.length; i++) {
-        final q = session.questions[i];
+      for (final q in session.questions) {
         if (q.selectedOptionId != null) {
           _answeredOptions[q.questionId] = q.selectedOptionId!;
-        } else if (firstUnanswered == 0 &&
-            !_answeredOptions.containsKey(q.questionId)) {
-          firstUnanswered = i;
         }
       }
-      final allAnswered =
-          _answeredOptions.length == session.questions.length;
+      final firstUnanswered =
+          session.questions.indexWhere((q) => q.selectedOptionId == null);
+      final startIndex =
+          firstUnanswered == -1 ? session.questions.length - 1 : firstUnanswered;
 
       setState(() {
         _session = session;
-        _currentIndex = allAnswered ? session.questions.length - 1 : firstUnanswered;
-        _selectedOptionId = _answeredOptions[_currentQuestionOf(session, _currentIndex).questionId];
+        _currentIndex = startIndex;
+        _selectedOptionId = _answeredOptions[_currentQuestionOf(session, startIndex).questionId];
         _phase = _ListenPhase.quiz;
       });
     } catch (e) {
@@ -193,6 +190,17 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       setState(() {
         _currentIndex = nextIndex;
         _selectedOptionId = _answeredOptions[_currentQuestion.questionId];
+      });
+      return;
+    }
+
+    final unansweredIndex = _session!.questions
+        .indexWhere((q) => !_answeredOptions.containsKey(q.questionId));
+    if (unansweredIndex != -1) {
+      setState(() {
+        _currentIndex = unansweredIndex;
+        _selectedOptionId =
+            _answeredOptions[_session!.questions[unansweredIndex].questionId];
       });
       return;
     }
