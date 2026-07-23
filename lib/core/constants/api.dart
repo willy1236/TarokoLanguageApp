@@ -10,6 +10,7 @@ class ApiConfig {
 
   static const String levels = '/api/levels';
   static const String quizStart = '/api/quiz/start';
+  static const String quizAnswer = '/api/quiz/answer';
   static const String quizSubmit = '/api/quiz/submit';
 
   static const String listeningStart = '/api/listening/start';
@@ -22,4 +23,7 @@ class ApiConfig {
   static const String shopItems = '/api/shop/items';
   static String itemPurchaseEndpoint(String itemId) =>
       '/api/shop/items/$itemId/purchase';
+
+  static const String videos = '/api/videos';
+  static String videoDetail(int id) => '/api/videos/$id';
 }

@@ -69,7 +69,7 @@ class _ShopScreenState extends State<ShopScreen> {
       // 讀取失敗時退回空白/預設 UserModel，避免整個商店頁面崩潰。
       if (!mounted) return;
       setState(() {
-        _user = const UserModel(uid: '');
+        _user = UserModel(uid: 0, email: '', createdAt: DateTime.now());
         _loadingUser = false;
       });
     }
@@ -163,7 +163,7 @@ class _ShopScreenState extends State<ShopScreen> {
       );
     }
 
-    final user = _user ?? const UserModel(uid: '');
+    final user = _user ?? UserModel(uid: 0, email: '', createdAt: DateTime.now());
     final showAvatars = _selectedCategory == _catAll || _selectedCategory == _catAvatar || _selectedCategory == _catOwned;
     final showFrames = _selectedCategory == _catAll || _selectedCategory == _catFrame || _selectedCategory == _catOwned;
 

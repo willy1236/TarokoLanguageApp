@@ -8,7 +8,7 @@
 // 兩者各自獨立、可同時配戴。
 
 class UserModel {
-  final String uid;
+  final int uid;
   final String? displayName;
   final String? avatarUrl; // 原 Google 大頭貼，avatarId 為 null 時的 fallback
   final String? avatarId; // 目前配戴的內建頭像 id，對應 item_catalog；null=尚未選用內建頭像
@@ -16,6 +16,8 @@ class UserModel {
   final List<String> ownedAvatarIds;
   final List<String> ownedFrameIds;
   final int millet; // 小米幣餘額
+  final String email;
+  final DateTime createdAt;
 
   const UserModel({
     required this.uid,
@@ -26,11 +28,13 @@ class UserModel {
     this.ownedAvatarIds = const [],
     this.ownedFrameIds = const [],
     this.millet = 0,
+    required this.email,
+    required this.createdAt,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
     return UserModel(
-      uid: json['uid'].toString(),
+      uid: json['uid'] as int,
       displayName: json['display_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       avatarId: json['avatar_id'] as String?,
@@ -42,6 +46,8 @@ class UserModel {
           .map((e) => e.toString())
           .toList(),
       millet: json['millet'] as int? ?? 0,
+      email: json['email'] as String,
+      createdAt: DateTime.parse(json['created_at'] as String),
     );
   }
 
@@ -54,10 +60,14 @@ class UserModel {
         'owned_avatar_ids': ownedAvatarIds,
         'owned_frame_ids': ownedFrameIds,
         'millet': millet,
+        'email': email,
+        'created_at': createdAt.toIso8601String(),
       };
 
+  int get joinedDays => DateTime.now().difference(createdAt).inDays;
+
   UserModel copyWith({
-    String? uid,
+    int? uid,
     String? displayName,
     String? avatarUrl,
     String? avatarId,
@@ -65,6 +75,8 @@ class UserModel {
     List<String>? ownedAvatarIds,
     List<String>? ownedFrameIds,
     int? millet,
+    String? email,
+    DateTime? createdAt,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -75,6 +87,8 @@ class UserModel {
       ownedAvatarIds: ownedAvatarIds ?? this.ownedAvatarIds,
       ownedFrameIds: ownedFrameIds ?? this.ownedFrameIds,
       millet: millet ?? this.millet,
+      email: email ?? this.email,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 }
