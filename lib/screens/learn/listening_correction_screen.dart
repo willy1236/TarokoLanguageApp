@@ -2,6 +2,7 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/audio_url.dart';
 import '../../models/listening_models.dart';
 import '../../shared/widgets/truku_painters.dart';
 
@@ -31,8 +32,15 @@ class _ListeningCorrectionScreenState extends State<ListeningCorrectionScreen> {
 
   Future<void> _play(String? url) async {
     if (url == null) return;
-    await _player.stop();
-    await _player.play(UrlSource(url));
+    try {
+      await _player.stop();
+      await _player.play(UrlSource(sanitizeAudioUrl(url)));
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('發音播放失敗，請稍後再試')),
+      );
+    }
   }
 
   @override
