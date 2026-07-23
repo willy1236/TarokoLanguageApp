@@ -85,6 +85,16 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
         return;
       }
 
+      if (session.conflictingLevel != null) {
+        final shouldContinue =
+            await _showConflictDialog(session.level, session.conflictingLevel!);
+        if (!mounted) return;
+        if (!shouldContinue) {
+          Navigator.pop(context);
+          return;
+        }
+      }
+
       _answeredOptions.clear();
       var firstUnanswered = 0;
       for (var i = 0; i < session.questions.length; i++) {
@@ -111,6 +121,31 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
         _phase = _ListenPhase.error;
       });
     }
+  }
+
+  Future<bool> _showConflictDialog(String oldLevel, String wantedLevel) async {
+    final result = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        title: const Text('有未完成的聽力測驗'),
+        content: Text(
+          '你還有未完成的「$oldLevel」聽力測驗，要繼續完成，還是先返回？\n'
+          '（目前尚不支援直接放棄舊測驗，需完成後才能開始「$wantedLevel」）',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('返回'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: Text('繼續「$oldLevel」測驗'),
+          ),
+        ],
+      ),
+    );
+    return result ?? false;
   }
 
   ListeningQuestion _currentQuestionOf(ListeningSession session, int index) =>
@@ -269,7 +304,6 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _buildProgressBar(total),
-          if (_session!.conflictingLevel != null) _buildConflictBanner(),
           _buildUnitLabel(),
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
@@ -284,24 +318,6 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildConflictBanner() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.amber.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: AppColors.amber, width: 1),
-        ),
-        child: Text(
-          '此測驗是在「${_session!.conflictingLevel}」級別開始的，將繼續使用原級別題目',
-          style: GoogleFonts.notoSansTc(fontSize: 12, color: AppColors.inkSoft),
-        ),
       ),
     );
   }
