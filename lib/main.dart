@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
 import 'firebase_options.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/backpack/backpack_screen.dart';
 import 'screens/community/community_screen.dart';
 import 'screens/culture/culture_screen.dart';
 import 'screens/home/home_screen.dart';
@@ -60,6 +61,7 @@ class KariTrukuApp extends StatelessWidget {
         '/login': (_) => const LoginScreen(),
         '/home': (_) => const MainContainer(),
         '/shop': (_) => const ShopScreen(),
+        '/backpack': (_) => const BackpackScreen(),
       },
     );
   }
