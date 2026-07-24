@@ -908,7 +908,7 @@ class _VideoCard extends StatelessWidget {
                     Image.network(
                       video.thumbnailUrl!,
                       fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => _fallbackBackground(),
+                      errorBuilder: (_, _, _) => _fallbackBackground(),
                     )
                   else
                     _fallbackBackground(),
