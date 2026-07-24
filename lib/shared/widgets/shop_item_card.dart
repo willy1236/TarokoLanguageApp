@@ -70,7 +70,7 @@ class ShopItemCard extends StatelessWidget {
                 Center(
                   child: Container(
                     width: 64,
-                    height: 52,
+                    height: 64,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: isGold
@@ -188,7 +188,7 @@ class ShopItemCard extends StatelessWidget {
     return Image.network(
       imageUrl!,
       width: 64,
-      height: 52,
+      height: 64,
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) => Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog),
     );
