@@ -86,6 +86,28 @@ class _ShopScreenState extends State<ShopScreen> {
     }
   }
 
+  Future<void> _confirmAndPurchase(ShopItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('兌換確認'),
+        content: Text('確定要花 ${item.price} 小米兌換「${item.name}」嗎？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('兌換'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _purchaseItem(item);
+  }
+
   Future<void> _purchaseItem(ShopItem item) async {
     try {
       final updated = await ShopService.purchaseItem(item.id);
@@ -443,17 +465,21 @@ class _ShopScreenState extends State<ShopScreen> {
     final rarityColor = _rarityColors[item.rarity];
     final owned = item.isOwned;
     final locked = !owned && item.unlockCondition != null ? item.unlockCondition : null;
+    final equipped = item.type == 'frame' ? _user?.frameId == item.id : _user?.avatarId == item.id;
 
     String? actionLabel;
     VoidCallback? onAction;
-    if (owned) {
+    if (owned && equipped) {
+      actionLabel = '已配戴';
+      onAction = null;
+    } else if (owned) {
       actionLabel = '配戴';
       onAction = () => _equipItem(item);
     } else if (locked == null) {
       // 兌換按鈕永遠顯示（只要未擁有且未鎖定），不因 millet < price 而隱藏，
       // 讓兌換流程在餘額不足時仍可觸及、顯示 INSUFFICIENT_BALANCE 提示。
       actionLabel = '兌換';
-      onAction = () => _purchaseItem(item);
+      onAction = () => _confirmAndPurchase(item);
     }
 
     return ShopItemCard(

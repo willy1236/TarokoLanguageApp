@@ -136,12 +136,16 @@ class ShopItemCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        color: AppColors.gold,
+                        color: onAction != null ? AppColors.gold : AppColors.creamDeep,
                       ),
                       child: Text(
                         actionLabel!,
                         textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.ink),
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w700,
+                          color: onAction != null ? AppColors.ink : AppColors.fog,
+                        ),
                       ),
                     ),
                   ),
