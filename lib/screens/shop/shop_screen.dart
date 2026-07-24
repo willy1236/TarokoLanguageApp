@@ -308,51 +308,11 @@ class _ShopScreenState extends State<ShopScreen> {
                                 height: 1,
                               ),
                             ),
-                            const SizedBox(height: 6),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(10),
-                                color: const Color(0xFF5BC97D).withValues(alpha: 0.15),
-                                border: Border.all(color: const Color(0xFF5BC97D).withValues(alpha: 0.5)),
-                              ),
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  const Icon(Icons.arrow_upward_rounded, size: 9, color: Color(0xFF7FE49A)),
-                                  const SizedBox(width: 3),
-                                  Text('每日簽到 +50', style: TextStyle(fontSize: 10, color: const Color(0xFF7FE49A), letterSpacing: 1)),
-                                ],
-                              ),
-                            ),
                           ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.gold),
-                        ),
-                        child: Text(
-                          '賺取小米',
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.gold,
-                            letterSpacing: 1,
-                          ),
                         ),
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(height: 12),
-                // 賺取提示
-                Row(
-                  children: [
-                    _earnChip('每日簽到 +50'),
-                  ],
                 ),
               ],
             ),
@@ -373,24 +333,6 @@ class _ShopScreenState extends State<ShopScreen> {
           color: AppColors.creamLight.withValues(alpha: 0.15),
         ),
         child: Center(child: child),
-      ),
-    );
-  }
-
-  Widget _earnChip(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(10),
-        color: AppColors.creamLight.withValues(alpha: 0.08),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('●', style: TextStyle(color: AppColors.gold, fontSize: 8)),
-          const SizedBox(width: 4),
-          Text(text, style: TextStyle(fontSize: 11, color: AppColors.creamLight.withValues(alpha: 0.85))),
-        ],
       ),
     );
   }

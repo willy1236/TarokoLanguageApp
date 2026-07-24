@@ -18,6 +18,8 @@ class UserModel {
   final int millet; // 小米幣餘額
   final String email;
   final DateTime createdAt;
+  final bool checkedInToday; // 今天（台灣時間）是否已簽到，見 每日簽到.md
+  final int checkinStreak; // 目前連續簽到天數，由後端即時計算
 
   const UserModel({
     required this.uid,
@@ -30,6 +32,8 @@ class UserModel {
     this.millet = 0,
     required this.email,
     required this.createdAt,
+    this.checkedInToday = false,
+    this.checkinStreak = 0,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -48,6 +52,8 @@ class UserModel {
       millet: json['millet'] as int? ?? 0,
       email: json['email'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
+      checkedInToday: json['checked_in_today'] as bool? ?? false,
+      checkinStreak: json['checkin_streak'] as int? ?? 0,
     );
   }
 
@@ -62,6 +68,8 @@ class UserModel {
         'millet': millet,
         'email': email,
         'created_at': createdAt.toIso8601String(),
+        'checked_in_today': checkedInToday,
+        'checkin_streak': checkinStreak,
       };
 
   int get joinedDays => DateTime.now().difference(createdAt).inDays;
@@ -77,6 +85,8 @@ class UserModel {
     int? millet,
     String? email,
     DateTime? createdAt,
+    bool? checkedInToday,
+    int? checkinStreak,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -89,6 +99,8 @@ class UserModel {
       millet: millet ?? this.millet,
       email: email ?? this.email,
       createdAt: createdAt ?? this.createdAt,
+      checkedInToday: checkedInToday ?? this.checkedInToday,
+      checkinStreak: checkinStreak ?? this.checkinStreak,
     );
   }
 }
