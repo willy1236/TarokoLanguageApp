@@ -1,6 +1,14 @@
 // 對應 /api/millet/transactions
 // 規格參考：說明文件/API/小米幣帳本.md
 
+// id／next_cursor 對應資料庫 BIGSERIAL，pg driver 會回傳字串以避免精度遺失
+int? _parseId(dynamic value) {
+  if (value == null) return null;
+  if (value is int) return value;
+  if (value is String) return int.tryParse(value);
+  return null;
+}
+
 class MilletTransaction {
   final int id;
   final int delta;
@@ -22,7 +30,7 @@ class MilletTransaction {
 
   factory MilletTransaction.fromJson(Map<String, dynamic> json) {
     return MilletTransaction(
-      id: json['id'] as int,
+      id: _parseId(json['id']) ?? 0,
       delta: json['delta'] as int? ?? 0,
       reason: json['reason'] as String? ?? '',
       refId: json['ref_id'] as String?,
@@ -46,7 +54,7 @@ class MilletTransactionListResult {
       transactions: (json['transactions'] as List<dynamic>? ?? [])
           .map((e) => MilletTransaction.fromJson(e as Map<String, dynamic>))
           .toList(),
-      nextCursor: json['next_cursor'] as int?,
+      nextCursor: _parseId(json['next_cursor']),
     );
   }
 }
