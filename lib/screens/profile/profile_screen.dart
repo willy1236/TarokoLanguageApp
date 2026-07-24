@@ -9,6 +9,7 @@ import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../backpack/backpack_screen.dart';
+import '../millet/millet_ledger_screen.dart';
 import '../shop/shop_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -391,6 +392,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         style: TextStyle(fontSize: 10, color: AppColors.fog, letterSpacing: 1),
                       ),
                     ],
+                  ),
+                ),
+                GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MilletLedgerScreen()),
+                  ),
+                  child: const Text(
+                    '查看明細 →',
+                    style: TextStyle(fontSize: 10, color: AppColors.primary, letterSpacing: 1),
                   ),
                 ),
               ],
