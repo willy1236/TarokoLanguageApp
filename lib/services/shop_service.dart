@@ -134,6 +134,16 @@ class ShopService {
     return updated;
   }
 
+  /// 呼叫 PATCH /api/me 帶 frame_id: null，恢復不配戴頭像框。
+  static Future<UserModel> clearFrame() async {
+    final updated = await _patchMe({'frame_id': null});
+
+    if (updated.frameId != null) {
+      throw ShopFeatureUnavailableException('取消配戴頭像框功能尚未開放');
+    }
+    return updated;
+  }
+
   static Future<UserModel> _patchMe(Map<String, dynamic> body) async {
     final token = await AuthService.currentToken();
     late final http.Response resp;
