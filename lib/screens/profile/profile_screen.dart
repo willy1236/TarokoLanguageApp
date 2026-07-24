@@ -9,6 +9,7 @@ import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../backpack/backpack_screen.dart';
+import '../shop/shop_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onClose;
@@ -328,6 +329,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUser();
   }
 
+  /// 前往商店頁面兌換新道具；商店頁不會 pop 回更新後的 UserModel，
+  /// 因此回到本頁後一律重新呼叫 fetchMe() 以取得最新的 millet/owned 清單。
+  Future<void> _openShop() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ShopScreen()),
+    );
+    if (!mounted) return;
+    _loadUser();
+  }
+
   Widget _buildInventorySection() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -404,6 +415,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Expanded(
                     child: Text(
                       '我的背包 · 查看已擁有的頭像與頭像框',
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ink,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.fog, size: 16),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: AppColors.creamDeep),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _openShop,
+              child: Row(
+                children: [
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                    ),
+                    child: const Icon(Icons.storefront_outlined, size: 15, color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '小米商店 · 兌換頭像與頭像框',
                       style: GoogleFonts.notoSerifTc(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
