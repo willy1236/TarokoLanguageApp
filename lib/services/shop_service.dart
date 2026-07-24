@@ -114,6 +114,16 @@ class ShopService {
     return updated;
   }
 
+  /// 呼叫 PATCH /api/me 帶 avatar_id: null，恢復顯示預設（登入帳號）頭貼。
+  static Future<UserModel> clearAvatar() async {
+    final updated = await _patchMe({'avatar_id': null});
+
+    if (updated.avatarId != null) {
+      throw ShopFeatureUnavailableException('恢復預設頭貼功能尚未開放');
+    }
+    return updated;
+  }
+
   /// 呼叫 PATCH /api/me 帶 frame_id，切換配戴中的頭像框；與 avatar_id 各自獨立。
   static Future<UserModel> equipFrame(String frameId) async {
     final updated = await _patchMe({'frame_id': frameId});

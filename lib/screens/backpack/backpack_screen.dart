@@ -98,6 +98,33 @@ class _BackpackScreenState extends State<BackpackScreen> {
     }
   }
 
+  /// 恢復顯示預設（登入帳號）頭貼，對應 _user?.avatarId == null 的狀態。
+  Future<void> _setDefaultAvatar() async {
+    try {
+      final updated = await ShopService.clearAvatar();
+      if (!mounted) return;
+      setState(() => _user = updated);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已恢復預設頭貼')),
+      );
+    } on ShopFeatureUnavailableException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('功能尚未開放')),
+      );
+    } on ShopApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('配戴失敗，請稍後再試')),
+      );
+    }
+  }
+
   Future<void> _openShop() async {
     await Navigator.of(context).push(
       MaterialPageRoute<UserModel?>(builder: (_) => const ShopScreen()),
@@ -120,7 +147,9 @@ class _BackpackScreenState extends State<BackpackScreen> {
     final showFrames = _selectedCategory == _catAll || _selectedCategory == _catFrame;
     final avatarList = ownedItems.where((i) => i.type == 'avatar').toList();
     final frameList = ownedItems.where((i) => i.type == 'frame').toList();
-    final isEmpty = avatarList.isEmpty && frameList.isEmpty;
+    // 頭像分類一律有「預設頭貼」這個選項可看/可選，所以永遠不算空；
+    // 頭像框沒有這種預設項目，只有在使用者只看「頭像框」分類且真的沒擁有任何一個時才顯示空狀態。
+    final showFrameEmptyState = _selectedCategory == _catFrame && frameList.isEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.creamLight,
@@ -128,14 +157,10 @@ class _BackpackScreenState extends State<BackpackScreen> {
         slivers: [
           SliverToBoxAdapter(child: _buildHero(context)),
           SliverToBoxAdapter(child: _buildCategories()),
-          if (isEmpty)
-            SliverToBoxAdapter(child: _buildEmptyState())
-          else ...[
-            if (showAvatars && avatarList.isNotEmpty)
-              SliverToBoxAdapter(child: _buildItemSection('頭像 Lukus', 'lukus · 共 ${avatarList.length} 款', avatarList)),
-            if (showFrames && frameList.isNotEmpty)
-              SliverToBoxAdapter(child: _buildItemSection('頭像框', 'rangi · 共 ${frameList.length} 款', frameList)),
-          ],
+          if (showAvatars) SliverToBoxAdapter(child: _buildAvatarSection(avatarList)),
+          if (showFrames && frameList.isNotEmpty)
+            SliverToBoxAdapter(child: _buildItemSection('頭像框', 'rangi · 共 ${frameList.length} 款', frameList)),
+          if (showFrameEmptyState) SliverToBoxAdapter(child: _buildFrameEmptyState()),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
@@ -241,7 +266,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildFrameEmptyState() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 40, 20, 0),
       child: Column(
@@ -249,7 +274,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
           Icon(Icons.inventory_2_outlined, size: 40, color: AppColors.fog),
           const SizedBox(height: 12),
           Text(
-            '尚未擁有任何頭像或頭像框',
+            '尚未擁有任何頭像框',
             style: TextStyle(fontSize: 13, color: AppColors.fog, letterSpacing: 0.5),
           ),
           const SizedBox(height: 16),
@@ -274,6 +299,56 @@ class _BackpackScreenState extends State<BackpackScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  /// 頭像分類固定在第一格顯示「預設頭貼」（對應 avatarId == null，顯示登入帳號頭像），
+  /// 讓使用者在沒配戴任何內建頭像時，背包裡仍能看到目前實際生效的狀態並可切回它。
+  Widget _buildAvatarSection(List<ShopItem> items) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '頭像 Lukus',
+            style: GoogleFonts.notoSerifTc(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.ink, letterSpacing: 1),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            'lukus · 共 ${items.length + 1} 款',
+            style: GoogleFonts.crimsonPro(fontStyle: FontStyle.italic, fontSize: 10, color: AppColors.fog, letterSpacing: 2),
+          ),
+          const SizedBox(height: 10),
+          GridView.count(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            crossAxisCount: 3,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            childAspectRatio: 0.72,
+            children: [
+              _buildDefaultAvatarCard(),
+              ...items.map((item) => _buildItemCard(item)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDefaultAvatarCard() {
+    final equipped = _user?.avatarId == null;
+    return ShopItemCard(
+      name: '預設頭貼',
+      price: 0,
+      isGold: false,
+      icon: Icons.person,
+      owned: true,
+      imageUrl: _user?.avatarUrl,
+      showPrice: false,
+      actionLabel: equipped ? '已配戴' : '設為預設',
+      onAction: equipped ? null : _setDefaultAvatar,
     );
   }
 
