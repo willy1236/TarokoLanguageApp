@@ -8,8 +8,8 @@ import '../../core/constants/app_colors.dart';
 /// - [owned] 為 true：圖片畫在最上層（不會被標籤蓋住），右上角顯示「已擁有」標籤，
 ///   圖片外圈套用持有感的綠色邊框；若提供 [actionLabel]（例如「配戴」）則額外顯示按鈕。
 /// - [lockedText] 非 null：整張卡片降低透明度、右上角顯示鎖頭圖示、底部顯示解鎖條件文字，不可互動。
-/// - 未擁有（含鎖定與可兌換兩種情況）：圖片套用灰階濾鏡、卡片邊框改用中性色，
-///   與已擁有的全彩＋綠框狀態明顯區隔，不只靠右上角標籤文字。
+/// - 未擁有（含鎖定與可兌換兩種情況）：圖片維持原色（避免灰階讓真實圖案看不清楚），
+///   改用外圈綠框（僅已擁有）＋卡片邊框顏色差異來區隔，不只靠右上角標籤文字。
 /// - [showPrice] 為 false 時不顯示價格列（背包頁只列出已擁有道具，不需要價格）。
 /// - [rarityColor] 非 null 時（頭像才有）依六色稀有度上色副標；頭像框無此欄位。
 class ShopItemCard extends StatelessWidget {
@@ -43,14 +43,6 @@ class ShopItemCard extends StatelessWidget {
   });
 
   static const Color _ownedColor = Color(0xFF5BC97D);
-
-  // 灰階濾鏡矩陣（標準亮度加權係數），用於未擁有道具的去飽和處理。
-  static const List<double> _greyscaleMatrix = <double>[
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0.2126, 0.7152, 0.0722, 0, 0,
-    0, 0, 0, 1, 0,
-  ];
 
   @override
   Widget build(BuildContext context) {
@@ -88,9 +80,7 @@ class ShopItemCard extends StatelessWidget {
                           ? Border.all(color: _ownedColor, width: 2)
                           : null,
                     ),
-                    child: ClipOval(
-                      child: owned ? _buildItemImage() : _buildDimmedItemImage(),
-                    ),
+                    child: ClipOval(child: _buildItemImage()),
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -197,13 +187,6 @@ class ShopItemCard extends StatelessWidget {
       height: 52,
       fit: BoxFit.cover,
       errorBuilder: (_, _, _) => Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog),
-    );
-  }
-
-  Widget _buildDimmedItemImage() {
-    return ColorFiltered(
-      colorFilter: const ColorFilter.matrix(_greyscaleMatrix),
-      child: _buildItemImage(),
     );
   }
 }
