@@ -78,19 +78,25 @@ class _MainContainerState extends State<MainContainer> {
   int _currentIndex = 0;
   bool _showProfile = false;
   String? _displayName;
+  int? _millet;
 
   @override
   void initState() {
     super.initState();
-    _fetchDisplayName();
+    _fetchUserSummary();
   }
 
-  Future<void> _fetchDisplayName() async {
+  Future<void> _fetchUserSummary() async {
     try {
       final user = await UserService.fetchMe();
-      if (mounted) setState(() => _displayName = user.displayName);
+      if (mounted) {
+        setState(() {
+          _displayName = user.displayName;
+          _millet = user.millet;
+        });
+      }
     } catch (e, st) {
-      debugPrint('Failed to fetch displayName: $e');
+      debugPrint('Failed to fetch user summary: $e');
       debugPrintStack(stackTrace: st);
     }
   }
@@ -113,6 +119,7 @@ class _MainContainerState extends State<MainContainer> {
             children: [
               HomeScreen(
                 displayName: _displayName,
+                millet: _millet,
                 onShowProfile: () => setState(() => _showProfile = true),
                 onNavigateToTab: _navigate,
               ),
@@ -130,7 +137,7 @@ class _MainContainerState extends State<MainContainer> {
               child: ProfileScreen(
                 onClose: () {
                   setState(() => _showProfile = false);
-                  _fetchDisplayName();
+                  _fetchUserSummary();
                 },
               ),
             ),
