@@ -75,7 +75,16 @@ void main() {
     test('POST /api/listening/start', () => _inspect(
       'POST',
       ApiConfig.listeningStart,
-      body: {'level': 'beginner'},
+      body: {'mode': 'word_to_zh', 'level': 'beginner'},
+    ));
+    test('PATCH /api/listening/answer (空資料測格式)', () => _inspect(
+      'PATCH',
+      ApiConfig.listeningAnswer,
+      body: {
+        'session_id': '__test__',
+        'question_id': '__test__',
+        'selected_option_id': 0,
+      },
     ));
     test('POST /api/listening/submit (空資料測格式)', () => _inspect(
       'POST',

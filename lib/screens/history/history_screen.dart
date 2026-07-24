@@ -5,6 +5,7 @@ import '../../core/network/api_client.dart';
 import '../../models/history_models.dart';
 import '../../services/history_service.dart';
 import '../learn/lesson_card_screen.dart';
+import '../learn/listening_quiz_screen.dart';
 import 'listening_history_detail_screen.dart';
 import 'quiz_history_detail_screen.dart';
 
@@ -130,17 +131,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     // 進行中
     if (record.isListening) {
-      showDialog(
-        context: context,
-        builder: (_) => AlertDialog(
-          title: const Text('尚未支援'),
-          content: const Text('聽力測驗尚未支援於 App 內續接，請留意後續更新。'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('了解'),
-            ),
-          ],
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ListeningQuizScreen(
+            mode: record.mode!,
+            level: record.level,
+          ),
         ),
       );
     } else {
