@@ -131,11 +131,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
     // 進行中
     if (record.isListening) {
+      final mode = record.mode;
+      if (mode == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('測驗資料異常，請重新開始聽力測驗')),
+        );
+        return;
+      }
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (_) => ListeningQuizScreen(
-            mode: record.mode!,
+            mode: mode,
             level: record.level,
           ),
         ),
