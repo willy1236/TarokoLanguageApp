@@ -326,7 +326,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
             crossAxisCount: 3,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
-            childAspectRatio: 0.72,
+            childAspectRatio: 0.66,
             children: [
               _buildDefaultAvatarCard(),
               ...items.map((item) => _buildItemCard(item)),
@@ -374,7 +374,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
             crossAxisCount: 3,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
-            childAspectRatio: 0.72,
+            childAspectRatio: 0.66,
             children: items.map((item) => _buildItemCard(item)).toList(),
           ),
         ],
