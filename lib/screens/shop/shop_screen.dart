@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
 import '../../services/shop_service.dart';
+import '../../shared/widgets/shop_item_card.dart';
 import '../../shared/widgets/truku_painters.dart';
 
 class ShopScreen extends StatefulWidget {
@@ -83,6 +84,28 @@ class _ShopScreenState extends State<ShopScreen> {
     } catch (_) {
       // 功能尚未開放或發生錯誤：維持 null，商品區塊不顯示，不影響商店頁面其他部分。
     }
+  }
+
+  Future<void> _confirmAndPurchase(ShopItem item) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('兌換確認'),
+        content: Text('確定要花 ${item.price} 小米兌換「${item.name}」嗎？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('兌換'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true) return;
+    await _purchaseItem(item);
   }
 
   Future<void> _purchaseItem(ShopItem item) async {
@@ -429,7 +452,7 @@ class _ShopScreenState extends State<ShopScreen> {
             crossAxisCount: 3,
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
-            childAspectRatio: 0.72,
+            childAspectRatio: 0.66,
             children: items.map((item) => _buildItemCard(item)).toList(),
           ),
         ],
@@ -442,20 +465,24 @@ class _ShopScreenState extends State<ShopScreen> {
     final rarityColor = _rarityColors[item.rarity];
     final owned = item.isOwned;
     final locked = !owned && item.unlockCondition != null ? item.unlockCondition : null;
+    final equipped = item.type == 'frame' ? _user?.frameId == item.id : _user?.avatarId == item.id;
 
     String? actionLabel;
     VoidCallback? onAction;
-    if (owned) {
+    if (owned && equipped) {
+      actionLabel = '已配戴';
+      onAction = null;
+    } else if (owned) {
       actionLabel = '配戴';
       onAction = () => _equipItem(item);
     } else if (locked == null) {
       // 兌換按鈕永遠顯示（只要未擁有且未鎖定），不因 millet < price 而隱藏，
       // 讓兌換流程在餘額不足時仍可觸及、顯示 INSUFFICIENT_BALANCE 提示。
       actionLabel = '兌換';
-      onAction = () => _purchaseItem(item);
+      onAction = () => _confirmAndPurchase(item);
     }
 
-    return _ShopItemCard(
+    return ShopItemCard(
       name: item.name,
       subtitle: item.rarity != null ? _rarityLabels[item.rarity] ?? item.rarity! : null,
       price: item.price,
@@ -467,169 +494,6 @@ class _ShopScreenState extends State<ShopScreen> {
       icon: item.type == 'frame' ? Icons.circle_outlined : Icons.face_rounded,
       actionLabel: actionLabel,
       onAction: onAction,
-    );
-  }
-}
-
-/// 共用卡片：頭像與頭像框兩種商品都用這個 widget 呈現 owned / locked / price 三種視覺狀態，
-/// 避免重複的圓形圖示 + 名稱 + 價格排版程式碼。
-///
-/// - [owned] 為 true：右上角顯示「已擁有」標籤；若提供 [actionLabel]（例如「配戴」）則額外顯示按鈕。
-/// - [lockedText] 非 null：整張卡片降低透明度、右上角顯示鎖頭圖示、底部顯示解鎖條件文字，不可互動。
-/// - 其餘情況（未擁有且未鎖定）：顯示價格；若提供 [actionLabel]（例如「兌換」）則顯示按鈕。
-/// - [rarityColor] 非 null 時（頭像才有）依六色稀有度上色價格與副標；頭像框無此欄位。
-class _ShopItemCard extends StatelessWidget {
-  final String name;
-  final String? subtitle;
-  final int price;
-  final bool isGold;
-  final Color? rarityColor;
-  final bool owned;
-  final String? lockedText;
-  final String? imageUrl;
-  final IconData icon;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  const _ShopItemCard({
-    required this.name,
-    required this.price,
-    required this.isGold,
-    required this.icon,
-    this.subtitle,
-    this.rarityColor,
-    this.owned = false,
-    this.lockedText,
-    this.imageUrl,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final accentColor = rarityColor ?? AppColors.primary;
-    return Opacity(
-      opacity: lockedText != null ? 0.55 : 1.0,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(8, 10, 8, 8),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          color: isGold ? const Color(0xFF2A1A15) : AppColors.cream,
-          border: Border.all(color: isGold ? AppColors.gold.withValues(alpha: 0.31) : accentColor.withValues(alpha: 0.35)),
-        ),
-        child: Stack(
-          children: [
-            if (owned)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: const Color(0xFF5BC97D)),
-                  child: Text('已擁有', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: AppColors.ink, letterSpacing: 1)),
-                ),
-              ),
-            if (lockedText != null)
-              Positioned(
-                top: 0,
-                right: 0,
-                child: Container(
-                  width: 18,
-                  height: 18,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.black.withValues(alpha: 0.5)),
-                  child: Icon(Icons.lock_outline_rounded, size: 10, color: AppColors.gold),
-                ),
-              ),
-            Column(
-              children: [
-                Center(
-                  child: Container(
-                    width: 64,
-                    height: 52,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isGold ? AppColors.gold.withValues(alpha: 0.1) : AppColors.creamDeep,
-                    ),
-                    child: ClipOval(child: _buildItemImage()),
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  name,
-                  textAlign: TextAlign.center,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: isGold ? AppColors.creamLight : AppColors.ink,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                if (subtitle != null) ...[
-                  const SizedBox(height: 1),
-                  Text(
-                    subtitle!,
-                    style: TextStyle(fontSize: 9, color: isGold ? AppColors.gold : accentColor, letterSpacing: 1),
-                  ),
-                ],
-                const SizedBox(height: 2),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.grain, size: 13, color: isGold ? AppColors.gold : AppColors.primary),
-                    const SizedBox(width: 2),
-                    Text(
-                      '$price',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: isGold ? AppColors.gold : AppColors.primary,
-                      ),
-                    ),
-                  ],
-                ),
-                if (lockedText != null) ...[
-                  const SizedBox(height: 4),
-                  Text(lockedText!, textAlign: TextAlign.center, style: TextStyle(fontSize: 9, color: AppColors.fog, letterSpacing: 0.5)),
-                ],
-                if (lockedText == null && actionLabel != null) ...[
-                  const SizedBox(height: 4),
-                  GestureDetector(
-                    onTap: onAction,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: AppColors.gold,
-                      ),
-                      child: Text(
-                        actionLabel!,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w700, color: AppColors.ink),
-                      ),
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // image_url 理論上一律有值（真實 GCS 網址）；errorBuilder 只是網路載入失敗時的
-  // 防禦性 fallback，不是本地素材 fallback。
-  Widget _buildItemImage() {
-    if (imageUrl == null) {
-      return Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog);
-    }
-    return Image.network(
-      imageUrl!,
-      width: 64,
-      height: 52,
-      fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog),
     );
   }
 }

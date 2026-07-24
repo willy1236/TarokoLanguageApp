@@ -72,12 +72,14 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback? onShowProfile;
   final void Function(int tabIndex)? onNavigateToTab;
   final String? displayName;
+  final int? millet;
 
   const HomeScreen({
     super.key,
     this.onShowProfile,
     this.onNavigateToTab,
     this.displayName,
+    this.millet,
   });
 
   void _onModeTap(ModeData mode) {
@@ -181,7 +183,7 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 18),
 
                 // ③ 今日進度卡（暗色）
-                const _TodayProgressCard(),
+                _TodayProgressCard(millet: millet),
               ],
             ),
           ),
@@ -244,7 +246,9 @@ class HomeScreen extends StatelessWidget {
 // ─── 今日進度卡 ──────────────────────────────────────────────────────────────
 
 class _TodayProgressCard extends StatelessWidget {
-  const _TodayProgressCard();
+  final int? millet;
+
+  const _TodayProgressCard({this.millet});
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +309,7 @@ class _TodayProgressCard extends StatelessWidget {
                           Icon(Icons.grain, size: 18, color: AppColors.gold),
                           const SizedBox(width: 4),
                           Text(
-                            '320',
+                            '${millet ?? 0}',
                             style: GoogleFonts.notoSerifTc(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,

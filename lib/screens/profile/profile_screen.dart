@@ -8,6 +8,7 @@ import '../../services/auth_service.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
+import '../backpack/backpack_screen.dart';
 import '../shop/shop_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -20,7 +21,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   UserModel? _user;
-  bool _loadingUser = true;
 
   // 後端 GET /api/shop/items 的合併目錄（頭像＋頭像框，含 image_url）；id → item，
   // 供渲染頭貼／頭像框用。空 map 代表尚未取得或功能未開放，此時直接顯示預設圖示。
@@ -37,19 +37,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     try {
       final user = await ShopService.fetchMe();
       if (!mounted) return;
-      setState(() {
-        _user = user;
-        _loadingUser = false;
-      });
+      setState(() => _user = user);
     } catch (e, st) {
       debugPrint('Failed to fetch user: $e');
       debugPrintStack(stackTrace: st);
       // 讀取失敗時退回空白/預設 UserModel，避免整個個人頁面崩潰。
       if (!mounted) return;
-      setState(() {
-        _user = UserModel(uid: 0, email: '', createdAt: DateTime.now());
-        _loadingUser = false;
-      });
+      setState(() => _user = UserModel(uid: 0, email: '', createdAt: DateTime.now()));
     }
   }
 
@@ -65,60 +59,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _equipAvatar(String avatarId) async {
-    try {
-      final updated = await ShopService.equipAvatar(avatarId);
-      if (!mounted) return;
-      setState(() {
-        _user = updated.avatarId == avatarId
-            ? updated
-            : updated.copyWith(avatarId: avatarId);
-      });
-    } on ShopFeatureUnavailableException {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('功能尚未開放')),
-      );
-    } on ShopApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('配戴失敗，請稍後再試')),
-      );
-    }
-  }
-
-  Future<void> _equipFrame(String frameId) async {
-    try {
-      final updated = await ShopService.equipFrame(frameId);
-      if (!mounted) return;
-      setState(() {
-        _user = updated.frameId == frameId
-            ? updated
-            : updated.copyWith(frameId: frameId);
-      });
-    } on ShopFeatureUnavailableException {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('功能尚未開放')),
-      );
-    } on ShopApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('配戴失敗，請稍後再試')),
-      );
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -129,8 +69,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             padding: EdgeInsets.zero,
             children: [
               _buildHero(),
-              _buildBadgeSection(),
-              _buildFrameSection(),
+              _buildInventorySection(),
               _buildAccountSection(),
               _buildPreferencesSection(),
               _buildOtherSection(),
@@ -291,15 +230,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Positioned(
             bottom: 6,
             right: 6,
-            child: Container(
-              width: 26,
-              height: 26,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.gold,
-                border: Border.all(color: AppColors.primary, width: 2),
+            child: GestureDetector(
+              onTap: _openBackpack,
+              child: Container(
+                width: 26,
+                height: 26,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: AppColors.gold,
+                  border: Border.all(color: AppColors.primary, width: 2),
+                ),
+                child: CustomPaint(painter: _EditIconPainter()),
               ),
-              child: CustomPaint(painter: _EditIconPainter()),
             ),
           ),
         ],
@@ -374,341 +316,151 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── 大頭貼選擇 ────────────────────────────────────────────────────────────
+  // ── 背包／小米幣 ──────────────────────────────────────────────────────────
 
-  /// 前往商店頁面；商店頁目前不會 pop 回更新後的 UserModel（見 Task 4 報告），
-  /// 因此回到本頁後一律重新呼叫 fetchMe() 以取得最新的 avatarId/ownedAvatarIds。
-  Future<void> _openShop() async {
+  /// 前往背包頁面（統一查看已擁有的頭像／頭像框並配戴）；背包頁目前不會 pop 回
+  /// 更新後的 UserModel，因此回到本頁後一律重新呼叫 fetchMe() 以取得最新的
+  /// avatarId/frameId。
+  Future<void> _openBackpack() async {
     await Navigator.of(context).push(
-      MaterialPageRoute<UserModel?>(builder: (_) => const ShopScreen()),
+      MaterialPageRoute<void>(builder: (_) => const BackpackScreen()),
     );
     if (!mounted) return;
     _loadUser();
   }
 
-  Widget _buildBadgeSection() {
-    final ownedIds = _user?.ownedAvatarIds ?? const <String>[];
-    final currentAvatarId = _user?.avatarId;
+  /// 前往商店頁面兌換新道具；商店頁不會 pop 回更新後的 UserModel，
+  /// 因此回到本頁後一律重新呼叫 fetchMe() 以取得最新的 millet/owned 清單。
+  Future<void> _openShop() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const ShopScreen()),
+    );
+    if (!mounted) return;
+    _loadUser();
+  }
 
+  Widget _buildInventorySection() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                'LUKUS · 大頭貼',
-                style: GoogleFonts.crimsonPro(
-                  fontStyle: FontStyle.italic,
-                  fontSize: 10,
-                  color: AppColors.fog,
-                  letterSpacing: 3,
-                ),
-              ),
-              GestureDetector(
-                onTap: _openShop,
-                child: Text(
-                  '前往商店 →',
-                  style: TextStyle(fontSize: 11, color: AppColors.primary, letterSpacing: 1),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.cream,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.creamDeep),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '從擁有的徽章中選一個作為頭貼',
-                  style: TextStyle(fontSize: 11, color: AppColors.fog, letterSpacing: 1),
-                ),
-                const SizedBox(height: 10),
-                if (_loadingUser)
-                  const SizedBox(
-                    height: 64,
-                    child: Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                      ),
-                    ),
-                  )
-                else if (ownedIds.isEmpty)
-                  SizedBox(
-                    height: 64,
-                    child: Center(
-                      child: Text(
-                        '尚未擁有任何頭像，前往商店兌換吧',
-                        style: TextStyle(fontSize: 11, color: AppColors.fog, letterSpacing: 0.5),
-                      ),
-                    ),
-                  )
-                else
-                  _buildPickerRow(
-                    ownedIds: ownedIds,
-                    selectedId: currentAvatarId,
-                    onSelect: _equipAvatar,
-                    placeholderIcon: Icons.face_rounded,
-                  ),
-                const SizedBox(height: 12),
-                const Divider(height: 1, color: AppColors.creamDeep),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Container(
-                      width: 26,
-                      height: 26,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.gold.withValues(alpha: 0.2),
-                      ),
-                      child: const Icon(Icons.grain, size: 16, color: AppColors.gold),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          RichText(
-                            text: TextSpan(
-                              style: GoogleFonts.notoSerifTc(
-                                fontSize: 13,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.ink,
-                                letterSpacing: 0.5,
-                              ),
-                              children: const [
-                                TextSpan(text: '目前小米：'),
-                                TextSpan(
-                                  text: '320',
-                                  style: TextStyle(color: AppColors.primary),
-                                ),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '每日登入 / 完成單元都能得小米',
-                            style: TextStyle(fontSize: 10, color: AppColors.fog, letterSpacing: 1),
-                          ),
-                        ],
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: _openShop,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary,
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Text(
-                          '逛商店',
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.creamLight,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFrameSection() {
-    final ownedIds = _user?.ownedFrameIds ?? const <String>[];
-    final currentFrameId = _user?.frameId;
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                'RANGI · 頭像框',
-                style: GoogleFonts.crimsonPro(
-                  fontStyle: FontStyle.italic,
-                  fontSize: 10,
-                  color: AppColors.fog,
-                  letterSpacing: 3,
-                ),
-              ),
-              GestureDetector(
-                onTap: _openShop,
-                child: Text(
-                  '前往商店 →',
-                  style: TextStyle(fontSize: 11, color: AppColors.primary, letterSpacing: 1),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: AppColors.cream,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.creamDeep),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '從擁有的頭像框中選一個配戴，與頭貼各自獨立',
-                  style: TextStyle(fontSize: 11, color: AppColors.fog, letterSpacing: 1),
-                ),
-                const SizedBox(height: 10),
-                if (_loadingUser)
-                  const SizedBox(
-                    height: 64,
-                    child: Center(
-                      child: SizedBox(
-                        width: 20,
-                        height: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
-                      ),
-                    ),
-                  )
-                else if (ownedIds.isEmpty)
-                  SizedBox(
-                    height: 64,
-                    child: Center(
-                      child: Text(
-                        '尚未擁有任何頭像框，前往商店兌換吧',
-                        style: TextStyle(fontSize: 11, color: AppColors.fog, letterSpacing: 0.5),
-                      ),
-                    ),
-                  )
-                else
-                  _buildPickerRow(
-                    ownedIds: ownedIds,
-                    selectedId: currentFrameId,
-                    onSelect: _equipFrame,
-                    placeholderIcon: Icons.circle_outlined,
-                  ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 共用的橫向選擇列：頭貼與頭像框選擇器都用這個 widget 呈現「已擁有清單 + 加號跳轉商店」，
-  /// 避免重複的圓形圖示 + 已選 checkmark 排版程式碼。
-  Widget _buildPickerRow({
-    required List<String> ownedIds,
-    required String? selectedId,
-    required void Function(String id) onSelect,
-    required IconData placeholderIcon,
-  }) {
-    return SizedBox(
-      height: 64,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        itemCount: ownedIds.length + 1,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (context, i) {
-          if (i == ownedIds.length) {
-            return GestureDetector(
-              onTap: _openShop,
-              child: Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: AppColors.gold.withValues(alpha: 0.5),
-                    width: 1.5,
-                  ),
-                  color: AppColors.gold.withValues(alpha: 0.06),
-                ),
-                child: const Icon(Icons.add, color: AppColors.primary, size: 20),
-              ),
-            );
-          }
-          final id = ownedIds[i];
-          final selected = id == selectedId;
-          final imageUrl = _itemCatalogById[id]?.imageUrl;
-          return GestureDetector(
-            onTap: () => onSelect(id),
-            child: Stack(
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.creamDeep),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
               children: [
                 Container(
-                  width: 56,
-                  height: 56,
+                  width: 26,
+                  height: 26,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: selected ? AppColors.primary : Colors.transparent,
-                    border: Border.all(
-                      color: selected ? AppColors.gold : AppColors.creamDeep,
-                      width: selected ? 2.0 : 1.5,
-                    ),
+                    color: AppColors.gold.withValues(alpha: 0.2),
                   ),
-                  child: ClipOval(
-                    child: imageUrl == null
-                        ? Icon(
-                            placeholderIcon,
-                            size: 34,
-                            color: selected ? AppColors.gold : AppColors.fog,
-                          )
-                        : Image.network(
-                            imageUrl,
-                            width: 56,
-                            height: 56,
-                            fit: BoxFit.cover,
-                            errorBuilder: (_, _, _) => Icon(
-                              placeholderIcon,
-                              size: 34,
-                              color: selected ? AppColors.gold : AppColors.fog,
-                            ),
+                  child: const Icon(Icons.grain, size: 16, color: AppColors.gold),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RichText(
+                        text: TextSpan(
+                          style: GoogleFonts.notoSerifTc(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.ink,
+                            letterSpacing: 0.5,
                           ),
+                          children: [
+                            const TextSpan(text: '目前小米：'),
+                            TextSpan(
+                              text: '${_user?.millet ?? 0}',
+                              style: const TextStyle(color: AppColors.primary),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '每日登入 / 完成單元都能得小米',
+                        style: TextStyle(fontSize: 10, color: AppColors.fog, letterSpacing: 1),
+                      ),
+                    ],
                   ),
                 ),
-                if (selected)
-                  Positioned(
-                    bottom: -2,
-                    right: -2,
-                    child: Container(
-                      width: 18,
-                      height: 18,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.gold,
-                        border: Border.all(color: AppColors.creamLight, width: 1.5),
-                      ),
-                      child: const Icon(Icons.check, size: 10, color: AppColors.ink),
-                    ),
-                  ),
               ],
             ),
-          );
-        },
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: AppColors.creamDeep),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _openBackpack,
+              child: Row(
+                children: [
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                    ),
+                    child: const Icon(Icons.inventory_2_outlined, size: 15, color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '我的背包 · 查看已擁有的頭像與頭像框',
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ink,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.fog, size: 16),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Divider(height: 1, color: AppColors.creamDeep),
+            const SizedBox(height: 12),
+            GestureDetector(
+              onTap: _openShop,
+              child: Row(
+                children: [
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: AppColors.primary.withValues(alpha: 0.12),
+                    ),
+                    child: const Icon(Icons.storefront_outlined, size: 15, color: AppColors.primary),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '小米商店 · 兌換頭像與頭像框',
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ink,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.fog, size: 16),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
