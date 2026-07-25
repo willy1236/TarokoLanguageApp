@@ -67,8 +67,9 @@ class _EventsScreenState extends State<EventsScreen> {
 
   String _statusLabel(EventSummary e) {
     if (e.isJoined) return '已報名';
-    if (e.effectiveStatus == 'ended') return '已結束';
-    if (e.status == 'cancelled') return '已取消';
+    if (e.displayStatus == 'ended') return '已結束';
+    if (e.displayStatus == 'cancelled') return '已取消';
+    if (e.isFull) return '已額滿';
     if (e.registrationOpen) return '報名中';
     return '';
   }

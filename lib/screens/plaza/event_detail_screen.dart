@@ -132,7 +132,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   Future<String?> _askCancelReason() async {
     final controller = TextEditingController();
-    return showDialog<String>(
+    try {
+      return await showDialog<String>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.creamLight,
@@ -176,7 +177,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           ),
         ],
       ),
-    );
+      );
+    } finally {
+      controller.dispose();
+    }
   }
 
   @override

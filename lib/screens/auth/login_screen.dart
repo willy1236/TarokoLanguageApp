@@ -35,8 +35,10 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loggingIn = true);
     try {
       await AuthService.signInWithGoogle();
-      // 登入成功才上傳 FCM token（需 JWT）。失敗不阻斷進首頁。
-      await FcmService.registerDevice();
+      // 登入成功才上傳 FCM token（需 JWT）。失敗不阻斷進首頁，故獨立 try/catch。
+      try {
+        await FcmService.registerDevice();
+      } catch (_) {}
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } on AuthException catch (e) {
