@@ -31,4 +31,14 @@ class ApiConfig {
 
   static const String videos = '/api/videos';
   static String videoDetail(int id) => '/api/videos/$id';
+
+  // 活動 + 提醒 + 裝置推播（見 Truku_backend backend/routes/events.ts）
+  static const String events = '/api/events';
+  static const String eventsMine = '/api/events/mine';
+  static String eventDetail(int id) => '/api/events/$id';
+  static String eventJoin(int id) => '/api/events/$id/join';
+  static String eventCancel(int id) => '/api/events/$id/cancel';
+  static String eventReminders(int id) => '/api/events/$id/reminders';
+  static String reminderDetail(int id) => '/api/reminders/$id';
+  static const String devices = '/api/devices';
 }

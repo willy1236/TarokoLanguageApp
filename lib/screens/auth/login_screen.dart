@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
+import '../../services/fcm_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 
@@ -34,6 +35,8 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _loggingIn = true);
     try {
       await AuthService.signInWithGoogle();
+      // 登入成功才上傳 FCM token（需 JWT）。失敗不阻斷進首頁。
+      await FcmService.registerDevice();
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } on AuthException catch (e) {
