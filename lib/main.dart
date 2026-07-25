@@ -15,6 +15,7 @@ import 'screens/plaza/plaza_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/splash/splash_screen.dart';
+import 'services/checkin_service.dart';
 import 'services/user_service.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 
@@ -81,11 +82,14 @@ class _MainContainerState extends State<MainContainer> {
   bool _showProfile = false;
   String? _displayName;
   int? _millet;
+  bool _checkedInToday = false;
+  int _checkinStreak = 0;
 
   @override
   void initState() {
     super.initState();
     _fetchUserSummary();
+    _loadCheckinStatus();
   }
 
   Future<void> _fetchUserSummary() async {
@@ -100,6 +104,57 @@ class _MainContainerState extends State<MainContainer> {
     } catch (e, st) {
       debugPrint('Failed to fetch user summary: $e');
       debugPrintStack(stackTrace: st);
+    }
+  }
+
+  Future<void> _loadCheckinStatus() async {
+    try {
+      final status = await CheckinService.fetchStatus();
+      if (!mounted) return;
+      setState(() {
+        _checkedInToday = status.checkedInToday;
+        _checkinStreak = status.checkinStreak;
+        _millet = status.millet;
+      });
+    } catch (_) {
+      // 功能尚未開放或發生錯誤：維持現狀，簽到按鈕保持預設（可點）樣式。
+    }
+  }
+
+  Future<void> _checkin() async {
+    try {
+      final status = await CheckinService.checkin();
+      if (!mounted) return;
+      setState(() {
+        _checkedInToday = status.checkedInToday;
+        _checkinStreak = status.checkinStreak;
+        _millet = status.millet;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('簽到成功，+50 小米')),
+      );
+    } on CheckinFeatureUnavailableException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('功能尚未開放')),
+      );
+    } on CheckinApiException catch (e) {
+      if (!mounted) return;
+      if (e.code == 'ALREADY_CHECKED_IN') {
+        setState(() => _checkedInToday = true);
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('今日已簽到')),
+        );
+        return;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('簽到失敗，請稍後再試')),
+      );
     }
   }
 
@@ -122,6 +177,9 @@ class _MainContainerState extends State<MainContainer> {
               HomeScreen(
                 displayName: _displayName,
                 millet: _millet,
+                checkedInToday: _checkedInToday,
+                checkinStreak: _checkinStreak,
+                onCheckin: _checkin,
                 onShowProfile: () => setState(() => _showProfile = true),
                 onNavigateToTab: _navigate,
               ),

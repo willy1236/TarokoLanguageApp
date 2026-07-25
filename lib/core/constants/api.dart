@@ -34,4 +34,8 @@ class ApiConfig {
 
   static const String videos = '/api/videos';
   static String videoDetail(int id) => '/api/videos/$id';
+
+  // 每日簽到（issue #24，見 每日簽到.md）
+  static const String checkinStatus = '/api/checkin/status';
+  static const String checkinAction = '/api/checkin';
 }
