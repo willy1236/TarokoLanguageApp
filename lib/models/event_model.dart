@@ -5,6 +5,16 @@
 // 後端回傳為 snake_case，這裡轉成 Dart 慣用的 camelCase。未知欄位（v2 擴充如
 // reminder_note、報名截止…）不解析也不影響，需要時再補欄位即可。
 
+/// 後端理論上都回數字，但曾遇過某些環境把 bigint 欄位序列化成字串；
+/// 這裡統一容錯解析，避免整頁因單一欄位型別跳掉而白畫面。
+int? asEventInt(dynamic v) {
+  if (v == null) return null;
+  if (v is int) return v;
+  if (v is num) return v.toInt();
+  if (v is String) return int.tryParse(v);
+  return null;
+}
+
 class EventDetail {
   final int id;
   final int hostUid;
@@ -65,8 +75,8 @@ class EventDetail {
   factory EventDetail.fromJson(Map<String, dynamic> json) {
     final rawParts = json['participants'] as List<dynamic>? ?? const [];
     return EventDetail(
-      id: json['id'] as int,
-      hostUid: json['host_uid'] as int,
+      id: asEventInt(json['id'])!,
+      hostUid: asEventInt(json['host_uid'])!,
       title: json['title'] as String,
       description: json['description'] as String?,
       startsAt: DateTime.parse(json['starts_at'] as String),
@@ -78,7 +88,7 @@ class EventDetail {
       contactEmail: json['contact_email'] as String?,
       contactPhone: json['contact_phone'] as String?,
       reminderNote: json['reminder_note'] as String?,
-      maxParticipants: json['max_participants'] as int?,
+      maxParticipants: asEventInt(json['max_participants']),
       category: json['category'] as String?,
       status: json['status'] as String? ?? 'active',
       effectiveStatus: json['effective_status'] as String?,
@@ -137,15 +147,15 @@ class EventSummary {
 
   factory EventSummary.fromJson(Map<String, dynamic> json) {
     return EventSummary(
-      id: json['id'] as int,
-      hostUid: json['host_uid'] as int?,
+      id: asEventInt(json['id'])!,
+      hostUid: asEventInt(json['host_uid']),
       title: json['title'] as String,
       startsAt: DateTime.parse(json['starts_at'] as String),
       location: json['location'] as String?,
-      maxParticipants: json['max_participants'] as int?,
+      maxParticipants: asEventInt(json['max_participants']),
       category: json['category'] as String?,
       status: json['status'] as String? ?? 'active',
-      participantCount: json['participant_count'] as int? ?? 0,
+      participantCount: asEventInt(json['participant_count']) ?? 0,
       isJoined: json['is_joined'] as bool? ?? false,
       registrationDeadline: json['registration_deadline'] != null
           ? DateTime.parse(json['registration_deadline'] as String)
@@ -171,7 +181,7 @@ class EventParticipant {
 
   factory EventParticipant.fromJson(Map<String, dynamic> json) {
     return EventParticipant(
-      uid: json['uid'] as int,
+      uid: asEventInt(json['uid'])!,
       displayName: json['display_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       joinedAt: json['joined_at'] != null
@@ -202,8 +212,8 @@ class EventReminder {
 
   factory EventReminder.fromJson(Map<String, dynamic> json) {
     return EventReminder(
-      id: json['id'] as int,
-      eventId: json['event_id'] as int?,
+      id: asEventInt(json['id'])!,
+      eventId: asEventInt(json['event_id']),
       message: json['message'] as String,
       scheduledAt: DateTime.parse(json['scheduled_at'] as String),
       status: json['status'] as String? ?? 'pending',

@@ -95,7 +95,7 @@ class EventService {
       body['category'] = category.trim();
     }
     final data = await ApiClient.post(ApiConfig.events, body);
-    return data['id'] as int;
+    return asEventInt(data['id'])!;
   }
 
   /// 活動詳情（含參加者清單）。
