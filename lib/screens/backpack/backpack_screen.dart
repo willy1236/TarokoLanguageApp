@@ -125,6 +125,33 @@ class _BackpackScreenState extends State<BackpackScreen> {
     }
   }
 
+  /// 取消配戴頭像框，對應 _user?.frameId == null 的狀態。
+  Future<void> _clearFrame() async {
+    try {
+      final updated = await ShopService.clearFrame();
+      if (!mounted) return;
+      setState(() => _user = updated);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已取消配戴頭像框')),
+      );
+    } on ShopFeatureUnavailableException {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('功能尚未開放')),
+      );
+    } on ShopApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message)),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('配戴失敗，請稍後再試')),
+      );
+    }
+  }
+
   Future<void> _openShop() async {
     await Navigator.of(context).push(
       MaterialPageRoute<UserModel?>(builder: (_) => const ShopScreen()),
@@ -147,9 +174,6 @@ class _BackpackScreenState extends State<BackpackScreen> {
     final showFrames = _selectedCategory == _catAll || _selectedCategory == _catFrame;
     final avatarList = ownedItems.where((i) => i.type == 'avatar').toList();
     final frameList = ownedItems.where((i) => i.type == 'frame').toList();
-    // 頭像分類一律有「預設頭貼」這個選項可看/可選，所以永遠不算空；
-    // 頭像框沒有這種預設項目，只有在使用者只看「頭像框」分類且真的沒擁有任何一個時才顯示空狀態。
-    final showFrameEmptyState = _selectedCategory == _catFrame && frameList.isEmpty;
 
     return Scaffold(
       backgroundColor: AppColors.creamLight,
@@ -158,9 +182,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
           SliverToBoxAdapter(child: _buildHero(context)),
           SliverToBoxAdapter(child: _buildCategories()),
           if (showAvatars) SliverToBoxAdapter(child: _buildAvatarSection(avatarList)),
-          if (showFrames && frameList.isNotEmpty)
-            SliverToBoxAdapter(child: _buildItemSection('頭像框', 'rangi · 共 ${frameList.length} 款', frameList)),
-          if (showFrameEmptyState) SliverToBoxAdapter(child: _buildFrameEmptyState()),
+          if (showFrames) SliverToBoxAdapter(child: _buildFrameSection(frameList)),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
@@ -266,42 +288,6 @@ class _BackpackScreenState extends State<BackpackScreen> {
     );
   }
 
-  Widget _buildFrameEmptyState() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 40, 20, 0),
-      child: Column(
-        children: [
-          Icon(Icons.inventory_2_outlined, size: 40, color: AppColors.fog),
-          const SizedBox(height: 12),
-          Text(
-            '尚未擁有任何頭像框',
-            style: TextStyle(fontSize: 13, color: AppColors.fog, letterSpacing: 0.5),
-          ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: _openShop,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Text(
-                '前往商店兌換',
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.creamLight,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   /// 頭像分類固定在第一格顯示「預設頭貼」（對應 avatarId == null，顯示登入帳號頭像），
   /// 讓使用者在沒配戴任何內建頭像時，背包裡仍能看到目前實際生效的狀態並可切回它。
   Widget _buildAvatarSection(List<ShopItem> items) {
@@ -352,19 +338,21 @@ class _BackpackScreenState extends State<BackpackScreen> {
     );
   }
 
-  Widget _buildItemSection(String title, String subtitle, List<ShopItem> items) {
+  /// 頭像框分類固定在第一格顯示「不配戴」（對應 frameId == null，維持純頭像圓形無框），
+  /// 讓使用者在沒配戴任何頭像框時，背包裡仍能看到目前實際生效的狀態並可切回它。
+  Widget _buildFrameSection(List<ShopItem> items) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            title,
+            '頭像框',
             style: GoogleFonts.notoSerifTc(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.ink, letterSpacing: 1),
           ),
           const SizedBox(height: 2),
           Text(
-            subtitle,
+            'rangi · 共 ${items.length + 1} 款',
             style: GoogleFonts.crimsonPro(fontStyle: FontStyle.italic, fontSize: 10, color: AppColors.fog, letterSpacing: 2),
           ),
           const SizedBox(height: 10),
@@ -375,10 +363,27 @@ class _BackpackScreenState extends State<BackpackScreen> {
             crossAxisSpacing: 8,
             mainAxisSpacing: 8,
             childAspectRatio: 0.66,
-            children: items.map((item) => _buildItemCard(item)).toList(),
+            children: [
+              _buildDefaultFrameCard(),
+              ...items.map((item) => _buildItemCard(item)),
+            ],
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildDefaultFrameCard() {
+    final equipped = _user?.frameId == null;
+    return ShopItemCard(
+      name: '不配戴',
+      price: 0,
+      isGold: false,
+      icon: Icons.circle_outlined,
+      owned: true,
+      showPrice: false,
+      actionLabel: equipped ? '已配戴' : '設為預設',
+      onAction: equipped ? null : _clearFrame,
     );
   }
 

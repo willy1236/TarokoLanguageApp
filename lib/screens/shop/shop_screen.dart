@@ -6,6 +6,7 @@ import '../../models/user_model.dart';
 import '../../services/shop_service.dart';
 import '../../shared/widgets/shop_item_card.dart';
 import '../../shared/widgets/truku_painters.dart';
+import '../millet/millet_ledger_screen.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -257,6 +258,10 @@ class _ShopScreenState extends State<ShopScreen> {
                       ),
                     ),
                     _circleBtn(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const MilletLedgerScreen()),
+                      ),
                       child: const Icon(Icons.access_time_rounded, color: AppColors.creamLight, size: 16),
                     ),
                   ],
