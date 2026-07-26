@@ -56,7 +56,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _itemCatalogById = {for (final i in items) i.id: i};
       });
     } catch (_) {
-      // 功能尚未開放或發生錯誤：維持空 map，頭貼一律顯示預設圖示。
+      // 取得失敗（含離線）：維持空 map，頭貼一律顯示預設圖示。
     }
   }
 

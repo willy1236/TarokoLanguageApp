@@ -50,7 +50,7 @@ class _ShopScreenState extends State<ShopScreen> {
   bool _loadingUser = true;
 
   // 後端 GET /api/shop/items 的合併目錄（頭像＋頭像框，含 image_url／is_owned）；
-  // null 代表尚未取得或功能尚未開放，此時不顯示商品區塊，只顯示商店其餘的基本介面
+  // null 代表尚未取得或取得失敗，此時不顯示商品區塊，只顯示商店其餘的基本介面
   // （餘額卡），避免顯示跟後端擁有狀態對不上的假資料。
   List<ShopItem>? _serverItems;
 
@@ -85,7 +85,7 @@ class _ShopScreenState extends State<ShopScreen> {
       if (!mounted) return;
       setState(() => _serverItems = items);
     } catch (_) {
-      // 功能尚未開放或發生錯誤：維持 null，商品區塊不顯示，不影響商店頁面其他部分。
+      // 取得失敗（含離線）：維持 null，商品區塊不顯示，不影響商店頁面其他部分。
     }
   }
 
@@ -184,7 +184,7 @@ class _ShopScreenState extends State<ShopScreen> {
     final showFrames = _selectedCategory == _catAll || _selectedCategory == _catFrame || _selectedCategory == _catOwned;
 
     final onlyOwned = _selectedCategory == _catOwned;
-    // 沒有本地 fallback：_serverItems 為 null（尚未取得或功能未開放）時直接是空清單，
+    // 沒有本地 fallback：_serverItems 為 null（尚未取得或取得失敗）時直接是空清單，
     // 下面 isNotEmpty 判斷會讓對應區塊不顯示。
     final allItems = _serverItems ?? const <ShopItem>[];
     var avatarList = allItems.where((i) => i.type == 'avatar').toList();
