@@ -39,9 +39,30 @@ class AuthService {
       }
       throw AuthException('Google 登入失敗：${e.description ?? e.code}');
     }
+    return _exchangeAndStore(googleUser);
+  }
+
+  /// 靜默登入：重用裝置上先前已授權過本 app 的 Google 帳號，不叫出任何 UI。
+  /// 成功回 user JSON；無可用帳號或失敗回 `null`（不 throw），由呼叫端決定備援。
+  /// 供整合測試自動登入使用；正式流程仍走 [signInWithGoogle]。
+  static Future<Map<String, dynamic>?> signInSilently() async {
+    try {
+      await _ensureGoogleSignInInitialized();
+      final account = await _googleSignIn.attemptLightweightAuthentication();
+      if (account == null) return null;
+      return await _exchangeAndStore(account);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// 用 [GoogleSignInAccount] 換 Firebase user，再打後端換系統 JWT 並存入 storage。
+  static Future<Map<String, dynamic>> _exchangeAndStore(
+    GoogleSignInAccount googleUser,
+  ) async {
     final googleAuth = googleUser.authentication;
 
-    // 2. 用 Google credential 換 Firebase user
+    // 用 Google credential 換 Firebase user
     final credential = GoogleAuthProvider.credential(idToken: googleAuth.idToken);
     final userCred = await _auth.signInWithCredential(credential);
     final firebaseToken = await userCred.user?.getIdToken();
@@ -49,7 +70,7 @@ class AuthService {
       throw AuthException('取得 Firebase token 失敗');
     }
 
-    // 3. 打後端換系統 JWT
+    // 打後端換系統 JWT
     final resp = await http.post(
       Uri.parse(ApiConfig.baseUrl + ApiConfig.authLogin),
       headers: {'Content-Type': 'application/json'},
