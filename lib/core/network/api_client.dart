@@ -6,6 +6,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import '../constants/api.dart';
 import '../../main.dart';
@@ -123,6 +124,11 @@ class ApiClient {
       if (nav != null) {
         nav.pushNamedAndRemoveUntil('/login', (route) => false);
       }
+      scaffoldMessengerKey.currentState
+        ?..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(content: Text('登入已過期，請重新登入')),
+        );
     });
   }
 

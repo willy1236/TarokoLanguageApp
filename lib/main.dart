@@ -21,6 +21,7 @@ import 'services/user_service.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
+final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +42,7 @@ class KariTrukuApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
+      scaffoldMessengerKey: scaffoldMessengerKey,
       title: 'KARI TRUKU',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
