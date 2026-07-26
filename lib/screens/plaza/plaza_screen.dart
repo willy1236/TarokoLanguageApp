@@ -5,7 +5,7 @@ import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'compose_screen.dart';
-import 'event_detail_screen.dart';
+import '../events/event_detail_screen.dart';
 
 class PlazaScreen extends StatefulWidget {
   const PlazaScreen({super.key});

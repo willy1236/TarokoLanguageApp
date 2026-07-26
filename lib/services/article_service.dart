@@ -12,7 +12,7 @@ class ArticleService {
     final json = await ApiClient.get(
       ApiConfig.articles,
       query: {
-        if (category != null) 'category': category,
+        'category': ?category,
         'sort': sort,
         'page': '$page',
         'page_size': '$pageSize',

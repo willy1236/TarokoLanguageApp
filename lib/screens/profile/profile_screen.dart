@@ -9,7 +9,7 @@ import '../../services/fcm_service.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
-import '../plaza/my_events_screen.dart';
+import '../events/my_events_screen.dart';
 import '../shop/shop_screen.dart';
 
 class ProfileScreen extends StatefulWidget {

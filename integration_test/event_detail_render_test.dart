@@ -5,7 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'package:flutter_application_1/firebase_options.dart';
-import 'package:flutter_application_1/screens/plaza/event_detail_screen.dart';
+import 'package:flutter_application_1/screens/events/event_detail_screen.dart';
 
 // 直接 pump EventDetailScreen(eventId: 6)（已知是 effective_status=ended 的活動，
 // 見 api_inspector_test.dart 的輸出），繞過導覽流程，專門抓渲染期間真正丟出的例外。

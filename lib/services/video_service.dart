@@ -12,7 +12,7 @@ class VideoService {
     final json = await ApiClient.get(
       ApiConfig.videos,
       query: {
-        if (category != null) 'category': category,
+        'category': ?category,
         'sort': sort,
         'page': '$page',
         'page_size': '$pageSize',
