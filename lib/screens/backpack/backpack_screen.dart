@@ -5,6 +5,7 @@ import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
 import '../../services/shop_service.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/shop_item_card.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../shop/shop_screen.dart';
@@ -56,7 +57,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
 
   Future<void> _load() async {
     try {
-      final user = await ShopService.fetchMe();
+      final user = await UserService.fetchMe();
       final items = await ShopService.fetchShopItems();
       if (!mounted) return;
       setState(() {

@@ -28,12 +28,6 @@ class ShopService {
         .toList();
   }
 
-  /// 呼叫既有 GET /api/me，解析為 [UserModel]。
-  static Future<UserModel> fetchMe() async {
-    final json = await ApiClient.get(ApiConfig.meEndpoint);
-    return UserModel.fromJson(json);
-  }
-
   /// 呼叫 POST /api/shop/items/{id}/purchase。頭像與頭像框走同一支端點，
   /// 後端依 item_catalog.type 自動判斷，呼叫端不需分開處理。
   static Future<UserModel> purchaseItem(String itemId) async {
@@ -85,7 +79,7 @@ class ShopService {
   }
 
   static Future<UserModel> _patchMe(Map<String, dynamic> body) async {
-    final json = await ApiClient.patch(ApiConfig.meEndpoint, body);
+    final json = await ApiClient.patch(ApiConfig.me, body);
     return UserModel.fromJson(json);
   }
 

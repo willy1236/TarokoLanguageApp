@@ -5,6 +5,7 @@ import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
 import '../../services/shop_service.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/shop_item_card.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../millet/millet_ledger_screen.dart';
@@ -62,7 +63,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
   Future<void> _loadUser() async {
     try {
-      final user = await ShopService.fetchMe();
+      final user = await UserService.fetchMe();
       if (!mounted) return;
       setState(() {
         _user = user;

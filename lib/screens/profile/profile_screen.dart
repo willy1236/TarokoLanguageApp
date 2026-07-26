@@ -36,7 +36,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUser() async {
     try {
-      final user = await ShopService.fetchMe();
+      final user = await UserService.fetchMe();
       if (!mounted) return;
       setState(() => _user = user);
     } catch (e, st) {
