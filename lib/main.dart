@@ -81,8 +81,10 @@ class MainContainer extends StatefulWidget {
 }
 
 class _MainContainerState extends State<MainContainer> {
+  static const int _profileIndex = 6;
+
   int _currentIndex = 0;
-  bool _showProfile = false;
+  int _previousIndex = 0;
   String? _displayName;
   int? _millet;
   bool _checkedInToday = false;
@@ -158,52 +160,87 @@ class _MainContainerState extends State<MainContainer> {
 
   void _navigate(int index) => setState(() {
     _currentIndex = index;
-    _showProfile = false;
   });
+
+  void _openProfile() => setState(() {
+    _previousIndex = _currentIndex;
+    _currentIndex = _profileIndex;
+  });
+
+  void _closeProfile() {
+    setState(() => _currentIndex = _previousIndex);
+    _fetchUserSummary();
+  }
+
+  Future<void> _handleBack() async {
+    if (_currentIndex == _profileIndex) {
+      _closeProfile();
+      return;
+    }
+    if (_currentIndex != 0) {
+      _navigate(0);
+      return;
+    }
+    await _confirmExit();
+  }
+
+  Future<void> _confirmExit() async {
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('離開'),
+        content: const Text('確定要關閉 App 嗎？'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('離開'),
+          ),
+        ],
+      ),
+    );
+    if (shouldExit == true) {
+      await SystemNavigator.pop();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBody: true,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 主內容（6 個分頁）
-          IndexedStack(
-            index: _currentIndex,
-            children: [
-              HomeScreen(
-                displayName: _displayName,
-                millet: _millet,
-                checkedInToday: _checkedInToday,
-                checkinStreak: _checkinStreak,
-                onCheckin: _checkin,
-                onShowProfile: () => setState(() => _showProfile = true),
-                onNavigateToTab: _navigate,
-              ),
-              const LearnScreen(),
-              const CultureScreen(),
-              const CommunityScreen(),
-              const PlazaScreen(),
-              const EventsScreen(),
-            ],
-          ),
-
-          // ProfileScreen overlay
-          if (_showProfile)
-            Positioned.fill(
-              child: ProfileScreen(
-                onClose: () {
-                  setState(() => _showProfile = false);
-                  _fetchUserSummary();
-                },
-              ),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _handleBack();
+      },
+      child: Scaffold(
+        extendBody: true,
+        body: IndexedStack(
+          index: _currentIndex,
+          children: [
+            HomeScreen(
+              displayName: _displayName,
+              millet: _millet,
+              checkedInToday: _checkedInToday,
+              checkinStreak: _checkinStreak,
+              onCheckin: _checkin,
+              onShowProfile: _openProfile,
+              onNavigateToTab: _navigate,
             ),
-        ],
+            const LearnScreen(),
+            const CultureScreen(),
+            const CommunityScreen(),
+            const PlazaScreen(),
+            const EventsScreen(),
+            ProfileScreen(onClose: _closeProfile),
+          ],
+        ),
+        bottomNavigationBar: _currentIndex == _profileIndex
+            ? null
+            : TrukuBottomTab(currentIndex: _currentIndex, onTap: _navigate),
       ),
-      bottomNavigationBar: _showProfile
-          ? null
-          : TrukuBottomTab(currentIndex: _currentIndex, onTap: _navigate),
     );
   }
 }
