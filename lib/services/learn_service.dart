@@ -41,6 +41,7 @@ class LearnService {
       'session_id': sessionId,
       'answers': answers.map((a) => a.toJson()).toList(),
     });
-    return QuizResult.fromJson(json);
+    final data = (json['data'] as Map<String, dynamic>?) ?? json;
+    return QuizResult.fromJson(data);
   }
 }
