@@ -15,6 +15,7 @@ import 'screens/plaza/plaza_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/splash/splash_screen.dart';
+import 'core/network/api_client.dart';
 import 'services/checkin_service.dart';
 import 'services/user_service.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
@@ -133,12 +134,7 @@ class _MainContainerState extends State<MainContainer> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('簽到成功，+50 小米')),
       );
-    } on CheckinFeatureUnavailableException {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('功能尚未開放')),
-      );
-    } on CheckinApiException catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
       if (e.code == 'ALREADY_CHECKED_IN') {
         setState(() => _checkedInToday = true);
