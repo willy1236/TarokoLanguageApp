@@ -643,6 +643,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 border: Border.all(color: AppColors.danger.withValues(alpha: 0.5)),
               ),
               child: Center(
+                heightFactor: 1.0,
                 child: Text('取消活動',
                     style: GoogleFonts.notoSerifTc(
                         fontSize: 14,
