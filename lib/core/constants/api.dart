@@ -18,6 +18,9 @@ class ApiConfig {
 
   static const String historyList = '/api/history';
 
+  // 小米幣明細（issue #25）
+  static const String milletTransactions = '/api/millet/transactions';
+
   static const String health = '/api/health';
 
   static const String articles = '/api/articles';
@@ -41,4 +44,8 @@ class ApiConfig {
   static String eventReminders(int id) => '/api/events/$id/reminders';
   static String reminderDetail(int id) => '/api/reminders/$id';
   static const String devices = '/api/devices';
+
+  // 每日簽到（issue #24，見 每日簽到.md）
+  static const String checkinStatus = '/api/checkin/status';
+  static const String checkinAction = '/api/checkin';
 }

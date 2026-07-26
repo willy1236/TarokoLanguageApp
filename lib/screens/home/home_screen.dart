@@ -72,12 +72,20 @@ class HomeScreen extends StatelessWidget {
   final VoidCallback? onShowProfile;
   final void Function(int tabIndex)? onNavigateToTab;
   final String? displayName;
+  final int? millet;
+  final bool checkedInToday;
+  final int checkinStreak;
+  final VoidCallback? onCheckin;
 
   const HomeScreen({
     super.key,
     this.onShowProfile,
     this.onNavigateToTab,
     this.displayName,
+    this.millet,
+    this.checkedInToday = false,
+    this.checkinStreak = 0,
+    this.onCheckin,
   });
 
   void _onModeTap(ModeData mode) {
@@ -181,7 +189,12 @@ class HomeScreen extends StatelessWidget {
                 const SizedBox(height: 18),
 
                 // ③ 今日進度卡（暗色）
-                const _TodayProgressCard(),
+                _TodayProgressCard(
+                  millet: millet,
+                  checkedInToday: checkedInToday,
+                  checkinStreak: checkinStreak,
+                  onCheckin: onCheckin,
+                ),
               ],
             ),
           ),
@@ -244,7 +257,17 @@ class HomeScreen extends StatelessWidget {
 // ─── 今日進度卡 ──────────────────────────────────────────────────────────────
 
 class _TodayProgressCard extends StatelessWidget {
-  const _TodayProgressCard();
+  final int? millet;
+  final bool checkedInToday;
+  final int checkinStreak;
+  final VoidCallback? onCheckin;
+
+  const _TodayProgressCard({
+    this.millet,
+    this.checkedInToday = false,
+    this.checkinStreak = 0,
+    this.onCheckin,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -305,7 +328,7 @@ class _TodayProgressCard extends StatelessWidget {
                           Icon(Icons.grain, size: 18, color: AppColors.gold),
                           const SizedBox(width: 4),
                           Text(
-                            '320',
+                            '${millet ?? 0}',
                             style: GoogleFonts.notoSerifTc(
                               fontSize: 13,
                               fontWeight: FontWeight.w700,
@@ -375,6 +398,52 @@ class _TodayProgressCard extends StatelessWidget {
                       letterSpacing: 0.5,
                     ),
                   ),
+                ),
+
+                const SizedBox(height: 14),
+
+                // 每日簽到
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        checkinStreak > 0
+                            ? '每日簽到 +50 · 已連續 $checkinStreak 天'
+                            : '每日簽到 +50 小米幣',
+                        style: GoogleFonts.notoSansTc(
+                          fontSize: 12,
+                          color: AppColors.creamLight.withValues(alpha: 0.85),
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    GestureDetector(
+                      onTap: checkedInToday ? null : onCheckin,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: checkedInToday
+                                ? AppColors.gold.withValues(alpha: 0.4)
+                                : AppColors.gold,
+                          ),
+                        ),
+                        child: Text(
+                          checkedInToday ? '已簽到' : '立即簽到',
+                          style: GoogleFonts.notoSerifTc(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: checkedInToday
+                                ? AppColors.gold.withValues(alpha: 0.4)
+                                : AppColors.gold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),

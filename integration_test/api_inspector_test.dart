@@ -10,12 +10,15 @@ import 'package:integration_test/integration_test.dart';
 import 'package:flutter_application_1/core/constants/api.dart';
 import 'package:flutter_application_1/firebase_options.dart';
 
+import 'helpers/test_auth.dart';
+
 // ============================================================
-// API Inspector — 直接用裝置上的登入 token 打所有端點
+// API Inspector — 用裝置上的 Google 帳號自動登入後打所有端點
 //
 // 使用方式：
-//   1. 先在裝置上開 app 並完成 Google 登入
+//   1. 首次在該裝置上開 app 用 Google 登入一次（完成授權）即可
 //   2. flutter test integration_test/api_inspector_test.dart -d <device_id>
+//      測試會自動靜默登入取得 token；靜默失敗時會叫出帳號選擇，手動點一次。
 //
 // 新增端點測試時，在下方 group 裡加一行 test() 即可。
 // ============================================================
@@ -29,6 +32,8 @@ void main() {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
+    // 自動用裝置上的 Google 帳號登入（靜默優先＋互動備援）
+    await ensureLoggedIn();
     const storage = FlutterSecureStorage();
     _token = await storage.read(key: 'session_token');
 
@@ -38,7 +43,7 @@ void main() {
     if (_token != null) {
       print('  Token: ${_token!.substring(0, 20)}... (${_token!.length} chars)');
     } else {
-      print('  Token: ✗ 未登入 — 請先開 app 完成 Google 登入');
+      print('  Token: ✗ 自動登入失敗 — 請先在此裝置開 app 用 Google 登入一次');
     }
     print('========================================\n');
   });
