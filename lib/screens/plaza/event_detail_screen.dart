@@ -60,7 +60,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         _uid = results[1] as int?;
         _loading = false;
       });
-    } catch (e) {
+    } catch (e, st) {
+      debugPrint('[EventDetailScreen] _load 失敗：$e');
+      debugPrint('$st');
       if (!mounted) return;
       setState(() {
         _error = e.toString();
@@ -711,7 +713,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               : AppColors.primary,
           borderRadius: BorderRadius.circular(14),
         ),
+        // heightFactor: 1.0 讓 Center 收縮到子元件高度；預設在 Scaffold
+        // bottomNavigationBar 的有界高度下會撐滿整個高度，把 body 擠成 0。
         child: Center(
+          heightFactor: 1.0,
           child: _acting
               ? const SizedBox(
                   width: 20,
@@ -738,6 +743,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         borderRadius: BorderRadius.circular(14),
       ),
       child: Center(
+        heightFactor: 1.0,
         child: Text(label,
             style: TextStyle(
                 fontSize: 15,
