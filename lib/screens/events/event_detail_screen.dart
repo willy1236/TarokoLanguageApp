@@ -83,6 +83,25 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   Future<void> _refresh() => _load();
 
+  /// 動作（參加/退出/取消）成功後的刷新：只更新資料本身，不設 `_loading = true`，
+  /// 避免整頁重建與剛關閉的對話框收尾動畫互撞（觸發 `_dependents.isEmpty` assertion）。
+  Future<void> _silentRefresh() async {
+    try {
+      final results = await Future.wait([
+        EventService.fetchEventDetail(widget.eventId),
+        _ensureUid(),
+      ]);
+      if (!mounted) return;
+      setState(() {
+        _event = results[0] as EventDetail;
+        _uid = results[1] as int?;
+      });
+    } catch (e, st) {
+      debugPrint('[EventDetailScreen] _silentRefresh 失敗：$e');
+      debugPrint('$st');
+    }
+  }
+
   // ── 行動：參加 / 退出 / 取消 ─────────────────────────────────
   Future<void> _join() async {
     await _runAction(
@@ -118,7 +137,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
           .showSnackBar(SnackBar(content: Text(success)));
-      await _refresh();
+      await _silentRefresh();
     } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context)
@@ -132,57 +151,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
-  Future<String?> _askCancelReason() async {
-    final controller = TextEditingController();
-    try {
-      return await showDialog<String>(
+  Future<String?> _askCancelReason() {
+    return showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: AppColors.creamLight,
-        title: Text('取消活動',
-            style: GoogleFonts.notoSerifTc(
-                fontWeight: FontWeight.w700, color: AppColors.ink)),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('請填寫取消理由，會一併推播通知所有參加者。',
-                style: TextStyle(fontSize: 13, color: AppColors.inkSoft, height: 1.5)),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              maxLines: 3,
-              maxLength: 500,
-              autofocus: true,
-              style: const TextStyle(fontSize: 14, color: AppColors.ink),
-              decoration: InputDecoration(
-                hintText: '例如：因天候因素順延…',
-                hintStyle: TextStyle(color: AppColors.fog),
-                border: const OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('返回', style: TextStyle(color: AppColors.inkSoft)),
-          ),
-          TextButton(
-            onPressed: () {
-              final r = controller.text.trim();
-              if (r.isEmpty) return;
-              Navigator.pop(ctx, r);
-            },
-            child: const Text('確認取消活動',
-                style: TextStyle(color: AppColors.dangerDark)),
-          ),
-        ],
-      ),
-      );
-    } finally {
-      controller.dispose();
-    }
+      builder: (ctx) => const _CancelReasonDialog(),
+    );
   }
 
   @override
@@ -752,6 +725,75 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 color: AppColors.inkSoft,
                 letterSpacing: 2.0)),
       ),
+    );
+  }
+}
+
+/// 「取消活動」理由輸入對話框。獨立成 StatefulWidget 讓
+/// [TextEditingController] 隨這個 dialog 元件自身的生命週期建立/釋放，
+/// 避免在 `showDialog` 的 Future resolve 當下就手動 dispose——
+/// 此時 dialog 的關閉動畫可能還沒跑完，仍持有該 controller 的 TextField
+/// 尚未真正 unmount，手動提早 dispose 會丟出
+/// "A TextEditingController was used after being disposed." 例外。
+class _CancelReasonDialog extends StatefulWidget {
+  const _CancelReasonDialog();
+
+  @override
+  State<_CancelReasonDialog> createState() => _CancelReasonDialogState();
+}
+
+class _CancelReasonDialogState extends State<_CancelReasonDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.creamLight,
+      title: Text('取消活動',
+          style: GoogleFonts.notoSerifTc(
+              fontWeight: FontWeight.w700, color: AppColors.ink)),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('請填寫取消理由，會一併推播通知所有參加者。',
+              style: TextStyle(fontSize: 13, color: AppColors.inkSoft, height: 1.5)),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _controller,
+            maxLines: 3,
+            maxLength: 500,
+            autofocus: true,
+            style: const TextStyle(fontSize: 14, color: AppColors.ink),
+            decoration: InputDecoration(
+              hintText: '例如：因天候因素順延…',
+              hintStyle: TextStyle(color: AppColors.fog),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('返回', style: TextStyle(color: AppColors.inkSoft)),
+        ),
+        TextButton(
+          onPressed: () {
+            final r = _controller.text.trim();
+            if (r.isEmpty) return;
+            Navigator.pop(context, r);
+          },
+          child: const Text('確認取消活動',
+              style: TextStyle(color: AppColors.dangerDark)),
+        ),
+      ],
     );
   }
 }
