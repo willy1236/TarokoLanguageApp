@@ -38,4 +38,8 @@ class ApiConfig {
   // 每日簽到（issue #24，見 每日簽到.md）
   static const String checkinStatus = '/api/checkin/status';
   static const String checkinAction = '/api/checkin';
+
+  // 族群/部落（issue #5）
+  static const String ethnicGroups = '/api/ethnic-groups';
+  static const String tribes = '/api/tribes';
 }
