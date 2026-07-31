@@ -6,7 +6,7 @@ import '../models/quiz_models.dart';
 class LearnService {
   static Future<List<LevelInfo>> fetchLevels() async {
     final json = await ApiClient.get('/api/levels');
-    final list = json['levels'] as List<dynamic>? ?? (json['data'] as List<dynamic>? ?? []);
+    final list = ApiClient.unwrapList(json, 'levels');
     return list
         .cast<Map<String, dynamic>>()
         .where((e) => e['code'] != null || e['label'] != null || e['level'] != null)
@@ -16,7 +16,7 @@ class LearnService {
 
   static Future<QuizSession> startQuiz(String level) async {
     final json = await ApiClient.post('/api/quiz/start', {'level': level});
-    final data = (json['data'] as Map<String, dynamic>?) ?? json;
+    final data = ApiClient.unwrapData(json);
     return QuizSession.fromJson(data);
   }
 
@@ -41,6 +41,7 @@ class LearnService {
       'session_id': sessionId,
       'answers': answers.map((a) => a.toJson()).toList(),
     });
-    return QuizResult.fromJson(json);
+    final data = (json['data'] as Map<String, dynamic>?) ?? json;
+    return QuizResult.fromJson(data);
   }
 }

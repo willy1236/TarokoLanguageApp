@@ -14,6 +14,7 @@ class ApiConfig {
   static const String quizSubmit = '/api/quiz/submit';
 
   static const String listeningStart = '/api/listening/start';
+  static const String listeningAnswer = '/api/listening/answer';
   static const String listeningSubmit = '/api/listening/submit';
 
   static const String historyList = '/api/history';
@@ -27,7 +28,6 @@ class ApiConfig {
   static String articleDetail(int id) => '/api/articles/$id';
 
   // 頭像商店（issue #12，頭像／頭像框合併目錄，見 頭像商店.md v2.0）
-  static const String meEndpoint = me;
   static const String shopItems = '/api/shop/items';
   static String itemPurchaseEndpoint(String itemId) =>
       '/api/shop/items/$itemId/purchase';
