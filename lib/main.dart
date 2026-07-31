@@ -11,7 +11,7 @@ import 'screens/culture/culture_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/learn/learn_screen.dart';
 import 'screens/plaza/events_screen.dart';
-import 'screens/plaza/plaza_screen.dart';
+import 'screens/plaza/forum_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/splash/splash_screen.dart';
@@ -186,7 +186,7 @@ class _MainContainerState extends State<MainContainer> {
               const LearnScreen(),
               const CultureScreen(),
               const CommunityScreen(),
-              const PlazaScreen(),
+              const ForumScreen(),
               const EventsScreen(),
             ],
           ),

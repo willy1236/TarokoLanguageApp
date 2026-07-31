@@ -38,4 +38,11 @@ class ApiConfig {
   // 每日簽到（issue #24，見 每日簽到.md）
   static const String checkinStatus = '/api/checkin/status';
   static const String checkinAction = '/api/checkin';
+
+  // Forum (Dcard-style community)
+  static const String forumPosts = '/api/forum/posts';
+  static String forumComments(int postId) => '/api/forum/posts/$postId/comments';
+
+  static String get forumWebSocketUrl =>
+      '${baseUrl.replaceFirst('https://', 'wss://').replaceFirst('http://', 'ws://')}/ws/forum';
 }
