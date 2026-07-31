@@ -27,6 +27,7 @@ class EventDetailScreen extends StatefulWidget {
 class _EventDetailScreenState extends State<EventDetailScreen> {
   EventDetail? _event;
   int? _uid;
+  List<EventReminder> _reminders = [];
   bool _loading = true;
   String? _error;
   bool _acting = false; // 參加/退出/取消進行中，避免重複點
@@ -49,15 +50,17 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       _error = null;
     });
     try {
-      // 詳情與目前 uid 併行取得（uid 已快取就不重打）。
+      // 詳情、目前 uid、提醒紀錄併行取得（uid 已快取就不重打）。
       final results = await Future.wait([
         EventService.fetchEventDetail(widget.eventId),
         _ensureUid(),
+        _fetchRemindersSafe(),
       ]);
       if (!mounted) return;
       setState(() {
         _event = results[0] as EventDetail;
         _uid = results[1] as int?;
+        _reminders = results[2] as List<EventReminder>;
         _loading = false;
       });
     } catch (e, st) {
@@ -68,6 +71,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         _error = e.toString();
         _loading = false;
       });
+    }
+  }
+
+  /// 提醒紀錄僅參加者可查看（非參加者打會 403），失敗時回空清單，
+  /// 不能讓這支 API 拖垮整頁載入。
+  Future<List<EventReminder>> _fetchRemindersSafe() async {
+    try {
+      return await EventService.fetchReminders(widget.eventId);
+    } catch (_) {
+      return const [];
     }
   }
 
@@ -90,11 +103,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       final results = await Future.wait([
         EventService.fetchEventDetail(widget.eventId),
         _ensureUid(),
+        _fetchRemindersSafe(),
       ]);
       if (!mounted) return;
       setState(() {
         _event = results[0] as EventDetail;
         _uid = results[1] as int?;
+        _reminders = results[2] as List<EventReminder>;
       });
     } catch (e, st) {
       debugPrint('[EventDetailScreen] _silentRefresh 失敗：$e');
@@ -415,6 +430,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             const SizedBox(height: 16),
           ],
 
+          // 提醒紀錄
+          if (_reminders.isNotEmpty) ...[
+            Text('提醒紀錄',
+                style: GoogleFonts.notoSerifTc(
+                    fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.ink)),
+            const SizedBox(height: 8),
+            for (final r in _sortedReminders()) ...[
+              _buildReminderCard(r),
+              const SizedBox(height: 10),
+            ],
+            const SizedBox(height: 12),
+          ],
+
           // 聯絡資訊
           if ((e.contactEmail != null && e.contactEmail!.isNotEmpty) ||
               (e.contactPhone != null && e.contactPhone!.isNotEmpty)) ...[
@@ -480,6 +508,41 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           const SizedBox(height: 6),
           Text(body,
               style: TextStyle(fontSize: 13, color: AppColors.inkSoft, height: 1.6)),
+        ],
+      ),
+    );
+  }
+
+  /// 新的（id 較大）排在前面；後端固定回傳 scheduled_at 遞增排序，這裡反過來。
+  List<EventReminder> _sortedReminders() {
+    final sorted = [..._reminders];
+    sorted.sort((a, b) => b.id.compareTo(a.id));
+    return sorted;
+  }
+
+  Widget _buildReminderCard(EventReminder r) {
+    final (label, color) = switch (r.status) {
+      'sent' => ('已發送 · ${_formatDateTime((r.sentAt ?? r.scheduledAt).toLocal())}', AppColors.mossDeep),
+      'failed' => ('發送失敗', AppColors.dangerDark),
+      'cancelled' => ('已取消', AppColors.fog),
+      _ => ('排定於 ${_formatDateTime(r.scheduledAt.toLocal())}', AppColors.primary),
+    };
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.creamDeep),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(r.message,
+              style: const TextStyle(fontSize: 13.5, color: AppColors.ink, height: 1.6)),
+          const SizedBox(height: 8),
+          Text(label,
+              style: TextStyle(fontSize: 11, color: color, letterSpacing: 0.6)),
         ],
       ),
     );
