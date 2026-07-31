@@ -13,6 +13,7 @@
 // 注意：iOS 需另外設定 APNs 憑證與 GoogleService-Info.plist，本階段先只支援 Android。
 
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'auth_service.dart';
 import 'event_service.dart';
@@ -32,6 +33,12 @@ class FcmService {
   /// 參數為 payload 裡的 event_id（可能為 null）。
   static void Function(int? eventId)? onReminderTapped;
 
+  /// App 被完全關閉、靠點擊通知冷啟動時拿到的訊息。此時 runApp() 尚未執行，
+  /// navigatorKey 還沒掛上 Navigator，不能立即導頁，先暫存；等 SplashScreen
+  /// 完成起始路由跳轉後再呼叫 [consumePendingInitialMessage] 處理，
+  /// 避免被 splash 的 pushReplacementNamed 蓋掉（見 splash_screen.dart）。
+  static RemoteMessage? _pendingInitialMessage;
+
   /// App 啟動時呼叫一次：註冊背景 handler、要通知權限、掛前景/點擊監聽。
   /// 不在這裡上傳 token —— 上傳需要 JWT，登入成功後再呼叫 [registerDevice]。
   static Future<void> init() async {
@@ -43,15 +50,23 @@ class FcmService {
     FirebaseMessaging.onMessage.listen(_onForegroundMessage);
     // 背景中點擊通知開啟 App
     FirebaseMessaging.onMessageOpenedApp.listen(_handleOpened);
-    // App 被完全關閉、由點擊通知啟動
-    final initial = await _fm.getInitialMessage();
-    if (initial != null) _handleOpened(initial);
+    // App 被完全關閉、由點擊通知啟動：先暫存，等 UI 掛好再處理。
+    _pendingInitialMessage = await _fm.getInitialMessage();
 
     // token 會定期更換，換了要重新上傳
     _fm.onTokenRefresh.listen((token) {
       _lastToken = token;
       _uploadIfLoggedIn(token);
     });
+  }
+
+  /// 由 SplashScreen 在完成起始路由跳轉（pushReplacementNamed）之後呼叫，
+  /// 處理冷啟動時暫存的通知，並清空暫存避免重複觸發。
+  static void consumePendingInitialMessage() {
+    final message = _pendingInitialMessage;
+    if (message == null) return;
+    _pendingInitialMessage = null;
+    _handleOpened(message);
   }
 
   /// 登入成功後呼叫：取得 FCM token 並上傳後端。
@@ -99,6 +114,9 @@ class FcmService {
     // 提醒與取消通知都導到活動詳情頁。
     if (type == 'event_reminder' || type == 'event_cancelled') {
       final eventId = int.tryParse(data['event_id']?.toString() ?? '');
+      if (eventId == null) {
+        debugPrint('FcmService: event_id 缺失或無法解析，忽略導頁：${data['event_id']}');
+      }
       onReminderTapped?.call(eventId);
     }
   }

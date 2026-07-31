@@ -36,7 +36,12 @@ Future<void> main() async {
   // 點提醒/取消通知 → 導到該活動詳情頁（用全域 navigatorKey，不依賴當下 context）。
   FcmService.onReminderTapped = (eventId) {
     if (eventId == null) return;
-    navigatorKey.currentState?.push(
+    final navState = navigatorKey.currentState;
+    if (navState == null) {
+      debugPrint('FcmService.onReminderTapped: navigatorKey 尚未掛上，導頁被忽略');
+      return;
+    }
+    navState.push(
       MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: eventId)),
     );
   };
