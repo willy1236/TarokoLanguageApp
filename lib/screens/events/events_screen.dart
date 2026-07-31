@@ -55,8 +55,8 @@ class _EventsScreenState extends State<EventsScreen> {
 
   // ── 日期/時間格式（後端時間為 UTC，顯示轉本地）────────────────
   static const _months = [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+    '1月', '2月', '3月', '4月', '5月', '6月',
+    '7月', '8月', '9月', '10月', '11月', '12月',
   ];
   static const _weekdays = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
   String _mon(DateTime d) => _months[d.month - 1];
@@ -362,7 +362,7 @@ class _EventsScreenState extends State<EventsScreen> {
                           children: [
                             Text(_mon(d),
                                 style: const TextStyle(
-                                    fontSize: 8, color: AppColors.gold, letterSpacing: 3.0)),
+                                    fontSize: 9, color: AppColors.gold, letterSpacing: 0.5)),
                             Text(_day(d),
                                 style: GoogleFonts.notoSerifTc(
                                     fontSize: 18,
@@ -473,7 +473,7 @@ class _EventsScreenState extends State<EventsScreen> {
                   children: [
                     Text(_mon(d),
                         style: const TextStyle(
-                            fontSize: 9, color: AppColors.gold, letterSpacing: 2.5)),
+                            fontSize: 9, color: AppColors.gold, letterSpacing: 0.5)),
                     Text(_day(d),
                         style: GoogleFonts.notoSerifTc(
                             fontSize: 22,

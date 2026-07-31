@@ -394,8 +394,8 @@ class _MiniEventCard extends StatelessWidget {
   const _MiniEventCard({required this.event, required this.onTap});
 
   static const _months = [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
+    '1月', '2月', '3月', '4月', '5月', '6月',
+    '7月', '8月', '9月', '10月', '11月', '12月',
   ];
 
   @override
@@ -443,7 +443,7 @@ class _MiniEventCard extends StatelessWidget {
                             style: const TextStyle(
                               fontSize: 8,
                               color: AppColors.gold,
-                              letterSpacing: 2.0,
+                              letterSpacing: 0.3,
                             ),
                           ),
                           Text(

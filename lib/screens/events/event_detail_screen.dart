@@ -33,8 +33,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   bool _acting = false; // 參加/退出/取消進行中，避免重複點
 
   static const _months = [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+    '1月', '2月', '3月', '4月', '5月', '6月',
+    '7月', '8月', '9月', '10月', '11月', '12月',
   ];
   static const _weekdays = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
 
@@ -312,8 +312,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     ),
                   ),
                 Text(
-                  '${_months[start.month - 1]} ${start.day.toString().padLeft(2, '0')} · ${_weekdays[start.weekday - 1]}',
-                  style: GoogleFonts.crimsonPro(
+                  '${_months[start.month - 1]}${start.day}日 · ${_weekdays[start.weekday - 1]}',
+                  style: GoogleFonts.notoSerifTc(
                     fontStyle: FontStyle.italic,
                     fontSize: 13,
                     color: AppColors.gold,
@@ -342,8 +342,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   // ── 內容 ─────────────────────────────────────────────────────
   Widget _buildBody(EventDetail e) {
     final start = e.startsAt.toLocal();
-    String two(int n) => n.toString().padLeft(2, '0');
-    final timeText = '${two(start.hour)}:${two(start.minute)}';
+    final timeText = _formatDateTime(start);
     final hostName = e.participants
             .where((p) => p.uid == e.hostUid)
             .map((p) => p.displayName)

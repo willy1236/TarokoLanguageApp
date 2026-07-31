@@ -22,8 +22,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
   List<EventSummary> _events = const [];
 
   static const _months = [
-    'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
-    'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC',
+    '1月', '2月', '3月', '4月', '5月', '6月',
+    '7月', '8月', '9月', '10月', '11月', '12月',
   ];
 
   @override
@@ -160,7 +160,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                 children: [
                   Text(_months[d.month - 1],
                       style: const TextStyle(
-                          fontSize: 9, color: AppColors.primary, letterSpacing: 2.0)),
+                          fontSize: 9, color: AppColors.primary, letterSpacing: 0.5)),
                   Text(two(d.day),
                       style: GoogleFonts.notoSerifTc(
                           fontSize: 22,
