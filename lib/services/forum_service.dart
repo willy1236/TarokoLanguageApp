@@ -3,43 +3,118 @@ import '../core/network/api_client.dart';
 import '../models/forum_models.dart';
 
 class ForumService {
-  static Future<List<ForumPost>> fetchPosts({String? category}) async {
-    final response = await ApiClient.get(
+  static Future<ForumPage> fetchPosts({
+    String? category,
+    String? cursor,
+  }) async {
+    final r = await ApiClient.get(
       ApiConfig.forumPosts,
-      query: {'category': ?category, 'limit': '30'},
+      query: {
+        if (category != null) 'category': category,
+        if (cursor != null) 'cursor': cursor,
+        'limit': '20',
+      },
     );
-    final posts = response['posts'] as List<dynamic>? ?? const [];
-    return posts
-        .map((item) => ForumPost.fromJson(item as Map<String, dynamic>))
-        .toList();
+    return ForumPage(
+      (r['posts'] as List<dynamic>? ?? const [])
+          .map((x) => ForumPost.fromJson(x as Map<String, dynamic>))
+          .toList(),
+      r['next_cursor'] as String?,
+    );
+  }
+
+  static Future<ForumPost> fetchPost(int id) async {
+    final r = await ApiClient.get(ApiConfig.forumPost(id));
+    return ForumPost.fromJson(r['post'] as Map<String, dynamic>);
   }
 
   static Future<ForumPost> createPost({
     required String category,
     required String title,
     required String content,
+    List<String> imageUrls = const [],
   }) async {
-    final response = await ApiClient.post(ApiConfig.forumPosts, {
+    final r = await ApiClient.post(ApiConfig.forumPosts, {
       'category': category,
       'title': title,
       'content': content,
+      'image_urls': imageUrls,
     });
-    return ForumPost.fromJson(response['post'] as Map<String, dynamic>);
+    return ForumPost.fromJson(r['post'] as Map<String, dynamic>);
   }
 
-  static Future<List<ForumComment>> fetchComments(int postId) async {
-    final response = await ApiClient.get(ApiConfig.forumComments(postId));
-    final comments = response['comments'] as List<dynamic>? ?? const [];
-    return comments
-        .map((item) => ForumComment.fromJson(item as Map<String, dynamic>))
+  static Future<ForumPost> updatePost(
+    int id, {
+    String? category,
+    String? title,
+    String? content,
+    List<String>? imageUrls,
+  }) async {
+    final r = await ApiClient.patch(ApiConfig.forumPost(id), {
+      if (category != null) 'category': category,
+      if (title != null) 'title': title,
+      if (content != null) 'content': content,
+      if (imageUrls != null) 'image_urls': imageUrls,
+    });
+    return ForumPost.fromJson(r['post'] as Map<String, dynamic>);
+  }
+
+  static Future<void> deletePost(int id) =>
+      ApiClient.delete(ApiConfig.forumPost(id));
+  static Future<List<ForumComment>> fetchComments(int id) async {
+    final r = await ApiClient.get(ApiConfig.forumComments(id));
+    return (r['comments'] as List<dynamic>? ?? const [])
+        .map((x) => ForumComment.fromJson(x as Map<String, dynamic>))
         .toList();
   }
 
-  static Future<ForumComment> createComment(int postId, String content) async {
-    final response = await ApiClient.post(
-      ApiConfig.forumComments(postId),
-      {'content': content},
+  static Future<ForumComment> createComment(int id, String content) async {
+    final r = await ApiClient.post(ApiConfig.forumComments(id), {
+      'content': content,
+    });
+    return ForumComment.fromJson(r['comment'] as Map<String, dynamic>);
+  }
+
+  static Future<ForumComment> updateComment(int id, String content) async {
+    final r = await ApiClient.patch(ApiConfig.forumComment(id), {
+      'content': content,
+    });
+    return ForumComment.fromJson(r['comment'] as Map<String, dynamic>);
+  }
+
+  static Future<void> deleteComment(int id) =>
+      ApiClient.delete(ApiConfig.forumComment(id));
+  static Future<Map<String, dynamic>> toggleLike(int id) =>
+      ApiClient.post(ApiConfig.forumLike(id));
+  static Future<Map<String, dynamic>> toggleBookmark(int id) =>
+      ApiClient.post(ApiConfig.forumBookmark(id));
+  static Future<void> report({
+    int? postId,
+    int? commentId,
+    required String reason,
+  }) => ApiClient.post(ApiConfig.forumReports, {
+    if (postId != null) 'post_id': postId,
+    if (commentId != null) 'comment_id': commentId,
+    'reason': reason,
+  });
+  static Future<List<ForumPost>> bookmarks() async {
+    final r = await ApiClient.get(ApiConfig.forumBookmarks);
+    return (r['posts'] as List<dynamic>? ?? const [])
+        .map((x) => ForumPost.fromJson(x as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<String> uploadImage({
+    required List<int> bytes,
+    required String filename,
+    required String mimeType,
+  }) async {
+    final r = await ApiClient.postMultipartBytes(
+      ApiConfig.forumMedia,
+      bytes: bytes,
+      filename: filename,
+      contentType: mimeType,
     );
-    return ForumComment.fromJson(response['comment'] as Map<String, dynamic>);
+    return r['url'] as String;
   }
 }

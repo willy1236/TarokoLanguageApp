@@ -6,6 +6,7 @@
 
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../constants/api.dart';
 import '../../main.dart';
 import '../../services/auth_service.dart';
@@ -35,9 +36,9 @@ class ApiClient {
     Map<String, String>? query,
   }) async {
     final token = await AuthService.currentToken();
-    final uri = Uri.parse(ApiConfig.baseUrl + path).replace(
-      queryParameters: query,
-    );
+    final uri = Uri.parse(
+      ApiConfig.baseUrl + path,
+    ).replace(queryParameters: query);
     final resp = await http.get(uri, headers: _headers(token));
     return _handle(resp);
   }
@@ -68,10 +69,45 @@ class ApiClient {
     return _handle(resp);
   }
 
+  static Future<Map<String, dynamic>> delete(String path) async {
+    final token = await AuthService.currentToken();
+    final resp = await http.delete(
+      Uri.parse(ApiConfig.baseUrl + path),
+      headers: _headers(token),
+    );
+    return _handle(resp);
+  }
+
+  static Future<Map<String, dynamic>> postMultipartBytes(
+    String path, {
+    required List<int> bytes,
+    required String filename,
+    required String contentType,
+    String fieldName = 'image',
+  }) async {
+    final token = await AuthService.currentToken();
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse(ApiConfig.baseUrl + path),
+    );
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+    request.files.add(
+      http.MultipartFile.fromBytes(
+        fieldName,
+        bytes,
+        filename: filename,
+        contentType: MediaType.parse(contentType),
+      ),
+    );
+    final streamed = await request.send();
+    final resp = await http.Response.fromStream(streamed);
+    return _handle(resp);
+  }
+
   static Map<String, String> _headers(String? token) => {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
+    'Content-Type': 'application/json',
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
 
   static Map<String, dynamic> _handle(http.Response resp) {
     if (resp.statusCode < 200 || resp.statusCode >= 300) {

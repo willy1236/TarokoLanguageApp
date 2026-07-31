@@ -41,7 +41,17 @@ class ApiConfig {
 
   // Forum (Dcard-style community)
   static const String forumPosts = '/api/forum/posts';
-  static String forumComments(int postId) => '/api/forum/posts/$postId/comments';
+  static String forumPost(int postId) => '/api/forum/posts/$postId';
+  static String forumComments(int postId) =>
+      '/api/forum/posts/$postId/comments';
+  static String forumComment(int commentId) => '/api/forum/comments/$commentId';
+  static String forumLike(int postId) => '/api/forum/posts/$postId/like';
+  static String forumBookmark(int postId) =>
+      '/api/forum/posts/$postId/bookmark';
+  static const String forumBookmarks = '/api/forum/bookmarks';
+  static const String forumReports = '/api/forum/reports';
+  static const String forumMedia = '/api/forum/media';
+  static const String devices = '/api/devices';
 
   static String get forumWebSocketUrl =>
       '${baseUrl.replaceFirst('https://', 'wss://').replaceFirst('http://', 'ws://')}/ws/forum';

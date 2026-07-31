@@ -16,6 +16,7 @@ import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'services/checkin_service.dart';
+import 'services/notification_service.dart';
 import 'services/user_service.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 
@@ -90,6 +91,7 @@ class _MainContainerState extends State<MainContainer> {
     super.initState();
     _fetchUserSummary();
     _loadCheckinStatus();
+    NotificationService.registerDevice();
   }
 
   Future<void> _fetchUserSummary() async {
@@ -130,31 +132,31 @@ class _MainContainerState extends State<MainContainer> {
         _checkinStreak = status.checkinStreak;
         _millet = status.millet;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('簽到成功，+50 小米')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('簽到成功，+50 小米')));
     } on CheckinFeatureUnavailableException {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('功能尚未開放')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('功能尚未開放')));
     } on CheckinApiException catch (e) {
       if (!mounted) return;
       if (e.code == 'ALREADY_CHECKED_IN') {
         setState(() => _checkedInToday = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('今日已簽到')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('今日已簽到')));
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('簽到失敗，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('簽到失敗，請稍後再試')));
     }
   }
 

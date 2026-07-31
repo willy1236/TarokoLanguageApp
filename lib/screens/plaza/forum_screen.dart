@@ -1,313 +1,683 @@
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-
+import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
-import '../../services/forum_service.dart';
 import '../../services/forum_realtime_service.dart';
+import '../../services/forum_service.dart';
 
-const _categories = <String, String>{
-  'general': '全部',
-  'culture': '文化',
-  'learning': '學習',
-  'events': '活動',
-  'help': '求助',
+const _categories = {
+  'general': 'General',
+  'culture': 'Culture',
+  'learning': 'Learning',
+  'events': 'Events',
+  'help': 'Help',
 };
+void _message(BuildContext c, Object e) => ScaffoldMessenger.of(c).showSnackBar(
+  SnackBar(
+    content: Text(
+      e is ApiException ? e.message : 'Unable to complete this action',
+    ),
+  ),
+);
 
 class ForumScreen extends StatefulWidget {
   const ForumScreen({super.key});
-
   @override
   State<ForumScreen> createState() => _ForumScreenState();
 }
 
 class _ForumScreenState extends State<ForumScreen> {
-  String? _category;
-  late Future<List<ForumPost>> _posts;
-  final _realtime = ForumRealtimeService();
-
+  final _scroll = ScrollController(), _realtime = ForumRealtimeService();
+  final List<ForumPost> _posts = [];
+  String? _category, _cursor;
+  bool _loading = true, _more = false;
   @override
   void initState() {
     super.initState();
-    _posts = ForumService.fetchPosts();
+    _scroll.addListener(_onScroll);
+    _load(reset: true);
     _realtime.connect((event) {
-      if (event['type'] == 'forum.comment.created' && mounted) _reload();
+      if (mounted && event['type'].toString().startsWith('forum.'))
+        _load(reset: true);
     });
   }
 
   @override
   void dispose() {
+    _scroll.dispose();
     _realtime.dispose();
     super.dispose();
   }
 
-  Future<void> _reload() async {
-    final request = ForumService.fetchPosts(category: _category);
-    setState(() => _posts = request);
-    await request;
+  void _onScroll() {
+    if (_scroll.position.pixels > _scroll.position.maxScrollExtent - 240)
+      _load();
   }
 
-  Future<void> _openComposer() async {
-    final created = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const ForumComposeScreen()),
+  Future<void> _load({bool reset = false}) async {
+    if (_loading || _more || (!reset && _cursor == null)) return;
+    if (reset) {
+      setState(() {
+        _loading = true;
+        _cursor = '';
+        _posts.clear();
+      });
+    } else {
+      setState(() => _more = true);
+    }
+    try {
+      final page = await ForumService.fetchPosts(
+        category: _category,
+        cursor: reset ? null : _cursor,
+      );
+      if (mounted)
+        setState(() {
+          _posts.addAll(page.posts);
+          _cursor = page.nextCursor;
+        });
+    } catch (e) {
+      if (mounted) _message(context, e);
+    } finally {
+      if (mounted)
+        setState(() {
+          _loading = false;
+          _more = false;
+        });
+    }
+  }
+
+  Future<void> _compose([ForumPost? post]) async {
+    final changed = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => ForumComposeScreen(post: post)),
     );
-    if (created == true && mounted) await _reload();
+    if (changed == true) _load(reset: true);
   }
 
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.creamLight,
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openComposer,
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.creamLight,
-        icon: const Icon(Icons.edit_outlined),
-        label: const Text('發表貼文'),
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.creamLight,
+    floatingActionButton: FloatingActionButton.extended(
+      onPressed: _compose,
+      backgroundColor: AppColors.primary,
+      foregroundColor: Colors.white,
+      icon: const Icon(Icons.edit),
+      label: const Text('Post'),
+    ),
+    body: SafeArea(
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                const Expanded(
+                  child: Text(
+                    'ALANG FORUM',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
+                  ),
+                ),
+                IconButton(
+                  onPressed: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ForumBookmarksScreen(),
+                    ),
+                  ),
+                  icon: const Icon(Icons.bookmarks_outlined),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(
+            height: 44,
+            child: ListView(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: [
+                _chip(null, 'All'),
+                ..._categories.entries.map((e) => _chip(e.key, e.value)),
+              ],
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => _load(reset: true),
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : ListView.builder(
+                      controller: _scroll,
+                      itemCount: _posts.length + (_more ? 1 : 0),
+                      itemBuilder: (c, i) {
+                        if (i >= _posts.length)
+                          return const Padding(
+                            padding: EdgeInsets.all(20),
+                            child: Center(child: CircularProgressIndicator()),
+                          );
+                        return ForumPostCard(
+                          post: _posts[i],
+                          onTap: () => Navigator.push(
+                            c,
+                            MaterialPageRoute(
+                              builder: (_) =>
+                                  ForumDetailScreen(post: _posts[i]),
+                            ),
+                          ).then((_) => _load(reset: true)),
+                        );
+                      },
+                    ),
+            ),
+          ),
+        ],
       ),
-      body: SafeArea(
+    ),
+  );
+  Widget _chip(String? id, String label) => Padding(
+    padding: const EdgeInsets.only(right: 8),
+    child: ChoiceChip(
+      label: Text(label),
+      selected: _category == id,
+      onSelected: (_) {
+        setState(() => _category = id);
+        _load(reset: true);
+      },
+    ),
+  );
+}
+
+class ForumPostCard extends StatelessWidget {
+  const ForumPostCard({super.key, required this.post, required this.onTap});
+  final ForumPost post;
+  final VoidCallback onTap;
+  @override
+  Widget build(BuildContext c) => Card(
+    margin: const EdgeInsets.fromLTRB(14, 8, 14, 4),
+    child: InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.all(15),
         child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('ALANG FORUM', style: GoogleFonts.crimsonPro(
-                          color: AppColors.primary, letterSpacing: 2.5, fontSize: 13,
-                        )),
-                        const SizedBox(height: 3),
-                        Text('族人交流論壇', style: GoogleFonts.notoSerifTc(
-                          color: AppColors.ink, fontSize: 26, fontWeight: FontWeight.w700,
-                        )),
-                      ],
-                    ),
-                  ),
-                  IconButton(
-                    tooltip: '重新整理',
-                    onPressed: _reload,
-                    icon: const Icon(Icons.refresh, color: AppColors.primary),
-                  ),
-                ],
+            Text(
+              _categories[post.category] ?? post.category,
+              style: TextStyle(
+                color: AppColors.primary,
+                fontWeight: FontWeight.bold,
               ),
             ),
-            SizedBox(
-              height: 45,
-              child: ListView.separated(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
-                scrollDirection: Axis.horizontal,
-                itemCount: _categories.length,
-                separatorBuilder: (_, _) => const SizedBox(width: 8),
-                itemBuilder: (_, index) {
-                  final item = _categories.entries.elementAt(index);
-                  final selected = _category == item.key || (item.key == 'general' && _category == null);
-                  return ChoiceChip(
-                    label: Text(item.value),
-                    selected: selected,
-                    selectedColor: AppColors.primary,
-                    labelStyle: TextStyle(color: selected ? AppColors.creamLight : AppColors.inkSoft),
-                    side: const BorderSide(color: AppColors.creamDeep),
-                    onSelected: (_) {
-                      setState(() => _category = item.key == 'general' ? null : item.key);
-                      _reload();
-                    },
-                  );
-                },
-              ),
+            const SizedBox(height: 5),
+            Text(
+              post.title,
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
-            const Divider(height: 1, color: AppColors.creamDeep),
-            Expanded(
-              child: FutureBuilder<List<ForumPost>>(
-                future: _posts,
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState != ConnectionState.done) {
-                    return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-                  }
-                  if (snapshot.hasError) return _ForumError(onRetry: _reload, error: snapshot.error);
-                  final posts = snapshot.data ?? const [];
-                  if (posts.isEmpty) return const _EmptyForum();
-                  return RefreshIndicator(
-                    color: AppColors.primary,
-                    onRefresh: _reload,
-                    child: ListView.separated(
-                      padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
-                      itemCount: posts.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (_, index) => _PostCard(
-                        post: posts[index],
-                        onTap: () => Navigator.of(context).push(MaterialPageRoute(
-                          builder: (_) => ForumDetailScreen(post: posts[index]),
-                        )),
-                      ),
-                    ),
-                  );
-                },
+            const SizedBox(height: 6),
+            Text(post.content, maxLines: 3, overflow: TextOverflow.ellipsis),
+            if (post.imageUrls.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(top: 10),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.network(
+                    post.imageUrls.first,
+                    height: 140,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
               ),
+            const SizedBox(height: 10),
+            Text(
+              '${post.author.displayName}  ·  ${post.likeCount} likes  ·  ${post.commentCount} comments',
+              style: Theme.of(c).textTheme.bodySmall,
             ),
           ],
         ),
       ),
-    );
-  }
+    ),
+  );
 }
 
-class _PostCard extends StatelessWidget {
-  const _PostCard({required this.post, required this.onTap});
-  final ForumPost post;
-  final VoidCallback onTap;
+class ForumComposeScreen extends StatefulWidget {
+  const ForumComposeScreen({super.key, this.post});
+  final ForumPost? post;
+  @override
+  State<ForumComposeScreen> createState() => _ForumComposeScreenState();
+}
+
+class _ForumComposeScreenState extends State<ForumComposeScreen> {
+  late final TextEditingController _title, _content;
+  String _category = 'general';
+  final List<XFile> _files = [];
+  bool _saving = false;
+  @override
+  void initState() {
+    super.initState();
+    _title = TextEditingController(text: widget.post?.title);
+    _content = TextEditingController(text: widget.post?.content);
+    _category = widget.post?.category ?? 'general';
+  }
 
   @override
-  Widget build(BuildContext context) => Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(14),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(14),
-          onTap: onTap,
-          child: Padding(
-            padding: const EdgeInsets.all(15),
-            child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Row(children: [
-                CircleAvatar(
-                  backgroundColor: AppColors.moss,
-                  foregroundColor: Colors.white,
-                  child: Text(post.author.displayName.isEmpty ? '?' : post.author.displayName.characters.first),
-                ),
-                const SizedBox(width: 10),
-                Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text(post.author.displayName, style: const TextStyle(color: AppColors.ink, fontWeight: FontWeight.w700)),
-                  Text(_timeAgo(post.createdAt), style: const TextStyle(color: AppColors.fog, fontSize: 12)),
-                ])),
-                _CategoryBadge(category: post.category),
-              ]),
-              const SizedBox(height: 12),
-              Text(post.title, style: GoogleFonts.notoSerifTc(color: AppColors.ink, fontSize: 18, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 6),
-              Text(post.content, maxLines: 3, overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: AppColors.inkSoft, height: 1.45)),
-              const SizedBox(height: 12),
-              Row(children: [
-                const Icon(Icons.chat_bubble_outline, size: 17, color: AppColors.fog),
-                const SizedBox(width: 5),
-                Text('${post.commentCount} 則回覆', style: const TextStyle(color: AppColors.fog, fontSize: 13)),
-              ]),
-            ]),
+  void dispose() {
+    _title.dispose();
+    _content.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pick() async {
+    final x = await ImagePicker().pickMultiImage(imageQuality: 80);
+    if (mounted) setState(() => _files.addAll(x.take(4 - _files.length)));
+  }
+
+  Future<void> _save() async {
+    if (_saving) return;
+    setState(() => _saving = true);
+    try {
+      final urls = <String>[...?(widget.post?.imageUrls)];
+      for (final file in _files) {
+        final bytes = await file.readAsBytes();
+        urls.add(
+          await ForumService.uploadImage(
+            bytes: bytes,
+            filename: file.name,
+            mimeType: file.mimeType ?? 'image/jpeg',
           ),
-        ),
-      );
+        );
+      }
+      if (widget.post == null) {
+        await ForumService.createPost(
+          category: _category,
+          title: _title.text,
+          content: _content.text,
+          imageUrls: urls,
+        );
+      } else {
+        await ForumService.updatePost(
+          widget.post!.id,
+          category: _category,
+          title: _title.text,
+          content: _content.text,
+          imageUrls: urls,
+        );
+      }
+      if (mounted) Navigator.pop(context, true);
+    } catch (e) {
+      if (mounted) _message(context, e);
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext c) => Scaffold(
+    appBar: AppBar(title: Text(widget.post == null ? 'New post' : 'Edit post')),
+    body: Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+          DropdownButtonFormField(
+            value: _category,
+            items: _categories.entries
+                .map(
+                  (e) => DropdownMenuItem(value: e.key, child: Text(e.value)),
+                )
+                .toList(),
+            onChanged: (v) => setState(() => _category = v!),
+          ),
+          TextField(
+            controller: _title,
+            maxLength: 120,
+            decoration: const InputDecoration(labelText: 'Title'),
+          ),
+          Expanded(
+            child: TextField(
+              controller: _content,
+              maxLength: 5000,
+              maxLines: null,
+              expands: true,
+              decoration: const InputDecoration(
+                labelText: 'What would you like to share?',
+                alignLabelWithHint: true,
+              ),
+            ),
+          ),
+          Wrap(
+            spacing: 8,
+            children: [
+              ..._files.map(
+                (f) => FutureBuilder<Uint8List>(
+                  future: f.readAsBytes(),
+                  builder: (_, s) => s.hasData
+                      ? Image.memory(
+                          s.data!,
+                          height: 65,
+                          width: 65,
+                          fit: BoxFit.cover,
+                        )
+                      : const SizedBox(height: 65, width: 65),
+                ),
+              ),
+              if (_files.length < 4)
+                IconButton(
+                  onPressed: _pick,
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          FilledButton(
+            onPressed: _saving ? null : _save,
+            child: Text(_saving ? 'Uploading...' : 'Publish'),
+          ),
+        ],
+      ),
+    ),
+  );
 }
 
 class ForumDetailScreen extends StatefulWidget {
-  const ForumDetailScreen({required this.post, super.key});
+  const ForumDetailScreen({super.key, required this.post});
   final ForumPost post;
   @override
   State<ForumDetailScreen> createState() => _ForumDetailScreenState();
 }
 
 class _ForumDetailScreenState extends State<ForumDetailScreen> {
-  late Future<List<ForumComment>> _comments;
-  final _commentController = TextEditingController();
+  late ForumPost _post;
+  List<ForumComment> _comments = [];
+  final _input = TextEditingController();
+  final _realtime = ForumRealtimeService();
   bool _sending = false;
   @override
-  void initState() { super.initState(); _comments = ForumService.fetchComments(widget.post.id); }
+  void initState() {
+    super.initState();
+    _post = widget.post;
+    _load();
+    _realtime.connect(_event);
+  }
+
   @override
-  void dispose() { _commentController.dispose(); super.dispose(); }
+  void dispose() {
+    _input.dispose();
+    _realtime.dispose();
+    super.dispose();
+  }
+
+  Future<void> _load() async {
+    try {
+      final values = await Future.wait([
+        ForumService.fetchPost(_post.id),
+        ForumService.fetchComments(_post.id),
+      ]);
+      if (mounted)
+        setState(() {
+          _post = values[0] as ForumPost;
+          _comments = values[1] as List<ForumComment>;
+        });
+    } catch (e) {
+      if (mounted) _message(context, e);
+    }
+  }
+
+  void _event(Map<String, dynamic> e) {
+    if (e['post_id'] != _post.id || !mounted) return;
+    if (e['type'] == 'forum.comment.created') {
+      setState(() {
+        _comments.add(
+          ForumComment.fromJson(e['comment'] as Map<String, dynamic>),
+        );
+        _post = ForumPost(
+          id: _post.id,
+          category: _post.category,
+          title: _post.title,
+          content: _post.content,
+          imageUrls: _post.imageUrls,
+          commentCount: _post.commentCount + 1,
+          likeCount: _post.likeCount,
+          isLiked: _post.isLiked,
+          isBookmarked: _post.isBookmarked,
+          isMine: _post.isMine,
+          createdAt: _post.createdAt,
+          author: _post.author,
+        );
+      });
+    } else {
+      _load();
+    }
+  }
 
   Future<void> _send() async {
-    final content = _commentController.text.trim();
-    if (content.isEmpty || _sending) return;
+    if (_sending || _input.text.trim().isEmpty) return;
     setState(() => _sending = true);
     try {
-      await ForumService.createComment(widget.post.id, content);
-      _commentController.clear();
-      setState(() => _comments = ForumService.fetchComments(widget.post.id));
-    } on ApiException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      final comment = await ForumService.createComment(_post.id, _input.text);
+      if (mounted)
+        setState(() {
+          _comments.add(comment);
+          _input.clear();
+        });
+    } catch (e) {
+      if (mounted) _message(context, e);
     } finally {
       if (mounted) setState(() => _sending = false);
     }
   }
 
-  @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AppColors.creamLight,
-    appBar: AppBar(backgroundColor: AppColors.creamLight, foregroundColor: AppColors.ink, title: const Text('貼文內容')),
-    body: Column(children: [
-      Expanded(child: FutureBuilder<List<ForumComment>>(
-        future: _comments,
-        builder: (_, snapshot) => ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            _PostCard(post: widget.post, onTap: () {}),
-            const Padding(padding: EdgeInsets.symmetric(vertical: 18), child: Text('回覆', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: AppColors.ink))),
-            if (snapshot.connectionState != ConnectionState.done) const Center(child: CircularProgressIndicator()),
-            ...?snapshot.data?.map((comment) => _CommentTile(comment: comment)),
-          ],
-        ),
-      )),
-      SafeArea(top: false, child: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-        child: Row(children: [Expanded(child: TextField(controller: _commentController, minLines: 1, maxLines: 4, decoration: const InputDecoration(hintText: '寫下你的回覆…', filled: true))), IconButton(onPressed: _sending ? null : _send, icon: const Icon(Icons.send, color: AppColors.primary))]),
-      )),
-    ]),
-  );
-}
-
-class ForumComposeScreen extends StatefulWidget {
-  const ForumComposeScreen({super.key});
-  @override
-  State<ForumComposeScreen> createState() => _ForumComposeScreenState();
-}
-
-class _ForumComposeScreenState extends State<ForumComposeScreen> {
-  final _title = TextEditingController();
-  final _content = TextEditingController();
-  String _category = 'general';
-  bool _submitting = false;
-  @override
-  void dispose() { _title.dispose(); _content.dispose(); super.dispose(); }
-  Future<void> _submit() async {
-    if (_title.text.trim().isEmpty || _content.text.trim().isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('請填寫標題和內容'))); return;
-    }
-    setState(() => _submitting = true);
+  Future<void> _like() async {
     try {
-      await ForumService.createPost(category: _category, title: _title.text.trim(), content: _content.text.trim());
-      if (mounted) Navigator.pop(context, true);
-    } on ApiException catch (e) {
-      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
-    } finally { if (mounted) setState(() => _submitting = false); }
+      final r = await ForumService.toggleLike(_post.id);
+      if (mounted)
+        setState(
+          () => _post = ForumPost(
+            id: _post.id,
+            category: _post.category,
+            title: _post.title,
+            content: _post.content,
+            imageUrls: _post.imageUrls,
+            commentCount: _post.commentCount,
+            likeCount: (r['like_count'] as num).toInt(),
+            isLiked: r['liked'] == true,
+            isBookmarked: _post.isBookmarked,
+            isMine: _post.isMine,
+            createdAt: _post.createdAt,
+            author: _post.author,
+          ),
+        );
+    } catch (e) {
+      if (mounted) _message(context, e);
+    }
   }
+
+  Future<void> _bookmark() async {
+    try {
+      final r = await ForumService.toggleBookmark(_post.id);
+      if (mounted)
+        setState(
+          () => _post = ForumPost(
+            id: _post.id,
+            category: _post.category,
+            title: _post.title,
+            content: _post.content,
+            imageUrls: _post.imageUrls,
+            commentCount: _post.commentCount,
+            likeCount: _post.likeCount,
+            isLiked: _post.isLiked,
+            isBookmarked: r['bookmarked'] == true,
+            isMine: _post.isMine,
+            createdAt: _post.createdAt,
+            author: _post.author,
+          ),
+        );
+    } catch (e) {
+      if (mounted) _message(context, e);
+    }
+  }
+
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AppColors.creamLight,
-    appBar: AppBar(backgroundColor: AppColors.creamLight, foregroundColor: AppColors.ink, title: const Text('發表貼文'), actions: [TextButton(onPressed: _submitting ? null : _submit, child: Text(_submitting ? '發表中…' : '發表', style: const TextStyle(color: AppColors.primary)))]),
-    body: Padding(padding: const EdgeInsets.all(16), child: Column(children: [
-      DropdownButtonFormField<String>(initialValue: _category, decoration: const InputDecoration(labelText: '分類'), items: _categories.entries.map((e) => DropdownMenuItem(value: e.key, child: Text(e.value))).toList(), onChanged: (value) => setState(() => _category = value ?? 'general')),
-      const SizedBox(height: 12),
-      TextField(controller: _title, maxLength: 120, decoration: const InputDecoration(labelText: '標題', filled: true)),
-      const SizedBox(height: 12),
-      Expanded(child: TextField(controller: _content, maxLength: 5000, minLines: null, maxLines: null, expands: true, textAlignVertical: TextAlignVertical.top, decoration: const InputDecoration(labelText: '內容', alignLabelWithHint: true, filled: true))),
-    ])),
+  Widget build(BuildContext c) => Scaffold(
+    appBar: AppBar(
+      title: const Text('Post'),
+      actions: [
+        if (_post.isMine)
+          PopupMenuButton<String>(
+            onSelected: (v) async {
+              if (v == 'edit') {
+                final ok = await Navigator.push<bool>(
+                  c,
+                  MaterialPageRoute(
+                    builder: (_) => ForumComposeScreen(post: _post),
+                  ),
+                );
+                if (ok == true) _load();
+              } else {
+                await ForumService.deletePost(_post.id);
+                if (c.mounted) Navigator.pop(c);
+              }
+            },
+            itemBuilder: (_) => const [
+              PopupMenuItem(value: 'edit', child: Text('Edit')),
+              PopupMenuItem(value: 'delete', child: Text('Delete')),
+            ],
+          ),
+      ],
+    ),
+    body: Column(
+      children: [
+        Expanded(
+          child: ListView(
+            children: [
+              ForumPostCard(post: _post, onTap: () {}),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                child: Row(
+                  children: [
+                    IconButton(
+                      onPressed: _like,
+                      icon: Icon(
+                        _post.isLiked ? Icons.favorite : Icons.favorite_border,
+                      ),
+                    ),
+                    Text('${_post.likeCount}'),
+                    IconButton(
+                      onPressed: _bookmark,
+                      icon: Icon(
+                        _post.isBookmarked
+                            ? Icons.bookmark
+                            : Icons.bookmark_border,
+                      ),
+                    ),
+                    const Spacer(),
+                    TextButton(
+                      onPressed: () => _report(c, postId: _post.id),
+                      child: const Text('Report'),
+                    ),
+                  ],
+                ),
+              ),
+              const Divider(),
+              ..._comments.map(
+                (x) => ListTile(
+                  title: Text(x.author.displayName),
+                  subtitle: Text(x.content),
+                  trailing: TextButton(
+                    onPressed: () => _report(c, commentId: x.id),
+                    child: const Text('Report'),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _input,
+                    decoration: const InputDecoration(
+                      hintText: 'Write a comment',
+                    ),
+                  ),
+                ),
+                IconButton(onPressed: _send, icon: const Icon(Icons.send)),
+              ],
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
+  Future<void> _report(BuildContext c, {int? postId, int? commentId}) async {
+    final text = TextEditingController();
+    final yes = await showDialog<bool>(
+      context: c,
+      builder: (d) => AlertDialog(
+        title: const Text('Report'),
+        content: TextField(
+          controller: text,
+          decoration: const InputDecoration(hintText: 'Reason'),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(d),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(d, true),
+            child: const Text('Send'),
+          ),
+        ],
+      ),
+    );
+    if (yes == true) {
+      try {
+        await ForumService.report(
+          postId: postId,
+          commentId: commentId,
+          reason: text.text,
+        );
+        if (c.mounted)
+          ScaffoldMessenger.of(
+            c,
+          ).showSnackBar(const SnackBar(content: Text('Report sent')));
+      } catch (e) {
+        if (c.mounted) _message(c, e);
+      }
+    }
+  }
+}
+
+class ForumBookmarksScreen extends StatelessWidget {
+  const ForumBookmarksScreen({super.key});
+  @override
+  Widget build(BuildContext c) => Scaffold(
+    appBar: AppBar(title: const Text('Saved posts')),
+    body: FutureBuilder<List<ForumPost>>(
+      future: ForumService.bookmarks(),
+      builder: (_, s) {
+        if (!s.hasData) return const Center(child: CircularProgressIndicator());
+        return ListView(
+          children: s.data!
+              .map(
+                (p) => ForumPostCard(
+                  post: p,
+                  onTap: () => Navigator.push(
+                    c,
+                    MaterialPageRoute(
+                      builder: (_) => ForumDetailScreen(post: p),
+                    ),
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      },
+    ),
   );
 }
-
-class _CommentTile extends StatelessWidget {
-  const _CommentTile({required this.comment}); final ForumComment comment;
-  @override
-  Widget build(BuildContext context) => Padding(padding: const EdgeInsets.only(bottom: 14), child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-    CircleAvatar(radius: 17, backgroundColor: AppColors.moss, foregroundColor: Colors.white, child: Text(comment.author.displayName.characters.first)),
-    const SizedBox(width: 9), Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text(comment.author.displayName, style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.ink)), Text(comment.content, style: const TextStyle(color: AppColors.inkSoft, height: 1.4)), Text(_timeAgo(comment.createdAt), style: const TextStyle(color: AppColors.fog, fontSize: 11))]))
-  ]));
-}
-
-class _CategoryBadge extends StatelessWidget { const _CategoryBadge({required this.category}); final String category;
-  @override Widget build(BuildContext context) => Container(padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), decoration: BoxDecoration(color: AppColors.cream, borderRadius: BorderRadius.circular(99)), child: Text(_categories[category] ?? '討論', style: const TextStyle(color: AppColors.primary, fontSize: 12)));
-}
-class _EmptyForum extends StatelessWidget { const _EmptyForum(); @override Widget build(BuildContext context) => const Center(child: Text('還沒有貼文，成為第一位發文的族人吧！', style: TextStyle(color: AppColors.fog))); }
-class _ForumError extends StatelessWidget { const _ForumError({required this.onRetry, this.error}); final VoidCallback onRetry; final Object? error;
-  @override Widget build(BuildContext context) => Center(child: Column(mainAxisSize: MainAxisSize.min, children: [const Text('暫時無法載入論壇', style: TextStyle(color: AppColors.ink)), const SizedBox(height: 8), OutlinedButton(onPressed: onRetry, child: const Text('再試一次'))])); }
-String _timeAgo(DateTime time) { final duration = DateTime.now().difference(time); if (duration.inMinutes < 1) return '剛剛'; if (duration.inHours < 1) return '${duration.inMinutes} 分鐘前'; if (duration.inDays < 1) return '${duration.inHours} 小時前'; return '${duration.inDays} 天前'; }
