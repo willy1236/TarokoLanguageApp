@@ -27,6 +27,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   final _maxParticipants = TextEditingController();
 
   DateTime? _startsAt;
+  DateTime? _registrationDeadline;
   String? _category; // 選填，null = 不分類
   bool _submitting = false;
   String? _error;
@@ -67,6 +68,28 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     });
   }
 
+  Future<void> _pickRegistrationDeadline() async {
+    final now = DateTime.now();
+    final lastDate = _startsAt ?? now.add(const Duration(days: 365));
+    final date = await showDatePicker(
+      context: context,
+      initialDate: _registrationDeadline ?? now,
+      firstDate: now,
+      lastDate: lastDate.isAfter(now) ? lastDate : now,
+      helpText: '選擇報名截止日期',
+    );
+    if (date == null || !mounted) return;
+    final t = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(_registrationDeadline ?? now),
+      helpText: '選擇報名截止時間',
+    );
+    if (t == null || !mounted) return;
+    setState(() {
+      _registrationDeadline = DateTime(date.year, date.month, date.day, t.hour, t.minute);
+    });
+  }
+
   String _formatDateTime(DateTime dt) {
     String two(int n) => n.toString().padLeft(2, '0');
     return '${dt.year}/${two(dt.month)}/${two(dt.day)}  ${two(dt.hour)}:${two(dt.minute)}';
@@ -93,6 +116,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       setState(() => _error = '活動時間需為未來');
       return;
     }
+    if (_registrationDeadline != null && _registrationDeadline!.isAfter(_startsAt!)) {
+      setState(() => _error = '報名截止時間不能晚於活動開始時間');
+      return;
+    }
 
     // 名額選填：留空 = 不限；有填須為正整數
     int? maxPeople;
@@ -113,6 +140,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         location: location,
         address: address,
         startsAt: _startsAt!,
+        registrationDeadline: _registrationDeadline,
         contactEmail: _email.text,
         contactPhone: _phone.text,
         maxParticipants: maxPeople,
@@ -157,7 +185,14 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                   _textField(_address, hint: '例如：花蓮縣秀林鄉…', maxLength: 200),
                   const SizedBox(height: 18),
                   _label('開始時間', required: true),
-                  _buildDateField(),
+                  _buildDateField(value: _startsAt, onTap: _pickDateTime),
+                  const SizedBox(height: 18),
+                  _label('報名截止時間', required: false),
+                  _buildDateField(
+                    value: _registrationDeadline,
+                    onTap: _pickRegistrationDeadline,
+                    placeholder: '選擇日期與時間（選填）',
+                  ),
                   const SizedBox(height: 18),
                   _label('名額上限', required: false),
                   _textField(_maxParticipants,
@@ -258,9 +293,13 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     );
   }
 
-  Widget _buildDateField() {
+  Widget _buildDateField({
+    required DateTime? value,
+    required VoidCallback onTap,
+    String placeholder = '選擇日期與時間',
+  }) {
     return GestureDetector(
-      onTap: _pickDateTime,
+      onTap: onTap,
       child: Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
@@ -274,10 +313,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             const Icon(Icons.event, size: 16, color: AppColors.primary),
             const SizedBox(width: 10),
             Text(
-              _startsAt == null ? '選擇日期與時間' : _formatDateTime(_startsAt!),
+              value == null ? placeholder : _formatDateTime(value),
               style: TextStyle(
                 fontSize: 14,
-                color: _startsAt == null ? AppColors.fog : AppColors.ink,
+                color: value == null ? AppColors.fog : AppColors.ink,
                 letterSpacing: 0.5,
               ),
             ),
