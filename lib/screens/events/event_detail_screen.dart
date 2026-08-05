@@ -448,17 +448,29 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             const SizedBox(height: 16),
           ],
 
-          // 提醒紀錄
+          // 提醒紀錄：排定發送（尚未送出）／已發送（含失敗、取消等已處理完的）
           if (_reminders.isNotEmpty) ...[
             Text('提醒紀錄',
                 style: GoogleFonts.notoSerifTc(
                     fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.ink)),
             const SizedBox(height: 8),
-            for (final r in _sortedReminders()) ...[
-              _buildReminderCard(r),
-              const SizedBox(height: 10),
+            if (_pendingReminders().isNotEmpty) ...[
+              _buildReminderGroupLabel('排定發送'),
+              const SizedBox(height: 6),
+              for (final r in _pendingReminders()) ...[
+                _buildReminderCard(r),
+                const SizedBox(height: 10),
+              ],
             ],
-            const SizedBox(height: 12),
+            if (_sentReminders().isNotEmpty) ...[
+              _buildReminderGroupLabel('已發送'),
+              const SizedBox(height: 6),
+              for (final r in _sentReminders()) ...[
+                _buildReminderCard(r),
+                const SizedBox(height: 10),
+              ],
+            ],
+            const SizedBox(height: 2),
           ],
 
           // 聯絡資訊
@@ -531,11 +543,24 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  /// 新的（id 較大）排在前面；後端固定回傳 scheduled_at 遞增排序，這裡反過來。
-  List<EventReminder> _sortedReminders() {
-    final sorted = [..._reminders];
-    sorted.sort((a, b) => b.id.compareTo(a.id));
-    return sorted;
+  /// 排定發送（尚未送出）：依排定時間由近到遠排序。
+  List<EventReminder> _pendingReminders() {
+    final list = _reminders.where((r) => r.status == 'pending').toList();
+    list.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    return list;
+  }
+
+  /// 已發送（含失敗、取消等已處理完的）：新的（id 較大）排在前面；
+  /// 後端固定回傳 scheduled_at 遞增排序，這裡反過來。
+  List<EventReminder> _sentReminders() {
+    final list = _reminders.where((r) => r.status != 'pending').toList();
+    list.sort((a, b) => b.id.compareTo(a.id));
+    return list;
+  }
+
+  Widget _buildReminderGroupLabel(String text) {
+    return Text(text,
+        style: TextStyle(fontSize: 11.5, color: AppColors.fog, letterSpacing: 1.5));
   }
 
   Widget _buildReminderCard(EventReminder r) {
