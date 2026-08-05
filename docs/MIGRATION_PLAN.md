@@ -56,7 +56,7 @@
 | 檔案 | 狀態 |
 |---|---|
 | `lib/screens/plaza/plaza_screen.dart` | PlazaScreen，亮色主題，動態/活動分頁，近期活動小卡、貼文列表、精選活動卡 |
-| `lib/screens/plaza/events_screen.dart` | EventsScreen，亮色主題，篩選 chips、精選大卡、活動清單 |
+| `lib/screens/events/events_screen.dart` | EventsScreen，亮色主題，篩選 chips、精選大卡、活動清單 |
 | `lib/screens/plaza/compose_screen.dart` | ComposeScreen，動態/活動類型切換、文字輸入、標籤選擇、工具列 |
 | `lib/main.dart` | IndexedStack index 4 → PlazaScreen，index 5 → EventsScreen，移除 _PlaceholderTab |
 

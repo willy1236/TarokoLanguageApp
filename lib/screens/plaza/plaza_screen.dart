@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../shared/widgets/truku_painters.dart';
+import '../../models/event_model.dart';
+import '../../services/event_service.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'compose_screen.dart';
+import '../events/event_detail_screen.dart';
 
 class PlazaScreen extends StatefulWidget {
   const PlazaScreen({super.key});
@@ -13,7 +15,37 @@ class PlazaScreen extends StatefulWidget {
 }
 
 class _PlazaScreenState extends State<PlazaScreen> {
-  int _tabIndex = 0;
+  bool _eventsLoading = true;
+  List<EventSummary> _events = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadEvents();
+  }
+
+  Future<void> _loadEvents() async {
+    try {
+      final events = await EventService.fetchEvents(scope: 'upcoming');
+      if (!mounted) return;
+      setState(() {
+        _events = events;
+        _eventsLoading = false;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _eventsLoading = false);
+    }
+  }
+
+  void _openEventDetail(EventSummary e) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: e.id)),
+    ).then((_) {
+      if (mounted) _loadEvents();
+    });
+  }
 
   static const _posts = [
     _PostData(
@@ -33,35 +65,6 @@ class _PlazaScreenState extends State<PlazaScreen> {
     ),
   ];
 
-  static const _miniEvents = [
-    _MiniEventData(month: 'JUN', day: '15', title: '青年族語營', loc: '秀林部落', count: 23, isPrimary: true),
-    _MiniEventData(month: 'JUN', day: '22', title: '苧麻採集走讀', loc: '銅門部落', count: 12, isPrimary: false),
-    _MiniEventData(month: 'JUL', day: '03', title: '部落歌謠之夜', loc: '富世社區', count: 41, isPrimary: true),
-  ];
-
-  static const _events = [
-    _EventData(
-      month: 'JUN', day: '15', dayOfWeek: '週六', title: '青年族語營', loc: '秀林部落',
-      time: '09:00 — 17:00', count: 23, max: 30, tag: '族語', host: 'Sayun Lowking',
-      desc: '三天兩夜，跟著耆老學族語、織布、聽部落故事。', isPrimary: true, featured: true,
-    ),
-    _EventData(
-      month: 'JUN', day: '22', dayOfWeek: '週六', title: '苧麻採集走讀', loc: '銅門部落',
-      time: '06:00 — 12:00', count: 12, max: 20, tag: '走讀', host: 'Bakan Nawi',
-      desc: '', isPrimary: false,
-    ),
-    _EventData(
-      month: 'JUL', day: '03', dayOfWeek: '週日', title: '部落歌謠之夜', loc: '富世社區活動中心',
-      time: '19:00 — 21:00', count: 41, max: 60, tag: '音樂', host: 'Pisaw baki',
-      desc: '', isPrimary: true,
-    ),
-    _EventData(
-      month: 'JUL', day: '12', dayOfWeek: '週六', title: '太魯閣語讀書會', loc: '線上',
-      time: '20:00 — 21:30', count: 8, max: 15, tag: '線上', host: 'Yudaw',
-      desc: '', isPrimary: false,
-    ),
-  ];
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -70,12 +73,9 @@ class _PlazaScreenState extends State<PlazaScreen> {
         slivers: [
           SliverToBoxAdapter(child: _buildHeader(context)),
           SliverToBoxAdapter(child: _buildTabBar()),
-          if (_tabIndex == 0) ...[
+          if (!_eventsLoading && _events.isNotEmpty)
             SliverToBoxAdapter(child: _buildMiniEventCards()),
-            SliverToBoxAdapter(child: _buildPostsSection()),
-          ] else ...[
-            SliverToBoxAdapter(child: _buildEventsSection()),
-          ],
+          SliverToBoxAdapter(child: _buildPostsSection()),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
@@ -154,11 +154,9 @@ class _PlazaScreenState extends State<PlazaScreen> {
       decoration: const BoxDecoration(
         border: Border(bottom: BorderSide(color: AppColors.creamDeep)),
       ),
-      child: Row(
+      child: const Row(
         children: [
-          _Tab(label: '動態', active: _tabIndex == 0, onTap: () => setState(() => _tabIndex = 0)),
-          const SizedBox(width: 24),
-          _Tab(label: '活動', active: _tabIndex == 1, onTap: () => setState(() => _tabIndex = 1)),
+          _Tab(label: '動態'),
         ],
       ),
     );
@@ -185,9 +183,12 @@ class _PlazaScreenState extends State<PlazaScreen> {
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-            itemCount: _miniEvents.length,
+            itemCount: _events.length,
             separatorBuilder: (_, _) => const SizedBox(width: 10),
-            itemBuilder: (_, i) => _MiniEventCard(event: _miniEvents[i]),
+            itemBuilder: (_, i) => _MiniEventCard(
+              event: _events[i],
+              onTap: () => _openEventDetail(_events[i]),
+            ),
           ),
         ),
       ],
@@ -222,78 +223,38 @@ class _PlazaScreenState extends State<PlazaScreen> {
     );
   }
 
-  Widget _buildEventsSection() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-      child: Column(
-        children: [
-          _FeaturedEventCard(event: _events[0]),
-          const SizedBox(height: 14),
-          Row(
-            children: [
-              const Expanded(child: Divider(color: AppColors.creamDeep)),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 10),
-                child: Text(
-                  '更多活動',
-                  style: GoogleFonts.crimsonPro(
-                    fontStyle: FontStyle.italic,
-                    fontSize: 10,
-                    color: AppColors.fog,
-                    letterSpacing: 3.0,
-                  ),
-                ),
-              ),
-              const Expanded(child: Divider(color: AppColors.creamDeep)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          ..._events.skip(1).map((e) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _EventListTile(event: e),
-              )),
-        ],
-      ),
-    );
-  }
 }
 
 // ── Tab 元件 ──────────────────────────────────────────────────
 
 class _Tab extends StatelessWidget {
   final String label;
-  final bool active;
-  final VoidCallback onTap;
 
-  const _Tab({required this.label, required this.active, required this.onTap});
+  const _Tab({required this.label});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Stack(
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 10),
-            child: Text(
-              label,
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 14,
-                fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                color: active ? AppColors.primary : AppColors.fog,
-                letterSpacing: 1.5,
-              ),
+    return Stack(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          child: Text(
+            label,
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+              letterSpacing: 1.5,
             ),
           ),
-          if (active)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(height: 2, color: AppColors.primary),
-            ),
-        ],
-      ),
+        ),
+        Positioned(
+          bottom: 0,
+          left: 0,
+          right: 0,
+          child: Container(height: 2, color: AppColors.primary),
+        ),
+      ],
     );
   }
 }
@@ -311,43 +272,6 @@ class _PostData {
     required this.tag,
     required this.likes,
     required this.comments,
-  });
-}
-
-class _MiniEventData {
-  final String month, day, title, loc;
-  final int count;
-  final bool isPrimary;
-
-  const _MiniEventData({
-    required this.month,
-    required this.day,
-    required this.title,
-    required this.loc,
-    required this.count,
-    required this.isPrimary,
-  });
-}
-
-class _EventData {
-  final String month, day, dayOfWeek, title, loc, time, tag, host, desc;
-  final int count, max;
-  final bool isPrimary, featured;
-
-  const _EventData({
-    required this.month,
-    required this.day,
-    required this.dayOfWeek,
-    required this.title,
-    required this.loc,
-    required this.time,
-    required this.tag,
-    required this.host,
-    required this.desc,
-    required this.count,
-    required this.max,
-    required this.isPrimary,
-    this.featured = false,
   });
 }
 
@@ -464,488 +388,132 @@ class _PostCard extends StatelessWidget {
 // ── 近期活動小卡 ─────────────────────────────────────────────
 
 class _MiniEventCard extends StatelessWidget {
-  final _MiniEventData event;
+  final EventSummary event;
+  final VoidCallback onTap;
 
-  const _MiniEventCard({required this.event});
+  const _MiniEventCard({required this.event, required this.onTap});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 200,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.ink,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Stack(
-        children: [
-          Positioned(
-            right: -16,
-            top: -16,
-            child: Opacity(
-              opacity: 0.13,
-              child: TrukuDiamond(size: 80, color: AppColors.gold),
-            ),
-          ),
-          Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: BoxDecoration(
-                      color: event.isPrimary ? AppColors.primary : AppColors.moss,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          event.month,
-                          style: const TextStyle(
-                            fontSize: 8,
-                            color: AppColors.gold,
-                            letterSpacing: 2.0,
-                          ),
-                        ),
-                        Text(
-                          event.day,
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.creamLight,
-                            height: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          event.title,
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.creamLight,
-                            letterSpacing: 0.6,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          event.loc,
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: AppColors.creamLight.withValues(alpha: 0.65),
-                            letterSpacing: 0.8,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 10),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '● ${event.count} 人報名',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      color: AppColors.gold,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    child: const Text(
-                      '我要參加',
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.gold,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── 精選活動大卡 ─────────────────────────────────────────────
-
-class _FeaturedEventCard extends StatelessWidget {
-  final _EventData event;
-
-  const _FeaturedEventCard({required this.event});
+  static const _months = [
+    '1月', '2月', '3月', '4月', '5月', '6月',
+    '7月', '8月', '9月', '10月', '11月', '12月',
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.ink,
-        borderRadius: BorderRadius.circular(18),
-      ),
-      clipBehavior: Clip.hardEdge,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            height: 130,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                Container(
-                  decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [AppColors.primary, AppColors.primaryDeep],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                  ),
-                ),
-                Opacity(
-                  opacity: 0.25,
-                  child: CustomPaint(
-                    painter: TrukuWeavePainter(opacity: 1, scale: 0.7),
-                  ),
-                ),
-                Positioned(
-                  top: 14,
-                  left: 14,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: AppColors.gold,
-                      borderRadius: BorderRadius.circular(4),
-                    ),
-                    child: const Text(
-                      '編輯精選',
-                      style: TextStyle(
-                        fontSize: 10,
-                        color: AppColors.ink,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 2.5,
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 14,
-                  right: 14,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                    decoration: BoxDecoration(
-                      color: AppColors.ink.withValues(alpha: 0.55),
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
-                    ),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          event.month,
-                          style: const TextStyle(
-                            fontSize: 8,
-                            color: AppColors.gold,
-                            letterSpacing: 3.0,
-                          ),
-                        ),
-                        Text(
-                          event.day,
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.creamLight,
-                            height: 1,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+    final d = event.startsAt.toLocal();
+    final month = _months[d.month - 1];
+    final day = d.day.toString().padLeft(2, '0');
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: 200,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.ink,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              right: -16,
+              top: -16,
+              child: Opacity(
+                opacity: 0.13,
+                child: TrukuDiamond(size: 80, color: AppColors.gold),
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(18),
-            child: Column(
+            Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  event.title,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 19,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.creamLight,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  event.desc,
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: AppColors.creamLight.withValues(alpha: 0.75),
-                    height: 1.5,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Icon(Icons.access_time, color: AppColors.gold, size: 11),
-                    const SizedBox(width: 4),
-                    Text(
-                      event.time,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.creamLight.withValues(alpha: 0.85),
+                    Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: event.isJoined ? AppColors.primary : AppColors.moss,
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                    ),
-                    const SizedBox(width: 14),
-                    const Icon(Icons.location_on_outlined, color: AppColors.gold, size: 11),
-                    const SizedBox(width: 4),
-                    Text(
-                      event.loc,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: AppColors.creamLight.withValues(alpha: 0.85),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          ClipRRect(
-                            borderRadius: BorderRadius.circular(3),
-                            child: LinearProgressIndicator(
-                              value: event.count / event.max,
-                              backgroundColor: Colors.white.withValues(alpha: 0.15),
-                              valueColor: const AlwaysStoppedAnimation(AppColors.gold),
-                              minHeight: 5,
+                          Text(
+                            month,
+                            style: const TextStyle(
+                              fontSize: 8,
+                              color: AppColors.gold,
+                              letterSpacing: 0.3,
                             ),
                           ),
-                          const SizedBox(height: 4),
                           Text(
-                            '${event.count}/${event.max} 人 · 剩 ${event.max - event.count} 個名額',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: AppColors.creamLight.withValues(alpha: 0.7),
+                            day,
+                            style: GoogleFonts.notoSerifTc(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.creamLight,
+                              height: 1,
                             ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: AppColors.gold,
-                        borderRadius: BorderRadius.circular(22),
-                      ),
-                      child: Text(
-                        '我要參加',
-                        style: GoogleFonts.notoSerifTc(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.ink,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── 活動列表項目 ──────────────────────────────────────────────
-
-class _EventListTile extends StatelessWidget {
-  final _EventData event;
-
-  const _EventListTile({required this.event});
-
-  @override
-  Widget build(BuildContext context) {
-    final isNearlyFull = event.count / event.max > 0.7;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: AppColors.cream,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.creamDeep),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 56,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              decoration: BoxDecoration(
-                color: event.isPrimary ? AppColors.primary : AppColors.moss,
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  Positioned.fill(
-                    child: Opacity(
-                      opacity: 0.18,
-                      child: CustomPaint(
-                        painter: TrukuWeavePainter(opacity: 1, scale: 0.3),
-                      ),
-                    ),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        event.month,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          color: AppColors.gold,
-                          letterSpacing: 2.5,
-                        ),
-                      ),
-                      Text(
-                        event.day,
-                        style: GoogleFonts.notoSerifTc(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          color: AppColors.creamLight,
-                          height: 1,
-                        ),
-                      ),
-                      Text(
-                        event.dayOfWeek,
-                        style: TextStyle(
-                          fontSize: 9,
-                          color: AppColors.creamLight.withValues(alpha: 0.7),
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: Text(
-                        event.tag,
-                        style: const TextStyle(
-                          fontSize: 9,
-                          color: AppColors.primary,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ),
-                    if (isNearlyFull) ...[
-                      const SizedBox(width: 6),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFAA3333).withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: const Text(
-                          '即將額滿',
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: Color(0xFFAA3333),
-                            letterSpacing: 1.5,
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            event.title,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: GoogleFonts.notoSerifTc(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: AppColors.creamLight,
+                              letterSpacing: 0.6,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 2),
+                          Text(
+                            event.location ?? '線上',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: AppColors.creamLight.withValues(alpha: 0.65),
+                              letterSpacing: 0.8,
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 3),
-                Text(
-                  event.title,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
-                    letterSpacing: 0.6,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  '${event.time} · ${event.loc}',
-                  style: const TextStyle(
-                    fontSize: 11,
-                    color: AppColors.fog,
-                    letterSpacing: 0.8,
-                  ),
-                ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 10),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Row(
-                      children: [
-                        const Icon(Icons.person_outline, size: 11, color: AppColors.inkSoft),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${event.count}/${event.max}',
-                          style: const TextStyle(fontSize: 11, color: AppColors.inkSoft),
-                        ),
-                      ],
+                    Text(
+                      '● ${event.participantCount} 人報名',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.gold,
+                        letterSpacing: 1.5,
+                      ),
                     ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.primary),
-                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                        borderRadius: BorderRadius.circular(14),
                       ),
-                      child: const Text(
-                        '查看',
-                        style: TextStyle(
+                      child: Text(
+                        event.isJoined ? '已報名' : '我要參加',
+                        style: const TextStyle(
                           fontSize: 11,
-                          color: AppColors.primary,
-                          letterSpacing: 1.0,
+                          color: AppColors.gold,
+                          letterSpacing: 1.5,
                         ),
                       ),
                     ),
@@ -953,9 +521,10 @@ class _EventListTile extends StatelessWidget {
                 ),
               ],
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
+
