@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
+import '../../services/fcm_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import 'reminder_compose_screen.dart';
@@ -42,6 +43,24 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   void initState() {
     super.initState();
     _load();
+    FcmService.onReminderReceivedForOpenScreen = _onForegroundReminder;
+  }
+
+  @override
+  void dispose() {
+    if (identical(FcmService.onReminderReceivedForOpenScreen, _onForegroundReminder)) {
+      FcmService.onReminderReceivedForOpenScreen = null;
+    }
+    super.dispose();
+  }
+
+  /// 前景收到本活動的新提醒推播時觸發，即時刷新提醒紀錄區塊。
+  void _onForegroundReminder(int? eventId) {
+    if (eventId != widget.eventId || !mounted) return;
+    _fetchRemindersSafe().then((reminders) {
+      if (!mounted) return;
+      setState(() => _reminders = reminders);
+    });
   }
 
   Future<void> _load() async {

@@ -1,4 +1,4 @@
-// FCM 推播：要權限、取得裝置 token、上傳後端、處理前景/點擊通知。
+// FCM 推播：要權限、取得裝置 token、上傳後端、處理前景/背景/點擊通知。
 //
 // 與後端搭配（Truku_backend backend/routes/events.ts、push.ts）：
 //   - 登入後把 token 上傳 POST /api/devices（req 需帶 JWT，故必須登入後才呼叫）
@@ -12,9 +12,12 @@
 //
 // 注意：iOS 需另外設定 APNs 憑證與 GoogleService-Info.plist，本階段先只支援 Android。
 
+import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../main.dart';
 import 'auth_service.dart';
 import 'event_service.dart';
 
@@ -27,11 +30,27 @@ Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
 class FcmService {
   static final FirebaseMessaging _fm = FirebaseMessaging.instance;
+  static final FlutterLocalNotificationsPlugin _localNotifications =
+      FlutterLocalNotificationsPlugin();
   static String? _lastToken;
+
+  static const String _reminderChannelId = 'event_reminder_channel';
+  static const AndroidNotificationDetails _reminderAndroidDetails =
+      AndroidNotificationDetails(
+    _reminderChannelId,
+    '活動提醒',
+    channelDescription: '活動提醒與取消通知',
+    importance: Importance.high,
+    priority: Priority.high,
+  );
 
   /// 點擊提醒通知時的導頁 callback。由 UI 層設定（用 navigatorKey 導到活動詳情）。
   /// 參數為 payload 裡的 event_id（可能為 null）。
   static void Function(int? eventId)? onReminderTapped;
+
+  /// 前景收到「目前正開著的活動」的新提醒推播時觸發，讓該頁即時刷新提醒紀錄。
+  /// 由 EventDetailScreen 在 initState/dispose 掛上/清空。
+  static void Function(int? eventId)? onReminderReceivedForOpenScreen;
 
   /// App 被完全關閉、靠點擊通知冷啟動時拿到的訊息。此時 runApp() 尚未執行，
   /// navigatorKey 還沒掛上 Navigator，不能立即導頁，先暫存；等 SplashScreen
@@ -45,6 +64,7 @@ class FcmService {
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
     await _fm.requestPermission();
+    await _initLocalNotifications();
 
     // 前景收到訊息
     FirebaseMessaging.onMessage.listen(_onForegroundMessage);
@@ -58,6 +78,29 @@ class FcmService {
       _lastToken = token;
       _uploadIfLoggedIn(token);
     });
+  }
+
+  /// 初始化系統通知列（Android channel + 點擊回呼）。iOS 走最小設定，
+  /// 本階段推播只支援 Android（見檔案頂部註解）。
+  static Future<void> _initLocalNotifications() async {
+    const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const iosInit = DarwinInitializationSettings();
+    await _localNotifications.initialize(
+      const InitializationSettings(android: androidInit, iOS: iosInit),
+      onDidReceiveNotificationResponse: (response) {
+        final eventId = int.tryParse(response.payload ?? '');
+        onReminderTapped?.call(eventId);
+      },
+    );
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(const AndroidNotificationChannel(
+      _reminderChannelId,
+      '活動提醒',
+      description: '活動提醒與取消通知',
+      importance: Importance.high,
+    ));
   }
 
   /// 由 SplashScreen 在完成起始路由跳轉（pushReplacementNamed）之後呼叫，
@@ -103,21 +146,50 @@ class FcmService {
     }
   }
 
+  /// 解析提醒/取消通知的 payload，非提醒相關類型回傳 null。
+  static (String type, int? eventId)? _parseReminderPayload(
+      Map<String, dynamic> data) {
+    final type = data['type'];
+    if (type != 'event_reminder' && type != 'event_cancelled') return null;
+    final eventId = int.tryParse(data['event_id']?.toString() ?? '');
+    if (eventId == null) {
+      debugPrint('FcmService: event_id 缺失或無法解析，忽略：${data['event_id']}');
+    }
+    return (type as String, eventId);
+  }
+
   static void _onForegroundMessage(RemoteMessage message) {
-    // 前景時系統預設不跳通知列。要在 App 內呈現（SnackBar / 本地通知）時，
-    // 於 UI 對話補上；這裡先保留 hook。
+    final parsed = _parseReminderPayload(message.data);
+    if (parsed == null) return;
+    final (_, eventId) = parsed;
+
+    final title = message.notification?.title ?? '活動提醒';
+    final body = message.notification?.body ?? '';
+
+    unawaited(_localNotifications.show(
+      message.hashCode,
+      title,
+      body,
+      const NotificationDetails(android: _reminderAndroidDetails),
+      payload: eventId?.toString(),
+    ));
+
+    scaffoldMessengerKey.currentState
+      ?..clearSnackBars()
+      ..showSnackBar(SnackBar(
+        content: Text(body.isNotEmpty ? body : title),
+        action: eventId == null
+            ? null
+            : SnackBarAction(label: '查看', onPressed: () => onReminderTapped?.call(eventId)),
+      ));
+
+    onReminderReceivedForOpenScreen?.call(eventId);
   }
 
   static void _handleOpened(RemoteMessage message) {
-    final data = message.data;
-    final type = data['type'];
-    // 提醒與取消通知都導到活動詳情頁。
-    if (type == 'event_reminder' || type == 'event_cancelled') {
-      final eventId = int.tryParse(data['event_id']?.toString() ?? '');
-      if (eventId == null) {
-        debugPrint('FcmService: event_id 缺失或無法解析，忽略導頁：${data['event_id']}');
-      }
-      onReminderTapped?.call(eventId);
-    }
+    final parsed = _parseReminderPayload(message.data);
+    if (parsed == null) return;
+    final (_, eventId) = parsed;
+    onReminderTapped?.call(eventId);
   }
 }
