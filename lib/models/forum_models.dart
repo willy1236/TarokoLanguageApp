@@ -8,7 +8,8 @@ class ForumAuthor {
   final String displayName;
   final String? avatarUrl;
   factory ForumAuthor.fromJson(Map<String, dynamic> j) => ForumAuthor(
-    uid: (j['uid'] as num?)?.toInt() ?? 0,
+    // The production PostgreSQL driver may serialise BIGINT IDs as strings.
+    uid: int.tryParse(j['uid']?.toString() ?? '') ?? 0,
     displayName: j['display_name'] as String? ?? 'Anonymous',
     avatarUrl: j['avatar_url'] as String?,
   );
