@@ -32,7 +32,7 @@ class _ForumScreenState extends State<ForumScreen> {
   final _scroll = ScrollController(), _realtime = ForumRealtimeService();
   final List<ForumPost> _posts = [];
   String? _category, _cursor;
-  bool _loading = true, _more = false;
+  bool _loading = false, _more = false;
   @override
   void initState() {
     super.initState();
