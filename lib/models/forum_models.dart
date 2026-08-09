@@ -38,7 +38,7 @@ class ForumPost {
   final DateTime createdAt;
   final ForumAuthor author;
   factory ForumPost.fromJson(Map<String, dynamic> j) => ForumPost(
-    id: (j['id'] as num).toInt(),
+    id: int.tryParse(j['id']?.toString() ?? '') ?? 0,
     category: j['category'] as String? ?? 'general',
     title: j['title'] as String? ?? '',
     content: j['content'] as String? ?? '',
@@ -73,8 +73,8 @@ class ForumComment {
   final DateTime createdAt;
   final ForumAuthor author;
   factory ForumComment.fromJson(Map<String, dynamic> j) => ForumComment(
-    id: (j['id'] as num).toInt(),
-    postId: (j['post_id'] as num?)?.toInt() ?? 0,
+    id: int.tryParse(j['id']?.toString() ?? '') ?? 0,
+    postId: int.tryParse(j['post_id']?.toString() ?? '') ?? 0,
     content: j['content'] as String? ?? '',
     isMine: j['is_mine'] == true,
     createdAt:
