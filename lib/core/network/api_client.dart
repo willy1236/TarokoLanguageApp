@@ -5,6 +5,8 @@
 // 規格書對應：API設計/資料交換表_核心.md（錯誤格式 {error:{code,message}}）
 
 import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../constants/api.dart';
@@ -39,7 +41,7 @@ class ApiClient {
     final uri = Uri.parse(
       ApiConfig.baseUrl + path,
     ).replace(queryParameters: query);
-    final resp = await http.get(uri, headers: _headers(token));
+    final resp = await _send(() => http.get(uri, headers: _headers(token)));
     return _handle(resp);
   }
 
@@ -48,11 +50,11 @@ class ApiClient {
     Map<String, dynamic>? body,
   ]) async {
     final token = await AuthService.currentToken();
-    final resp = await http.post(
-      Uri.parse(ApiConfig.baseUrl + path),
-      headers: _headers(token),
-      body: body == null ? null : jsonEncode(body),
-    );
+    final resp = await _send(() => http.post(
+          Uri.parse(ApiConfig.baseUrl + path),
+          headers: _headers(token),
+          body: body == null ? null : jsonEncode(body),
+        ));
     return _handle(resp);
   }
 
@@ -61,19 +63,23 @@ class ApiClient {
     Map<String, dynamic>? body,
   ]) async {
     final token = await AuthService.currentToken();
-    final resp = await http.patch(
-      Uri.parse(ApiConfig.baseUrl + path),
-      headers: _headers(token),
-      body: body == null ? null : jsonEncode(body),
-    );
+    final resp = await _send(() => http.patch(
+          Uri.parse(ApiConfig.baseUrl + path),
+          headers: _headers(token),
+          body: body == null ? null : jsonEncode(body),
+        ));
     return _handle(resp);
   }
 
-  static Future<Map<String, dynamic>> delete(String path) async {
+  static Future<Map<String, dynamic>> delete(
+    String path, [
+    Map<String, dynamic>? body,
+  ]) async {
     final token = await AuthService.currentToken();
     final resp = await http.delete(
       Uri.parse(ApiConfig.baseUrl + path),
       headers: _headers(token),
+      body: body == null ? null : jsonEncode(body),
     );
     return _handle(resp);
   }
@@ -109,6 +115,30 @@ class ApiClient {
     if (token != null) 'Authorization': 'Bearer $token',
   };
 
+  /// 統一攔截離線（SocketException），轉成一致的 NETWORK_ERROR ApiException，
+  /// 讓所有 service 不必各自 catch SocketException。
+  static Future<http.Response> _send(
+    Future<http.Response> Function() doRequest,
+  ) async {
+    try {
+      return await doRequest();
+    } on SocketException {
+      throw ApiException(
+        statusCode: 0,
+        code: 'NETWORK_ERROR',
+        message: '無法連線到伺服器，請檢查網路',
+      );
+    }
+  }
+
+  /// 後端回應有時包一層 {data:{...}}、有時直接回物件，統一在此解包。
+  static Map<String, dynamic> unwrapData(Map<String, dynamic> json) =>
+      (json['data'] as Map<String, dynamic>?) ?? json;
+
+  /// 取回應中的清單欄位；相容 {key:[...]}、{data:[...]} 兩種格式。
+  static List<dynamic> unwrapList(Map<String, dynamic> json, String key) =>
+      json[key] as List<dynamic>? ?? (json['data'] as List<dynamic>? ?? []);
+
   static Map<String, dynamic> _handle(http.Response resp) {
     if (resp.statusCode < 200 || resp.statusCode >= 300) {
       final error = _parseError(resp);
@@ -134,6 +164,11 @@ class ApiClient {
       if (nav != null) {
         nav.pushNamedAndRemoveUntil('/login', (route) => false);
       }
+      scaffoldMessengerKey.currentState
+        ?..clearSnackBars()
+        ..showSnackBar(
+          const SnackBar(content: Text('登入已過期，請重新登入')),
+        );
     });
   }
 

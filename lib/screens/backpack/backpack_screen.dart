@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
 import '../../services/shop_service.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/shop_item_card.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../shop/shop_screen.dart';
@@ -55,7 +57,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
 
   Future<void> _load() async {
     try {
-      final user = await ShopService.fetchMe();
+      final user = await UserService.fetchMe();
       final items = await ShopService.fetchShopItems();
       if (!mounted) return;
       setState(() {
@@ -80,12 +82,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('已配戴')),
       );
-    } on ShopFeatureUnavailableException {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('功能尚未開放')),
-      );
-    } on ShopApiException catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message)),
@@ -107,12 +104,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('已恢復預設頭貼')),
       );
-    } on ShopFeatureUnavailableException {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('功能尚未開放')),
-      );
-    } on ShopApiException catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message)),
@@ -134,12 +126,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('已取消配戴頭像框')),
       );
-    } on ShopFeatureUnavailableException {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('功能尚未開放')),
-      );
-    } on ShopApiException catch (e) {
+    } on ApiException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message)),

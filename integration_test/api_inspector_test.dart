@@ -80,7 +80,16 @@ void main() {
     test('POST /api/listening/start', () => _inspect(
       'POST',
       ApiConfig.listeningStart,
-      body: {'level': 'beginner'},
+      body: {'mode': 'word_to_zh', 'level': 'beginner'},
+    ));
+    test('PATCH /api/listening/answer (空資料測格式)', () => _inspect(
+      'PATCH',
+      ApiConfig.listeningAnswer,
+      body: {
+        'session_id': '__test__',
+        'question_id': '__test__',
+        'selected_option_id': 0,
+      },
     ));
     test('POST /api/listening/submit (空資料測格式)', () => _inspect(
       'POST',
@@ -98,7 +107,46 @@ void main() {
       'GET',
       ApiConfig.videoDetail(999999),
     ));
+
+    test('GET /api/events?scope=all (找已結束的活動)', () => _inspect(
+      'GET',
+      '${ApiConfig.events}?scope=all',
+    ));
+    test('GET /api/events/:id (自動挑第一個 effective_status=ended 的活動測詳情)',
+        () async {
+      if (_token == null) {
+        markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+        return;
+      }
+      final endedId = await _findEndedEventId();
+      if (endedId == null) {
+        markTestSkipped('目前沒有任何 effective_status=ended 的活動可測');
+        return;
+      }
+      print('（挑到已結束活動 id=$endedId）');
+      await _inspect('GET', ApiConfig.eventDetail(endedId));
+    });
   });
+}
+
+/// 打 /api/events?scope=all 找第一筆 effective_status == 'ended' 的活動 id。
+Future<int?> _findEndedEventId() async {
+  final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.events}?scope=all');
+  final response = await http.get(uri, headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $_token',
+  });
+  if (response.statusCode != 200) return null;
+  final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+  final events = decoded['events'] as List<dynamic>? ?? [];
+  for (final e in events) {
+    final m = e as Map<String, dynamic>;
+    if (m['effective_status'] == 'ended') {
+      final id = m['id'];
+      return id is int ? id : int.tryParse(id.toString());
+    }
+  }
+  return null;
 }
 
 Future<String?> _fetchDisplayName() async {

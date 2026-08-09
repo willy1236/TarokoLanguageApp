@@ -102,6 +102,52 @@ class _DiamondPainter extends CustomPainter {
       old.strokeWidth != strokeWidth;
 }
 
+/// 太魯閣風格的右向箭頭（用於列表項/卡片的導引箭頭）
+class TrukuChevron extends StatelessWidget {
+  final Color color;
+  final double size;
+
+  const TrukuChevron({super.key, this.color = AppColors.primary, this.size = 20});
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomPaint(
+      size: Size(size, size),
+      painter: _ChevronPainter(color: color),
+    );
+  }
+}
+
+class _ChevronPainter extends CustomPainter {
+  final Color color;
+
+  const _ChevronPainter({required this.color});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final w = size.width;
+    final h = size.height;
+
+    final path = Path()
+      ..moveTo(w * 7 / 20, h * 4 / 20)
+      ..lineTo(w * 13 / 20, h * 10 / 20)
+      ..lineTo(w * 7 / 20, h * 16 / 20);
+
+    canvas.drawPath(
+      path,
+      Paint()
+        ..color = color
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2.0
+        ..strokeCap = StrokeCap.round
+        ..strokeJoin = StrokeJoin.round,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_ChevronPainter old) => old.color != color;
+}
+
 /// 菱形鏈（橫向裝飾線）
 /// 對應 design-tokens.jsx TrukuChain
 class TrukuChain extends StatelessWidget {

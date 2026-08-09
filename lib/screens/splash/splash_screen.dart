@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
+import '../../services/fcm_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 
@@ -26,6 +27,11 @@ class _SplashScreenState extends State<SplashScreen> {
       final loggedIn = await AuthService.isLoggedIn();
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, loggedIn ? '/home' : '/login');
+      // 冷啟動由通知帶出的深連結導頁必須排在這裡之後，
+      // 否則會被上面這行 pushReplacementNamed 蓋掉（見 fcm_service.dart）。
+      if (loggedIn) {
+        FcmService.consumePendingInitialMessage();
+      }
     });
   }
 
