@@ -8,18 +8,14 @@ import '../../services/forum_realtime_service.dart';
 import '../../services/forum_service.dart';
 
 const _categories = {
-  'general': 'General',
-  'culture': 'Culture',
-  'learning': 'Learning',
-  'events': 'Events',
-  'help': 'Help',
+  'general': '綜合',
+  'culture': '文化',
+  'learning': '學習',
+  'events': '活動',
+  'help': '求助',
 };
 void _message(BuildContext c, Object e) => ScaffoldMessenger.of(c).showSnackBar(
-  SnackBar(
-    content: Text(
-      e is ApiException ? e.message : 'Unable to complete this action',
-    ),
-  ),
+  SnackBar(content: Text(e is ApiException ? e.message : '操作未完成，請稍後再試')),
 );
 
 class ForumScreen extends StatefulWidget {
@@ -108,7 +104,7 @@ class _ForumScreenState extends State<ForumScreen> {
               children: [
                 const Expanded(
                   child: Text(
-                    'ALANG FORUM',
+                    'ALANG 論壇',
                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 24),
                   ),
                 ),
@@ -124,7 +120,7 @@ class _ForumScreenState extends State<ForumScreen> {
                 FilledButton.icon(
                   onPressed: _compose,
                   icon: const Icon(Icons.edit, size: 18),
-                  label: const Text('Post'),
+                  label: const Text('發文'),
                 ),
               ],
             ),
@@ -135,7 +131,7 @@ class _ForumScreenState extends State<ForumScreen> {
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               children: [
-                _chip(null, 'All'),
+                _chip(null, '全部'),
                 ..._categories.entries.map((e) => _chip(e.key, e.value)),
               ],
             ),
@@ -229,7 +225,7 @@ class ForumPostCard extends StatelessWidget {
               ),
             const SizedBox(height: 10),
             Text(
-              '${post.author.displayName}  ·  ${post.likeCount} likes  ·  ${post.commentCount} comments',
+              '${post.author.displayName}  ·  ${post.likeCount} 個讚  ·  ${post.commentCount} 則留言',
               style: Theme.of(c).textTheme.bodySmall,
             ),
           ],
@@ -312,7 +308,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
 
   @override
   Widget build(BuildContext c) => Scaffold(
-    appBar: AppBar(title: Text(widget.post == null ? 'New post' : 'Edit post')),
+    appBar: AppBar(title: Text(widget.post == null ? '新增貼文' : '編輯貼文')),
     body: Padding(
       padding: const EdgeInsets.all(16),
       child: Column(
@@ -329,7 +325,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           TextField(
             controller: _title,
             maxLength: 120,
-            decoration: const InputDecoration(labelText: 'Title'),
+            decoration: const InputDecoration(labelText: '標題'),
           ),
           Expanded(
             child: TextField(
@@ -338,7 +334,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
               maxLines: null,
               expands: true,
               decoration: const InputDecoration(
-                labelText: 'What would you like to share?',
+                labelText: '想和大家分享什麼？',
                 alignLabelWithHint: true,
               ),
             ),
@@ -369,7 +365,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           const SizedBox(height: 8),
           FilledButton(
             onPressed: _saving ? null : _save,
-            child: Text(_saving ? 'Uploading...' : 'Publish'),
+            child: Text(_saving ? '上傳中…' : '發布'),
           ),
         ],
       ),
@@ -518,7 +514,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   @override
   Widget build(BuildContext c) => Scaffold(
     appBar: AppBar(
-      title: const Text('Post'),
+      title: const Text('貼文'),
       actions: [
         if (_post.isMine)
           PopupMenuButton<String>(
@@ -537,8 +533,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               }
             },
             itemBuilder: (_) => const [
-              PopupMenuItem(value: 'edit', child: Text('Edit')),
-              PopupMenuItem(value: 'delete', child: Text('Delete')),
+              PopupMenuItem(value: 'edit', child: Text('編輯')),
+              PopupMenuItem(value: 'delete', child: Text('刪除')),
             ],
           ),
       ],
@@ -571,7 +567,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     const Spacer(),
                     TextButton(
                       onPressed: () => _report(c, postId: _post.id),
-                      child: const Text('Report'),
+                      child: const Text('檢舉'),
                     ),
                   ],
                 ),
@@ -583,7 +579,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                   subtitle: Text(x.content),
                   trailing: TextButton(
                     onPressed: () => _report(c, commentId: x.id),
-                    child: const Text('Report'),
+                    child: const Text('檢舉'),
                   ),
                 ),
               ),
@@ -598,9 +594,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 Expanded(
                   child: TextField(
                     controller: _input,
-                    decoration: const InputDecoration(
-                      hintText: 'Write a comment',
-                    ),
+                    decoration: const InputDecoration(hintText: '寫下留言'),
                   ),
                 ),
                 IconButton(onPressed: _send, icon: const Icon(Icons.send)),
@@ -616,19 +610,19 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     final yes = await showDialog<bool>(
       context: c,
       builder: (d) => AlertDialog(
-        title: const Text('Report'),
+        title: const Text('檢舉'),
         content: TextField(
           controller: text,
-          decoration: const InputDecoration(hintText: 'Reason'),
+          decoration: const InputDecoration(hintText: '請填寫檢舉原因'),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(d),
-            child: const Text('Cancel'),
+            child: const Text('取消'),
           ),
           FilledButton(
             onPressed: () => Navigator.pop(d, true),
-            child: const Text('Send'),
+            child: const Text('送出'),
           ),
         ],
       ),
@@ -643,7 +637,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         if (c.mounted)
           ScaffoldMessenger.of(
             c,
-          ).showSnackBar(const SnackBar(content: Text('Report sent')));
+          ).showSnackBar(const SnackBar(content: Text('檢舉已送出')));
       } catch (e) {
         if (c.mounted) _message(c, e);
       }
@@ -655,7 +649,7 @@ class ForumBookmarksScreen extends StatelessWidget {
   const ForumBookmarksScreen({super.key});
   @override
   Widget build(BuildContext c) => Scaffold(
-    appBar: AppBar(title: const Text('Saved posts')),
+    appBar: AppBar(title: const Text('收藏貼文')),
     body: FutureBuilder<List<ForumPost>>(
       future: ForumService.bookmarks(),
       builder: (_, s) {
