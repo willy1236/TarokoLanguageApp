@@ -6,6 +6,7 @@ import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../services/forum_realtime_service.dart';
 import '../../services/forum_service.dart';
+import '../../services/user_service.dart';
 
 const _categories = {
   'general': '綜合',
@@ -28,16 +29,24 @@ class _ForumScreenState extends State<ForumScreen> {
   final _scroll = ScrollController(), _realtime = ForumRealtimeService();
   final List<ForumPost> _posts = [];
   String? _category, _cursor;
-  bool _loading = false, _more = false;
+  bool _loading = false, _more = false, _isAdmin = false;
   @override
   void initState() {
     super.initState();
     _scroll.addListener(_onScroll);
     _load(reset: true);
+    _loadRole();
     _realtime.connect((event) {
       if (mounted && event['type'].toString().startsWith('forum.'))
         _load(reset: true);
     });
+  }
+
+  Future<void> _loadRole() async {
+    try {
+      final user = await UserService.fetchMe();
+      if (mounted) setState(() => _isAdmin = user.role == 'admin');
+    } catch (_) {}
   }
 
   @override
@@ -158,6 +167,29 @@ class _ForumScreenState extends State<ForumScreen> {
                         icon: const Icon(Icons.bookmarks_outlined),
                         color: Colors.white,
                       ),
+                      IconButton(
+                        tooltip: '通知中心',
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ForumNotificationsScreen(),
+                          ),
+                        ),
+                        icon: const Icon(Icons.notifications_none_rounded),
+                        color: Colors.white,
+                      ),
+                      if (_isAdmin)
+                        IconButton(
+                          tooltip: '檢舉管理',
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const ForumReportAdminScreen(),
+                            ),
+                          ),
+                          icon: const Icon(Icons.gpp_maybe_outlined),
+                          color: Colors.white,
+                        ),
                     ],
                   ),
                   const SizedBox(height: 16),
@@ -168,6 +200,17 @@ class _ForumScreenState extends State<ForumScreen> {
                           '分享生活、文化與學習的每一刻',
                           style: TextStyle(color: Color(0xFFE8DBC0)),
                         ),
+                      ),
+                      IconButton(
+                        tooltip: '搜尋貼文',
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ForumSearchScreen(),
+                          ),
+                        ),
+                        icon: const Icon(Icons.search_rounded),
+                        color: Colors.white,
                       ),
                       FilledButton.icon(
                         onPressed: _compose,
@@ -967,6 +1010,281 @@ class ForumBookmarksScreen extends StatelessWidget {
                     MaterialPageRoute(
                       builder: (_) => ForumDetailScreen(post: p),
                     ),
+                  ),
+                ),
+              )
+              .toList(),
+        );
+      },
+    ),
+  );
+}
+
+class ForumSearchScreen extends StatefulWidget {
+  const ForumSearchScreen({super.key});
+  @override
+  State<ForumSearchScreen> createState() => _ForumSearchScreenState();
+}
+
+class _ForumSearchScreenState extends State<ForumSearchScreen> {
+  final _controller = TextEditingController();
+  List<ForumPost> _posts = [];
+  bool _loading = false;
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  Future<void> _search() async {
+    final keyword = _controller.text.trim();
+    if (keyword.isEmpty) return;
+    setState(() => _loading = true);
+    try {
+      final page = await ForumService.fetchPosts(search: keyword);
+      if (mounted) setState(() => _posts = page.posts);
+    } catch (e) {
+      if (mounted) _message(context, e);
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.creamLight,
+    appBar: AppBar(
+      backgroundColor: AppColors.creamLight,
+      surfaceTintColor: Colors.transparent,
+      title: const Text('搜尋貼文'),
+    ),
+    body: Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+          child: TextField(
+            controller: _controller,
+            autofocus: true,
+            textInputAction: TextInputAction.search,
+            onSubmitted: (_) => _search(),
+            decoration: InputDecoration(
+              hintText: '輸入標題或內容關鍵字',
+              prefixIcon: const Icon(Icons.search_rounded),
+              suffixIcon: IconButton(
+                onPressed: _search,
+                icon: const Icon(Icons.arrow_forward_rounded),
+              ),
+              filled: true,
+              fillColor: Colors.white,
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(16),
+                borderSide: BorderSide.none,
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: _loading
+              ? const Center(child: CircularProgressIndicator())
+              : _posts.isEmpty
+              ? const _ForumEmptyState()
+              : ListView(
+                  children: _posts
+                      .map(
+                        (post) => ForumPostCard(
+                          post: post,
+                          onTap: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => ForumDetailScreen(post: post),
+                            ),
+                          ),
+                        ),
+                      )
+                      .toList(),
+                ),
+        ),
+      ],
+    ),
+  );
+}
+
+class ForumNotificationsScreen extends StatefulWidget {
+  const ForumNotificationsScreen({super.key});
+  @override
+  State<ForumNotificationsScreen> createState() =>
+      _ForumNotificationsScreenState();
+}
+
+class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
+  late Future<List<ForumNotification>> _future;
+  @override
+  void initState() {
+    super.initState();
+    _future = ForumService.notifications();
+  }
+
+  Future<void> _open(ForumNotification item) async {
+    try {
+      await ForumService.markNotificationRead(item.id);
+      final post = await ForumService.fetchPost(item.postId);
+      if (mounted)
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ForumDetailScreen(post: post)),
+        );
+      if (mounted) setState(() => _future = ForumService.notifications());
+    } catch (e) {
+      if (mounted) _message(context, e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.creamLight,
+    appBar: AppBar(
+      backgroundColor: AppColors.creamLight,
+      surfaceTintColor: Colors.transparent,
+      title: const Text('通知中心'),
+    ),
+    body: FutureBuilder<List<ForumNotification>>(
+      future: _future,
+      builder: (_, snapshot) {
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
+        if (snapshot.data!.isEmpty) return const _ForumEmptyState();
+        return RefreshIndicator(
+          onRefresh: () async =>
+              setState(() => _future = ForumService.notifications()),
+          child: ListView(
+            children: snapshot.data!
+                .map(
+                  (item) => Container(
+                    margin: const EdgeInsets.fromLTRB(16, 7, 16, 0),
+                    decoration: BoxDecoration(
+                      color: item.isRead ? Colors.white : AppColors.cream,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: ListTile(
+                      onTap: () => _open(item),
+                      leading: CircleAvatar(
+                        backgroundColor: AppColors.primary,
+                        child: Text(
+                          item.actor.displayName.isEmpty
+                              ? '?'
+                              : item.actor.displayName.substring(0, 1),
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      title: Text(
+                        '${item.actor.displayName} 回覆了你的貼文',
+                        style: TextStyle(
+                          fontWeight: item.isRead
+                              ? FontWeight.w500
+                              : FontWeight.w800,
+                        ),
+                      ),
+                      subtitle: const Text('點此查看留言內容'),
+                      trailing: item.isRead
+                          ? null
+                          : const Icon(
+                              Icons.circle,
+                              size: 10,
+                              color: AppColors.primary,
+                            ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        );
+      },
+    ),
+  );
+}
+
+class ForumReportAdminScreen extends StatefulWidget {
+  const ForumReportAdminScreen({super.key});
+  @override
+  State<ForumReportAdminScreen> createState() => _ForumReportAdminScreenState();
+}
+
+class _ForumReportAdminScreenState extends State<ForumReportAdminScreen> {
+  late Future<List<ForumReport>> _future;
+  @override
+  void initState() {
+    super.initState();
+    _future = ForumService.adminReports();
+  }
+
+  Future<void> _review(ForumReport report, String action) async {
+    try {
+      await ForumService.reviewReport(report.id, action);
+      if (mounted) setState(() => _future = ForumService.adminReports());
+    } catch (e) {
+      if (mounted) _message(context, e);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.creamLight,
+    appBar: AppBar(
+      backgroundColor: AppColors.creamLight,
+      surfaceTintColor: Colors.transparent,
+      title: const Text('檢舉管理'),
+    ),
+    body: FutureBuilder<List<ForumReport>>(
+      future: _future,
+      builder: (_, snapshot) {
+        if (!snapshot.hasData)
+          return const Center(child: CircularProgressIndicator());
+        if (snapshot.data!.isEmpty) return const _ForumEmptyState();
+        return ListView(
+          children: snapshot.data!
+              .map(
+                (report) => Container(
+                  margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        report.targetPreview,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontWeight: FontWeight.w800),
+                      ),
+                      const SizedBox(height: 6),
+                      Text('檢舉原因：${report.reason}'),
+                      Text(
+                        '檢舉人：${report.reporterName}',
+                        style: const TextStyle(color: AppColors.fog),
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton(
+                            onPressed: () => _review(report, 'dismiss'),
+                            child: const Text('駁回'),
+                          ),
+                          TextButton(
+                            onPressed: () => _review(report, 'resolve'),
+                            child: const Text('標記已處理'),
+                          ),
+                          FilledButton(
+                            onPressed: () => _review(report, 'hide'),
+                            child: const Text('隱藏內容'),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
               )

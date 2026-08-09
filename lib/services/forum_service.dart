@@ -6,12 +6,14 @@ class ForumService {
   static Future<ForumPage> fetchPosts({
     String? category,
     String? cursor,
+    String? search,
   }) async {
     final r = await ApiClient.get(
       ApiConfig.forumPosts,
       query: {
         if (category != null) 'category': category,
         if (cursor != null) 'cursor': cursor,
+        if (search != null && search.trim().isNotEmpty) 'q': search.trim(),
         'limit': '20',
       },
     );
@@ -103,6 +105,29 @@ class ForumService {
         .map((x) => ForumPost.fromJson(x as Map<String, dynamic>))
         .toList();
   }
+
+  static Future<List<ForumNotification>> notifications() async {
+    final r = await ApiClient.get(ApiConfig.forumNotifications);
+    return (r['notifications'] as List<dynamic>? ?? const [])
+        .map((x) => ForumNotification.fromJson(x as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<void> markNotificationRead(int id) =>
+      ApiClient.post(ApiConfig.forumNotificationRead(id));
+
+  static Future<List<ForumReport>> adminReports() async {
+    final r = await ApiClient.get(
+      ApiConfig.forumAdminReports,
+      query: {'status': 'pending'},
+    );
+    return (r['reports'] as List<dynamic>? ?? const [])
+        .map((x) => ForumReport.fromJson(x as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<void> reviewReport(int id, String action) =>
+      ApiClient.post(ApiConfig.forumAdminReportReview(id), {'action': action});
 
   static Future<String> uploadImage({
     required List<int> bytes,

@@ -16,6 +16,7 @@ class UserModel {
   final List<String> ownedAvatarIds;
   final List<String> ownedFrameIds;
   final int millet; // 小米幣餘額
+  final String role;
   final String email;
   final DateTime createdAt;
   final bool checkedInToday; // 今天（台灣時間）是否已簽到，見 每日簽到.md
@@ -30,6 +31,7 @@ class UserModel {
     this.ownedAvatarIds = const [],
     this.ownedFrameIds = const [],
     this.millet = 0,
+    this.role = 'user',
     required this.email,
     required this.createdAt,
     this.checkedInToday = false,
@@ -50,6 +52,7 @@ class UserModel {
           .map((e) => e.toString())
           .toList(),
       millet: json['millet'] as int? ?? 0,
+      role: json['role'] as String? ?? 'user',
       email: json['email'] as String,
       createdAt: DateTime.parse(json['created_at'] as String),
       checkedInToday: json['checked_in_today'] as bool? ?? false,
@@ -58,19 +61,20 @@ class UserModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'uid': uid,
-        'display_name': displayName,
-        'avatar_url': avatarUrl,
-        'avatar_id': avatarId,
-        'frame_id': frameId,
-        'owned_avatar_ids': ownedAvatarIds,
-        'owned_frame_ids': ownedFrameIds,
-        'millet': millet,
-        'email': email,
-        'created_at': createdAt.toIso8601String(),
-        'checked_in_today': checkedInToday,
-        'checkin_streak': checkinStreak,
-      };
+    'uid': uid,
+    'display_name': displayName,
+    'avatar_url': avatarUrl,
+    'avatar_id': avatarId,
+    'frame_id': frameId,
+    'owned_avatar_ids': ownedAvatarIds,
+    'owned_frame_ids': ownedFrameIds,
+    'millet': millet,
+    'role': role,
+    'email': email,
+    'created_at': createdAt.toIso8601String(),
+    'checked_in_today': checkedInToday,
+    'checkin_streak': checkinStreak,
+  };
 
   int get joinedDays => DateTime.now().difference(createdAt).inDays;
 
@@ -83,6 +87,7 @@ class UserModel {
     List<String>? ownedAvatarIds,
     List<String>? ownedFrameIds,
     int? millet,
+    String? role,
     String? email,
     DateTime? createdAt,
     bool? checkedInToday,
@@ -97,6 +102,7 @@ class UserModel {
       ownedAvatarIds: ownedAvatarIds ?? this.ownedAvatarIds,
       ownedFrameIds: ownedFrameIds ?? this.ownedFrameIds,
       millet: millet ?? this.millet,
+      role: role ?? this.role,
       email: email ?? this.email,
       createdAt: createdAt ?? this.createdAt,
       checkedInToday: checkedInToday ?? this.checkedInToday,

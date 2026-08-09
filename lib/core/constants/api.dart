@@ -50,6 +50,12 @@ class ApiConfig {
       '/api/forum/posts/$postId/bookmark';
   static const String forumBookmarks = '/api/forum/bookmarks';
   static const String forumReports = '/api/forum/reports';
+  static const String forumNotifications = '/api/forum/notifications';
+  static String forumNotificationRead(int id) =>
+      '/api/forum/notifications/$id/read';
+  static const String forumAdminReports = '/api/forum/admin/reports';
+  static String forumAdminReportReview(int id) =>
+      '/api/forum/admin/reports/$id/review';
   static const String forumMedia = '/api/forum/media';
   static const String devices = '/api/devices';
 

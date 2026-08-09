@@ -90,3 +90,51 @@ class ForumPage {
   final List<ForumPost> posts;
   final String? nextCursor;
 }
+
+class ForumNotification {
+  const ForumNotification({
+    required this.id,
+    required this.postId,
+    required this.isRead,
+    required this.createdAt,
+    required this.actor,
+  });
+  final int id, postId;
+  final bool isRead;
+  final DateTime createdAt;
+  final ForumAuthor actor;
+  factory ForumNotification.fromJson(Map<String, dynamic> json) =>
+      ForumNotification(
+        id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+        postId: int.tryParse(json['post_id']?.toString() ?? '') ?? 0,
+        isRead: json['read_at'] != null,
+        createdAt:
+            DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+            DateTime.now(),
+        actor: ForumAuthor.fromJson(
+          json['actor'] as Map<String, dynamic>? ?? const {},
+        ),
+      );
+}
+
+class ForumReport {
+  const ForumReport({
+    required this.id,
+    required this.reason,
+    required this.reporterName,
+    required this.targetPreview,
+    required this.createdAt,
+  });
+  final int id;
+  final String reason, reporterName, targetPreview;
+  final DateTime createdAt;
+  factory ForumReport.fromJson(Map<String, dynamic> json) => ForumReport(
+    id: int.tryParse(json['id']?.toString() ?? '') ?? 0,
+    reason: json['reason'] as String? ?? '',
+    reporterName: json['reporter_name'] as String? ?? '匿名使用者',
+    targetPreview: json['target_preview'] as String? ?? '',
+    createdAt:
+        DateTime.tryParse(json['created_at']?.toString() ?? '') ??
+        DateTime.now(),
+  );
+}
