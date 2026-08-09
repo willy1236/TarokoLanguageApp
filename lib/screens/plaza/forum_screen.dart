@@ -99,13 +99,6 @@ class _ForumScreenState extends State<ForumScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.creamLight,
-    floatingActionButton: FloatingActionButton.extended(
-      onPressed: _compose,
-      backgroundColor: AppColors.primary,
-      foregroundColor: Colors.white,
-      icon: const Icon(Icons.edit),
-      label: const Text('Post'),
-    ),
     body: SafeArea(
       child: Column(
         children: [
@@ -127,6 +120,11 @@ class _ForumScreenState extends State<ForumScreen> {
                     ),
                   ),
                   icon: const Icon(Icons.bookmarks_outlined),
+                ),
+                FilledButton.icon(
+                  onPressed: _compose,
+                  icon: const Icon(Icons.edit, size: 18),
+                  label: const Text('Post'),
                 ),
               ],
             ),
