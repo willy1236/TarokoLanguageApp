@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
 import '../../models/event_model.dart';
+import '../../models/forum_models.dart';
 import '../../services/event_service.dart';
+import '../../services/forum_service.dart';
 import '../../shared/widgets/truku_widgets.dart';
-import 'compose_screen.dart';
+import '../forum/forum_board_view.dart';
 import '../events/event_detail_screen.dart';
 
 class PlazaScreen extends StatefulWidget {
@@ -18,10 +21,18 @@ class _PlazaScreenState extends State<PlazaScreen> {
   bool _eventsLoading = true;
   List<EventSummary> _events = [];
 
+  List<ForumBoard> _boards = [];
+  String? _boardSlug;
+  bool _boardsLoading = true;
+  int _unread = 0;
+  final _boardViewKey = GlobalKey<ForumBoardViewState>();
+
   @override
   void initState() {
     super.initState();
     _loadEvents();
+    _loadBoards();
+    _loadUnread();
   }
 
   Future<void> _loadEvents() async {
@@ -38,6 +49,32 @@ class _PlazaScreenState extends State<PlazaScreen> {
     }
   }
 
+  Future<void> _loadBoards() async {
+    try {
+      final boards = await ForumService.boards();
+      if (!mounted) return;
+      setState(() {
+        _boards = boards;
+        _boardSlug = boards.isEmpty ? null : boards.first.slug;
+        _boardsLoading = false;
+      });
+    } on ApiException {
+      // 看板載不到不應該讓整頁失效，活動小卡仍要顯示。
+      if (!mounted) return;
+      setState(() => _boardsLoading = false);
+    }
+  }
+
+  Future<void> _loadUnread() async {
+    try {
+      final page = await ForumService.notifications();
+      if (!mounted) return;
+      setState(() => _unread = page.unreadCount);
+    } on ApiException {
+      // 紅點拿不到就不顯示，不干擾主要內容。
+    }
+  }
+
   void _openEventDetail(EventSummary e) {
     Navigator.push(
       context,
@@ -47,40 +84,18 @@ class _PlazaScreenState extends State<PlazaScreen> {
     });
   }
 
-  static const _posts = [
-    _PostData(
-      name: 'Sayun', sub: '銅門部落 · 3 小時前',
-      text: '今天跟 yaki 學了「mhuway」這個詞，原來是「謝謝」也是「祝福」的意思 ✦',
-      tag: 'Mhuway', likes: 24, comments: 6,
-    ),
-    _PostData(
-      name: 'Pisaw', sub: '太管處青年志工 · 昨天',
-      text: '誰知道立霧溪的族語怎麼念？我聽過長輩說 Yayung Bsngun 但不確定拼法...',
-      tag: '求救', likes: 8, comments: 12,
-    ),
-    _PostData(
-      name: 'Bakan', sub: '秀林部落 · 2 天前',
-      text: '上週末跟著耆老去採苧麻，第一次看到整片山坡的青色，真的很美。',
-      tag: '走讀', likes: 56, comments: 9,
-    ),
-  ];
-
   @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.creamLight,
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: _buildHeader(context)),
-          SliverToBoxAdapter(child: _buildTabBar()),
-          if (!_eventsLoading && _events.isNotEmpty)
-            SliverToBoxAdapter(child: _buildMiniEventCards()),
-          SliverToBoxAdapter(child: _buildPostsSection()),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => Scaffold(
+        backgroundColor: AppColors.creamLight,
+        body: Column(
+          children: [
+            _buildHeader(context),
+            if (!_eventsLoading && _events.isNotEmpty) _buildMiniEventCards(),
+            _buildTabBar(),
+            Expanded(child: _buildPostsSection()),
+          ],
+        ),
+      );
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
@@ -114,11 +129,42 @@ class _PlazaScreenState extends State<PlazaScreen> {
               ],
             ),
           ),
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ComposeScreen()),
+          IconButton(
+            // Task 10 補上導向 ForumSearchScreen
+            onPressed: null,
+            icon: const Icon(Icons.search, color: AppColors.ink, size: 20),
+          ),
+          IconButton(
+            // Task 12 補上導向 ForumBookmarksScreen
+            onPressed: null,
+            icon: const Icon(Icons.bookmark_border, color: AppColors.ink, size: 20),
+          ),
+          IconButton(
+            // Task 11 補上導向 ForumNotificationsScreen，返回後呼叫 _loadUnread()
+            onPressed: null,
+            icon: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Icon(Icons.notifications_none, color: AppColors.ink, size: 20),
+                if (_unread > 0)
+                  Positioned(
+                    right: -2,
+                    top: -2,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ),
+              ],
             ),
+          ),
+          GestureDetector(
+            // Task 9 建立 ForumComposeScreen 後接上
+            onTap: null,
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
@@ -148,19 +194,25 @@ class _PlazaScreenState extends State<PlazaScreen> {
     );
   }
 
-  Widget _buildTabBar() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
-      decoration: const BoxDecoration(
-        border: Border(bottom: BorderSide(color: AppColors.creamDeep)),
-      ),
-      child: const Row(
-        children: [
-          _Tab(label: '動態'),
-        ],
-      ),
-    );
-  }
+  Widget _buildTabBar() => Container(
+        decoration: const BoxDecoration(
+          border: Border(bottom: BorderSide(color: AppColors.creamDeep)),
+        ),
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: Row(
+            children: [
+              for (final board in _boards)
+                _BoardTab(
+                  label: board.name,
+                  selected: board.slug == _boardSlug,
+                  onTap: () => setState(() => _boardSlug = board.slug),
+                ),
+            ],
+          ),
+        ),
+      );
 
   Widget _buildMiniEventCards() {
     return Column(
@@ -196,190 +248,74 @@ class _PlazaScreenState extends State<PlazaScreen> {
   }
 
   Widget _buildPostsSection() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            'PATAS · 族人發文',
-            style: GoogleFonts.crimsonPro(
-              fontStyle: FontStyle.italic,
-              fontSize: 10,
-              color: AppColors.fog,
-              letterSpacing: 3.0,
-            ),
-          ),
-          const SizedBox(height: 10),
-          ...List.generate(
-            _posts.length,
-            (i) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _PostCard(post: _posts[i], index: i),
-            ),
-          ),
-        ],
-      ),
+    final slug = _boardSlug;
+    if (_boardsLoading) {
+      return const Padding(
+        padding: EdgeInsets.symmetric(vertical: 40),
+        child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+      );
+    }
+    if (slug == null) {
+      return const Padding(
+        padding: EdgeInsets.fromLTRB(20, 40, 20, 40),
+        child: Text('目前沒有可用的看板', style: TextStyle(color: AppColors.fog)),
+      );
+    }
+    return ForumBoardView(
+      key: ValueKey(slug),
+      loadPage: ({cursor, after}) =>
+          ForumService.posts(slug, cursor: cursor, after: after),
+      toggleLike: ForumService.likePost,
+      toggleBookmark: ForumService.bookmarkPost,
+      // 詳情頁在 Task 8 才建立，此處先留空，Task 8 換成 _openPost。
+      onOpenPost: (_) {},
     );
   }
-
 }
 
-// ── Tab 元件 ──────────────────────────────────────────────────
+// ── 看板 Tab 元件 ──────────────────────────────────────────────
 
-class _Tab extends StatelessWidget {
+class _BoardTab extends StatelessWidget {
   final String label;
+  final bool selected;
+  final VoidCallback onTap;
 
-  const _Tab({required this.label});
-
-  @override
-  Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Text(
-            label,
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.primary,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ),
-        Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: Container(height: 2, color: AppColors.primary),
-        ),
-      ],
-    );
-  }
-}
-
-// ── 資料模型 ──────────────────────────────────────────────────
-
-class _PostData {
-  final String name, sub, text, tag;
-  final int likes, comments;
-
-  const _PostData({
-    required this.name,
-    required this.sub,
-    required this.text,
-    required this.tag,
-    required this.likes,
-    required this.comments,
+  const _BoardTab({
+    required this.label,
+    required this.selected,
+    required this.onTap,
   });
-}
-
-// ── 貼文卡片 ─────────────────────────────────────────────────
-
-class _PostCard extends StatelessWidget {
-  final _PostData post;
-  final int index;
-
-  const _PostCard({required this.post, required this.index});
 
   @override
   Widget build(BuildContext context) {
-    final avatarColor = index % 2 == 0 ? AppColors.primary : AppColors.moss;
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 14, 14, 14),
-      decoration: BoxDecoration(
-        color: AppColors.cream,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.creamDeep),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: avatarColor,
-                  border: const Border.fromBorderSide(
-                    BorderSide(color: AppColors.gold, width: 1.5),
-                  ),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  post.name[0],
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.gold,
-                  ),
+    final color = selected ? AppColors.primary : AppColors.fog;
+    return GestureDetector(
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.only(right: 22),
+        child: Stack(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Text(
+                label,
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: color,
+                  letterSpacing: 1.5,
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      post.name,
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink,
-                        letterSpacing: 0.6,
-                      ),
-                    ),
-                    Text(
-                      post.sub,
-                      style: const TextStyle(
-                        fontSize: 11,
-                        color: AppColors.fog,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.08),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Text(
-                  '#${post.tag}',
-                  style: GoogleFonts.crimsonPro(
-                    fontStyle: FontStyle.italic,
-                    fontSize: 11,
-                    color: AppColors.primary,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 10),
-          Text(
-            post.text,
-            style: const TextStyle(
-              fontSize: 14,
-              color: AppColors.inkSoft,
-              height: 1.55,
-              letterSpacing: 0.5,
             ),
-          ),
-          const SizedBox(height: 10),
-          Row(
-            children: [
-              Text('♡ ${post.likes}', style: const TextStyle(fontSize: 12, color: AppColors.fog)),
-              const SizedBox(width: 18),
-              Text('💬 ${post.comments}', style: const TextStyle(fontSize: 12, color: AppColors.fog)),
-            ],
-          ),
-        ],
+            if (selected)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(height: 2, color: AppColors.primary),
+              ),
+          ],
+        ),
       ),
     );
   }
@@ -527,4 +463,3 @@ class _MiniEventCard extends StatelessWidget {
     );
   }
 }
-
