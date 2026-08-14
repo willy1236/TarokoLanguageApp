@@ -274,6 +274,39 @@ class ForumCommentPage {
       );
 }
 
+/// 一則第一層留言與掛在它底下的回覆。論壇只有兩層，replies 不再有子節點。
+class ForumCommentThread {
+  final ForumComment root;
+  final List<ForumComment> replies;
+
+  const ForumCommentThread({required this.root, required this.replies});
+}
+
+/// 把後端分開回傳的第一層留言與第二層回覆合成樹。
+///
+/// 順序完全跟隨傳入順序（後端已依 created_at 排好），這裡不重新排序，
+/// 以免與後端的分頁游標對不上。
+///
+/// parent 不在本頁的回覆會被丟棄：可能是 parent 已被軟刪除，也可能是分頁邊界。
+/// 掛不上去的回覆沒有能顯示的位置，硬塞到第一層會讓對話看起來錯亂。
+List<ForumCommentThread> groupComments(
+  List<ForumComment> comments,
+  List<ForumComment> replies,
+) {
+  final byParent = <int, List<ForumComment>>{};
+  for (final reply in replies) {
+    final parent = reply.parentCommentId;
+    if (parent == null) continue;
+    byParent.putIfAbsent(parent, () => []).add(reply);
+  }
+  return comments
+      .map((c) => ForumCommentThread(
+            root: c,
+            replies: byParent[c.id] ?? const [],
+          ))
+      .toList();
+}
+
 class ForumNotification {
   final int id;
   final String type;

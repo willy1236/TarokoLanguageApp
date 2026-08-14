@@ -152,4 +152,45 @@ void main() {
       expect(page.nextCursor, 3);
     });
   });
+
+  group('groupComments', () {
+    ForumComment comment(int id, {int? parent}) => ForumComment(
+          id: id,
+          postId: 1024,
+          parentCommentId: parent,
+          body: 'c$id',
+          likeCount: 0,
+          isLiked: false,
+          createdAt: DateTime.parse('2026-08-01T11:00:00.000Z'),
+          author: const ForumAuthor(uid: 1, displayName: 'A'),
+        );
+
+    test('回覆掛到所屬的第一層留言底下', () {
+      final threads = groupComments(
+        [comment(1), comment(2)],
+        [comment(3, parent: 1), comment(4, parent: 1), comment(5, parent: 2)],
+      );
+
+      expect(threads.map((t) => t.root.id), [1, 2]);
+      expect(threads[0].replies.map((r) => r.id), [3, 4]);
+      expect(threads[1].replies.map((r) => r.id), [5]);
+    });
+
+    test('沒有回覆的留言 replies 為空', () {
+      expect(groupComments([comment(1)], []).single.replies, isEmpty);
+    });
+
+    test('孤兒回覆（parent 不在本頁）被丟棄而非造成崩潰', () {
+      final threads = groupComments([comment(1)], [comment(9, parent: 99)]);
+
+      expect(threads, hasLength(1));
+      expect(threads.single.replies, isEmpty);
+    });
+
+    test('保持 comments 傳入的順序，不重新排序', () {
+      final threads = groupComments([comment(5), comment(2)], []);
+
+      expect(threads.map((t) => t.root.id), [5, 2]);
+    });
+  });
 }
