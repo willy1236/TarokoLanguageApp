@@ -43,6 +43,7 @@ dependencies:
 
   # Backend 通訊與 token 儲存
   http: ^1.2.2
+  http_parser: ^4.1.2 # multipart 的 Content-Type（後端 multer 以 MIME 過濾附圖）
   flutter_secure_storage: ^10.3.1
 
   # 測驗題目發音播放

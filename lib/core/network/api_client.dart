@@ -8,9 +8,26 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../constants/api.dart';
 import '../../main.dart';
 import '../../services/auth_service.dart';
+
+/// multipart 的單一檔案。bytes 由呼叫端準備好（論壇附圖在 App 端壓縮後上傳，
+/// 後端不做伺服器端壓縮），mimeType 必填——後端 multer 以它過濾檔案類型。
+class MultipartFileData {
+  final String field;
+  final List<int> bytes;
+  final String filename;
+  final String mimeType;
+
+  const MultipartFileData({
+    required this.field,
+    required this.bytes,
+    required this.filename,
+    required this.mimeType,
+  });
+}
 
 class ApiException implements Exception {
   final int statusCode;
@@ -32,6 +49,11 @@ class ApiException implements Exception {
 }
 
 class ApiClient {
+  /// 傳輸層。正式執行時是預設的 http client；測試可換成 MockClient。
+  /// 換成可注入的原因：service 的端點、query、multipart 組成需要在沒有網路的
+  /// 情況下驗證，直接呼叫 http 頂層函式無法做到。
+  static http.Client httpClient = http.Client();
+
   static Future<Map<String, dynamic>> get(
     String path, {
     Map<String, String>? query,
@@ -40,7 +62,8 @@ class ApiClient {
     final uri = Uri.parse(ApiConfig.baseUrl + path).replace(
       queryParameters: query,
     );
-    final resp = await _send(() => http.get(uri, headers: _headers(token)));
+    final resp =
+        await _send(() => httpClient.get(uri, headers: _headers(token)));
     return _handle(resp);
   }
 
@@ -49,7 +72,7 @@ class ApiClient {
     Map<String, dynamic>? body,
   ]) async {
     final token = await AuthService.currentToken();
-    final resp = await _send(() => http.post(
+    final resp = await _send(() => httpClient.post(
           Uri.parse(ApiConfig.baseUrl + path),
           headers: _headers(token),
           body: body == null ? null : jsonEncode(body),
@@ -62,11 +85,38 @@ class ApiClient {
     Map<String, dynamic>? body,
   ]) async {
     final token = await AuthService.currentToken();
-    final resp = await _send(() => http.patch(
+    final resp = await _send(() => httpClient.patch(
           Uri.parse(ApiConfig.baseUrl + path),
           headers: _headers(token),
           body: body == null ? null : jsonEncode(body),
         ));
+    return _handle(resp);
+  }
+
+  /// multipart 送出。文字欄位與檔案一併送，供發文（文字 + 最多 4 張附圖）使用。
+  static Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required Map<String, String> fields,
+    required List<MultipartFileData> files,
+  }) async {
+    final token = await AuthService.currentToken();
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse(ApiConfig.baseUrl + path),
+    );
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+    request.fields.addAll(fields);
+    for (final file in files) {
+      request.files.add(http.MultipartFile.fromBytes(
+        file.field,
+        file.bytes,
+        filename: file.filename,
+        contentType: MediaType.parse(file.mimeType),
+      ));
+    }
+    final resp = await _send(
+      () async => http.Response.fromStream(await httpClient.send(request)),
+    );
     return _handle(resp);
   }
 
@@ -75,11 +125,11 @@ class ApiClient {
     Map<String, dynamic>? body,
   ]) async {
     final token = await AuthService.currentToken();
-    final resp = await http.delete(
-      Uri.parse(ApiConfig.baseUrl + path),
-      headers: _headers(token),
-      body: body == null ? null : jsonEncode(body),
-    );
+    final resp = await _send(() => httpClient.delete(
+          Uri.parse(ApiConfig.baseUrl + path),
+          headers: _headers(token),
+          body: body == null ? null : jsonEncode(body),
+        ));
     return _handle(resp);
   }
 
