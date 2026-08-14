@@ -55,6 +55,9 @@ dependencies:
   # 影音模組：HLS 串流播放（better_player 已停止維護，改用維護中的 fork）
   better_player_plus: ^1.3.4
 
+  # 論壇附圖：列表捲動時避免重複下載
+  cached_network_image: ^3.4.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
