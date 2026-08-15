@@ -92,13 +92,16 @@ class _PlazaScreenState extends State<PlazaScreen> {
   Future<void> _openPost(ForumPost post) async {
     final result = await Navigator.push<ForumDetailResult>(
       context,
-      MaterialPageRoute(builder: (_) => ForumDetailScreen(postId: post.id)),
+      MaterialPageRoute(
+        builder: (_) => ForumDetailScreen(
+          postId: post.id,
+          onPostChanged: (p) => _boardViewKey.currentState?.replacePost(p),
+        ),
+      ),
     );
     if (result == null) return;
     if (result.deleted) {
       _boardViewKey.currentState?.removePost(post.id);
-    } else if (result.post != null) {
-      _boardViewKey.currentState?.replacePost(result.post!);
     }
   }
 

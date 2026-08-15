@@ -17,18 +17,20 @@ import 'widgets/forum_image_grid.dart';
 import 'widgets/forum_post_card.dart' show forumRelativeTime;
 import 'widgets/forum_report_sheet.dart';
 
-/// 詳情頁關閉時回報的結果：貼文被刪除、貼文有更新，或什麼都沒變。
+/// 詳情頁關閉時回報的結果：貼文是否被刪除。
 class ForumDetailResult {
   final bool deleted;
-  final ForumPost? post;
 
-  const ForumDetailResult({this.deleted = false, this.post});
+  const ForumDetailResult({this.deleted = false});
 }
 
 class ForumDetailScreen extends StatefulWidget {
   final int postId;
 
-  const ForumDetailScreen({super.key, required this.postId});
+  /// 貼文有異動（讚、收藏、留言數）時即時回報，讓列表頁不必等關閉才更新。
+  final ValueChanged<ForumPost>? onPostChanged;
+
+  const ForumDetailScreen({super.key, required this.postId, this.onPostChanged});
 
   @override
   State<ForumDetailScreen> createState() => _ForumDetailScreenState();
@@ -140,15 +142,26 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     try {
       final result = await ForumService.likePost(post.id, like: !post.isLiked);
       if (!mounted) return;
+      final current = _post;
+      if (current == null) return;
       setState(
-        () => _post = post.copyWith(
+        () => _post = current.copyWith(
           isLiked: result.liked,
           likeCount: result.likeCount,
         ),
       );
+      widget.onPostChanged?.call(_post!);
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _post = post);
+      final current = _post;
+      if (current != null) {
+        setState(
+          () => _post = current.copyWith(
+            isLiked: post.isLiked,
+            likeCount: post.likeCount,
+          ),
+        );
+      }
       _toast(e.message);
     }
   }
@@ -163,10 +176,16 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         add: !post.isBookmarked,
       );
       if (!mounted) return;
-      setState(() => _post = post.copyWith(isBookmarked: added));
+      final current = _post;
+      if (current == null) return;
+      setState(() => _post = current.copyWith(isBookmarked: added));
+      widget.onPostChanged?.call(_post!);
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _post = post);
+      final current = _post;
+      if (current != null) {
+        setState(() => _post = current.copyWith(isBookmarked: post.isBookmarked));
+      }
       _toast(e.message);
     }
   }
@@ -223,6 +242,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _replyTarget = null;
         _sending = false;
       });
+      final updated = _post;
+      if (updated != null) widget.onPostChanged?.call(updated);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _sending = false);
@@ -252,6 +273,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           );
         }
       });
+      final updated = _post;
+      if (updated != null) widget.onPostChanged?.call(updated);
     } on ApiException catch (e) {
       if (e.code == 'COMMENT_NOT_FOUND') {
         if (!mounted) return;
@@ -311,51 +334,44 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final post = _post;
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        Navigator.pop(context, ForumDetailResult(post: _post));
-      },
-      child: Scaffold(
+    return Scaffold(
+      backgroundColor: AppColors.creamLight,
+      appBar: AppBar(
         backgroundColor: AppColors.creamLight,
-        appBar: AppBar(
-          backgroundColor: AppColors.creamLight,
-          elevation: 0,
-          foregroundColor: AppColors.ink,
-          title: Text(
-            '貼文',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-            ),
+        elevation: 0,
+        foregroundColor: AppColors.ink,
+        title: Text(
+          '貼文',
+          style: GoogleFonts.notoSerifTc(
+            fontSize: 16,
+            fontWeight: FontWeight.w600,
+            color: AppColors.ink,
           ),
-          actions: [
-            if (post != null)
-              PopupMenuButton<String>(
-                onSelected: (value) {
-                  if (value == 'edit') _edit();
-                  if (value == 'delete') _deletePost();
-                  if (value == 'report') {
-                    showForumReportSheet(
-                      context,
-                      targetType: 'post',
-                      targetId: post.id,
-                    );
-                  }
-                },
-                itemBuilder: (_) => _isMine
-                    ? const [
-                        PopupMenuItem(value: 'edit', child: Text('編輯')),
-                        PopupMenuItem(value: 'delete', child: Text('刪除')),
-                      ]
-                    : const [PopupMenuItem(value: 'report', child: Text('檢舉'))],
-              ),
-          ],
         ),
-        body: _buildBody(post),
+        actions: [
+          if (post != null)
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'edit') _edit();
+                if (value == 'delete') _deletePost();
+                if (value == 'report') {
+                  showForumReportSheet(
+                    context,
+                    targetType: 'post',
+                    targetId: post.id,
+                  );
+                }
+              },
+              itemBuilder: (_) => _isMine
+                  ? const [
+                      PopupMenuItem(value: 'edit', child: Text('編輯')),
+                      PopupMenuItem(value: 'delete', child: Text('刪除')),
+                    ]
+                  : const [PopupMenuItem(value: 'report', child: Text('檢舉'))],
+            ),
+        ],
       ),
+      body: _buildBody(post),
     );
   }
 
