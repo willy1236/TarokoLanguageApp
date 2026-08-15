@@ -10,6 +10,7 @@ import '../../shared/widgets/truku_widgets.dart';
 import '../forum/forum_board_view.dart';
 import '../forum/forum_compose_screen.dart';
 import '../forum/forum_detail_screen.dart';
+import '../forum/forum_search_screen.dart';
 import '../events/event_detail_screen.dart';
 
 class PlazaScreen extends StatefulWidget {
@@ -140,8 +141,12 @@ class _PlazaScreenState extends State<PlazaScreen> {
             ),
           ),
           IconButton(
-            // Task 10 補上導向 ForumSearchScreen
-            onPressed: null,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ForumSearchScreen(boards: _boards),
+              ),
+            ),
             icon: const Icon(Icons.search, color: AppColors.ink, size: 20),
           ),
           IconButton(
