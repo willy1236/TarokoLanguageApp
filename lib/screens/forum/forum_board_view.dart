@@ -31,6 +31,7 @@ class ForumBoardView extends StatefulWidget {
   final ForumBookmarkToggler toggleBookmark;
   final void Function(ForumPost post) onOpenPost;
   final String emptyMessage;
+  final bool prependOnRefresh;
 
   const ForumBoardView({
     super.key,
@@ -39,6 +40,7 @@ class ForumBoardView extends StatefulWidget {
     required this.toggleBookmark,
     required this.onOpenPost,
     this.emptyMessage = '這個看板還沒有貼文',
+    this.prependOnRefresh = true,
   });
 
   @override
@@ -127,9 +129,9 @@ class ForumBoardViewState extends State<ForumBoardView> {
   }
 
   /// 下拉刷新用 after 只取斷層後的新貼文，接在最前面。
-  /// 列表為空時沒有可用的 after，退回整份重載。
+  /// 列表為空、或呼叫端表示沒有「比某 id 新」語意（如收藏頁）時，退回整份重載。
   Future<void> refresh() async {
-    if (_posts.isEmpty) return _load();
+    if (_posts.isEmpty || !widget.prependOnRefresh) return _load();
     try {
       final page = await widget.loadPage(after: _posts.first.id);
       if (!mounted) return;

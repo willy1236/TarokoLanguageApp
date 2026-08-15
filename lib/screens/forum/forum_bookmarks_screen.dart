@@ -40,11 +40,9 @@ class _ForumBookmarksScreenState extends State<ForumBookmarksScreen> {
         body: ForumBoardView(
           key: _viewKey,
           emptyMessage: '還沒有收藏任何貼文',
-          loadPage: ({cursor, after}) async {
-            // 收藏頁沒有下拉刷新語意，after 直接重取第一頁。
-            if (after != null) return ForumService.bookmarks();
-            return ForumService.bookmarks(cursor: cursor);
-          },
+          // 收藏頁沒有「比某 id 新」的語意，下拉刷新一律整份重載。
+          prependOnRefresh: false,
+          loadPage: ({cursor, after}) => ForumService.bookmarks(cursor: cursor),
           toggleLike: ForumService.likePost,
           toggleBookmark: (postId, {required add}) async {
             final result = await ForumService.bookmarkPost(postId, add: add);
