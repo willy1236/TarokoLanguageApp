@@ -6,6 +6,7 @@
 
 import 'dart:typed_data';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -165,6 +166,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
     final error = forumComposeError(
       boardId: _boardId,
       title: _titleController.text,
@@ -383,9 +385,48 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     if (_isEditing) {
       final images = widget.editing!.images;
       if (images.isEmpty) return const SizedBox.shrink();
-      return const Text(
-        '附圖無法在編輯時變更',
-        style: TextStyle(fontSize: 12, color: AppColors.fog),
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '附圖無法在編輯時變更',
+            style: TextStyle(fontSize: 12, color: AppColors.fog),
+          ),
+          const SizedBox(height: 10),
+          SizedBox(
+            height: 88,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              itemCount: images.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 8),
+              itemBuilder: (_, i) => ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(
+                  imageUrl: images[i],
+                  width: 88,
+                  height: 88,
+                  fit: BoxFit.cover,
+                  placeholder: (_, _) => Container(
+                    width: 88,
+                    height: 88,
+                    color: AppColors.creamDeep,
+                  ),
+                  errorWidget: (_, _, _) => Container(
+                    width: 88,
+                    height: 88,
+                    color: AppColors.creamDeep,
+                    alignment: Alignment.center,
+                    child: const Icon(
+                      Icons.broken_image_outlined,
+                      color: AppColors.fog,
+                      size: 20,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       );
     }
     return Column(
