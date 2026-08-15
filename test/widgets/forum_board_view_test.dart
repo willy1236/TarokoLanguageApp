@@ -363,4 +363,43 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byIcon(Icons.bookmark_border), findsOneWidget);
   });
+
+  testWidgets('下拉刷新會一併執行 onRefresh，並等它完成才收起轉圈', (tester) async {
+    var refreshCalls = 0;
+    final extra = Completer<void>();
+
+    await tester.pumpWidget(
+      wrap(
+        ForumBoardView(
+          loadPage: ({cursor, after}) async => ForumPostPage(
+            pinned: const [],
+            posts: [post(1)],
+            nextCursor: null,
+          ),
+          toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
+          toggleBookmark: (_, {required add}) async => add,
+          onOpenPost: (_) {},
+          onRefresh: () {
+            refreshCalls++;
+            return extra.future;
+          },
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(refreshCalls, 0);
+
+    await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(refreshCalls, 1, reason: '下拉時應該一併重載頁首');
+    // 額外工作還沒結束前，刷新指示器不該消失。
+    expect(find.byType(RefreshProgressIndicator), findsOneWidget);
+
+    extra.complete();
+    await tester.pumpAndSettle();
+    expect(find.byType(RefreshProgressIndicator), findsNothing);
+  });
 }

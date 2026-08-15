@@ -23,7 +23,10 @@ class PlazaScreen extends StatefulWidget {
   State<PlazaScreen> createState() => _PlazaScreenState();
 }
 
-class _PlazaScreenState extends State<PlazaScreen> {
+// MainContainer 用 IndexedStack，廣場的 State 建立一次就一直活著——切到別的
+// 分頁再切回來不會重跑 initState。因此除了首次載入，另外掛兩個更新時機：
+// 下拉刷新與 App 回到前景。沒有這兩個，剛建立的活動要等重開 App 才看得到。
+class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   bool _eventsLoading = true;
   List<EventSummary> _events = [];
 
@@ -42,9 +45,29 @@ class _PlazaScreenState extends State<PlazaScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadEvents();
     _loadBoards();
     _loadUnread();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    // 只重載頁首那兩塊。貼文列表不動，否則使用者切出去再回來會失去捲動位置。
+    _loadEvents();
+    _loadUnread();
+  }
+
+  /// 下拉刷新時與貼文一起更新的頁首內容。
+  Future<void> _refreshHeader() async {
+    await Future.wait([_loadEvents(), _loadUnread()]);
   }
 
   Future<void> _loadEvents() async {
@@ -433,6 +456,7 @@ class _PlazaScreenState extends State<PlazaScreen> {
         toggleLike: ForumService.likePost,
         toggleBookmark: ForumService.bookmarkPost,
         onOpenPost: _openPost,
+        onRefresh: _refreshHeader,
       ),
     );
   }

@@ -35,6 +35,10 @@ class ForumBoardView extends StatefulWidget {
   /// null 代表這個畫面不需要身分驅動的重載（例如收藏頁）。
   final String? reloadKey;
 
+  /// 下拉刷新時一併執行的額外工作（例如廣場頁要重載近期活動與未讀數）。
+  /// 使用者下拉時預期的是「整頁更新」，只更新貼文會與這個直覺不符。
+  final Future<void> Function()? onRefresh;
+
   const ForumBoardView({
     super.key,
     required this.loadPage,
@@ -44,6 +48,7 @@ class ForumBoardView extends StatefulWidget {
     this.emptyMessage = '這個看板還沒有貼文',
     this.prependOnRefresh = true,
     this.reloadKey,
+    this.onRefresh,
   });
 
   @override
@@ -132,9 +137,15 @@ class ForumBoardViewState extends State<ForumBoardView> {
     }
   }
 
-  /// 下拉刷新用 after 只取斷層後的新貼文，接在最前面。
-  /// 列表為空、或呼叫端表示沒有「比某 id 新」語意（如收藏頁）時，退回整份重載。
+  /// 下拉刷新：貼文與呼叫端的額外工作並行，兩者都完成才收起轉圈動畫。
   Future<void> refresh() async {
+    final extra = widget.onRefresh?.call();
+    await Future.wait([_refreshPosts(), if (extra != null) extra]);
+  }
+
+  /// 用 after 只取斷層後的新貼文，接在最前面。
+  /// 列表為空、或呼叫端表示沒有「比某 id 新」語意（如收藏頁）時，退回整份重載。
+  Future<void> _refreshPosts() async {
     if (_posts.isEmpty || !widget.prependOnRefresh) return _load();
     try {
       final page = await widget.loadPage(after: _posts.first.id);
