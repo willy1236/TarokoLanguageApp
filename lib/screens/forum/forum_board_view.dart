@@ -39,11 +39,6 @@ class ForumBoardView extends StatefulWidget {
   /// 使用者下拉時預期的是「整頁更新」，只更新貼文會與這個直覺不符。
   final Future<void> Function()? onRefresh;
 
-  /// 放在列表最上方、跟著一起捲動的內容。放進列表而不是固定在外面，
-  /// 是因為固定區塊不在下拉手勢的範圍內——使用者想刷新那塊內容時
-  /// 最直覺就是在那塊上面下拉，結果卻毫無反應。
-  final Widget? header;
-
   const ForumBoardView({
     super.key,
     required this.loadPage,
@@ -54,7 +49,6 @@ class ForumBoardView extends StatefulWidget {
     this.prependOnRefresh = true,
     this.reloadKey,
     this.onRefresh,
-    this.header,
   });
 
   @override
@@ -259,12 +253,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
       controller: _scrollController,
       physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.only(bottom: 100),
-      children: [
-        // header 由呼叫端提供（廣場頁放近期活動），跟著列表一起捲動，
-        // 也一起進入下拉刷新的手勢範圍。
-        if (widget.header != null) widget.header!,
-        ..._buildBody(),
-      ],
+      children: _buildBody(),
     ),
   );
 
