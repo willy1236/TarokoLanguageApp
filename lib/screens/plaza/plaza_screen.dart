@@ -13,6 +13,7 @@ import '../forum/forum_compose_screen.dart';
 import '../forum/forum_detail_screen.dart';
 import '../forum/forum_notifications_screen.dart';
 import '../forum/forum_search_screen.dart';
+import '../forum/forum_theme.dart';
 import '../events/event_detail_screen.dart';
 
 class PlazaScreen extends StatefulWidget {
@@ -89,6 +90,12 @@ class _PlazaScreenState extends State<PlazaScreen> {
     });
   }
 
+  /// 收藏頁或搜尋頁改了某篇的收藏狀態時，同步廣場列表上的書籤圖示，
+  /// 否則返回後那一列仍會顯示成已收藏。
+  void _syncBookmark(int postId, bool bookmarked) {
+    _boardViewKey.currentState?.setBookmarked(postId, bookmarked);
+  }
+
   Future<void> _openPost(ForumPost post) async {
     final result = await Navigator.push<ForumDetailResult>(
       context,
@@ -106,15 +113,20 @@ class _PlazaScreenState extends State<PlazaScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    backgroundColor: AppColors.creamLight,
-    body: Column(
-      children: [
-        _buildHeader(context),
-        if (!_eventsLoading && _events.isNotEmpty) _buildMiniEventCards(),
-        _buildTabBar(),
-        Expanded(child: _buildPostsSection()),
-      ],
+  Widget build(BuildContext context) => Theme(
+    data: forumTheme(context),
+    child: Scaffold(
+      backgroundColor: AppColors.creamLight,
+      // 順序沿用改版前：標題、近期活動橫向小卡、看板 tab，最後才是貼文列表。
+      // 只有貼文列表捲動，上面三段固定。
+      body: Column(
+        children: [
+          _buildHeader(context),
+          if (!_eventsLoading && _events.isNotEmpty) _buildMiniEventCards(),
+          _buildTabBar(),
+          Expanded(child: _buildPostsSection()),
+        ],
+      ),
     ),
   );
 
@@ -154,7 +166,10 @@ class _PlazaScreenState extends State<PlazaScreen> {
             onPressed: () => Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) => ForumSearchScreen(boards: _boards),
+                builder: (_) => ForumSearchScreen(
+                  boards: _boards,
+                  onBookmarkChanged: _syncBookmark,
+                ),
               ),
             ),
             icon: const Icon(Icons.search, color: AppColors.ink, size: 20),
@@ -162,7 +177,10 @@ class _PlazaScreenState extends State<PlazaScreen> {
           IconButton(
             onPressed: () => Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const ForumBookmarksScreen()),
+              MaterialPageRoute(
+                builder: (_) =>
+                    ForumBookmarksScreen(onBookmarkChanged: _syncBookmark),
+              ),
             ),
             icon: const Icon(
               Icons.bookmark_border,

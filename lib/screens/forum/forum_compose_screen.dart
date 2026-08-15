@@ -13,6 +13,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/constants/app_colors.dart';
+import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
@@ -117,8 +118,9 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
       _toast('最多只能附 ${ForumService.imageMaxCount} 張圖');
       return;
     }
-    final picked = await ImagePicker()
-        .pickMultiImage(limit: ForumService.imageMaxCount - _images.length);
+    final picked = await ImagePicker().pickMultiImage(
+      limit: ForumService.imageMaxCount - _images.length,
+    );
     if (picked.isEmpty) return;
 
     for (final file in picked) {
@@ -139,11 +141,15 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
         continue;
       }
       if (!mounted) return;
-      setState(() => _images.add(_PickedImage(
+      setState(
+        () => _images.add(
+          _PickedImage(
             bytes: compressed,
             // 一律轉成 JPEG，副檔名跟著改，避免與 Content-Type 不一致。
             filename: '${DateTime.now().microsecondsSinceEpoch}.jpg',
-          )));
+          ),
+        ),
+      );
       if (_images.length >= ForumService.imageMaxCount) break;
     }
   }
@@ -215,171 +221,174 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppColors.creamLight,
-        appBar: AppBar(
-          backgroundColor: AppColors.creamLight,
-          elevation: 0,
-          foregroundColor: AppColors.ink,
-          title: Text(
-            _isEditing ? '編輯貼文' : '發文',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-            ),
+  Widget build(BuildContext context) =>
+      Theme(data: forumTheme(context), child: _buildScaffold(context));
+
+  Widget _buildScaffold(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.creamLight,
+    appBar: AppBar(
+      backgroundColor: AppColors.creamLight,
+      elevation: 0,
+      foregroundColor: AppColors.ink,
+      title: Text(
+        _isEditing ? '編輯貼文' : '發文',
+        style: GoogleFonts.notoSerifTc(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: AppColors.ink,
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: _saving ? null : _save,
+          child: Text(
+            _saving ? '送出中…' : '送出',
+            style: const TextStyle(color: AppColors.primary),
           ),
-          actions: [
-            TextButton(
-              onPressed: _saving ? null : _save,
-              child: Text(
-                _saving ? '送出中…' : '送出',
-                style: const TextStyle(color: AppColors.primary),
-              ),
-            ),
-          ],
         ),
-        body: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
-          children: [
-            _boardSegment(),
-            const SizedBox(height: 16),
-            TextField(
-              controller: _titleController,
-              maxLength: ForumService.titleMax,
-              onChanged: (_) => setState(() {}),
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-              ),
-              decoration: const InputDecoration(
-                hintText: '標題',
-                border: InputBorder.none,
-              ),
-            ),
-            const Divider(color: AppColors.creamDeep),
-            TextField(
-              controller: _bodyController,
-              maxLength: ForumService.bodyMax,
-              minLines: 8,
-              maxLines: null,
-              onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(
-                hintText: '想說的話…',
-                border: InputBorder.none,
-              ),
-            ),
-            const SizedBox(height: 12),
-            _tagSection(),
-            const SizedBox(height: 16),
-            _imageSection(),
-          ],
+      ],
+    ),
+    body: ListView(
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
+      children: [
+        _boardSegment(),
+        const SizedBox(height: 16),
+        TextField(
+          controller: _titleController,
+          maxLength: ForumService.titleMax,
+          onChanged: (_) => setState(() {}),
+          style: GoogleFonts.notoSerifTc(
+            fontSize: 18,
+            fontWeight: FontWeight.w600,
+            color: AppColors.ink,
+          ),
+          decoration: const InputDecoration(
+            hintText: '標題',
+            border: InputBorder.none,
+          ),
         ),
-      );
+        const Divider(color: AppColors.creamDeep),
+        TextField(
+          controller: _bodyController,
+          maxLength: ForumService.bodyMax,
+          minLines: 8,
+          maxLines: null,
+          onChanged: (_) => setState(() {}),
+          decoration: const InputDecoration(
+            hintText: '想說的話…',
+            border: InputBorder.none,
+          ),
+        ),
+        const SizedBox(height: 12),
+        _tagSection(),
+        const SizedBox(height: 16),
+        _imageSection(),
+      ],
+    ),
+  );
 
   Widget _boardSegment() => SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            for (final board in widget.boards)
-              Padding(
-                padding: const EdgeInsets.only(right: 8),
-                child: GestureDetector(
-                  // 編輯模式不能換看板：後端 PATCH 不接受 board_id。
-                  onTap: _isEditing
-                      ? null
-                      : () => setState(() => _boardId = board.id),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 7,
-                    ),
-                    decoration: BoxDecoration(
-                      color: board.id == _boardId
-                          ? AppColors.primary
-                          : AppColors.cream,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.creamDeep),
-                    ),
-                    child: Text(
-                      board.name,
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: 13,
-                        color: board.id == _boardId
-                            ? AppColors.creamLight
-                            : AppColors.inkSoft,
-                      ),
-                    ),
+    scrollDirection: Axis.horizontal,
+    child: Row(
+      children: [
+        for (final board in widget.boards)
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              // 編輯模式不能換看板：後端 PATCH 不接受 board_id。
+              onTap: _isEditing
+                  ? null
+                  : () => setState(() => _boardId = board.id),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: board.id == _boardId
+                      ? AppColors.primary
+                      : AppColors.cream,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppColors.creamDeep),
+                ),
+                child: Text(
+                  board.name,
+                  style: GoogleFonts.notoSerifTc(
+                    fontSize: 13,
+                    color: board.id == _boardId
+                        ? AppColors.creamLight
+                        : AppColors.inkSoft,
                   ),
                 ),
+              ),
+            ),
+          ),
+      ],
+    ),
+  );
+
+  Widget _tagSection() => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Row(
+        children: [
+          Expanded(
+            child: TextField(
+              controller: _tagController,
+              maxLength: ForumService.tagNameMax,
+              onSubmitted: (_) => _addTag(),
+              decoration: const InputDecoration(
+                hintText: '加入標籤',
+                counterText: '',
+                isDense: true,
+              ),
+            ),
+          ),
+          TextButton(onPressed: _addTag, child: const Text('加入')),
+        ],
+      ),
+      Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        children: [
+          for (final tag in _tags)
+            Chip(
+              label: Text('#$tag'),
+              onDeleted: () => setState(() => _tags.remove(tag)),
+              backgroundColor: AppColors.cream,
+            ),
+        ],
+      ),
+      if (_hotTags.isNotEmpty) ...[
+        const SizedBox(height: 8),
+        Text(
+          'HOT · 熱門標籤',
+          style: GoogleFonts.crimsonPro(
+            fontStyle: FontStyle.italic,
+            fontSize: 10,
+            color: AppColors.fog,
+            letterSpacing: 3.0,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Wrap(
+          spacing: 6,
+          runSpacing: 6,
+          children: [
+            for (final stat in _hotTags)
+              ActionChip(
+                label: Text('#${stat.tag.name}'),
+                backgroundColor: AppColors.cream,
+                onPressed: () {
+                  _tagController.text = stat.tag.name;
+                  _addTag();
+                },
               ),
           ],
         ),
-      );
-
-  Widget _tagSection() => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _tagController,
-                  maxLength: ForumService.tagNameMax,
-                  onSubmitted: (_) => _addTag(),
-                  decoration: const InputDecoration(
-                    hintText: '加入標籤',
-                    counterText: '',
-                    isDense: true,
-                  ),
-                ),
-              ),
-              TextButton(onPressed: _addTag, child: const Text('加入')),
-            ],
-          ),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final tag in _tags)
-                Chip(
-                  label: Text('#$tag'),
-                  onDeleted: () => setState(() => _tags.remove(tag)),
-                  backgroundColor: AppColors.cream,
-                ),
-            ],
-          ),
-          if (_hotTags.isNotEmpty) ...[
-            const SizedBox(height: 8),
-            Text(
-              'HOT · 熱門標籤',
-              style: GoogleFonts.crimsonPro(
-                fontStyle: FontStyle.italic,
-                fontSize: 10,
-                color: AppColors.fog,
-                letterSpacing: 3.0,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final stat in _hotTags)
-                  ActionChip(
-                    label: Text('#${stat.tag.name}'),
-                    backgroundColor: AppColors.cream,
-                    onPressed: () {
-                      _tagController.text = stat.tag.name;
-                      _addTag();
-                    },
-                  ),
-              ],
-            ),
-          ],
-        ],
-      );
+      ],
+    ],
+  );
 
   Widget _imageSection() {
     if (_isEditing) {
@@ -437,8 +446,9 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
             OutlinedButton.icon(
               onPressed: _pickImages,
               icon: const Icon(Icons.image_outlined, size: 18),
-              label:
-                  Text('加入圖片（${_images.length}/${ForumService.imageMaxCount}）'),
+              label: Text(
+                '加入圖片（${_images.length}/${ForumService.imageMaxCount}）',
+              ),
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 side: const BorderSide(color: AppColors.creamDeep),

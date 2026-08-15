@@ -323,4 +323,44 @@ void main() {
     expect(find.text('42'), findsOneWidget);
     expect(find.text('3'), findsNothing);
   });
+
+  testWidgets('setBookmarked 同步書籤圖示，不動其他欄位', (tester) async {
+    final key = GlobalKey<ForumBoardViewState>();
+    await tester.pumpWidget(
+      wrap(
+        ForumBoardView(
+          key: key,
+          loadPage: ({cursor, after}) async => ForumPostPage(
+            pinned: const [],
+            posts: [post(1, likeCount: 7)],
+            nextCursor: null,
+          ),
+          toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
+          toggleBookmark: (_, {required add}) async => add,
+          onOpenPost: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.bookmark_border), findsOneWidget);
+
+    // 收藏頁把「已收藏」帶回來。
+    key.currentState?.setBookmarked(1, true);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.bookmark), findsOneWidget);
+    expect(find.byIcon(Icons.bookmark_border), findsNothing);
+    // 讚數不該被這個操作影響。
+    expect(find.text('7'), findsOneWidget);
+
+    // 在收藏頁取消收藏後回到列表，圖示要跟著變回空心。
+    key.currentState?.setBookmarked(1, false);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.bookmark_border), findsOneWidget);
+
+    // 不存在的 id 不應該造成任何改變或例外。
+    key.currentState?.setBookmarked(999, true);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.bookmark_border), findsOneWidget);
+  });
 }

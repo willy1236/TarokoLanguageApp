@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../forum_theme.dart';
 import '../../../core/network/api_client.dart';
 import '../../../services/forum_service.dart';
 
@@ -12,16 +13,18 @@ Future<void> showForumReportSheet(
   BuildContext context, {
   required String targetType,
   required int targetId,
-}) =>
-    showModalBottomSheet<void>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: AppColors.creamLight,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (_) => _ReportSheet(targetType: targetType, targetId: targetId),
-    );
+}) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  backgroundColor: AppColors.creamLight,
+  shape: const RoundedRectangleBorder(
+    borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+  ),
+  builder: (sheetContext) => Theme(
+    data: forumTheme(sheetContext),
+    child: _ReportSheet(targetType: targetType, targetId: targetId),
+  ),
+);
 
 class _ReportSheet extends StatefulWidget {
   final String targetType;

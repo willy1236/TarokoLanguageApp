@@ -215,6 +215,19 @@ class ForumBoardViewState extends State<ForumBoardView> {
     setState(() => _replace(post));
   }
 
+  /// 別的畫面（收藏頁、搜尋頁）改了收藏狀態時同步這一筆。
+  /// 只有收藏欄位會變，其餘沿用本地既有的值——那些畫面沒有更新的計數可帶回來。
+  void setBookmarked(int postId, bool bookmarked) {
+    ForumPost? found;
+    final pinnedIndex = _pinned.indexWhere((p) => p.id == postId);
+    if (pinnedIndex >= 0) found = _pinned[pinnedIndex];
+    final index = _posts.indexWhere((p) => p.id == postId);
+    if (index >= 0) found = _posts[index];
+    if (found == null) return;
+    final updated = found.copyWith(isBookmarked: bookmarked);
+    setState(() => _replace(updated));
+  }
+
   @override
   Widget build(BuildContext context) {
     if (_loading) {

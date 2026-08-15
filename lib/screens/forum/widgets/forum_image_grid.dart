@@ -48,27 +48,27 @@ class _Thumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-        onTap: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ForumImageViewer(urls: urls, initialIndex: index),
-          ),
+    onTap: () => Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ForumImageViewer(urls: urls, initialIndex: index),
+      ),
+    ),
+    child: CachedNetworkImage(
+      imageUrl: urls[index],
+      fit: BoxFit.cover,
+      placeholder: (_, _) => Container(color: AppColors.creamDeep),
+      errorWidget: (_, _, _) => Container(
+        color: AppColors.creamDeep,
+        alignment: Alignment.center,
+        child: const Icon(
+          Icons.broken_image_outlined,
+          color: AppColors.fog,
+          size: 20,
         ),
-        child: CachedNetworkImage(
-          imageUrl: urls[index],
-          fit: BoxFit.cover,
-          placeholder: (_, _) => Container(color: AppColors.creamDeep),
-          errorWidget: (_, _, _) => Container(
-            color: AppColors.creamDeep,
-            alignment: Alignment.center,
-            child: const Icon(
-              Icons.broken_image_outlined,
-              color: AppColors.fog,
-              size: 20,
-            ),
-          ),
-        ),
-      );
+      ),
+    ),
+  );
 }
 
 /// 全螢幕檢視。深色底讓照片本身成為主體。
@@ -84,23 +84,23 @@ class ForumImageViewer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppColors.midnight,
-        appBar: AppBar(
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          iconTheme: const IconThemeData(color: AppColors.creamLight),
+    backgroundColor: AppColors.midnight,
+    appBar: AppBar(
+      backgroundColor: Colors.transparent,
+      elevation: 0,
+      iconTheme: const IconThemeData(color: AppColors.creamLight),
+    ),
+    extendBodyBehindAppBar: true,
+    body: PageView.builder(
+      controller: PageController(initialPage: initialIndex),
+      itemCount: urls.length,
+      itemBuilder: (_, i) => InteractiveViewer(
+        minScale: 1,
+        maxScale: 4,
+        child: Center(
+          child: CachedNetworkImage(imageUrl: urls[i], fit: BoxFit.contain),
         ),
-        extendBodyBehindAppBar: true,
-        body: PageView.builder(
-          controller: PageController(initialPage: initialIndex),
-          itemCount: urls.length,
-          itemBuilder: (_, i) => InteractiveViewer(
-            minScale: 1,
-            maxScale: 4,
-            child: Center(
-              child: CachedNetworkImage(imageUrl: urls[i], fit: BoxFit.contain),
-            ),
-          ),
-        ),
-      );
+      ),
+    ),
+  );
 }

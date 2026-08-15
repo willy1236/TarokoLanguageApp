@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
@@ -30,7 +31,11 @@ class ForumDetailScreen extends StatefulWidget {
   /// 貼文有異動（讚、收藏、留言數）時即時回報，讓列表頁不必等關閉才更新。
   final ValueChanged<ForumPost>? onPostChanged;
 
-  const ForumDetailScreen({super.key, required this.postId, this.onPostChanged});
+  const ForumDetailScreen({
+    super.key,
+    required this.postId,
+    this.onPostChanged,
+  });
 
   @override
   State<ForumDetailScreen> createState() => _ForumDetailScreenState();
@@ -184,7 +189,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       if (!mounted) return;
       final current = _post;
       if (current != null) {
-        setState(() => _post = current.copyWith(isBookmarked: post.isBookmarked));
+        setState(
+          () => _post = current.copyWith(isBookmarked: post.isBookmarked),
+        );
       }
       _toast(e.message);
     }
@@ -332,7 +339,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      Theme(data: forumTheme(context), child: _buildScaffold(context));
+
+  Widget _buildScaffold(BuildContext context) {
     final post = _post;
     return Scaffold(
       backgroundColor: AppColors.creamLight,

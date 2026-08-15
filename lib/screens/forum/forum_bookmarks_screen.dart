@@ -7,12 +7,17 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import 'forum_theme.dart';
 import '../../services/forum_service.dart';
 import 'forum_board_view.dart';
 import 'forum_detail_screen.dart';
 
 class ForumBookmarksScreen extends StatefulWidget {
-  const ForumBookmarksScreen({super.key});
+  /// 在這裡取消（或重新加入）收藏時回報，讓推開這一頁的列表同步書籤圖示，
+  /// 否則返回後那一列還會顯示成已收藏。
+  final void Function(int postId, bool bookmarked)? onBookmarkChanged;
+
+  const ForumBookmarksScreen({super.key, this.onBookmarkChanged});
 
   @override
   State<ForumBookmarksScreen> createState() => _ForumBookmarksScreenState();
@@ -22,7 +27,10 @@ class _ForumBookmarksScreenState extends State<ForumBookmarksScreen> {
   final _viewKey = GlobalKey<ForumBoardViewState>();
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) =>
+      Theme(data: forumTheme(context), child: _buildScaffold(context));
+
+  Widget _buildScaffold(BuildContext context) => Scaffold(
     backgroundColor: AppColors.creamLight,
     appBar: AppBar(
       backgroundColor: AppColors.creamLight,
@@ -46,6 +54,7 @@ class _ForumBookmarksScreenState extends State<ForumBookmarksScreen> {
       toggleLike: ForumService.likePost,
       toggleBookmark: (postId, {required add}) async {
         final result = await ForumService.bookmarkPost(postId, add: add);
+        widget.onBookmarkChanged?.call(postId, result);
         // 取消收藏後這筆就不屬於本頁，直接移除比留著一個空心書籤誠實。
         if (!result) _viewKey.currentState?.removePost(postId);
         return result;
@@ -56,7 +65,10 @@ class _ForumBookmarksScreenState extends State<ForumBookmarksScreen> {
           MaterialPageRoute(
             builder: (_) => ForumDetailScreen(
               postId: post.id,
-              onPostChanged: (p) => _viewKey.currentState?.replacePost(p),
+              onPostChanged: (p) {
+                _viewKey.currentState?.replacePost(p);
+                widget.onBookmarkChanged?.call(p.id, p.isBookmarked);
+              },
             ),
           ),
         );

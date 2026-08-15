@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import 'forum_theme.dart';
 import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
 import 'forum_board_view.dart';
@@ -15,7 +16,14 @@ import 'forum_detail_screen.dart';
 class ForumSearchScreen extends StatefulWidget {
   final List<ForumBoard> boards;
 
-  const ForumSearchScreen({super.key, this.boards = const []});
+  /// 在搜尋結果裡改了收藏狀態時回報，讓推開這一頁的列表同步書籤圖示。
+  final void Function(int postId, bool bookmarked)? onBookmarkChanged;
+
+  const ForumSearchScreen({
+    super.key,
+    this.boards = const [],
+    this.onBookmarkChanged,
+  });
 
   @override
   State<ForumSearchScreen> createState() => _ForumSearchScreenState();
@@ -51,7 +59,10 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) =>
+      Theme(data: forumTheme(context), child: _buildScaffold(context));
+
+  Widget _buildScaffold(BuildContext context) {
     final query = _query;
     return Scaffold(
       backgroundColor: AppColors.creamLight,
@@ -104,15 +115,24 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
                   cursor: cursor,
                 ),
                 toggleLike: ForumService.likePost,
-                toggleBookmark: ForumService.bookmarkPost,
+                toggleBookmark: (postId, {required add}) async {
+                  final result = await ForumService.bookmarkPost(
+                    postId,
+                    add: add,
+                  );
+                  widget.onBookmarkChanged?.call(postId, result);
+                  return result;
+                },
                 onOpenPost: (post) async {
                   final result = await Navigator.push<ForumDetailResult>(
                     context,
                     MaterialPageRoute(
                       builder: (_) => ForumDetailScreen(
                         postId: post.id,
-                        onPostChanged: (p) =>
-                            _boardViewKey.currentState?.replacePost(p),
+                        onPostChanged: (p) {
+                          _boardViewKey.currentState?.replacePost(p);
+                          widget.onBookmarkChanged?.call(p.id, p.isBookmarked);
+                        },
                       ),
                     ),
                   );
@@ -140,14 +160,30 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
     ),
   );
 
-  Widget _chip(String label, String? slug) => Padding(
-    padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
-    child: ChoiceChip(
-      label: Text(label),
-      selected: _boardSlug == slug,
-      backgroundColor: AppColors.cream,
-      selectedColor: AppColors.primary.withValues(alpha: 0.12),
-      onSelected: (_) => setState(() => _boardSlug = slug),
-    ),
-  );
+  /// 選中態刻意只用淡淡的酒紅底加同色文字與邊框：整片深色會蓋掉文字，
+  /// 太淡又看不出選了哪一個，所以底色壓在 0.16、靠邊框與文字顏色補足對比。
+  Widget _chip(String label, String? slug) {
+    final selected = _boardSlug == slug;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
+      child: ChoiceChip(
+        label: Text(label),
+        selected: selected,
+        showCheckmark: false,
+        backgroundColor: AppColors.cream,
+        selectedColor: AppColors.primary.withValues(alpha: 0.16),
+        labelStyle: TextStyle(
+          fontSize: 13,
+          color: selected ? AppColors.primary : AppColors.inkSoft,
+          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
+        ),
+        side: BorderSide(
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.45)
+              : AppColors.creamDeep,
+        ),
+        onSelected: (_) => setState(() => _boardSlug = slug),
+      ),
+    );
+  }
 }

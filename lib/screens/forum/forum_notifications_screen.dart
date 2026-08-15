@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
@@ -129,32 +130,32 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppColors.creamLight,
-        appBar: AppBar(
-          backgroundColor: AppColors.creamLight,
-          elevation: 0,
-          foregroundColor: AppColors.ink,
-          title: Text(
-            '通知',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: _items.isEmpty ? null : _markAllRead,
-              child: const Text(
-                '全部已讀',
-                style: TextStyle(color: AppColors.primary),
-              ),
-            ),
-          ],
+  Widget build(BuildContext context) =>
+      Theme(data: forumTheme(context), child: _buildScaffold(context));
+
+  Widget _buildScaffold(BuildContext context) => Scaffold(
+    backgroundColor: AppColors.creamLight,
+    appBar: AppBar(
+      backgroundColor: AppColors.creamLight,
+      elevation: 0,
+      foregroundColor: AppColors.ink,
+      title: Text(
+        '通知',
+        style: GoogleFonts.notoSerifTc(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: AppColors.ink,
         ),
-        body: _buildBody(),
-      );
+      ),
+      actions: [
+        TextButton(
+          onPressed: _items.isEmpty ? null : _markAllRead,
+          child: const Text('全部已讀', style: TextStyle(color: AppColors.primary)),
+        ),
+      ],
+    ),
+    body: _buildBody(),
+  );
 
   Widget _buildBody() {
     if (_loading) {
@@ -205,8 +206,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
           );
         }
         final item = _items[i];
-        final action =
-            item.type == 'reply_post' ? '回覆了你的貼文' : '回覆了你的留言';
+        final action = item.type == 'reply_post' ? '回覆了你的貼文' : '回覆了你的留言';
         return ListTile(
           tileColor: item.isRead ? null : AppColors.cream,
           onTap: () => _open(item),
