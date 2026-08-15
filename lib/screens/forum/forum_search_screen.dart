@@ -23,6 +23,7 @@ class ForumSearchScreen extends StatefulWidget {
 
 class _ForumSearchScreenState extends State<ForumSearchScreen> {
   final _controller = TextEditingController();
+  final _boardViewKey = GlobalKey<ForumBoardViewState>();
   String? _query;
   String? _boardSlug;
   String? _hint;
@@ -78,10 +79,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
           if (_hint != null)
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Text(
-                _hint!,
-                style: const TextStyle(color: AppColors.fog),
-              ),
+              child: Text(_hint!, style: const TextStyle(color: AppColors.fog)),
             ),
           if (query == null && _hint == null)
             Padding(
@@ -94,31 +92,33 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
           if (query != null)
             Expanded(
               child: ForumBoardView(
-                key: ValueKey('$query|$_boardSlug'),
+                key: _boardViewKey,
+                reloadKey: '$query|$_boardSlug',
                 emptyMessage: '找不到符合的貼文',
-                loadPage: ({cursor, after}) async {
-                  // 搜尋沒有下拉刷新語意，after 直接回空頁。
-                  if (after != null) {
-                    return const ForumPostPage(
-                      pinned: [],
-                      posts: [],
-                      nextCursor: null,
-                    );
-                  }
-                  return ForumService.search(
-                    query,
-                    board: _boardSlug,
-                    cursor: cursor,
-                  );
-                },
+                // 搜尋沒有「比某 id 新」語意，下拉刷新一律整份重載，
+                // 所以 loadPage 只需按 cursor 分頁。
+                prependOnRefresh: false,
+                loadPage: ({cursor, after}) => ForumService.search(
+                  query,
+                  board: _boardSlug,
+                  cursor: cursor,
+                ),
                 toggleLike: ForumService.likePost,
                 toggleBookmark: ForumService.bookmarkPost,
-                onOpenPost: (post) => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => ForumDetailScreen(postId: post.id),
-                  ),
-                ),
+                onOpenPost: (post) async {
+                  final result = await Navigator.push<ForumDetailResult>(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ForumDetailScreen(postId: post.id),
+                    ),
+                  );
+                  if (result == null) return;
+                  if (result.deleted) {
+                    _boardViewKey.currentState?.removePost(post.id);
+                  } else if (result.post != null) {
+                    _boardViewKey.currentState?.replacePost(result.post!);
+                  }
+                },
               ),
             ),
         ],
@@ -127,25 +127,25 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
   }
 
   Widget _boardFilter() => SizedBox(
-        height: 48,
-        child: ListView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          children: [
-            _chip('全部看板', null),
-            for (final board in widget.boards) _chip(board.name, board.slug),
-          ],
-        ),
-      );
+    height: 48,
+    child: ListView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [
+        _chip('全部看板', null),
+        for (final board in widget.boards) _chip(board.name, board.slug),
+      ],
+    ),
+  );
 
   Widget _chip(String label, String? slug) => Padding(
-        padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
-        child: ChoiceChip(
-          label: Text(label),
-          selected: _boardSlug == slug,
-          backgroundColor: AppColors.cream,
-          selectedColor: AppColors.primary.withValues(alpha: 0.12),
-          onSelected: (_) => setState(() => _boardSlug = slug),
-        ),
-      );
+    padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
+    child: ChoiceChip(
+      label: Text(label),
+      selected: _boardSlug == slug,
+      backgroundColor: AppColors.cream,
+      selectedColor: AppColors.primary.withValues(alpha: 0.12),
+      onSelected: (_) => setState(() => _boardSlug = slug),
+    ),
+  );
 }

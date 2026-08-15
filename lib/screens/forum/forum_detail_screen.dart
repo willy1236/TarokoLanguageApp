@@ -17,6 +17,14 @@ import 'widgets/forum_image_grid.dart';
 import 'widgets/forum_post_card.dart' show forumRelativeTime;
 import 'widgets/forum_report_sheet.dart';
 
+/// 詳情頁關閉時回報的結果：貼文被刪除、貼文有更新，或什麼都沒變。
+class ForumDetailResult {
+  final bool deleted;
+  final ForumPost? post;
+
+  const ForumDetailResult({this.deleted = false, this.post});
+}
+
 class ForumDetailScreen extends StatefulWidget {
   final int postId;
 
@@ -35,6 +43,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   final List<ForumComment> _replies = [];
   int? _nextCursor;
   bool _loading = true;
+  bool _loadingMore = false;
   bool _sending = false;
   String? _error;
 
@@ -90,8 +99,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 
   Future<void> _loadMoreComments() async {
+    if (_loadingMore) return;
     final cursor = _nextCursor;
     if (cursor == null) return;
+    setState(() => _loadingMore = true);
     try {
       final page = await ForumService.comments(widget.postId, cursor: cursor);
       if (!mounted) return;
@@ -99,8 +110,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _comments.addAll(page.comments);
         _replies.addAll(page.replies);
         _nextCursor = page.nextCursor;
+        _loadingMore = false;
       });
     } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _loadingMore = false);
       _toast(e.message);
     }
   }
@@ -112,10 +126,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  /// 貼文已不存在：回到列表並回報 true，讓呼叫端把它移除。
+  /// 貼文已不存在：回到列表並回報已刪除，讓呼叫端把它移除。
   void _popDeleted(String message) {
     if (!mounted) return;
-    Navigator.pop(context, true);
+    Navigator.pop(context, const ForumDetailResult(deleted: true));
     _toast(message);
   }
 
@@ -126,10 +140,30 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     try {
       final result = await ForumService.likePost(post.id, like: !post.isLiked);
       if (!mounted) return;
-      setState(() => _post = post.copyWith(
-            isLiked: result.liked,
-            likeCount: result.likeCount,
-          ));
+      setState(
+        () => _post = post.copyWith(
+          isLiked: result.liked,
+          likeCount: result.likeCount,
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _post = post);
+      _toast(e.message);
+    }
+  }
+
+  Future<void> _bookmarkPost() async {
+    final post = _post;
+    if (post == null) return;
+    setState(() => _post = post.toggledBookmark());
+    try {
+      final added = await ForumService.bookmarkPost(
+        post.id,
+        add: !post.isBookmarked,
+      );
+      if (!mounted) return;
+      setState(() => _post = post.copyWith(isBookmarked: added));
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _post = post);
@@ -152,10 +186,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         like: !comment.isLiked,
       );
       if (!mounted) return;
-      setState(() => replace(comment.copyWith(
-            isLiked: result.liked,
-            likeCount: result.likeCount,
-          )));
+      setState(
+        () => replace(
+          comment.copyWith(isLiked: result.liked, likeCount: result.likeCount),
+        ),
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => replace(comment));
@@ -223,6 +258,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         setState(() {
           _comments.removeWhere((c) => c.id == comment.id);
           _replies.removeWhere((c) => c.id == comment.id);
+          // 第一層被刪時，掛在它底下的回覆也失去容身之處（與成功路徑一致）。
+          _replies.removeWhere((c) => c.parentCommentId == comment.id);
         });
         return;
       }
@@ -236,28 +273,28 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     try {
       await ForumService.deletePost(widget.postId);
       if (!mounted) return;
-      Navigator.pop(context, true);
+      Navigator.pop(context, const ForumDetailResult(deleted: true));
     } on ApiException catch (e) {
       _toast(e.message);
     }
   }
 
   Future<bool?> _confirm(String message) => showDialog<bool>(
-        context: context,
-        builder: (c) => AlertDialog(
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(c, false),
-              child: const Text('取消'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.pop(c, true),
-              child: const Text('刪除'),
-            ),
-          ],
+    context: context,
+    builder: (c) => AlertDialog(
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(c, false),
+          child: const Text('取消'),
         ),
-      );
+        TextButton(
+          onPressed: () => Navigator.pop(c, true),
+          child: const Text('刪除'),
+        ),
+      ],
+    ),
+  );
 
   Future<void> _edit() async {
     final post = _post;
@@ -274,52 +311,59 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final post = _post;
-    return Scaffold(
-      backgroundColor: AppColors.creamLight,
-      appBar: AppBar(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pop(context, ForumDetailResult(post: _post));
+      },
+      child: Scaffold(
         backgroundColor: AppColors.creamLight,
-        elevation: 0,
-        foregroundColor: AppColors.ink,
-        title: Text(
-          '貼文',
-          style: GoogleFonts.notoSerifTc(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-            color: AppColors.ink,
-          ),
-        ),
-        actions: [
-          if (post != null)
-            PopupMenuButton<String>(
-              onSelected: (value) {
-                if (value == 'edit') _edit();
-                if (value == 'delete') _deletePost();
-                if (value == 'report') {
-                  showForumReportSheet(
-                    context,
-                    targetType: 'post',
-                    targetId: post.id,
-                  );
-                }
-              },
-              itemBuilder: (_) => _isMine
-                  ? const [
-                      PopupMenuItem(value: 'edit', child: Text('編輯')),
-                      PopupMenuItem(value: 'delete', child: Text('刪除')),
-                    ]
-                  : const [
-                      PopupMenuItem(value: 'report', child: Text('檢舉')),
-                    ],
+        appBar: AppBar(
+          backgroundColor: AppColors.creamLight,
+          elevation: 0,
+          foregroundColor: AppColors.ink,
+          title: Text(
+            '貼文',
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
             ),
-        ],
+          ),
+          actions: [
+            if (post != null)
+              PopupMenuButton<String>(
+                onSelected: (value) {
+                  if (value == 'edit') _edit();
+                  if (value == 'delete') _deletePost();
+                  if (value == 'report') {
+                    showForumReportSheet(
+                      context,
+                      targetType: 'post',
+                      targetId: post.id,
+                    );
+                  }
+                },
+                itemBuilder: (_) => _isMine
+                    ? const [
+                        PopupMenuItem(value: 'edit', child: Text('編輯')),
+                        PopupMenuItem(value: 'delete', child: Text('刪除')),
+                      ]
+                    : const [PopupMenuItem(value: 'report', child: Text('檢舉'))],
+              ),
+          ],
+        ),
+        body: _buildBody(post),
       ),
-      body: _buildBody(post),
     );
   }
 
   Widget _buildBody(ForumPost? post) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
     final error = _error;
     if (error != null || post == null) {
@@ -327,7 +371,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(error ?? '載入失敗', style: const TextStyle(color: AppColors.inkSoft)),
+            Text(
+              error ?? '載入失敗',
+              style: const TextStyle(color: AppColors.inkSoft),
+            ),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: _load, child: const Text('重試')),
           ],
@@ -408,54 +455,56 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 
   Widget _postBody(ForumPost post) => Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        post.title,
+        style: GoogleFonts.notoSerifTc(
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
+          color: AppColors.ink,
+          height: 1.4,
+        ),
+      ),
+      const SizedBox(height: 6),
+      Text(
+        '${post.author.displayName} · ${post.board.name} · '
+        '${forumRelativeTime(post.createdAt)}',
+        style: const TextStyle(fontSize: 12, color: AppColors.fog),
+      ),
+      const SizedBox(height: 14),
+      Text(
+        post.body,
+        style: const TextStyle(
+          fontSize: 15,
+          color: AppColors.inkSoft,
+          height: 1.7,
+        ),
+      ),
+      if (post.images.isNotEmpty) ...[
+        const SizedBox(height: 14),
+        ForumImageGrid(urls: post.images),
+      ],
+      if (post.tags.isNotEmpty) ...[
+        const SizedBox(height: 12),
+        Wrap(
+          spacing: 6,
+          children: [
+            for (final tag in post.tags)
+              Text(
+                '#${tag.name}',
+                style: GoogleFonts.crimsonPro(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 12,
+                  color: AppColors.primary,
+                ),
+              ),
+          ],
+        ),
+      ],
+      const SizedBox(height: 12),
+      Row(
         children: [
-          Text(
-            post.title,
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 20,
-              fontWeight: FontWeight.w700,
-              color: AppColors.ink,
-              height: 1.4,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '${post.author.displayName} · ${post.board.name} · '
-            '${forumRelativeTime(post.createdAt)}',
-            style: const TextStyle(fontSize: 12, color: AppColors.fog),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            post.body,
-            style: const TextStyle(
-              fontSize: 15,
-              color: AppColors.inkSoft,
-              height: 1.7,
-            ),
-          ),
-          if (post.images.isNotEmpty) ...[
-            const SizedBox(height: 14),
-            ForumImageGrid(urls: post.images),
-          ],
-          if (post.tags.isNotEmpty) ...[
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 6,
-              children: [
-                for (final tag in post.tags)
-                  Text(
-                    '#${tag.name}',
-                    style: GoogleFonts.crimsonPro(
-                      fontStyle: FontStyle.italic,
-                      fontSize: 12,
-                      color: AppColors.primary,
-                    ),
-                  ),
-              ],
-            ),
-          ],
-          const SizedBox(height: 12),
           GestureDetector(
             behavior: HitTestBehavior.opaque,
             onTap: _likePost,
@@ -475,8 +524,20 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               ],
             ),
           ),
+          const SizedBox(width: 18),
+          GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTap: _bookmarkPost,
+            child: Icon(
+              post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+              size: 18,
+              color: post.isBookmarked ? AppColors.primary : AppColors.fog,
+            ),
+          ),
         ],
-      );
+      ),
+    ],
+  );
 
   Widget _inputBar() {
     final target = _replyTarget;
@@ -505,7 +566,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 ),
                 GestureDetector(
                   onTap: () => setState(() => _replyTarget = null),
-                  child: const Icon(Icons.close, size: 16, color: AppColors.fog),
+                  child: const Icon(
+                    Icons.close,
+                    size: 16,
+                    color: AppColors.fog,
+                  ),
                 ),
               ],
             ),
@@ -529,7 +594,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 onPressed: _sending || _inputController.text.trim().isEmpty
                     ? null
                     : _send,
-                icon: const Icon(Icons.send, color: AppColors.primary, size: 20),
+                icon: const Icon(
+                  Icons.send,
+                  color: AppColors.primary,
+                  size: 20,
+                ),
               ),
             ],
           ),

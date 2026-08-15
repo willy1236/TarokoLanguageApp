@@ -90,25 +90,30 @@ class _PlazaScreenState extends State<PlazaScreen> {
   }
 
   Future<void> _openPost(ForumPost post) async {
-    final deleted = await Navigator.push<bool>(
+    final result = await Navigator.push<ForumDetailResult>(
       context,
       MaterialPageRoute(builder: (_) => ForumDetailScreen(postId: post.id)),
     );
-    if (deleted == true) _boardViewKey.currentState?.removePost(post.id);
+    if (result == null) return;
+    if (result.deleted) {
+      _boardViewKey.currentState?.removePost(post.id);
+    } else if (result.post != null) {
+      _boardViewKey.currentState?.replacePost(result.post!);
+    }
   }
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        backgroundColor: AppColors.creamLight,
-        body: Column(
-          children: [
-            _buildHeader(context),
-            if (!_eventsLoading && _events.isNotEmpty) _buildMiniEventCards(),
-            _buildTabBar(),
-            Expanded(child: _buildPostsSection()),
-          ],
-        ),
-      );
+    backgroundColor: AppColors.creamLight,
+    body: Column(
+      children: [
+        _buildHeader(context),
+        if (!_eventsLoading && _events.isNotEmpty) _buildMiniEventCards(),
+        _buildTabBar(),
+        Expanded(child: _buildPostsSection()),
+      ],
+    ),
+  );
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
@@ -156,20 +161,30 @@ class _PlazaScreenState extends State<PlazaScreen> {
               context,
               MaterialPageRoute(builder: (_) => const ForumBookmarksScreen()),
             ),
-            icon: const Icon(Icons.bookmark_border, color: AppColors.ink, size: 20),
+            icon: const Icon(
+              Icons.bookmark_border,
+              color: AppColors.ink,
+              size: 20,
+            ),
           ),
           IconButton(
             onPressed: () async {
               await Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => const ForumNotificationsScreen()),
+                MaterialPageRoute(
+                  builder: (_) => const ForumNotificationsScreen(),
+                ),
               );
               if (mounted) _loadUnread();
             },
             icon: Stack(
               clipBehavior: Clip.none,
               children: [
-                const Icon(Icons.notifications_none, color: AppColors.ink, size: 20),
+                const Icon(
+                  Icons.notifications_none,
+                  color: AppColors.ink,
+                  size: 20,
+                ),
                 if (_unread > 0)
                   Positioned(
                     right: -2,
@@ -230,24 +245,24 @@ class _PlazaScreenState extends State<PlazaScreen> {
   }
 
   Widget _buildTabBar() => Container(
-        decoration: const BoxDecoration(
-          border: Border(bottom: BorderSide(color: AppColors.creamDeep)),
-        ),
-        child: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: [
-              for (final board in _boards)
-                _BoardTab(
-                  label: board.name,
-                  selected: board.slug == _boardSlug,
-                  onTap: () => setState(() => _boardSlug = board.slug),
-                ),
-            ],
-          ),
-        ),
-      );
+    decoration: const BoxDecoration(
+      border: Border(bottom: BorderSide(color: AppColors.creamDeep)),
+    ),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          for (final board in _boards)
+            _BoardTab(
+              label: board.name,
+              selected: board.slug == _boardSlug,
+              onTap: () => setState(() => _boardSlug = board.slug),
+            ),
+        ],
+      ),
+    ),
+  );
 
   Widget _buildMiniEventCards() {
     return Column(
@@ -287,7 +302,9 @@ class _PlazaScreenState extends State<PlazaScreen> {
     if (_boardsLoading) {
       return const Padding(
         padding: EdgeInsets.symmetric(vertical: 40),
-        child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
       );
     }
     if (slug == null) {
@@ -300,6 +317,7 @@ class _PlazaScreenState extends State<PlazaScreen> {
       key: ValueKey(slug),
       child: ForumBoardView(
         key: _boardViewKey,
+        reloadKey: slug,
         loadPage: ({cursor, after}) =>
             ForumService.posts(slug, cursor: cursor, after: after),
         toggleLike: ForumService.likePost,
@@ -367,8 +385,18 @@ class _MiniEventCard extends StatelessWidget {
   const _MiniEventCard({required this.event, required this.onTap});
 
   static const _months = [
-    '1月', '2月', '3月', '4月', '5月', '6月',
-    '7月', '8月', '9月', '10月', '11月', '12月',
+    '1月',
+    '2月',
+    '3月',
+    '4月',
+    '5月',
+    '6月',
+    '7月',
+    '8月',
+    '9月',
+    '10月',
+    '11月',
+    '12月',
   ];
 
   @override
@@ -405,7 +433,9 @@ class _MiniEventCard extends StatelessWidget {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: event.isJoined ? AppColors.primary : AppColors.moss,
+                        color: event.isJoined
+                            ? AppColors.primary
+                            : AppColors.moss,
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Column(
@@ -454,7 +484,9 @@ class _MiniEventCard extends StatelessWidget {
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
                               fontSize: 10,
-                              color: AppColors.creamLight.withValues(alpha: 0.65),
+                              color: AppColors.creamLight.withValues(
+                                alpha: 0.65,
+                              ),
                               letterSpacing: 0.8,
                             ),
                           ),
@@ -476,9 +508,14 @@ class _MiniEventCard extends StatelessWidget {
                       ),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                        border: Border.all(
+                          color: AppColors.gold.withValues(alpha: 0.5),
+                        ),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: Text(

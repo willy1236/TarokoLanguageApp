@@ -12,18 +12,15 @@ import '../../models/forum_models.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'widgets/forum_post_card.dart';
 
-typedef ForumPageLoader = Future<ForumPostPage> Function({
-  int? cursor,
-  int? after,
-});
-typedef ForumLikeToggler = Future<({bool liked, int likeCount})> Function(
-  int postId, {
-  required bool like,
-});
-typedef ForumBookmarkToggler = Future<bool> Function(
-  int postId, {
-  required bool add,
-});
+typedef ForumPageLoader =
+    Future<ForumPostPage> Function({int? cursor, int? after});
+typedef ForumLikeToggler =
+    Future<({bool liked, int likeCount})> Function(
+      int postId, {
+      required bool like,
+    });
+typedef ForumBookmarkToggler =
+    Future<bool> Function(int postId, {required bool add});
 
 class ForumBoardView extends StatefulWidget {
   final ForumPageLoader loadPage;
@@ -33,6 +30,11 @@ class ForumBoardView extends StatefulWidget {
   final String emptyMessage;
   final bool prependOnRefresh;
 
+  /// 資料來源的身分識別。closure 之間永遠不會相等（即使程式碼相同），
+  /// 所以是否要整份重載改用這個值比對，而不是比較 loadPage 本身。
+  /// null 代表這個畫面不需要身分驅動的重載（例如收藏頁）。
+  final String? reloadKey;
+
   const ForumBoardView({
     super.key,
     required this.loadPage,
@@ -41,6 +43,7 @@ class ForumBoardView extends StatefulWidget {
     required this.onOpenPost,
     this.emptyMessage = '這個看板還沒有貼文',
     this.prependOnRefresh = true,
+    this.reloadKey,
   });
 
   @override
@@ -67,8 +70,9 @@ class ForumBoardViewState extends State<ForumBoardView> {
   @override
   void didUpdateWidget(covariant ForumBoardView oldWidget) {
     super.didUpdateWidget(oldWidget);
-    // 切換看板時 loadPage 會換成新的 closure，須整份重載。
-    if (oldWidget.loadPage != widget.loadPage) _load();
+    // reloadKey 代表資料來源的身分；closure 本身即使程式碼相同也永遠不相等，
+    // 比較它會在無關的 setState（例如父層更新未讀數）時誤觸發整份重載。
+    if (oldWidget.reloadKey != widget.reloadKey) _load();
   }
 
   @override
@@ -169,12 +173,11 @@ class ForumBoardViewState extends State<ForumBoardView> {
       final result = await widget.toggleLike(post.id, like: !post.isLiked);
       if (!mounted) return;
       // 以後端算出的真實計數校正，不沿用樂觀值。
-      setState(() => _replace(
-            original.copyWith(
-              isLiked: result.liked,
-              likeCount: result.likeCount,
-            ),
-          ));
+      setState(
+        () => _replace(
+          original.copyWith(isLiked: result.liked, likeCount: result.likeCount),
+        ),
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _replace(original));
@@ -205,6 +208,11 @@ class ForumBoardViewState extends State<ForumBoardView> {
       _pinned.removeWhere((p) => p.id == postId);
       _posts.removeWhere((p) => p.id == postId);
     });
+  }
+
+  /// 詳情頁把更新後的貼文（讚數、留言數、收藏狀態…）帶回來時，就地替換這一筆。
+  void replacePost(ForumPost post) {
+    setState(() => _replace(post));
   }
 
   @override
@@ -278,56 +286,56 @@ class _ForumEmptyState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-        child: Column(
-          children: [
-            SizedBox(
-              width: 76,
-              height: 76,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      color: AppColors.creamDeep,
-                      shape: BoxShape.circle,
-                    ),
-                    child: SizedBox.expand(),
-                  ),
-                  Positioned(
-                    right: -6,
-                    top: -6,
-                    child: Opacity(
-                      opacity: 0.13,
-                      child: TrukuDiamond(size: 40, color: AppColors.primary),
-                    ),
-                  ),
-                  const Icon(
-                    Icons.forum_outlined,
-                    color: AppColors.primary,
-                    size: 34,
-                  ),
-                ],
+    padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+    child: Column(
+      children: [
+        SizedBox(
+          width: 76,
+          height: 76,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              const DecoratedBox(
+                decoration: BoxDecoration(
+                  color: AppColors.creamDeep,
+                  shape: BoxShape.circle,
+                ),
+                child: SizedBox.expand(),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              message,
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.ink,
+              Positioned(
+                right: -6,
+                top: -6,
+                child: Opacity(
+                  opacity: 0.13,
+                  child: TrukuDiamond(size: 40, color: AppColors.primary),
+                ),
               ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              '下拉重新整理，或成為第一位分享的人。',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: AppColors.fog),
-            ),
-          ],
+              const Icon(
+                Icons.forum_outlined,
+                color: AppColors.primary,
+                size: 34,
+              ),
+            ],
+          ),
         ),
-      );
+        const SizedBox(height: 16),
+        Text(
+          message,
+          style: GoogleFonts.notoSerifTc(
+            fontSize: 18,
+            fontWeight: FontWeight.w700,
+            color: AppColors.ink,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          '下拉重新整理，或成為第一位分享的人。',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: AppColors.fog),
+        ),
+      ],
+    ),
+  );
 }
 
 class _ForumErrorState extends StatelessWidget {
@@ -338,30 +346,26 @@ class _ForumErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-        child: Column(
-          children: [
-            const Icon(
-              Icons.cloud_off_outlined,
-              size: 40,
-              color: AppColors.fog,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: const TextStyle(color: AppColors.inkSoft),
-            ),
-            const SizedBox(height: 14),
-            OutlinedButton(
-              onPressed: onRetry,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-              ),
-              child: const Text('重試'),
-            ),
-          ],
+    padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+    child: Column(
+      children: [
+        const Icon(Icons.cloud_off_outlined, size: 40, color: AppColors.fog),
+        const SizedBox(height: 12),
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppColors.inkSoft),
         ),
-      );
+        const SizedBox(height: 14),
+        OutlinedButton(
+          onPressed: onRetry,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.primary,
+            side: const BorderSide(color: AppColors.primary),
+          ),
+          child: const Text('重試'),
+        ),
+      ],
+    ),
+  );
 }
