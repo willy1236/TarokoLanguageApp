@@ -284,3 +284,31 @@ v2 後端規格 §1 將書籤列為 YAGNI，§7.0 拆除了 v1 的 `forum_bookma
 | `image_picker` | 從相簿選圖 / 拍照 |
 | `flutter_image_compress` | 上傳前壓縮至後端 5MB 限制內（後端不做伺服器端壓縮，見後端規格 §5） |
 | `cached_network_image` | 貼文附圖快取，避免列表捲動時重複下載 |
+
+---
+
+## 14. 實作偏離記錄
+
+實作過程中與本規格不同的決定，連同理由記錄於此。
+
+| 項目 | 規格原本 | 實際做法 | 理由 |
+|---|---|---|---|
+| `http_parser` 依賴 | §13 未列 | 加入 `http_parser: ^4.1.2` | multipart 每個 part 必須帶 `Content-Type`，後端 multer 的 `fileFilter` 以它過濾；`http` 預設送 `application/octet-stream` 會被拒收 |
+| `ApiClient` 可測試性 | 未提 | 新增可注入的 `static http.Client httpClient` | service 的端點、query、multipart 組成需在無網路下驗證；原本直接呼叫 `http` 頂層函式無法替換傳輸層 |
+| `ForumBoardView.prependOnRefresh` | §7.2 只描述下拉刷新用 `after` 前置 | 新增參數，預設 `true`；收藏頁與搜尋頁傳 `false` 改為整份重載 | 收藏與搜尋沒有「比某 id 更新」的語意，硬套前置模型會讓下拉刷新把整頁重複一次 |
+| `ForumBoardView.reloadKey` | 未提 | 以身分字串比對決定是否重載，取代比對 `loadPage` closure | Dart 的 closure 不會相等，原本任何 `setState` 都會讓列表退回第一頁 |
+| 詳情頁的狀態回傳 | §7.4 未定義 | 新增 `onPostChanged` 回呼即時通知列表，刪除仍走 pop 結果 | 先前以 `PopScope(canPop: false)` 攜帶結果，會讓 iOS 邊緣滑動返回整個失效（`isPopGestureEnabled` 在 `doNotPop` 時為 false） |
+| 詳情頁的書籤鈕 | §7.4 未列，§12 步驟 8 有列 | 已實作，與按讚並列 | 依 §12 |
+| 發文附圖排序 | §7.5「縮圖列可刪可排序」 | **只做刪除，未做排序** | 未實作，列為後續項目 |
+| 廣場頁 `PATAS · 族人發文` 小標 | §7.1 保留 | 已移除 | 看板 tab 已標示內容分類，小標成為重複資訊 |
+| 上傳進度 | §7.5「顯示進度」 | 只顯示「送出中…」文字 | 未實作進度百分比，列為後續項目 |
+
+### 已知後續項目（不阻擋合併）
+
+- `ForumDetailScreen` 無 widget 測試；風險最高的三處為回覆層級收斂、按讚回滾、`POST_NOT_FOUND` 導回並移除。
+- `ForumComposeScreen` 無 widget 測試，僅驗證函式 `forumComposeError` 有覆蓋。
+- `ForumImageGrid` / `ForumImageViewer` 無測試；`ForumImageViewer` 的 `PageController` 建在 `build()` 內未 dispose，旋轉螢幕會跳回起始頁。
+- FCM 的論壇／事件推播分流無自動化測試；`_parseForumPayload` 在 `post_id` 無法解析時整則丟棄，事件提醒路徑則仍會顯示通知只是不能點。
+- 搜尋頁改用持久的 `GlobalKey` 後，切換關鍵字時舊查詢的第二頁回應可能落進新結果（窄競態）。
+- `ForumBoardView` 的按讚／收藏完成時以 await 前的快照重建貼文，兩者同時進行會互相覆蓋（詳情頁已修，列表未修）。
+- `ForumService.posts()` 的 cursor/after 互斥只用 `assert`，release build 會被移除。
