@@ -59,7 +59,9 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     if (date == null || !mounted) return;
     final t = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(_startsAt ?? now.add(const Duration(hours: 1))),
+      initialTime: TimeOfDay.fromDateTime(
+        _startsAt ?? now.add(const Duration(hours: 1)),
+      ),
       helpText: '選擇活動時間',
     );
     if (t == null || !mounted) return;
@@ -86,7 +88,13 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     );
     if (t == null || !mounted) return;
     setState(() {
-      _registrationDeadline = DateTime(date.year, date.month, date.day, t.hour, t.minute);
+      _registrationDeadline = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        t.hour,
+        t.minute,
+      );
     });
   }
 
@@ -116,7 +124,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       setState(() => _error = '活動時間需為未來');
       return;
     }
-    if (_registrationDeadline != null && _registrationDeadline!.isAfter(_startsAt!)) {
+    if (_registrationDeadline != null &&
+        _registrationDeadline!.isAfter(_startsAt!)) {
       setState(() => _error = '報名截止時間不能晚於活動開始時間');
       return;
     }
@@ -147,9 +156,9 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         category: _category,
       );
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('活動已發起')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('活動已發起')));
       Navigator.pop(context, true); // 通知列表刷新
     } catch (e) {
       if (!mounted) return;
@@ -176,7 +185,12 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                   _textField(_title, hint: '例如：青年族語營', maxLength: 100),
                   const SizedBox(height: 18),
                   _label('活動介紹', required: true),
-                  _textField(_desc, hint: '介紹活動內容、流程、注意事項…', maxLines: 4, maxLength: 2000),
+                  _textField(
+                    _desc,
+                    hint: '介紹活動內容、流程、注意事項…',
+                    maxLines: 4,
+                    maxLength: 2000,
+                  ),
                   const SizedBox(height: 18),
                   _label('地點名稱', required: true),
                   _textField(_location, hint: '例如：秀林部落活動中心', maxLength: 200),
@@ -195,19 +209,29 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                   ),
                   const SizedBox(height: 18),
                   _label('名額上限', required: false),
-                  _textField(_maxParticipants,
-                      hint: '留空 = 不限名額',
-                      keyboardType: TextInputType.number,
-                      maxLength: 6),
+                  _textField(
+                    _maxParticipants,
+                    hint: '留空 = 不限名額',
+                    keyboardType: TextInputType.number,
+                    maxLength: 6,
+                  ),
                   const SizedBox(height: 18),
                   _label('分類', required: false),
                   _buildCategoryChips(),
                   const SizedBox(height: 18),
                   _label('聯絡 Email', required: false),
-                  _textField(_email, hint: '選填', keyboardType: TextInputType.emailAddress),
+                  _textField(
+                    _email,
+                    hint: '選填',
+                    keyboardType: TextInputType.emailAddress,
+                  ),
                   const SizedBox(height: 18),
                   _label('聯絡電話', required: false),
-                  _textField(_phone, hint: '選填', keyboardType: TextInputType.phone),
+                  _textField(
+                    _phone,
+                    hint: '選填',
+                    keyboardType: TextInputType.phone,
+                  ),
                   if (_error != null) ...[
                     const SizedBox(height: 16),
                     _buildErrorBox(_error!),
@@ -231,9 +255,14 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             onPressed: () => Navigator.pop(context),
             icon: const Icon(Icons.arrow_back, color: AppColors.ink),
           ),
-          Text('發起活動',
-              style: GoogleFonts.notoSerifTc(
-                  fontSize: 19, fontWeight: FontWeight.w700, color: AppColors.ink)),
+          Text(
+            '發起活動',
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 19,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
+            ),
+          ),
         ],
       ),
     );
@@ -244,18 +273,30 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
         children: [
-          Text(text,
-              style: GoogleFonts.notoSerifTc(
-                  fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.ink, letterSpacing: 1.0)),
+          Text(
+            text,
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
+              letterSpacing: 1.0,
+            ),
+          ),
           if (required)
             const Padding(
               padding: EdgeInsets.only(left: 4),
-              child: Text('*', style: TextStyle(fontSize: 14, color: AppColors.primary)),
+              child: Text(
+                '*',
+                style: TextStyle(fontSize: 14, color: AppColors.primary),
+              ),
             )
           else
             Padding(
               padding: const EdgeInsets.only(left: 6),
-              child: Text('選填', style: TextStyle(fontSize: 11, color: AppColors.fog)),
+              child: Text(
+                '選填',
+                style: TextStyle(fontSize: 11, color: AppColors.fog),
+              ),
             ),
         ],
       ),
@@ -340,7 +381,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               color: selected ? AppColors.primary : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                  color: selected ? AppColors.primary : AppColors.creamDeep),
+                color: selected ? AppColors.primary : AppColors.creamDeep,
+              ),
             ),
             child: Text(
               c,
@@ -368,11 +410,21 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Icon(Icons.error_outline, size: 16, color: AppColors.dangerDark),
+          const Icon(
+            Icons.error_outline,
+            size: 16,
+            color: AppColors.dangerDark,
+          ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(message,
-                style: TextStyle(fontSize: 12.5, color: AppColors.dangerDark, height: 1.5)),
+            child: Text(
+              message,
+              style: TextStyle(
+                fontSize: 12.5,
+                color: AppColors.dangerDark,
+                height: 1.5,
+              ),
+            ),
           ),
         ],
       ),
@@ -391,7 +443,9 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
-            color: _submitting ? AppColors.fog.withValues(alpha: 0.4) : AppColors.primary,
+            color: _submitting
+                ? AppColors.fog.withValues(alpha: 0.4)
+                : AppColors.primary,
             borderRadius: BorderRadius.circular(14),
           ),
           child: Center(
@@ -400,14 +454,19 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.creamLight),
+                      strokeWidth: 2,
+                      color: AppColors.creamLight,
+                    ),
                   )
-                : Text('發起活動',
+                : Text(
+                    '發起活動',
                     style: GoogleFonts.notoSerifTc(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.creamLight,
-                        letterSpacing: 2.0)),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.creamLight,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
           ),
         ),
       ),

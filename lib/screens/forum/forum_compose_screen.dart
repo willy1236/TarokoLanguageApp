@@ -287,45 +287,52 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     ),
   );
 
-  Widget _boardSegment() => SingleChildScrollView(
-    scrollDirection: Axis.horizontal,
+  /// 看板選擇採 segmented 樣式：整條淺褐底槽，選中的那格浮起成淺色卡片。
+  /// 各格等寬，看板名稱過長時省略——名稱長度由後端 seed 決定，前端不再自己縮寫。
+  Widget _boardSegment() => Container(
+    padding: const EdgeInsets.all(4),
+    decoration: BoxDecoration(
+      color: AppColors.cream,
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: AppColors.creamDeep),
+    ),
     child: Row(
       children: [
         for (final board in widget.boards)
-          Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              // 編輯模式不能換看板：後端 PATCH 不接受 board_id。
-              onTap: _isEditing
-                  ? null
-                  : () => setState(() => _boardId = board.id),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 7,
-                ),
-                decoration: BoxDecoration(
-                  color: board.id == _boardId
-                      ? AppColors.primary
-                      : AppColors.cream,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: AppColors.creamDeep),
-                ),
-                child: Text(
-                  board.name,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 13,
-                    color: board.id == _boardId
-                        ? AppColors.creamLight
-                        : AppColors.inkSoft,
-                  ),
-                ),
-              ),
-            ),
-          ),
+          Expanded(child: _boardSegmentTab(board)),
       ],
     ),
   );
+
+  Widget _boardSegmentTab(ForumBoard board) {
+    final selected = board.id == _boardId;
+    return GestureDetector(
+      // 編輯模式不能換看板：後端 PATCH 不接受 board_id。
+      onTap: _isEditing ? null : () => setState(() => _boardId = board.id),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.creamLight : null,
+          borderRadius: BorderRadius.circular(9),
+          border: selected
+              ? Border.all(color: AppColors.creamDeep)
+              : Border.all(color: Colors.transparent),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          board.name,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          textAlign: TextAlign.center,
+          style: GoogleFonts.notoSerifTc(
+            fontSize: 13,
+            fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
+            color: selected ? AppColors.primary : AppColors.fog,
+          ),
+        ),
+      ),
+    );
+  }
 
   Widget _tagSection() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,

@@ -303,6 +303,23 @@ v2 後端規格 §1 將書籤列為 YAGNI，§7.0 拆除了 v1 的 `forum_bookma
 | 廣場頁 `PATAS · 族人發文` 小標 | §7.1 保留 | 已移除 | 看板 tab 已標示內容分類，小標成為重複資訊 |
 | 上傳進度 | §7.5「顯示進度」 | 只顯示「送出中…」文字 | 未實作進度百分比，列為後續項目 |
 
+### 跨看板貼文（廣場的「全部」tab，後端待補）
+
+廣場的看板 tab 最前面是「全部」，且為進頁預設。v2 後端只有 `GET /api/forum/boards/:slug/posts`，沒有跨看板端點，因此需要後端補上一支，約定與看板貼文同構：
+
+| 項目 | 約定 |
+|---|---|
+| 端點 | `GET /api/forum/posts?cursor=&after=&limit=` |
+| 回傳 | `{ pinned, posts, next_cursor }`，貼文結構與 `enrichPosts()` 完全相同 |
+| 排序 | 與看板貼文一致：置頂在前，其餘依 id 遞減 |
+| 分頁 | keyset，`cursor` 取更舊、`after` 取更新，兩者互斥 |
+
+**端點上線前**：廣場預設停在「全部」，會顯示錯誤與重試。改成預設停在第一個看板只需把 `plaza_screen.dart` 的 `_boardSlug` 初值設為 `_boards.first.slug`。
+
+### 分類（看板）名稱
+
+看板名稱一律由後端 `forum_boards.name` 提供，前端直接顯示，**不做前端縮寫對照表**。`feature/forum-dcard` 把分類寫死在前端（`_categories` 常數），分類一改就要改 App 送審，v2 改用資料表正是為了解決這件事。要短名稱就改 seed 的 `name` 欄位。
+
 ### 已知後續項目（不阻擋合併）
 
 - `ForumDetailScreen` 無 widget 測試；風險最高的三處為回覆層級收斂、按讚回滾、`POST_NOT_FOUND` 導回並移除。

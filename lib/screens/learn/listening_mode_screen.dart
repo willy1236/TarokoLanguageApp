@@ -105,7 +105,10 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                 if (levels.isEmpty)
                   Text(
                     '目前沒有可用的級別',
-                    style: GoogleFonts.notoSansTc(fontSize: 14, color: AppColors.fog),
+                    style: GoogleFonts.notoSansTc(
+                      fontSize: 14,
+                      color: AppColors.fog,
+                    ),
                   )
                 else
                   Wrap(

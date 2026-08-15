@@ -17,7 +17,9 @@ class UserService {
   static void clearCache() => currentUid = null;
 
   static Future<UserModel> updateMe({required String displayName}) async {
-    final data = await ApiClient.patch(ApiConfig.me, {'display_name': displayName});
+    final data = await ApiClient.patch(ApiConfig.me, {
+      'display_name': displayName,
+    });
     return UserModel.fromJson(data);
   }
 }

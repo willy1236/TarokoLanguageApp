@@ -73,6 +73,29 @@ class ForumService {
     return ForumPostPage.fromJson(data);
   }
 
+  /// 跨看板的貼文（廣場的「全部」tab）。
+  ///
+  /// 後端端點尚未實作，約定與看板貼文同構：
+  ///   GET /api/forum/posts?cursor=&after=&limit=
+  ///   回傳 { pinned, posts, next_cursor }，貼文結構與 enrichPosts() 相同。
+  /// 端點上線前這個 tab 會顯示錯誤與重試，屬預期狀態。
+  static Future<ForumPostPage> allPosts({
+    int? cursor,
+    int? after,
+    int limit = 20,
+  }) async {
+    assert(cursor == null || after == null, 'cursor 與 after 不可同時使用');
+    final data = await ApiClient.get(
+      ApiConfig.forumPosts,
+      query: {
+        if (cursor != null) 'cursor': '$cursor',
+        if (after != null) 'after': '$after',
+        'limit': '$limit',
+      },
+    );
+    return ForumPostPage.fromJson(data);
+  }
+
   static Future<ForumPost> post(int id) async {
     final data = await ApiClient.get(ApiConfig.forumPost(id));
     return ForumPost.fromJson(data['post'] as Map<String, dynamic>);
@@ -160,22 +183,21 @@ class ForumService {
   static Future<({bool liked, int likeCount})> likePost(
     int id, {
     required bool like,
-  }) =>
-      _toggleLike(ApiConfig.forumPostLike(id), like: like);
+  }) => _toggleLike(ApiConfig.forumPostLike(id), like: like);
 
   static Future<({bool liked, int likeCount})> likeComment(
     int id, {
     required bool like,
-  }) =>
-      _toggleLike(ApiConfig.forumCommentLike(id), like: like);
+  }) => _toggleLike(ApiConfig.forumCommentLike(id), like: like);
 
   /// 回傳後端算出的真實計數，呼叫端不要自行累加——樂觀更新只是暫時值。
   static Future<({bool liked, int likeCount})> _toggleLike(
     String path, {
     required bool like,
   }) async {
-    final data =
-        like ? await ApiClient.post(path) : await ApiClient.delete(path);
+    final data = like
+        ? await ApiClient.post(path)
+        : await ApiClient.delete(path);
     return (
       liked: data['liked'] == true,
       likeCount: int.tryParse(data['like_count']?.toString() ?? '') ?? 0,
@@ -202,11 +224,14 @@ class ForumService {
     if (trimmed.length < searchMin || trimmed.length > searchMax) {
       throw ArgumentError('搜尋關鍵字須為 $searchMin-$searchMax 字');
     }
-    final data = await ApiClient.get(ApiConfig.forumSearch, query: {
-      'q': trimmed,
-      if (board != null && board.isNotEmpty) 'board': board,
-      if (cursor != null) 'cursor': '$cursor',
-    });
+    final data = await ApiClient.get(
+      ApiConfig.forumSearch,
+      query: {
+        'q': trimmed,
+        if (board != null && board.isNotEmpty) 'board': board,
+        if (cursor != null) 'cursor': '$cursor',
+      },
+    );
     return ForumPostPage.fromJson(data);
   }
 
@@ -217,12 +242,11 @@ class ForumService {
     required String targetType,
     required int targetId,
     required String reason,
-  }) =>
-      ApiClient.post(ApiConfig.forumReports, {
-        'target_type': targetType,
-        'target_id': targetId,
-        'reason': reason,
-      });
+  }) => ApiClient.post(ApiConfig.forumReports, {
+    'target_type': targetType,
+    'target_id': targetId,
+    'reason': reason,
+  });
 
   // ── 通知 ──────────────────────────────────────────────────
 
@@ -235,17 +259,19 @@ class ForumService {
   }
 
   /// 不帶 [ids] 代表全部標記已讀。
-  static Future<void> markRead({List<int>? ids}) =>
-      ApiClient.post(ApiConfig.forumNotificationsRead, {
-        if (ids != null) 'ids': ids,
-      });
+  static Future<void> markRead({List<int>? ids}) => ApiClient.post(
+    ApiConfig.forumNotificationsRead,
+    {if (ids != null) 'ids': ids},
+  );
 
   // ── 書籤（後端待補，規格 §9）────────────────────────────────
 
   /// 回傳操作後的收藏狀態。端點上線前會拿到 404，由畫面顯示錯誤訊息。
   static Future<bool> bookmarkPost(int id, {required bool add}) async {
     final path = ApiConfig.forumPostBookmark(id);
-    final data = add ? await ApiClient.post(path) : await ApiClient.delete(path);
+    final data = add
+        ? await ApiClient.post(path)
+        : await ApiClient.delete(path);
     return data['bookmarked'] == true;
   }
 

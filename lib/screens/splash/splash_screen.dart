@@ -18,10 +18,12 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
     Future.delayed(const Duration(milliseconds: 2500), () async {
       if (!mounted) return;
       final loggedIn = await AuthService.isLoggedIn();
@@ -49,7 +51,11 @@ class _SplashScreenState extends State<SplashScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 stops: [0.0, 0.6, 1.0],
-                colors: [AppColors.midnight, AppColors.primaryDeep, AppColors.primary],
+                colors: [
+                  AppColors.midnight,
+                  AppColors.primaryDeep,
+                  AppColors.primary,
+                ],
               ),
             ),
           ),
@@ -59,47 +65,68 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Opacity(
               opacity: 0.18,
               child: CustomPaint(
-                painter: const TrukuWeavePainter(color: AppColors.gold, opacity: 1.0),
+                painter: const TrukuWeavePainter(
+                  color: AppColors.gold,
+                  opacity: 1.0,
+                ),
               ),
             ),
           ),
 
           // 山脈剪影（後層）
           Positioned(
-            bottom: 0, left: 0, right: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
             child: Opacity(
               opacity: 0.85,
               child: CustomPaint(
                 size: Size(size.width, 180),
-                painter: const TrukuMountainsPainter(color: Color(0xFF0E0604), opacity: 0.7),
+                painter: const TrukuMountainsPainter(
+                  color: Color(0xFF0E0604),
+                  opacity: 0.7,
+                ),
               ),
             ),
           ),
 
           // 山脈剪影（前層）
           Positioned(
-            bottom: 30, left: 0, right: 0,
+            bottom: 30,
+            left: 0,
+            right: 0,
             child: Opacity(
               opacity: 0.6,
               child: CustomPaint(
                 size: Size(size.width, 120),
-                painter: const TrukuMountainsPainter(color: Color(0xFF0E0604), opacity: 0.5),
+                painter: const TrukuMountainsPainter(
+                  color: Color(0xFF0E0604),
+                  opacity: 0.5,
+                ),
               ),
             ),
           ),
 
           // 頂部菱形鏈（top: 90）
           const Positioned(
-            top: 90, left: 0, right: 0,
+            top: 90,
+            left: 0,
+            right: 0,
             child: Center(
-              child: TrukuChain(count: 9, size: 10, color: AppColors.gold, gap: 6),
+              child: TrukuChain(
+                count: 9,
+                size: 10,
+                color: AppColors.gold,
+                gap: 6,
+              ),
             ),
           ),
 
           // 中央 logo 區（top: 32%）
           Positioned(
             top: size.height * 0.32,
-            left: 0, right: 0,
+            left: 0,
+            right: 0,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -107,7 +134,8 @@ class _SplashScreenState extends State<SplashScreen> {
                   alignment: Alignment.center,
                   children: [
                     Container(
-                      width: 220, height: 220,
+                      width: 220,
+                      height: 220,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
@@ -138,14 +166,21 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const TrukuChain(count: 5, size: 8, color: AppColors.gold, gap: 5),
+                const TrukuChain(
+                  count: 5,
+                  size: 8,
+                  color: AppColors.gold,
+                  gap: 5,
+                ),
               ],
             ),
           ),
 
           // 底部 tagline（bottom: 70）
           Positioned(
-            bottom: 70, left: 0, right: 0,
+            bottom: 70,
+            left: 0,
+            right: 0,
             child: Text(
               '說我們的話 · 走我們的山',
               textAlign: TextAlign.center,

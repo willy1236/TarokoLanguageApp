@@ -31,11 +31,10 @@ class EventService {
     int page = 1,
     int pageSize = 20,
   }) async {
-    final data = await ApiClient.get(ApiConfig.events, query: {
-      'scope': scope,
-      'page': '$page',
-      'page_size': '$pageSize',
-    });
+    final data = await ApiClient.get(
+      ApiConfig.events,
+      query: {'scope': scope, 'page': '$page', 'page_size': '$pageSize'},
+    );
     final list = data['events'] as List<dynamic>? ?? const [];
     return list
         .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
@@ -78,8 +77,9 @@ class EventService {
       'starts_at': startsAt.toUtc().toIso8601String(),
     };
     if (registrationDeadline != null) {
-      body['registration_deadline'] =
-          registrationDeadline.toUtc().toIso8601String();
+      body['registration_deadline'] = registrationDeadline
+          .toUtc()
+          .toIso8601String();
     }
     if (contactEmail != null && contactEmail.trim().isNotEmpty) {
       body['contact_email'] = contactEmail.trim();

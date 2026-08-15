@@ -28,7 +28,13 @@ class _PlazaScreenState extends State<PlazaScreen> {
   List<EventSummary> _events = [];
 
   List<ForumBoard> _boards = [];
+
+  /// 目前選到的看板 slug；null 代表「全部」（跨看板），也是預設。
   String? _boardSlug;
+
+  /// 「全部」沒有 slug，借一個不可能與看板 slug 相撞的字串當重載識別。
+  static const _allBoardsKey = '__all__';
+
   bool _boardsLoading = true;
   int _unread = 0;
   final _boardViewKey = GlobalKey<ForumBoardViewState>();
@@ -61,7 +67,7 @@ class _PlazaScreenState extends State<PlazaScreen> {
       if (!mounted) return;
       setState(() {
         _boards = boards;
-        _boardSlug = boards.isEmpty ? null : boards.first.slug;
+        // 預設停在「全部」，不自動選第一個看板。
         _boardsLoading = false;
       });
     } on ApiException {
@@ -274,6 +280,12 @@ class _PlazaScreenState extends State<PlazaScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
+          // slug 為 null 代表「全部」，排在最前面且是預設。
+          _BoardTab(
+            label: '全部',
+            selected: _boardSlug == null,
+            onTap: () => setState(() => _boardSlug = null),
+          ),
           for (final board in _boards)
             _BoardTab(
               label: board.name,
@@ -328,19 +340,17 @@ class _PlazaScreenState extends State<PlazaScreen> {
         ),
       );
     }
-    if (slug == null) {
-      return const Padding(
-        padding: EdgeInsets.fromLTRB(20, 40, 20, 40),
-        child: Text('目前沒有可用的看板', style: TextStyle(color: AppColors.fog)),
-      );
-    }
+    // slug 為 null 是「全部」，走跨看板端點；否則走該看板的貼文。
+    final reloadKey = slug ?? _allBoardsKey;
     return KeyedSubtree(
-      key: ValueKey(slug),
+      key: ValueKey(reloadKey),
       child: ForumBoardView(
         key: _boardViewKey,
-        reloadKey: slug,
-        loadPage: ({cursor, after}) =>
-            ForumService.posts(slug, cursor: cursor, after: after),
+        reloadKey: reloadKey,
+        emptyMessage: slug == null ? '還沒有人發文' : '這個分類還沒有貼文',
+        loadPage: ({cursor, after}) => slug == null
+            ? ForumService.allPosts(cursor: cursor, after: after)
+            : ForumService.posts(slug, cursor: cursor, after: after),
         toggleLike: ForumService.likePost,
         toggleBookmark: ForumService.bookmarkPost,
         onOpenPost: _openPost,

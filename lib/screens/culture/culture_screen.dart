@@ -44,8 +44,9 @@ class _CultureScreenState extends State<CultureScreen> {
     _featuredFuture = _fetchFeatured();
   }
 
-  String? get _selectedArticleCategory =>
-      _articleChipIndex == 0 ? null : ArticleCategory.all[_articleChipIndex - 1];
+  String? get _selectedArticleCategory => _articleChipIndex == 0
+      ? null
+      : ArticleCategory.all[_articleChipIndex - 1];
 
   Future<ArticleListResponse> _fetchArticles() {
     return ArticleService.fetchArticles(
@@ -62,8 +63,10 @@ class _CultureScreenState extends State<CultureScreen> {
 
   // 後端無獨立「精選」欄位/endpoint，改用本週熱門第一名頂替本週精選。
   Future<VideoSummary?> _fetchFeatured() async {
-    final res =
-        await VideoService.fetchVideos(sort: 'weekly_popular', pageSize: 1);
+    final res = await VideoService.fetchVideos(
+      sort: 'weekly_popular',
+      pageSize: 1,
+    );
     return res.videos.isEmpty ? null : res.videos.first;
   }
 
@@ -129,7 +132,11 @@ class _CultureScreenState extends State<CultureScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     stops: [0.0, 0.5, 1.0],
-                    colors: [Colors.transparent, Colors.transparent, AppColors.midnight],
+                    colors: [
+                      Colors.transparent,
+                      Colors.transparent,
+                      AppColors.midnight,
+                    ],
                   ),
                 ),
               ),
@@ -156,11 +163,11 @@ class _CultureScreenState extends State<CultureScreen> {
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.black.withValues(alpha: 0.4),
-                        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+                        border: Border.all(
+                          color: AppColors.gold.withValues(alpha: 0.25),
+                        ),
                       ),
-                      child: const Center(
-                        child: _SearchIcon(),
-                      ),
+                      child: const Center(child: _SearchIcon()),
                     ),
                   ],
                 ),
@@ -256,15 +263,15 @@ class _CultureScreenState extends State<CultureScreen> {
   // ── Tab Bar ───────────────────────────────────────────────────────────────
 
   Widget _buildTabBar() {
-    final tabs = [
-      ('影音', 'patas hngak'),
-      ('文章', 'patas kari'),
-    ];
+    final tabs = [('影音', 'patas hngak'), ('文章', 'patas kari')];
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppColors.cream.withValues(alpha: 0.09), width: 1),
+          bottom: BorderSide(
+            color: AppColors.cream.withValues(alpha: 0.09),
+            width: 1,
+          ),
         ),
       ),
       child: Row(
@@ -345,13 +352,18 @@ class _CultureScreenState extends State<CultureScreen> {
                 _reloadVideos();
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: active ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                   border: active
                       ? null
-                      : Border.all(color: AppColors.cream.withValues(alpha: 0.19)),
+                      : Border.all(
+                          color: AppColors.cream.withValues(alpha: 0.19),
+                        ),
                 ),
                 child: Text(
                   _chips[i],
@@ -552,7 +564,10 @@ class _CultureScreenState extends State<CultureScreen> {
             children: [
               _buildSectionHeader('族人寫的文章', 'patas kari'),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -582,8 +597,14 @@ class _CultureScreenState extends State<CultureScreen> {
               _buildArticleChips(),
               _buildArticleSortRow(),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Text('目前沒有文章', style: TextStyle(color: AppColors.fog, fontSize: 13)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: Text(
+                  '目前沒有文章',
+                  style: TextStyle(color: AppColors.fog, fontSize: 13),
+                ),
               ),
             ],
           );
@@ -593,7 +614,10 @@ class _CultureScreenState extends State<CultureScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader('族人寫的文章', 'patas kari · 共 ${snapshot.data!.total} 篇'),
+            _buildSectionHeader(
+              '族人寫的文章',
+              'patas kari · 共 ${snapshot.data!.total} 篇',
+            ),
             _buildArticleChips(),
             _buildArticleSortRow(),
             _buildFeaturedArticle(featured),
@@ -612,7 +636,9 @@ class _CultureScreenState extends State<CultureScreen> {
         children: List.generate(_articleChipLabels.length, (i) {
           final active = _articleChipIndex == i;
           return Padding(
-            padding: EdgeInsets.only(right: i < _articleChipLabels.length - 1 ? 8 : 0),
+            padding: EdgeInsets.only(
+              right: i < _articleChipLabels.length - 1 ? 8 : 0,
+            ),
             child: GestureDetector(
               onTap: () {
                 setState(() {
@@ -621,13 +647,18 @@ class _CultureScreenState extends State<CultureScreen> {
                 });
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: active ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                   border: active
                       ? null
-                      : Border.all(color: AppColors.cream.withValues(alpha: 0.19)),
+                      : Border.all(
+                          color: AppColors.cream.withValues(alpha: 0.19),
+                        ),
                 ),
                 child: Text(
                   _articleChipLabels[i],
@@ -717,7 +748,10 @@ class _CultureScreenState extends State<CultureScreen> {
                       top: 12,
                       left: 12,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.gold,
                           borderRadius: BorderRadius.circular(4),
@@ -814,10 +848,12 @@ class _CultureScreenState extends State<CultureScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: articles
-            .map((a) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _ArticleCard(item: a, onTap: () => _openArticle(a.id)),
-                ))
+            .map(
+              (a) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _ArticleCard(item: a, onTap: () => _openArticle(a.id)),
+              ),
+            )
             .toList(),
       ),
     );
@@ -916,8 +952,10 @@ class _VideoCard extends StatelessWidget {
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(4),
@@ -936,8 +974,10 @@ class _VideoCard extends StatelessWidget {
                     bottom: 8,
                     right: 8,
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(3),
@@ -959,7 +999,8 @@ class _VideoCard extends StatelessWidget {
                         shape: BoxShape.circle,
                         color: Colors.black.withValues(alpha: 0.5),
                         border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.5)),
+                          color: AppColors.gold.withValues(alpha: 0.5),
+                        ),
                       ),
                       child: const Center(
                         child: _PlayIcon(size: 12, color: AppColors.gold),
@@ -1074,7 +1115,10 @@ class _ArticleCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.gold.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(3),
@@ -1195,7 +1239,9 @@ class _PlayIconPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color..style = PaintingStyle.fill;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
     final path = Path()
       ..moveTo(0, 0)
       ..lineTo(size.width, size.height / 2)
@@ -1213,10 +1259,7 @@ class _SearchIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(16, 16),
-      painter: _SearchIconPainter(),
-    );
+    return CustomPaint(size: const Size(16, 16), painter: _SearchIconPainter());
   }
 }
 
@@ -1258,10 +1301,7 @@ class _ArrowIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(16, 16),
-      painter: _ArrowIconPainter(),
-    );
+    return CustomPaint(size: const Size(16, 16), painter: _ArrowIconPainter());
   }
 }
 

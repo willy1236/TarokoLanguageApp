@@ -83,6 +83,18 @@ void main() {
     expect(seen.single.url.queryParameters.containsKey('cursor'), isFalse);
   });
 
+  test('allPosts 打跨看板端點，不帶 board 參數', () async {
+    respondWith({'pinned': [], 'posts': [], 'next_cursor': null});
+
+    await ForumService.allPosts(cursor: 300);
+
+    expect(seen.single.method, 'GET');
+    expect(seen.single.url.path, '/api/forum/posts');
+    expect(seen.single.url.queryParameters['cursor'], '300');
+    expect(seen.single.url.queryParameters['limit'], '20');
+    expect(seen.single.url.queryParameters.containsKey('board'), isFalse);
+  });
+
   test('likePost like=true 走 POST、like=false 走 DELETE', () async {
     respondWith({'liked': true, 'like_count': 4});
     final liked = await ForumService.likePost(7, like: true);

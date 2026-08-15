@@ -50,7 +50,10 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
                 if (levels.isEmpty)
                   Text(
                     '目前沒有可學習的級別',
-                    style: GoogleFonts.notoSansTc(fontSize: 14, color: AppColors.fog),
+                    style: GoogleFonts.notoSansTc(
+                      fontSize: 14,
+                      color: AppColors.fog,
+                    ),
                   )
                 else
                   for (int i = 0; i < levels.length; i++) ...[

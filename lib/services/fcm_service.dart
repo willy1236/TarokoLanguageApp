@@ -37,12 +37,12 @@ class FcmService {
   static const String _reminderChannelId = 'event_reminder_channel';
   static const AndroidNotificationDetails _reminderAndroidDetails =
       AndroidNotificationDetails(
-    _reminderChannelId,
-    '活動提醒',
-    channelDescription: '活動提醒與取消通知',
-    importance: Importance.high,
-    priority: Priority.high,
-  );
+        _reminderChannelId,
+        '活動提醒',
+        channelDescription: '活動提醒與取消通知',
+        importance: Importance.high,
+        priority: Priority.high,
+      );
 
   /// 點擊提醒通知時的導頁 callback。由 UI 層設定（用 navigatorKey 導到活動詳情）。
   /// 參數為 payload 裡的 event_id（可能為 null）。
@@ -102,13 +102,16 @@ class FcmService {
     );
     await _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(const AndroidNotificationChannel(
-      _reminderChannelId,
-      '活動提醒',
-      description: '活動提醒與取消通知',
-      importance: Importance.high,
-    ));
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(
+          const AndroidNotificationChannel(
+            _reminderChannelId,
+            '活動提醒',
+            description: '活動提醒與取消通知',
+            importance: Importance.high,
+          ),
+        );
   }
 
   /// 由 SplashScreen 在完成起始路由跳轉（pushReplacementNamed）之後呼叫，
@@ -156,7 +159,8 @@ class FcmService {
 
   /// 解析提醒/取消通知的 payload，非提醒相關類型回傳 null。
   static (String type, int? eventId)? _parseReminderPayload(
-      Map<String, dynamic> data) {
+    Map<String, dynamic> data,
+  ) {
     final type = data['type'];
     if (type != 'event_reminder' && type != 'event_cancelled') return null;
     final eventId = int.tryParse(data['event_id']?.toString() ?? '');
@@ -183,23 +187,27 @@ class FcmService {
     if (forumPostId != null) {
       final title = message.notification?.title ?? '有人回覆你';
       final body = message.notification?.body ?? '';
-      unawaited(_localNotifications.show(
-        message.hashCode,
-        title,
-        body,
-        const NotificationDetails(android: _reminderAndroidDetails),
-        // 事件通知的 payload 是純數字的 event_id，論壇加前綴區分兩者。
-        payload: 'forum:$forumPostId',
-      ));
+      unawaited(
+        _localNotifications.show(
+          message.hashCode,
+          title,
+          body,
+          const NotificationDetails(android: _reminderAndroidDetails),
+          // 事件通知的 payload 是純數字的 event_id，論壇加前綴區分兩者。
+          payload: 'forum:$forumPostId',
+        ),
+      );
       scaffoldMessengerKey.currentState
         ?..clearSnackBars()
-        ..showSnackBar(SnackBar(
-          content: Text(body.isNotEmpty ? body : title),
-          action: SnackBarAction(
-            label: '查看',
-            onPressed: () => onForumReplyTapped?.call(forumPostId),
+        ..showSnackBar(
+          SnackBar(
+            content: Text(body.isNotEmpty ? body : title),
+            action: SnackBarAction(
+              label: '查看',
+              onPressed: () => onForumReplyTapped?.call(forumPostId),
+            ),
           ),
-        ));
+        );
       return;
     }
 
@@ -210,22 +218,29 @@ class FcmService {
     final title = message.notification?.title ?? '活動提醒';
     final body = message.notification?.body ?? '';
 
-    unawaited(_localNotifications.show(
-      message.hashCode,
-      title,
-      body,
-      const NotificationDetails(android: _reminderAndroidDetails),
-      payload: eventId?.toString(),
-    ));
+    unawaited(
+      _localNotifications.show(
+        message.hashCode,
+        title,
+        body,
+        const NotificationDetails(android: _reminderAndroidDetails),
+        payload: eventId?.toString(),
+      ),
+    );
 
     scaffoldMessengerKey.currentState
       ?..clearSnackBars()
-      ..showSnackBar(SnackBar(
-        content: Text(body.isNotEmpty ? body : title),
-        action: eventId == null
-            ? null
-            : SnackBarAction(label: '查看', onPressed: () => onReminderTapped?.call(eventId)),
-      ));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(body.isNotEmpty ? body : title),
+          action: eventId == null
+              ? null
+              : SnackBarAction(
+                  label: '查看',
+                  onPressed: () => onReminderTapped?.call(eventId),
+                ),
+        ),
+      );
 
     onReminderReceivedForOpenScreen?.call(eventId);
   }

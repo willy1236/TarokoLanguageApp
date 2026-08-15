@@ -55,8 +55,18 @@ class _EventsScreenState extends State<EventsScreen> {
 
   // ── 日期/時間格式（後端時間為 UTC，顯示轉本地）────────────────
   static const _months = [
-    '1月', '2月', '3月', '4月', '5月', '6月',
-    '7月', '8月', '9月', '10月', '11月', '12月',
+    '1月',
+    '2月',
+    '3月',
+    '4月',
+    '5月',
+    '6月',
+    '7月',
+    '8月',
+    '9月',
+    '10月',
+    '11月',
+    '12月',
   ];
   static const _weekdays = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
   String _mon(DateTime d) => _months[d.month - 1];
@@ -88,9 +98,7 @@ class _EventsScreenState extends State<EventsScreen> {
     // isHost 判斷、報名狀態）。回來後刷新清單，反映報名/退出。
     Navigator.push(
       context,
-      MaterialPageRoute(
-        builder: (_) => EventDetailScreen(eventId: e.id),
-      ),
+      MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: e.id)),
     ).then((_) {
       if (mounted) _load();
     });
@@ -121,7 +129,9 @@ class _EventsScreenState extends State<EventsScreen> {
         const SliverToBoxAdapter(
           child: Padding(
             padding: EdgeInsets.only(top: 80),
-            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
           ),
         ),
       ];
@@ -146,9 +156,15 @@ class _EventsScreenState extends State<EventsScreen> {
         children: [
           const Icon(Icons.cloud_off, size: 40, color: AppColors.fog),
           const SizedBox(height: 12),
-          Text('載入活動失敗\n$_error',
-              textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: AppColors.inkSoft, height: 1.6)),
+          Text(
+            '載入活動失敗\n$_error',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.inkSoft,
+              height: 1.6,
+            ),
+          ),
           const SizedBox(height: 16),
           GestureDetector(
             onTap: _load,
@@ -158,9 +174,14 @@ class _EventsScreenState extends State<EventsScreen> {
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(20),
               ),
-              child: Text('重試',
-                  style: GoogleFonts.notoSerifTc(
-                      fontSize: 13, color: AppColors.creamLight, letterSpacing: 1.5)),
+              child: Text(
+                '重試',
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 13,
+                  color: AppColors.creamLight,
+                  letterSpacing: 1.5,
+                ),
+              ),
             ),
           ),
         ],
@@ -175,11 +196,18 @@ class _EventsScreenState extends State<EventsScreen> {
         children: [
           const Icon(Icons.event_note_outlined, size: 44, color: AppColors.fog),
           const SizedBox(height: 12),
-          Text('目前沒有活動',
-              style: GoogleFonts.notoSerifTc(fontSize: 16, color: AppColors.inkSoft)),
+          Text(
+            '目前沒有活動',
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 16,
+              color: AppColors.inkSoft,
+            ),
+          ),
           const SizedBox(height: 6),
-          Text('點右上角「發起」開一場部落聚會吧',
-              style: TextStyle(fontSize: 12, color: AppColors.fog)),
+          Text(
+            '點右上角「發起」開一場部落聚會吧',
+            style: TextStyle(fontSize: 12, color: AppColors.fog),
+          ),
         ],
       ),
     );
@@ -195,19 +223,25 @@ class _EventsScreenState extends State<EventsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('SMRATUC · 活動',
-                    style: GoogleFonts.crimsonPro(
-                        fontStyle: FontStyle.italic,
-                        fontSize: 12,
-                        color: AppColors.fog,
-                        letterSpacing: 3.0)),
+                Text(
+                  'SMRATUC · 活動',
+                  style: GoogleFonts.crimsonPro(
+                    fontStyle: FontStyle.italic,
+                    fontSize: 12,
+                    color: AppColors.fog,
+                    letterSpacing: 3.0,
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text('近期部落聚會',
-                    style: GoogleFonts.notoSerifTc(
-                        fontSize: 26,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink,
-                        letterSpacing: 1.0)),
+                Text(
+                  '近期部落聚會',
+                  style: GoogleFonts.notoSerifTc(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                    letterSpacing: 1.0,
+                  ),
+                ),
               ],
             ),
           ),
@@ -224,12 +258,15 @@ class _EventsScreenState extends State<EventsScreen> {
                 children: [
                   const Icon(Icons.add, color: AppColors.creamLight, size: 14),
                   const SizedBox(width: 6),
-                  Text('發起',
-                      style: GoogleFonts.notoSerifTc(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.creamLight,
-                          letterSpacing: 1.5)),
+                  Text(
+                    '發起',
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.creamLight,
+                      letterSpacing: 1.5,
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -261,11 +298,14 @@ class _EventsScreenState extends State<EventsScreen> {
                 borderRadius: BorderRadius.circular(20),
                 border: active ? null : Border.all(color: AppColors.creamDeep),
               ),
-              child: Text(_filters[i],
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: active ? AppColors.creamLight : AppColors.inkSoft,
-                      letterSpacing: 1.0)),
+              child: Text(
+                _filters[i],
+                style: TextStyle(
+                  fontSize: 12,
+                  color: active ? AppColors.creamLight : AppColors.inkSoft,
+                  letterSpacing: 1.0,
+                ),
+              ),
             ),
           );
         },
@@ -281,12 +321,15 @@ class _EventsScreenState extends State<EventsScreen> {
           const Expanded(child: Divider(color: AppColors.creamDeep)),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text('更多活動',
-                style: GoogleFonts.crimsonPro(
-                    fontStyle: FontStyle.italic,
-                    fontSize: 10,
-                    color: AppColors.fog,
-                    letterSpacing: 3.0)),
+            child: Text(
+              '更多活動',
+              style: GoogleFonts.crimsonPro(
+                fontStyle: FontStyle.italic,
+                fontSize: 10,
+                color: AppColors.fog,
+                letterSpacing: 3.0,
+              ),
+            ),
           ),
           const Expanded(child: Divider(color: AppColors.creamDeep)),
         ],
@@ -327,48 +370,69 @@ class _EventsScreenState extends State<EventsScreen> {
                     ),
                     Opacity(
                       opacity: 0.25,
-                      child: CustomPaint(painter: TrukuWeavePainter(opacity: 1, scale: 0.7)),
+                      child: CustomPaint(
+                        painter: TrukuWeavePainter(opacity: 1, scale: 0.7),
+                      ),
                     ),
                     if (label.isNotEmpty)
                       Positioned(
                         top: 14,
                         left: 14,
                         child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
                           decoration: BoxDecoration(
                             color: AppColors.gold,
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: Text(label,
-                              style: const TextStyle(
-                                  fontSize: 10,
-                                  color: AppColors.ink,
-                                  fontWeight: FontWeight.w600,
-                                  letterSpacing: 2.0)),
+                          child: Text(
+                            label,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: AppColors.ink,
+                              fontWeight: FontWeight.w600,
+                              letterSpacing: 2.0,
+                            ),
+                          ),
                         ),
                       ),
                     Positioned(
                       top: 14,
                       right: 14,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.ink.withValues(alpha: 0.55),
                           borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                          border: Border.all(
+                            color: AppColors.gold.withValues(alpha: 0.3),
+                          ),
                         ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(_mon(d),
-                                style: const TextStyle(
-                                    fontSize: 9, color: AppColors.gold, letterSpacing: 0.5)),
-                            Text(_day(d),
-                                style: GoogleFonts.notoSerifTc(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.creamLight,
-                                    height: 1)),
+                            Text(
+                              _mon(d),
+                              style: const TextStyle(
+                                fontSize: 9,
+                                color: AppColors.gold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                            Text(
+                              _day(d),
+                              style: GoogleFonts.notoSerifTc(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.creamLight,
+                                height: 1,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -381,42 +445,68 @@ class _EventsScreenState extends State<EventsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(e.title,
-                        style: GoogleFonts.notoSerifTc(
-                            fontSize: 19,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.creamLight,
-                            letterSpacing: 0.6)),
+                    Text(
+                      e.title,
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.creamLight,
+                        letterSpacing: 0.6,
+                      ),
+                    ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        const Icon(Icons.access_time, color: AppColors.gold, size: 11),
+                        const Icon(
+                          Icons.access_time,
+                          color: AppColors.gold,
+                          size: 11,
+                        ),
                         const SizedBox(width: 4),
-                        Text('${_wd(d)} ${_time(d)}',
-                            style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.creamLight.withValues(alpha: 0.85))),
+                        Text(
+                          '${_wd(d)} ${_time(d)}',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.creamLight.withValues(alpha: 0.85),
+                          ),
+                        ),
                         const SizedBox(width: 14),
-                        const Icon(Icons.location_on_outlined, color: AppColors.gold, size: 11),
+                        const Icon(
+                          Icons.location_on_outlined,
+                          color: AppColors.gold,
+                          size: 11,
+                        ),
                         const SizedBox(width: 4),
                         Flexible(
-                          child: Text(e.location ?? '線上',
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: AppColors.creamLight.withValues(alpha: 0.85))),
+                          child: Text(
+                            e.location ?? '線上',
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: AppColors.creamLight.withValues(
+                                alpha: 0.85,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 10),
                     Row(
                       children: [
-                        const Icon(Icons.person_outline, color: AppColors.gold, size: 12),
+                        const Icon(
+                          Icons.person_outline,
+                          color: AppColors.gold,
+                          size: 12,
+                        ),
                         const SizedBox(width: 4),
-                        Text('${e.participantCount} 人報名',
-                            style: TextStyle(
-                                fontSize: 11,
-                                color: AppColors.creamLight.withValues(alpha: 0.7))),
+                        Text(
+                          '${e.participantCount} 人報名',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: AppColors.creamLight.withValues(alpha: 0.7),
+                          ),
+                        ),
                       ],
                     ),
                   ],
@@ -436,10 +526,12 @@ class _EventsScreenState extends State<EventsScreen> {
       child: Column(
         children: _events
             .skip(1)
-            .map((e) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _buildListTile(e),
-                ))
+            .map(
+              (e) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _buildListTile(e),
+              ),
+            )
             .toList(),
       ),
     );
@@ -471,20 +563,31 @@ class _EventsScreenState extends State<EventsScreen> {
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(_mon(d),
-                        style: const TextStyle(
-                            fontSize: 9, color: AppColors.gold, letterSpacing: 0.5)),
-                    Text(_day(d),
-                        style: GoogleFonts.notoSerifTc(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.creamLight,
-                            height: 1)),
-                    Text(_wd(d),
-                        style: TextStyle(
-                            fontSize: 9,
-                            color: AppColors.creamLight.withValues(alpha: 0.7),
-                            letterSpacing: 1.5)),
+                    Text(
+                      _mon(d),
+                      style: const TextStyle(
+                        fontSize: 9,
+                        color: AppColors.gold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    Text(
+                      _day(d),
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: 22,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.creamLight,
+                        height: 1,
+                      ),
+                    ),
+                    Text(
+                      _wd(d),
+                      style: TextStyle(
+                        fontSize: 9,
+                        color: AppColors.creamLight.withValues(alpha: 0.7),
+                        letterSpacing: 1.5,
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -496,33 +599,58 @@ class _EventsScreenState extends State<EventsScreen> {
                 children: [
                   if (label.isNotEmpty)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(3),
                       ),
-                      child: Text(label,
-                          style: const TextStyle(
-                              fontSize: 9, color: AppColors.primary, letterSpacing: 1.5)),
+                      child: Text(
+                        label,
+                        style: const TextStyle(
+                          fontSize: 9,
+                          color: AppColors.primary,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
                     ),
                   const SizedBox(height: 3),
-                  Text(e.title,
-                      style: GoogleFonts.notoSerifTc(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.ink,
-                          letterSpacing: 0.6)),
+                  Text(
+                    e.title,
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                      letterSpacing: 0.6,
+                    ),
+                  ),
                   const SizedBox(height: 3),
-                  Text('${_time(d)} · ${e.location ?? '線上'}',
-                      style: const TextStyle(
-                          fontSize: 11, color: AppColors.fog, letterSpacing: 0.8)),
+                  Text(
+                    '${_time(d)} · ${e.location ?? '線上'}',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      color: AppColors.fog,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
                   const SizedBox(height: 6),
                   Row(
                     children: [
-                      const Icon(Icons.person_outline, size: 11, color: AppColors.inkSoft),
+                      const Icon(
+                        Icons.person_outline,
+                        size: 11,
+                        color: AppColors.inkSoft,
+                      ),
                       const SizedBox(width: 4),
-                      Text('${e.participantCount} 人報名',
-                          style: const TextStyle(fontSize: 11, color: AppColors.inkSoft)),
+                      Text(
+                        '${e.participantCount} 人報名',
+                        style: const TextStyle(
+                          fontSize: 11,
+                          color: AppColors.inkSoft,
+                        ),
+                      ),
                     ],
                   ),
                 ],
