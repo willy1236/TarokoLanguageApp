@@ -39,6 +39,11 @@ class ForumBoardView extends StatefulWidget {
   /// 使用者下拉時預期的是「整頁更新」，只更新貼文會與這個直覺不符。
   final Future<void> Function()? onRefresh;
 
+  /// 放在列表最上方、跟著一起捲動的內容。放進列表而不是固定在外面，
+  /// 是因為固定區塊不在下拉手勢的範圍內——使用者想刷新那塊內容時
+  /// 最直覺就是在那塊上面下拉，結果卻毫無反應。
+  final Widget? header;
+
   const ForumBoardView({
     super.key,
     required this.loadPage,
@@ -49,6 +54,7 @@ class ForumBoardView extends StatefulWidget {
     this.prependOnRefresh = true,
     this.reloadKey,
     this.onRefresh,
+    this.header,
   });
 
   @override
@@ -244,67 +250,72 @@ class ForumBoardViewState extends State<ForumBoardView> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => RefreshIndicator(
+    color: AppColors.primary,
+    onRefresh: refresh,
+    // 所有狀態都包在同一個可捲動容器裡：載入中、載入失敗、空清單也要能下拉。
+    // 失敗時尤其重要——那正是最需要重試的時候。
+    child: ListView(
+      controller: _scrollController,
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.only(bottom: 100),
+      children: [
+        // header 由呼叫端提供（廣場頁放近期活動），跟著列表一起捲動，
+        // 也一起進入下拉刷新的手勢範圍。
+        if (widget.header != null) widget.header!,
+        ..._buildBody(),
+      ],
+    ),
+  );
+
+  List<Widget> _buildBody() {
     if (_loading) {
-      return const Padding(
-        padding: EdgeInsets.symmetric(vertical: 60),
-        child: Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
+      return const [
+        Padding(
+          padding: EdgeInsets.symmetric(vertical: 60),
+          child: Center(
+            child: CircularProgressIndicator(color: AppColors.primary),
+          ),
         ),
-      );
+      ];
     }
     if (_error != null) {
-      return _ForumErrorState(message: _error!, onRetry: _load);
+      return [_ForumErrorState(message: _error!, onRetry: _load)];
     }
 
     final all = [..._pinned, ..._posts];
     if (all.isEmpty) {
-      return RefreshIndicator(
-        color: AppColors.primary,
-        onRefresh: refresh,
-        child: ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          children: [_ForumEmptyState(message: widget.emptyMessage)],
-        ),
-      );
+      return [_ForumEmptyState(message: widget.emptyMessage)];
     }
 
-    return RefreshIndicator(
-      color: AppColors.primary,
-      onRefresh: refresh,
-      child: ListView.separated(
-        controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        // 上方留白讓第一張卡片與看板 tab 的底線分開，不會黏在一起。
-        padding: const EdgeInsets.fromLTRB(20, 14, 20, 100),
-        itemCount: all.length + (_loadingMore ? 1 : 0),
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (_, i) {
-          if (i >= all.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            );
-          }
-          final post = all[i];
-          return ForumPostCard(
+    return [
+      // 上方留白讓第一張卡片與上面的內容分開，不會黏在一起。
+      const SizedBox(height: 14),
+      for (final post in all)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: ForumPostCard(
             post: post,
             onTap: () => widget.onOpenPost(post),
             onLike: () => _like(post),
             onBookmark: () => _bookmark(post),
-          );
-        },
-      ),
-    );
+          ),
+        ),
+      if (_loadingMore)
+        const Padding(
+          padding: EdgeInsets.symmetric(vertical: 16),
+          child: Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.primary,
+              ),
+            ),
+          ),
+        ),
+    ];
   }
 }
 

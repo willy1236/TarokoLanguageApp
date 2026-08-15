@@ -203,6 +203,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(seenCursors, [null, 1]);
+
+    // 用固定距離拖曳只能保證觸發載入下一頁，不保證新那筆剛好落在視野內
+    // （卡片高度一改就會失準），所以捲到看見為止再斷言。
+    await tester.scrollUntilVisible(find.text('標題 0'), 300);
     expect(find.text('標題 0'), findsOneWidget);
   });
 
@@ -401,5 +405,65 @@ void main() {
     extra.complete();
     await tester.pumpAndSettle();
     expect(find.byType(RefreshProgressIndicator), findsNothing);
+  });
+
+  testWidgets('header 跟著列表一起捲動，且落在下拉刷新的範圍內', (tester) async {
+    var refreshCalls = 0;
+
+    await tester.pumpWidget(
+      wrap(
+        ForumBoardView(
+          header: const Text('近期活動區塊'),
+          loadPage: ({cursor, after}) async => ForumPostPage(
+            pinned: const [],
+            posts: [post(1)],
+            nextCursor: null,
+          ),
+          toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
+          toggleBookmark: (_, {required add}) async => add,
+          onOpenPost: (_) {},
+          onRefresh: () async => refreshCalls++,
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('近期活動區塊'), findsOneWidget);
+
+    // 在 header 上下拉也要能觸發刷新——固定在列表外面時這個手勢毫無反應。
+    await tester.fling(find.text('近期活動區塊'), const Offset(0, 300), 1000);
+    await tester.pumpAndSettle();
+
+    expect(refreshCalls, 1);
+  });
+
+  testWidgets('載入失敗時仍可下拉重試', (tester) async {
+    var calls = 0;
+    await tester.pumpWidget(
+      wrap(
+        ForumBoardView(
+          loadPage: ({cursor, after}) async {
+            calls++;
+            throw ApiException(
+              statusCode: 0,
+              code: 'NETWORK_ERROR',
+              message: '無法連線到伺服器，請檢查網路',
+            );
+          },
+          toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
+          toggleBookmark: (_, {required add}) async => add,
+          onOpenPost: (_) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('無法連線到伺服器，請檢查網路'), findsOneWidget);
+    expect(calls, 1);
+
+    await tester.fling(find.byType(ListView), const Offset(0, 300), 1000);
+    await tester.pumpAndSettle();
+
+    expect(calls, greaterThan(1), reason: '錯誤畫面也要能下拉重試');
   });
 }

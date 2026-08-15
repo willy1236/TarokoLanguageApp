@@ -151,8 +151,9 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       body: Column(
         children: [
           _buildHeader(context),
-          _buildMiniEventCards(),
           _buildTabBar(),
+          // 近期活動改放進貼文列表的 header，跟著一起捲動，
+          // 也才會落在下拉刷新的手勢範圍內。
           Expanded(child: _buildPostsSection()),
         ],
       ),
@@ -457,6 +458,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         toggleBookmark: ForumService.bookmarkPost,
         onOpenPost: _openPost,
         onRefresh: _refreshHeader,
+        header: _buildMiniEventCards(),
       ),
     );
   }
