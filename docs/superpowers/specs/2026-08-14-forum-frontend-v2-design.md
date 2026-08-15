@@ -329,3 +329,20 @@ v2 後端規格 §1 將書籤列為 YAGNI，§7.0 拆除了 v1 的 `forum_bookma
 - 搜尋頁改用持久的 `GlobalKey` 後，切換關鍵字時舊查詢的第二頁回應可能落進新結果（窄競態）。
 - `ForumBoardView` 的按讚／收藏完成時以 await 前的快照重建貼文，兩者同時進行會互相覆蓋（詳情頁已修，列表未修）。
 - `ForumService.posts()` 的 cursor/after 互斥只用 `assert`，release build 會被移除。
+
+
+---
+
+## 15. 對齊後端 API 文件（`說明文件/API/論壇模組.md`）
+
+後端補齊端點後，依其 API 文件比對出五處前端與後端不一致，已修正：
+
+| 後端行為 | 原本的實作 | 後果 | 修正 |
+|---|---|---|---|
+| multipart 的 `tags` 以**逗號分隔**（§3.1） | 送 JSON 字串 | 帶附圖發文時標籤全壞 | `tags.join(',')` |
+| PATCH **不接受** `tags`／`images`／`board_id`，且 `title` 與 `body` 至少要給一個（§3.3） | 有送 `tags` | 編輯時標籤看似能改，實際不會存 | `updatePost` 移除 `tags` 參數；編輯畫面的標籤區改唯讀 |
+| 刪除第一層留言時，底下回覆保留，父留言變成 `is_deleted: true` 的佔位，`body` 與 `author` 皆為 `null`（§4.3／§4.4） | 未解析 `is_deleted`，本地把回覆一併清掉 | 已刪留言顯示成「匿名使用者」空白留言且仍可按讚；本地狀態與後端不一致 | `ForumComment` 新增 `isDeleted`、`author` 改為可空；`ForumCommentTile` 顯示「此留言已刪除」且不給任何操作；刪除後依是否還有回覆決定轉佔位或整則移除 |
+| `?after=` 下拉刷新時 `pinned` 一律為空陣列（§2.3） | 用回傳值覆蓋置頂區 | 下拉一次置頂貼文就消失 | 只有 `pinned` 非空時才更新 |
+| 跨看板總覽 `GET /api/forum/posts` 的 `pinned` 為空，置頂混在 `posts` 裡依 id 排序（§2.2） | 無 | 無（行為相容） | 註明總覽不需另外渲染置頂區塊 |
+
+書籤端點（§5.5）與跨看板總覽（§2.2）皆已上線，與 §9、§14 記載的約定一致，前端無須調整。`GET /api/forum/bookmarks` 的 `next_cursor` 是**書籤 id** 而非貼文 id，前端原樣帶回，不做解讀。

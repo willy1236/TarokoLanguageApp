@@ -188,11 +188,11 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     try {
       final editing = widget.editing;
       if (editing != null) {
+        // 後端 PATCH 只吃 title 與 body，標籤與附圖都不可變更。
         await ForumService.updatePost(
           editing.id,
           title: _titleController.text.trim(),
           body: _bodyController.text.trim(),
-          tags: _tags,
         );
       } else {
         await ForumService.createPost(
@@ -334,7 +334,34 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     );
   }
 
-  Widget _tagSection() => Column(
+  /// 編輯模式的標籤唯讀：後端 PATCH 不接受 tags，讓使用者以為改得動
+  /// 但實際不會存，比不給改更糟（與附圖同理）。
+  Widget _tagSection() {
+    if (_isEditing) {
+      if (_tags.isEmpty) return const SizedBox.shrink();
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: 6,
+            runSpacing: 6,
+            children: [
+              for (final tag in _tags)
+                Chip(label: Text('#$tag'), backgroundColor: AppColors.cream),
+            ],
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            '標籤無法在編輯時變更',
+            style: TextStyle(fontSize: 12, color: AppColors.fog),
+          ),
+        ],
+      );
+    }
+    return _tagEditor();
+  }
+
+  Widget _tagEditor() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Row(

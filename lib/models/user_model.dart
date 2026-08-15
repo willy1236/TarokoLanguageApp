@@ -58,19 +58,19 @@ class UserModel {
   }
 
   Map<String, dynamic> toJson() => {
-        'uid': uid,
-        'display_name': displayName,
-        'avatar_url': avatarUrl,
-        'avatar_id': avatarId,
-        'frame_id': frameId,
-        'owned_avatar_ids': ownedAvatarIds,
-        'owned_frame_ids': ownedFrameIds,
-        'millet': millet,
-        'email': email,
-        'created_at': createdAt.toIso8601String(),
-        'checked_in_today': checkedInToday,
-        'checkin_streak': checkinStreak,
-      };
+    'uid': uid,
+    'display_name': displayName,
+    'avatar_url': avatarUrl,
+    'avatar_id': avatarId,
+    'frame_id': frameId,
+    'owned_avatar_ids': ownedAvatarIds,
+    'owned_frame_ids': ownedFrameIds,
+    'millet': millet,
+    'email': email,
+    'created_at': createdAt.toIso8601String(),
+    'checked_in_today': checkedInToday,
+    'checkin_streak': checkinStreak,
+  };
 
   int get joinedDays => DateTime.now().difference(createdAt).inDays;
 

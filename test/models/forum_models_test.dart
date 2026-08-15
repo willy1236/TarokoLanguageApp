@@ -2,23 +2,23 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/models/forum_models.dart';
 
 Map<String, dynamic> _postJson() => {
-      // pg driver 會把 BIGINT 以字串回傳，這裡刻意用字串。
-      'id': '1024',
-      'board': {'id': 2, 'slug': 'culture', 'name': '文化傳承'},
-      'title': '關於 mhuway',
-      'body': '內文',
-      'like_count': 3,
-      'comment_count': 5,
-      'is_pinned': false,
-      'is_liked': true,
-      'images': ['https://storage.googleapis.com/truku-media/forum/a.jpg'],
-      'tags': [
-        {'name': '族語', 'slug': 'yuyan'},
-      ],
-      'created_at': '2026-08-01T10:00:00.000Z',
-      'updated_at': '2026-08-01T10:00:00.000Z',
-      'author': {'uid': 7, 'display_name': 'Sayun', 'avatar_url': null},
-    };
+  // pg driver 會把 BIGINT 以字串回傳，這裡刻意用字串。
+  'id': '1024',
+  'board': {'id': 2, 'slug': 'culture', 'name': '文化傳承'},
+  'title': '關於 mhuway',
+  'body': '內文',
+  'like_count': 3,
+  'comment_count': 5,
+  'is_pinned': false,
+  'is_liked': true,
+  'images': ['https://storage.googleapis.com/truku-media/forum/a.jpg'],
+  'tags': [
+    {'name': '族語', 'slug': 'yuyan'},
+  ],
+  'created_at': '2026-08-01T10:00:00.000Z',
+  'updated_at': '2026-08-01T10:00:00.000Z',
+  'author': {'uid': 7, 'display_name': 'Sayun', 'avatar_url': null},
+};
 
 void main() {
   group('ForumPost.fromJson', () {
@@ -112,6 +112,66 @@ void main() {
     });
   });
 
+  group('ForumComment 已刪除佔位', () {
+    test('is_deleted 為 true 時 body 與 author 皆為 null，仍能解析', () {
+      final comment = ForumComment.fromJson({
+        'id': 108,
+        'post_id': 42,
+        'parent_comment_id': null,
+        'body': null,
+        'is_deleted': true,
+        'like_count': 0,
+        'is_liked': false,
+        'created_at': '2026-08-01T11:00:00.000Z',
+        'author': null,
+      });
+
+      expect(comment.id, 108);
+      expect(comment.isDeleted, isTrue);
+      expect(comment.body, '');
+      expect(comment.author, isNull);
+    });
+
+    test('一般留言的 isDeleted 為 false，author 有值', () {
+      final comment = ForumComment.fromJson({
+        'id': 5,
+        'post_id': 42,
+        'parent_comment_id': null,
+        'body': '推',
+        'is_deleted': false,
+        'like_count': 0,
+        'is_liked': false,
+        'created_at': '2026-08-01T11:00:00.000Z',
+        'author': {'uid': 8, 'display_name': 'Pisaw', 'avatar_url': null},
+      });
+
+      expect(comment.isDeleted, isFalse);
+      expect(comment.author?.displayName, 'Pisaw');
+    });
+
+    test('asDeletedPlaceholder 清掉內容與作者但保留 id 與層級', () {
+      final comment = ForumComment.fromJson({
+        'id': 5,
+        'post_id': 42,
+        'parent_comment_id': null,
+        'body': '推',
+        'like_count': 9,
+        'is_liked': true,
+        'created_at': '2026-08-01T11:00:00.000Z',
+        'author': {'uid': 8, 'display_name': 'Pisaw', 'avatar_url': null},
+      });
+
+      final placeholder = comment.asDeletedPlaceholder();
+
+      expect(placeholder.id, 5);
+      expect(placeholder.parentCommentId, isNull);
+      expect(placeholder.isDeleted, isTrue);
+      expect(placeholder.body, '');
+      expect(placeholder.author, isNull);
+      expect(placeholder.likeCount, 0);
+    });
+  });
+
   group('ForumPostPage.fromJson', () {
     test('置頂與一般貼文分開，next_cursor 為 null 時代表沒有下一頁', () {
       final page = ForumPostPage.fromJson({
@@ -155,15 +215,16 @@ void main() {
 
   group('groupComments', () {
     ForumComment comment(int id, {int? parent}) => ForumComment(
-          id: id,
-          postId: 1024,
-          parentCommentId: parent,
-          body: 'c$id',
-          likeCount: 0,
-          isLiked: false,
-          createdAt: DateTime.parse('2026-08-01T11:00:00.000Z'),
-          author: const ForumAuthor(uid: 1, displayName: 'A'),
-        );
+      id: id,
+      postId: 1024,
+      parentCommentId: parent,
+      body: 'c$id',
+      likeCount: 0,
+      isLiked: false,
+      isDeleted: false,
+      createdAt: DateTime.parse('2026-08-01T11:00:00.000Z'),
+      author: const ForumAuthor(uid: 1, displayName: 'A'),
+    );
 
     test('回覆掛到所屬的第一層留言底下', () {
       final threads = groupComments(

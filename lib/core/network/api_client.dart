@@ -59,11 +59,12 @@ class ApiClient {
     Map<String, String>? query,
   }) async {
     final token = await AuthService.currentToken();
-    final uri = Uri.parse(ApiConfig.baseUrl + path).replace(
-      queryParameters: query,
+    final uri = Uri.parse(
+      ApiConfig.baseUrl + path,
+    ).replace(queryParameters: query);
+    final resp = await _send(
+      () => httpClient.get(uri, headers: _headers(token)),
     );
-    final resp =
-        await _send(() => httpClient.get(uri, headers: _headers(token)));
     return _handle(resp);
   }
 
@@ -72,11 +73,13 @@ class ApiClient {
     Map<String, dynamic>? body,
   ]) async {
     final token = await AuthService.currentToken();
-    final resp = await _send(() => httpClient.post(
-          Uri.parse(ApiConfig.baseUrl + path),
-          headers: _headers(token),
-          body: body == null ? null : jsonEncode(body),
-        ));
+    final resp = await _send(
+      () => httpClient.post(
+        Uri.parse(ApiConfig.baseUrl + path),
+        headers: _headers(token),
+        body: body == null ? null : jsonEncode(body),
+      ),
+    );
     return _handle(resp);
   }
 
@@ -85,11 +88,13 @@ class ApiClient {
     Map<String, dynamic>? body,
   ]) async {
     final token = await AuthService.currentToken();
-    final resp = await _send(() => httpClient.patch(
-          Uri.parse(ApiConfig.baseUrl + path),
-          headers: _headers(token),
-          body: body == null ? null : jsonEncode(body),
-        ));
+    final resp = await _send(
+      () => httpClient.patch(
+        Uri.parse(ApiConfig.baseUrl + path),
+        headers: _headers(token),
+        body: body == null ? null : jsonEncode(body),
+      ),
+    );
     return _handle(resp);
   }
 
@@ -107,12 +112,14 @@ class ApiClient {
     if (token != null) request.headers['Authorization'] = 'Bearer $token';
     request.fields.addAll(fields);
     for (final file in files) {
-      request.files.add(http.MultipartFile.fromBytes(
-        file.field,
-        file.bytes,
-        filename: file.filename,
-        contentType: MediaType.parse(file.mimeType),
-      ));
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          file.field,
+          file.bytes,
+          filename: file.filename,
+          contentType: MediaType.parse(file.mimeType),
+        ),
+      );
     }
     final resp = await _send(
       () async => http.Response.fromStream(await httpClient.send(request)),
@@ -125,18 +132,20 @@ class ApiClient {
     Map<String, dynamic>? body,
   ]) async {
     final token = await AuthService.currentToken();
-    final resp = await _send(() => httpClient.delete(
-          Uri.parse(ApiConfig.baseUrl + path),
-          headers: _headers(token),
-          body: body == null ? null : jsonEncode(body),
-        ));
+    final resp = await _send(
+      () => httpClient.delete(
+        Uri.parse(ApiConfig.baseUrl + path),
+        headers: _headers(token),
+        body: body == null ? null : jsonEncode(body),
+      ),
+    );
     return _handle(resp);
   }
 
   static Map<String, String> _headers(String? token) => {
-        'Content-Type': 'application/json',
-        if (token != null) 'Authorization': 'Bearer $token',
-      };
+    'Content-Type': 'application/json',
+    if (token != null) 'Authorization': 'Bearer $token',
+  };
 
   /// 統一攔截離線（SocketException），轉成一致的 NETWORK_ERROR ApiException，
   /// 讓所有 service 不必各自 catch SocketException。
@@ -189,9 +198,7 @@ class ApiClient {
       }
       scaffoldMessengerKey.currentState
         ?..clearSnackBars()
-        ..showSnackBar(
-          const SnackBar(content: Text('登入已過期，請重新登入')),
-        );
+        ..showSnackBar(const SnackBar(content: Text('登入已過期，請重新登入')));
     });
   }
 

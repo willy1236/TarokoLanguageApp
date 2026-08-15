@@ -14,9 +14,9 @@ void main() {
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-      (call) async => null,
-    );
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (call) async => null,
+        );
   });
 
   late List<http.BaseRequest> seen;
@@ -35,18 +35,18 @@ void main() {
   }
 
   Map<String, dynamic> postJson() => {
-        'id': 1,
-        'board': {'id': 2, 'slug': 'culture', 'name': '文化傳承'},
-        'title': 't',
-        'body': 'b',
-        'like_count': 0,
-        'comment_count': 0,
-        'is_pinned': false,
-        'is_liked': false,
-        'created_at': '2026-08-01T10:00:00.000Z',
-        'updated_at': '2026-08-01T10:00:00.000Z',
-        'author': {'uid': 1, 'display_name': 'A', 'avatar_url': null},
-      };
+    'id': 1,
+    'board': {'id': 2, 'slug': 'culture', 'name': '文化傳承'},
+    'title': 't',
+    'body': 'b',
+    'like_count': 0,
+    'comment_count': 0,
+    'is_pinned': false,
+    'is_liked': false,
+    'created_at': '2026-08-01T10:00:00.000Z',
+    'updated_at': '2026-08-01T10:00:00.000Z',
+    'author': {'uid': 1, 'display_name': 'A', 'avatar_url': null},
+  };
 
   tearDown(() => ApiClient.httpClient = http.Client());
 
@@ -122,8 +122,11 @@ void main() {
       },
     }, status: 201);
 
-    final comment =
-        await ForumService.createComment(7, '回覆', parentCommentId: 5);
+    final comment = await ForumService.createComment(
+      7,
+      '回覆',
+      parentCommentId: 5,
+    );
 
     final body = jsonDecode((seen.single as http.Request).body);
     expect(body['body'], '回覆');
@@ -141,7 +144,7 @@ void main() {
     expect(body['board_id'], 2);
   });
 
-  test('createPost 有附圖時走 multipart，標籤以 JSON 字串傳遞', () async {
+  test('createPost 有附圖時走 multipart，標籤以逗號分隔傳遞', () async {
     respondWith({'post': postJson()}, status: 201);
 
     await ForumService.createPost(
@@ -166,14 +169,28 @@ void main() {
     // 轉成一份新的 http.Request 再交給 handler（見 package:http/src/mock_client.dart），
     // 因此這裡拿不回原本的 MultipartRequest，只能改由原始 body bytes 解析欄位。
     final bodyText = utf8.decode((request as http.Request).bodyBytes);
-    final boardIdMatch =
-        RegExp('name="board_id"\r\n\r\n([^\r]*)').firstMatch(bodyText);
+    final boardIdMatch = RegExp(
+      'name="board_id"\r\n\r\n([^\r]*)',
+    ).firstMatch(bodyText);
     expect(boardIdMatch?.group(1), '2');
     // tags 欄位在 name 與值之間多帶了 content-type / content-transfer-encoding
     // 標頭列，因此用非貪婪比對跳過剩餘標頭列，直到分隔用的空白行為止。
-    final tagsMatch =
-        RegExp('name="tags"[\\s\\S]*?\r\n\r\n([^\r]*)').firstMatch(bodyText);
-    expect(jsonDecode(tagsMatch!.group(1)!), ['族語', '走讀']);
+    final tagsMatch = RegExp(
+      'name="tags"[\\s\\S]*?\r\n\r\n([^\r]*)',
+    ).firstMatch(bodyText);
+    // multipart 下後端以逗號分隔解析（後端 API 文件 §3.1），不是 JSON。
+    expect(tagsMatch!.group(1), '族語,走讀');
+  });
+
+  test('updatePost 只送 title 與 body，不送 tags', () async {
+    respondWith({'post': postJson()});
+
+    await ForumService.updatePost(1, title: 't2', body: 'b2');
+
+    final body = jsonDecode((seen.single as http.Request).body);
+    expect(body, {'title': 't2', 'body': 'b2'});
+    expect(body.containsKey('tags'), isFalse);
+    expect(seen.single.method, 'PATCH');
   });
 
   test('search 少於 2 字直接丟錯，不發請求', () async {

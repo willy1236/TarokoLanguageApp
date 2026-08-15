@@ -15,9 +15,9 @@ void main() {
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-      (call) async => null,
-    );
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (call) async => null,
+        );
   });
 
   tearDown(() => ApiClient.httpClient = http.Client());

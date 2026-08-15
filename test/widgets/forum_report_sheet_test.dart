@@ -15,9 +15,9 @@ void main() {
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-      (call) async => null,
-    );
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (call) async => null,
+        );
   });
 
   tearDown(() => ApiClient.httpClient = http.Client());
@@ -29,20 +29,22 @@ void main() {
       return http.Response(jsonEncode({'ok': true}), 201);
     });
 
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: Builder(
-          builder: (context) => ElevatedButton(
-            onPressed: () => showForumReportSheet(
-              context,
-              targetType: 'comment',
-              targetId: 11,
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showForumReportSheet(
+                context,
+                targetType: 'comment',
+                targetId: 11,
+              ),
+              child: const Text('open'),
             ),
-            child: const Text('open'),
           ),
         ),
       ),
-    ));
+    );
 
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();
@@ -60,20 +62,22 @@ void main() {
   });
 
   testWidgets('理由留空時送出鈕不可按', (tester) async {
-    await tester.pumpWidget(MaterialApp(
-      home: Scaffold(
-        body: Builder(
-          builder: (context) => ElevatedButton(
-            onPressed: () => showForumReportSheet(
-              context,
-              targetType: 'post',
-              targetId: 1,
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () => showForumReportSheet(
+                context,
+                targetType: 'post',
+                targetId: 1,
+              ),
+              child: const Text('open'),
             ),
-            child: const Text('open'),
           ),
         ),
       ),
-    ));
+    );
 
     await tester.tap(find.text('open'));
     await tester.pumpAndSettle();

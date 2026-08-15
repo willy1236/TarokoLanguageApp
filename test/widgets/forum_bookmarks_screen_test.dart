@@ -15,9 +15,9 @@ void main() {
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-      (call) async => null,
-    );
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (call) async => null,
+        );
   });
 
   tearDown(() => ApiClient.httpClient = http.Client());
@@ -57,13 +57,15 @@ void main() {
   });
 
   testWidgets('端點未上線（404）時顯示錯誤與重試', (tester) async {
-    ApiClient.httpClient = MockClient((_) async => http.Response(
-          jsonEncode({
-            'error': {'code': 'NOT_FOUND', 'message': '找不到資源'},
-          }),
-          404,
-          headers: {'content-type': 'application/json; charset=utf-8'},
-        ));
+    ApiClient.httpClient = MockClient(
+      (_) async => http.Response(
+        jsonEncode({
+          'error': {'code': 'NOT_FOUND', 'message': '找不到資源'},
+        }),
+        404,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      ),
+    );
 
     await tester.pumpWidget(const MaterialApp(home: ForumBookmarksScreen()));
     await tester.pumpAndSettle();
@@ -72,28 +74,28 @@ void main() {
   });
 
   http.Response bookmarksPage() => http.Response(
-        jsonEncode({
-          'posts': [
-            {
-              'id': 1,
-              'board': {'id': 2, 'slug': 'culture', 'name': '文化傳承'},
-              'title': '收藏的貼文',
-              'body': '內文',
-              'like_count': 0,
-              'comment_count': 0,
-              'is_pinned': false,
-              'is_liked': false,
-              'is_bookmarked': true,
-              'created_at': '2026-08-01T10:00:00.000Z',
-              'updated_at': '2026-08-01T10:00:00.000Z',
-              'author': {'uid': 1, 'display_name': 'A', 'avatar_url': null},
-            },
-          ],
-          'next_cursor': null,
-        }),
-        200,
-        headers: {'content-type': 'application/json; charset=utf-8'},
-      );
+    jsonEncode({
+      'posts': [
+        {
+          'id': 1,
+          'board': {'id': 2, 'slug': 'culture', 'name': '文化傳承'},
+          'title': '收藏的貼文',
+          'body': '內文',
+          'like_count': 0,
+          'comment_count': 0,
+          'is_pinned': false,
+          'is_liked': false,
+          'is_bookmarked': true,
+          'created_at': '2026-08-01T10:00:00.000Z',
+          'updated_at': '2026-08-01T10:00:00.000Z',
+          'author': {'uid': 1, 'display_name': 'A', 'avatar_url': null},
+        },
+      ],
+      'next_cursor': null,
+    }),
+    200,
+    headers: {'content-type': 'application/json; charset=utf-8'},
+  );
 
   testWidgets('取消收藏後該筆貼文從列表移除', (tester) async {
     ApiClient.httpClient = MockClient((req) async {

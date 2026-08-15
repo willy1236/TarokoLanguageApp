@@ -8,12 +8,7 @@ void main() {
     String body = '內文',
     List<String> tags = const [],
   }) =>
-      forumComposeError(
-        boardId: boardId,
-        title: title,
-        body: body,
-        tags: tags,
-      );
+      forumComposeError(boardId: boardId, title: title, body: body, tags: tags);
 
   test('全部合法時回傳 null', () {
     expect(check(), isNull);

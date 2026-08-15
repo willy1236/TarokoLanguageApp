@@ -262,6 +262,24 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
   }
 
+  /// 本地反映後端的刪除語意（後端 API 文件 §4.3 / §4.4）：
+  /// 第一層留言底下若還有存活回覆，後端會把它保留成佔位讓回覆有東西可掛，
+  /// 只有沒有回覆時才整則消失。回覆本身一律直接消失。
+  void _applyCommentDeleted(ForumComment comment) {
+    if (comment.parentCommentId != null) {
+      _replies.removeWhere((c) => c.id == comment.id);
+      return;
+    }
+    final hasLiveReplies = _replies.any((c) => c.parentCommentId == comment.id);
+    final index = _comments.indexWhere((c) => c.id == comment.id);
+    if (index < 0) return;
+    if (hasLiveReplies) {
+      _comments[index] = comment.asDeletedPlaceholder();
+    } else {
+      _comments.removeAt(index);
+    }
+  }
+
   Future<void> _deleteComment(ForumComment comment) async {
     final confirmed = await _confirm('刪除這則留言？');
     if (confirmed != true) return;
@@ -269,16 +287,16 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       await ForumService.deleteComment(comment.id);
       if (!mounted) return;
       setState(() {
-        _comments.removeWhere((c) => c.id == comment.id);
-        _replies.removeWhere((c) => c.id == comment.id);
-        // 第一層被刪時，掛在它底下的回覆也失去容身之處。
-        _replies.removeWhere((c) => c.parentCommentId == comment.id);
+        _applyCommentDeleted(comment);
+        // 佔位不計入 comment_count，後端也是這樣算的。
         final post = _post;
         if (post != null) {
           _post = post.copyWith(
             commentCount: (post.commentCount - 1).clamp(0, 1 << 31),
           );
         }
+        // 正在回覆的就是被刪的那則時，取消回覆對象。
+        if (_replyTarget?.id == comment.id) _replyTarget = null;
       });
       final updated = _post;
       if (updated != null) widget.onPostChanged?.call(updated);
@@ -286,10 +304,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       if (e.code == 'COMMENT_NOT_FOUND') {
         if (!mounted) return;
         setState(() {
-          _comments.removeWhere((c) => c.id == comment.id);
-          _replies.removeWhere((c) => c.id == comment.id);
-          // 第一層被刪時，掛在它底下的回覆也失去容身之處（與成功路徑一致）。
-          _replies.removeWhere((c) => c.parentCommentId == comment.id);
+          _applyCommentDeleted(comment);
+          if (_replyTarget?.id == comment.id) _replyTarget = null;
         });
         return;
       }
@@ -445,7 +461,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                   ForumCommentTile(
                     comment: thread.root,
                     isReply: false,
-                    isMine: thread.root.author.uid == UserService.currentUid,
+                    isMine: thread.root.author?.uid == UserService.currentUid,
                     onLike: () => _likeComment(thread.root),
                     onReply: () => setState(() => _replyTarget = thread.root),
                     onDelete: () => _deleteComment(thread.root),
@@ -459,7 +475,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     ForumCommentTile(
                       comment: reply,
                       isReply: true,
-                      isMine: reply.author.uid == UserService.currentUid,
+                      isMine: reply.author?.uid == UserService.currentUid,
                       onLike: () => _likeComment(reply),
                       // 論壇只有兩層：回覆「回覆」時，parent 仍是第一層那則。
                       onReply: () => setState(() => _replyTarget = thread.root),
@@ -586,7 +602,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    '回覆 @${target.author.displayName}',
+                    '回覆 @${target.author?.displayName ?? '匿名使用者'}',
                     style: const TextStyle(fontSize: 12, color: AppColors.fog),
                   ),
                 ),

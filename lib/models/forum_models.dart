@@ -27,11 +27,11 @@ class ForumBoard {
   });
 
   factory ForumBoard.fromJson(Map<String, dynamic> j) => ForumBoard(
-        id: _asInt(j['id']),
-        slug: j['slug'] as String? ?? '',
-        name: j['name'] as String? ?? '',
-        description: j['description'] as String?,
-      );
+    id: _asInt(j['id']),
+    slug: j['slug'] as String? ?? '',
+    name: j['name'] as String? ?? '',
+    description: j['description'] as String?,
+  );
 }
 
 class ForumAuthor {
@@ -46,10 +46,10 @@ class ForumAuthor {
   });
 
   factory ForumAuthor.fromJson(Map<String, dynamic> j) => ForumAuthor(
-        uid: _asInt(j['uid']),
-        displayName: j['display_name'] as String? ?? '匿名使用者',
-        avatarUrl: j['avatar_url'] as String?,
-      );
+    uid: _asInt(j['uid']),
+    displayName: j['display_name'] as String? ?? '匿名使用者',
+    avatarUrl: j['avatar_url'] as String?,
+  );
 }
 
 class ForumTag {
@@ -59,9 +59,9 @@ class ForumTag {
   const ForumTag({required this.name, required this.slug});
 
   factory ForumTag.fromJson(Map<String, dynamic> j) => ForumTag(
-        name: j['name'] as String? ?? '',
-        slug: j['slug'] as String? ?? '',
-      );
+    name: j['name'] as String? ?? '',
+    slug: j['slug'] as String? ?? '',
+  );
 }
 
 /// `/forum/tags` 額外回傳貼文數，供「熱門標籤」排序。
@@ -72,9 +72,9 @@ class ForumTagStat {
   const ForumTagStat({required this.tag, required this.postCount});
 
   factory ForumTagStat.fromJson(Map<String, dynamic> j) => ForumTagStat(
-        tag: ForumTag.fromJson(j),
-        postCount: _asInt(j['post_count']),
-      );
+    tag: ForumTag.fromJson(j),
+    postCount: _asInt(j['post_count']),
+  );
 }
 
 class ForumPost {
@@ -111,31 +111,29 @@ class ForumPost {
   });
 
   factory ForumPost.fromJson(Map<String, dynamic> j) => ForumPost(
-        id: _asInt(j['id']),
-        board: ForumBoard.fromJson(
-          j['board'] as Map<String, dynamic>? ?? const {},
-        ),
-        title: j['title'] as String? ?? '',
-        body: j['body'] as String? ?? '',
-        likeCount: _asInt(j['like_count']),
-        commentCount: _asInt(j['comment_count']),
-        isPinned: j['is_pinned'] == true,
-        isLiked: j['is_liked'] == true,
-        // 後端補上書籤端點前不會有這個欄位（規格 §9）。
-        isBookmarked: j['is_bookmarked'] == true,
-        images: (j['images'] as List<dynamic>? ?? const [])
-            .whereType<String>()
-            .toList(),
-        tags: (j['tags'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(ForumTag.fromJson)
-            .toList(),
-        createdAt: _asDate(j['created_at']),
-        updatedAt: _asDate(j['updated_at']),
-        author: ForumAuthor.fromJson(
-          j['author'] as Map<String, dynamic>? ?? const {},
-        ),
-      );
+    id: _asInt(j['id']),
+    board: ForumBoard.fromJson(j['board'] as Map<String, dynamic>? ?? const {}),
+    title: j['title'] as String? ?? '',
+    body: j['body'] as String? ?? '',
+    likeCount: _asInt(j['like_count']),
+    commentCount: _asInt(j['comment_count']),
+    isPinned: j['is_pinned'] == true,
+    isLiked: j['is_liked'] == true,
+    // 後端補上書籤端點前不會有這個欄位（規格 §9）。
+    isBookmarked: j['is_bookmarked'] == true,
+    images: (j['images'] as List<dynamic>? ?? const [])
+        .whereType<String>()
+        .toList(),
+    tags: (j['tags'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(ForumTag.fromJson)
+        .toList(),
+    createdAt: _asDate(j['created_at']),
+    updatedAt: _asDate(j['updated_at']),
+    author: ForumAuthor.fromJson(
+      j['author'] as Map<String, dynamic>? ?? const {},
+    ),
+  );
 
   ForumPost copyWith({
     int? likeCount,
@@ -146,30 +144,29 @@ class ForumPost {
     String? title,
     String? body,
     List<ForumTag>? tags,
-  }) =>
-      ForumPost(
-        id: id,
-        board: board,
-        title: title ?? this.title,
-        body: body ?? this.body,
-        likeCount: likeCount ?? this.likeCount,
-        commentCount: commentCount ?? this.commentCount,
-        isPinned: isPinned ?? this.isPinned,
-        isLiked: isLiked ?? this.isLiked,
-        isBookmarked: isBookmarked ?? this.isBookmarked,
-        images: images,
-        tags: tags ?? this.tags,
-        createdAt: createdAt,
-        updatedAt: updatedAt,
-        author: author,
-      );
+  }) => ForumPost(
+    id: id,
+    board: board,
+    title: title ?? this.title,
+    body: body ?? this.body,
+    likeCount: likeCount ?? this.likeCount,
+    commentCount: commentCount ?? this.commentCount,
+    isPinned: isPinned ?? this.isPinned,
+    isLiked: isLiked ?? this.isLiked,
+    isBookmarked: isBookmarked ?? this.isBookmarked,
+    images: images,
+    tags: tags ?? this.tags,
+    createdAt: createdAt,
+    updatedAt: updatedAt,
+    author: author,
+  );
 
   /// 樂觀更新用：先翻轉本地狀態，等後端回應再以真實計數校正。
   /// 計數以 0 為下限，避免併發或重送時出現負數。
   ForumPost toggledLike() => copyWith(
-        isLiked: !isLiked,
-        likeCount: isLiked ? (likeCount - 1).clamp(0, 1 << 31) : likeCount + 1,
-      );
+    isLiked: !isLiked,
+    likeCount: isLiked ? (likeCount - 1).clamp(0, 1 << 31) : likeCount + 1,
+  );
 
   /// 書籤是私人行為，不做公開計數（規格 §9），只翻轉狀態。
   ForumPost toggledBookmark() => copyWith(isBookmarked: !isBookmarked);
@@ -182,8 +179,15 @@ class ForumComment {
   final String body;
   final int likeCount;
   final bool isLiked;
+
+  /// 已刪除、但底下還有存活回覆的第一層留言，後端保留成佔位，
+  /// 此時 body 與 author 都是 null（後端 API 文件 §4.4）。
+  final bool isDeleted;
+
   final DateTime createdAt;
-  final ForumAuthor author;
+
+  /// 佔位留言沒有作者——已刪除的身分不外洩。
+  final ForumAuthor? author;
 
   const ForumComment({
     required this.id,
@@ -192,38 +196,58 @@ class ForumComment {
     required this.body,
     required this.likeCount,
     required this.isLiked,
+    required this.isDeleted,
     required this.createdAt,
     required this.author,
   });
 
-  factory ForumComment.fromJson(Map<String, dynamic> j) => ForumComment(
-        id: _asInt(j['id']),
-        postId: _asInt(j['post_id']),
-        parentCommentId: _asIntOrNull(j['parent_comment_id']),
-        body: j['body'] as String? ?? '',
-        likeCount: _asInt(j['like_count']),
-        isLiked: j['is_liked'] == true,
-        createdAt: _asDate(j['created_at']),
-        author: ForumAuthor.fromJson(
-          j['author'] as Map<String, dynamic>? ?? const {},
-        ),
-      );
+  factory ForumComment.fromJson(Map<String, dynamic> j) {
+    final author = j['author'];
+    return ForumComment(
+      id: _asInt(j['id']),
+      postId: _asInt(j['post_id']),
+      parentCommentId: _asIntOrNull(j['parent_comment_id']),
+      body: j['body'] as String? ?? '',
+      likeCount: _asInt(j['like_count']),
+      isLiked: j['is_liked'] == true,
+      isDeleted: j['is_deleted'] == true,
+      createdAt: _asDate(j['created_at']),
+      author: author is Map<String, dynamic>
+          ? ForumAuthor.fromJson(author)
+          : null,
+    );
+  }
 
   ForumComment copyWith({int? likeCount, bool? isLiked}) => ForumComment(
-        id: id,
-        postId: postId,
-        parentCommentId: parentCommentId,
-        body: body,
-        likeCount: likeCount ?? this.likeCount,
-        isLiked: isLiked ?? this.isLiked,
-        createdAt: createdAt,
-        author: author,
-      );
+    id: id,
+    postId: postId,
+    parentCommentId: parentCommentId,
+    body: body,
+    likeCount: likeCount ?? this.likeCount,
+    isLiked: isLiked ?? this.isLiked,
+    isDeleted: isDeleted,
+    createdAt: createdAt,
+    author: author,
+  );
+
+  /// 把一則第一層留言就地轉成佔位：後端刪除第一層留言時會保留它，
+  /// 好讓底下的回覆有東西可以掛（後端 API 文件 §4.3）。
+  ForumComment asDeletedPlaceholder() => ForumComment(
+    id: id,
+    postId: postId,
+    parentCommentId: parentCommentId,
+    body: '',
+    likeCount: 0,
+    isLiked: false,
+    isDeleted: true,
+    createdAt: createdAt,
+    author: null,
+  );
 
   ForumComment toggledLike() => copyWith(
-        isLiked: !isLiked,
-        likeCount: isLiked ? (likeCount - 1).clamp(0, 1 << 31) : likeCount + 1,
-      );
+    isLiked: !isLiked,
+    likeCount: isLiked ? (likeCount - 1).clamp(0, 1 << 31) : likeCount + 1,
+  );
 }
 
 class ForumPostPage {
@@ -238,16 +262,16 @@ class ForumPostPage {
   });
 
   factory ForumPostPage.fromJson(Map<String, dynamic> j) => ForumPostPage(
-        pinned: (j['pinned'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(ForumPost.fromJson)
-            .toList(),
-        posts: (j['posts'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(ForumPost.fromJson)
-            .toList(),
-        nextCursor: _asIntOrNull(j['next_cursor']),
-      );
+    pinned: (j['pinned'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(ForumPost.fromJson)
+        .toList(),
+    posts: (j['posts'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(ForumPost.fromJson)
+        .toList(),
+    nextCursor: _asIntOrNull(j['next_cursor']),
+  );
 }
 
 class ForumCommentPage {
@@ -262,16 +286,16 @@ class ForumCommentPage {
   });
 
   factory ForumCommentPage.fromJson(Map<String, dynamic> j) => ForumCommentPage(
-        comments: (j['comments'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(ForumComment.fromJson)
-            .toList(),
-        replies: (j['replies'] as List<dynamic>? ?? const [])
-            .whereType<Map<String, dynamic>>()
-            .map(ForumComment.fromJson)
-            .toList(),
-        nextCursor: _asIntOrNull(j['next_cursor']),
-      );
+    comments: (j['comments'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(ForumComment.fromJson)
+        .toList(),
+    replies: (j['replies'] as List<dynamic>? ?? const [])
+        .whereType<Map<String, dynamic>>()
+        .map(ForumComment.fromJson)
+        .toList(),
+    nextCursor: _asIntOrNull(j['next_cursor']),
+  );
 }
 
 /// 一則第一層留言與掛在它底下的回覆。論壇只有兩層，replies 不再有子節點。
@@ -300,10 +324,9 @@ List<ForumCommentThread> groupComments(
     byParent.putIfAbsent(parent, () => []).add(reply);
   }
   return comments
-      .map((c) => ForumCommentThread(
-            root: c,
-            replies: byParent[c.id] ?? const [],
-          ))
+      .map(
+        (c) => ForumCommentThread(root: c, replies: byParent[c.id] ?? const []),
+      )
       .toList();
 }
 

@@ -140,9 +140,13 @@ class ForumBoardViewState extends State<ForumBoardView> {
       final page = await widget.loadPage(after: _posts.first.id);
       if (!mounted) return;
       setState(() {
-        _pinned
-          ..clear()
-          ..addAll(page.pinned);
+        // 後端只在第一頁回傳 pinned，帶 after 時一律是空陣列，
+        // 直接覆蓋會讓置頂區在下拉一次後消失。只有真的有帶回來才更新。
+        if (page.pinned.isNotEmpty) {
+          _pinned
+            ..clear()
+            ..addAll(page.pinned);
+        }
         _posts.insertAll(0, page.posts);
       });
     } on ApiException catch (e) {

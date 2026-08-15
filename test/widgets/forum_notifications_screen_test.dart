@@ -8,15 +8,15 @@ import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/screens/forum/forum_notifications_screen.dart';
 
 Map<String, dynamic> notification({required int id, required bool isRead}) => {
-      'id': id,
-      'type': 'reply_post',
-      'post_id': 1024,
-      'comment_id': 5,
-      'post_title': '關於 mhuway',
-      'is_read': isRead,
-      'created_at': '2026-08-01T11:00:00.000Z',
-      'actor': {'uid': 8, 'display_name': 'Pisaw', 'avatar_url': null},
-    };
+  'id': id,
+  'type': 'reply_post',
+  'post_id': 1024,
+  'comment_id': 5,
+  'post_title': '關於 mhuway',
+  'is_read': isRead,
+  'created_at': '2026-08-01T11:00:00.000Z',
+  'actor': {'uid': 8, 'display_name': 'Pisaw', 'avatar_url': null},
+};
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -26,25 +26,29 @@ void main() {
   setUp(() {
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(
-      const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-      (call) async => null,
-    );
+          const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+          (call) async => null,
+        );
   });
 
   tearDown(() => ApiClient.httpClient = http.Client());
 
   testWidgets('顯示通知，內容包含回覆者與貼文標題', (tester) async {
-    ApiClient.httpClient = MockClient((_) async => http.Response(
-          jsonEncode({
-            'notifications': [notification(id: 3, isRead: false)],
-            'unread_count': 1,
-            'next_cursor': null,
-          }),
-          200,
-          headers: {'content-type': 'application/json; charset=utf-8'},
-        ));
+    ApiClient.httpClient = MockClient(
+      (_) async => http.Response(
+        jsonEncode({
+          'notifications': [notification(id: 3, isRead: false)],
+          'unread_count': 1,
+          'next_cursor': null,
+        }),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      ),
+    );
 
-    await tester.pumpWidget(const MaterialApp(home: ForumNotificationsScreen()));
+    await tester.pumpWidget(
+      const MaterialApp(home: ForumNotificationsScreen()),
+    );
     await tester.pumpAndSettle();
 
     expect(find.textContaining('Pisaw'), findsOneWidget);
@@ -52,17 +56,21 @@ void main() {
   });
 
   testWidgets('沒有通知時顯示空狀態', (tester) async {
-    ApiClient.httpClient = MockClient((_) async => http.Response(
-          jsonEncode({
-            'notifications': [],
-            'unread_count': 0,
-            'next_cursor': null,
-          }),
-          200,
-          headers: {'content-type': 'application/json; charset=utf-8'},
-        ));
+    ApiClient.httpClient = MockClient(
+      (_) async => http.Response(
+        jsonEncode({
+          'notifications': [],
+          'unread_count': 0,
+          'next_cursor': null,
+        }),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      ),
+    );
 
-    await tester.pumpWidget(const MaterialApp(home: ForumNotificationsScreen()));
+    await tester.pumpWidget(
+      const MaterialApp(home: ForumNotificationsScreen()),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text('還沒有新的回覆'), findsOneWidget);
@@ -88,7 +96,9 @@ void main() {
       );
     });
 
-    await tester.pumpWidget(const MaterialApp(home: ForumNotificationsScreen()));
+    await tester.pumpWidget(
+      const MaterialApp(home: ForumNotificationsScreen()),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('全部已讀'));

@@ -1,4 +1,8 @@
 // 單則留言。論壇只有兩層，[isReply] 決定是否縮排，沒有更深的層級。
+//
+// 已刪除但底下還有回覆的第一層留言，後端會保留成佔位（is_deleted = true，
+// body 與 author 皆為 null），此時只顯示「此留言已刪除」，不給任何操作按鈕——
+// 對已刪除的留言做任何操作後端一律回 404。
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -28,7 +32,31 @@ class ForumCommentTile extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Padding(
+  Widget build(BuildContext context) {
+    if (comment.isDeleted) return _deletedPlaceholder();
+    return _tile();
+  }
+
+  Widget _deletedPlaceholder() => Padding(
+    key: const ValueKey('forum-comment-indent'),
+    padding: EdgeInsets.fromLTRB(isReply ? 34 : 0, 10, 0, 10),
+    child: Row(
+      children: [
+        Icon(Icons.block, size: isReply ? 14 : 16, color: AppColors.mist),
+        const SizedBox(width: 8),
+        Text(
+          '此留言已刪除',
+          style: GoogleFonts.notoSerifTc(
+            fontSize: 13,
+            fontStyle: FontStyle.italic,
+            color: AppColors.fog,
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _tile() => Padding(
     key: const ValueKey('forum-comment-indent'),
     padding: EdgeInsets.fromLTRB(isReply ? 34 : 0, 10, 0, 10),
     child: Column(
@@ -45,7 +73,7 @@ class ForumCommentTile extends StatelessWidget {
               ),
               alignment: Alignment.center,
               child: Text(
-                comment.author.displayName.characters.firstOrNull ?? '?',
+                comment.author?.displayName.characters.firstOrNull ?? '?',
                 style: GoogleFonts.notoSerifTc(
                   fontSize: 12,
                   color: AppColors.gold,
@@ -54,7 +82,7 @@ class ForumCommentTile extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              comment.author.displayName,
+              comment.author?.displayName ?? '匿名使用者',
               style: GoogleFonts.notoSerifTc(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,

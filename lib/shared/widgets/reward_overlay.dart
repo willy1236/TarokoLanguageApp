@@ -27,7 +27,8 @@ class RewardOverlay extends StatefulWidget {
   State<RewardOverlay> createState() => _RewardOverlayState();
 }
 
-class _RewardOverlayState extends State<RewardOverlay> with SingleTickerProviderStateMixin {
+class _RewardOverlayState extends State<RewardOverlay>
+    with SingleTickerProviderStateMixin {
   late final AnimationController _ctrl;
   late final Animation<double> _scaleAnim;
   late final Animation<double> _numAnim;
@@ -36,13 +37,22 @@ class _RewardOverlayState extends State<RewardOverlay> with SingleTickerProvider
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 600));
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 600),
+    );
     _scaleAnim = CurvedAnimation(parent: _ctrl, curve: Curves.elasticOut);
     _numAnim = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _ctrl, curve: const Interval(0.3, 1.0, curve: Curves.easeOut)),
+      CurvedAnimation(
+        parent: _ctrl,
+        curve: const Interval(0.3, 1.0, curve: Curves.easeOut),
+      ),
     );
     _rotateAnim = Tween<double>(begin: 0, end: 2 * math.pi).animate(
-      CurvedAnimation(parent: _ctrl, curve: const Interval(0.0, 0.5, curve: Curves.easeOut)),
+      CurvedAnimation(
+        parent: _ctrl,
+        curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+      ),
     );
     _ctrl.forward();
   }
@@ -69,10 +79,7 @@ class _RewardOverlayState extends State<RewardOverlay> with SingleTickerProvider
             ),
           ),
           Center(
-            child: ScaleTransition(
-              scale: _scaleAnim,
-              child: _buildCard(),
-            ),
+            child: ScaleTransition(scale: _scaleAnim, child: _buildCard()),
           ),
         ],
       ),
@@ -91,7 +98,13 @@ class _RewardOverlayState extends State<RewardOverlay> with SingleTickerProvider
         ),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(color: AppColors.gold, width: 2),
-        boxShadow: const [BoxShadow(color: Colors.black54, blurRadius: 40, offset: Offset(0, 16))],
+        boxShadow: const [
+          BoxShadow(
+            color: Colors.black54,
+            blurRadius: 40,
+            offset: Offset(0, 16),
+          ),
+        ],
       ),
       child: Stack(
         children: [
@@ -100,15 +113,51 @@ class _RewardOverlayState extends State<RewardOverlay> with SingleTickerProvider
             child: Opacity(
               opacity: 0.10,
               child: CustomPaint(
-                painter: TrukuWeavePainter(color: AppColors.primary, opacity: 1.0, scale: 0.6),
+                painter: TrukuWeavePainter(
+                  color: AppColors.primary,
+                  opacity: 1.0,
+                  scale: 0.6,
+                ),
               ),
             ),
           ),
           // 四角菱形裝飾
-          const Positioned(top: -8, left: -8, child: TrukuDiamond(size: 12, color: AppColors.primary, filled: true)),
-          const Positioned(top: -8, right: -8, child: TrukuDiamond(size: 12, color: AppColors.primary, filled: true)),
-          const Positioned(bottom: -8, left: -8, child: TrukuDiamond(size: 12, color: AppColors.primary, filled: true)),
-          const Positioned(bottom: -8, right: -8, child: TrukuDiamond(size: 12, color: AppColors.primary, filled: true)),
+          const Positioned(
+            top: -8,
+            left: -8,
+            child: TrukuDiamond(
+              size: 12,
+              color: AppColors.primary,
+              filled: true,
+            ),
+          ),
+          const Positioned(
+            top: -8,
+            right: -8,
+            child: TrukuDiamond(
+              size: 12,
+              color: AppColors.primary,
+              filled: true,
+            ),
+          ),
+          const Positioned(
+            bottom: -8,
+            left: -8,
+            child: TrukuDiamond(
+              size: 12,
+              color: AppColors.primary,
+              filled: true,
+            ),
+          ),
+          const Positioned(
+            bottom: -8,
+            right: -8,
+            child: TrukuDiamond(
+              size: 12,
+              color: AppColors.primary,
+              filled: true,
+            ),
+          ),
           // 主體內容
           Column(
             mainAxisSize: MainAxisSize.min,
@@ -145,14 +194,35 @@ class _RewardOverlayState extends State<RewardOverlay> with SingleTickerProvider
                     crossAxisAlignment: CrossAxisAlignment.baseline,
                     textBaseline: TextBaseline.alphabetic,
                     children: [
-                      Text('+', style: GoogleFonts.notoSerifTc(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.primary, letterSpacing: 1)),
+                      Text(
+                        '+',
+                        style: GoogleFonts.notoSerifTc(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.primary,
+                          letterSpacing: 1,
+                        ),
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '$displayed',
-                        style: GoogleFonts.notoSerifTc(fontSize: 56, fontWeight: FontWeight.w700, color: AppColors.primary, height: 1),
+                        style: GoogleFonts.notoSerifTc(
+                          fontSize: 56,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primary,
+                          height: 1,
+                        ),
                       ),
                       const SizedBox(width: 6),
-                      Text('顆小米', style: GoogleFonts.notoSerifTc(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.inkSoft, letterSpacing: 1)),
+                      Text(
+                        '顆小米',
+                        style: GoogleFonts.notoSerifTc(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.inkSoft,
+                          letterSpacing: 1,
+                        ),
+                      ),
                     ],
                   );
                 },
@@ -160,20 +230,30 @@ class _RewardOverlayState extends State<RewardOverlay> with SingleTickerProvider
               const SizedBox(height: 6),
               // 原因標籤
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(12),
                   color: AppColors.primary.withValues(alpha: 0.08),
                 ),
                 child: Text(
                   widget.reason,
-                  style: TextStyle(fontSize: 11, color: AppColors.primary, letterSpacing: 2),
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.primary,
+                    letterSpacing: 2,
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
               // 餘額列
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.ink,
                   borderRadius: BorderRadius.circular(12),
@@ -181,14 +261,29 @@ class _RewardOverlayState extends State<RewardOverlay> with SingleTickerProvider
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('目前小米', style: TextStyle(fontSize: 11, color: AppColors.gold.withValues(alpha: 0.85), letterSpacing: 1)),
+                    Text(
+                      '目前小米',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: AppColors.gold.withValues(alpha: 0.85),
+                        letterSpacing: 1,
+                      ),
+                    ),
                     Row(
                       children: [
-                        const Icon(Icons.grain, size: 22, color: AppColors.gold),
+                        const Icon(
+                          Icons.grain,
+                          size: 22,
+                          color: AppColors.gold,
+                        ),
                         const SizedBox(width: 6),
                         Text(
                           '320',
-                          style: GoogleFonts.notoSerifTc(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.creamLight),
+                          style: GoogleFonts.notoSerifTc(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.creamLight,
+                          ),
                         ),
                       ],
                     ),
@@ -209,7 +304,10 @@ class _RewardOverlayState extends State<RewardOverlay> with SingleTickerProvider
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.creamDeep, width: 1.5),
+                          border: Border.all(
+                            color: AppColors.creamDeep,
+                            width: 1.5,
+                          ),
                           color: AppColors.creamLight,
                         ),
                         child: Text(
@@ -275,7 +373,10 @@ class _RewardOverlayState extends State<RewardOverlay> with SingleTickerProvider
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               gradient: RadialGradient(
-                colors: [AppColors.gold.withValues(alpha: 0.38), Colors.transparent],
+                colors: [
+                  AppColors.gold.withValues(alpha: 0.38),
+                  Colors.transparent,
+                ],
               ),
             ),
           ),

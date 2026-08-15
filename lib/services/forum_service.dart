@@ -19,10 +19,9 @@
 //   POST   /api/forum/reports                     檢舉
 //   GET    /api/forum/notifications               我的通知
 //   POST   /api/forum/notifications/read          標記已讀
-//   POST   / DELETE /api/forum/posts/:id/bookmark 收藏 / 取消（後端待補，規格 §9）
-//   GET    /api/forum/bookmarks                   我的收藏（後端待補，規格 §9）
-
-import 'dart:convert';
+//   POST   / DELETE /api/forum/posts/:id/bookmark 收藏 / 取消
+//   GET    /api/forum/bookmarks                   我的收藏（游標是書籤 id，非貼文 id）
+//   GET    /api/forum/posts                       跨看板總覽（board 選填）
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
@@ -73,12 +72,11 @@ class ForumService {
     return ForumPostPage.fromJson(data);
   }
 
-  /// 跨看板的貼文（廣場的「全部」tab）。
+  /// 跨看板總覽（廣場的「全部」tab）。
   ///
-  /// 後端端點尚未實作，約定與看板貼文同構：
-  ///   GET /api/forum/posts?cursor=&after=&limit=
-  ///   回傳 { pinned, posts, next_cursor }，貼文結構與 enrichPosts() 相同。
-  /// 端點上線前這個 tab 會顯示錯誤與重試，屬預期狀態。
+  /// 總覽的 pinned 一律為空陣列，置頂貼文混在 posts 裡依 id 排序——置頂是各看板
+  /// 自己的事，把所有看板的置頂堆在總覽最上面只會變成雜訊（後端 API 文件 §2.2）。
+  /// 因此這裡不需要另外渲染置頂區塊。
   static Future<ForumPostPage> allPosts({
     int? cursor,
     int? after,
@@ -125,8 +123,9 @@ class ForumService {
           'board_id': '$boardId',
           'title': title,
           'body': body,
-          // multipart 的欄位值只能是字串，陣列改以 JSON 字串傳遞。
-          if (tags.isNotEmpty) 'tags': jsonEncode(tags),
+          // multipart 的欄位值只能是字串，後端在此格式下以逗號分隔解析
+          // （後端 API 文件 §3.1），不是 JSON。
+          if (tags.isNotEmpty) 'tags': tags.join(','),
         },
         files: images,
       );
@@ -134,17 +133,17 @@ class ForumService {
     return ForumPost.fromJson(data['post'] as Map<String, dynamic>);
   }
 
-  /// 編輯。後端只接受文字欄位，附圖無法在此變更。
+  /// 編輯。後端只接受 title 與 body，且兩者至少要給一個，否則回 400；
+  /// board_id、tags、images 一律不可變更（後端 API 文件 §3.3）。
   static Future<ForumPost> updatePost(
     int id, {
     String? title,
     String? body,
-    List<String>? tags,
   }) async {
+    assert(title != null || body != null, 'title 與 body 至少要給一個');
     final data = await ApiClient.patch(ApiConfig.forumPost(id), {
       if (title != null) 'title': title,
       if (body != null) 'body': body,
-      if (tags != null) 'tags': tags,
     });
     return ForumPost.fromJson(data['post'] as Map<String, dynamic>);
   }
@@ -264,9 +263,9 @@ class ForumService {
     {if (ids != null) 'ids': ids},
   );
 
-  // ── 書籤（後端待補，規格 §9）────────────────────────────────
+  // ── 書籤 ──────────────────────────────────────────────────
 
-  /// 回傳操作後的收藏狀態。端點上線前會拿到 404，由畫面顯示錯誤訊息。
+  /// 回傳操作後的收藏狀態。重複收藏或重複取消後端都回 200，不必防連點。
   static Future<bool> bookmarkPost(int id, {required bool add}) async {
     final path = ApiConfig.forumPostBookmark(id);
     final data = add
