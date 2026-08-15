@@ -11,6 +11,7 @@ import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
 import '../../services/user_service.dart';
+import 'forum_compose_screen.dart';
 import 'widgets/forum_comment_tile.dart';
 import 'widgets/forum_image_grid.dart';
 import 'widgets/forum_post_card.dart' show forumRelativeTime;
@@ -258,7 +259,17 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         ),
       );
 
-  // 編輯（_edit）在 Task 9 建立 ForumComposeScreen 後補上。
+  Future<void> _edit() async {
+    final post = _post;
+    if (post == null) return;
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ForumComposeScreen(boards: [post.board], editing: post),
+      ),
+    );
+    if (updated == true && mounted) _load();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -281,7 +292,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           if (post != null)
             PopupMenuButton<String>(
               onSelected: (value) {
-                // 'edit' 由 Task 9 加入
+                if (value == 'edit') _edit();
                 if (value == 'delete') _deletePost();
                 if (value == 'report') {
                   showForumReportSheet(
@@ -293,7 +304,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               },
               itemBuilder: (_) => _isMine
                   ? const [
-                      // Task 9 在此加入 PopupMenuItem(value: 'edit', child: Text('編輯'))
+                      PopupMenuItem(value: 'edit', child: Text('編輯')),
                       PopupMenuItem(value: 'delete', child: Text('刪除')),
                     ]
                   : const [

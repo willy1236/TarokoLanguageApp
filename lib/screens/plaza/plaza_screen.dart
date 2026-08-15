@@ -8,6 +8,7 @@ import '../../services/event_service.dart';
 import '../../services/forum_service.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../forum/forum_board_view.dart';
+import '../forum/forum_compose_screen.dart';
 import '../forum/forum_detail_screen.dart';
 import '../events/event_detail_screen.dart';
 
@@ -172,8 +173,19 @@ class _PlazaScreenState extends State<PlazaScreen> {
             ),
           ),
           GestureDetector(
-            // Task 9 建立 ForumComposeScreen 後接上
-            onTap: null,
+            onTap: _boards.isEmpty
+                ? null
+                : () async {
+                    final created = await Navigator.push<bool>(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => ForumComposeScreen(boards: _boards),
+                      ),
+                    );
+                    if (created == true) {
+                      _boardViewKey.currentState?.refresh();
+                    }
+                  },
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
               decoration: BoxDecoration(
