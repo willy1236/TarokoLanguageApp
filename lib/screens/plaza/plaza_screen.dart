@@ -8,6 +8,7 @@ import '../../services/event_service.dart';
 import '../../services/forum_service.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../forum/forum_board_view.dart';
+import '../forum/forum_detail_screen.dart';
 import '../events/event_detail_screen.dart';
 
 class PlazaScreen extends StatefulWidget {
@@ -82,6 +83,14 @@ class _PlazaScreenState extends State<PlazaScreen> {
     ).then((_) {
       if (mounted) _loadEvents();
     });
+  }
+
+  Future<void> _openPost(ForumPost post) async {
+    final deleted = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(builder: (_) => ForumDetailScreen(postId: post.id)),
+    );
+    if (deleted == true) _boardViewKey.currentState?.removePost(post.id);
   }
 
   @override
@@ -261,14 +270,16 @@ class _PlazaScreenState extends State<PlazaScreen> {
         child: Text('目前沒有可用的看板', style: TextStyle(color: AppColors.fog)),
       );
     }
-    return ForumBoardView(
+    return KeyedSubtree(
       key: ValueKey(slug),
-      loadPage: ({cursor, after}) =>
-          ForumService.posts(slug, cursor: cursor, after: after),
-      toggleLike: ForumService.likePost,
-      toggleBookmark: ForumService.bookmarkPost,
-      // 詳情頁在 Task 8 才建立，此處先留空，Task 8 換成 _openPost。
-      onOpenPost: (_) {},
+      child: ForumBoardView(
+        key: _boardViewKey,
+        loadPage: ({cursor, after}) =>
+            ForumService.posts(slug, cursor: cursor, after: after),
+        toggleLike: ForumService.likePost,
+        toggleBookmark: ForumService.bookmarkPost,
+        onOpenPost: _openPost,
+      ),
     );
   }
 }
