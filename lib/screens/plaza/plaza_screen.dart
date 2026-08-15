@@ -128,7 +128,7 @@ class _PlazaScreenState extends State<PlazaScreen> {
       body: Column(
         children: [
           _buildHeader(context),
-          if (!_eventsLoading && _events.isNotEmpty) _buildMiniEventCards(),
+          _buildMiniEventCards(),
           _buildTabBar(),
           Expanded(child: _buildPostsSection()),
         ],
@@ -138,9 +138,9 @@ class _PlazaScreenState extends State<PlazaScreen> {
 
   Widget _buildHeader(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 16),
+      padding: const EdgeInsets.fromLTRB(20, 60, 20, 12),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
@@ -168,141 +168,174 @@ class _PlazaScreenState extends State<PlazaScreen> {
               ],
             ),
           ),
-          IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ForumSearchScreen(
-                  boards: _boards,
-                  onBookmarkChanged: _syncBookmark,
-                ),
-              ),
-            ),
-            icon: const Icon(Icons.search, color: AppColors.ink, size: 20),
-          ),
-          IconButton(
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (_) =>
-                    ForumBookmarksScreen(onBookmarkChanged: _syncBookmark),
-              ),
-            ),
-            icon: const Icon(
-              Icons.bookmark_border,
-              color: AppColors.ink,
-              size: 20,
-            ),
-          ),
-          IconButton(
-            onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const ForumNotificationsScreen(),
-                ),
-              );
-              if (mounted) _loadUnread();
-            },
-            icon: Stack(
-              clipBehavior: Clip.none,
-              children: [
-                const Icon(
-                  Icons.notifications_none,
-                  color: AppColors.ink,
-                  size: 20,
-                ),
-                if (_unread > 0)
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(
-                        color: AppColors.primary,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          GestureDetector(
-            onTap: _boards.isEmpty
-                ? null
-                : () async {
-                    final created = await Navigator.push<bool>(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => ForumComposeScreen(boards: _boards),
-                      ),
-                    );
-                    if (created == true) {
-                      _boardViewKey.currentState?.refresh();
-                    }
-                  },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.add, color: AppColors.creamLight, size: 14),
-                  const SizedBox(width: 6),
-                  Text(
-                    '發布',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.creamLight,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // 發布是主要動作放上排，三個次要入口收在它下面：
+          // 全部擠在同一列時，標題可用的寬度會被壓到換行。
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _composeButton(),
+              const SizedBox(height: 2),
+              _actionIcons(),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTabBar() => Container(
-    decoration: const BoxDecoration(
-      border: Border(bottom: BorderSide(color: AppColors.creamDeep)),
-    ),
-    child: SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+  Widget _composeButton() => GestureDetector(
+    onTap: _boards.isEmpty
+        ? null
+        : () async {
+            final created = await Navigator.push<bool>(
+              context,
+              MaterialPageRoute(
+                builder: (_) => ForumComposeScreen(boards: _boards),
+              ),
+            );
+            if (created == true) {
+              _boardViewKey.currentState?.refresh();
+            }
+          },
+    child: Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(22),
+      ),
       child: Row(
+        mainAxisSize: MainAxisSize.min,
         children: [
-          // slug 為 null 代表「全部」，排在最前面且是預設。
-          _BoardTab(
-            label: '全部',
-            selected: _boardSlug == null,
-            onTap: () => setState(() => _boardSlug = null),
-          ),
-          for (final board in _boards)
-            _BoardTab(
-              label: board.name,
-              selected: board.slug == _boardSlug,
-              onTap: () => setState(() => _boardSlug = board.slug),
+          const Icon(Icons.add, color: AppColors.creamLight, size: 14),
+          const SizedBox(width: 6),
+          Text(
+            '發布',
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.creamLight,
+              letterSpacing: 1.5,
             ),
+          ),
         ],
       ),
     ),
   );
 
+  Widget _actionIcons() => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      IconButton(
+        tooltip: '搜尋',
+        visualDensity: VisualDensity.compact,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ForumSearchScreen(
+              boards: _boards,
+              onBookmarkChanged: _syncBookmark,
+            ),
+          ),
+        ),
+        icon: const Icon(Icons.search, color: AppColors.ink, size: 20),
+      ),
+      IconButton(
+        tooltip: '我的收藏',
+        visualDensity: VisualDensity.compact,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                ForumBookmarksScreen(onBookmarkChanged: _syncBookmark),
+          ),
+        ),
+        icon: const Icon(Icons.bookmark_border, color: AppColors.ink, size: 20),
+      ),
+      IconButton(
+        tooltip: '通知',
+        visualDensity: VisualDensity.compact,
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ForumNotificationsScreen()),
+          );
+          if (mounted) _loadUnread();
+        },
+        icon: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            const Icon(
+              Icons.notifications_none,
+              color: AppColors.ink,
+              size: 20,
+            ),
+            if (_unread > 0)
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ],
+  );
+
+  /// 看板 tab。名稱短時平均分佈填滿整列，多到放不下才變成可捲動——
+  /// 固定間距在只有六個兩字看板時會全部擠在左半邊，右邊留一大片空白。
+  Widget _buildTabBar() => Container(
+    decoration: const BoxDecoration(
+      border: Border(bottom: BorderSide(color: AppColors.creamDeep)),
+    ),
+    child: LayoutBuilder(
+      builder: (context, constraints) => SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minWidth: constraints.maxWidth),
+          // IntrinsicWidth 讓 Row 先量出自己的寬度，ConstrainedBox 再把它撐到
+          // 至少一個螢幕寬，spaceEvenly 才有東西可以分佈。
+          child: IntrinsicWidth(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  // slug 為 null 代表「全部」，排在最前面且是預設。
+                  _BoardTab(
+                    label: '全部',
+                    selected: _boardSlug == null,
+                    onTap: () => setState(() => _boardSlug = null),
+                  ),
+                  for (final board in _boards)
+                    _BoardTab(
+                      label: board.name,
+                      selected: board.slug == _boardSlug,
+                      onTap: () => setState(() => _boardSlug = board.slug),
+                    ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    ),
+  );
+
+  /// 近期活動區塊一律顯示，沒有活動時給一句話而不是整塊消失——
+  /// 區塊時有時無會讓下面的看板 tab 跟著上下跳。
   Widget _buildMiniEventCards() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
           child: Text(
             'SMRATUC · 近期活動',
             style: GoogleFonts.crimsonPro(
@@ -313,19 +346,65 @@ class _PlazaScreenState extends State<PlazaScreen> {
             ),
           ),
         ),
-        SizedBox(
-          height: 120,
-          child: ListView.separated(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-            itemCount: _events.length,
-            separatorBuilder: (_, _) => const SizedBox(width: 10),
-            itemBuilder: (_, i) => _MiniEventCard(
-              event: _events[i],
-              onTap: () => _openEventDetail(_events[i]),
+        if (_eventsLoading)
+          const Padding(
+            padding: EdgeInsets.fromLTRB(20, 0, 20, 16),
+            child: SizedBox(
+              height: 18,
+              width: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: AppColors.primary,
+              ),
+            ),
+          )
+        else if (_events.isEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              decoration: BoxDecoration(
+                color: AppColors.cream,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.creamDeep),
+              ),
+              child: Row(
+                children: [
+                  const Icon(
+                    Icons.event_available_outlined,
+                    size: 18,
+                    color: AppColors.fog,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      '近期暫無活動，敬請期待',
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: 13,
+                        color: AppColors.fog,
+                        letterSpacing: 0.8,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else
+          SizedBox(
+            height: 120,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+              itemCount: _events.length,
+              separatorBuilder: (_, _) => const SizedBox(width: 10),
+              itemBuilder: (_, i) => _MiniEventCard(
+                event: _events[i],
+                onTap: () => _openEventDetail(_events[i]),
+              ),
             ),
           ),
-        ),
       ],
     );
   }
@@ -378,7 +457,7 @@ class _BoardTab extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.only(right: 22),
+        padding: const EdgeInsets.symmetric(horizontal: 6),
         child: Stack(
           children: [
             Padding(

@@ -264,7 +264,8 @@ class ForumBoardViewState extends State<ForumBoardView> {
       child: ListView.separated(
         controller: _scrollController,
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
+        // 上方留白讓第一張卡片與看板 tab 的底線分開，不會黏在一起。
+        padding: const EdgeInsets.fromLTRB(20, 14, 20, 100),
         itemCount: all.length + (_loadingMore ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (_, i) {

@@ -74,7 +74,8 @@ class ForumPostCard extends StatelessWidget {
           ),
           if (post.images.isNotEmpty) ...[
             const SizedBox(height: 10),
-            ForumImageGrid(urls: post.images),
+            // 列表上點附圖等同點卡片，一律進詳情頁；放大檢視只在詳情頁提供。
+            ForumImageGrid(urls: post.images, onTap: onTap),
           ],
           if (post.tags.isNotEmpty) ...[
             const SizedBox(height: 10),

@@ -17,6 +17,7 @@ import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
+import 'widgets/forum_image_grid.dart' show ForumImageViewer;
 
 /// 依後端硬性限制檢查，回傳第一個錯誤訊息；全部通過回 null。
 String? forumComposeError({
@@ -152,6 +153,20 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
       );
       if (_images.length >= ForumService.imageMaxCount) break;
     }
+  }
+
+  /// 全螢幕預覽已選、尚未上傳的圖片。用 MemoryImage 是因為這些圖只存在記憶體，
+  /// 還沒有可以引用的網址。
+  void _previewPicked(int index) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ForumImageViewer(
+          images: [for (final image in _images) MemoryImage(image.bytes)],
+          initialIndex: index,
+        ),
+      ),
+    );
   }
 
   void _addTag() {
@@ -500,13 +515,17 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
               separatorBuilder: (_, _) => const SizedBox(width: 8),
               itemBuilder: (_, i) => Stack(
                 children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.memory(
-                      _images[i].bytes,
-                      width: 88,
-                      height: 88,
-                      fit: BoxFit.cover,
+                  GestureDetector(
+                    // 點縮圖看原圖：縮圖只有 88px，選錯圖在這個尺寸下看不出來。
+                    onTap: () => _previewPicked(i),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: Image.memory(
+                        _images[i].bytes,
+                        width: 88,
+                        height: 88,
+                        fit: BoxFit.cover,
+                      ),
                     ),
                   ),
                   Positioned(
