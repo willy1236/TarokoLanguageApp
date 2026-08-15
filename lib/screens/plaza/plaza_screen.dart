@@ -8,6 +8,7 @@ import '../../services/event_service.dart';
 import '../../services/forum_service.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../forum/forum_board_view.dart';
+import '../forum/forum_bookmarks_screen.dart';
 import '../forum/forum_compose_screen.dart';
 import '../forum/forum_detail_screen.dart';
 import '../forum/forum_notifications_screen.dart';
@@ -151,8 +152,10 @@ class _PlazaScreenState extends State<PlazaScreen> {
             icon: const Icon(Icons.search, color: AppColors.ink, size: 20),
           ),
           IconButton(
-            // Task 12 補上導向 ForumBookmarksScreen
-            onPressed: null,
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const ForumBookmarksScreen()),
+            ),
             icon: const Icon(Icons.bookmark_border, color: AppColors.ink, size: 20),
           ),
           IconButton(
