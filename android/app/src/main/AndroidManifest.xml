@@ -2,6 +2,11 @@
     <uses-permission android:name="android.permission.INTERNET"/>
     <!-- Android 13 (API 33)+ 需宣告才能請求通知權限（FCM 活動提醒） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+    <!-- 1 對 1 視訊配對（issue #10）：Agora RTC 通話需要相機與麥克風 -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
     <application
         android:label="Kari Truku"
         android:name="${applicationName}"

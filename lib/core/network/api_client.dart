@@ -26,6 +26,9 @@ class ApiException implements Exception {
   bool get isUnauthorized => statusCode == 401;
   bool get isSessionNotFound => code == 'SESSION_NOT_FOUND';
   bool get isSessionNotCompleted => code == 'SESSION_NOT_COMPLETED';
+  bool get isVideoUnavailable =>
+      statusCode == 503 && code == 'VIDEO_UNAVAILABLE';
+  bool get isSessionEnded => code == 'SESSION_ENDED';
 
   @override
   String toString() => message;

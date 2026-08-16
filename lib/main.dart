@@ -12,6 +12,7 @@ import 'screens/home/home_screen.dart';
 import 'screens/learn/learn_screen.dart';
 import 'screens/events/event_detail_screen.dart';
 import 'screens/events/events_screen.dart';
+import 'screens/community/video_call_screen.dart';
 import 'screens/plaza/plaza_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
@@ -20,6 +21,7 @@ import 'core/network/api_client.dart';
 import 'services/checkin_service.dart';
 import 'services/fcm_service.dart';
 import 'services/user_service.dart';
+import 'services/video_call_service.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
@@ -46,6 +48,26 @@ Future<void> main() async {
     navState.push(
       MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: eventId)),
     );
+  };
+  // 冷啟動/背景點擊 video_matched 通知 → 查目前 active session 並導到通話畫面。
+  // FCM payload 只有 session_id/channel，權威資料一律重新查詢（見 fcm_service.dart
+  // 檔頭註解），避免跟輪詢路徑組出不一致的 VideoSession。
+  FcmService.onVideoMatchedColdStart = (sessionId, channel) async {
+    if (sessionId == null) return;
+    try {
+      final session = await VideoCallService.fetchCurrentSession();
+      if (session == null || session.id != sessionId) return;
+      final navState = navigatorKey.currentState;
+      if (navState == null) {
+        debugPrint('FcmService.onVideoMatchedColdStart: navigatorKey 尚未掛上，導頁被忽略');
+        return;
+      }
+      navState.push(
+        MaterialPageRoute(builder: (_) => VideoCallScreen(session: session)),
+      );
+    } catch (e) {
+      debugPrint('FcmService.onVideoMatchedColdStart: 查詢 session 失敗：$e');
+    }
   };
   // FCM 掛載（要權限、掛前景/點擊監聽）。失敗不阻斷 App 啟動；token 上傳待登入後。
   try {

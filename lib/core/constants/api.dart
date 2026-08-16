@@ -52,4 +52,12 @@ class ApiConfig {
   // 族群/部落（issue #5）
   static const String ethnicGroups = '/api/ethnic-groups';
   static const String tribes = '/api/tribes';
+
+  // 1 對 1 視訊配對（issue #10，見 Truku_backend backend/routes/video.ts）
+  static const String videoQueue = '/api/video/queue';
+  static const String videoSessionCurrent = '/api/video/session/current';
+  static String videoSessionToken(int sessionId) =>
+      '/api/video/session/$sessionId/token';
+  static String videoSessionEnd(int sessionId) =>
+      '/api/video/session/$sessionId/end';
 }

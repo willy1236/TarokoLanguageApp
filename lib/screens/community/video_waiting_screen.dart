@@ -1,6 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../services/fcm_service.dart';
+import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'video_call_screen.dart';
@@ -13,8 +17,11 @@ class VideoWaitingScreen extends StatefulWidget {
 }
 
 class _VideoWaitingScreenState extends State<VideoWaitingScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController _controller;
+  Timer? _pollTimer;
+  bool _isPolling = false;
+  bool _matched = false;
 
   @override
   void initState() {
@@ -23,12 +30,56 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
+
+    WidgetsBinding.instance.addObserver(this);
+    FcmService.onVideoMatchedForeground = (_, _) => _poll();
+    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) => _poll());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _poll();
   }
 
   @override
   void dispose() {
+    _pollTimer?.cancel();
+    FcmService.onVideoMatchedForeground = null;
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     super.dispose();
+  }
+
+  /// 查詢目前 active session；配到就取消輪詢並導向通話畫面。單次查詢失敗只記
+  /// log，不中斷輪詢迴圈——佇列狀態在後端維護，前端輪詢只是查詢動作。
+  Future<void> _poll() async {
+    if (_isPolling || _matched) return;
+    _isPolling = true;
+    try {
+      final session = await VideoCallService.fetchCurrentSession();
+      if (session == null || !mounted || _matched) return;
+      _matched = true;
+      _pollTimer?.cancel();
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VideoCallScreen(
+            session: session,
+            credentials: null, // 由 VideoCallScreen 自行 refreshToken 取得
+          ),
+        ),
+      );
+    } catch (e) {
+      debugPrint('VideoWaitingScreen: 輪詢失敗，忽略並等下一輪：$e');
+    } finally {
+      _isPolling = false;
+    }
+  }
+
+  /// 取消配對：離開佇列。不必等後端確認即可讓使用者感覺立即返回。
+  void _cancel(BuildContext context) {
+    unawaited(VideoCallService.leaveQueue());
+    Navigator.pop(context);
   }
 
   @override
@@ -81,7 +132,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
       child: Row(
         children: [
           GestureDetector(
-            onTap: () => Navigator.pop(context),
+            onTap: () => _cancel(context),
             child: Container(
               width: 36,
               height: 36,
@@ -169,19 +220,13 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
           ),
         ),
         const SizedBox(height: 32),
-        GestureDetector(
-          onTap: () => Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const VideoCallScreen()),
-          ),
-          child: Text(
-            '正在尋找',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: AppColors.creamLight,
-              letterSpacing: 2.0,
-            ),
+        Text(
+          '正在尋找',
+          style: GoogleFonts.notoSerifTc(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: AppColors.creamLight,
+            letterSpacing: 2.0,
           ),
         ),
       ],
@@ -192,7 +237,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 50),
       child: GestureDetector(
-        onTap: () => Navigator.pop(context),
+        onTap: () => _cancel(context),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
           decoration: BoxDecoration(

@@ -4,6 +4,13 @@
 //   - 登入後把 token 上傳 POST /api/devices（req 需帶 JWT，故必須登入後才呼叫）
 //   - 登出前 DELETE /api/devices 移除
 //   - 提醒推播的 data payload：{ type: 'event_reminder', event_id, reminder_id }
+//   - 視訊配對推播的 data payload（issue #10，見 backend/routes/video.ts）：
+//     { type: 'video_matched', session_id, channel }
+//     { type: 'video_session_ended', session_id }
+//     注意：video_matched payload 只有 session_id/channel，沒有
+//     peer_uid/expires_at，不足以組出完整 VideoSession —— 收到後一律當「觸發
+//     訊號」，由畫面端另外呼叫 VideoService.fetchCurrentSession() 取得權威資料，
+//     不要直接拿 payload 欄位組物件（避免輪詢與 FCM 兩條路徑組出不一致的結果）。
 //
 // 使用方式（之後在 UI/啟動流程接）：
 //   main() 啟動時：await FcmService.init();
@@ -52,6 +59,20 @@ class FcmService {
   /// 由 EventDetailScreen 在 initState/dispose 掛上/清空。
   static void Function(int? eventId)? onReminderReceivedForOpenScreen;
 
+  /// 冷啟動／背景點擊通知時收到 video_matched。全域註冊一次（main.dart），
+  /// 用 navigatorKey 直接導頁到通話等待/通話畫面。
+  static void Function(int? sessionId, String? channel)? onVideoMatchedColdStart;
+
+  /// 前景收到 video_matched 時觸發，只在配對等待畫面開著時有意義，由
+  /// VideoWaitingScreen 在 initState/dispose 掛上/清空——收到後應立即重新查詢
+  /// GET /api/video/session/current 取得權威資料，不要直接用 payload 欄位。
+  static void Function(int? sessionId, String? channel)? onVideoMatchedForeground;
+
+  /// 收到 video_session_ended（前景/背景點擊/冷啟動皆可能觸發）。由
+  /// VideoCallScreen 在 initState/dispose 掛上/清空；若收到時不在通話畫面可
+  /// 忽略或僅記錄 log。
+  static void Function(int? sessionId)? onVideoSessionEnded;
+
   /// App 被完全關閉、靠點擊通知冷啟動時拿到的訊息。此時 runApp() 尚未執行，
   /// navigatorKey 還沒掛上 Navigator，不能立即導頁，先暫存；等 SplashScreen
   /// 完成起始路由跳轉後再呼叫 [consumePendingInitialMessage] 處理，
@@ -88,8 +109,13 @@ class FcmService {
     await _localNotifications.initialize(
       const InitializationSettings(android: androidInit, iOS: iosInit),
       onDidReceiveNotificationResponse: (response) {
-        final eventId = int.tryParse(response.payload ?? '');
-        onReminderTapped?.call(eventId);
+        final payload = response.payload ?? '';
+        if (payload.startsWith('video:')) {
+          onVideoMatchedColdStart?.call(
+              int.tryParse(payload.substring('video:'.length)), null);
+          return;
+        }
+        onReminderTapped?.call(int.tryParse(payload));
       },
     );
     await _localNotifications
@@ -158,7 +184,25 @@ class FcmService {
     return (type as String, eventId);
   }
 
+  /// 解析視訊配對相關通知的 payload，非視訊類型回傳 null。
+  static (String type, int? sessionId, String? channel)? _parseVideoPayload(
+      Map<String, dynamic> data) {
+    final type = data['type'];
+    if (type != 'video_matched' && type != 'video_session_ended') return null;
+    final sessionId = int.tryParse(data['session_id']?.toString() ?? '');
+    if (sessionId == null) {
+      debugPrint('FcmService: session_id 缺失或無法解析，忽略：${data['session_id']}');
+    }
+    return (type as String, sessionId, data['channel'] as String?);
+  }
+
   static void _onForegroundMessage(RemoteMessage message) {
+    final videoParsed = _parseVideoPayload(message.data);
+    if (videoParsed != null) {
+      _onForegroundVideoMessage(videoParsed);
+      return;
+    }
+
     final parsed = _parseReminderPayload(message.data);
     if (parsed == null) return;
     final (_, eventId) = parsed;
@@ -186,7 +230,44 @@ class FcmService {
     onReminderReceivedForOpenScreen?.call(eventId);
   }
 
+  /// 前景收到視訊配對相關通知：畫面自己開著時交給畫面等級訂閱處理，不彈本地
+  /// 系統通知，避免使用者正看著等待/通話畫面卻又跳一則通知打擾；沒有對應
+  /// 訂閱者（代表使用者不在該畫面）時才彈通知。
+  static void _onForegroundVideoMessage(
+      (String type, int? sessionId, String? channel) parsed) {
+    final (type, sessionId, channel) = parsed;
+
+    if (type == 'video_matched') {
+      if (onVideoMatchedForeground != null) {
+        onVideoMatchedForeground!(sessionId, channel);
+        return;
+      }
+      unawaited(_localNotifications.show(
+        sessionId ?? DateTime.now().millisecondsSinceEpoch,
+        '找到語伴了！',
+        '點開始你們的視訊練習',
+        const NotificationDetails(android: _reminderAndroidDetails),
+        payload: 'video:$sessionId',
+      ));
+      return;
+    }
+
+    // video_session_ended
+    onVideoSessionEnded?.call(sessionId);
+  }
+
   static void _handleOpened(RemoteMessage message) {
+    final videoParsed = _parseVideoPayload(message.data);
+    if (videoParsed != null) {
+      final (type, sessionId, channel) = videoParsed;
+      if (type == 'video_matched') {
+        onVideoMatchedColdStart?.call(sessionId, channel);
+      } else {
+        onVideoSessionEnded?.call(sessionId);
+      }
+      return;
+    }
+
     final parsed = _parseReminderPayload(message.data);
     if (parsed == null) return;
     final (_, eventId) = parsed;
