@@ -23,6 +23,8 @@ class UserModel {
   final String? ethnicGroup; // 族群，見 00_核心與認證.md §2.5；未設為 null
   final int? tribeId; // 部落 id，對應 tribes.id；未設為 null
   final String? tribeName; // 部落中文名，由後端 join tribes 帶出
+  final bool? isIndigenous; // 是否原住民；ethnicGroup 一經設定即永久鎖定
+  final String? tribalName; // 本人族語名，不受 ethnicGroup 鎖定限制，可隨時修改
 
   const UserModel({
     required this.uid,
@@ -40,6 +42,8 @@ class UserModel {
     this.ethnicGroup,
     this.tribeId,
     this.tribeName,
+    this.isIndigenous,
+    this.tribalName,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -63,6 +67,8 @@ class UserModel {
       ethnicGroup: json['ethnic_group'] as String?,
       tribeId: json['tribe_id'] as int?,
       tribeName: json['tribe_name'] as String?,
+      isIndigenous: json['is_indigenous'] as bool?,
+      tribalName: json['tribal_name'] as String?,
     );
   }
 
@@ -82,6 +88,8 @@ class UserModel {
         'ethnic_group': ethnicGroup,
         'tribe_id': tribeId,
         'tribe_name': tribeName,
+        'is_indigenous': isIndigenous,
+        'tribal_name': tribalName,
       };
 
   int get joinedDays => DateTime.now().difference(createdAt).inDays;
@@ -102,6 +110,8 @@ class UserModel {
     String? ethnicGroup,
     int? tribeId,
     String? tribeName,
+    bool? isIndigenous,
+    String? tribalName,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -119,6 +129,8 @@ class UserModel {
       ethnicGroup: ethnicGroup ?? this.ethnicGroup,
       tribeId: tribeId ?? this.tribeId,
       tribeName: tribeName ?? this.tribeName,
+      isIndigenous: isIndigenous ?? this.isIndigenous,
+      tribalName: tribalName ?? this.tribalName,
     );
   }
 }

@@ -66,6 +66,35 @@ void main() {
         await _inspect('PATCH', ApiConfig.me, body: {'display_name': original});
       }
     });
+    test('PATCH /api/me (is_indigenous/tribal_name 回傳格式測試，測完自動還原)',
+        () async {
+      if (_token == null) {
+        markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+        return;
+      }
+      final original = await _fetchIdentityFields();
+      await _inspect(
+        'PATCH',
+        ApiConfig.me,
+        body: {'is_indigenous': true, 'tribal_name': 'API Inspector Test'},
+      );
+      // 再打一次確認是否遭 IDENTITY_LOCKED（族群/部落尚未設定應該不會鎖）
+      await _inspect(
+        'PATCH',
+        ApiConfig.me,
+        body: {'tribal_name': 'API Inspector Test 2'},
+      );
+      if (original != null) {
+        await _inspect(
+          'PATCH',
+          ApiConfig.me,
+          body: {
+            'is_indigenous': original['is_indigenous'],
+            'tribal_name': original['tribal_name'],
+          },
+        );
+      }
+    });
     test('GET /api/levels', () => _inspect('GET', ApiConfig.levels));
     test('POST /api/quiz/start', () => _inspect(
       'POST',
@@ -158,6 +187,20 @@ Future<String?> _fetchDisplayName() async {
   if (response.statusCode != 200) return null;
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   return decoded['display_name'] as String?;
+}
+
+Future<Map<String, dynamic>?> _fetchIdentityFields() async {
+  final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.me}');
+  final response = await http.get(uri, headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $_token',
+  });
+  if (response.statusCode != 200) return null;
+  final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+  return {
+    'is_indigenous': decoded['is_indigenous'],
+    'tribal_name': decoded['tribal_name'],
+  };
 }
 
 Future<void> _inspect(

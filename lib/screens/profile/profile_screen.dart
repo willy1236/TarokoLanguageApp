@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
 import '../../models/tribe_model.dart';
 import '../../models/user_model.dart';
@@ -364,6 +365,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUser();
   }
 
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
   /// 前往商店頁面兌換新道具；商店頁不會 pop 回更新後的 UserModel，
   /// 因此回到本頁後一律重新呼叫 fetchMe() 以取得最新的 millet/owned 清單。
   Future<void> _openShop() async {
@@ -574,6 +582,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── 帳號設定 ──────────────────────────────────────────────────────────────
 
   Widget _buildAccountSection() {
+    final identityLocked = _user?.ethnicGroup != null;
     return _section('HANGAN · 帳號', [
       _settingRow(
         '中文姓名',
@@ -583,15 +592,23 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       _settingRow(
         '族語名字',
-        _user?.displayName ?? 'Sayun Lowking',
+        _user?.tribalName ?? '尚未設定',
         truku: true,
-        editable: false,
+        editable: true,
+        onTap: _editTribalName,
+      ),
+      _switchRow(
+        '是否原住民',
+        _user?.isIndigenous ?? false,
+        locked: identityLocked,
+        lockedHint: identityLocked ? '已設定，如需更正請聯繫客服' : null,
+        onChanged: _updateIsIndigenous,
       ),
       _settingRow(
         '部落',
         _user?.tribeName ?? '尚未設定',
-        editable: true,
-        onTap: _editTribe,
+        editable: !identityLocked,
+        onTap: identityLocked ? null : _editTribe,
       ),
       _settingRow('電子信箱', _user?.email ?? 'apyang@truku.org', editable: false),
     ]);
@@ -600,16 +617,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _editDisplayName() async {
     final newName = await showDialog<String>(
       context: context,
-      builder: (ctx) => _RenameDialog(initialValue: _user?.displayName ?? ''),
+      builder: (ctx) => _RenameDialog(
+        title: '修改姓名',
+        label: '中文姓名',
+        initialValue: _user?.displayName ?? '',
+      ),
     );
     if (newName == null || newName.isEmpty || newName == _user?.displayName)
       return;
     try {
       final updated = await UserService.updateMe(displayName: newName);
       if (mounted) setState(() => _user = updated);
+    } on ApiException catch (e) {
+      _showError(e.message);
     } catch (e, st) {
       debugPrint('Failed to update display name: $e');
       debugPrintStack(stackTrace: st);
+      _showError('更新失敗，請稍後再試');
+    }
+  }
+
+  Future<void> _editTribalName() async {
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _RenameDialog(
+        title: '修改族語名字',
+        label: '族語名字',
+        initialValue: _user?.tribalName ?? '',
+      ),
+    );
+    if (newName == null || newName == _user?.tribalName) return;
+    try {
+      final updated = await UserService.updateMe(tribalName: newName);
+      if (mounted) setState(() => _user = updated);
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (e, st) {
+      debugPrint('Failed to update tribal name: $e');
+      debugPrintStack(stackTrace: st);
+      _showError('更新失敗，請稍後再試');
+    }
+  }
+
+  Future<void> _updateIsIndigenous(bool value) async {
+    try {
+      final updated = await UserService.updateMe(isIndigenous: value);
+      if (mounted) setState(() => _user = updated);
+    } on ApiException catch (e) {
+      if (e.isIdentityLocked) {
+        _showError('族群已設定，如需更正請聯繫客服');
+      } else {
+        _showError(e.message);
+      }
+    } catch (e, st) {
+      debugPrint('Failed to update is_indigenous: $e');
+      debugPrintStack(stackTrace: st);
+      _showError('更新失敗，請稍後再試');
     }
   }
 
@@ -631,9 +694,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
       try {
         final updated = await UserService.updateMe(clearTribeId: true);
         if (mounted) setState(() => _user = updated);
+      } on ApiException catch (e) {
+        if (e.isIdentityLocked) {
+          _showError('族群已設定，如需更正請聯繫客服');
+        } else {
+          _showError(e.message);
+        }
       } catch (e, st) {
         debugPrint('Failed to clear tribe: $e');
         debugPrintStack(stackTrace: st);
+        _showError('更新失敗，請稍後再試');
       }
       return;
     }
@@ -644,9 +714,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         tribeId: tribe.id,
       );
       if (mounted) setState(() => _user = updated);
+    } on ApiException catch (e) {
+      if (e.isIdentityLocked) {
+        _showError('族群已設定，如需更正請聯繫客服');
+      } else {
+        _showError(e.message);
+      }
     } catch (e, st) {
       debugPrint('Failed to update tribe: $e');
       debugPrintStack(stackTrace: st);
+      _showError('更新失敗，請稍後再試');
     }
   }
 
@@ -853,6 +930,86 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ),
               ],
             ),
+          ),
+        ),
+        const Divider(
+          height: 1,
+          color: AppColors.creamDeep,
+          indent: 16,
+          endIndent: 16,
+        ),
+      ],
+    );
+  }
+
+  /// 可互動的開關列，供族群鎖定等需要送出 PATCH 的設定使用（區別於純顯示用的
+  /// [_toggleRow]）。locked=true 時停用點擊，並在下方顯示 lockedHint 提示。
+  Widget _switchRow(
+    String label,
+    bool on, {
+    required ValueChanged<bool> onChanged,
+    bool locked = false,
+    String? lockedHint,
+  }) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: 14,
+                        color: AppColors.ink,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    if (locked && lockedHint != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        lockedHint,
+                        style: TextStyle(fontSize: 10, color: AppColors.fog),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: locked ? null : () => onChanged(!on),
+                child: Container(
+                  width: 36,
+                  height: 22,
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(11),
+                    color: on
+                        ? (locked
+                              ? AppColors.primary.withValues(alpha: 0.5)
+                              : AppColors.primary)
+                        : AppColors.creamDeep,
+                  ),
+                  child: Align(
+                    alignment: on
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.creamLight,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const Divider(
@@ -1165,8 +1322,14 @@ class _TribePickerSheetState extends State<_TribePickerSheet> {
 }
 
 class _RenameDialog extends StatefulWidget {
+  final String title;
+  final String label;
   final String initialValue;
-  const _RenameDialog({required this.initialValue});
+  const _RenameDialog({
+    required this.title,
+    required this.label,
+    required this.initialValue,
+  });
 
   @override
   State<_RenameDialog> createState() => _RenameDialogState();
@@ -1186,11 +1349,11 @@ class _RenameDialogState extends State<_RenameDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('修改姓名'),
+      title: Text(widget.title),
       content: TextField(
         controller: _controller,
         autofocus: true,
-        decoration: const InputDecoration(labelText: '中文姓名'),
+        decoration: InputDecoration(labelText: widget.label),
       ),
       actions: [
         TextButton(

@@ -22,6 +22,8 @@ class UserService {
     String? ethnicGroup,
     int? tribeId,
     bool clearTribeId = false,
+    bool? isIndigenous,
+    String? tribalName,
   }) async {
     final body = <String, dynamic>{
       if (displayName != null) 'display_name': displayName,
@@ -30,6 +32,8 @@ class UserService {
         'tribe_id': null
       else if (tribeId != null)
         'tribe_id': tribeId,
+      if (isIndigenous != null) 'is_indigenous': isIndigenous,
+      if (tribalName != null) 'tribal_name': tribalName,
     };
     final data = await ApiClient.patch(ApiConfig.me, body);
     return UserModel.fromJson(data);
