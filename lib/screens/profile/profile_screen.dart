@@ -698,8 +698,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         initialValue: _user?.displayName ?? '',
       ),
     );
-    if (newName == null || newName.isEmpty || newName == _user?.displayName)
+    if (newName == null || newName.isEmpty || newName == _user?.displayName) {
       return;
+    }
     try {
       final updated = await UserService.updateMe(displayName: newName);
       if (mounted) setState(() => _user = updated);

@@ -28,14 +28,13 @@ class UserService {
     String? tribalName,
   }) async {
     final body = <String, dynamic>{
-      if (displayName != null) 'display_name': displayName,
-      if (ethnicGroup != null) 'ethnic_group': ethnicGroup,
+      'display_name': ?displayName,
+      'ethnic_group': ?ethnicGroup,
       if (clearTribeId)
         'tribe_id': null
-      else if (tribeId != null)
-        'tribe_id': tribeId,
-      if (isIndigenous != null) 'is_indigenous': isIndigenous,
-      if (tribalName != null) 'tribal_name': tribalName,
+      else 'tribe_id': ?tribeId,
+      'is_indigenous': ?isIndigenous,
+      'tribal_name': ?tribalName,
     };
     final data = await ApiClient.patch(ApiConfig.me, body);
     return UserModel.fromJson(data);
@@ -63,9 +62,9 @@ class UserService {
     final body = <String, dynamic>{
       'display_name': displayName,
       'is_indigenous': isIndigenous,
-      if (ethnicGroup != null) 'ethnic_group': ethnicGroup,
-      if (tribeId != null) 'tribe_id': tribeId,
-      if (tribalName != null) 'tribal_name': tribalName,
+      'ethnic_group': ?ethnicGroup,
+      'tribe_id': ?tribeId,
+      'tribal_name': ?tribalName,
     };
     final data = await ApiClient.post(ApiConfig.completeProfile, body);
     return UserModel.fromJson(data);

@@ -151,7 +151,7 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
     return ListView.separated(
       shrinkWrap: true,
       itemCount: tribes.length + clearOptionCount,
-      separatorBuilder: (_, __) => const Divider(
+      separatorBuilder: (_, _) => const Divider(
         height: 1,
         color: AppColors.creamDeep,
         indent: 16,
