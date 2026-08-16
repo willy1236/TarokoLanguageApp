@@ -38,7 +38,8 @@ class ReviewCard extends StatelessWidget {
     try {
       await player.stop();
       await player.play(UrlSource(sanitizeAudioUrl(url)));
-    } catch (_) {
+    } catch (e) {
+      debugPrint('HistoryReviewCard._play failed: $e');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('發音播放失敗，請稍後再試')),

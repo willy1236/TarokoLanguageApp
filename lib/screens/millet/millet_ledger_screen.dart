@@ -93,7 +93,8 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
         _hasMore = result.nextCursor != null;
         _loadingMore = false;
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint('MilletLedgerScreen._loadNextPage failed: $e');
       setState(() => _loadingMore = false);
     }
   }
