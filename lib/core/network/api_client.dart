@@ -27,6 +27,8 @@ class ApiException implements Exception {
   bool get isSessionNotFound => code == 'SESSION_NOT_FOUND';
   bool get isSessionNotCompleted => code == 'SESSION_NOT_COMPLETED';
   bool get isIdentityLocked => code == 'IDENTITY_LOCKED';
+  bool get isFileTooLarge => code == 'FILE_TOO_LARGE';
+  bool get isInvalidFileType => code == 'INVALID_FILE_TYPE';
 
   @override
   String toString() => message;
@@ -81,6 +83,29 @@ class ApiClient {
       headers: _headers(token),
       body: body == null ? null : jsonEncode(body),
     );
+    return _handle(resp);
+  }
+
+  /// multipart/form-data 上傳（例如頭像）。不可帶 Content-Type: application/json，
+  /// 交給 http.MultipartRequest 自行設定含 boundary 的 Content-Type。
+  static Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required String fieldName,
+    required File file,
+  }) async {
+    final token = await AuthService.currentToken();
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse(ApiConfig.baseUrl + path),
+    );
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+    request.files.add(await http.MultipartFile.fromPath(fieldName, file.path));
+    final resp = await _send(() async {
+      final streamed = await request.send();
+      return http.Response.fromStream(streamed);
+    });
     return _handle(resp);
   }
 

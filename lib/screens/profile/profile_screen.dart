@@ -1,6 +1,8 @@
+import 'dart:io';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
@@ -15,6 +17,11 @@ import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
 import '../millet/millet_ledger_screen.dart';
 import '../shop/shop_screen.dart';
+
+// 頭像檔案限制（後端規則：≤8MB，僅接受 JPEG/PNG/WebP/GIF），前端先擋掉明顯無效
+// 的檔案以減少無效上傳，實際裁切壓縮一律由後端處理。
+const int _kMaxAvatarBytes = 8 * 1024 * 1024;
+const _kAllowedAvatarExtensions = {'jpg', 'jpeg', 'png', 'webp', 'gif'};
 
 // 部落 picker 用「不設定部落」選項的 sentinel id，真實 tribes.id 皆為正整數，不會衝突。
 const int _kClearTribeId = -1;
@@ -253,7 +260,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             bottom: 6,
             right: 6,
             child: GestureDetector(
-              onTap: _openBackpack,
+              onTap: _openAvatarOptions,
               child: Container(
                 width: 26,
                 height: 26,
@@ -363,6 +370,75 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ).push(MaterialPageRoute<void>(builder: (_) => const BackpackScreen()));
     if (!mounted) return;
     _loadUser();
+  }
+
+  /// 頭像編輯鉛筆入口：讓使用者選擇「從商店挑選內建頭像」或「上傳自己的照片」，
+  /// 兩者互不衝突（上傳照片時後端會自動清空 avatar_id，見 uploadAvatar()）。
+  Future<void> _openAvatarOptions() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.cream,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('上傳照片'),
+              onTap: () => Navigator.pop(ctx, 'upload'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.inventory_2_outlined),
+              title: const Text('從商店選擇內建頭像'),
+              onTap: () => Navigator.pop(ctx, 'backpack'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || choice == null) return;
+    if (choice == 'upload') {
+      await _pickAndUploadAvatar();
+    } else {
+      await _openBackpack();
+    }
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+
+    final ext = picked.name.split('.').last.toLowerCase();
+    if (!_kAllowedAvatarExtensions.contains(ext)) {
+      _showError('僅接受 JPEG／PNG／WebP／GIF 圖片');
+      return;
+    }
+    final file = File(picked.path);
+    final size = await file.length();
+    if (size > _kMaxAvatarBytes) {
+      _showError('檔案大小不可超過 8MB');
+      return;
+    }
+
+    try {
+      final updated = await UserService.uploadAvatar(file);
+      if (mounted) setState(() => _user = updated);
+    } on ApiException catch (e) {
+      if (e.isFileTooLarge) {
+        _showError('檔案大小不可超過 8MB');
+      } else if (e.isInvalidFileType) {
+        _showError('僅接受 JPEG／PNG／WebP／GIF 圖片');
+      } else {
+        _showError(e.message);
+      }
+    } catch (e, st) {
+      debugPrint('Failed to upload avatar: $e');
+      debugPrintStack(stackTrace: st);
+      _showError('頭像上傳失敗，請稍後再試');
+    }
   }
 
   void _showError(String message) {

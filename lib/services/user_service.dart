@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/user_model.dart';
@@ -36,6 +38,17 @@ class UserService {
       if (tribalName != null) 'tribal_name': tribalName,
     };
     final data = await ApiClient.patch(ApiConfig.me, body);
+    return UserModel.fromJson(data);
+  }
+
+  /// 上傳自訂頭像（multipart，欄位名固定 avatar）。後端會自動裁正方形、轉 WebP
+  /// 並清空 avatar_id；回傳完整 user 物件，不需再呼叫一次 fetchMe()。
+  static Future<UserModel> uploadAvatar(File file) async {
+    final data = await ApiClient.postMultipart(
+      ApiConfig.meAvatar,
+      fieldName: 'avatar',
+      file: file,
+    );
     return UserModel.fromJson(data);
   }
 
