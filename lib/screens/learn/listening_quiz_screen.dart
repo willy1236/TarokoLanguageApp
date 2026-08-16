@@ -173,7 +173,8 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       await _player.stop();
       await _player.setPlaybackRate(rate);
       await _player.play(UrlSource(sanitizeAudioUrl(url)));
-    } catch (_) {
+    } catch (e) {
+      debugPrint('ListeningQuizScreen._play failed: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,

@@ -65,8 +65,9 @@ class _BackpackScreenState extends State<BackpackScreen> {
         _serverItems = items;
         _loading = false;
       });
-    } catch (_) {
+    } catch (e) {
       // 讀取失敗時維持空清單，只顯示基本介面，不讓整頁崩潰。
+      debugPrint('BackpackScreen._load failed: $e');
       if (!mounted) return;
       setState(() => _loading = false);
     }
@@ -87,7 +88,8 @@ class _BackpackScreenState extends State<BackpackScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (_) {
+    } catch (e) {
+      debugPrint('BackpackScreen._equipItem failed: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -109,7 +111,8 @@ class _BackpackScreenState extends State<BackpackScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (_) {
+    } catch (e) {
+      debugPrint('BackpackScreen._setDefaultAvatar failed: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
@@ -131,7 +134,8 @@ class _BackpackScreenState extends State<BackpackScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (_) {
+    } catch (e) {
+      debugPrint('BackpackScreen._clearFrame failed: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,

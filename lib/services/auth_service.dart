@@ -5,6 +5,7 @@
 // 規格書對應：API設計/資料交換表_核心.md §2.1 POST /api/auth/login
 
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:google_sign_in/google_sign_in.dart';
@@ -51,7 +52,8 @@ class AuthService {
       final account = await _googleSignIn.attemptLightweightAuthentication();
       if (account == null) return null;
       return await _exchangeAndStore(account);
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AuthService.signInSilently failed: $e');
       return null;
     }
   }
@@ -129,7 +131,8 @@ class AuthService {
     try {
       final j = jsonDecode(body);
       return j['error']?['message'] ?? '登入失敗';
-    } catch (_) {
+    } catch (e) {
+      debugPrint('AuthService._parseError 解析失敗 ($e): $body');
       return '登入失敗';
     }
   }

@@ -150,8 +150,9 @@ class _MainContainerState extends State<MainContainer> {
         _checkinStreak = status.checkinStreak;
         _millet = status.millet;
       });
-    } catch (_) {
+    } catch (e) {
       // 功能尚未開放或發生錯誤：維持現狀，簽到按鈕保持預設（可點）樣式。
+      debugPrint('Failed to load checkin status: $e');
     }
   }
 

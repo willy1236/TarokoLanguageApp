@@ -154,7 +154,8 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
       await _player.stop();
       await _player.setPlaybackRate(rate);
       await _player.play(UrlSource(sanitizeAudioUrl(url)));
-    } catch (_) {
+    } catch (e) {
+      debugPrint('LessonCardScreen._play failed: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(
         context,
