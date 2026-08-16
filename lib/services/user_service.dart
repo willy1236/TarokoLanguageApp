@@ -52,6 +52,25 @@ class UserService {
     return UserModel.fromJson(data);
   }
 
+  /// 首次登入完善資料（issue #43），成功後 profile_completed 轉為 true。
+  static Future<UserModel> completeProfile({
+    required String displayName,
+    required bool isIndigenous,
+    String? ethnicGroup,
+    int? tribeId,
+    String? tribalName,
+  }) async {
+    final body = <String, dynamic>{
+      'display_name': displayName,
+      'is_indigenous': isIndigenous,
+      if (ethnicGroup != null) 'ethnic_group': ethnicGroup,
+      if (tribeId != null) 'tribe_id': tribeId,
+      if (tribalName != null) 'tribal_name': tribalName,
+    };
+    final data = await ApiClient.post(ApiConfig.completeProfile, body);
+    return UserModel.fromJson(data);
+  }
+
   static Future<List<EthnicGroup>> fetchEthnicGroups() async {
     final data = await ApiClient.get(ApiConfig.ethnicGroups);
     return ApiClient.unwrapList(

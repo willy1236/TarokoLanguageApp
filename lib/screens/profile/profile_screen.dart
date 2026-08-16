@@ -13,6 +13,7 @@ import '../../services/fcm_service.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
+import '../../shared/widgets/tribe_picker_sheet.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
 import '../millet/millet_ledger_screen.dart';
@@ -22,9 +23,6 @@ import '../shop/shop_screen.dart';
 // 的檔案以減少無效上傳，實際裁切壓縮一律由後端處理。
 const int _kMaxAvatarBytes = 8 * 1024 * 1024;
 const _kAllowedAvatarExtensions = {'jpg', 'jpeg', 'png', 'webp', 'gif'};
-
-// 部落 picker 用「不設定部落」選項的 sentinel id，真實 tribes.id 皆為正整數，不會衝突。
-const int _kClearTribeId = -1;
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onClose;
@@ -669,16 +667,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _settingRow(
         '族語名字',
         _user?.tribalName ?? '尚未設定',
-        truku: true,
+        // 尚未設定時顯示中文提示字，不套用族語專用的斜體字型，避免字型跟中文不搭。
+        truku: _user?.tribalName != null && _user!.tribalName!.isNotEmpty,
         editable: true,
         onTap: _editTribalName,
       ),
       _switchRow(
         '是否原住民',
         _user?.isIndigenous ?? false,
-        locked: identityLocked,
-        lockedHint: identityLocked ? '已設定，如需更正請聯繫客服' : null,
-        onChanged: _updateIsIndigenous,
+        locked: true,
+        lockedHint: '已設定，如需更正請聯繫管理員',
+        onChanged: (_) {},
       ),
       _settingRow(
         '部落',
@@ -735,23 +734,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _updateIsIndigenous(bool value) async {
-    try {
-      final updated = await UserService.updateMe(isIndigenous: value);
-      if (mounted) setState(() => _user = updated);
-    } on ApiException catch (e) {
-      if (e.isIdentityLocked) {
-        _showError('族群已設定，如需更正請聯繫客服');
-      } else {
-        _showError(e.message);
-      }
-    } catch (e, st) {
-      debugPrint('Failed to update is_indigenous: $e');
-      debugPrintStack(stackTrace: st);
-      _showError('更新失敗，請稍後再試');
-    }
-  }
-
   // 目前僅太魯閣族一個族群，選部落時固定連同 ethnic_group 一起送，
   // 避免後端「改 ethnic_group 未附 tribe_id 就清空」的規則誤觸發。
   static const String _defaultEthnicGroup = '太魯閣族';
@@ -762,17 +744,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) =>
-          const _TribePickerSheet(ethnicGroup: _defaultEthnicGroup),
+          const TribePickerSheet(ethnicGroup: _defaultEthnicGroup),
     );
     if (tribe == null) return;
-    if (tribe.id == _kClearTribeId) {
+    if (tribe.id == kClearTribeId) {
       if (_user?.tribeId == null) return;
       try {
         final updated = await UserService.updateMe(clearTribeId: true);
         if (mounted) setState(() => _user = updated);
       } on ApiException catch (e) {
         if (e.isIdentityLocked) {
-          _showError('族群已設定，如需更正請聯繫客服');
+          _showError('族群已設定，如需更正請聯繫管理員');
         } else {
           _showError(e.message);
         }
@@ -792,7 +774,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (mounted) setState(() => _user = updated);
     } on ApiException catch (e) {
       if (e.isIdentityLocked) {
-        _showError('族群已設定，如需更正請聯繫客服');
+        _showError('族群已設定，如需更正請聯繫管理員');
       } else {
         _showError(e.message);
       }
@@ -1042,6 +1024,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label,
                       style: GoogleFonts.notoSerifTc(
                         fontSize: 14,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
                       ),
@@ -1206,193 +1189,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           endIndent: 16,
         ),
       ],
-    );
-  }
-}
-
-class _TribePickerSheet extends StatefulWidget {
-  final String ethnicGroup;
-  const _TribePickerSheet({required this.ethnicGroup});
-
-  @override
-  State<_TribePickerSheet> createState() => _TribePickerSheetState();
-}
-
-class _TribePickerSheetState extends State<_TribePickerSheet> {
-  final _searchController = TextEditingController();
-  List<Tribe>? _tribes;
-  String? _error;
-  String _keyword = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-    _searchController.addListener(() {
-      setState(() => _keyword = _searchController.text.trim());
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _load() async {
-    try {
-      final tribes = await UserService.fetchTribes(
-        ethnicGroup: widget.ethnicGroup,
-      );
-      if (mounted) setState(() => _tribes = tribes);
-    } catch (e, st) {
-      debugPrint('Failed to load tribes: $e');
-      debugPrintStack(stackTrace: st);
-      if (mounted) setState(() => _error = '載入部落清單失敗，請稍後再試');
-    }
-  }
-
-  List<Tribe> get _filtered {
-    final tribes = _tribes ?? const [];
-    if (_keyword.isEmpty) return tribes;
-    return tribes
-        .where(
-          (t) =>
-              t.name.contains(_keyword) ||
-              t.county.contains(_keyword) ||
-              t.township.contains(_keyword),
-        )
-        .toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.75,
-        ),
-        decoration: const BoxDecoration(
-          color: AppColors.cream,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        clipBehavior: Clip.hardEdge,
-        child: Material(
-          color: Colors.transparent,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Text(
-                  '選擇部落',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: '搜尋部落、縣市或鄉鎮',
-                    isDense: true,
-                    filled: true,
-                    fillColor: AppColors.creamLight,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Flexible(child: _buildList()),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildList() {
-    if (_error != null) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(_error!, style: TextStyle(color: AppColors.fog)),
-      );
-    }
-    if (_tribes == null) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
-        child: CircularProgressIndicator(),
-      );
-    }
-    final tribes = _filtered;
-    if (tribes.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text('找不到符合的部落', style: TextStyle(color: AppColors.fog)),
-      );
-    }
-    return ListView.separated(
-      shrinkWrap: true,
-      itemCount: tribes.length + 1,
-      separatorBuilder: (_, __) => const Divider(
-        height: 1,
-        color: AppColors.creamDeep,
-        indent: 16,
-        endIndent: 16,
-      ),
-      itemBuilder: (ctx, i) {
-        if (i == 0) {
-          return ListTile(
-            title: Text(
-              '不設定部落',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 14,
-                color: AppColors.fog,
-                letterSpacing: 0.5,
-              ),
-            ),
-            onTap: () => Navigator.pop(
-              context,
-              const Tribe(
-                id: _kClearTribeId,
-                ethnicGroup: '',
-                name: '',
-                nameTruku: '',
-                county: '',
-                township: '',
-              ),
-            ),
-          );
-        }
-        final tribe = tribes[i - 1];
-        return ListTile(
-          title: Text(
-            tribe.name,
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 14,
-              color: AppColors.ink,
-              letterSpacing: 0.5,
-            ),
-          ),
-          subtitle: Text(
-            '${tribe.county}${tribe.township} · ${tribe.nameTruku}',
-            style: TextStyle(fontSize: 11, color: AppColors.fog),
-          ),
-          onTap: () => Navigator.pop(context, tribe),
-        );
-      },
     );
   }
 }
