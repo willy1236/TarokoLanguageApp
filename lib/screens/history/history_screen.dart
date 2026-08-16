@@ -91,7 +91,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _page += 1;
         _loadingMore = false;
       });
-    } catch (_) {
+    } catch (e) {
+      debugPrint('HistoryScreen._loadNextPage failed: $e');
       setState(() => _loadingMore = false);
     }
   }

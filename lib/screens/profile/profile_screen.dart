@@ -6,10 +6,12 @@ import '../../models/shop_item.dart';
 import '../../models/tribe_model.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
+import '../../services/fcm_service.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../backpack/backpack_screen.dart';
+import '../events/my_events_screen.dart';
 import '../millet/millet_ledger_screen.dart';
 import '../shop/shop_screen.dart';
 
@@ -61,8 +63,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       setState(() {
         _itemCatalogById = {for (final i in items) i.id: i};
       });
-    } catch (_) {
+    } catch (e) {
       // 取得失敗（含離線）：維持空 map，頭貼一律顯示預設圖示。
+      debugPrint('ProfileScreen._loadItemCatalog failed: $e');
     }
   }
 
@@ -77,6 +80,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               _buildHero(),
               _buildInventorySection(),
+              _buildMyEventsSection(),
               _buildAccountSection(),
               _buildPreferencesSection(),
               _buildOtherSection(),
@@ -536,6 +540,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  // ── 我的活動 ──────────────────────────────────────────────────────────────
+
+  Widget _buildMyEventsSection() {
+    return _section('SMRATUC · 活動', [
+      GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const MyEventsScreen()),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.event_note_outlined, size: 18, color: AppColors.primary),
+                  const SizedBox(width: 10),
+                  Text('我發起的活動',
+                      style: GoogleFonts.notoSerifTc(
+                          fontSize: 14, color: AppColors.ink, letterSpacing: 0.5)),
+                ],
+              ),
+              const Icon(Icons.chevron_right, color: AppColors.fog, size: 16),
+            ],
+          ),
+        ),
+      ),
+    ]);
+  }
+
   // ── 帳號設定 ──────────────────────────────────────────────────────────────
 
   Widget _buildAccountSection() {
@@ -678,6 +713,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           GestureDetector(
             onTap: () async {
+              // 先移除本裝置 FCM token（需 JWT，故在 signOut 之前），再登出。
+              await FcmService.unregisterDevice();
+              UserService.clearCache();
               await AuthService.signOut();
               if (context.mounted) {
                 Navigator.pushNamedAndRemoveUntil(

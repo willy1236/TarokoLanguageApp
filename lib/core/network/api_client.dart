@@ -70,6 +70,19 @@ class ApiClient {
     return _handle(resp);
   }
 
+  static Future<Map<String, dynamic>> delete(
+    String path, [
+    Map<String, dynamic>? body,
+  ]) async {
+    final token = await AuthService.currentToken();
+    final resp = await http.delete(
+      Uri.parse(ApiConfig.baseUrl + path),
+      headers: _headers(token),
+      body: body == null ? null : jsonEncode(body),
+    );
+    return _handle(resp);
+  }
+
   static Map<String, String> _headers(String? token) => {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
@@ -136,12 +149,20 @@ class ApiClient {
     try {
       final j = jsonDecode(resp.body);
       final error = j['error'] as Map<String, dynamic>?;
+      if (error == null) {
+        debugPrint(
+          'ApiClient: ${resp.statusCode} ${resp.request?.url} 回應無 error 欄位: ${resp.body}',
+        );
+      }
       return ApiException(
         statusCode: resp.statusCode,
         code: error?['code'] as String? ?? 'UNKNOWN',
         message: error?['message'] as String? ?? '發生未知錯誤',
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint(
+        'ApiClient: ${resp.statusCode} ${resp.request?.url} 錯誤回應解析失敗 ($e): ${resp.body}',
+      );
       return ApiException(
         statusCode: resp.statusCode,
         code: resp.statusCode == 401 ? 'UNAUTHORIZED' : 'UNKNOWN',

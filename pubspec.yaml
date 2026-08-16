@@ -37,6 +37,8 @@ dependencies:
   # Firebase + Google Sign-In（後端用 firebase-admin 驗 ID token 換系統 JWT）
   firebase_core: ^4.12.1
   firebase_auth: ^6.5.6
+  firebase_messaging: ^16.0.4 # FCM 推播（活動提醒）
+  flutter_local_notifications: ^19.4.2 # 前景收到推播時顯示系統通知列
   google_sign_in: ^7.2.0
 
   # Backend 通訊與 token 儲存

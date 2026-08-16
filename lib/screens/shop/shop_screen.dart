@@ -69,8 +69,9 @@ class _ShopScreenState extends State<ShopScreen> {
         _user = user;
         _loadingUser = false;
       });
-    } catch (_) {
+    } catch (e) {
       // 讀取失敗時退回空白/預設 UserModel，避免整個商店頁面崩潰。
+      debugPrint('ShopScreen._loadUser failed: $e');
       if (!mounted) return;
       setState(() {
         _user = UserModel(uid: 0, email: '', createdAt: DateTime.now());
@@ -84,8 +85,9 @@ class _ShopScreenState extends State<ShopScreen> {
       final items = await ShopService.fetchShopItems();
       if (!mounted) return;
       setState(() => _serverItems = items);
-    } catch (_) {
+    } catch (e) {
       // 取得失敗（含離線）：維持 null，商品區塊不顯示，不影響商店頁面其他部分。
+      debugPrint('ShopScreen._loadItems failed: $e');
     }
   }
 
@@ -139,7 +141,8 @@ class _ShopScreenState extends State<ShopScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message)),
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('ShopScreen._purchaseItem failed: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('兌換失敗，請稍後再試')),
@@ -162,7 +165,8 @@ class _ShopScreenState extends State<ShopScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.message)),
       );
-    } catch (_) {
+    } catch (e) {
+      debugPrint('ShopScreen._equipItem failed: $e');
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('配戴失敗，請稍後再試')),
