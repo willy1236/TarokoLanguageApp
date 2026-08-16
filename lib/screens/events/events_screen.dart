@@ -1,0 +1,536 @@
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../core/constants/app_colors.dart';
+import '../../shared/widgets/truku_painters.dart';
+import '../../models/event_model.dart';
+import '../../services/event_service.dart';
+import 'event_compose_screen.dart';
+import 'event_detail_screen.dart';
+
+/// 活動列表 —— 真資料版（GET /api/events）。
+/// 發起活動返回後自動刷新；下拉可重新整理。需登入（未登入 API 會 401 導回登入）。
+class EventsScreen extends StatefulWidget {
+  const EventsScreen({super.key});
+
+  @override
+  State<EventsScreen> createState() => _EventsScreenState();
+}
+
+class _EventsScreenState extends State<EventsScreen> {
+  int _filterIndex = 0;
+  // 目前只有「全部 / 即將到來」對應到後端 scope；其餘為分類，後端列表尚未支援，先保留 UI。
+  static const _filters = ['即將到來', '全部'];
+
+  bool _loading = true;
+  String? _error;
+  List<EventSummary> _events = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+    try {
+      final scope = _filterIndex == 1 ? 'all' : 'upcoming';
+      final events = await EventService.fetchEvents(scope: scope);
+      if (!mounted) return;
+      setState(() {
+        _events = events;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.toString();
+        _loading = false;
+      });
+    }
+  }
+
+  // ── 日期/時間格式（後端時間為 UTC，顯示轉本地）────────────────
+  static const _months = [
+    '1月', '2月', '3月', '4月', '5月', '6月',
+    '7月', '8月', '9月', '10月', '11月', '12月',
+  ];
+  static const _weekdays = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
+  String _mon(DateTime d) => _months[d.month - 1];
+  String _day(DateTime d) => d.day.toString().padLeft(2, '0');
+  String _wd(DateTime d) => _weekdays[d.weekday - 1];
+  String _time(DateTime d) =>
+      '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
+
+  String _statusLabel(EventSummary e) {
+    if (e.isJoined) return '已報名';
+    if (e.displayStatus == 'ended') return '已結束';
+    if (e.displayStatus == 'cancelled') return '已取消';
+    if (e.isFull) return '已額滿';
+    if (e.registrationOpen) return '報名中';
+    return '';
+  }
+
+  void _openCompose() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const EventComposeScreen()),
+    ).then((created) {
+      if (created == true) _load(); // 成功發起才刷新列表
+    });
+  }
+
+  void _openDetail(EventSummary e) {
+    // 詳情頁自行以 eventId 打 GET /api/events/:id 取真資料（含發起人姓名、
+    // isHost 判斷、報名狀態）。回來後刷新清單，反映報名/退出。
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EventDetailScreen(eventId: e.id),
+      ),
+    ).then((_) {
+      if (mounted) _load();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.creamLight,
+      body: RefreshIndicator(
+        onRefresh: _load,
+        color: AppColors.primary,
+        child: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: _buildHeader()),
+            SliverToBoxAdapter(child: _buildFilterChips()),
+            ..._buildContentSlivers(),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  List<Widget> _buildContentSlivers() {
+    if (_loading) {
+      return [
+        const SliverToBoxAdapter(
+          child: Padding(
+            padding: EdgeInsets.only(top: 80),
+            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+          ),
+        ),
+      ];
+    }
+    if (_error != null) {
+      return [SliverToBoxAdapter(child: _buildError())];
+    }
+    if (_events.isEmpty) {
+      return [SliverToBoxAdapter(child: _buildEmpty())];
+    }
+    return [
+      SliverToBoxAdapter(child: _buildFeaturedCard(_events.first)),
+      if (_events.length > 1) SliverToBoxAdapter(child: _buildDivider()),
+      SliverToBoxAdapter(child: _buildList()),
+    ];
+  }
+
+  Widget _buildError() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 80, 20, 0),
+      child: Column(
+        children: [
+          const Icon(Icons.cloud_off, size: 40, color: AppColors.fog),
+          const SizedBox(height: 12),
+          Text('載入活動失敗\n$_error',
+              textAlign: TextAlign.center,
+              style: TextStyle(fontSize: 13, color: AppColors.inkSoft, height: 1.6)),
+          const SizedBox(height: 16),
+          GestureDetector(
+            onTap: _load,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Text('重試',
+                  style: GoogleFonts.notoSerifTc(
+                      fontSize: 13, color: AppColors.creamLight, letterSpacing: 1.5)),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmpty() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 90, 20, 0),
+      child: Column(
+        children: [
+          const Icon(Icons.event_note_outlined, size: 44, color: AppColors.fog),
+          const SizedBox(height: 12),
+          Text('目前沒有活動',
+              style: GoogleFonts.notoSerifTc(fontSize: 16, color: AppColors.inkSoft)),
+          const SizedBox(height: 6),
+          Text('點右上角「發起」開一場部落聚會吧',
+              style: TextStyle(fontSize: 12, color: AppColors.fog)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 60, 20, 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('SMRATUC · 活動',
+                    style: GoogleFonts.crimsonPro(
+                        fontStyle: FontStyle.italic,
+                        fontSize: 12,
+                        color: AppColors.fog,
+                        letterSpacing: 3.0)),
+                const SizedBox(height: 4),
+                Text('近期部落聚會',
+                    style: GoogleFonts.notoSerifTc(
+                        fontSize: 26,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ink,
+                        letterSpacing: 1.0)),
+              ],
+            ),
+          ),
+          GestureDetector(
+            onTap: _openCompose,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: AppColors.primary,
+                borderRadius: BorderRadius.circular(22),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.add, color: AppColors.creamLight, size: 14),
+                  const SizedBox(width: 6),
+                  Text('發起',
+                      style: GoogleFonts.notoSerifTc(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.creamLight,
+                          letterSpacing: 1.5)),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return SizedBox(
+      height: 44,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+        itemCount: _filters.length,
+        separatorBuilder: (context, i) => const SizedBox(width: 8),
+        itemBuilder: (_, i) {
+          final active = _filterIndex == i;
+          return GestureDetector(
+            onTap: () {
+              setState(() => _filterIndex = i);
+              _load();
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+              decoration: BoxDecoration(
+                color: active ? AppColors.ink : Colors.transparent,
+                borderRadius: BorderRadius.circular(20),
+                border: active ? null : Border.all(color: AppColors.creamDeep),
+              ),
+              child: Text(_filters[i],
+                  style: TextStyle(
+                      fontSize: 12,
+                      color: active ? AppColors.creamLight : AppColors.inkSoft,
+                      letterSpacing: 1.0)),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildDivider() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 6, 20, 10),
+      child: Row(
+        children: [
+          const Expanded(child: Divider(color: AppColors.creamDeep)),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text('更多活動',
+                style: GoogleFonts.crimsonPro(
+                    fontStyle: FontStyle.italic,
+                    fontSize: 10,
+                    color: AppColors.fog,
+                    letterSpacing: 3.0)),
+          ),
+          const Expanded(child: Divider(color: AppColors.creamDeep)),
+        ],
+      ),
+    );
+  }
+
+  // ── 精選卡片（深色）──────────────────────────────────────────
+  Widget _buildFeaturedCard(EventSummary e) {
+    final d = e.startsAt.toLocal();
+    final label = _statusLabel(e);
+    return GestureDetector(
+      onTap: () => _openDetail(e),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+        child: Container(
+          decoration: BoxDecoration(
+            color: AppColors.ink,
+            borderRadius: BorderRadius.circular(18),
+          ),
+          clipBehavior: Clip.hardEdge,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                height: 120,
+                child: Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    Container(
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [AppColors.primary, AppColors.primaryDeep],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                      ),
+                    ),
+                    Opacity(
+                      opacity: 0.25,
+                      child: CustomPaint(painter: TrukuWeavePainter(opacity: 1, scale: 0.7)),
+                    ),
+                    if (label.isNotEmpty)
+                      Positioned(
+                        top: 14,
+                        left: 14,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: AppColors.gold,
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(label,
+                              style: const TextStyle(
+                                  fontSize: 10,
+                                  color: AppColors.ink,
+                                  fontWeight: FontWeight.w600,
+                                  letterSpacing: 2.0)),
+                        ),
+                      ),
+                    Positioned(
+                      top: 14,
+                      right: 14,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: AppColors.ink.withValues(alpha: 0.55),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                        ),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(_mon(d),
+                                style: const TextStyle(
+                                    fontSize: 9, color: AppColors.gold, letterSpacing: 0.5)),
+                            Text(_day(d),
+                                style: GoogleFonts.notoSerifTc(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.creamLight,
+                                    height: 1)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(e.title,
+                        style: GoogleFonts.notoSerifTc(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.creamLight,
+                            letterSpacing: 0.6)),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        const Icon(Icons.access_time, color: AppColors.gold, size: 11),
+                        const SizedBox(width: 4),
+                        Text('${_wd(d)} ${_time(d)}',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.creamLight.withValues(alpha: 0.85))),
+                        const SizedBox(width: 14),
+                        const Icon(Icons.location_on_outlined, color: AppColors.gold, size: 11),
+                        const SizedBox(width: 4),
+                        Flexible(
+                          child: Text(e.location ?? '線上',
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                  fontSize: 11,
+                                  color: AppColors.creamLight.withValues(alpha: 0.85))),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 10),
+                    Row(
+                      children: [
+                        const Icon(Icons.person_outline, color: AppColors.gold, size: 12),
+                        const SizedBox(width: 4),
+                        Text('${e.participantCount} 人報名',
+                            style: TextStyle(
+                                fontSize: 11,
+                                color: AppColors.creamLight.withValues(alpha: 0.7))),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── 其餘活動列表 ─────────────────────────────────────────────
+  Widget _buildList() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Column(
+        children: _events
+            .skip(1)
+            .map((e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _buildListTile(e),
+                ))
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _buildListTile(EventSummary e) {
+    final d = e.startsAt.toLocal();
+    final label = _statusLabel(e);
+    return GestureDetector(
+      onTap: () => _openDetail(e),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.creamDeep),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(
+              width: 56,
+              child: Container(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(_mon(d),
+                        style: const TextStyle(
+                            fontSize: 9, color: AppColors.gold, letterSpacing: 0.5)),
+                    Text(_day(d),
+                        style: GoogleFonts.notoSerifTc(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.creamLight,
+                            height: 1)),
+                    Text(_wd(d),
+                        style: TextStyle(
+                            fontSize: 9,
+                            color: AppColors.creamLight.withValues(alpha: 0.7),
+                            letterSpacing: 1.5)),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (label.isNotEmpty)
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                      child: Text(label,
+                          style: const TextStyle(
+                              fontSize: 9, color: AppColors.primary, letterSpacing: 1.5)),
+                    ),
+                  const SizedBox(height: 3),
+                  Text(e.title,
+                      style: GoogleFonts.notoSerifTc(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink,
+                          letterSpacing: 0.6)),
+                  const SizedBox(height: 3),
+                  Text('${_time(d)} · ${e.location ?? '線上'}',
+                      style: const TextStyle(
+                          fontSize: 11, color: AppColors.fog, letterSpacing: 0.8)),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.person_outline, size: 11, color: AppColors.inkSoft),
+                      const SizedBox(width: 4),
+                      Text('${e.participantCount} 人報名',
+                          style: const TextStyle(fontSize: 11, color: AppColors.inkSoft)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}

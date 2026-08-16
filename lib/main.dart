@@ -10,13 +10,15 @@ import 'screens/community/community_screen.dart';
 import 'screens/culture/culture_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/learn/learn_screen.dart';
-import 'screens/plaza/events_screen.dart';
+import 'screens/events/event_detail_screen.dart';
+import 'screens/events/events_screen.dart';
 import 'screens/plaza/plaza_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'core/network/api_client.dart';
 import 'services/checkin_service.dart';
+import 'services/fcm_service.dart';
 import 'services/user_service.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 
@@ -32,6 +34,26 @@ Future<void> main() async {
       statusBarIconBrightness: Brightness.light,
     ),
   );
+
+  // 點提醒/取消通知 → 導到該活動詳情頁（用全域 navigatorKey，不依賴當下 context）。
+  FcmService.onReminderTapped = (eventId) {
+    if (eventId == null) return;
+    final navState = navigatorKey.currentState;
+    if (navState == null) {
+      debugPrint('FcmService.onReminderTapped: navigatorKey 尚未掛上，導頁被忽略');
+      return;
+    }
+    navState.push(
+      MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: eventId)),
+    );
+  };
+  // FCM 掛載（要權限、掛前景/點擊監聽）。失敗不阻斷 App 啟動；token 上傳待登入後。
+  try {
+    await FcmService.init();
+  } catch (e) {
+    debugPrint('FcmService.init 失敗（不影響 App 啟動）：$e');
+  }
+
   runApp(const KariTrukuApp());
 }
 
