@@ -20,6 +20,9 @@ class UserModel {
   final DateTime createdAt;
   final bool checkedInToday; // 今天（台灣時間）是否已簽到，見 每日簽到.md
   final int checkinStreak; // 目前連續簽到天數，由後端即時計算
+  final String? ethnicGroup; // 族群，見 00_核心與認證.md §2.5；未設為 null
+  final int? tribeId; // 部落 id，對應 tribes.id；未設為 null
+  final String? tribeName; // 部落中文名，由後端 join tribes 帶出
 
   const UserModel({
     required this.uid,
@@ -34,6 +37,9 @@ class UserModel {
     required this.createdAt,
     this.checkedInToday = false,
     this.checkinStreak = 0,
+    this.ethnicGroup,
+    this.tribeId,
+    this.tribeName,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -54,6 +60,9 @@ class UserModel {
       createdAt: DateTime.parse(json['created_at'] as String),
       checkedInToday: json['checked_in_today'] as bool? ?? false,
       checkinStreak: json['checkin_streak'] as int? ?? 0,
+      ethnicGroup: json['ethnic_group'] as String?,
+      tribeId: json['tribe_id'] as int?,
+      tribeName: json['tribe_name'] as String?,
     );
   }
 
@@ -70,6 +79,9 @@ class UserModel {
         'created_at': createdAt.toIso8601String(),
         'checked_in_today': checkedInToday,
         'checkin_streak': checkinStreak,
+        'ethnic_group': ethnicGroup,
+        'tribe_id': tribeId,
+        'tribe_name': tribeName,
       };
 
   int get joinedDays => DateTime.now().difference(createdAt).inDays;
@@ -87,6 +99,9 @@ class UserModel {
     DateTime? createdAt,
     bool? checkedInToday,
     int? checkinStreak,
+    String? ethnicGroup,
+    int? tribeId,
+    String? tribeName,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -101,6 +116,9 @@ class UserModel {
       createdAt: createdAt ?? this.createdAt,
       checkedInToday: checkedInToday ?? this.checkedInToday,
       checkinStreak: checkinStreak ?? this.checkinStreak,
+      ethnicGroup: ethnicGroup ?? this.ethnicGroup,
+      tribeId: tribeId ?? this.tribeId,
+      tribeName: tribeName ?? this.tribeName,
     );
   }
 }
