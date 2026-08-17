@@ -21,6 +21,9 @@ class ApiConfig {
 
   static const String historyList = '/api/history';
 
+  // 回報答案錯誤（issue #20）
+  static const String historyReport = '/api/history/report';
+
   // 小米幣明細（issue #25）
   static const String milletTransactions = '/api/millet/transactions';
 

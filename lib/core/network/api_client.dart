@@ -30,6 +30,7 @@ class ApiException implements Exception {
   bool get isIdentityLocked => code == 'IDENTITY_LOCKED';
   bool get isFileTooLarge => code == 'FILE_TOO_LARGE';
   bool get isInvalidFileType => code == 'INVALID_FILE_TYPE';
+  bool get isQuestionNotFound => code == 'QUESTION_NOT_FOUND';
 
   @override
   String toString() => message;
