@@ -209,19 +209,30 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   }
 
   Widget _composeButton() => GestureDetector(
-    onTap: _boards.isEmpty
-        ? null
-        : () async {
-            final created = await Navigator.push<bool>(
-              context,
-              MaterialPageRoute(
-                builder: (_) => ForumComposeScreen(boards: _boards),
-              ),
-            );
-            if (created == true) {
-              _boardViewKey.currentState?.refresh();
-            }
-          },
+    onTap: () async {
+      if (_boardsLoading) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('看板載入中，請稍候')));
+        return;
+      }
+      if (_boards.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('看板載入失敗，請稍後再試'),
+            action: SnackBarAction(label: '重試', onPressed: _loadBoards),
+          ),
+        );
+        return;
+      }
+      final created = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(builder: (_) => ForumComposeScreen(boards: _boards)),
+      );
+      if (created == true) {
+        _boardViewKey.currentState?.refresh();
+      }
+    },
     child: Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       decoration: BoxDecoration(
