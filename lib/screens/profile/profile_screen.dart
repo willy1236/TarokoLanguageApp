@@ -384,13 +384,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('上傳照片'),
+              leading: const Icon(
+                Icons.photo_library_outlined,
+                color: Colors.black,
+              ),
+              title: const Text(
+                '上傳照片',
+                style: TextStyle(color: Colors.black),
+              ),
               onTap: () => Navigator.pop(ctx, 'upload'),
             ),
             ListTile(
-              leading: const Icon(Icons.inventory_2_outlined),
-              title: const Text('從商店選擇內建頭像'),
+              leading: const Icon(
+                Icons.inventory_2_outlined,
+                color: Colors.black,
+              ),
+              title: const Text(
+                '從商店選擇內建頭像',
+                style: TextStyle(color: Colors.black),
+              ),
               onTap: () => Navigator.pop(ctx, 'backpack'),
             ),
           ],
