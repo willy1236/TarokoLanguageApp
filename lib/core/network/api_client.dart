@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../constants/api.dart';
 import '../../main.dart';
 import '../../services/auth_service.dart';
@@ -92,6 +93,7 @@ class ApiClient {
     String path, {
     required String fieldName,
     required File file,
+    String? contentType,
   }) async {
     final token = await AuthService.currentToken();
     final request = http.MultipartRequest(
@@ -101,7 +103,11 @@ class ApiClient {
     if (token != null) {
       request.headers['Authorization'] = 'Bearer $token';
     }
-    request.files.add(await http.MultipartFile.fromPath(fieldName, file.path));
+    request.files.add(await http.MultipartFile.fromPath(
+      fieldName,
+      file.path,
+      contentType: contentType == null ? null : MediaType.parse(contentType),
+    ));
     final resp = await _send(() async {
       final streamed = await request.send();
       return http.Response.fromStream(streamed);

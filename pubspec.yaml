@@ -43,6 +43,7 @@ dependencies:
 
   # Backend 通訊與 token 儲存
   http: ^1.2.2
+  http_parser: ^4.1.2
   flutter_secure_storage: ^10.3.1
 
   # 測驗題目發音播放

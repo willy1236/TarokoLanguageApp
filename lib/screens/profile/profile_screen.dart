@@ -421,8 +421,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
+    final mimeType = 'image/${ext == 'jpg' ? 'jpeg' : ext}';
     try {
-      final updated = await UserService.uploadAvatar(file);
+      final updated = await UserService.uploadAvatar(file, contentType: mimeType);
       if (mounted) setState(() => _user = updated);
     } on ApiException catch (e) {
       if (e.isFileTooLarge) {
