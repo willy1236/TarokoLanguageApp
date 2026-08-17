@@ -29,4 +29,18 @@ class HistoryService {
     final json = await ApiClient.get('/api/history/listening/$sessionId');
     return ListeningHistoryDetail.fromJson(json);
   }
+
+  static Future<void> reportQuestion({
+    required String questionType,
+    required String sessionId,
+    required String questionId,
+    required String message,
+  }) async {
+    await ApiClient.post(ApiConfig.historyReport, {
+      'question_type': questionType,
+      'session_id': sessionId,
+      'question_id': questionId,
+      'message': message,
+    });
+  }
 }
