@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -14,6 +15,7 @@ import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
+import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
 import '../millet/millet_ledger_screen.dart';
@@ -426,14 +428,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _showError('僅接受 JPEG／PNG／WebP／GIF 圖片');
       return;
     }
-    final file = File(picked.path);
+
+    File file = File(picked.path);
+    var mimeType = 'image/${ext == 'jpg' ? 'jpeg' : ext}';
+
+    // GIF 為動態圖，裁切會破壞動畫，跳過裁切步驟直接上傳原圖。
+    if (ext != 'gif') {
+      final originalBytes = await file.readAsBytes();
+      if (!mounted) return;
+      final croppedBytes = await Navigator.push<Uint8List>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AvatarCropScreen(imageBytes: originalBytes),
+        ),
+      );
+      if (croppedBytes == null) return; // 使用者取消裁切，中止整個上傳流程
+
+      final tempDir = await Directory.systemTemp.createTemp('avatar_crop_');
+      final croppedFile = File('${tempDir.path}/avatar.png');
+      await croppedFile.writeAsBytes(croppedBytes);
+      file = croppedFile;
+      mimeType = 'image/png';
+    }
+
     final size = await file.length();
     if (size > _kMaxAvatarBytes) {
       _showError('檔案大小不可超過 8MB');
       return;
     }
 
-    final mimeType = 'image/${ext == 'jpg' ? 'jpeg' : ext}';
     try {
       final updated = await UserService.uploadAvatar(file, contentType: mimeType);
       if (mounted) setState(() => _user = updated);
