@@ -24,12 +24,9 @@ class UserService {
     bool clearTribeId = false,
   }) async {
     final body = <String, dynamic>{
-      if (displayName != null) 'display_name': displayName,
-      if (ethnicGroup != null) 'ethnic_group': ethnicGroup,
-      if (clearTribeId)
-        'tribe_id': null
-      else if (tribeId != null)
-        'tribe_id': tribeId,
+      'display_name': ?displayName,
+      'ethnic_group': ?ethnicGroup,
+      if (clearTribeId) 'tribe_id': null else 'tribe_id': ?tribeId,
     };
     final data = await ApiClient.patch(ApiConfig.me, body);
     return UserModel.fromJson(data);

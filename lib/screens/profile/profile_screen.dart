@@ -611,8 +611,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       context: context,
       builder: (ctx) => _RenameDialog(initialValue: _user?.displayName ?? ''),
     );
-    if (newName == null || newName.isEmpty || newName == _user?.displayName)
+    if (newName == null || newName.isEmpty || newName == _user?.displayName) {
       return;
+    }
     try {
       final updated = await UserService.updateMe(displayName: newName);
       if (mounted) setState(() => _user = updated);
@@ -1122,7 +1123,7 @@ class _TribePickerSheetState extends State<_TribePickerSheet> {
     return ListView.separated(
       shrinkWrap: true,
       itemCount: tribes.length + 1,
-      separatorBuilder: (_, __) => const Divider(
+      separatorBuilder: (_, _) => const Divider(
         height: 1,
         color: AppColors.creamDeep,
         indent: 16,
