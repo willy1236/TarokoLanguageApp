@@ -34,6 +34,9 @@ class _VideoCallScreenState extends State<VideoCallScreen>
   int? _remoteUid;
   bool _ended = false;
   bool _joining = true;
+  bool _muted = false;
+  bool _camOff = false;
+  bool _remoteCamOff = false;
   String? _joinError;
   Timer? _countdownTimer;
   Duration _remaining = Duration.zero;
@@ -94,6 +97,9 @@ class _VideoCallScreenState extends State<VideoCallScreen>
         // video_session_ended 或倒數/手動按鈕決定。
         if (mounted) setState(() => _remoteUid = null);
       },
+      onUserMuteVideo: (connection, remoteUid, muted) {
+        if (mounted) setState(() => _remoteCamOff = muted);
+      },
       onTokenPrivilegeWillExpire: (connection, token) async {
         if (_session.isExpired) return;
         try {
@@ -144,6 +150,20 @@ class _VideoCallScreenState extends State<VideoCallScreen>
   void _onPeerEnded(int? sessionId) {
     if (_ended || sessionId != _session.id) return;
     _cleanupAndLeave(notifyBackend: false);
+  }
+
+  Future<void> _toggleMute() async {
+    final next = !_muted;
+    await _engine?.muteLocalAudioStream(next);
+    if (!mounted) return;
+    setState(() => _muted = next);
+  }
+
+  Future<void> _toggleCamera() async {
+    final next = !_camOff;
+    await _engine?.muteLocalVideoStream(next);
+    if (!mounted) return;
+    setState(() => _camOff = next);
   }
 
   Future<void> _endCall({required bool auto}) async {
@@ -261,12 +281,18 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     final engine = _engine;
     final remoteUid = _remoteUid;
     if (engine != null && remoteUid != null) {
-      return AgoraVideoView(
-        controller: VideoViewController.remote(
-          rtcEngine: engine,
-          canvas: VideoCanvas(uid: remoteUid),
-          connection: RtcConnection(channelId: _session.channel),
-        ),
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          AgoraVideoView(
+            controller: VideoViewController.remote(
+              rtcEngine: engine,
+              canvas: VideoCanvas(uid: remoteUid),
+              connection: RtcConnection(channelId: _session.channel),
+            ),
+          ),
+          if (_remoteCamOff) _buildCameraOffOverlay('對方已關閉鏡頭'),
+        ],
       );
     }
     return Stack(
@@ -299,6 +325,28 @@ class _VideoCallScreenState extends State<VideoCallScreen>
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildCameraOffOverlay(String label) {
+    return Container(
+      color: AppColors.ink.withValues(alpha: 0.85),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CustomPaint(size: const Size(28, 28), painter: _CamOffPainter()),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 13,
+              color: AppColors.creamLight.withValues(alpha: 0.85),
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -418,14 +466,19 @@ class _VideoCallScreenState extends State<VideoCallScreen>
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(12.5),
-          child: engine != null
-              ? AgoraVideoView(
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (engine != null)
+                AgoraVideoView(
                   controller: VideoViewController(
                     rtcEngine: engine,
                     canvas: const VideoCanvas(uid: 0),
                   ),
-                )
-              : const SizedBox.shrink(),
+                ),
+              if (_camOff) _buildCameraOffOverlay('已關閉鏡頭'),
+            ],
+          ),
         ),
       ),
     );
@@ -452,8 +505,18 @@ class _VideoCallScreenState extends State<VideoCallScreen>
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            const _ControlButton(icon: _ControlIcon.mic, label: '靜音'),
-            const _ControlButton(icon: _ControlIcon.cam, label: '鏡頭'),
+            _ControlButton(
+              icon: _ControlIcon.mic,
+              label: '靜音',
+              active: _muted,
+              onTap: _toggleMute,
+            ),
+            _ControlButton(
+              icon: _ControlIcon.cam,
+              label: '鏡頭',
+              active: _camOff,
+              onTap: _toggleCamera,
+            ),
             _ControlButton(
               icon: _ControlIcon.end,
               label: '結束',
@@ -475,12 +538,14 @@ class _ControlButton extends StatelessWidget {
   final _ControlIcon icon;
   final String label;
   final bool danger;
+  final bool active;
   final VoidCallback? onTap;
 
   const _ControlButton({
     required this.icon,
     required this.label,
     this.danger = false,
+    this.active = false,
     this.onTap,
   });
 
@@ -499,8 +564,10 @@ class _ControlButton extends StatelessWidget {
               shape: BoxShape.circle,
               color: danger
                   ? const Color(0xFFD8392C)
-                  : Colors.white.withValues(alpha: 0.12),
-              border: danger
+                  : active
+                      ? AppColors.dangerDark
+                      : Colors.white.withValues(alpha: 0.12),
+              border: danger || active
                   ? null
                   : Border.all(
                       color: AppColors.creamLight.withValues(alpha: 0.12),
@@ -590,6 +657,35 @@ class _CamPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_CamPainter _) => false;
+}
+
+class _CamOffPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cream = AppColors.creamLight.withValues(alpha: 0.85);
+    final w = size.width;
+    final h = size.height;
+    final body = RRect.fromRectAndRadius(
+      Rect.fromLTWH(w * 3 / 24, h * 6 / 24, w * 13 / 24, h * 12 / 24),
+      Radius.circular(w * 2 / 24),
+    );
+    canvas.drawRRect(body, Paint()..color = cream..style = PaintingStyle.fill);
+    final tri = Path()
+      ..moveTo(w * 16 / 24, h * 10 / 24)
+      ..lineTo(w * 21 / 24, h * 7 / 24)
+      ..lineTo(w * 21 / 24, h * 17 / 24)
+      ..close();
+    canvas.drawPath(tri, Paint()..color = cream..style = PaintingStyle.fill);
+    final slash = Paint()
+      ..color = AppColors.danger
+      ..strokeWidth = 2.4
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(w * 2 / 24, h * 2 / 24),
+        Offset(w * 22 / 24, h * 22 / 24), slash);
+  }
+
+  @override
+  bool shouldRepaint(_CamOffPainter _) => false;
 }
 
 class _EndPainter extends CustomPainter {
