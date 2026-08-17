@@ -66,4 +66,8 @@ class ApiConfig {
   // 書籤端點由後端另行補上，前端依規格 §9 的約定先行實作。
   static String forumPostBookmark(int id) => '/api/forum/posts/$id/bookmark';
   static const String forumBookmarks = '/api/forum/bookmarks';
+
+  // 族群/部落（issue #5）
+  static const String ethnicGroups = '/api/ethnic-groups';
+  static const String tribes = '/api/tribes';
 }
