@@ -64,22 +64,7 @@ class ForumCommentTile extends StatelessWidget {
       children: [
         Row(
           children: [
-            Container(
-              width: isReply ? 24 : 30,
-              height: isReply ? 24 : 30,
-              decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.moss,
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                comment.author?.displayName.characters.firstOrNull ?? '?',
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 12,
-                  color: AppColors.gold,
-                ),
-              ),
-            ),
+            _avatar(size: isReply ? 24 : 30),
             const SizedBox(width: 8),
             Text(
               comment.author?.displayName ?? '匿名使用者',
@@ -147,6 +132,34 @@ class ForumCommentTile extends StatelessWidget {
       ],
     ),
   );
+
+  Widget _initialsAvatar(double size) => Container(
+    width: size,
+    height: size,
+    decoration: const BoxDecoration(
+      shape: BoxShape.circle,
+      color: AppColors.moss,
+    ),
+    alignment: Alignment.center,
+    child: Text(
+      comment.author?.displayName.characters.firstOrNull ?? '?',
+      style: GoogleFonts.notoSerifTc(fontSize: 12, color: AppColors.gold),
+    ),
+  );
+
+  Widget _avatar({required double size}) {
+    final avatarUrl = comment.author?.avatarUrl;
+    if (avatarUrl == null || avatarUrl.isEmpty) return _initialsAvatar(size);
+    return ClipOval(
+      child: Image.network(
+        avatarUrl,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) => _initialsAvatar(size),
+      ),
+    );
+  }
 
   Widget _action(String label, VoidCallback onTap) => GestureDetector(
     behavior: HitTestBehavior.opaque,
