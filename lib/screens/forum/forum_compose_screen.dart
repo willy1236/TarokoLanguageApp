@@ -269,7 +269,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
       ),
       actions: [
         Padding(
-          padding: const EdgeInsets.only(right: 16),
+          padding: const EdgeInsets.only(right: 16, top: 14),
           child: GestureDetector(
             onTap: _saving ? null : _save,
             child: Container(
