@@ -16,7 +16,9 @@ import '../../core/constants/app_colors.dart';
 import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
+import '../../models/user_model.dart';
 import '../../services/forum_service.dart';
+import '../../services/user_service.dart';
 import 'widgets/forum_image_grid.dart' show ForumImageViewer;
 
 /// 依後端硬性限制檢查，回傳第一個錯誤訊息；全部通過回 null。
@@ -71,6 +73,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
   int? _boardId;
   bool _saving = false;
   List<ForumTagStat> _hotTags = [];
+  UserModel? _user;
 
   bool get _isEditing => widget.editing != null;
 
@@ -87,6 +90,17 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
       _boardId = widget.boards.isEmpty ? null : widget.boards.first.id;
     }
     _loadHotTags();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    try {
+      final user = await UserService.fetchMe();
+      if (!mounted) return;
+      setState(() => _user = user);
+    } on ApiException {
+      // 作者列只是輔助顯示，拿不到就留空白。
+    }
   }
 
   @override
@@ -254,11 +268,28 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
         ),
       ),
       actions: [
-        TextButton(
-          onPressed: _saving ? null : _save,
-          child: Text(
-            _saving ? '送出中…' : '送出',
-            style: const TextStyle(color: AppColors.primary),
+        Padding(
+          padding: const EdgeInsets.only(right: 16),
+          child: GestureDetector(
+            onTap: _saving ? null : _save,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              decoration: BoxDecoration(
+                color: _saving
+                    ? AppColors.primary.withValues(alpha: 0.5)
+                    : AppColors.primary,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Text(
+                _saving ? '送出中…' : '送出',
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.creamLight,
+                  letterSpacing: 1.2,
+                ),
+              ),
+            ),
           ),
         ),
       ],
@@ -266,32 +297,52 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     body: ListView(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 40),
       children: [
+        _authorRow(),
+        const SizedBox(height: 16),
         _boardSegment(),
         const SizedBox(height: 16),
-        TextField(
-          controller: _titleController,
-          maxLength: ForumService.titleMax,
-          onChanged: (_) => setState(() {}),
-          style: GoogleFonts.notoSerifTc(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.ink,
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          decoration: BoxDecoration(
+            color: AppColors.creamDeep,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.creamDeep),
           ),
-          decoration: const InputDecoration(
-            hintText: '標題',
-            border: InputBorder.none,
+          child: TextField(
+            controller: _titleController,
+            maxLength: ForumService.titleMax,
+            onChanged: (_) => setState(() {}),
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
+            ),
+            decoration: const InputDecoration(
+              hintText: '標題',
+              border: InputBorder.none,
+            ),
           ),
         ),
-        const Divider(color: AppColors.creamDeep),
-        TextField(
-          controller: _bodyController,
-          maxLength: ForumService.bodyMax,
-          minLines: 8,
-          maxLines: null,
-          onChanged: (_) => setState(() {}),
-          decoration: const InputDecoration(
-            hintText: '想說的話…',
-            border: InputBorder.none,
+        const SizedBox(height: 12),
+        Container(
+          constraints: const BoxConstraints(minHeight: 140),
+          padding: const EdgeInsets.all(14).copyWith(left: 16),
+          decoration: BoxDecoration(
+            color: AppColors.creamDeep,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: AppColors.creamDeep),
+          ),
+          child: TextField(
+            controller: _bodyController,
+            maxLength: ForumService.bodyMax,
+            minLines: 8,
+            maxLines: null,
+            onChanged: (_) => setState(() {}),
+            style: const TextStyle(color: AppColors.ink, height: 1.6),
+            decoration: const InputDecoration(
+              hintText: '想說的話…',
+              border: InputBorder.none,
+            ),
           ),
         ),
         const SizedBox(height: 12),
@@ -301,6 +352,73 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
       ],
     ),
   );
+
+  Widget _authorRow() {
+    final avatarUrl = _user?.avatarUrl;
+    return Row(
+      children: [
+        Container(
+          width: 40,
+          height: 40,
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.primary,
+            border: Border.fromBorderSide(
+              BorderSide(color: AppColors.gold, width: 1.5),
+            ),
+          ),
+          alignment: Alignment.center,
+          child: ClipOval(
+            child: avatarUrl == null
+                ? const Icon(Icons.person, color: AppColors.gold, size: 22)
+                : Image.network(
+                    avatarUrl,
+                    width: 40,
+                    height: 40,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const Icon(
+                      Icons.person,
+                      color: AppColors.gold,
+                      size: 22,
+                    ),
+                  ),
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                _user?.displayName ?? '',
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.ink,
+                  letterSpacing: 0.6,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Row(
+                children: [
+                  const Icon(Icons.language, size: 11, color: AppColors.fog),
+                  const SizedBox(width: 4),
+                  const Text(
+                    '公開 · 所有族人都看得到',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.fog,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
 
   /// 看板選擇採 segmented 樣式：整條淺褐底槽，選中的那格浮起成淺色卡片。
   /// 各格等寬，看板名稱過長時省略——名稱長度由後端 seed 決定，前端不再自己縮寫。
@@ -360,10 +478,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           Wrap(
             spacing: 6,
             runSpacing: 6,
-            children: [
-              for (final tag in _tags)
-                Chip(label: Text('#$tag'), backgroundColor: AppColors.cream),
-            ],
+            children: [for (final tag in _tags) _TagPill(label: tag)],
           ),
           const SizedBox(height: 6),
           const Text(
@@ -379,6 +494,16 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
   Widget _tagEditor() => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
+      Text(
+        'HANGAN · 標籤',
+        style: GoogleFonts.crimsonPro(
+          fontStyle: FontStyle.italic,
+          fontSize: 10,
+          color: AppColors.fog,
+          letterSpacing: 3.0,
+        ),
+      ),
+      const SizedBox(height: 8),
       Row(
         children: [
           Expanded(
@@ -401,10 +526,9 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
         runSpacing: 6,
         children: [
           for (final tag in _tags)
-            Chip(
-              label: Text('#$tag'),
+            _TagPill(
+              label: tag,
               onDeleted: () => setState(() => _tags.remove(tag)),
-              backgroundColor: AppColors.cream,
             ),
         ],
       ),
@@ -425,10 +549,10 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           runSpacing: 6,
           children: [
             for (final stat in _hotTags)
-              ActionChip(
-                label: Text('#${stat.tag.name}'),
-                backgroundColor: AppColors.cream,
-                onPressed: () {
+              _TagPill(
+                label: stat.tag.name,
+                filled: false,
+                onTap: () {
                   _tagController.text = stat.tag.name;
                   _addTag();
                 },
@@ -490,66 +614,138 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            OutlinedButton.icon(
-              onPressed: _pickImages,
-              icon: const Icon(Icons.image_outlined, size: 18),
-              label: Text(
-                '加入圖片（${_images.length}/${ForumService.imageMaxCount}）',
-              ),
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.creamDeep),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              for (final image in _images)
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: Stack(
+                    children: [
+                      GestureDetector(
+                        // 點縮圖看原圖：縮圖只有 80px，選錯圖在這個尺寸下看不出來。
+                        onTap: () => _previewPicked(_images.indexOf(image)),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.memory(
+                            image.bytes,
+                            width: 80,
+                            height: 80,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        top: 4,
+                        right: 4,
+                        child: GestureDetector(
+                          onTap: () => setState(() => _images.remove(image)),
+                          child: Container(
+                            width: 18,
+                            height: 18,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.black.withValues(alpha: 0.6),
+                            ),
+                            child: const Icon(
+                              Icons.close,
+                              size: 10,
+                              color: AppColors.creamLight,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              if (_images.length < ForumService.imageMaxCount)
+                GestureDetector(
+                  onTap: _pickImages,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: AppColors.fog.withValues(alpha: 0.5),
+                        width: 1.5,
+                      ),
+                    ),
+                    child: const Icon(
+                      Icons.add,
+                      color: AppColors.fog,
+                      size: 22,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '${_images.length}/${ForumService.imageMaxCount} 張',
+          style: const TextStyle(fontSize: 11, color: AppColors.fog),
+        ),
+      ],
+    );
+  }
+}
+
+/// 標籤 pill：已加入的標籤填色顯示為「已選中」，熱門標籤建議則是外框樣式。
+class _TagPill extends StatelessWidget {
+  final String label;
+  final bool filled;
+  final VoidCallback? onTap;
+  final VoidCallback? onDeleted;
+
+  const _TagPill({
+    required this.label,
+    this.filled = true,
+    this.onTap,
+    this.onDeleted,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final pill = Container(
+      padding: EdgeInsets.only(
+        left: 12,
+        right: onDeleted != null ? 6 : 12,
+        top: 6,
+        bottom: 6,
+      ),
+      decoration: BoxDecoration(
+        color: filled ? AppColors.primary : Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        border: filled ? null : Border.all(color: AppColors.creamDeep),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '#$label',
+            style: GoogleFonts.crimsonPro(
+              fontStyle: FontStyle.italic,
+              fontSize: 12,
+              color: filled ? AppColors.creamLight : AppColors.inkSoft,
+              letterSpacing: 1.2,
+            ),
+          ),
+          if (onDeleted != null) ...[
+            const SizedBox(width: 4),
+            GestureDetector(
+              onTap: onDeleted,
+              child: Icon(
+                Icons.close,
+                size: 14,
+                color: filled ? AppColors.creamLight : AppColors.inkSoft,
               ),
             ),
           ],
-        ),
-        if (_images.isNotEmpty) ...[
-          const SizedBox(height: 10),
-          SizedBox(
-            height: 88,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _images.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (_, i) => Stack(
-                children: [
-                  GestureDetector(
-                    // 點縮圖看原圖：縮圖只有 88px，選錯圖在這個尺寸下看不出來。
-                    onTap: () => _previewPicked(i),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: Image.memory(
-                        _images[i].bytes,
-                        width: 88,
-                        height: 88,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 2,
-                    top: 2,
-                    child: GestureDetector(
-                      onTap: () => setState(() => _images.removeAt(i)),
-                      child: const CircleAvatar(
-                        radius: 10,
-                        backgroundColor: AppColors.ink,
-                        child: Icon(
-                          Icons.close,
-                          size: 12,
-                          color: AppColors.creamLight,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
         ],
-      ],
+      ),
     );
+    return onTap == null ? pill : GestureDetector(onTap: onTap, child: pill);
   }
 }
