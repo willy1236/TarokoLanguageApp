@@ -92,28 +92,53 @@ class ForumPostCard extends StatelessWidget {
     ),
   );
 
-  Widget _header() => Row(
-    children: [
-      Container(
-        width: 38,
-        height: 38,
-        decoration: const BoxDecoration(
-          shape: BoxShape.circle,
-          color: AppColors.primary,
-          border: Border.fromBorderSide(
-            BorderSide(color: AppColors.gold, width: 1.5),
-          ),
-        ),
-        alignment: Alignment.center,
-        child: Text(
-          post.author.displayName.characters.firstOrNull ?? '?',
-          style: GoogleFonts.notoSerifTc(
-            fontSize: 14,
-            fontWeight: FontWeight.w600,
-            color: AppColors.gold,
-          ),
+  Widget _initialsAvatar() => Container(
+    width: 38,
+    height: 38,
+    decoration: const BoxDecoration(
+      shape: BoxShape.circle,
+      color: AppColors.primary,
+    ),
+    alignment: Alignment.center,
+    child: Text(
+      post.author.displayName.characters.firstOrNull ?? '?',
+      style: GoogleFonts.notoSerifTc(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: AppColors.gold,
+      ),
+    ),
+  );
+
+  Widget _avatar() {
+    final avatarUrl = post.author.avatarUrl;
+    return Container(
+      width: 38,
+      height: 38,
+      decoration: const BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.fromBorderSide(
+          BorderSide(color: AppColors.gold, width: 1.5),
         ),
       ),
+      child: (avatarUrl == null || avatarUrl.isEmpty)
+          ? _initialsAvatar()
+          : ClipOval(
+              child: Image.network(
+                avatarUrl,
+                width: 38,
+                height: 38,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) =>
+                    _initialsAvatar(),
+              ),
+            ),
+    );
+  }
+
+  Widget _header() => Row(
+    children: [
+      _avatar(),
       const SizedBox(width: 10),
       Expanded(
         child: Column(
