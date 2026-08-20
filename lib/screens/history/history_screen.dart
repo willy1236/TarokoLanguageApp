@@ -134,24 +134,23 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (record.isListening) {
       final mode = record.mode;
       if (mode == null) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('測驗資料異常，請重新開始聽力測驗')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('測驗資料異常，請重新開始聽力測驗')));
         return;
       }
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (_) => ListeningQuizScreen(
-            mode: mode,
-            level: record.level,
-          ),
+          builder: (_) => ListeningQuizScreen(mode: mode, level: record.level),
         ),
       );
     } else {
       Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => LessonCardScreen(level: record.level)),
+        MaterialPageRoute(
+          builder: (_) => LessonCardScreen(level: record.level),
+        ),
       );
     }
   }
@@ -212,7 +211,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
       );
     }
     if (_error != null) {
-      final isUnauthorized = _error is ApiException && (_error as ApiException).isUnauthorized;
+      final isUnauthorized =
+          _error is ApiException && (_error as ApiException).isUnauthorized;
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -221,7 +221,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
             children: [
               Text(
                 isUnauthorized ? '請先登入' : '載入失敗，請稍後再試',
-                style: GoogleFonts.notoSerifTc(fontSize: 15, color: AppColors.ink),
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 15,
+                  color: AppColors.ink,
+                ),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -264,7 +267,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
           final record = _records[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
-            child: _HistoryRow(record: record, onTap: () => _onTapRecord(record)),
+            child: _HistoryRow(
+              record: record,
+              onTap: () => _onTapRecord(record),
+            ),
           );
         },
       ),
@@ -277,7 +283,11 @@ class _FilterChip extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
-  const _FilterChip({required this.label, required this.selected, required this.onTap});
+  const _FilterChip({
+    required this.label,
+    required this.selected,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -288,7 +298,9 @@ class _FilterChip extends StatelessWidget {
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : AppColors.cream,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: selected ? AppColors.primary : AppColors.creamDeep),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.creamDeep,
+          ),
         ),
         child: Text(
           label,
@@ -398,7 +410,11 @@ class _HistoryRow extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
       ),
     );
   }

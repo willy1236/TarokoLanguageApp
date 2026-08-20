@@ -74,8 +74,10 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
   Future<void> _load() async {
     setState(() => _phase = _ListenPhase.loading);
     try {
-      final session =
-          await ListeningService.startListening(widget.mode, widget.level);
+      final session = await ListeningService.startListening(
+        widget.mode,
+        widget.level,
+      );
       if (session.questions.isEmpty) {
         setState(() {
           _error = ApiException(
@@ -89,8 +91,10 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       }
 
       if (session.conflictingLevel != null) {
-        final shouldContinue =
-            await _showConflictDialog(session.level, session.conflictingLevel!);
+        final shouldContinue = await _showConflictDialog(
+          session.level,
+          session.conflictingLevel!,
+        );
         if (!mounted) return;
         if (!shouldContinue) {
           Navigator.pop(context);
@@ -104,16 +108,22 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
           _answeredOptions[q.questionId] = q.selectedOptionId!;
         }
       }
-      final firstUnanswered =
-          session.questions.indexWhere((q) => q.selectedOptionId == null);
-      final startIndex =
-          firstUnanswered == -1 ? session.questions.length - 1 : firstUnanswered;
+      final firstUnanswered = session.questions.indexWhere(
+        (q) => q.selectedOptionId == null,
+      );
+      final startIndex = firstUnanswered == -1
+          ? session.questions.length - 1
+          : firstUnanswered;
 
       setState(() {
         _session = session;
         _effectiveLevel = session.level;
         _currentIndex = startIndex;
-        _selectedOptionId = _answeredOptions[_currentQuestionOf(session, startIndex).questionId];
+        _selectedOptionId =
+            _answeredOptions[_currentQuestionOf(
+              session,
+              startIndex,
+            ).questionId];
         _phase = _ListenPhase.quiz;
       });
     } catch (e) {
@@ -166,9 +176,9 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
     } catch (e) {
       debugPrint('ListeningQuizScreen._play failed: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('發音播放失敗，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('發音播放失敗，請稍後再試')));
     }
   }
 
@@ -188,11 +198,12 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      final message =
-          e is ApiException ? _listeningErrorMessage(e) : '儲存答案失敗，請稍後再試';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      final message = e is ApiException
+          ? _listeningErrorMessage(e)
+          : '儲存答案失敗，請稍後再試';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -208,8 +219,9 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       return;
     }
 
-    final unansweredIndex = _session!.questions
-        .indexWhere((q) => !_answeredOptions.containsKey(q.questionId));
+    final unansweredIndex = _session!.questions.indexWhere(
+      (q) => !_answeredOptions.containsKey(q.questionId),
+    );
     if (unansweredIndex != -1) {
       setState(() {
         _currentIndex = unansweredIndex;
@@ -222,21 +234,23 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
     setState(() => _phase = _ListenPhase.loading);
     try {
       final answers = _session!.questions
-          .map((q) => ListeningAnswer(
-                questionId: q.questionId,
-                selectedOptionId: _answeredOptions[q.questionId]!,
-              ))
+          .map(
+            (q) => ListeningAnswer(
+              questionId: q.questionId,
+              selectedOptionId: _answeredOptions[q.questionId]!,
+            ),
+          )
           .toList();
-      final result =
-          await ListeningService.submitListening(_session!.sessionId, answers);
+      final result = await ListeningService.submitListening(
+        _session!.sessionId,
+        answers,
+      );
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => ListeningCorrectionScreen(
-            result: result,
-            level: _displayLevel,
-          ),
+          builder: (_) =>
+              ListeningCorrectionScreen(result: result, level: _displayLevel),
         ),
       );
     } catch (e) {
@@ -253,18 +267,20 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       backgroundColor: AppColors.creamLight,
       body: SafeArea(
         bottom: false,
-        child: Builder(builder: (context) {
-          switch (_phase) {
-            case _ListenPhase.loading:
-              return const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              );
-            case _ListenPhase.error:
-              return _buildError();
-            case _ListenPhase.quiz:
-              return _buildQuiz();
-          }
-        }),
+        child: Builder(
+          builder: (context) {
+            switch (_phase) {
+              case _ListenPhase.loading:
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                );
+              case _ListenPhase.error:
+                return _buildError();
+              case _ListenPhase.quiz:
+                return _buildQuiz();
+            }
+          },
+        ),
       ),
     );
   }
@@ -487,7 +503,9 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
                             children: [
                               CustomPaint(
                                 size: const Size(20, 20),
-                                painter: SpeakerIconPainter(color: AppColors.ink),
+                                painter: SpeakerIconPainter(
+                                  color: AppColors.ink,
+                                ),
                               ),
                               const SizedBox(width: 10),
                               Text(

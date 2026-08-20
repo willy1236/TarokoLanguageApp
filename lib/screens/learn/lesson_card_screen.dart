@@ -63,8 +63,10 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
       }
 
       if (session.conflictingLevel != null) {
-        final shouldContinue =
-            await _showConflictDialog(session.level, session.conflictingLevel!);
+        final shouldContinue = await _showConflictDialog(
+          session.level,
+          session.conflictingLevel!,
+        );
         if (!mounted) return;
         if (!shouldContinue) {
           Navigator.pop(context);
@@ -84,15 +86,20 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
 
   void _applySession(QuizSession session) {
     // 找第一題還沒作答的位置（續接時據此跳到未完成的題目，而非重回第一題）
-    final firstUnanswered =
-        session.questions.indexWhere((q) => q.selectedOptionId == null);
-    final startIndex =
-        firstUnanswered == -1 ? session.questions.length - 1 : firstUnanswered;
+    final firstUnanswered = session.questions.indexWhere(
+      (q) => q.selectedOptionId == null,
+    );
+    final startIndex = firstUnanswered == -1
+        ? session.questions.length - 1
+        : firstUnanswered;
 
     final restoredAnswers = <QuizAnswer>[
       for (final q in session.questions.take(startIndex))
         if (q.selectedOptionId != null)
-          QuizAnswer(questionId: q.questionId, selectedOptionId: q.selectedOptionId!),
+          QuizAnswer(
+            questionId: q.questionId,
+            selectedOptionId: q.selectedOptionId!,
+          ),
     ];
 
     setState(() {
@@ -150,9 +157,9 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
     } catch (e) {
       debugPrint('LessonCardScreen._play failed: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('發音播放失敗，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('發音播放失敗，請稍後再試')));
     }
   }
 
@@ -171,10 +178,12 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
   Future<void> _confirmAndNext() async {
     final selected = _selectedOptionId;
     if (selected == null) return;
-    _answers.add(QuizAnswer(
-      questionId: _currentQuestion.questionId,
-      selectedOptionId: selected,
-    ));
+    _answers.add(
+      QuizAnswer(
+        questionId: _currentQuestion.questionId,
+        selectedOptionId: selected,
+      ),
+    );
 
     if (_currentIndex < _session!.questions.length - 1) {
       setState(() {
@@ -186,7 +195,10 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
 
     setState(() => _phase = _Phase.loading);
     try {
-      final result = await LearnService.submitQuiz(_session!.sessionId, _answers);
+      final result = await LearnService.submitQuiz(
+        _session!.sessionId,
+        _answers,
+      );
       setState(() {
         _result = result;
         _phase = _Phase.result;
@@ -205,20 +217,22 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
       backgroundColor: AppColors.creamLight,
       body: SafeArea(
         bottom: false,
-        child: Builder(builder: (context) {
-          switch (_phase) {
-            case _Phase.loading:
-              return const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              );
-            case _Phase.error:
-              return _buildError();
-            case _Phase.result:
-              return _buildResult();
-            case _Phase.quiz:
-              return _buildQuiz();
-          }
-        }),
+        child: Builder(
+          builder: (context) {
+            switch (_phase) {
+              case _Phase.loading:
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                );
+              case _Phase.error:
+                return _buildError();
+              case _Phase.result:
+                return _buildResult();
+              case _Phase.quiz:
+                return _buildQuiz();
+            }
+          },
+        ),
       ),
     );
   }
@@ -297,11 +311,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildBottomButton(
-                  label: '重新測驗',
-                  primary: false,
-                  onTap: _load,
-                ),
+                _buildBottomButton(label: '重新測驗', primary: false, onTap: _load),
                 const SizedBox(width: 10),
                 _buildBottomButton(
                   label: '返回 →',
@@ -522,7 +532,9 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
                             children: [
                               CustomPaint(
                                 size: const Size(20, 20),
-                                painter: SpeakerIconPainter(color: AppColors.ink),
+                                painter: SpeakerIconPainter(
+                                  color: AppColors.ink,
+                                ),
                               ),
                               const SizedBox(width: 10),
                               Text(
@@ -695,4 +707,3 @@ class _OptionTile extends StatelessWidget {
     );
   }
 }
-

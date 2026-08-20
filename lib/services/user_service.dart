@@ -30,9 +30,7 @@ class UserService {
     final body = <String, dynamic>{
       'display_name': ?displayName,
       'ethnic_group': ?ethnicGroup,
-      if (clearTribeId)
-        'tribe_id': null
-      else 'tribe_id': ?tribeId,
+      if (clearTribeId) 'tribe_id': null else 'tribe_id': ?tribeId,
       'is_indigenous': ?isIndigenous,
       'tribal_name': ?tribalName,
     };
@@ -43,7 +41,7 @@ class UserService {
   /// 上傳自訂頭像（multipart，欄位名固定 avatar）。後端會自動裁正方形、轉 WebP
   /// 並清空 avatar_id；回傳完整 user 物件，不需再呼叫一次 fetchMe()。
   static Future<UserModel> uploadAvatar(File file, {String? contentType}) async {
-    final data = await ApiClient.postMultipart(
+    final data = await ApiClient.postMultipartFile(
       ApiConfig.meAvatar,
       fieldName: 'avatar',
       file: file,

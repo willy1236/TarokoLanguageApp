@@ -37,12 +37,12 @@ class FcmService {
   static const String _reminderChannelId = 'event_reminder_channel';
   static const AndroidNotificationDetails _reminderAndroidDetails =
       AndroidNotificationDetails(
-    _reminderChannelId,
-    '活動提醒',
-    channelDescription: '活動提醒與取消通知',
-    importance: Importance.high,
-    priority: Priority.high,
-  );
+        _reminderChannelId,
+        '活動提醒',
+        channelDescription: '活動提醒與取消通知',
+        importance: Importance.high,
+        priority: Priority.high,
+      );
 
   /// 點擊提醒通知時的導頁 callback。由 UI 層設定（用 navigatorKey 導到活動詳情）。
   /// 參數為 payload 裡的 event_id（可能為 null）。
@@ -51,6 +51,9 @@ class FcmService {
   /// 前景收到「目前正開著的活動」的新提醒推播時觸發，讓該頁即時刷新提醒紀錄。
   /// 由 EventDetailScreen 在 initState/dispose 掛上/清空。
   static void Function(int? eventId)? onReminderReceivedForOpenScreen;
+
+  /// 點擊論壇回覆通知時的導頁 callback。由 UI 層設定（用 navigatorKey 導到貼文詳情）。
+  static void Function(int postId)? onForumReplyTapped;
 
   /// App 被完全關閉、靠點擊通知冷啟動時拿到的訊息。此時 runApp() 尚未執行，
   /// navigatorKey 還沒掛上 Navigator，不能立即導頁，先暫存；等 SplashScreen
@@ -88,19 +91,27 @@ class FcmService {
     await _localNotifications.initialize(
       const InitializationSettings(android: androidInit, iOS: iosInit),
       onDidReceiveNotificationResponse: (response) {
-        final eventId = int.tryParse(response.payload ?? '');
-        onReminderTapped?.call(eventId);
+        final payload = response.payload ?? '';
+        if (payload.startsWith('forum:')) {
+          final postId = int.tryParse(payload.substring('forum:'.length));
+          if (postId != null) onForumReplyTapped?.call(postId);
+          return;
+        }
+        onReminderTapped?.call(int.tryParse(payload));
       },
     );
     await _localNotifications
         .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin>()
-        ?.createNotificationChannel(const AndroidNotificationChannel(
-      _reminderChannelId,
-      '活動提醒',
-      description: '活動提醒與取消通知',
-      importance: Importance.high,
-    ));
+          AndroidFlutterLocalNotificationsPlugin
+        >()
+        ?.createNotificationChannel(
+          const AndroidNotificationChannel(
+            _reminderChannelId,
+            '活動提醒',
+            description: '活動提醒與取消通知',
+            importance: Importance.high,
+          ),
+        );
   }
 
   /// 由 SplashScreen 在完成起始路由跳轉（pushReplacementNamed）之後呼叫，
@@ -148,7 +159,8 @@ class FcmService {
 
   /// 解析提醒/取消通知的 payload，非提醒相關類型回傳 null。
   static (String type, int? eventId)? _parseReminderPayload(
-      Map<String, dynamic> data) {
+    Map<String, dynamic> data,
+  ) {
     final type = data['type'];
     if (type != 'event_reminder' && type != 'event_cancelled') return null;
     final eventId = int.tryParse(data['event_id']?.toString() ?? '');
@@ -158,7 +170,47 @@ class FcmService {
     return (type as String, eventId);
   }
 
+  /// 解析論壇回覆通知的 payload，非論壇類型回傳 null。
+  /// 後端送出的 data：{ type: 'reply_post' | 'reply_comment', post_id, comment_id }
+  static int? _parseForumPayload(Map<String, dynamic> data) {
+    final type = data['type'];
+    if (type != 'reply_post' && type != 'reply_comment') return null;
+    final postId = int.tryParse(data['post_id']?.toString() ?? '');
+    if (postId == null) {
+      debugPrint('FcmService: post_id 缺失或無法解析，忽略：${data['post_id']}');
+    }
+    return postId;
+  }
+
   static void _onForegroundMessage(RemoteMessage message) {
+    final forumPostId = _parseForumPayload(message.data);
+    if (forumPostId != null) {
+      final title = message.notification?.title ?? '有人回覆你';
+      final body = message.notification?.body ?? '';
+      unawaited(
+        _localNotifications.show(
+          message.hashCode,
+          title,
+          body,
+          const NotificationDetails(android: _reminderAndroidDetails),
+          // 事件通知的 payload 是純數字的 event_id，論壇加前綴區分兩者。
+          payload: 'forum:$forumPostId',
+        ),
+      );
+      scaffoldMessengerKey.currentState
+        ?..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(body.isNotEmpty ? body : title),
+            action: SnackBarAction(
+              label: '查看',
+              onPressed: () => onForumReplyTapped?.call(forumPostId),
+            ),
+          ),
+        );
+      return;
+    }
+
     final parsed = _parseReminderPayload(message.data);
     if (parsed == null) return;
     final (_, eventId) = parsed;
@@ -166,27 +218,39 @@ class FcmService {
     final title = message.notification?.title ?? '活動提醒';
     final body = message.notification?.body ?? '';
 
-    unawaited(_localNotifications.show(
-      message.hashCode,
-      title,
-      body,
-      const NotificationDetails(android: _reminderAndroidDetails),
-      payload: eventId?.toString(),
-    ));
+    unawaited(
+      _localNotifications.show(
+        message.hashCode,
+        title,
+        body,
+        const NotificationDetails(android: _reminderAndroidDetails),
+        payload: eventId?.toString(),
+      ),
+    );
 
     scaffoldMessengerKey.currentState
       ?..clearSnackBars()
-      ..showSnackBar(SnackBar(
-        content: Text(body.isNotEmpty ? body : title),
-        action: eventId == null
-            ? null
-            : SnackBarAction(label: '查看', onPressed: () => onReminderTapped?.call(eventId)),
-      ));
+      ..showSnackBar(
+        SnackBar(
+          content: Text(body.isNotEmpty ? body : title),
+          action: eventId == null
+              ? null
+              : SnackBarAction(
+                  label: '查看',
+                  onPressed: () => onReminderTapped?.call(eventId),
+                ),
+        ),
+      );
 
     onReminderReceivedForOpenScreen?.call(eventId);
   }
 
   static void _handleOpened(RemoteMessage message) {
+    final forumPostId = _parseForumPayload(message.data);
+    if (forumPostId != null) {
+      onForumReplyTapped?.call(forumPostId);
+      return;
+    }
     final parsed = _parseReminderPayload(message.data);
     if (parsed == null) return;
     final (_, eventId) = parsed;

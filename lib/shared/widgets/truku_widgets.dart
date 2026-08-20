@@ -107,7 +107,11 @@ class TrukuChevron extends StatelessWidget {
   final Color color;
   final double size;
 
-  const TrukuChevron({super.key, this.color = AppColors.primary, this.size = 20});
+  const TrukuChevron({
+    super.key,
+    this.color = AppColors.primary,
+    this.size = 20,
+  });
 
   @override
   Widget build(BuildContext context) {

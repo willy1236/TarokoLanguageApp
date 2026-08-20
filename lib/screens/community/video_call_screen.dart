@@ -65,7 +65,11 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             gradient: LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [AppColors.mossDeep, AppColors.ink, AppColors.primaryDeep],
+              colors: [
+                AppColors.mossDeep,
+                AppColors.ink,
+                AppColors.primaryDeep,
+              ],
               stops: [0.0, 0.6, 1.0],
             ),
           ),
@@ -443,7 +447,11 @@ class _MicPainter extends CustomPainter {
       Radius.circular(w * 3 / 24),
     );
     canvas.drawRRect(
-        body, Paint()..color = AppColors.creamLight..style = PaintingStyle.fill);
+      body,
+      Paint()
+        ..color = AppColors.creamLight
+        ..style = PaintingStyle.fill,
+    );
     // Arc below
     final arcPath = Path()
       ..moveTo(w * 5 / 24, h * 11 / 24)
@@ -451,8 +459,11 @@ class _MicPainter extends CustomPainter {
       ..quadraticBezierTo(w * 19 / 24, h * 18 / 24, w * 19 / 24, h * 11 / 24);
     canvas.drawPath(arcPath, p);
     // Stem
-    canvas.drawLine(Offset(w * 12 / 24, h * 18 / 24),
-        Offset(w * 12 / 24, h * 21 / 24), p);
+    canvas.drawLine(
+      Offset(w * 12 / 24, h * 18 / 24),
+      Offset(w * 12 / 24, h * 21 / 24),
+      p,
+    );
   }
 
   @override
@@ -471,17 +482,23 @@ class _CamPainter extends CustomPainter {
       Radius.circular(w * 2 / 24),
     );
     canvas.drawRRect(
-        body,
-        Paint()
-          ..color = cream
-          ..style = PaintingStyle.fill);
+      body,
+      Paint()
+        ..color = cream
+        ..style = PaintingStyle.fill,
+    );
     // Lens triangle
     final tri = Path()
       ..moveTo(w * 16 / 24, h * 10 / 24)
       ..lineTo(w * 21 / 24, h * 7 / 24)
       ..lineTo(w * 21 / 24, h * 17 / 24)
       ..close();
-    canvas.drawPath(tri, Paint()..color = cream..style = PaintingStyle.fill);
+    canvas.drawPath(
+      tri,
+      Paint()
+        ..color = cream
+        ..style = PaintingStyle.fill,
+    );
   }
 
   @override
@@ -508,10 +525,16 @@ class _NotePainter extends CustomPainter {
       ..close();
     canvas.drawPath(doc, p);
     // Lines
-    canvas.drawLine(Offset(w * 9 / 24, h * 11 / 24),
-        Offset(w * 15 / 24, h * 11 / 24), p);
-    canvas.drawLine(Offset(w * 9 / 24, h * 15 / 24),
-        Offset(w * 13 / 24, h * 15 / 24), p);
+    canvas.drawLine(
+      Offset(w * 9 / 24, h * 11 / 24),
+      Offset(w * 15 / 24, h * 11 / 24),
+      p,
+    );
+    canvas.drawLine(
+      Offset(w * 9 / 24, h * 15 / 24),
+      Offset(w * 13 / 24, h * 15 / 24),
+      p,
+    );
   }
 
   @override
@@ -531,36 +554,112 @@ class _EndPainter extends CustomPainter {
     final path = Path()
       ..moveTo(w * 22 / 24, h * 16.92 / 24)
       ..lineTo(w * 22 / 24, h * 19 / 24)
-      ..cubicTo(w * 22 / 24, h * 20.1 / 24, w * 21.1 / 24, h * 21 / 24,
-          w * 19.82 / 24, h * 21 / 24)
-      ..cubicTo(w * 17.33 / 24, h * 20.79 / 24, w * 15.19 / 24,
-          h * 19.92 / 24, w * 11.19 / 24, h * 17.93 / 24)
-      ..cubicTo(w * 8.4 / 24, h * 16.43 / 24, w * 7.57 / 24, h * 15.6 / 24,
-          w * 5.07 / 24, h * 11.93 / 24)
-      ..cubicTo(w * 2.79 / 24, h * 8.13 / 24, w * 2 / 24, h * 5.9 / 24,
-          w * 2 / 24, h * 3.11 / 24)
-      ..cubicTo(w * 2 / 24, h * 2.1 / 24, w * 2.9 / 24, h * 2 / 24,
-          w * 4 / 24, h * 2 / 24)
+      ..cubicTo(
+        w * 22 / 24,
+        h * 20.1 / 24,
+        w * 21.1 / 24,
+        h * 21 / 24,
+        w * 19.82 / 24,
+        h * 21 / 24,
+      )
+      ..cubicTo(
+        w * 17.33 / 24,
+        h * 20.79 / 24,
+        w * 15.19 / 24,
+        h * 19.92 / 24,
+        w * 11.19 / 24,
+        h * 17.93 / 24,
+      )
+      ..cubicTo(
+        w * 8.4 / 24,
+        h * 16.43 / 24,
+        w * 7.57 / 24,
+        h * 15.6 / 24,
+        w * 5.07 / 24,
+        h * 11.93 / 24,
+      )
+      ..cubicTo(
+        w * 2.79 / 24,
+        h * 8.13 / 24,
+        w * 2 / 24,
+        h * 5.9 / 24,
+        w * 2 / 24,
+        h * 3.11 / 24,
+      )
+      ..cubicTo(
+        w * 2 / 24,
+        h * 2.1 / 24,
+        w * 2.9 / 24,
+        h * 2 / 24,
+        w * 4 / 24,
+        h * 2 / 24,
+      )
       ..lineTo(w * 7 / 24, h * 2 / 24)
-      ..cubicTo(w * 8.1 / 24, h * 2 / 24, w * 9 / 24, h * 2.72 / 24,
-          w * 9 / 24, h * 3.72 / 24)
-      ..cubicTo(w * 9.13 / 24, h * 4.68 / 24, w * 9.37 / 24, h * 5.63 / 24,
-          w * 9.71 / 24, h * 6.53 / 24)
-      ..cubicTo(w * 10.04 / 24, h * 7.11 / 24, w * 9.71 / 24, h * 8.11 / 24,
-          w * 9.26 / 24, h * 8.64 / 24)
+      ..cubicTo(
+        w * 8.1 / 24,
+        h * 2 / 24,
+        w * 9 / 24,
+        h * 2.72 / 24,
+        w * 9 / 24,
+        h * 3.72 / 24,
+      )
+      ..cubicTo(
+        w * 9.13 / 24,
+        h * 4.68 / 24,
+        w * 9.37 / 24,
+        h * 5.63 / 24,
+        w * 9.71 / 24,
+        h * 6.53 / 24,
+      )
+      ..cubicTo(
+        w * 10.04 / 24,
+        h * 7.11 / 24,
+        w * 9.71 / 24,
+        h * 8.11 / 24,
+        w * 9.26 / 24,
+        h * 8.64 / 24,
+      )
       ..lineTo(w * 8.09 / 24, h * 9.91 / 24)
-      ..cubicTo(w * 10 / 24, h * 12.9 / 24, w * 13.1 / 24, h * 14.9 / 24,
-          w * 14.09 / 24, h * 15.91 / 24)
+      ..cubicTo(
+        w * 10 / 24,
+        h * 12.9 / 24,
+        w * 13.1 / 24,
+        h * 14.9 / 24,
+        w * 14.09 / 24,
+        h * 15.91 / 24,
+      )
       ..lineTo(w * 15.36 / 24, h * 14.64 / 24)
-      ..cubicTo(w * 15.89 / 24, h * 14.19 / 24, w * 16.89 / 24,
-          h * 13.96 / 24, w * 18 / 24, h * 14.29 / 24)
-      ..cubicTo(w * 18.9 / 24, h * 14.63 / 24, w * 19.85 / 24,
-          h * 14.87 / 24, w * 20.81 / 24, h * 15 / 24)
-      ..cubicTo(w * 21.92 / 24, h * 15.08 / 24, w * 22 / 24, h * 15.8 / 24,
-          w * 22 / 24, h * 16.92 / 24)
+      ..cubicTo(
+        w * 15.89 / 24,
+        h * 14.19 / 24,
+        w * 16.89 / 24,
+        h * 13.96 / 24,
+        w * 18 / 24,
+        h * 14.29 / 24,
+      )
+      ..cubicTo(
+        w * 18.9 / 24,
+        h * 14.63 / 24,
+        w * 19.85 / 24,
+        h * 14.87 / 24,
+        w * 20.81 / 24,
+        h * 15 / 24,
+      )
+      ..cubicTo(
+        w * 21.92 / 24,
+        h * 15.08 / 24,
+        w * 22 / 24,
+        h * 15.8 / 24,
+        w * 22 / 24,
+        h * 16.92 / 24,
+      )
       ..close();
     canvas.drawPath(
-        path, Paint()..color = AppColors.creamLight..style = PaintingStyle.fill);
+      path,
+      Paint()
+        ..color = AppColors.creamLight
+        ..style = PaintingStyle.fill,
+    );
     canvas.restore();
   }
 
@@ -586,7 +685,11 @@ class _DotsPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     final r = size.width * 1.5 / 24;
     final cx = size.width / 2;
-    for (final cy in [size.height * 6 / 24, size.height * 12 / 24, size.height * 18 / 24]) {
+    for (final cy in [
+      size.height * 6 / 24,
+      size.height * 12 / 24,
+      size.height * 18 / 24,
+    ]) {
       canvas.drawCircle(Offset(cx, cy), r, paint);
     }
   }

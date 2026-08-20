@@ -25,7 +25,9 @@ class TrukuBottomTab extends StatelessWidget {
           decoration: const BoxDecoration(
             // creamLight #FAF5EA at ~92% opacity (0xEB alpha)
             color: Color(0xEBFAF5EA),
-            border: Border(top: BorderSide(color: AppColors.creamDeep, width: 1)),
+            border: Border(
+              top: BorderSide(color: AppColors.creamDeep, width: 1),
+            ),
           ),
           padding: EdgeInsets.fromLTRB(8, 10, 8, 28 + bottomPad),
           child: Row(
@@ -51,7 +53,9 @@ class TrukuBottomTab extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           letterSpacing: 1.0,
-                          fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+                          fontWeight: isActive
+                              ? FontWeight.w600
+                              : FontWeight.w400,
                           color: color,
                         ),
                       ),
@@ -115,8 +119,14 @@ class _TabIconPainter extends CustomPainter {
 
       case 'learn':
         // 書：兩個矩形 M4 4h7v16H4z  M13 4h7v16h-7z
-        canvas.drawPath(Path()..addRect(const Rect.fromLTWH(4, 4, 7, 16)), stroke);
-        canvas.drawPath(Path()..addRect(const Rect.fromLTWH(13, 4, 7, 16)), stroke);
+        canvas.drawPath(
+          Path()..addRect(const Rect.fromLTWH(4, 4, 7, 16)),
+          stroke,
+        );
+        canvas.drawPath(
+          Path()..addRect(const Rect.fromLTWH(13, 4, 7, 16)),
+          stroke,
+        );
 
       case 'culture':
         // 播放圓圈 + 填充三角

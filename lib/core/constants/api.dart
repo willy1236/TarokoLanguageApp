@@ -63,6 +63,24 @@ class ApiConfig {
   static const String checkinStatus = '/api/checkin/status';
   static const String checkinAction = '/api/checkin';
 
+  // 論壇 v2（見 Truku_backend backend/routes/forum.ts）
+  static const String forumBoards = '/api/forum/boards';
+  static String forumBoardPosts(String slug) => '/api/forum/boards/$slug/posts';
+  static const String forumPosts = '/api/forum/posts';
+  static String forumPost(int id) => '/api/forum/posts/$id';
+  static String forumPostComments(int id) => '/api/forum/posts/$id/comments';
+  static String forumComment(int id) => '/api/forum/comments/$id';
+  static String forumPostLike(int id) => '/api/forum/posts/$id/like';
+  static String forumCommentLike(int id) => '/api/forum/comments/$id/like';
+  static const String forumSearch = '/api/forum/search';
+  static const String forumTags = '/api/forum/tags';
+  static const String forumReports = '/api/forum/reports';
+  static const String forumNotifications = '/api/forum/notifications';
+  static const String forumNotificationsRead = '/api/forum/notifications/read';
+  // 書籤端點由後端另行補上，前端依規格 §9 的約定先行實作。
+  static String forumPostBookmark(int id) => '/api/forum/posts/$id/bookmark';
+  static const String forumBookmarks = '/api/forum/bookmarks';
+
   // 族群/部落（issue #5）
   static const String ethnicGroups = '/api/ethnic-groups';
   static const String tribes = '/api/tribes';

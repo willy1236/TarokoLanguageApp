@@ -133,20 +133,20 @@ class _ShopScreenState extends State<ShopScreen> {
                 ownedAvatarIds: [...updated.ownedAvatarIds, item.id],
               );
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('兌換成功')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('兌換成功')));
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       debugPrint('ShopScreen._purchaseItem failed: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('兌換失敗，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('兌換失敗，請稍後再試')));
     }
   }
 
@@ -157,20 +157,20 @@ class _ShopScreenState extends State<ShopScreen> {
           : await ShopService.equipAvatar(item.id);
       if (!mounted) return;
       setState(() => _user = updated);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已配戴')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('已配戴')));
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       debugPrint('ShopScreen._equipItem failed: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('配戴失敗，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('配戴失敗，請稍後再試')));
     }
   }
 
@@ -179,13 +179,22 @@ class _ShopScreenState extends State<ShopScreen> {
     if (_loadingUser) {
       return const Scaffold(
         backgroundColor: AppColors.creamLight,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
       );
     }
 
-    final user = _user ?? UserModel(uid: 0, email: '', createdAt: DateTime.now());
-    final showAvatars = _selectedCategory == _catAll || _selectedCategory == _catAvatar || _selectedCategory == _catOwned;
-    final showFrames = _selectedCategory == _catAll || _selectedCategory == _catFrame || _selectedCategory == _catOwned;
+    final user =
+        _user ?? UserModel(uid: 0, email: '', createdAt: DateTime.now());
+    final showAvatars =
+        _selectedCategory == _catAll ||
+        _selectedCategory == _catAvatar ||
+        _selectedCategory == _catOwned;
+    final showFrames =
+        _selectedCategory == _catAll ||
+        _selectedCategory == _catFrame ||
+        _selectedCategory == _catOwned;
 
     final onlyOwned = _selectedCategory == _catOwned;
     // 沒有本地 fallback：_serverItems 為 null（尚未取得或取得失敗）時直接是空清單，
@@ -205,9 +214,21 @@ class _ShopScreenState extends State<ShopScreen> {
           SliverToBoxAdapter(child: _buildHero(context, user)),
           SliverToBoxAdapter(child: _buildCategories()),
           if (showAvatars && avatarList.isNotEmpty)
-            SliverToBoxAdapter(child: _buildItemSection('頭像 Lukus', 'lukus · 共 ${avatarList.length} 款', avatarList)),
+            SliverToBoxAdapter(
+              child: _buildItemSection(
+                '頭像 Lukus',
+                'lukus · 共 ${avatarList.length} 款',
+                avatarList,
+              ),
+            ),
           if (showFrames && frameList.isNotEmpty)
-            SliverToBoxAdapter(child: _buildItemSection('頭像框', 'rangi · 共 ${frameList.length} 款', frameList)),
+            SliverToBoxAdapter(
+              child: _buildItemSection(
+                '頭像框',
+                'rangi · 共 ${frameList.length} 款',
+                frameList,
+              ),
+            ),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
@@ -229,7 +250,13 @@ class _ShopScreenState extends State<ShopScreen> {
           Positioned.fill(
             child: Opacity(
               opacity: 0.15,
-              child: CustomPaint(painter: TrukuWeavePainter(color: AppColors.gold, opacity: 1.0, scale: 0.7)),
+              child: CustomPaint(
+                painter: TrukuWeavePainter(
+                  color: AppColors.gold,
+                  opacity: 1.0,
+                  scale: 0.7,
+                ),
+              ),
             ),
           ),
           Padding(
@@ -242,7 +269,11 @@ class _ShopScreenState extends State<ShopScreen> {
                   children: [
                     _circleBtn(
                       onTap: () => Navigator.of(context).pop(),
-                      child: const Icon(Icons.chevron_left, color: AppColors.creamLight, size: 18),
+                      child: const Icon(
+                        Icons.chevron_left,
+                        color: AppColors.creamLight,
+                        size: 18,
+                      ),
                     ),
                     Text(
                       'SAPAH SMPUNG · 小米商店',
@@ -256,9 +287,15 @@ class _ShopScreenState extends State<ShopScreen> {
                     _circleBtn(
                       onTap: () => Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const MilletLedgerScreen()),
+                        MaterialPageRoute(
+                          builder: (_) => const MilletLedgerScreen(),
+                        ),
                       ),
-                      child: const Icon(Icons.access_time_rounded, color: AppColors.creamLight, size: 16),
+                      child: const Icon(
+                        Icons.access_time_rounded,
+                        color: AppColors.creamLight,
+                        size: 16,
+                      ),
                     ),
                   ],
                 ),
@@ -269,7 +306,9 @@ class _ShopScreenState extends State<ShopScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.ink.withValues(alpha: 0.6),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.31)),
+                    border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.31),
+                    ),
                   ),
                   child: Row(
                     children: [
@@ -279,10 +318,17 @@ class _ShopScreenState extends State<ShopScreen> {
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           gradient: RadialGradient(
-                            colors: [AppColors.gold.withValues(alpha: 0.25), Colors.transparent],
+                            colors: [
+                              AppColors.gold.withValues(alpha: 0.25),
+                              Colors.transparent,
+                            ],
                           ),
                         ),
-                        child: const Icon(Icons.grain, size: 42, color: AppColors.gold),
+                        child: const Icon(
+                          Icons.grain,
+                          size: 42,
+                          color: AppColors.gold,
+                        ),
                       ),
                       const SizedBox(width: 14),
                       Expanded(
@@ -373,7 +419,11 @@ class _ShopScreenState extends State<ShopScreen> {
     );
   }
 
-  Widget _buildItemSection(String title, String subtitle, List<ShopItem> items) {
+  Widget _buildItemSection(
+    String title,
+    String subtitle,
+    List<ShopItem> items,
+  ) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
       child: Column(
@@ -381,12 +431,22 @@ class _ShopScreenState extends State<ShopScreen> {
         children: [
           Text(
             title,
-            style: GoogleFonts.notoSerifTc(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.ink, letterSpacing: 1),
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
+              letterSpacing: 1,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             subtitle,
-            style: GoogleFonts.crimsonPro(fontStyle: FontStyle.italic, fontSize: 10, color: AppColors.fog, letterSpacing: 2),
+            style: GoogleFonts.crimsonPro(
+              fontStyle: FontStyle.italic,
+              fontSize: 10,
+              color: AppColors.fog,
+              letterSpacing: 2,
+            ),
           ),
           const SizedBox(height: 10),
           GridView.count(
@@ -407,8 +467,12 @@ class _ShopScreenState extends State<ShopScreen> {
     final isGold = item.rarity == 'gold';
     final rarityColor = _rarityColors[item.rarity];
     final owned = item.isOwned;
-    final locked = !owned && item.unlockCondition != null ? item.unlockCondition : null;
-    final equipped = item.type == 'frame' ? _user?.frameId == item.id : _user?.avatarId == item.id;
+    final locked = !owned && item.unlockCondition != null
+        ? item.unlockCondition
+        : null;
+    final equipped = item.type == 'frame'
+        ? _user?.frameId == item.id
+        : _user?.avatarId == item.id;
 
     String? actionLabel;
     VoidCallback? onAction;
@@ -427,7 +491,9 @@ class _ShopScreenState extends State<ShopScreen> {
 
     return ShopItemCard(
       name: item.name,
-      subtitle: item.rarity != null ? _rarityLabels[item.rarity] ?? item.rarity! : null,
+      subtitle: item.rarity != null
+          ? _rarityLabels[item.rarity] ?? item.rarity!
+          : null,
       price: item.price,
       isGold: isGold,
       rarityColor: rarityColor,

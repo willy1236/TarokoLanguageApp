@@ -13,6 +13,7 @@ import 'screens/home/home_screen.dart';
 import 'screens/learn/learn_screen.dart';
 import 'screens/events/event_detail_screen.dart';
 import 'screens/events/events_screen.dart';
+import 'screens/forum/forum_detail_screen.dart';
 import 'screens/plaza/plaza_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
@@ -46,6 +47,12 @@ Future<void> main() async {
     }
     navState.push(
       MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: eventId)),
+    );
+  };
+  // 點論壇回覆通知 → 導到該貼文詳情頁。
+  FcmService.onForumReplyTapped = (postId) {
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(builder: (_) => ForumDetailScreen(postId: postId)),
     );
   };
   // FCM 掛載（要權限、掛前景/點擊監聽）。失敗不阻斷 App 啟動；token 上傳待登入後。
@@ -160,26 +167,26 @@ class _MainContainerState extends State<MainContainer> {
         _checkinStreak = status.checkinStreak;
         _millet = status.millet;
       });
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('簽到成功，+50 小米')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('簽到成功，+50 小米')));
     } on ApiException catch (e) {
       if (!mounted) return;
       if (e.code == 'ALREADY_CHECKED_IN') {
         setState(() => _checkedInToday = true);
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('今日已簽到')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('今日已簽到')));
         return;
       }
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('簽到失敗，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('簽到失敗，請稍後再試')));
     }
   }
 

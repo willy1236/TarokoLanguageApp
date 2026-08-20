@@ -664,9 +664,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _section('SMRATUC · 活動', [
       GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const MyEventsScreen()),
-        ),
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const MyEventsScreen())),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Row(
@@ -674,11 +674,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: [
               Row(
                 children: [
-                  const Icon(Icons.event_note_outlined, size: 18, color: AppColors.primary),
+                  const Icon(
+                    Icons.event_note_outlined,
+                    size: 18,
+                    color: AppColors.primary,
+                  ),
                   const SizedBox(width: 10),
-                  Text('我發起的活動',
-                      style: GoogleFonts.notoSerifTc(
-                          fontSize: 14, color: AppColors.ink, letterSpacing: 0.5)),
+                  Text(
+                    '我發起的活動',
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 14,
+                      color: AppColors.ink,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ],
               ),
               const Icon(Icons.chevron_right, color: AppColors.fog, size: 16),

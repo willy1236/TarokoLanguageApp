@@ -65,7 +65,9 @@ class AuthService {
     final googleAuth = googleUser.authentication;
 
     // 用 Google credential 換 Firebase user
-    final credential = GoogleAuthProvider.credential(idToken: googleAuth.idToken);
+    final credential = GoogleAuthProvider.credential(
+      idToken: googleAuth.idToken,
+    );
     final userCred = await _auth.signInWithCredential(credential);
     final firebaseToken = await userCred.user?.getIdToken();
     if (firebaseToken == null) {

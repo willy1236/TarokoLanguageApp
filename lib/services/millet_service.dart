@@ -10,10 +10,7 @@ class MilletService {
     final beforeStr = before?.toString();
     final json = await ApiClient.get(
       ApiConfig.milletTransactions,
-      query: {
-        'before': ?beforeStr,
-        'limit': '$limit',
-      },
+      query: {'before': ?beforeStr, 'limit': '$limit'},
     );
     return MilletTransactionListResult.fromJson(json);
   }

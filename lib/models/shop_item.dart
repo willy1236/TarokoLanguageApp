@@ -8,7 +8,8 @@ class ShopItem {
   final String type; // 'avatar' | 'frame'
   final String name;
   final int price;
-  final String? rarity; // 'red'|'orange'|'yellow'|'green'|'blue'|'gold'；頭像框固定 null
+  final String?
+  rarity; // 'red'|'orange'|'yellow'|'green'|'blue'|'gold'；頭像框固定 null
   final String? unlockCondition;
   final String? imageUrl;
   final bool isOwned;

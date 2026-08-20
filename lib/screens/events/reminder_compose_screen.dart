@@ -56,12 +56,20 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
     if (date == null || !mounted) return;
     final t = await showTimePicker(
       context: context,
-      initialTime: TimeOfDay.fromDateTime(_scheduledAt ?? now.add(const Duration(hours: 1))),
+      initialTime: TimeOfDay.fromDateTime(
+        _scheduledAt ?? now.add(const Duration(hours: 1)),
+      ),
       helpText: '選擇發送時間',
     );
     if (t == null || !mounted) return;
     setState(() {
-      _scheduledAt = DateTime(date.year, date.month, date.day, t.hour, t.minute);
+      _scheduledAt = DateTime(
+        date.year,
+        date.month,
+        date.day,
+        t.hour,
+        t.minute,
+      );
       _sendNow = false;
     });
   }
@@ -75,21 +83,23 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
     if (_submitting) return;
     final msg = _controller.text.trim();
     if (msg.isEmpty) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請先輸入提醒訊息')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('請先輸入提醒訊息')));
       return;
     }
     if (!_sendNow && _scheduledAt == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('請選擇發送時間')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('請選擇發送時間')));
       return;
     }
-    if (!_sendNow && _scheduledAt != null && _scheduledAt!.isBefore(DateTime.now())) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('發送時間不能早於現在')),
-      );
+    if (!_sendNow &&
+        _scheduledAt != null &&
+        _scheduledAt!.isBefore(DateTime.now())) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('發送時間不能早於現在')));
       return;
     }
 
@@ -101,21 +111,25 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
         scheduledAt: _sendNow ? null : _scheduledAt,
       );
       if (!mounted) return;
-      final whenText = _sendNow ? '立即發送' : '排定於 ${_formatDateTime(_scheduledAt!)}';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('提醒已建立 — $whenText')),
-      );
+      final whenText = _sendNow
+          ? '立即發送'
+          : '排定於 ${_formatDateTime(_scheduledAt!)}';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('提醒已建立 — $whenText')));
       Navigator.pop(context, true);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      ScaffoldMessenger.of(context)
-          .showSnackBar(SnackBar(content: Text('建立提醒失敗：$e')));
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('建立提醒失敗：$e')));
     }
   }
 
@@ -165,13 +179,24 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('發送提醒',
-                    style: GoogleFonts.notoSerifTc(
-                        fontSize: 19, fontWeight: FontWeight.w700, color: AppColors.ink)),
-                Text(widget.eventTitle,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: TextStyle(fontSize: 12, color: AppColors.fog, letterSpacing: 0.5)),
+                Text(
+                  '發送提醒',
+                  style: GoogleFonts.notoSerifTc(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.ink,
+                  ),
+                ),
+                Text(
+                  widget.eventTitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.fog,
+                    letterSpacing: 0.5,
+                  ),
+                ),
               ],
             ),
           ),
@@ -193,8 +218,14 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
           const Icon(Icons.groups_outlined, size: 18, color: AppColors.primary),
           const SizedBox(width: 10),
           Expanded(
-            child: Text('提醒將推播給此活動的所有參加者',
-                style: TextStyle(fontSize: 12.5, color: AppColors.inkSoft, height: 1.4)),
+            child: Text(
+              '提醒將推播給此活動的所有參加者',
+              style: TextStyle(
+                fontSize: 12.5,
+                color: AppColors.inkSoft,
+                height: 1.4,
+              ),
+            ),
           ),
         ],
       ),
@@ -202,9 +233,15 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
   }
 
   Widget _sectionLabel(String text) {
-    return Text(text,
-        style: GoogleFonts.notoSerifTc(
-            fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.ink, letterSpacing: 1.0));
+    return Text(
+      text,
+      style: GoogleFonts.notoSerifTc(
+        fontSize: 14,
+        fontWeight: FontWeight.w600,
+        color: AppColors.ink,
+        letterSpacing: 1.0,
+      ),
+    );
   }
 
   Widget _buildMessageField() {
@@ -223,7 +260,11 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
             maxLines: 4,
             maxLength: _maxLen,
             onChanged: (_) => setState(() {}),
-            style: const TextStyle(fontSize: 14, color: AppColors.ink, height: 1.6),
+            style: const TextStyle(
+              fontSize: 14,
+              color: AppColors.ink,
+              height: 1.6,
+            ),
             decoration: InputDecoration(
               hintText: '輸入要提醒參加者的內容…',
               hintStyle: TextStyle(color: AppColors.fog, fontSize: 14),
@@ -231,8 +272,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
               counterText: '',
             ),
           ),
-          Text('${_controller.text.characters.length} / $_maxLen',
-              style: TextStyle(fontSize: 11, color: AppColors.fog)),
+          Text(
+            '${_controller.text.characters.length} / $_maxLen',
+            style: TextStyle(fontSize: 11, color: AppColors.fog),
+          ),
         ],
       ),
     );
@@ -247,8 +290,9 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
           onTap: () {
             setState(() {
               _controller.text = t;
-              _controller.selection =
-                  TextSelection.fromPosition(TextPosition(offset: t.length));
+              _controller.selection = TextSelection.fromPosition(
+                TextPosition(offset: t.length),
+              );
             });
           },
           child: Container(
@@ -258,8 +302,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: AppColors.creamDeep),
             ),
-            child: Text(t,
-                style: TextStyle(fontSize: 11.5, color: AppColors.inkSoft)),
+            child: Text(
+              t,
+              style: TextStyle(fontSize: 11.5, color: AppColors.inkSoft),
+            ),
           ),
         );
       }).toList(),
@@ -307,25 +353,38 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
                 children: [
                   const Icon(Icons.event, size: 16, color: AppColors.primary),
                   const SizedBox(width: 10),
-                  Text(_formatDateTime(_scheduledAt!),
-                      style: const TextStyle(
-                          fontSize: 14, color: AppColors.ink, letterSpacing: 0.5)),
+                  Text(
+                    _formatDateTime(_scheduledAt!),
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: AppColors.ink,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                   const Spacer(),
-                  Text('更改',
-                      style: TextStyle(fontSize: 12, color: AppColors.primary)),
+                  Text(
+                    '更改',
+                    style: TextStyle(fontSize: 12, color: AppColors.primary),
+                  ),
                 ],
               ),
             ),
           ),
         ],
         const SizedBox(height: 8),
-        Text('※ 系統每分鐘檢查一次，實際送達可能有約 1 分鐘誤差。',
-            style: TextStyle(fontSize: 11, color: AppColors.fog, height: 1.5)),
+        Text(
+          '※ 系統每分鐘檢查一次，實際送達可能有約 1 分鐘誤差。',
+          style: TextStyle(fontSize: 11, color: AppColors.fog, height: 1.5),
+        ),
       ],
     );
   }
 
-  Widget _timeOption({required String label, required bool selected, required VoidCallback onTap}) {
+  Widget _timeOption({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -333,15 +392,20 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
         decoration: BoxDecoration(
           color: selected ? AppColors.primary : Colors.transparent,
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: selected ? AppColors.primary : AppColors.creamDeep),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.creamDeep,
+          ),
         ),
         child: Center(
-          child: Text(label,
-              style: TextStyle(
-                  fontSize: 13.5,
-                  color: selected ? AppColors.creamLight : AppColors.inkSoft,
-                  fontWeight: FontWeight.w600,
-                  letterSpacing: 1.0)),
+          child: Text(
+            label,
+            style: TextStyle(
+              fontSize: 13.5,
+              color: selected ? AppColors.creamLight : AppColors.inkSoft,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 1.0,
+            ),
+          ),
         ),
       ),
     );
@@ -361,7 +425,9 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 15),
           decoration: BoxDecoration(
-            color: enabled ? AppColors.primary : AppColors.fog.withValues(alpha: 0.4),
+            color: enabled
+                ? AppColors.primary
+                : AppColors.fog.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(14),
           ),
           child: Center(
@@ -370,14 +436,19 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
                     width: 20,
                     height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2, color: AppColors.creamLight),
+                      strokeWidth: 2,
+                      color: AppColors.creamLight,
+                    ),
                   )
-                : Text(_sendNow ? '立即發送提醒' : '排定發送',
+                : Text(
+                    _sendNow ? '立即發送提醒' : '排定發送',
                     style: GoogleFonts.notoSerifTc(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.creamLight,
-                        letterSpacing: 2.0)),
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.creamLight,
+                      letterSpacing: 2.0,
+                    ),
+                  ),
           ),
         ),
       ),

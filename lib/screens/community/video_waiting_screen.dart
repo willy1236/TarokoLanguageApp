@@ -92,11 +92,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
               child: const Center(child: _XIcon()),
             ),
           ),
-          const Expanded(
-            child: Center(
-              child: _SmtrungLabel(),
-            ),
-          ),
+          const Expanded(child: Center(child: _SmtrungLabel())),
           const SizedBox(width: 36),
         ],
       ),
@@ -162,7 +158,11 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
                   ],
                 ),
                 child: const Center(
-                  child: TrukuDiamond(size: 70, color: AppColors.gold, strokeWidth: 1.5),
+                  child: TrukuDiamond(
+                    size: 70,
+                    color: AppColors.gold,
+                    strokeWidth: 1.5,
+                  ),
                 ),
               ),
             ],
@@ -230,10 +230,16 @@ class _XPainter extends CustomPainter {
       ..color = AppColors.creamLight
       ..strokeWidth = 2
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(size.width * 0.25, size.height * 0.25),
-        Offset(size.width * 0.75, size.height * 0.75), paint);
-    canvas.drawLine(Offset(size.width * 0.75, size.height * 0.25),
-        Offset(size.width * 0.25, size.height * 0.75), paint);
+    canvas.drawLine(
+      Offset(size.width * 0.25, size.height * 0.25),
+      Offset(size.width * 0.75, size.height * 0.75),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(size.width * 0.75, size.height * 0.25),
+      Offset(size.width * 0.25, size.height * 0.75),
+      paint,
+    );
   }
 
   @override

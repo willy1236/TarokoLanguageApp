@@ -7,10 +7,10 @@ class ListeningService {
     String mode,
     String level,
   ) async {
-    final json = await ApiClient.post(
-      ApiConfig.listeningStart,
-      {'mode': mode, 'level': level},
-    );
+    final json = await ApiClient.post(ApiConfig.listeningStart, {
+      'mode': mode,
+      'level': level,
+    });
     final data = (json['data'] as Map<String, dynamic>?) ?? json;
     return ListeningSession.fromJson(data);
   }

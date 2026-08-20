@@ -77,9 +77,9 @@ class ReviewCard extends StatelessWidget {
     } catch (e) {
       debugPrint('HistoryReviewCard._play failed: $e');
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('發音播放失敗，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('發音播放失敗，請稍後再試')));
     }
   }
 
@@ -113,7 +113,10 @@ class ReviewCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: (isCorrect ? AppColors.moss : AppColors.danger)
                       .withValues(alpha: 0.12),
@@ -146,7 +149,9 @@ class ReviewCard extends StatelessWidget {
                 ),
               if (promptAudioUrl != null)
                 Padding(
-                  padding: promptText == null ? EdgeInsets.zero : const EdgeInsets.only(left: 8),
+                  padding: promptText == null
+                      ? EdgeInsets.zero
+                      : const EdgeInsets.only(left: 8),
                   child: Column(
                     children: [
                       GestureDetector(
@@ -158,7 +163,11 @@ class ReviewCard extends StatelessWidget {
                             shape: BoxShape.circle,
                             color: AppColors.gold,
                           ),
-                          child: const Icon(Icons.volume_up, size: 18, color: AppColors.ink),
+                          child: const Icon(
+                            Icons.volume_up,
+                            size: 18,
+                            color: AppColors.ink,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -172,7 +181,11 @@ class ReviewCard extends StatelessWidget {
             ],
           ),
           const SizedBox(height: 12),
-          _answerRow('你的作答', yourAnswerText, isCorrect ? AppColors.moss : AppColors.danger),
+          _answerRow(
+            '你的作答',
+            yourAnswerText,
+            isCorrect ? AppColors.moss : AppColors.danger,
+          ),
           if (!isCorrect) ...[
             const SizedBox(height: 6),
             _answerRow('正確答案', correctAnswerText, AppColors.moss),
@@ -199,14 +212,21 @@ class ReviewCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       Text(
                         detailSubtitle!,
-                        style: const TextStyle(fontSize: 13, color: AppColors.inkSoft),
+                        style: const TextStyle(
+                          fontSize: 13,
+                          color: AppColors.inkSoft,
+                        ),
                       ),
                     ],
                     if (explanation != null && explanation!.isNotEmpty) ...[
                       const SizedBox(height: 6),
                       Text(
                         explanation!,
-                        style: const TextStyle(fontSize: 12, color: AppColors.fog, height: 1.4),
+                        style: const TextStyle(
+                          fontSize: 12,
+                          color: AppColors.fog,
+                          height: 1.4,
+                        ),
                       ),
                     ],
                   ],
@@ -226,7 +246,11 @@ class ReviewCard extends StatelessWidget {
                             shape: BoxShape.circle,
                             border: Border.all(color: AppColors.gold),
                           ),
-                          child: const Icon(Icons.play_arrow, size: 16, color: AppColors.primary),
+                          child: const Icon(
+                            Icons.play_arrow,
+                            size: 16,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -266,12 +290,19 @@ class ReviewCard extends StatelessWidget {
       children: [
         SizedBox(
           width: 64,
-          child: Text(label, style: const TextStyle(fontSize: 12, color: AppColors.fog)),
+          child: Text(
+            label,
+            style: const TextStyle(fontSize: 12, color: AppColors.fog),
+          ),
         ),
         Expanded(
           child: Text(
             value,
-            style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: valueColor),
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              color: valueColor,
+            ),
           ),
         ),
       ],
@@ -284,7 +315,12 @@ class ScoreHeader extends StatelessWidget {
   final int score;
   final int total;
 
-  const ScoreHeader({super.key, required this.title, required this.score, required this.total});
+  const ScoreHeader({
+    super.key,
+    required this.title,
+    required this.score,
+    required this.total,
+  });
 
   @override
   Widget build(BuildContext context) {

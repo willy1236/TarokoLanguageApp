@@ -168,14 +168,18 @@ class _LearnScreenState extends State<LearnScreen> {
                       _VocabQuizCard(
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const VocabLevelScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const VocabLevelScreen(),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
                       _ListeningQuizCard(
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const ListeningModeScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const ListeningModeScreen(),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 12),
@@ -186,7 +190,9 @@ class _LearnScreenState extends State<LearnScreen> {
                         tone: _CardTone.primary,
                         onTap: () => Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const HistoryScreen(),
+                          ),
                         ),
                       ),
                     ],
@@ -247,43 +253,51 @@ class _LearnScreenState extends State<LearnScreen> {
                 Row(
                   children: [
                     RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                          text: '$totalWords',
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: 18,
-                            color: AppColors.gold,
-                            fontWeight: FontWeight.bold,
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '$totalWords',
+                            style: GoogleFonts.notoSerifTc(
+                              fontSize: 18,
+                              color: AppColors.gold,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        TextSpan(
-                          text: '　可學單字',
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: 13,
-                            color: AppColors.creamLight.withValues(alpha: 0.85),
+                          TextSpan(
+                            text: '　可學單字',
+                            style: GoogleFonts.notoSerifTc(
+                              fontSize: 13,
+                              color: AppColors.creamLight.withValues(
+                                alpha: 0.85,
+                              ),
+                            ),
                           ),
-                        ),
-                      ]),
+                        ],
+                      ),
                     ),
                     const SizedBox(width: 16),
                     RichText(
-                      text: TextSpan(children: [
-                        TextSpan(
-                          text: '${levels.length}',
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: 18,
-                            color: AppColors.gold,
-                            fontWeight: FontWeight.bold,
+                      text: TextSpan(
+                        children: [
+                          TextSpan(
+                            text: '${levels.length}',
+                            style: GoogleFonts.notoSerifTc(
+                              fontSize: 18,
+                              color: AppColors.gold,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
-                        ),
-                        TextSpan(
-                          text: '　個級別',
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: 13,
-                            color: AppColors.creamLight.withValues(alpha: 0.85),
+                          TextSpan(
+                            text: '　個級別',
+                            style: GoogleFonts.notoSerifTc(
+                              fontSize: 13,
+                              color: AppColors.creamLight.withValues(
+                                alpha: 0.85,
+                              ),
+                            ),
                           ),
-                        ),
-                      ]),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -725,7 +739,8 @@ class _LearnError extends StatelessWidget {
 
   const _LearnError({required this.error, required this.onRetry});
 
-  bool get _isUnauthorized => error is ApiException && (error as ApiException).isUnauthorized;
+  bool get _isUnauthorized =>
+      error is ApiException && (error as ApiException).isUnauthorized;
 
   @override
   Widget build(BuildContext context) {
@@ -746,9 +761,14 @@ class _LearnError extends StatelessWidget {
             if (!_isUnauthorized && error != null) ...[
               const SizedBox(height: 8),
               Text(
-                error is ApiException ? (error as ApiException).message : '$error',
+                error is ApiException
+                    ? (error as ApiException).message
+                    : '$error',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.notoSansTc(fontSize: 13, color: AppColors.fog),
+                style: GoogleFonts.notoSansTc(
+                  fontSize: 13,
+                  color: AppColors.fog,
+                ),
               ),
             ],
             const SizedBox(height: 16),
@@ -791,7 +811,9 @@ class _QuizEntryCard extends StatelessWidget {
     final isDark = tone == _CardTone.dark;
     final iconColor = isDark ? AppColors.gold : AppColors.creamLight;
     final titleColor = AppColors.creamLight;
-    final subtitleColor = isDark ? AppColors.mist : AppColors.creamLight.withValues(alpha: 0.75);
+    final subtitleColor = isDark
+        ? AppColors.mist
+        : AppColors.creamLight.withValues(alpha: 0.75);
     return GestureDetector(
       onTap: onTap,
       child: Container(

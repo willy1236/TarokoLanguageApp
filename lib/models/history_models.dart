@@ -162,11 +162,14 @@ class QuizHistoryResultItem {
       prompt: json['prompt'] as String? ?? '',
       isCorrect: json['is_correct'] as bool? ?? false,
       yourAnswer: HistoryAnswerOption.fromJson(
-          json['your_answer'] as Map<String, dynamic>? ?? const {}),
+        json['your_answer'] as Map<String, dynamic>? ?? const {},
+      ),
       correctAnswer: HistoryAnswerOption.fromJson(
-          json['correct_answer'] as Map<String, dynamic>? ?? const {}),
+        json['correct_answer'] as Map<String, dynamic>? ?? const {},
+      ),
       wordDetail: QuizWordDetail.fromJson(
-          json['word_detail'] as Map<String, dynamic>? ?? const {}),
+        json['word_detail'] as Map<String, dynamic>? ?? const {},
+      ),
     );
   }
 }
@@ -271,11 +274,14 @@ class ListeningHistoryResultItem {
       promptAudioUrl: json['prompt_audio_url'] as String?,
       isCorrect: json['is_correct'] as bool? ?? false,
       yourAnswer: HistoryAnswerOption.fromJson(
-          json['your_answer'] as Map<String, dynamic>? ?? const {}),
+        json['your_answer'] as Map<String, dynamic>? ?? const {},
+      ),
       correctAnswer: HistoryAnswerOption.fromJson(
-          json['correct_answer'] as Map<String, dynamic>? ?? const {}),
+        json['correct_answer'] as Map<String, dynamic>? ?? const {},
+      ),
       detail: ListeningResultDetail.fromJson(
-          json['detail'] as Map<String, dynamic>? ?? const {}),
+        json['detail'] as Map<String, dynamic>? ?? const {},
+      ),
     );
   }
 }
@@ -305,8 +311,10 @@ class ListeningHistoryDetail {
       total: json['total'] as int? ?? 0,
       completedAt: json['completed_at'] as String?,
       results: (json['results'] as List<dynamic>? ?? [])
-          .map((e) =>
-              ListeningHistoryResultItem.fromJson(e as Map<String, dynamic>))
+          .map(
+            (e) =>
+                ListeningHistoryResultItem.fromJson(e as Map<String, dynamic>),
+          )
           .toList(),
     );
   }

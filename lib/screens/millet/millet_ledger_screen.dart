@@ -137,7 +137,10 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
             children: [
               Text(
                 isUnauthorized ? '請先登入' : '載入失敗，請稍後再試',
-                style: GoogleFonts.notoSerifTc(fontSize: 15, color: AppColors.ink),
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 15,
+                  color: AppColors.ink,
+                ),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -253,7 +256,9 @@ class _MilletRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  subtitle != null ? '$subtitle · ${_timeLabel()}' : _timeLabel(),
+                  subtitle != null
+                      ? '$subtitle · ${_timeLabel()}'
+                      : _timeLabel(),
                   style: const TextStyle(fontSize: 11, color: AppColors.fog),
                 ),
               ],
