@@ -198,8 +198,7 @@ class _ListeningPlacementScreenState extends State<ListeningPlacementScreen> {
     );
   }
 
-  bool get _isUnauthorized =>
-      _error is ApiException && (_error as ApiException).isUnauthorized;
+  bool get _isUnauthorized => isAuthError(_error);
 
   bool get _isAlreadyPlaced =>
       _error is ApiException && (_error as ApiException).code == 'ALREADY_PLACED';

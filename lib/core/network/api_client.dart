@@ -52,6 +52,9 @@ class ApiException implements Exception {
   String toString() => message;
 }
 
+/// 畫面上常見的「錯誤是不是因為未登入」判斷，統一隱藏 `is ApiException` 轉型。
+bool isAuthError(Object? error) => error is ApiException && error.isUnauthorized;
+
 class ApiClient {
   /// 傳輸層。正式執行時是預設的 http client；測試可換成 MockClient。
   /// 換成可注入的原因：service 的端點、query、multipart 組成需要在沒有網路的

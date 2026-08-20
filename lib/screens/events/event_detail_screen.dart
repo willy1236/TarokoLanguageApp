@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/fcm_service.dart';
@@ -400,7 +401,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   // ── 內容 ─────────────────────────────────────────────────────
   Widget _buildBody(EventDetail e) {
     final start = e.startsAt.toLocal();
-    final timeText = _formatDateTime(start);
+    final timeText = formatDateTime(start);
     final hostName =
         e.participants
             .where((p) => p.uid == e.hostUid)
@@ -487,7 +488,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             _infoRow(
               Icons.how_to_reg_outlined,
               '報名截止',
-              _formatDateTime(e.registrationDeadline!.toLocal()),
+              formatDateTime(e.registrationDeadline!.toLocal()),
             ),
             const SizedBox(height: 12),
           ],
@@ -578,11 +579,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         ],
       ),
     );
-  }
-
-  String _formatDateTime(DateTime dt) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${dt.year}/${two(dt.month)}/${two(dt.day)} ${two(dt.hour)}:${two(dt.minute)}';
   }
 
   Widget _infoRow(IconData icon, String label, String value) {
@@ -687,13 +683,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   Widget _buildReminderCard(EventReminder r) {
     final (label, color) = switch (r.status) {
       'sent' => (
-        '已發送 · ${_formatDateTime((r.sentAt ?? r.scheduledAt).toLocal())}',
+        '已發送 · ${formatDateTime((r.sentAt ?? r.scheduledAt).toLocal())}',
         AppColors.mossDeep,
       ),
       'failed' => ('發送失敗', AppColors.dangerDark),
       'cancelled' => ('已取消', AppColors.fog),
       _ => (
-        '排定於 ${_formatDateTime(r.scheduledAt.toLocal())}',
+        '排定於 ${formatDateTime(r.scheduledAt.toLocal())}',
         AppColors.primary,
       ),
     };

@@ -215,7 +215,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
   }
 
   Widget _buildError(Object? error) {
-    final isUnauthorized = error is ApiException && error.isUnauthorized;
+    final isUnauthorized = isAuthError(error);
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),

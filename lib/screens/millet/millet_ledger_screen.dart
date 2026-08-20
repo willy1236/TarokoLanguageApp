@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/date_format.dart';
 import '../../models/millet_transaction.dart';
 import '../../services/millet_service.dart';
 
@@ -127,8 +128,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
       );
     }
     if (_error != null) {
-      final isUnauthorized =
-          _error is ApiException && (_error as ApiException).isUnauthorized;
+      final isUnauthorized = isAuthError(_error);
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -209,9 +209,7 @@ class _MilletRow extends StatelessWidget {
   String _timeLabel() {
     final dt = DateTime.tryParse(transaction.createdAt);
     if (dt == null) return transaction.createdAt;
-    final local = dt.toLocal();
-    return '${local.year}/${local.month.toString().padLeft(2, '0')}/${local.day.toString().padLeft(2, '0')} '
-        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+    return formatDateTime(dt.toLocal());
   }
 
   @override

@@ -739,8 +739,7 @@ class _LearnError extends StatelessWidget {
 
   const _LearnError({required this.error, required this.onRetry});
 
-  bool get _isUnauthorized =>
-      error is ApiException && (error as ApiException).isUnauthorized;
+  bool get _isUnauthorized => isAuthError(error);
 
   @override
   Widget build(BuildContext context) {

@@ -211,8 +211,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       );
     }
     if (_error != null) {
-      final isUnauthorized =
-          _error is ApiException && (_error as ApiException).isUnauthorized;
+      final isUnauthorized = isAuthError(_error);
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),

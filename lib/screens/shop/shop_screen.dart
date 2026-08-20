@@ -6,6 +6,7 @@ import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
+import '../../shared/widgets/confirm_dialog.dart';
 import '../../shared/widgets/shop_item_card.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../millet/millet_ledger_screen.dart';
@@ -92,24 +93,13 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   Future<void> _confirmAndPurchase(ShopItem item) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('兌換確認'),
-        content: Text('確定要花 ${item.price} 小米兌換「${item.name}」嗎？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('兌換'),
-          ),
-        ],
-      ),
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '兌換確認',
+      message: '確定要花 ${item.price} 小米兌換「${item.name}」嗎？',
+      confirmText: '兌換',
     );
-    if (confirmed != true) return;
+    if (!confirmed) return;
     await _purchaseItem(item);
   }
 

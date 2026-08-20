@@ -8,6 +8,7 @@ import '../../core/network/api_client.dart';
 import '../../core/utils/audio_url.dart';
 import '../../models/listening_models.dart';
 import '../../services/listening_service.dart';
+import '../../shared/widgets/confirm_dialog.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'listening_correction_screen.dart';
@@ -134,29 +135,16 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
     }
   }
 
-  Future<bool> _showConflictDialog(String oldLevel, String wantedLevel) async {
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('有未完成的聽力測驗'),
-        content: Text(
-          '你還有未完成的「$oldLevel」聽力測驗，要繼續完成，還是先返回？\n'
+  Future<bool> _showConflictDialog(String oldLevel, String wantedLevel) {
+    return showConfirmDialog(
+      context,
+      title: '有未完成的聽力測驗',
+      message: '你還有未完成的「$oldLevel」聽力測驗，要繼續完成，還是先返回？\n'
           '（目前尚不支援直接放棄舊測驗，需完成後才能開始「$wantedLevel」）',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('返回'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text('繼續「$oldLevel」測驗'),
-          ),
-        ],
-      ),
+      cancelText: '返回',
+      confirmText: '繼續「$oldLevel」測驗',
+      barrierDismissible: false,
     );
-    return result ?? false;
   }
 
   String get _displayLevel => _effectiveLevel ?? widget.level;
@@ -285,8 +273,7 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
     );
   }
 
-  bool get _isUnauthorized =>
-      _error is ApiException && (_error as ApiException).isUnauthorized;
+  bool get _isUnauthorized => isAuthError(_error);
 
   Widget _buildError() {
     final err = _error;

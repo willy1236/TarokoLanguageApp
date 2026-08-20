@@ -237,8 +237,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
     );
   }
 
-  bool get _isUnauthorized =>
-      _error is ApiException && (_error as ApiException).isUnauthorized;
+  bool get _isUnauthorized => isAuthError(_error);
 
   Widget _buildError() {
     return Center(
