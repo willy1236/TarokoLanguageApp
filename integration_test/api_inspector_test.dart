@@ -107,6 +107,24 @@ void main() {
       ApiConfig.quizSubmit,
       body: {'session_id': '__test__', 'answers': []},
     ));
+    test('POST /api/quiz/placement/start', () => _inspect(
+      'POST',
+      ApiConfig.quizPlacementStart,
+    ));
+    test('PATCH /api/quiz/placement/answer (空資料測格式)', () => _inspect(
+      'PATCH',
+      ApiConfig.quizPlacementAnswer,
+      body: {
+        'session_id': '__test__',
+        'question_id': '__test__',
+        'selected_option_id': 0,
+      },
+    ));
+    test('POST /api/quiz/placement/submit (空資料測格式)', () => _inspect(
+      'POST',
+      ApiConfig.quizPlacementSubmit,
+      body: {'session_id': '__test__', 'answers': []},
+    ));
     test('POST /api/listening/start', () => _inspect(
       'POST',
       ApiConfig.listeningStart,
@@ -124,6 +142,24 @@ void main() {
     test('POST /api/listening/submit (空資料測格式)', () => _inspect(
       'POST',
       ApiConfig.listeningSubmit,
+      body: {'session_id': '__test__', 'answers': []},
+    ));
+    test('POST /api/listening/placement/start', () => _inspect(
+      'POST',
+      ApiConfig.listeningPlacementStart,
+    ));
+    test('PATCH /api/listening/placement/answer (空資料測格式)', () => _inspect(
+      'PATCH',
+      ApiConfig.listeningPlacementAnswer,
+      body: {
+        'session_id': '__test__',
+        'question_id': '__test__',
+        'selected_option_id': 0,
+      },
+    ));
+    test('POST /api/listening/placement/submit (空資料測格式)', () => _inspect(
+      'POST',
+      ApiConfig.listeningPlacementSubmit,
       body: {'session_id': '__test__', 'answers': []},
     ));
     test('GET /api/shop/items', () => _inspect('GET', ApiConfig.shopItems));
