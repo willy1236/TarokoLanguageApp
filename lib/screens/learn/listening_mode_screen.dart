@@ -121,6 +121,13 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                     padding: const EdgeInsets.only(bottom: 20),
                     child: _PlacementBanner(onTap: _goToPlacement),
                   ),
+                if (_suggestedLevelLoaded && _listeningSuggestedLevel != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: _PlacementResultBanner(
+                      level: _listeningSuggestedLevel!,
+                    ),
+                  ),
                 _buildSectionLabel('選擇模式'),
                 const SizedBox(height: 10),
                 for (final option in _modeOptions) ...[
@@ -328,6 +335,32 @@ class _LevelChip extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: selected ? AppColors.creamLight : AppColors.inkSoft,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlacementResultBanner extends StatelessWidget {
+  final String level;
+
+  const _PlacementResultBanner({required this.level});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        '你的推薦起始等級：$level',
+        style: GoogleFonts.notoSerifTc(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: AppColors.creamLight,
         ),
       ),
     );

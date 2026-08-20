@@ -28,8 +28,8 @@ class _LearnScreenState extends State<LearnScreen> {
   String? _listeningSuggestedLevel;
   bool _suggestedLevelLoaded = false;
 
-  bool get _hasCompletedPlacement =>
-      _quizSuggestedLevel != null && _listeningSuggestedLevel != null;
+  bool get _hasAnyPlacement =>
+      _quizSuggestedLevel != null || _listeningSuggestedLevel != null;
 
   @override
   void initState() {
@@ -154,10 +154,10 @@ class _LearnScreenState extends State<LearnScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                   child: Column(
                     children: [
-                      if (_suggestedLevelLoaded && _hasCompletedPlacement)
+                      if (_suggestedLevelLoaded && _hasAnyPlacement)
                         _PlacementSummaryCard(
-                          quizLevel: _quizSuggestedLevel!,
-                          listeningLevel: _listeningSuggestedLevel!,
+                          quizLevel: _quizSuggestedLevel,
+                          listeningLevel: _listeningSuggestedLevel,
                           onTap: () => _showPlacementPicker(context),
                         )
                       else
@@ -341,7 +341,7 @@ class _PlacementOptionTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    done ? '已完成，點擊重新測驗' : subtitle,
+                    done ? '已完成' : subtitle,
                     style: GoogleFonts.notoSansTc(
                       fontSize: 11,
                       color: AppColors.fog,
@@ -533,8 +533,8 @@ class _ListeningQuizCard extends StatelessWidget {
 // ── PlacementSummaryCard ──────────────────────────────────────────────────────
 
 class _PlacementSummaryCard extends StatelessWidget {
-  final String quizLevel;
-  final String listeningLevel;
+  final String? quizLevel;
+  final String? listeningLevel;
   final VoidCallback onTap;
 
   const _PlacementSummaryCard({
@@ -573,7 +573,7 @@ class _PlacementSummaryCard extends StatelessWidget {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '單字 $quizLevel ．聽力 $listeningLevel',
+                    '單字 ${quizLevel ?? "尚未測驗"}．聽力 ${listeningLevel ?? "尚未測驗"}',
                     style: GoogleFonts.notoSansTc(
                       fontSize: 12,
                       color: AppColors.fog,
