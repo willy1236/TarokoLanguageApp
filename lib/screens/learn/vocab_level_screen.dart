@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../models/history_models.dart';
 import '../../models/level_info.dart';
+import '../../services/history_service.dart';
 import '../../services/learn_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_widgets.dart';
+import '../history/quiz_history_detail_screen.dart';
 import 'lesson_card_screen.dart';
 import 'quiz_placement_screen.dart';
 
@@ -18,6 +21,7 @@ class VocabLevelScreen extends StatefulWidget {
 
 class _VocabLevelScreenState extends State<VocabLevelScreen> {
   late Future<List<LevelInfo>> _levelsFuture;
+  late Future<HistoryListResult> _recentQuizzesFuture;
   String? _quizSuggestedLevel;
   bool _suggestedLevelLoaded = false;
 
@@ -25,6 +29,8 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
   void initState() {
     super.initState();
     _levelsFuture = LearnService.fetchLevels();
+    _recentQuizzesFuture =
+        HistoryService.fetchHistory(type: 'quiz', page: 1, pageSize: 5);
     _loadSuggestedLevel();
   }
 
@@ -94,11 +100,74 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
                 else
                   for (int i = 0; i < levels.length; i++) ...[
                     if (i > 0) const SizedBox(height: 12),
-                    _LevelRow(level: levels[i]),
+                    _LevelRow(
+                      level: levels[i],
+                      isRecommended: _suggestedLevelLoaded &&
+                          _quizSuggestedLevel != null &&
+                          levels[i].level == _quizSuggestedLevel,
+                    ),
                   ],
+                const SizedBox(height: 28),
+                _buildSectionLabel('最近練習'),
+                const SizedBox(height: 10),
+                _buildRecentPractice(),
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentPractice() {
+    return FutureBuilder<HistoryListResult>(
+      future: _recentQuizzesFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          );
+        }
+        final records = snapshot.data?.records ?? const [];
+        if (records.isEmpty) {
+          return Text(
+            '尚無練習紀錄',
+            style: GoogleFonts.notoSansTc(fontSize: 14, color: AppColors.fog),
+          );
+        }
+        return Column(
+          children: [
+            for (int i = 0; i < records.length; i++) ...[
+              if (i > 0) const SizedBox(height: 12),
+              _RecentPracticeRow(
+                record: records[i],
+                onTap: () => _openQuizDetail(records[i]),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  void _openQuizDetail(HistoryRecord record) {
+    if (!record.isCompleted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => QuizHistoryDetailScreen(
+          sessionId: record.sessionId,
+          level: record.level,
         ),
       ),
     );
@@ -160,13 +229,24 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
   }
 }
 
+Color _levelColor(String level) {
+  if (level.contains('高')) {
+    return level.contains('中') ? AppColors.primary : AppColors.fog;
+  }
+  if (level.contains('中')) return AppColors.gold;
+  return AppColors.moss;
+}
+
 class _LevelRow extends StatelessWidget {
   final LevelInfo level;
+  final bool isRecommended;
 
-  const _LevelRow({required this.level});
+  const _LevelRow({required this.level, this.isRecommended = false});
 
   @override
   Widget build(BuildContext context) {
+    final color = _levelColor(level.level);
+    final textColor = isRecommended ? AppColors.creamLight : AppColors.ink;
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -174,24 +254,28 @@ class _LevelRow extends StatelessWidget {
       ),
       child: Container(
         decoration: BoxDecoration(
-          color: AppColors.cream,
+          color: isRecommended ? AppColors.ink : AppColors.cream,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: AppColors.creamDeep, width: 1),
+          border: isRecommended
+              ? null
+              : Border.all(color: AppColors.creamDeep, width: 1),
         ),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            _buildDiamond(),
+            _buildDiamond(color),
             const SizedBox(width: 14),
-            Expanded(child: _buildTextArea()),
-            const TrukuChevron(color: AppColors.primary),
+            Expanded(child: _buildTextArea(textColor)),
+            TrukuChevron(
+              color: isRecommended ? AppColors.creamLight : AppColors.primary,
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildDiamond() {
+  Widget _buildDiamond(Color color) {
     return SizedBox(
       width: 52,
       height: 52,
@@ -200,14 +284,14 @@ class _LevelRow extends StatelessWidget {
         children: [
           CustomPaint(
             size: const Size(52, 52),
-            painter: const _LevelDiamondPainter(),
+            painter: _LevelDiamondPainter(color: color),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildTextArea() {
+  Widget _buildTextArea(Color textColor) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -216,16 +300,16 @@ class _LevelRow extends StatelessWidget {
           style: GoogleFonts.notoSerifTc(
             fontSize: 17,
             fontWeight: FontWeight.w600,
-            color: AppColors.ink,
+            color: textColor,
             letterSpacing: 0.85,
           ),
         ),
         const SizedBox(height: 4),
         Text(
           '${level.wordCount} 個單字',
-          style: const TextStyle(
+          style: TextStyle(
             fontSize: 11,
-            color: AppColors.fog,
+            color: isRecommended ? AppColors.creamLight.withValues(alpha: 0.7) : AppColors.fog,
             letterSpacing: 0.55,
           ),
         ),
@@ -235,7 +319,9 @@ class _LevelRow extends StatelessWidget {
 }
 
 class _LevelDiamondPainter extends CustomPainter {
-  const _LevelDiamondPainter();
+  final Color color;
+
+  const _LevelDiamondPainter({required this.color});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -252,15 +338,106 @@ class _LevelDiamondPainter extends CustomPainter {
     canvas.drawPath(
       path,
       Paint()
-        ..color = AppColors.primary
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.5
-        ..strokeJoin = StrokeJoin.round,
+        ..color = color
+        ..style = PaintingStyle.fill,
     );
   }
 
   @override
-  bool shouldRepaint(_LevelDiamondPainter old) => false;
+  bool shouldRepaint(_LevelDiamondPainter old) => old.color != color;
+}
+
+class _RecentPracticeRow extends StatelessWidget {
+  final HistoryRecord record;
+  final VoidCallback onTap;
+
+  const _RecentPracticeRow({required this.record, required this.onTap});
+
+  String _scoreLabel() {
+    if (record.isCompleted) {
+      return '${record.score ?? 0} / ${record.totalQuestions}';
+    }
+    return '已答 ${record.answeredCount}/${record.totalQuestions}';
+  }
+
+  String _timeLabel() {
+    final raw = record.completedAt ?? record.lastActiveAt;
+    final dt = DateTime.tryParse(raw);
+    if (dt == null) return raw;
+    final local = dt.toLocal();
+    return '${local.year}/${local.month.toString().padLeft(2, '0')}/${local.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isCompleted = record.isCompleted;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.creamDeep),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _badge(record.statusLabel, AppColors.primary),
+                  const SizedBox(height: 6),
+                  Text(
+                    record.level,
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _timeLabel(),
+                    style: const TextStyle(fontSize: 11, color: AppColors.fog),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _scoreLabel(),
+                  style: GoogleFonts.notoSerifTc(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isCompleted ? AppColors.primary : AppColors.fog,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Icon(Icons.chevron_right, color: AppColors.fog, size: 18),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _badge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+      ),
+    );
+  }
 }
 
 class _PlacementResultBanner extends StatelessWidget {
