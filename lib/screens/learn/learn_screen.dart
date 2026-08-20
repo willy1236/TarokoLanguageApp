@@ -4,10 +4,13 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/level_info.dart';
 import '../../services/learn_service.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../history/history_screen.dart';
 import 'listening_mode_screen.dart';
+import 'listening_placement_screen.dart';
+import 'quiz_placement_screen.dart';
 import 'vocab_level_screen.dart';
 
 // ── LearnScreen ───────────────────────────────────────────────────────────────
@@ -21,11 +24,18 @@ class LearnScreen extends StatefulWidget {
 
 class _LearnScreenState extends State<LearnScreen> {
   late Future<List<LevelInfo>> _levelsFuture;
+  String? _quizSuggestedLevel;
+  String? _listeningSuggestedLevel;
+  bool _suggestedLevelLoaded = false;
+
+  bool get _hasCompletedPlacement =>
+      _quizSuggestedLevel != null && _listeningSuggestedLevel != null;
 
   @override
   void initState() {
     super.initState();
     _levelsFuture = LearnService.fetchLevels();
+    _loadSuggestedLevel();
   }
 
   Future<void> _reload() async {
@@ -33,6 +43,91 @@ class _LearnScreenState extends State<LearnScreen> {
       _levelsFuture = LearnService.fetchLevels();
     });
     await _levelsFuture;
+    await _loadSuggestedLevel();
+  }
+
+  Future<void> _loadSuggestedLevel() async {
+    try {
+      final user = await UserService.fetchMe();
+      if (!mounted) return;
+      setState(() {
+        _quizSuggestedLevel = user.quizSuggestedLevel;
+        _listeningSuggestedLevel = user.listeningSuggestedLevel;
+        _suggestedLevelLoaded = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _suggestedLevelLoaded = true);
+    }
+  }
+
+  Future<void> _goToVocabPlacement(BuildContext context) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const QuizPlacementScreen()),
+    );
+    _loadSuggestedLevel();
+  }
+
+  Future<void> _goToListeningPlacement(BuildContext context) async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ListeningPlacementScreen()),
+    );
+    _loadSuggestedLevel();
+  }
+
+  void _showPlacementPicker(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppColors.creamLight,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 24, 20, 20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '選擇分級測驗',
+                  style: GoogleFonts.notoSerifTc(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _PlacementOptionTile(
+                  icon: Icons.menu_book,
+                  title: '單字分級測驗',
+                  subtitle: '測驗詞彙量，找出合適起始等級',
+                  done: _quizSuggestedLevel != null,
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _goToVocabPlacement(context);
+                  },
+                ),
+                const SizedBox(height: 12),
+                _PlacementOptionTile(
+                  icon: Icons.headphones,
+                  title: '聽力分級測驗',
+                  subtitle: '測驗聽力理解，找出合適起始等級',
+                  done: _listeningSuggestedLevel != null,
+                  onTap: () {
+                    Navigator.pop(sheetContext);
+                    _goToListeningPlacement(context);
+                  },
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   @override
@@ -59,20 +154,25 @@ class _LearnScreenState extends State<LearnScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                   child: Column(
                     children: [
-                      _QuizEntryCard(
-                        icon: Icons.menu_book,
-                        title: '單字測驗',
-                        subtitle: '選級別，測驗詞彙',
+                      if (_suggestedLevelLoaded && _hasCompletedPlacement)
+                        _PlacementSummaryCard(
+                          quizLevel: _quizSuggestedLevel!,
+                          listeningLevel: _listeningSuggestedLevel!,
+                          onTap: () => _showPlacementPicker(context),
+                        )
+                      else
+                        _PlacementQuizCard(
+                          onTap: () => _showPlacementPicker(context),
+                        ),
+                      const SizedBox(height: 16),
+                      _VocabQuizCard(
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const VocabLevelScreen()),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      _QuizEntryCard(
-                        icon: Icons.headphones,
-                        title: '聽力測驗',
-                        subtitle: '聽發音，選出正確答案',
+                      const SizedBox(height: 16),
+                      _ListeningQuizCard(
                         onTap: () => Navigator.push(
                           context,
                           MaterialPageRoute(builder: (_) => const ListeningModeScreen()),
@@ -191,6 +291,418 @@ class _LearnScreenState extends State<LearnScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _PlacementOptionTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final bool done;
+  final VoidCallback onTap;
+
+  const _PlacementOptionTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+    this.done = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.creamDeep, width: 1),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Icon(icon, color: AppColors.primary, size: 24),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    done ? '已完成，點擊重新測驗' : subtitle,
+                    style: GoogleFonts.notoSansTc(
+                      fontSize: 11,
+                      color: AppColors.fog,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const TrukuChevron(color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── VocabQuizCard ─────────────────────────────────────────────────────────────
+
+class _VocabQuizCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _VocabQuizCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.ink,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Opacity(
+                opacity: 0.15,
+                child: CustomPaint(
+                  painter: TrukuWeavePainter(
+                    color: AppColors.gold,
+                    opacity: 1.0,
+                    scale: 0.7,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: TrukuDiamond(size: 40, color: AppColors.gold.withValues(alpha: 0.4)),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SLHAYAN · 單字測驗',
+                  style: GoogleFonts.crimsonPro(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.gold,
+                    letterSpacing: 2.4,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '單字測驗',
+                  style: GoogleFonts.notoSerifTc(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.creamLight,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '選級別，測驗詞彙\n單字卡跟讀．答題挑戰',
+                  style: GoogleFonts.notoSansTc(
+                    fontSize: 13,
+                    height: 1.5,
+                    color: AppColors.mist,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _PillButton(
+                  icon: Icons.menu_book,
+                  label: '開始單字測驗',
+                  background: AppColors.gold,
+                  foreground: AppColors.ink,
+                  onTap: onTap,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── ListeningQuizCard ─────────────────────────────────────────────────────────
+
+class _ListeningQuizCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _ListeningQuizCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.mossDeep,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Stack(
+        children: [
+          Positioned.fill(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(20),
+              child: Opacity(
+                opacity: 0.15,
+                child: CustomPaint(
+                  painter: TrukuWeavePainter(
+                    color: AppColors.gold,
+                    opacity: 1.0,
+                    scale: 0.7,
+                  ),
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            top: 16,
+            right: 16,
+            child: TrukuDiamond(size: 40, color: AppColors.gold.withValues(alpha: 0.4)),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'ENDAAN · 聽力測驗',
+                  style: GoogleFonts.crimsonPro(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.gold,
+                    letterSpacing: 2.4,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '聽力測驗',
+                  style: GoogleFonts.notoSerifTc(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.creamLight,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '聽發音，選出正確答案\n練耳朵．練反應',
+                  style: GoogleFonts.notoSansTc(
+                    fontSize: 13,
+                    height: 1.5,
+                    color: AppColors.mist,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _PillButton(
+                  icon: Icons.headphones,
+                  label: '開始聽力測驗',
+                  background: AppColors.gold,
+                  foreground: AppColors.ink,
+                  onTap: onTap,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── PlacementSummaryCard ──────────────────────────────────────────────────────
+
+class _PlacementSummaryCard extends StatelessWidget {
+  final String quizLevel;
+  final String listeningLevel;
+  final VoidCallback onTap;
+
+  const _PlacementSummaryCard({
+    required this.quizLevel,
+    required this.listeningLevel,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.creamDeep, width: 1),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            const TrukuDiamond(size: 28, color: AppColors.primary, filled: true),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '你的推薦起始等級',
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '單字 $quizLevel ．聽力 $listeningLevel',
+                    style: GoogleFonts.notoSansTc(
+                      fontSize: 12,
+                      color: AppColors.fog,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const TrukuChevron(color: AppColors.primary),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── PlacementQuizCard ─────────────────────────────────────────────────────────
+
+class _PlacementQuizCard extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _PlacementQuizCard({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: AppColors.creamDeep, width: 1),
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: 16,
+            right: 16,
+            child: TrukuDiamond(size: 40, color: AppColors.primary.withValues(alpha: 0.15)),
+          ),
+          Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'SMRMUN · 分級測驗',
+                  style: GoogleFonts.crimsonPro(
+                    fontSize: 11,
+                    fontStyle: FontStyle.italic,
+                    color: AppColors.primary,
+                    letterSpacing: 2.4,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '分級測驗',
+                  style: GoogleFonts.notoSerifTc(
+                    fontSize: 22,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  '先做一次測驗，找到最適合你的起始等級',
+                  style: GoogleFonts.notoSansTc(
+                    fontSize: 13,
+                    height: 1.5,
+                    color: AppColors.fog,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                _PillButton(
+                  icon: Icons.edit_note,
+                  label: '開始測驗',
+                  background: AppColors.primary,
+                  foreground: AppColors.creamLight,
+                  onTap: onTap,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _PillButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color background;
+  final Color foreground;
+  final VoidCallback onTap;
+
+  const _PillButton({
+    required this.icon,
+    required this.label,
+    required this.background,
+    required this.foreground,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        decoration: BoxDecoration(
+          color: background,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: foreground, size: 18),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: GoogleFonts.notoSerifTc(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: foreground,
+                letterSpacing: 0.6,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
