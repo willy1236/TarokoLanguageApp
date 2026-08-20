@@ -540,19 +540,36 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: () => _play(rate: 0.6),
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.gold, width: 1),
-                        ),
-                        child: Center(
-                          child: CustomPaint(
-                            size: const Size(24, 24),
-                            painter: const SlowIconPainter(),
+                    Semantics(
+                      button: true,
+                      label: '慢速播放發音',
+                      child: GestureDetector(
+                        onTap: () => _play(rate: 0.6),
+                        child: Container(
+                          height: 56,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.gold, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CustomPaint(
+                                size: Size(20, 20),
+                                painter: SlowIconPainter(),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '慢速',
+                                style: GoogleFonts.notoSerifTc(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.gold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -587,12 +604,6 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
     final isLast = _currentIndex == _session!.questions.length - 1;
     return Row(
       children: [
-        _buildBottomButton(
-          label: '再聽一次',
-          primary: false,
-          onTap: () => _play(),
-        ),
-        const SizedBox(width: 10),
         _buildBottomButton(
           label: isLast ? '完成測驗 →' : '下一題 →',
           primary: true,
