@@ -6,6 +6,8 @@ class ApiConfig {
   // 端點（與 backend/routes 對應）
   static const String authLogin = '/api/auth/login';
   static const String me = '/api/me';
+  static const String meAvatar = '/api/me/avatar';
+  static const String completeProfile = '/api/me/complete-profile';
   static const String logoutAll = '/api/auth/logout-all';
 
   static const String levels = '/api/levels';

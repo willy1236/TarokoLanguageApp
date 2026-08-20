@@ -8,6 +8,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import '../constants/api.dart';
 import '../../main.dart';
 import '../../services/auth_service.dart';
@@ -26,6 +27,9 @@ class ApiException implements Exception {
   bool get isUnauthorized => statusCode == 401;
   bool get isSessionNotFound => code == 'SESSION_NOT_FOUND';
   bool get isSessionNotCompleted => code == 'SESSION_NOT_COMPLETED';
+  bool get isIdentityLocked => code == 'IDENTITY_LOCKED';
+  bool get isFileTooLarge => code == 'FILE_TOO_LARGE';
+  bool get isInvalidFileType => code == 'INVALID_FILE_TYPE';
   bool get isQuestionNotFound => code == 'QUESTION_NOT_FOUND';
 
   @override
@@ -81,6 +85,34 @@ class ApiClient {
       headers: _headers(token),
       body: body == null ? null : jsonEncode(body),
     );
+    return _handle(resp);
+  }
+
+  /// multipart/form-data 上傳（例如頭像）。不可帶 Content-Type: application/json，
+  /// 交給 http.MultipartRequest 自行設定含 boundary 的 Content-Type。
+  static Future<Map<String, dynamic>> postMultipart(
+    String path, {
+    required String fieldName,
+    required File file,
+    String? contentType,
+  }) async {
+    final token = await AuthService.currentToken();
+    final request = http.MultipartRequest(
+      'POST',
+      Uri.parse(ApiConfig.baseUrl + path),
+    );
+    if (token != null) {
+      request.headers['Authorization'] = 'Bearer $token';
+    }
+    request.files.add(await http.MultipartFile.fromPath(
+      fieldName,
+      file.path,
+      contentType: contentType == null ? null : MediaType.parse(contentType),
+    ));
+    final resp = await _send(() async {
+      final streamed = await request.send();
+      return http.Response.fromStream(streamed);
+    });
     return _handle(resp);
   }
 

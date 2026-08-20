@@ -1,7 +1,11 @@
+import 'dart:io';
 import 'dart:math' as math;
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
 import '../../models/tribe_model.dart';
 import '../../models/user_model.dart';
@@ -10,13 +14,17 @@ import '../../services/fcm_service.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
+import '../../shared/widgets/tribe_picker_sheet.dart';
+import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
 import '../millet/millet_ledger_screen.dart';
 import '../shop/shop_screen.dart';
 
-// 部落 picker 用「不設定部落」選項的 sentinel id，真實 tribes.id 皆為正整數，不會衝突。
-const int _kClearTribeId = -1;
+// 頭像檔案限制（後端規則：≤8MB，僅接受 JPEG/PNG/WebP/GIF），前端先擋掉明顯無效
+// 的檔案以減少無效上傳，實際裁切壓縮一律由後端處理。
+const int _kMaxAvatarBytes = 8 * 1024 * 1024;
+const _kAllowedAvatarExtensions = {'jpg', 'jpeg', 'png', 'webp', 'gif'};
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onClose;
@@ -252,7 +260,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             bottom: 6,
             right: 6,
             child: GestureDetector(
-              onTap: _openBackpack,
+              onTap: _openAvatarOptions,
               child: Container(
                 width: 26,
                 height: 26,
@@ -362,6 +370,116 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ).push(MaterialPageRoute<void>(builder: (_) => const BackpackScreen()));
     if (!mounted) return;
     _loadUser();
+  }
+
+  /// 頭像編輯鉛筆入口：讓使用者選擇「從商店挑選內建頭像」或「上傳自己的照片」，
+  /// 兩者互不衝突（上傳照片時後端會自動清空 avatar_id，見 uploadAvatar()）。
+  Future<void> _openAvatarOptions() async {
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: AppColors.cream,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(
+                Icons.photo_library_outlined,
+                color: Colors.black,
+              ),
+              title: const Text(
+                '上傳照片',
+                style: TextStyle(color: Colors.black),
+              ),
+              onTap: () => Navigator.pop(ctx, 'upload'),
+            ),
+            ListTile(
+              leading: const Icon(
+                Icons.inventory_2_outlined,
+                color: Colors.black,
+              ),
+              title: const Text(
+                '從商店選擇內建頭像',
+                style: TextStyle(color: Colors.black),
+              ),
+              onTap: () => Navigator.pop(ctx, 'backpack'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (!mounted || choice == null) return;
+    if (choice == 'upload') {
+      await _pickAndUploadAvatar();
+    } else {
+      await _openBackpack();
+    }
+  }
+
+  Future<void> _pickAndUploadAvatar() async {
+    final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+    if (picked == null) return;
+
+    final ext = picked.name.split('.').last.toLowerCase();
+    if (!_kAllowedAvatarExtensions.contains(ext)) {
+      _showError('僅接受 JPEG／PNG／WebP／GIF 圖片');
+      return;
+    }
+
+    File file = File(picked.path);
+    var mimeType = 'image/${ext == 'jpg' ? 'jpeg' : ext}';
+
+    // GIF 為動態圖，裁切會破壞動畫，跳過裁切步驟直接上傳原圖。
+    if (ext != 'gif') {
+      final originalBytes = await file.readAsBytes();
+      if (!mounted) return;
+      final croppedBytes = await Navigator.push<Uint8List>(
+        context,
+        MaterialPageRoute(
+          builder: (_) => AvatarCropScreen(imageBytes: originalBytes),
+        ),
+      );
+      if (croppedBytes == null) return; // 使用者取消裁切，中止整個上傳流程
+
+      final tempDir = await Directory.systemTemp.createTemp('avatar_crop_');
+      final croppedFile = File('${tempDir.path}/avatar.png');
+      await croppedFile.writeAsBytes(croppedBytes);
+      file = croppedFile;
+      mimeType = 'image/png';
+    }
+
+    final size = await file.length();
+    if (size > _kMaxAvatarBytes) {
+      _showError('檔案大小不可超過 8MB');
+      return;
+    }
+
+    try {
+      final updated = await UserService.uploadAvatar(file, contentType: mimeType);
+      if (mounted) setState(() => _user = updated);
+    } on ApiException catch (e) {
+      if (e.isFileTooLarge) {
+        _showError('檔案大小不可超過 8MB');
+      } else if (e.isInvalidFileType) {
+        _showError('僅接受 JPEG／PNG／WebP／GIF 圖片');
+      } else {
+        _showError(e.message);
+      }
+    } catch (e, st) {
+      debugPrint('Failed to upload avatar: $e');
+      debugPrintStack(stackTrace: st);
+      _showError('頭像上傳失敗，請稍後再試');
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   /// 前往商店頁面兌換新道具；商店頁不會 pop 回更新後的 UserModel，
@@ -574,6 +692,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── 帳號設定 ──────────────────────────────────────────────────────────────
 
   Widget _buildAccountSection() {
+    final identityLocked = _user?.ethnicGroup != null;
     return _section('HANGAN · 帳號', [
       _settingRow(
         '中文姓名',
@@ -583,15 +702,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       _settingRow(
         '族語名字',
-        _user?.displayName ?? 'Sayun Lowking',
-        truku: true,
-        editable: false,
+        _user?.tribalName ?? '尚未設定',
+        // 尚未設定時顯示中文提示字，不套用族語專用的斜體字型，避免字型跟中文不搭。
+        truku: _user?.tribalName != null && _user!.tribalName!.isNotEmpty,
+        editable: true,
+        onTap: _editTribalName,
+      ),
+      _switchRow(
+        '是否原住民',
+        _user?.isIndigenous ?? false,
+        locked: true,
+        lockedHint: '已設定，如需更正請聯繫管理員',
+        onChanged: (_) {},
       ),
       _settingRow(
         '部落',
         _user?.tribeName ?? '尚未設定',
-        editable: true,
-        onTap: _editTribe,
+        editable: !identityLocked,
+        onTap: identityLocked ? null : _editTribe,
       ),
       _settingRow('電子信箱', _user?.email ?? 'apyang@truku.org', editable: false),
     ]);
@@ -600,16 +728,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _editDisplayName() async {
     final newName = await showDialog<String>(
       context: context,
-      builder: (ctx) => _RenameDialog(initialValue: _user?.displayName ?? ''),
+      builder: (ctx) => _RenameDialog(
+        title: '修改姓名',
+        label: '中文姓名',
+        initialValue: _user?.displayName ?? '',
+      ),
     );
-    if (newName == null || newName.isEmpty || newName == _user?.displayName)
+    if (newName == null || newName.isEmpty || newName == _user?.displayName) {
       return;
+    }
     try {
       final updated = await UserService.updateMe(displayName: newName);
       if (mounted) setState(() => _user = updated);
+    } on ApiException catch (e) {
+      _showError(e.message);
     } catch (e, st) {
       debugPrint('Failed to update display name: $e');
       debugPrintStack(stackTrace: st);
+      _showError('更新失敗，請稍後再試');
+    }
+  }
+
+  Future<void> _editTribalName() async {
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _RenameDialog(
+        title: '修改族語名字',
+        label: '族語名字',
+        initialValue: _user?.tribalName ?? '',
+      ),
+    );
+    if (newName == null || newName == _user?.tribalName) return;
+    try {
+      final updated = await UserService.updateMe(tribalName: newName);
+      if (mounted) setState(() => _user = updated);
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (e, st) {
+      debugPrint('Failed to update tribal name: $e');
+      debugPrintStack(stackTrace: st);
+      _showError('更新失敗，請稍後再試');
     }
   }
 
@@ -623,17 +781,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (ctx) =>
-          const _TribePickerSheet(ethnicGroup: _defaultEthnicGroup),
+          const TribePickerSheet(ethnicGroup: _defaultEthnicGroup),
     );
     if (tribe == null) return;
-    if (tribe.id == _kClearTribeId) {
+    if (tribe.id == kClearTribeId) {
       if (_user?.tribeId == null) return;
       try {
         final updated = await UserService.updateMe(clearTribeId: true);
         if (mounted) setState(() => _user = updated);
+      } on ApiException catch (e) {
+        if (e.isIdentityLocked) {
+          _showError('族群已設定，如需更正請聯繫管理員');
+        } else {
+          _showError(e.message);
+        }
       } catch (e, st) {
         debugPrint('Failed to clear tribe: $e');
         debugPrintStack(stackTrace: st);
+        _showError('更新失敗，請稍後再試');
       }
       return;
     }
@@ -644,9 +809,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
         tribeId: tribe.id,
       );
       if (mounted) setState(() => _user = updated);
+    } on ApiException catch (e) {
+      if (e.isIdentityLocked) {
+        _showError('族群已設定，如需更正請聯繫管理員');
+      } else {
+        _showError(e.message);
+      }
     } catch (e, st) {
       debugPrint('Failed to update tribe: $e');
       debugPrintStack(stackTrace: st);
+      _showError('更新失敗，請稍後再試');
     }
   }
 
@@ -865,6 +1037,87 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  /// 可互動的開關列，供族群鎖定等需要送出 PATCH 的設定使用（區別於純顯示用的
+  /// [_toggleRow]）。locked=true 時停用點擊，並在下方顯示 lockedHint 提示。
+  Widget _switchRow(
+    String label,
+    bool on, {
+    required ValueChanged<bool> onChanged,
+    bool locked = false,
+    String? lockedHint,
+  }) {
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.ink,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    if (locked && lockedHint != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        lockedHint,
+                        style: TextStyle(fontSize: 10, color: AppColors.fog),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              GestureDetector(
+                onTap: locked ? null : () => onChanged(!on),
+                child: Container(
+                  width: 36,
+                  height: 22,
+                  padding: const EdgeInsets.all(2),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(11),
+                    color: on
+                        ? (locked
+                              ? AppColors.primary.withValues(alpha: 0.5)
+                              : AppColors.primary)
+                        : AppColors.creamDeep,
+                  ),
+                  child: Align(
+                    alignment: on
+                        ? Alignment.centerRight
+                        : Alignment.centerLeft,
+                    child: Container(
+                      width: 18,
+                      height: 18,
+                      decoration: const BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: AppColors.creamLight,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+        const Divider(
+          height: 1,
+          color: AppColors.creamDeep,
+          indent: 16,
+          endIndent: 16,
+        ),
+      ],
+    );
+  }
+
   Widget _toggleRow(String label, String value, bool on) {
     return Column(
       children: [
@@ -977,196 +1230,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-class _TribePickerSheet extends StatefulWidget {
-  final String ethnicGroup;
-  const _TribePickerSheet({required this.ethnicGroup});
-
-  @override
-  State<_TribePickerSheet> createState() => _TribePickerSheetState();
-}
-
-class _TribePickerSheetState extends State<_TribePickerSheet> {
-  final _searchController = TextEditingController();
-  List<Tribe>? _tribes;
-  String? _error;
-  String _keyword = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-    _searchController.addListener(() {
-      setState(() => _keyword = _searchController.text.trim());
-    });
-  }
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _load() async {
-    try {
-      final tribes = await UserService.fetchTribes(
-        ethnicGroup: widget.ethnicGroup,
-      );
-      if (mounted) setState(() => _tribes = tribes);
-    } catch (e, st) {
-      debugPrint('Failed to load tribes: $e');
-      debugPrintStack(stackTrace: st);
-      if (mounted) setState(() => _error = '載入部落清單失敗，請稍後再試');
-    }
-  }
-
-  List<Tribe> get _filtered {
-    final tribes = _tribes ?? const [];
-    if (_keyword.isEmpty) return tribes;
-    return tribes
-        .where(
-          (t) =>
-              t.name.contains(_keyword) ||
-              t.county.contains(_keyword) ||
-              t.township.contains(_keyword),
-        )
-        .toList();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Container(
-        constraints: BoxConstraints(
-          maxHeight: MediaQuery.of(context).size.height * 0.75,
-        ),
-        decoration: const BoxDecoration(
-          color: AppColors.cream,
-          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-        ),
-        clipBehavior: Clip.hardEdge,
-        child: Material(
-          color: Colors.transparent,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-                child: Text(
-                  '選擇部落',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
-                    letterSpacing: 1,
-                  ),
-                ),
-              ),
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                child: TextField(
-                  controller: _searchController,
-                  decoration: InputDecoration(
-                    hintText: '搜尋部落、縣市或鄉鎮',
-                    isDense: true,
-                    filled: true,
-                    fillColor: AppColors.creamLight,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      borderSide: BorderSide.none,
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 10,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 8),
-              Flexible(child: _buildList()),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildList() {
-    if (_error != null) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text(_error!, style: TextStyle(color: AppColors.fog)),
-      );
-    }
-    if (_tribes == null) {
-      return const Padding(
-        padding: EdgeInsets.all(24),
-        child: CircularProgressIndicator(),
-      );
-    }
-    final tribes = _filtered;
-    if (tribes.isEmpty) {
-      return Padding(
-        padding: const EdgeInsets.all(24),
-        child: Text('找不到符合的部落', style: TextStyle(color: AppColors.fog)),
-      );
-    }
-    return ListView.separated(
-      shrinkWrap: true,
-      itemCount: tribes.length + 1,
-      separatorBuilder: (_, __) => const Divider(
-        height: 1,
-        color: AppColors.creamDeep,
-        indent: 16,
-        endIndent: 16,
-      ),
-      itemBuilder: (ctx, i) {
-        if (i == 0) {
-          return ListTile(
-            title: Text(
-              '不設定部落',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 14,
-                color: AppColors.fog,
-                letterSpacing: 0.5,
-              ),
-            ),
-            onTap: () => Navigator.pop(
-              context,
-              const Tribe(
-                id: _kClearTribeId,
-                ethnicGroup: '',
-                name: '',
-                nameTruku: '',
-                county: '',
-                township: '',
-              ),
-            ),
-          );
-        }
-        final tribe = tribes[i - 1];
-        return ListTile(
-          title: Text(
-            tribe.name,
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 14,
-              color: AppColors.ink,
-              letterSpacing: 0.5,
-            ),
-          ),
-          subtitle: Text(
-            '${tribe.county}${tribe.township} · ${tribe.nameTruku}',
-            style: TextStyle(fontSize: 11, color: AppColors.fog),
-          ),
-          onTap: () => Navigator.pop(context, tribe),
-        );
-      },
-    );
-  }
-}
-
 class _RenameDialog extends StatefulWidget {
+  final String title;
+  final String label;
   final String initialValue;
-  const _RenameDialog({required this.initialValue});
+  const _RenameDialog({
+    required this.title,
+    required this.label,
+    required this.initialValue,
+  });
 
   @override
   State<_RenameDialog> createState() => _RenameDialogState();
@@ -1186,11 +1258,11 @@ class _RenameDialogState extends State<_RenameDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text('修改姓名'),
+      title: Text(widget.title),
       content: TextField(
         controller: _controller,
         autofocus: true,
-        decoration: const InputDecoration(labelText: '中文姓名'),
+        decoration: InputDecoration(labelText: widget.label),
       ),
       actions: [
         TextButton(

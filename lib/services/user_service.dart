@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/user_model.dart';
@@ -22,16 +24,50 @@ class UserService {
     String? ethnicGroup,
     int? tribeId,
     bool clearTribeId = false,
+    bool? isIndigenous,
+    String? tribalName,
   }) async {
     final body = <String, dynamic>{
-      if (displayName != null) 'display_name': displayName,
-      if (ethnicGroup != null) 'ethnic_group': ethnicGroup,
+      'display_name': ?displayName,
+      'ethnic_group': ?ethnicGroup,
       if (clearTribeId)
         'tribe_id': null
-      else if (tribeId != null)
-        'tribe_id': tribeId,
+      else 'tribe_id': ?tribeId,
+      'is_indigenous': ?isIndigenous,
+      'tribal_name': ?tribalName,
     };
     final data = await ApiClient.patch(ApiConfig.me, body);
+    return UserModel.fromJson(data);
+  }
+
+  /// 上傳自訂頭像（multipart，欄位名固定 avatar）。後端會自動裁正方形、轉 WebP
+  /// 並清空 avatar_id；回傳完整 user 物件，不需再呼叫一次 fetchMe()。
+  static Future<UserModel> uploadAvatar(File file, {String? contentType}) async {
+    final data = await ApiClient.postMultipart(
+      ApiConfig.meAvatar,
+      fieldName: 'avatar',
+      file: file,
+      contentType: contentType,
+    );
+    return UserModel.fromJson(data);
+  }
+
+  /// 首次登入完善資料（issue #43），成功後 profile_completed 轉為 true。
+  static Future<UserModel> completeProfile({
+    required String displayName,
+    required bool isIndigenous,
+    String? ethnicGroup,
+    int? tribeId,
+    String? tribalName,
+  }) async {
+    final body = <String, dynamic>{
+      'display_name': displayName,
+      'is_indigenous': isIndigenous,
+      'ethnic_group': ?ethnicGroup,
+      'tribe_id': ?tribeId,
+      'tribal_name': ?tribalName,
+    };
+    final data = await ApiClient.post(ApiConfig.completeProfile, body);
     return UserModel.fromJson(data);
   }
 
