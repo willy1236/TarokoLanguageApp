@@ -3,7 +3,10 @@ import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
 import '../../core/utils/audio_url.dart';
+import '../../services/history_service.dart';
+import 'report_question_dialog.dart';
 
 class ReviewCard extends StatelessWidget {
   final int order;
@@ -17,6 +20,9 @@ class ReviewCard extends StatelessWidget {
   final String? explanation;
   final String? detailAudioUrl;
   final AudioPlayer player;
+  final String sessionId;
+  final String questionId;
+  final String questionType;
 
   const ReviewCard({
     super.key,
@@ -31,7 +37,37 @@ class ReviewCard extends StatelessWidget {
     required this.explanation,
     required this.detailAudioUrl,
     required this.player,
+    required this.sessionId,
+    required this.questionId,
+    required this.questionType,
   });
+
+  Future<void> _report(BuildContext context) async {
+    final message = await showDialog<String>(
+      context: context,
+      builder: (_) => const ReportQuestionDialog(),
+    );
+    if (message == null || message.isEmpty) return;
+    if (!context.mounted) return;
+    try {
+      await HistoryService.reportQuestion(
+        questionType: questionType,
+        sessionId: sessionId,
+        questionId: questionId,
+        message: message,
+      );
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('已送出回報，感謝您的協助')),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      final text = e is ApiException
+          ? (e.isQuestionNotFound ? '找不到此題目，可能資料已異動' : e.message)
+          : '回報失敗，請稍後再試';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+    }
+  }
 
   Future<void> _play(BuildContext context, String? url) async {
     if (url == null) return;
@@ -226,6 +262,23 @@ class ReviewCard extends StatelessWidget {
                   ),
                 ),
             ],
+          ),
+          const SizedBox(height: 6),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: () => _report(context),
+              style: TextButton.styleFrom(
+                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                minimumSize: Size.zero,
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+              icon: const Icon(Icons.flag_outlined, size: 14, color: AppColors.fog),
+              label: const Text(
+                '回報問題',
+                style: TextStyle(fontSize: 12, color: AppColors.fog),
+              ),
+            ),
           ),
         ],
       ),

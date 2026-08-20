@@ -6,6 +6,8 @@ class ApiConfig {
   // 端點（與 backend/routes 對應）
   static const String authLogin = '/api/auth/login';
   static const String me = '/api/me';
+  static const String meAvatar = '/api/me/avatar';
+  static const String completeProfile = '/api/me/complete-profile';
   static const String logoutAll = '/api/auth/logout-all';
 
   static const String levels = '/api/levels';
@@ -13,11 +15,23 @@ class ApiConfig {
   static const String quizAnswer = '/api/quiz/answer';
   static const String quizSubmit = '/api/quiz/submit';
 
+  // 分級測驗（見 Truku_backend docs/superpowers/specs/2026-08-17-quiz-listening-placement-design.md）
+  static const String quizPlacementStart = '/api/quiz/placement/start';
+  static const String quizPlacementAnswer = '/api/quiz/placement/answer';
+  static const String quizPlacementSubmit = '/api/quiz/placement/submit';
+
   static const String listeningStart = '/api/listening/start';
   static const String listeningAnswer = '/api/listening/answer';
   static const String listeningSubmit = '/api/listening/submit';
 
+  static const String listeningPlacementStart = '/api/listening/placement/start';
+  static const String listeningPlacementAnswer = '/api/listening/placement/answer';
+  static const String listeningPlacementSubmit = '/api/listening/placement/submit';
+
   static const String historyList = '/api/history';
+
+  // 回報答案錯誤（issue #20）
+  static const String historyReport = '/api/history/report';
 
   // 小米幣明細（issue #25）
   static const String milletTransactions = '/api/millet/transactions';

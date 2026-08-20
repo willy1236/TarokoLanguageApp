@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
 import 'firebase_options.dart';
+import 'screens/auth/complete_profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/backpack/backpack_screen.dart';
 import 'screens/community/community_screen.dart';
@@ -92,6 +93,7 @@ class KariTrukuApp extends StatelessWidget {
       routes: {
         '/splash': (_) => const SplashScreen(),
         '/login': (_) => const LoginScreen(),
+        '/complete-profile': (_) => const CompleteProfileScreen(),
         '/home': (_) => const MainContainer(),
         '/shop': (_) => const ShopScreen(),
         '/backpack': (_) => const BackpackScreen(),

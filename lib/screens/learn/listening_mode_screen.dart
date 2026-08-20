@@ -2,10 +2,23 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../models/history_models.dart';
 import '../../models/level_info.dart';
+import '../../services/history_service.dart';
 import '../../services/learn_service.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/truku_widgets.dart';
+import '../history/listening_history_detail_screen.dart';
+import 'listening_placement_screen.dart';
 import 'listening_quiz_screen.dart';
+
+Color _levelColor(String level) {
+  if (level.contains('高')) {
+    return level.contains('中') ? AppColors.primary : AppColors.fog;
+  }
+  if (level.contains('中')) return AppColors.gold;
+  return AppColors.moss;
+}
 
 class _ModeOption {
   final String value;
@@ -46,13 +59,41 @@ class ListeningModeScreen extends StatefulWidget {
 
 class _ListeningModeScreenState extends State<ListeningModeScreen> {
   late Future<List<LevelInfo>> _levelsFuture;
+  late Future<HistoryListResult> _recentListeningFuture;
   String? _selectedMode;
   String? _selectedLevel;
+  String? _listeningSuggestedLevel;
+  bool _suggestedLevelLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _levelsFuture = LearnService.fetchLevels();
+    _recentListeningFuture =
+        HistoryService.fetchHistory(type: 'listening', page: 1, pageSize: 5);
+    _loadSuggestedLevel();
+  }
+
+  Future<void> _loadSuggestedLevel() async {
+    try {
+      final user = await UserService.fetchMe();
+      if (!mounted) return;
+      setState(() {
+        _listeningSuggestedLevel = user.listeningSuggestedLevel;
+        _suggestedLevelLoaded = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _suggestedLevelLoaded = true);
+    }
+  }
+
+  Future<void> _goToPlacement() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ListeningPlacementScreen()),
+    );
+    _loadSuggestedLevel();
   }
 
   void _start() {
@@ -89,6 +130,18 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
               children: [
                 _buildHeader(),
                 const SizedBox(height: 20),
+                if (_suggestedLevelLoaded && _listeningSuggestedLevel == null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: _PlacementBanner(onTap: _goToPlacement),
+                  ),
+                if (_suggestedLevelLoaded && _listeningSuggestedLevel != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: _PlacementResultBanner(
+                      level: _listeningSuggestedLevel!,
+                    ),
+                  ),
                 _buildSectionLabel('選擇模式'),
                 const SizedBox(height: 10),
                 for (final option in _modeOptions) ...[
@@ -119,6 +172,9 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                         _LevelChip(
                           level: level,
                           selected: _selectedLevel == level.level,
+                          isRecommended: _suggestedLevelLoaded &&
+                              _listeningSuggestedLevel != null &&
+                              level.level == _listeningSuggestedLevel,
                           onTap: () =>
                               setState(() => _selectedLevel = level.level),
                         ),
@@ -126,9 +182,68 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                   ),
                 const SizedBox(height: 28),
                 _buildStartButton(),
+                const SizedBox(height: 28),
+                _buildSectionLabel('最近練習'),
+                const SizedBox(height: 10),
+                _buildRecentPractice(),
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildRecentPractice() {
+    return FutureBuilder<HistoryListResult>(
+      future: _recentListeningFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Padding(
+            padding: EdgeInsets.symmetric(vertical: 12),
+            child: Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
+              ),
+            ),
+          );
+        }
+        final records = snapshot.data?.records ?? const [];
+        if (records.isEmpty) {
+          return Text(
+            '尚無練習紀錄',
+            style: GoogleFonts.notoSansTc(fontSize: 14, color: AppColors.fog),
+          );
+        }
+        return Column(
+          children: [
+            for (int i = 0; i < records.length; i++) ...[
+              if (i > 0) const SizedBox(height: 12),
+              _RecentPracticeRow(
+                record: records[i],
+                onTap: () => _openListeningDetail(records[i]),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  void _openListeningDetail(HistoryRecord record) {
+    if (!record.isCompleted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ListeningHistoryDetailScreen(
+          sessionId: record.sessionId,
+          level: record.level,
+          modeLabel: record.modeLabel,
         ),
       ),
     );
@@ -270,35 +385,237 @@ class _ModeCard extends StatelessWidget {
 class _LevelChip extends StatelessWidget {
   final LevelInfo level;
   final bool selected;
+  final bool isRecommended;
   final VoidCallback onTap;
 
   const _LevelChip({
     required this.level,
     required this.selected,
     required this.onTap,
+    this.isRecommended = false,
   });
+
+  @override
+  Widget build(BuildContext context) {
+    final color = _levelColor(level.level);
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: selected ? color : AppColors.creamLight,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? color : AppColors.creamDeep,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: selected ? AppColors.creamLight : color,
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            Text(
+              level.level,
+              style: GoogleFonts.notoSerifTc(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: selected ? AppColors.creamLight : AppColors.inkSoft,
+              ),
+            ),
+            if (isRecommended) ...[
+              const SizedBox(width: 4),
+              Icon(
+                Icons.star,
+                size: 12,
+                color: selected ? AppColors.creamLight : AppColors.gold,
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _RecentPracticeRow extends StatelessWidget {
+  final HistoryRecord record;
+  final VoidCallback onTap;
+
+  const _RecentPracticeRow({required this.record, required this.onTap});
+
+  String _scoreLabel() {
+    if (record.isCompleted) {
+      return '${record.score ?? 0} / ${record.totalQuestions}';
+    }
+    return '已答 ${record.answeredCount}/${record.totalQuestions}';
+  }
+
+  String _timeLabel() {
+    final raw = record.completedAt ?? record.lastActiveAt;
+    final dt = DateTime.tryParse(raw);
+    if (dt == null) return raw;
+    final local = dt.toLocal();
+    return '${local.year}/${local.month.toString().padLeft(2, '0')}/${local.day.toString().padLeft(2, '0')}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final isCompleted = record.isCompleted;
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.creamDeep),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      _badge(record.statusLabel, AppColors.primary),
+                      if (record.modeLabel != null) ...[
+                        const SizedBox(width: 6),
+                        _badge(record.modeLabel!, AppColors.moss),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    record.level,
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    _timeLabel(),
+                    style: const TextStyle(fontSize: 11, color: AppColors.fog),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  _scoreLabel(),
+                  style: GoogleFonts.notoSerifTc(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                    color: isCompleted ? AppColors.primary : AppColors.fog,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                const Icon(Icons.chevron_right, color: AppColors.fog, size: 18),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _badge(String label, Color color) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+      ),
+    );
+  }
+}
+
+class _PlacementResultBanner extends StatelessWidget {
+  final String level;
+
+  const _PlacementResultBanner({required this.level});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        '你的推薦起始等級：$level',
+        style: GoogleFonts.notoSerifTc(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: AppColors.creamLight,
+        ),
+      ),
+    );
+  }
+}
+
+class _PlacementBanner extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _PlacementBanner({required this.onTap});
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.creamLight,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.creamDeep,
-            width: 1,
-          ),
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(16),
         ),
-        child: Text(
-          level.level,
-          style: GoogleFonts.notoSerifTc(
-            fontSize: 13,
-            fontWeight: FontWeight.w600,
-            color: selected ? AppColors.creamLight : AppColors.inkSoft,
-          ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '還沒做過分級測驗',
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.creamLight,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '先做一次測驗，幫你找出適合的起始等級',
+                    style: GoogleFonts.notoSansTc(
+                      fontSize: 12,
+                      color: AppColors.creamLight.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const TrukuChevron(color: AppColors.creamLight),
+          ],
         ),
       ),
     );

@@ -54,10 +54,11 @@ dependencies:
 
   # 影音模組：HLS 串流播放（better_player 已停止維護，改用維護中的 fork）
   better_player_plus: ^1.3.4
+  image_picker: ^1.2.3
+  crop_your_image: ^2.0.0
 
   # 論壇附圖：列表捲動時避免重複下載
   cached_network_image: ^3.4.1
-  image_picker: ^1.1.2 # 論壇發文選圖／拍照
   flutter_image_compress: ^2.3.0 # 上傳前壓縮（後端不做伺服器端壓縮）
 
 dev_dependencies:

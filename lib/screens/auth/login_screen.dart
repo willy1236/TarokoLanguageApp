@@ -34,13 +34,17 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_loggingIn) return;
     setState(() => _loggingIn = true);
     try {
-      await AuthService.signInWithGoogle();
+      final user = await AuthService.signInWithGoogle();
       // 登入成功才上傳 FCM token（需 JWT）。失敗不阻斷進首頁，故獨立 try/catch。
       try {
         await FcmService.registerDevice();
       } catch (_) {}
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/home');
+      final profileCompleted = user['profile_completed'] as bool? ?? false;
+      Navigator.pushReplacementNamed(
+        context,
+        profileCompleted ? '/home' : '/complete-profile',
+      );
     } on AuthException catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(

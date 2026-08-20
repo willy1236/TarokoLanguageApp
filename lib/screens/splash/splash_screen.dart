@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 
@@ -28,12 +29,26 @@ class _SplashScreenState extends State<SplashScreen> {
       if (!mounted) return;
       final loggedIn = await AuthService.isLoggedIn();
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, loggedIn ? '/home' : '/login');
+      if (!loggedIn) {
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+      // 離線等原因查不到 profile_completed 時，不擋既有使用者進首頁。
+      var profileCompleted = true;
+      try {
+        final user = await UserService.fetchMe();
+        profileCompleted = user.profileCompleted;
+      } catch (e) {
+        debugPrint('SplashScreen: fetchMe 失敗，略過完善資料檢查：$e');
+      }
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(
+        context,
+        profileCompleted ? '/home' : '/complete-profile',
+      );
       // 冷啟動由通知帶出的深連結導頁必須排在這裡之後，
       // 否則會被上面這行 pushReplacementNamed 蓋掉（見 fcm_service.dart）。
-      if (loggedIn) {
-        FcmService.consumePendingInitialMessage();
-      }
+      FcmService.consumePendingInitialMessage();
     });
   }
 
