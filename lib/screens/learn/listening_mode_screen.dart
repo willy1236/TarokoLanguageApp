@@ -4,7 +4,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/level_info.dart';
 import '../../services/learn_service.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/truku_widgets.dart';
+import 'listening_placement_screen.dart';
 import 'listening_quiz_screen.dart';
 
 class _ModeOption {
@@ -48,11 +50,36 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
   late Future<List<LevelInfo>> _levelsFuture;
   String? _selectedMode;
   String? _selectedLevel;
+  String? _listeningSuggestedLevel;
+  bool _suggestedLevelLoaded = false;
 
   @override
   void initState() {
     super.initState();
     _levelsFuture = LearnService.fetchLevels();
+    _loadSuggestedLevel();
+  }
+
+  Future<void> _loadSuggestedLevel() async {
+    try {
+      final user = await UserService.fetchMe();
+      if (!mounted) return;
+      setState(() {
+        _listeningSuggestedLevel = user.listeningSuggestedLevel;
+        _suggestedLevelLoaded = true;
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _suggestedLevelLoaded = true);
+    }
+  }
+
+  Future<void> _goToPlacement() async {
+    await Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const ListeningPlacementScreen()),
+    );
+    _loadSuggestedLevel();
   }
 
   void _start() {
@@ -89,6 +116,18 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
               children: [
                 _buildHeader(),
                 const SizedBox(height: 20),
+                if (_suggestedLevelLoaded && _listeningSuggestedLevel == null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: _PlacementBanner(onTap: _goToPlacement),
+                  ),
+                if (_suggestedLevelLoaded && _listeningSuggestedLevel != null)
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 20),
+                    child: _PlacementResultBanner(
+                      level: _listeningSuggestedLevel!,
+                    ),
+                  ),
                 _buildSectionLabel('選擇模式'),
                 const SizedBox(height: 10),
                 for (final option in _modeOptions) ...[
@@ -296,6 +335,82 @@ class _LevelChip extends StatelessWidget {
             fontWeight: FontWeight.w600,
             color: selected ? AppColors.creamLight : AppColors.inkSoft,
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _PlacementResultBanner extends StatelessWidget {
+  final String level;
+
+  const _PlacementResultBanner({required this.level});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Text(
+        '你的推薦起始等級：$level',
+        style: GoogleFonts.notoSerifTc(
+          fontSize: 15,
+          fontWeight: FontWeight.w600,
+          color: AppColors.creamLight,
+        ),
+      ),
+    );
+  }
+}
+
+class _PlacementBanner extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _PlacementBanner({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(16),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '還沒做過分級測驗',
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.creamLight,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '先做一次測驗，幫你找出適合的起始等級',
+                    style: GoogleFonts.notoSansTc(
+                      fontSize: 12,
+                      color: AppColors.creamLight.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            const TrukuChevron(color: AppColors.creamLight),
+          ],
         ),
       ),
     );
