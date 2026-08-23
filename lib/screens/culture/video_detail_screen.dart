@@ -15,8 +15,12 @@ class VideoDetailScreen extends StatefulWidget {
 }
 
 class _VideoDetailScreenState extends State<VideoDetailScreen> {
-  late Future<VideoDetail> _future;
+  late Future<void> _future;
+  VideoDetail? _video;
+  Object? _error;
   BetterPlayerController? _playerController;
+  bool _likeBusy = false;
+  bool _bookmarkBusy = false;
 
   @override
   void initState() {
@@ -24,27 +28,76 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     _future = _load();
   }
 
-  Future<VideoDetail> _load() async {
-    final detail = await VideoService.fetchVideoDetail(widget.videoId);
-    _playerController = BetterPlayerController(
-      const BetterPlayerConfiguration(
-        aspectRatio: 16 / 9,
-        autoPlay: true,
-        fit: BoxFit.contain,
-      ),
-      betterPlayerDataSource: BetterPlayerDataSource(
-        BetterPlayerDataSourceType.network,
-        detail.hlsUrl,
-        videoFormat: BetterPlayerVideoFormat.hls,
-      ),
-    );
-    return detail;
+  Future<void> _load() async {
+    try {
+      final detail = await VideoService.fetchVideoDetail(widget.videoId);
+      _playerController = BetterPlayerController(
+        const BetterPlayerConfiguration(
+          aspectRatio: 16 / 9,
+          autoPlay: true,
+          fit: BoxFit.contain,
+        ),
+        betterPlayerDataSource: BetterPlayerDataSource(
+          BetterPlayerDataSourceType.network,
+          detail.hlsUrl,
+          videoFormat: BetterPlayerVideoFormat.hls,
+        ),
+      );
+      _video = detail;
+    } catch (e) {
+      _error = e;
+    }
   }
 
   @override
   void dispose() {
     _playerController?.dispose();
     super.dispose();
+  }
+
+  /// 樂觀更新，API 回傳真實計數後校正；失敗則還原。
+  Future<void> _toggleLike() async {
+    final video = _video;
+    if (video == null || _likeBusy) return;
+    setState(() {
+      _likeBusy = true;
+      _video = video.toggledLike();
+    });
+    try {
+      final result = await VideoService.likeVideo(
+        widget.videoId,
+        like: !video.isLiked,
+      );
+      if (!mounted) return;
+      setState(() {
+        _video = _video!.withLikeResult(
+          liked: result.liked,
+          likeCount: result.likeCount,
+        );
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _video = video);
+    } finally {
+      if (mounted) setState(() => _likeBusy = false);
+    }
+  }
+
+  Future<void> _toggleBookmark() async {
+    final video = _video;
+    if (video == null || _bookmarkBusy) return;
+    setState(() {
+      _bookmarkBusy = true;
+      _video = video.toggledBookmark();
+    });
+    try {
+      await VideoService.bookmarkVideo(widget.videoId, add: !video.isBookmarked);
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _video = video);
+    } finally {
+      if (mounted) setState(() => _bookmarkBusy = false);
+    }
   }
 
   @override
@@ -56,7 +109,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
         foregroundColor: AppColors.cream,
         elevation: 0,
       ),
-      body: FutureBuilder<VideoDetail>(
+      body: FutureBuilder<void>(
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
@@ -64,11 +117,10 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
               child: CircularProgressIndicator(color: AppColors.gold),
             );
           }
-          if (snapshot.hasError) {
-            return _buildError(snapshot.error);
+          if (_error != null) {
+            return _buildError(_error);
           }
-          final video = snapshot.data!;
-          return _buildContent(video);
+          return _buildContent(_video!);
         },
       ),
     );
@@ -151,6 +203,23 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                       '${video.viewCount}',
                       style: TextStyle(color: AppColors.fog, fontSize: 12),
                     ),
+                    const Spacer(),
+                    _engagementButton(
+                      icon: video.isLiked
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      active: video.isLiked,
+                      count: video.likeCount,
+                      onTap: _toggleLike,
+                    ),
+                    const SizedBox(width: 8),
+                    _engagementButton(
+                      icon: video.isBookmarked
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
+                      active: video.isBookmarked,
+                      onTap: _toggleBookmark,
+                    ),
                   ],
                 ),
                 if (video.description != null &&
@@ -186,6 +255,31 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
           fontSize: 10,
           color: AppColors.gold,
           letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _engagementButton({
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+    int? count,
+  }) {
+    final color = active ? AppColors.gold : AppColors.fog;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: color),
+            if (count != null) ...[
+              const SizedBox(width: 4),
+              Text('$count', style: TextStyle(color: color, fontSize: 12)),
+            ],
+          ],
         ),
       ),
     );

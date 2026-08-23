@@ -33,6 +33,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   bool _loading = true;
   String? _error;
   bool _acting = false; // 參加/退出/取消進行中，避免重複點
+  bool _likeBusy = false;
+  bool _bookmarkBusy = false;
 
   static const _months = [
     '1月',
@@ -199,6 +201,56 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       ).showSnackBar(SnackBar(content: Text('操作失敗：$e')));
     } finally {
       if (mounted) setState(() => _acting = false);
+    }
+  }
+
+  // ── 按讚 / 收藏（任何活動狀態皆可） ────────────────────────────
+
+  /// 樂觀更新，API 回傳真實計數後校正；失敗則還原。
+  Future<void> _toggleLike() async {
+    final event = _event;
+    if (event == null || _likeBusy) return;
+    setState(() {
+      _likeBusy = true;
+      _event = event.toggledLike();
+    });
+    try {
+      final result = await EventService.likeEvent(
+        widget.eventId,
+        like: !event.isLiked,
+      );
+      if (!mounted) return;
+      setState(() {
+        _event = _event!.withLikeResult(
+          liked: result.liked,
+          likeCount: result.likeCount,
+        );
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _event = event);
+    } finally {
+      if (mounted) setState(() => _likeBusy = false);
+    }
+  }
+
+  Future<void> _toggleBookmark() async {
+    final event = _event;
+    if (event == null || _bookmarkBusy) return;
+    setState(() {
+      _bookmarkBusy = true;
+      _event = event.toggledBookmark();
+    });
+    try {
+      await EventService.bookmarkEvent(
+        widget.eventId,
+        add: !event.isBookmarked,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _event = event);
+    } finally {
+      if (mounted) setState(() => _bookmarkBusy = false);
     }
   }
 
@@ -470,6 +522,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   ),
                 ),
               ],
+              const Spacer(),
+              _engagementButton(
+                icon: e.isLiked ? Icons.favorite : Icons.favorite_border,
+                active: e.isLiked,
+                count: e.likeCount,
+                onTap: _toggleLike,
+              ),
+              const SizedBox(width: 6),
+              _engagementButton(
+                icon: e.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
+                active: e.isBookmarked,
+                onTap: _toggleBookmark,
+              ),
             ],
           ),
           const SizedBox(height: 20),
@@ -577,6 +642,31 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             ],
           ],
         ],
+      ),
+    );
+  }
+
+  Widget _engagementButton({
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+    int? count,
+  }) {
+    final color = active ? AppColors.primary : AppColors.fog;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: color),
+            if (count != null) ...[
+              const SizedBox(width: 4),
+              Text('$count', style: TextStyle(color: color, fontSize: 12)),
+            ],
+          ],
+        ),
       ),
     );
   }

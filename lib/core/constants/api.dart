@@ -40,6 +40,10 @@ class ApiConfig {
 
   static const String articles = '/api/articles';
   static String articleDetail(int id) => '/api/articles/$id';
+  static String articleLike(int id) => '/api/articles/$id/like';
+  static String articleBookmark(int id) => '/api/articles/$id/bookmark';
+  static const String articleBookmarks = '/api/articles/bookmarks';
+  static const String articleLikes = '/api/articles/likes';
 
   // 頭像商店（issue #12，頭像／頭像框合併目錄，見 頭像商店.md v2.0）
   static const String shopItems = '/api/shop/items';
@@ -48,6 +52,10 @@ class ApiConfig {
 
   static const String videos = '/api/videos';
   static String videoDetail(int id) => '/api/videos/$id';
+  static String videoLike(int id) => '/api/videos/$id/like';
+  static String videoBookmark(int id) => '/api/videos/$id/bookmark';
+  static const String videoBookmarks = '/api/videos/bookmarks';
+  static const String videoLikes = '/api/videos/likes';
 
   // 活動 + 提醒 + 裝置推播（見 Truku_backend backend/routes/events.ts）
   static const String events = '/api/events';
@@ -57,6 +65,10 @@ class ApiConfig {
   static String eventCancel(int id) => '/api/events/$id/cancel';
   static String eventReminders(int id) => '/api/events/$id/reminders';
   static String reminderDetail(int id) => '/api/reminders/$id';
+  static String eventLike(int id) => '/api/events/$id/like';
+  static String eventBookmark(int id) => '/api/events/$id/bookmark';
+  static const String eventLikes = '/api/events/likes';
+  static const String eventBookmarks = '/api/events/bookmarks';
   static const String devices = '/api/devices';
 
   // 每日簽到（issue #24，見 每日簽到.md）
@@ -80,6 +92,8 @@ class ApiConfig {
   // 書籤端點由後端另行補上，前端依規格 §9 的約定先行實作。
   static String forumPostBookmark(int id) => '/api/forum/posts/$id/bookmark';
   static const String forumBookmarks = '/api/forum/bookmarks';
+  static const String forumPostLikes = '/api/forum/posts/likes';
+  static const String forumCommentLikes = '/api/forum/comments/likes';
 
   // 族群/部落（issue #5）
   static const String ethnicGroups = '/api/ethnic-groups';

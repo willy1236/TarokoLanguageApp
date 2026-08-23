@@ -16,6 +16,10 @@
 //   DELETE /api/reminders/:id             取消未發送提醒
 //   POST   /api/devices                   上傳/更新 FCM token
 //   DELETE /api/devices                   移除 FCM token
+//   POST   / DELETE /api/events/:id/like     按讚 / 取消（任何活動狀態皆可）
+//   POST   / DELETE /api/events/:id/bookmark 收藏 / 取消
+//   GET    /api/events/likes              我按讚過的活動
+//   GET    /api/events/bookmarks          我收藏的活動
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
@@ -117,6 +121,60 @@ class EventService {
   /// 取消活動（僅發起人；須填理由，後端會推播通知所有參加者）。
   static Future<void> cancelEvent(int eventId, String reason) async {
     await ApiClient.post(ApiConfig.eventCancel(eventId), {'reason': reason});
+  }
+
+  // ── 按讚／收藏 ──────────────────────────────────────────────
+  // 任何活動狀態（含 cancelled/已結束）皆可操作；讚數為即時 COUNT，非反正規化。
+
+  /// 回傳後端算出的真實計數，呼叫端不要自行累加——樂觀更新只是暫時值。
+  static Future<({bool liked, int likeCount})> likeEvent(
+    int eventId, {
+    required bool like,
+  }) async {
+    final path = ApiConfig.eventLike(eventId);
+    final data = like
+        ? await ApiClient.post(path)
+        : await ApiClient.delete(path);
+    return (
+      liked: data['liked'] == true,
+      likeCount: int.tryParse(data['like_count']?.toString() ?? '') ?? 0,
+    );
+  }
+
+  static Future<bool> bookmarkEvent(int eventId, {required bool add}) async {
+    final path = ApiConfig.eventBookmark(eventId);
+    final data = add
+        ? await ApiClient.post(path)
+        : await ApiClient.delete(path);
+    return data['bookmarked'] == true;
+  }
+
+  static Future<List<EventSummary>> fetchLikedEvents({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final data = await ApiClient.get(
+      ApiConfig.eventLikes,
+      query: {'page': '$page', 'page_size': '$pageSize'},
+    );
+    final list = data['events'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  static Future<List<EventSummary>> fetchBookmarkedEvents({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final data = await ApiClient.get(
+      ApiConfig.eventBookmarks,
+      query: {'page': '$page', 'page_size': '$pageSize'},
+    );
+    final list = data['events'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   // ── 提醒 ────────────────────────────────────────────────────
