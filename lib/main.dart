@@ -18,6 +18,7 @@ import 'screens/plaza/plaza_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/splash/splash_screen.dart';
+import 'screens/terms/terms_consent_screen.dart';
 import 'core/network/api_client.dart';
 import 'services/checkin_service.dart';
 import 'services/fcm_service.dart';
@@ -94,6 +95,7 @@ class KariTrukuApp extends StatelessWidget {
         '/splash': (_) => const SplashScreen(),
         '/login': (_) => const LoginScreen(),
         '/complete-profile': (_) => const CompleteProfileScreen(),
+        '/terms-consent': (_) => const TermsConsentScreen(),
         '/home': (_) => const MainContainer(),
         '/shop': (_) => const ShopScreen(),
         '/backpack': (_) => const BackpackScreen(),

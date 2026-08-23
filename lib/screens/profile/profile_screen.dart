@@ -20,6 +20,7 @@ import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
 import '../millet/millet_ledger_screen.dart';
 import '../shop/shop_screen.dart';
+import '../terms/terms_consent_screen.dart';
 
 // 頭像檔案限制（後端規則：≤8MB，僅接受 JPEG/PNG/WebP/GIF），前端先擋掉明顯無效
 // 的檔案以減少無效上傳，實際裁切壓縮一律由後端處理。
@@ -849,27 +850,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _section(
       'QITA · 其他',
       List.generate(items.length, (i) {
+        final onTap = items[i] == '隱私權政策' ? _openTermsView : null;
         return Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    items[i],
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: 14,
-                      color: AppColors.ink,
-                      letterSpacing: 0.5,
+            InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      items[i],
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: 14,
+                        color: AppColors.ink,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.fog,
-                    size: 16,
-                  ),
-                ],
+                    const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.fog,
+                      size: 16,
+                    ),
+                  ],
+                ),
               ),
             ),
             if (i < items.length - 1)
@@ -882,6 +890,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         );
       }),
+    );
+  }
+
+  void _openTermsView() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const TermsConsentScreen(readOnly: true),
+      ),
     );
   }
 
