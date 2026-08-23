@@ -21,6 +21,28 @@ class VideoService {
     return VideoListResponse.fromJson(json);
   }
 
+  /// 關鍵字／時間區間／部落搜尋，三個維度皆選填、可任意組合。
+  static Future<VideoListResponse> searchVideos({
+    String? q,
+    String? range,
+    int? tribeId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final trimmed = q?.trim();
+    final json = await ApiClient.get(
+      ApiConfig.videoSearch,
+      query: {
+        'q': ?(trimmed != null && trimmed.isNotEmpty ? trimmed : null),
+        'range': ?range,
+        'tribe_id': ?tribeId?.toString(),
+        'page': '$page',
+        'page_size': '$pageSize',
+      },
+    );
+    return VideoListResponse.fromJson(json);
+  }
+
   static Future<VideoDetail> fetchVideoDetail(int id) async {
     final json = await ApiClient.get(ApiConfig.videoDetail(id));
     return VideoDetail.fromJson(json);

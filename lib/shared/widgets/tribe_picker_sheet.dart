@@ -7,16 +7,13 @@ import '../../services/user_service.dart';
 // 部落 picker 用「不設定部落」選項的 sentinel id，真實 tribes.id 皆為正整數，不會衝突。
 const int kClearTribeId = -1;
 
-/// 部落選擇 bottom sheet，供個人頁編輯部落、首次完善資料共用。
+/// 部落選擇 bottom sheet，供個人頁編輯部落、首次完善資料、搜尋篩選共用。
 /// [allowClear] 為 false 時不顯示「不設定部落」選項（首次完善資料流程部落為必填）。
+/// [ethnicGroup] 為 null 時列出所有族群的部落（搜尋篩選用途）。
 class TribePickerSheet extends StatefulWidget {
-  final String ethnicGroup;
+  final String? ethnicGroup;
   final bool allowClear;
-  const TribePickerSheet({
-    super.key,
-    required this.ethnicGroup,
-    this.allowClear = true,
-  });
+  const TribePickerSheet({super.key, this.ethnicGroup, this.allowClear = true});
 
   @override
   State<TribePickerSheet> createState() => _TribePickerSheetState();

@@ -44,6 +44,7 @@ class ApiConfig {
   static String articleBookmark(int id) => '/api/articles/$id/bookmark';
   static const String articleBookmarks = '/api/articles/bookmarks';
   static const String articleLikes = '/api/articles/likes';
+  static const String articleSearch = '/api/articles/search';
 
   // 頭像商店（issue #12，頭像／頭像框合併目錄，見 頭像商店.md v2.0）
   static const String shopItems = '/api/shop/items';
@@ -56,6 +57,7 @@ class ApiConfig {
   static String videoBookmark(int id) => '/api/videos/$id/bookmark';
   static const String videoBookmarks = '/api/videos/bookmarks';
   static const String videoLikes = '/api/videos/likes';
+  static const String videoSearch = '/api/videos/search';
 
   // 活動 + 提醒 + 裝置推播（見 Truku_backend backend/routes/events.ts）
   static const String events = '/api/events';
@@ -69,6 +71,7 @@ class ApiConfig {
   static String eventBookmark(int id) => '/api/events/$id/bookmark';
   static const String eventLikes = '/api/events/likes';
   static const String eventBookmarks = '/api/events/bookmarks';
+  static const String eventSearch = '/api/events/search';
   static const String devices = '/api/devices';
 
   // 每日簽到（issue #24，見 每日簽到.md）

@@ -45,6 +45,32 @@ class EventService {
         .toList();
   }
 
+  /// 關鍵字／時間區間／部落搜尋，三個維度皆選填、可任意組合。range 篩「未來 N 內
+  /// 即將舉辦」（跟 videos/articles 篩「最近發布」語意相反，見後端 events.ts）。
+  static Future<List<EventSummary>> searchEvents({
+    String? q,
+    String? range,
+    int? tribeId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final trimmed = q?.trim();
+    final data = await ApiClient.get(
+      ApiConfig.eventSearch,
+      query: {
+        'q': ?(trimmed != null && trimmed.isNotEmpty ? trimmed : null),
+        'range': ?range,
+        'tribe_id': ?tribeId?.toString(),
+        'page': '$page',
+        'page_size': '$pageSize',
+      },
+    );
+    final list = data['events'] as List<dynamic>? ?? const [];
+    return list
+        .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
   /// 我的活動（我發起的 + 我參加的）。
   static Future<List<EventSummary>> fetchMyEvents() async {
     final data = await ApiClient.get(ApiConfig.eventsMine);

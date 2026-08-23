@@ -9,7 +9,9 @@ import '../../services/article_service.dart';
 import '../../services/video_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import 'article_detail_screen.dart';
+import 'article_search_screen.dart';
 import 'video_detail_screen.dart';
+import 'video_search_screen.dart';
 
 class CultureScreen extends StatefulWidget {
   const CultureScreen({super.key});
@@ -157,17 +159,26 @@ class _CultureScreenState extends State<CultureScreen> {
                         letterSpacing: 4.0,
                       ),
                     ),
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.black.withValues(alpha: 0.4),
-                        border: Border.all(
-                          color: AppColors.gold.withValues(alpha: 0.25),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => _tabIndex == 0
+                              ? const VideoSearchScreen()
+                              : const ArticleSearchScreen(),
                         ),
                       ),
-                      child: const Center(child: _SearchIcon()),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black.withValues(alpha: 0.4),
+                          border: Border.all(
+                            color: AppColors.gold.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: const Center(child: _SearchIcon()),
+                      ),
                     ),
                   ],
                 ),

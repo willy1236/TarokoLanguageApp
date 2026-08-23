@@ -39,7 +39,7 @@ class ForumService {
   static const int tagNameMax = 20;
   static const int imageMaxCount = 4;
   static const int imageMaxBytes = 5 * 1024 * 1024;
-  static const int searchMin = 2;
+  static const int searchMin = 1;
   static const int searchMax = 80;
 
   // ── 看板 ──────────────────────────────────────────────────
@@ -234,10 +234,13 @@ class ForumService {
         .toList();
   }
 
-  /// 後端限制關鍵字 2-80 字，未達長度直接擋下，不送出必然失敗的請求。
+  /// 後端限制關鍵字 1-80 字，未達長度直接擋下，不送出必然失敗的請求。
+  /// [range]／[tribeId] 與 [board] 一樣皆選填、可任意組合。
   static Future<ForumPostPage> search(
     String q, {
     String? board,
+    String? range,
+    int? tribeId,
     int? cursor,
   }) async {
     final trimmed = q.trim();
@@ -249,6 +252,8 @@ class ForumService {
       query: {
         'q': trimmed,
         if (board != null && board.isNotEmpty) 'board': board,
+        if (range != null) 'range': range,
+        if (tribeId != null) 'tribe_id': '$tribeId',
         if (cursor != null) 'cursor': '$cursor',
       },
     );

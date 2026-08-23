@@ -6,6 +6,7 @@ import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import 'event_compose_screen.dart';
 import 'event_detail_screen.dart';
+import 'event_search_screen.dart';
 
 /// 活動列表 —— 真資料版（GET /api/events）。
 /// 發起活動返回後自動刷新；下拉可重新整理。需登入（未登入 API 會 401 導回登入）。
@@ -243,6 +244,26 @@ class _EventsScreenState extends State<EventsScreen> {
                   ),
                 ),
               ],
+            ),
+          ),
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const EventSearchScreen()),
+            ),
+            child: Container(
+              margin: const EdgeInsets.only(right: 8),
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(22),
+                border: Border.all(color: AppColors.creamDeep),
+              ),
+              child: const Icon(
+                Icons.search,
+                color: AppColors.inkSoft,
+                size: 16,
+              ),
             ),
           ),
           GestureDetector(
