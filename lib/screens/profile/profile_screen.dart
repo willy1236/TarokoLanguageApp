@@ -15,6 +15,7 @@ import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
+import '../../shared/widgets/user_avatar.dart';
 import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
@@ -254,7 +255,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: AppColors.ink,
               border: Border.all(color: AppColors.gold, width: 2),
             ),
-            child: ClipOval(child: Center(child: _buildAvatarContent())),
+            child: ClipOval(
+              child: Center(
+                child: UserAvatar(
+                  avatarId: _user?.avatarId,
+                  avatarUrl: _user?.avatarUrl,
+                  itemCatalogById: _itemCatalogById,
+                  size: 80,
+                  fallbackIconColor: AppColors.gold.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
           ),
           Positioned(
             bottom: 6,
@@ -275,53 +286,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildAvatarContent() {
-    final user = _user;
-    final avatarId = user?.avatarId;
-    if (avatarId != null) {
-      // 使用者已選用內建頭像：不 fallback 回 avatarUrl（那會誤導成「顯示的是登入帳號
-      // 頭像」，跟實際配戴狀態不符），拿不到 image_url 就顯示預設圖示。
-      final imageUrl = _itemCatalogById[avatarId]?.imageUrl;
-      if (imageUrl != null) {
-        return Image.network(
-          imageUrl,
-          width: 80,
-          height: 80,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Icon(
-            Icons.person,
-            size: 52,
-            color: AppColors.gold.withValues(alpha: 0.7),
-          ),
-        );
-      }
-      return Icon(
-        Icons.person,
-        size: 52,
-        color: AppColors.gold.withValues(alpha: 0.7),
-      );
-    }
-    final avatarUrl = user?.avatarUrl;
-    if (avatarUrl != null) {
-      return Image.network(
-        avatarUrl,
-        width: 80,
-        height: 80,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Icon(
-          Icons.person,
-          size: 52,
-          color: AppColors.gold.withValues(alpha: 0.7),
-        ),
-      );
-    }
-    return Icon(
-      Icons.person,
-      size: 52,
-      color: AppColors.gold.withValues(alpha: 0.7),
     );
   }
 

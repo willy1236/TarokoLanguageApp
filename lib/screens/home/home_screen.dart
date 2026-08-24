@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/shop_item.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../../shared/widgets/mode_card.dart';
+import '../../shared/widgets/user_avatar.dart';
 
 // 五張模式卡資料（依設計稿）
 const List<ModeData> _modes = [
@@ -73,6 +75,9 @@ class HomeScreen extends StatelessWidget {
   final void Function(int tabIndex)? onNavigateToTab;
   final String? displayName;
   final int? millet;
+  final String? avatarId;
+  final String? avatarUrl;
+  final Map<String, ShopItem> itemCatalogById;
   final bool checkedInToday;
   final int checkinStreak;
   final VoidCallback? onCheckin;
@@ -83,6 +88,9 @@ class HomeScreen extends StatelessWidget {
     this.onNavigateToTab,
     this.displayName,
     this.millet,
+    this.avatarId,
+    this.avatarUrl,
+    this.itemCatalogById = const {},
     this.checkedInToday = false,
     this.checkinStreak = 0,
     this.onCheckin,
@@ -177,9 +185,14 @@ class HomeScreen extends StatelessWidget {
                           color: AppColors.primary,
                           border: Border.all(color: AppColors.gold, width: 2),
                         ),
-                        child: const Icon(
-                          Icons.person,
-                          color: AppColors.creamLight,
+                        child: ClipOval(
+                          child: UserAvatar(
+                            avatarId: avatarId,
+                            avatarUrl: avatarUrl,
+                            itemCatalogById: itemCatalogById,
+                            size: 48,
+                            fallbackIconColor: AppColors.creamLight,
+                          ),
                         ),
                       ),
                     ),

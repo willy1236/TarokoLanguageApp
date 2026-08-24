@@ -19,8 +19,10 @@ import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'core/network/api_client.dart';
+import 'models/shop_item.dart';
 import 'services/checkin_service.dart';
 import 'services/fcm_service.dart';
+import 'services/shop_service.dart';
 import 'services/user_service.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 
@@ -118,6 +120,9 @@ class _MainContainerState extends State<MainContainer> {
   int _previousIndex = 0;
   String? _displayName;
   int? _millet;
+  String? _avatarId;
+  String? _avatarUrl;
+  Map<String, ShopItem> _itemCatalogById = const {};
   bool _checkedInToday = false;
   int _checkinStreak = 0;
 
@@ -125,6 +130,7 @@ class _MainContainerState extends State<MainContainer> {
   void initState() {
     super.initState();
     _fetchUserSummary();
+    _loadItemCatalog();
     _loadCheckinStatus();
   }
 
@@ -135,11 +141,26 @@ class _MainContainerState extends State<MainContainer> {
         setState(() {
           _displayName = user.displayName;
           _millet = user.millet;
+          _avatarId = user.avatarId;
+          _avatarUrl = user.avatarUrl;
         });
       }
     } catch (e, st) {
       debugPrint('Failed to fetch user summary: $e');
       debugPrintStack(stackTrace: st);
+    }
+  }
+
+  Future<void> _loadItemCatalog() async {
+    try {
+      final items = await ShopService.fetchShopItems();
+      if (!mounted) return;
+      setState(() {
+        _itemCatalogById = {for (final i in items) i.id: i};
+      });
+    } catch (e) {
+      // 取得失敗（含離線）：維持空 map，頭貼一律顯示預設圖示。
+      debugPrint('_MainContainerState._loadItemCatalog failed: $e');
     }
   }
 
@@ -255,6 +276,9 @@ class _MainContainerState extends State<MainContainer> {
             HomeScreen(
               displayName: _displayName,
               millet: _millet,
+              avatarId: _avatarId,
+              avatarUrl: _avatarUrl,
+              itemCatalogById: _itemCatalogById,
               checkedInToday: _checkedInToday,
               checkinStreak: _checkinStreak,
               onCheckin: _checkin,
