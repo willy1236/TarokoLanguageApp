@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 
@@ -34,16 +35,17 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_loggingIn) return;
     setState(() => _loggingIn = true);
     try {
-      final user = await AuthService.signInWithGoogle();
+      await AuthService.signInWithGoogle();
       // 登入成功才上傳 FCM token（需 JWT）。失敗不阻斷進首頁，故獨立 try/catch。
       try {
         await FcmService.registerDevice();
       } catch (_) {}
       if (!mounted) return;
-      final profileCompleted = user['profile_completed'] as bool? ?? false;
+      final user = await UserService.fetchMe();
+      if (!mounted) return;
       Navigator.pushReplacementNamed(
         context,
-        profileCompleted ? '/home' : '/complete-profile',
+        user.profileCompleted ? '/home' : '/complete-profile',
       );
     } on AuthException catch (e) {
       if (!mounted) return;
