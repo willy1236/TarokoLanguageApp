@@ -316,43 +316,58 @@ class _MainContainerState extends State<MainContainer> {
     }
   }
 
+  static const int _seniorHiddenIndex = 1; // LearnScreen
+
   @override
   Widget build(BuildContext context) {
-    return PopScope(
-      canPop: false,
-      onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
-        _handleBack();
-      },
-      child: Scaffold(
-        extendBody: true,
-        body: IndexedStack(
-          index: _currentIndex,
-          children: [
-            HomeScreen(
-              displayName: _displayName,
-              millet: _millet,
-              avatarId: _avatarId,
-              avatarUrl: _avatarUrl,
-              itemCatalogById: _itemCatalogById,
-              checkedInToday: _checkedInToday,
-              checkinStreak: _checkinStreak,
-              onCheckin: _checkin,
-              onShowProfile: _openProfile,
-              onNavigateToTab: _navigate,
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) {
+        final seniorMode = seniorModeController.enabled;
+        if (seniorMode && _currentIndex == _seniorHiddenIndex) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _navigate(0));
+        }
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (didPop) return;
+            _handleBack();
+          },
+          child: Scaffold(
+            extendBody: true,
+            body: IndexedStack(
+              index: _currentIndex,
+              children: [
+                HomeScreen(
+                  displayName: _displayName,
+                  millet: _millet,
+                  avatarId: _avatarId,
+                  avatarUrl: _avatarUrl,
+                  itemCatalogById: _itemCatalogById,
+                  checkedInToday: _checkedInToday,
+                  checkinStreak: _checkinStreak,
+                  onCheckin: _checkin,
+                  onShowProfile: _openProfile,
+                  onNavigateToTab: _navigate,
+                ),
+                const LearnScreen(),
+                const CultureScreen(),
+                const CommunityScreen(),
+                const PlazaScreen(),
+                const EventsScreen(),
+                ProfileScreen(onClose: _closeProfile),
+              ],
             ),
-            const LearnScreen(),
-            const CultureScreen(),
-            const CommunityScreen(),
-            const PlazaScreen(),
-            const EventsScreen(),
-            ProfileScreen(onClose: _closeProfile),
-          ],
-        ),
-        bottomNavigationBar: _currentIndex == _profileIndex
-            ? null
-            : TrukuBottomTab(currentIndex: _currentIndex, onTap: _navigate),
-      ),
+            bottomNavigationBar: _currentIndex == _profileIndex
+                ? null
+                : TrukuBottomTab(
+                    currentIndex: _currentIndex,
+                    onTap: _navigate,
+                    seniorMode: seniorMode,
+                  ),
+          ),
+        );
+      },
     );
   }
 }

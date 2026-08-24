@@ -135,6 +135,12 @@
 
 5. **導航簡化** — 修改 `main.dart`（`MainContainer`）與 `truku_bottom_tab.dart`：精簡模式下減少分頁數量、放大 `TrukuBottomTab` 觸控熱區，範圍集中、風險可控。
 
+   **[2026-08-24 已完成第五步]**
+   - `lib/shared/widgets/truku_bottom_tab.dart`：`TrukuBottomTab` 新增 `seniorMode`（預設 `false`）建構子參數。新增 `_seniorHiddenKeys = {'learn'}`，依此在精簡模式下從 `_keys`/`_labels` 過濾出 `visibleIndices`（僅隱藏「學習」分頁，依探索報告 8.4 節長者使用情境優先級，學習模組實用性最低），但 `onTap` 回傳的仍是原始 index（0–5），`MainContainer` 端不需改 `IndexedStack` 對應關係。精簡模式下圖示 22×22→30×30、文字 10px→13px、水平 padding 4→8，並用 `ConstrainedBox(minWidth/minHeight: 56)` 確保熱區達標；一般模式視覺與熱區完全不變。
+   - `lib/main.dart`：`MainContainer.build()` 改用 `ListenableBuilder(listenable: seniorModeController, ...)` 包住原本的 `PopScope`/`Scaffold`，讀取即時 `seniorMode`；新增 `_seniorHiddenIndex = 1`（LearnScreen），當精簡模式開啟且 `_currentIndex` 停在被隱藏的學習分頁時，透過 `addPostFrameCallback` 呼叫 `_navigate(0)` 導回首頁，避免使用者卡在消失的分頁上。`TrukuBottomTab` 呼叫處新增 `seniorMode: seniorMode` 傳入。
+   - `flutter analyze` 對 `lib/main.dart`、`lib/shared/widgets/truku_bottom_tab.dart` 無警告/錯誤。
+   - **範圍限制**：`IndexedStack` children 順序/數量、`_profileIndex`、`_openProfile`/`_closeProfile`、`PopScope`/`_handleBack`（返回鍵邏輯）皆未改動，僅動了底部分頁顯示與熱區——範圍嚴格限定在探索報告任務 5 的敘述內，避免蔓延到導航殼層其他邏輯。因目前仍無 UI 開關可觸發 `setEnabled(true)`（任務 2/3 已知限制延續），本次未做「精簡模式下分頁確實消失、熱區確實放大」的肉眼驗證，留待接上個人資料頁 Switch 時一併驗證。
+
 6. **無障礙補強** — 目前僅 4 處 `Semantics`、0 個 `Tooltip`，覆蓋率最低但工作量最大。建議先從長者實際會用的核心頁（社群/視訊通話、活動、文化影音、個人資料）補起，學習模組排在後面，而非一次全站覆蓋。
 
 7. **高複雜度互動畫面另開精簡版流程** — 依「長者實際使用情境」重新排序優先級（互動性高、情感連結強的功能優先，學習功能因長者實用性較低而調降）：

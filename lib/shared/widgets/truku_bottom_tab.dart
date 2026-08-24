@@ -5,19 +5,29 @@ import '../../core/constants/app_colors.dart';
 class TrukuBottomTab extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
+  final bool seniorMode;
 
   const TrukuBottomTab({
     super.key,
     required this.currentIndex,
     required this.onTap,
+    this.seniorMode = false,
   });
 
   static const _keys = ['home', 'learn', 'culture', 'comm', 'plaza', 'event'];
   static const _labels = ['首頁', '學習', '影音', '視訊', '廣場', '活動'];
+  static const _seniorHiddenKeys = {'learn'};
 
   @override
   Widget build(BuildContext context) {
     final bottomPad = MediaQuery.of(context).padding.bottom;
+    final visibleIndices = [
+      for (var i = 0; i < _keys.length; i++)
+        if (!seniorMode || !_seniorHiddenKeys.contains(_keys[i])) i,
+    ];
+    final iconSize = seniorMode ? 30.0 : 22.0;
+    final fontSize = seniorMode ? 13.0 : 10.0;
+    final horizontalPadding = seniorMode ? 8.0 : 4.0;
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
@@ -32,38 +42,56 @@ class TrukuBottomTab extends StatelessWidget {
           padding: EdgeInsets.fromLTRB(8, 10, 8, 28 + bottomPad),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: List.generate(_keys.length, (i) {
-              final isActive = i == currentIndex;
-              final color = isActive ? AppColors.primary : AppColors.fog;
-              return GestureDetector(
-                onTap: () => onTap(i),
-                behavior: HitTestBehavior.opaque,
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      CustomPaint(
-                        size: const Size(22, 22),
-                        painter: _TabIconPainter(_keys[i], color),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        _labels[i],
-                        style: TextStyle(
-                          fontSize: 10,
-                          letterSpacing: 1.0,
-                          fontWeight: isActive
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: color,
+            children: [
+              for (final i in visibleIndices)
+                Builder(
+                  builder: (context) {
+                    final isActive = i == currentIndex;
+                    final color = isActive
+                        ? AppColors.primary
+                        : AppColors.fog;
+                    return GestureDetector(
+                      onTap: () => onTap(i),
+                      behavior: HitTestBehavior.opaque,
+                      child: ConstrainedBox(
+                        constraints: seniorMode
+                            ? const BoxConstraints(
+                                minWidth: 56,
+                                minHeight: 56,
+                              )
+                            : const BoxConstraints(),
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: horizontalPadding,
+                          ),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              CustomPaint(
+                                size: Size(iconSize, iconSize),
+                                painter: _TabIconPainter(_keys[i], color),
+                              ),
+                              const SizedBox(height: 3),
+                              Text(
+                                _labels[i],
+                                style: TextStyle(
+                                  fontSize: fontSize,
+                                  letterSpacing: 1.0,
+                                  fontWeight: isActive
+                                      ? FontWeight.w600
+                                      : FontWeight.w400,
+                                  color: color,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                    ],
-                  ),
+                    );
+                  },
                 ),
-              );
-            }),
+            ],
           ),
         ),
       ),
