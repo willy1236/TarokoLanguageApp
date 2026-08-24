@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
-import '../../services/user_service.dart';
+import '../../services/terms_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 
@@ -35,17 +35,28 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_loggingIn) return;
     setState(() => _loggingIn = true);
     try {
-      await AuthService.signInWithGoogle();
+      final user = await AuthService.signInWithGoogle();
       // 登入成功才上傳 FCM token（需 JWT）。失敗不阻斷進首頁，故獨立 try/catch。
       try {
         await FcmService.registerDevice();
       } catch (_) {}
       if (!mounted) return;
-      final user = await UserService.fetchMe();
+      final profileCompleted = user['profile_completed'] as bool? ?? false;
+      var allConsented = true;
+      if (profileCompleted) {
+        try {
+          final status = await TermsService.fetchStatus();
+          allConsented = status.allConsented;
+        } catch (e) {
+          debugPrint('LoginScreen: fetchStatus 失敗，略過同意條款檢查：$e');
+        }
+      }
       if (!mounted) return;
       Navigator.pushReplacementNamed(
         context,
-        user.profileCompleted ? '/home' : '/complete-profile',
+        !profileCompleted
+            ? '/complete-profile'
+            : (!allConsented ? '/terms-consent' : '/home'),
       );
     } on AuthException catch (e) {
       if (!mounted) return;
