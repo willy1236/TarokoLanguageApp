@@ -2,11 +2,12 @@
 //
 // 兩種用途：
 // - 強制同意（readOnly=false，預設）：登入/啟動時偵測到未同意最新版，或
-//   ApiClient 攔截到 CONSENT_REQUIRED 時導來這裡，不可滑退，兩份文件一起顯示，
-//   同意後才能繼續（同意是單一動作，涵蓋當下存在的每一種 doc_type）。
-// - 唯讀檢視（readOnly=true）：profile_screen 的「服務條款」「隱私權政策」兩個
-//   項目分別點進來，用 titleKeyword 篩出各自對應的單一文件顯示，不強制同意、
-//   可正常返回。
+//   ApiClient 攔截到 CONSENT_REQUIRED 時導來這裡，不可滑退，同意後才能繼續。
+// - 唯讀檢視（readOnly=true）：profile_screen 的「服務條款與隱私權政策」項目
+//   點進來，單純查看目前條款內容，不強制同意、可正常返回。
+//
+// 兩種用途都是同一支 /api/terms 一次拿回全部文件；當文件數 > 1 時用 TabBar
+// 在同一頁內分頁顯示，而不是各自開一個新畫面。
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -19,11 +20,7 @@ import '../../services/terms_service.dart';
 class TermsConsentScreen extends StatefulWidget {
   final bool readOnly;
 
-  /// 唯讀檢視時，只顯示標題包含此關鍵字的文件（例如「服務條款」「隱私權政策」）。
-  /// 為 null 時顯示全部文件——用於強制同意流程。
-  final String? titleKeyword;
-
-  const TermsConsentScreen({super.key, this.readOnly = false, this.titleKeyword});
+  const TermsConsentScreen({super.key, this.readOnly = false});
 
   @override
   State<TermsConsentScreen> createState() => _TermsConsentScreenState();
@@ -106,7 +103,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
           elevation: 0,
           automaticallyImplyLeading: readOnly,
           title: Text(
-            widget.titleKeyword ?? '服務條款與隱私權政策',
+            '服務條款與隱私權政策',
             style: GoogleFonts.notoSerifTc(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -138,12 +135,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         ),
       );
     }
-    final keyword = widget.titleKeyword;
-    final documents = keyword == null
-        ? (_status?.documents ?? [])
-        : (_status?.documents ?? [])
-              .where((doc) => doc.title.contains(keyword))
-              .toList();
+    final documents = _status?.documents ?? [];
     if (documents.isEmpty) {
       return Center(
         child: Text(
@@ -152,23 +144,55 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         ),
       );
     }
-    return Column(
-      children: [
-        Expanded(
-          child: ListView.separated(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-            itemCount: documents.length,
-            separatorBuilder: (_, _) => const SizedBox(height: 24),
-            itemBuilder: (context, i) => _buildDocument(documents[i]),
+    if (documents.length == 1) {
+      return Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: _buildDocument(documents.first),
+            ),
           ),
-        ),
-        if (!readOnly) _buildAgreeBar(),
-      ],
+          if (!readOnly) _buildAgreeBar(),
+        ],
+      );
+    }
+    return DefaultTabController(
+      length: documents.length,
+      child: Column(
+        children: [
+          TabBar(
+            labelColor: AppColors.ink,
+            unselectedLabelColor: AppColors.fog,
+            indicatorColor: AppColors.gold,
+            labelStyle: GoogleFonts.notoSerifTc(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+            ),
+            tabs: documents
+                .map((doc) => Tab(text: doc.title))
+                .toList(),
+          ),
+          Expanded(
+            child: TabBarView(
+              children: documents
+                  .map(
+                    (doc) => SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      child: _buildDocument(doc, showTitle: false),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+          if (!readOnly) _buildAgreeBar(),
+        ],
+      ),
     );
   }
 
-  /// doc.title 已在上方顯示過一次，若 contentMd 開頭是重複的同名標題行則去掉，
-  /// 避免畫面看到兩次「織語者 服務條款」。
+  /// doc.title 已在 Tab 標籤或上方顯示過一次，若 contentMd 開頭是重複的同名
+  /// 標題行則去掉，避免畫面看到兩次「織語者 服務條款」。
   String _stripLeadingTitle(String contentMd, String title) {
     final lines = contentMd.split('\n');
     if (lines.isEmpty) return contentMd;
@@ -177,19 +201,21 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     return lines.skip(1).join('\n').trimLeft();
   }
 
-  Widget _buildDocument(TermsDocument doc) {
+  Widget _buildDocument(TermsDocument doc, {bool showTitle = true}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          doc.title,
-          style: GoogleFonts.notoSerifTc(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-            color: AppColors.ink,
+        if (showTitle) ...[
+          Text(
+            doc.title,
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
+          const SizedBox(height: 4),
+        ],
         Text(
           '第 ${doc.version} 版',
           style: TextStyle(fontSize: 12, color: AppColors.fog),
@@ -208,11 +234,13 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
             ),
+            h1Padding: const EdgeInsets.only(top: 16, bottom: 4),
             h2: GoogleFonts.notoSerifTc(
               fontSize: 16,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
             ),
+            h2Padding: const EdgeInsets.only(top: 16, bottom: 4),
             h3: GoogleFonts.notoSerifTc(
               fontSize: 15,
               fontWeight: FontWeight.w600,

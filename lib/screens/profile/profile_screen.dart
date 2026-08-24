@@ -846,13 +846,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── 其他 ──────────────────────────────────────────────────────────────────
 
   Widget _buildOtherSection() {
-    const items = ['關於語見太魯閣', '服務條款', '隱私權政策', '聯絡我們'];
+    const items = ['關於語見太魯閣', '服務條款與隱私權政策', '聯絡我們'];
     return _section(
       'QITA · 其他',
       List.generate(items.length, (i) {
-        final onTap = items[i] == '服務條款' || items[i] == '隱私權政策'
-            ? () => _openTermsView(items[i])
-            : null;
+        final onTap = items[i] == '服務條款與隱私權政策' ? _openTermsView : null;
         return Column(
           children: [
             InkWell(
@@ -895,13 +893,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  void _openTermsView(String titleKeyword) {
+  void _openTermsView() {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => TermsConsentScreen(
-          readOnly: true,
-          titleKeyword: titleKeyword,
-        ),
+        builder: (_) => const TermsConsentScreen(readOnly: true),
       ),
     );
   }

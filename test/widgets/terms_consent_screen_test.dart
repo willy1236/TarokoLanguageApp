@@ -79,7 +79,7 @@ void main() {
     expect(find.textContaining('最後更新日期'), findsOneWidget);
   });
 
-  testWidgets('唯讀檢視帶 titleKeyword 時只顯示對應的單一文件', (tester) async {
+  testWidgets('多份文件時用 TabBar 分頁顯示，而非各自開新畫面', (tester) async {
     ApiClient.httpClient = MockClient((req) async {
       return http.Response(
         jsonEncode({
@@ -111,16 +111,29 @@ void main() {
     });
 
     await tester.pumpWidget(
-      const MaterialApp(
-        home: TermsConsentScreen(readOnly: true, titleKeyword: '隱私權政策'),
-      ),
+      const MaterialApp(home: TermsConsentScreen(readOnly: true)),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('織語者 隱私權政策'), findsOneWidget);
+    // 兩個分頁標籤同時存在，而不是分開的畫面。
+    expect(find.byType(TabBar), findsOneWidget);
+    expect(
+      find.descendant(of: find.byType(TabBar), matching: find.text('織語者 服務條款')),
+      findsOneWidget,
+    );
+    expect(
+      find.descendant(
+        of: find.byType(TabBar),
+        matching: find.text('織語者 隱私權政策'),
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('服務條款內文'), findsOneWidget);
+
+    await tester.tap(find.text('織語者 隱私權政策'));
+    await tester.pumpAndSettle();
+
     expect(find.text('隱私權政策內文'), findsOneWidget);
-    expect(find.text('織語者 服務條款'), findsNothing);
-    expect(find.text('服務條款內文'), findsNothing);
     // 唯讀檢視不出現同意按鈕。
     expect(find.text('我已閱讀並同意'), findsNothing);
   });
