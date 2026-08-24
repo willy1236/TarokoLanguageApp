@@ -156,6 +156,16 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     );
   }
 
+  /// doc.title 已在上方顯示過一次，若 contentMd 開頭是重複的同名標題行則去掉，
+  /// 避免畫面看到兩次「織語者 服務條款」。
+  String _stripLeadingTitle(String contentMd, String title) {
+    final lines = contentMd.split('\n');
+    if (lines.isEmpty) return contentMd;
+    final firstLine = lines.first.replaceFirst(RegExp(r'^#+\s*'), '').trim();
+    if (firstLine != title.trim()) return contentMd;
+    return lines.skip(1).join('\n').trimLeft();
+  }
+
   Widget _buildDocument(TermsDocument doc) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -175,7 +185,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         ),
         const SizedBox(height: 12),
         MarkdownBody(
-          data: doc.contentMd,
+          data: _stripLeadingTitle(doc.contentMd, doc.title),
           styleSheet: MarkdownStyleSheet(
             p: TextStyle(
               fontSize: 14,

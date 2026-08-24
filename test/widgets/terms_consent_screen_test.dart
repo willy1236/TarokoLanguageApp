@@ -50,6 +50,35 @@ void main() {
     expect(find.text('這是服務條款內文'), findsOneWidget);
   });
 
+  testWidgets('條文內文開頭與標題重複時不重複顯示標題', (tester) async {
+    ApiClient.httpClient = MockClient((req) async {
+      return http.Response(
+        jsonEncode({
+          'documents': [
+            {
+              'doc_type': 'tos',
+              'version': 1,
+              'title': '織語者 服務條款',
+              'content_md': '# 織語者 服務條款\n\n最後更新日期：2026年08月23日',
+              'published_at': '2026-08-01T00:00:00.000Z',
+              'consented': false,
+              'consented_version': null,
+            },
+          ],
+          'all_consented': false,
+        }),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      );
+    });
+
+    await tester.pumpWidget(const MaterialApp(home: TermsConsentScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('織語者 服務條款'), findsOneWidget);
+    expect(find.textContaining('最後更新日期'), findsOneWidget);
+  });
+
   testWidgets('後端回傳空 documents 時顯示「目前沒有條款內容」提示', (tester) async {
     ApiClient.httpClient = MockClient(
       (_) async => http.Response(
