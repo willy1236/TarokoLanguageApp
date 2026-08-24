@@ -116,19 +116,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
-          Positioned(
-            top: 56,
-            right: 16,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.creamLight.withValues(alpha: 0.15),
-              ),
-              child: CustomPaint(painter: _SettingsIconPainter()),
-            ),
-          ),
         ],
       ),
     );
@@ -157,6 +144,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   scale: 0.8,
                 ),
               ),
+            ),
+          ),
+          Positioned(
+            top: 56,
+            right: 16,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.creamLight.withValues(alpha: 0.15),
+              ),
+              child: CustomPaint(painter: _SettingsIconPainter()),
             ),
           ),
           Padding(
