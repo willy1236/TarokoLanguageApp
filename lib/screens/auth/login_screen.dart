@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
+import '../../services/terms_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 
@@ -41,9 +42,21 @@ class _LoginScreenState extends State<LoginScreen> {
       } catch (_) {}
       if (!mounted) return;
       final profileCompleted = user['profile_completed'] as bool? ?? false;
+      var allConsented = true;
+      if (profileCompleted) {
+        try {
+          final status = await TermsService.fetchStatus();
+          allConsented = status.allConsented;
+        } catch (e) {
+          debugPrint('LoginScreen: fetchStatus 失敗，略過同意條款檢查：$e');
+        }
+      }
+      if (!mounted) return;
       Navigator.pushReplacementNamed(
         context,
-        profileCompleted ? '/home' : '/complete-profile',
+        !profileCompleted
+            ? '/complete-profile'
+            : (!allConsented ? '/terms-consent' : '/home'),
       );
     } on AuthException catch (e) {
       if (!mounted) return;
