@@ -89,6 +89,18 @@ class KariTrukuApp extends StatelessWidget {
           const TextTheme(bodyMedium: TextStyle(color: AppColors.creamLight)),
         ),
       ),
+      builder: (context, child) {
+        final mediaQuery = MediaQuery.of(context);
+        return MediaQuery(
+          data: mediaQuery.copyWith(
+            textScaler: mediaQuery.textScaler.clamp(
+              minScaleFactor: 0.85,
+              maxScaleFactor: 1.15,
+            ),
+          ),
+          child: child!,
+        );
+      },
       initialRoute: '/splash',
       routes: {
         '/splash': (_) => const SplashScreen(),
