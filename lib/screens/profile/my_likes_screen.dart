@@ -23,7 +23,6 @@ class MyLikesScreen extends StatelessWidget {
           elevation: 0,
           title: const Text('我按讚的內容'),
           bottom: const TabBar(
-            isScrollable: true,
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.fog,
             indicatorColor: AppColors.primary,
