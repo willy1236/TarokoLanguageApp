@@ -155,7 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo 框（暫以圖示代替圖片）
+        // Logo 框
         Container(
           width: 100,
           height: 100,
@@ -166,10 +166,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             borderRadius: BorderRadius.circular(24),
           ),
-          child: const Icon(
-            Icons.language_rounded,
-            size: 52,
+          padding: const EdgeInsets.all(20),
+          child: Image.asset(
+            'assets/icon/logo.png',
             color: AppColors.gold,
+            colorBlendMode: BlendMode.srcIn,
           ),
         ),
         const SizedBox(height: 14),
