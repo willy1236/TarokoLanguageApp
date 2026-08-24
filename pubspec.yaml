@@ -61,6 +61,8 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_image_compress: ^2.3.0 # 上傳前壓縮（後端不做伺服器端壓縮）
 
+  url_launcher: ^6.3.1 # 個人資料頁「聯絡我們」開啟系統寄信
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

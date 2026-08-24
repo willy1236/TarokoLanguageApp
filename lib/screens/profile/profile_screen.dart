@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
@@ -870,7 +871,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     return _section(
       'QITA · 其他',
       List.generate(items.length, (i) {
-        final onTap = items[i] == '服務條款與隱私權政策' ? _openTermsView : null;
+        final onTap = items[i] == '服務條款與隱私權政策'
+            ? _openTermsView
+            : items[i] == '聯絡我們'
+            ? _openContactEmail
+            : null;
         return Column(
           children: [
             InkWell(
@@ -919,6 +924,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
         builder: (_) => const TermsConsentScreen(readOnly: true),
       ),
     );
+  }
+
+  Future<void> _openContactEmail() async {
+    final uri = Uri(
+      scheme: 'mailto',
+      path: 'yujiantailuge@gmail.com',
+      query: 'subject=語見太魯閣 App 意見回饋',
+    );
+    final launched = await launchUrl(uri);
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('無法開啟郵件應用程式')));
+    }
   }
 
   // ── 登出 ──────────────────────────────────────────────────────────────────
