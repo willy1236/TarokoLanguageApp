@@ -136,12 +136,12 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo（暫以語言圖示代替）
+                // Logo
                 Center(
-                  child: Icon(
-                    Icons.language,
-                    size: 78,
-                    color: AppColors.primary,
+                  child: Image.asset(
+                    'assets/icon/logo.png',
+                    width: 120,
+                    height: 120,
                   ),
                 ),
                 const SizedBox(height: 14),
