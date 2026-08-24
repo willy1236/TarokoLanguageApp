@@ -162,10 +162,12 @@ class _SplashScreenState extends State<SplashScreen> {
                         ),
                       ),
                     ),
-                    Icon(
-                      Icons.language,
-                      size: 120,
-                      color: AppColors.gold.withValues(alpha: 0.9),
+                    Image.asset(
+                      'assets/icon/logo.png',
+                      width: 120,
+                      height: 120,
+                      color: AppColors.cream,
+                      colorBlendMode: BlendMode.srcIn,
                     ),
                   ],
                 ),
