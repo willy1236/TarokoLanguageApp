@@ -132,6 +132,14 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
       );
     }
     final documents = _status?.documents ?? [];
+    if (documents.isEmpty) {
+      return Center(
+        child: Text(
+          '目前沒有條款內容',
+          style: TextStyle(fontSize: 14, color: AppColors.fog),
+        ),
+      );
+    }
     return Column(
       children: [
         Expanded(
