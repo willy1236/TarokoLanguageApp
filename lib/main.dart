@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
+import 'core/constants/app_typography.dart';
 import 'firebase_options.dart';
 import 'screens/auth/complete_profile_screen.dart';
 import 'screens/auth/login_screen.dart';
@@ -89,7 +90,32 @@ class KariTrukuApp extends StatelessWidget {
           surface: AppColors.surface,
         ),
         textTheme: GoogleFonts.notoSansTcTextTheme(
-          const TextTheme(bodyMedium: TextStyle(color: AppColors.creamLight)),
+          const TextTheme(
+            bodySmall: TextStyle(
+              fontSize: AppTypography.caption,
+              color: AppColors.creamLight,
+            ),
+            bodyMedium: TextStyle(
+              fontSize: AppTypography.body,
+              color: AppColors.creamLight,
+            ),
+            bodyLarge: TextStyle(
+              fontSize: AppTypography.bodyLarge,
+              color: AppColors.creamLight,
+            ),
+            titleSmall: TextStyle(
+              fontSize: AppTypography.subtitle,
+              color: AppColors.creamLight,
+            ),
+            titleMedium: TextStyle(
+              fontSize: AppTypography.title,
+              color: AppColors.creamLight,
+            ),
+            titleLarge: TextStyle(
+              fontSize: AppTypography.headline,
+              color: AppColors.creamLight,
+            ),
+          ),
         ),
       ),
       builder: (context, child) {
