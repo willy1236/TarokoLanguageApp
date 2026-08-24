@@ -192,6 +192,24 @@ void main() {
       print('（挑到已結束活動 id=$endedId）');
       await _inspect('GET', ApiConfig.eventDetail(endedId));
     });
+
+    // 影音/文章/活動/論壇搜尋（q/range/tribe_id 皆選填，見 backend/searchQuery.ts）
+    test('GET /api/videos/search', () => _inspect(
+      'GET',
+      '${ApiConfig.videoSearch}?q=a&range=1m',
+    ));
+    test('GET /api/articles/search', () => _inspect(
+      'GET',
+      '${ApiConfig.articleSearch}?q=a&range=1m',
+    ));
+    test('GET /api/events/search', () => _inspect(
+      'GET',
+      '${ApiConfig.eventSearch}?q=a&range=1m',
+    ));
+    test('GET /api/forum/search (range/tribe_id)', () => _inspect(
+      'GET',
+      '${ApiConfig.forumSearch}?q=a&range=1m',
+    ));
   });
 }
 

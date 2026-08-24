@@ -34,6 +34,9 @@ class ArticleSummary {
   final String category;
   final int viewCount;
   final int weeklyViewCount;
+  final int likeCount;
+  final bool isLiked;
+  final bool isBookmarked;
   final DateTime? publishedAt;
 
   const ArticleSummary({
@@ -44,6 +47,9 @@ class ArticleSummary {
     required this.category,
     required this.viewCount,
     required this.weeklyViewCount,
+    this.likeCount = 0,
+    this.isLiked = false,
+    this.isBookmarked = false,
     this.publishedAt,
   });
 
@@ -56,6 +62,9 @@ class ArticleSummary {
       category: json['category'] as String,
       viewCount: json['view_count'] as int? ?? 0,
       weeklyViewCount: json['weekly_view_count'] as int? ?? 0,
+      likeCount: json['like_count'] as int? ?? 0,
+      isLiked: json['is_liked'] as bool? ?? false,
+      isBookmarked: json['is_bookmarked'] as bool? ?? false,
       publishedAt: json['published_at'] != null
           ? DateTime.tryParse(json['published_at'] as String)
           : null,
@@ -75,6 +84,9 @@ class ArticleDetail extends ArticleSummary {
     required super.category,
     required super.viewCount,
     required super.weeklyViewCount,
+    super.likeCount,
+    super.isLiked,
+    super.isBookmarked,
     super.publishedAt,
     required this.contentMd,
     this.createdAt,
@@ -89,6 +101,9 @@ class ArticleDetail extends ArticleSummary {
       category: json['category'] as String,
       viewCount: json['view_count'] as int? ?? 0,
       weeklyViewCount: json['weekly_view_count'] as int? ?? 0,
+      likeCount: json['like_count'] as int? ?? 0,
+      isLiked: json['is_liked'] as bool? ?? false,
+      isBookmarked: json['is_bookmarked'] as bool? ?? false,
       publishedAt: json['published_at'] != null
           ? DateTime.tryParse(json['published_at'] as String)
           : null,
@@ -98,6 +113,57 @@ class ArticleDetail extends ArticleSummary {
           : null,
     );
   }
+
+  /// 樂觀更新用：切換按讚狀態並同步計數，等後端真實回應後再校正。
+  ArticleDetail toggledLike() => ArticleDetail(
+    id: id,
+    title: title,
+    summary: summary,
+    coverImageUrl: coverImageUrl,
+    category: category,
+    viewCount: viewCount,
+    weeklyViewCount: weeklyViewCount,
+    likeCount: isLiked ? likeCount - 1 : likeCount + 1,
+    isLiked: !isLiked,
+    isBookmarked: isBookmarked,
+    publishedAt: publishedAt,
+    contentMd: contentMd,
+    createdAt: createdAt,
+  );
+
+  ArticleDetail toggledBookmark() => ArticleDetail(
+    id: id,
+    title: title,
+    summary: summary,
+    coverImageUrl: coverImageUrl,
+    category: category,
+    viewCount: viewCount,
+    weeklyViewCount: weeklyViewCount,
+    likeCount: likeCount,
+    isLiked: isLiked,
+    isBookmarked: !isBookmarked,
+    publishedAt: publishedAt,
+    contentMd: contentMd,
+    createdAt: createdAt,
+  );
+
+  /// API 回傳真實計數後校正，避免樂觀更新的本地累加值飄移。
+  ArticleDetail withLikeResult({required bool liked, required int likeCount}) =>
+      ArticleDetail(
+        id: id,
+        title: title,
+        summary: summary,
+        coverImageUrl: coverImageUrl,
+        category: category,
+        viewCount: viewCount,
+        weeklyViewCount: weeklyViewCount,
+        likeCount: likeCount,
+        isLiked: liked,
+        isBookmarked: isBookmarked,
+        publishedAt: publishedAt,
+        contentMd: contentMd,
+        createdAt: createdAt,
+      );
 }
 
 class ArticleListResponse {

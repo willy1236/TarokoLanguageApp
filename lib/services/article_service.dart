@@ -21,8 +21,75 @@ class ArticleService {
     return ArticleListResponse.fromJson(json);
   }
 
+  /// 關鍵字／時間區間／部落搜尋，三個維度皆選填、可任意組合。
+  static Future<ArticleListResponse> searchArticles({
+    String? q,
+    String? range,
+    int? tribeId,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final trimmed = q?.trim();
+    final json = await ApiClient.get(
+      ApiConfig.articleSearch,
+      query: {
+        'q': ?(trimmed != null && trimmed.isNotEmpty ? trimmed : null),
+        'range': ?range,
+        'tribe_id': ?tribeId?.toString(),
+        'page': '$page',
+        'page_size': '$pageSize',
+      },
+    );
+    return ArticleListResponse.fromJson(json);
+  }
+
   static Future<ArticleDetail> fetchArticleDetail(int id) async {
     final json = await ApiClient.get(ApiConfig.articleDetail(id));
     return ArticleDetail.fromJson(json);
+  }
+
+  /// 回傳後端算出的真實計數，呼叫端不要自行累加——樂觀更新只是暫時值。
+  static Future<({bool liked, int likeCount})> likeArticle(
+    int id, {
+    required bool like,
+  }) async {
+    final path = ApiConfig.articleLike(id);
+    final data = like
+        ? await ApiClient.post(path)
+        : await ApiClient.delete(path);
+    return (
+      liked: data['liked'] == true,
+      likeCount: int.tryParse(data['like_count']?.toString() ?? '') ?? 0,
+    );
+  }
+
+  static Future<bool> bookmarkArticle(int id, {required bool add}) async {
+    final path = ApiConfig.articleBookmark(id);
+    final data = add
+        ? await ApiClient.post(path)
+        : await ApiClient.delete(path);
+    return data['bookmarked'] == true;
+  }
+
+  static Future<ArticleListResponse> fetchArticleBookmarks({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final json = await ApiClient.get(
+      ApiConfig.articleBookmarks,
+      query: {'page': '$page', 'page_size': '$pageSize'},
+    );
+    return ArticleListResponse.fromJson(json);
+  }
+
+  static Future<ArticleListResponse> fetchLikedArticles({
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final json = await ApiClient.get(
+      ApiConfig.articleLikes,
+      query: {'page': '$page', 'page_size': '$pageSize'},
+    );
+    return ArticleListResponse.fromJson(json);
   }
 }

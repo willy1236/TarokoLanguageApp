@@ -298,6 +298,72 @@ class ForumCommentPage {
   );
 }
 
+/// GET /api/forum/posts/likes —— 我按讚過的貼文。游標是 liked_at 時間戳字串
+/// （非 ForumPostPage 用的貼文 id），故獨立一個分頁型別。
+class ForumLikedPostPage {
+  final List<ForumPost> posts;
+  final String? nextCursor;
+
+  const ForumLikedPostPage({required this.posts, required this.nextCursor});
+
+  factory ForumLikedPostPage.fromJson(Map<String, dynamic> j) =>
+      ForumLikedPostPage(
+        posts: (j['posts'] as List<dynamic>? ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .map(ForumPost.fromJson)
+            .toList(),
+        nextCursor: j['next_cursor'] as String?,
+      );
+}
+
+/// GET /api/forum/comments/likes —— 我按讚過的留言。留言沒有獨立頁面，
+/// 多帶 postId/postTitle/boardSlug 供前端連回原貼文。
+class ForumLikedComment {
+  final ForumComment comment;
+  final int postId;
+  final String? postTitle;
+  final String? boardSlug;
+  final DateTime? likedAt;
+
+  const ForumLikedComment({
+    required this.comment,
+    required this.postId,
+    this.postTitle,
+    this.boardSlug,
+    this.likedAt,
+  });
+
+  factory ForumLikedComment.fromJson(Map<String, dynamic> j) =>
+      ForumLikedComment(
+        comment: ForumComment.fromJson(j),
+        postId: _asInt(j['post_id']),
+        postTitle: j['post_title'] as String?,
+        boardSlug: j['board_slug'] as String?,
+        likedAt: j['liked_at'] != null
+            ? DateTime.tryParse(j['liked_at'] as String)
+            : null,
+      );
+}
+
+class ForumLikedCommentPage {
+  final List<ForumLikedComment> comments;
+  final String? nextCursor;
+
+  const ForumLikedCommentPage({
+    required this.comments,
+    required this.nextCursor,
+  });
+
+  factory ForumLikedCommentPage.fromJson(Map<String, dynamic> j) =>
+      ForumLikedCommentPage(
+        comments: (j['comments'] as List<dynamic>? ?? const [])
+            .whereType<Map<String, dynamic>>()
+            .map(ForumLikedComment.fromJson)
+            .toList(),
+        nextCursor: j['next_cursor'] as String?,
+      );
+}
+
 /// 一則第一層留言與掛在它底下的回覆。論壇只有兩層，replies 不再有子節點。
 class ForumCommentThread {
   final ForumComment root;

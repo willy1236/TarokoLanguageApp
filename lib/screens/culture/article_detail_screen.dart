@@ -15,12 +15,72 @@ class ArticleDetailScreen extends StatefulWidget {
 }
 
 class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
-  late Future<ArticleDetail> _future;
+  late Future<void> _future;
+  ArticleDetail? _article;
+  Object? _error;
+  bool _likeBusy = false;
+  bool _bookmarkBusy = false;
 
   @override
   void initState() {
     super.initState();
-    _future = ArticleService.fetchArticleDetail(widget.articleId);
+    _future = _load();
+  }
+
+  Future<void> _load() async {
+    try {
+      _article = await ArticleService.fetchArticleDetail(widget.articleId);
+    } catch (e) {
+      _error = e;
+    }
+  }
+
+  /// 樂觀更新，API 回傳真實計數後校正；失敗則還原。
+  Future<void> _toggleLike() async {
+    final article = _article;
+    if (article == null || _likeBusy) return;
+    setState(() {
+      _likeBusy = true;
+      _article = article.toggledLike();
+    });
+    try {
+      final result = await ArticleService.likeArticle(
+        widget.articleId,
+        like: !article.isLiked,
+      );
+      if (!mounted) return;
+      setState(() {
+        _article = _article!.withLikeResult(
+          liked: result.liked,
+          likeCount: result.likeCount,
+        );
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _article = article);
+    } finally {
+      if (mounted) setState(() => _likeBusy = false);
+    }
+  }
+
+  Future<void> _toggleBookmark() async {
+    final article = _article;
+    if (article == null || _bookmarkBusy) return;
+    setState(() {
+      _bookmarkBusy = true;
+      _article = article.toggledBookmark();
+    });
+    try {
+      await ArticleService.bookmarkArticle(
+        widget.articleId,
+        add: !article.isBookmarked,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _article = article);
+    } finally {
+      if (mounted) setState(() => _bookmarkBusy = false);
+    }
   }
 
   @override
@@ -32,7 +92,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         foregroundColor: AppColors.cream,
         elevation: 0,
       ),
-      body: FutureBuilder<ArticleDetail>(
+      body: FutureBuilder<void>(
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
@@ -40,11 +100,10 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               child: CircularProgressIndicator(color: AppColors.gold),
             );
           }
-          if (snapshot.hasError) {
-            return _buildError(snapshot.error);
+          if (_error != null) {
+            return _buildError(_error);
           }
-          final article = snapshot.data!;
-          return _buildContent(article);
+          return _buildContent(_article!);
         },
       ),
     );
@@ -135,6 +194,23 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                         style: TextStyle(color: AppColors.fog, fontSize: 12),
                       ),
                     ],
+                    const Spacer(),
+                    _engagementButton(
+                      icon: article.isLiked
+                          ? Icons.favorite
+                          : Icons.favorite_border,
+                      active: article.isLiked,
+                      count: article.likeCount,
+                      onTap: _toggleLike,
+                    ),
+                    const SizedBox(width: 8),
+                    _engagementButton(
+                      icon: article.isBookmarked
+                          ? Icons.bookmark
+                          : Icons.bookmark_border,
+                      active: article.isBookmarked,
+                      onTap: _toggleBookmark,
+                    ),
                   ],
                 ),
                 const SizedBox(height: 20),
@@ -201,5 +277,30 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
 
   String _formatDate(DateTime date) {
     return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
+  }
+
+  Widget _engagementButton({
+    required IconData icon,
+    required bool active,
+    required VoidCallback onTap,
+    int? count,
+  }) {
+    final color = active ? AppColors.gold : AppColors.fog;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        child: Row(
+          children: [
+            Icon(icon, size: 18, color: color),
+            if (count != null) ...[
+              const SizedBox(width: 4),
+              Text('$count', style: TextStyle(color: color, fontSize: 12)),
+            ],
+          ],
+        ),
+      ),
+    );
   }
 }

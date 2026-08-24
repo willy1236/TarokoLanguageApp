@@ -22,6 +22,8 @@
 //   POST   / DELETE /api/forum/posts/:id/bookmark 收藏 / 取消
 //   GET    /api/forum/bookmarks                   我的收藏（游標是書籤 id，非貼文 id）
 //   GET    /api/forum/posts                       跨看板總覽（board 選填）
+//   GET    /api/forum/posts/likes                 我按讚過的貼文（游標是 liked_at）
+//   GET    /api/forum/comments/likes               我按讚過的留言（游標是 liked_at）
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
@@ -37,7 +39,7 @@ class ForumService {
   static const int tagNameMax = 20;
   static const int imageMaxCount = 4;
   static const int imageMaxBytes = 5 * 1024 * 1024;
-  static const int searchMin = 2;
+  static const int searchMin = 1;
   static const int searchMax = 80;
 
   // ── 看板 ──────────────────────────────────────────────────
@@ -203,6 +205,25 @@ class ForumService {
     );
   }
 
+  /// 我按讚過的貼文。[cursor] 為上一頁 next_cursor（liked_at 時間戳字串）。
+  static Future<ForumLikedPostPage> likedPosts({String? cursor}) async {
+    final data = await ApiClient.get(
+      ApiConfig.forumPostLikes,
+      query: {if (cursor != null) 'cursor': cursor},
+    );
+    return ForumLikedPostPage.fromJson(data);
+  }
+
+  /// 我按讚過的留言。留言沒有獨立頁面，每筆多帶 postId/postTitle/boardSlug
+  /// 供前端連回原貼文。
+  static Future<ForumLikedCommentPage> likedComments({String? cursor}) async {
+    final data = await ApiClient.get(
+      ApiConfig.forumCommentLikes,
+      query: {if (cursor != null) 'cursor': cursor},
+    );
+    return ForumLikedCommentPage.fromJson(data);
+  }
+
   // ── 標籤與搜尋 ────────────────────────────────────────────
 
   static Future<List<ForumTagStat>> tags() async {
@@ -213,10 +234,13 @@ class ForumService {
         .toList();
   }
 
-  /// 後端限制關鍵字 2-80 字，未達長度直接擋下，不送出必然失敗的請求。
+  /// 後端限制關鍵字 1-80 字，未達長度直接擋下，不送出必然失敗的請求。
+  /// [range]／[tribeId] 與 [board] 一樣皆選填、可任意組合。
   static Future<ForumPostPage> search(
     String q, {
     String? board,
+    String? range,
+    int? tribeId,
     int? cursor,
   }) async {
     final trimmed = q.trim();
@@ -228,6 +252,8 @@ class ForumService {
       query: {
         'q': trimmed,
         if (board != null && board.isNotEmpty) 'board': board,
+        if (range != null) 'range': range,
+        if (tribeId != null) 'tribe_id': '$tribeId',
         if (cursor != null) 'cursor': '$cursor',
       },
     );

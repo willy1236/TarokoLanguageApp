@@ -22,6 +22,8 @@ import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
 import '../millet/millet_ledger_screen.dart';
 import '../shop/shop_screen.dart';
+import 'my_bookmarks_screen.dart';
+import 'my_likes_screen.dart';
 import '../terms/terms_consent_screen.dart';
 
 // 頭像檔案限制（後端規則：≤8MB，僅接受 JPEG/PNG/WebP/GIF），前端先擋掉明顯無效
@@ -92,6 +94,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               _buildHero(),
               _buildInventorySection(),
               _buildMyEventsSection(),
+              _buildMyLikesBookmarksSection(),
               _buildAccountSection(),
               _buildPreferencesSection(),
               _buildOtherSection(),
@@ -660,6 +663,60 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     ]);
+  }
+
+  Widget _buildMyLikesBookmarksSection() {
+    return _section('SMRATUC · 互動', [
+      _navRow(
+        icon: Icons.bookmark_outline,
+        label: '我的收藏',
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const MyBookmarksScreen())),
+      ),
+      const Divider(height: 1, color: AppColors.creamDeep),
+      _navRow(
+        icon: Icons.favorite_border,
+        label: '我按讚的內容',
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const MyLikesScreen())),
+      ),
+    ]);
+  }
+
+  Widget _navRow({
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onTap,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Icon(icon, size: 18, color: AppColors.primary),
+                const SizedBox(width: 10),
+                Text(
+                  label,
+                  style: GoogleFonts.notoSerifTc(
+                    fontSize: 14,
+                    color: AppColors.ink,
+                    letterSpacing: 0.5,
+                  ),
+                ),
+              ],
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.fog, size: 16),
+          ],
+        ),
+      ),
+    );
   }
 
   // ── 帳號設定 ──────────────────────────────────────────────────────────────

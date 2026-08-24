@@ -9,7 +9,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import 'forum_theme.dart';
 import '../../models/forum_models.dart';
+import '../../models/tribe_model.dart';
 import '../../services/forum_service.dart';
+import '../../shared/search_range.dart';
+import '../../shared/widgets/tribe_picker_sheet.dart';
 import 'forum_board_view.dart';
 import 'forum_detail_screen.dart';
 
@@ -34,6 +37,8 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
   final _boardViewKey = GlobalKey<ForumBoardViewState>();
   String? _query;
   String? _boardSlug;
+  String? _range;
+  Tribe? _tribe;
   String? _hint;
 
   @override
@@ -56,6 +61,21 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
       _hint = null;
       _query = text;
     });
+  }
+
+  Future<void> _pickTribe() async {
+    final tribe = await showModalBottomSheet<Tribe>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => const TribePickerSheet(),
+    );
+    if (tribe == null) return;
+    setState(() => _tribe = tribe.id == kClearTribeId ? null : tribe);
+  }
+
+  void _setRange(String? range) {
+    setState(() => _range = _range == range ? null : range);
   }
 
   @override
@@ -87,6 +107,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
       body: Column(
         children: [
           if (widget.boards.isNotEmpty) _boardFilter(),
+          _rangeTribeFilter(),
           if (_hint != null)
             Padding(
               padding: const EdgeInsets.all(20),
@@ -104,7 +125,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
             Expanded(
               child: ForumBoardView(
                 key: _boardViewKey,
-                reloadKey: '$query|$_boardSlug',
+                reloadKey: '$query|$_boardSlug|$_range|${_tribe?.id}',
                 emptyMessage: '找不到符合的貼文',
                 // 搜尋沒有「比某 id 新」語意，下拉刷新一律整份重載，
                 // 所以 loadPage 只需按 cursor 分頁。
@@ -112,6 +133,8 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
                 loadPage: ({cursor, after}) => ForumService.search(
                   query,
                   board: _boardSlug,
+                  range: _range,
+                  tribeId: _tribe?.id,
                   cursor: cursor,
                 ),
                 toggleLike: ForumService.likePost,
@@ -144,6 +167,69 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _rangeTribeFilter() => SizedBox(
+    height: 48,
+    child: ListView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      children: [
+        for (final r in SearchRange.values) _rangeChip(r),
+        const SizedBox(width: 4),
+        _tribeChip(),
+      ],
+    ),
+  );
+
+  Widget _rangeChip(String range) {
+    final selected = _range == range;
+    return Padding(
+      padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
+      child: ChoiceChip(
+        label: Text(SearchRange.label(range)),
+        selected: selected,
+        showCheckmark: false,
+        backgroundColor: AppColors.cream,
+        selectedColor: AppColors.primary.withValues(alpha: 0.16),
+        labelStyle: TextStyle(
+          fontSize: 12,
+          color: selected ? AppColors.primary : AppColors.inkSoft,
+        ),
+        side: BorderSide(
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.45)
+              : AppColors.creamDeep,
+        ),
+        onSelected: (_) => _setRange(range),
+      ),
+    );
+  }
+
+  Widget _tribeChip() {
+    final selected = _tribe != null;
+    return Padding(
+      padding: const EdgeInsets.only(top: 6, bottom: 6),
+      child: ActionChip(
+        avatar: Icon(
+          Icons.place_outlined,
+          size: 16,
+          color: selected ? AppColors.primary : AppColors.inkSoft,
+        ),
+        label: Text(_tribe?.name ?? '部落'),
+        backgroundColor: AppColors.cream,
+        labelStyle: TextStyle(
+          fontSize: 12,
+          color: selected ? AppColors.primary : AppColors.inkSoft,
+        ),
+        side: BorderSide(
+          color: selected
+              ? AppColors.primary.withValues(alpha: 0.45)
+              : AppColors.creamDeep,
+        ),
+        onPressed: _pickTribe,
       ),
     );
   }
