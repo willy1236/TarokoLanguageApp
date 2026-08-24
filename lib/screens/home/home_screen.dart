@@ -6,6 +6,7 @@ import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../../shared/widgets/mode_card.dart';
 import '../../shared/widgets/user_avatar.dart';
+import '../shop/shop_screen.dart';
 
 // 五張模式卡資料（依設計稿）
 const List<ModeData> _modes = [
@@ -326,30 +327,41 @@ class _TodayProgressCard extends StatelessWidget {
                       ),
                     ),
                     // 小米幣 chip
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(6, 4, 10, 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.gold.withValues(alpha: 0.18),
-                        border: Border.all(
-                          color: AppColors.gold.withValues(alpha: 0.5),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ShopScreen(),
                         ),
-                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.grain, size: 18, color: AppColors.gold),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${millet ?? 0}',
-                            style: GoogleFonts.notoSerifTc(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.gold,
-                              letterSpacing: 0.5,
-                            ),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(6, 4, 10, 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withValues(alpha: 0.18),
+                          border: Border.all(
+                            color: AppColors.gold.withValues(alpha: 0.5),
                           ),
-                        ],
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.grain,
+                              size: 18,
+                              color: AppColors.gold,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${millet ?? 0}',
+                              style: GoogleFonts.notoSerifTc(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.gold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
