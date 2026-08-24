@@ -7,6 +7,7 @@ import '../../models/user_model.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/confirm_dialog.dart';
+import '../../shared/widgets/millet_coin_icon.dart';
 import '../../shared/widgets/shop_item_card.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../millet/millet_ledger_screen.dart';
@@ -314,11 +315,7 @@ class _ShopScreenState extends State<ShopScreen> {
                             ],
                           ),
                         ),
-                        child: const Icon(
-                          Icons.grain,
-                          size: 42,
-                          color: AppColors.gold,
-                        ),
+                        child: const MilletCoinIcon(size: 42),
                       ),
                       const SizedBox(width: 14),
                       Expanded(

@@ -13,6 +13,7 @@ import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
+import '../../shared/widgets/millet_coin_icon.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
 import '../../shared/widgets/user_avatar.dart';
@@ -480,11 +481,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     shape: BoxShape.circle,
                     color: AppColors.gold.withValues(alpha: 0.2),
                   ),
-                  child: const Icon(
-                    Icons.grain,
-                    size: 16,
-                    color: AppColors.gold,
-                  ),
+                  child: const MilletCoinIcon(size: 16),
                 ),
                 const SizedBox(width: 10),
                 Expanded(

@@ -5,6 +5,7 @@ import '../../models/shop_item.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../../shared/widgets/mode_card.dart';
+import '../../shared/widgets/millet_coin_icon.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../shop/shop_screen.dart';
 
@@ -345,11 +346,7 @@ class _TodayProgressCard extends StatelessWidget {
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              Icons.grain,
-                              size: 18,
-                              color: AppColors.gold,
-                            ),
+                            const MilletCoinIcon(size: 18),
                             const SizedBox(width: 4),
                             Text(
                               '${millet ?? 0}',
