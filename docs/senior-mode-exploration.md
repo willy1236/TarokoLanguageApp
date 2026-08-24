@@ -119,7 +119,19 @@
 
 3. **調整 textScaler 策略** — 現有 `main.dart` 的 `clamp(0.85–1.15)` 上限會擋住精簡模式想要的放大字級，需改成依精簡模式開關切換不同 clamp 範圍（例如一般 0.85–1.15、精簡模式 1.0–1.5），並讓 tokens 層（任務1）感知這個縮放。
 
+   **[2026-08-24 已完成第三步]**
+   - `lib/main.dart`：`_buildApp` 的 `MaterialApp.builder`（原第 136–147 行）新增 `final seniorMode = seniorModeController.enabled;`，`textScaler.clamp` 的 `minScaleFactor`/`maxScaleFactor` 改依 `seniorMode` 三元分支：一般模式維持 `0.85–1.15` 不變，精簡模式改為 `1.0–1.5`。因 `_buildApp` 已包在外層 `ListenableBuilder(listenable: seniorModeController, ...)` 內，`builder:` 內直接讀 `enabled` 即可拿到即時值，不需額外監聽。
+   - `AppTypography` 字級 tokens 本身未改值——放大交給 `textScaler` 處理（Flutter 全域文字縮放機制本意），tokens 只負責提供基準字級。
+   - `flutter analyze` 對 `lib/main.dart` 無警告/錯誤。
+   - **範圍限制**：目前沒有 UI 開關可觸發 `setEnabled(true)`（任務 2 已知限制），本次僅完成邏輯分支，尚未做「精簡模式下文字實際放大超過 1.15 倍」的肉眼驗證，留待接上 UI 開關（個人資料頁 Switch，屬後續任務）時一併驗證。
+
 4. **制定資訊密度規則 + fallback 機制** — 定義精簡模式下的密度上限（如列表卡片最多顯示幾個欄位、首頁區塊數量上限），並確立「未特製精簡版頁面一律 fallback 回正常模式畫面」的規則與程式碼路徑（例如 `SeniorModeController.hasCustomLayout(routeName)` 之類的查詢介面）。此任務決定後續任務 6 每個頁面「要不要做精簡版」的判斷依據，需在任務 6 之前定案。
+
+   **[2026-08-24 已完成第四步]**
+   - 新增 `lib/core/constants/app_density.dart`：`abstract class AppDensity`，定義精簡模式下的顯示上限，目前先訂 `maxListCardFields(3)`（列表卡片最多欄位數）、`maxHomeSections(4)`（首頁最多區塊數）——先給合理預設值，後續頁面客製化（任務 6/7）時可依實際內容調整,不追求本次精確。
+   - `lib/services/senior_mode_controller.dart`：新增 `hasCustomLayout(String routeName)`，內部用 `static const Set<String> _customLayoutRoutes = {}`（目前為空）查表回傳該路由是否有精簡版畫面。未來任務 6/7 做完某頁精簡版時把路由名加進這個 Set 即可，呼叫端邏輯不用改。
+   - `flutter analyze` 對 `lib/services/senior_mode_controller.dart`、`lib/core/constants/app_density.dart` 無警告/錯誤。
+   - **範圍限制**：本次未改動任何既有 screen——`hasCustomLayout` 目前沒有呼叫方（尚無任何精簡版頁面），純粹搭好任務 5–8 會用到的查詢介面，避免任務 4 滲透去改各畫面。`AppDensity` 的數值也還沒有任何畫面實際引用，屬預留 tokens。
 
 5. **導航簡化** — 修改 `main.dart`（`MainContainer`）與 `truku_bottom_tab.dart`：精簡模式下減少分頁數量、放大 `TrukuBottomTab` 觸控熱區，範圍集中、風險可控。
 
