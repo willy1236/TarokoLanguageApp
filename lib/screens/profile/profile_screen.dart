@@ -194,7 +194,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '銅門部落 · 加入 ${_user?.joinedDays ?? 124} 天',
+                            _user?.isIndigenous == true
+                                ? '${_user?.tribeName ?? "尚未設定"} · 加入 ${_user?.joinedDays ?? 124} 天'
+                                : '加入 ${_user?.joinedDays ?? 124} 天',
                             style: TextStyle(
                               fontSize: 12,
                               color: AppColors.creamLight.withValues(
