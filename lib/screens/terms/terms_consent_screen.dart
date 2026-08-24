@@ -7,6 +7,7 @@
 //   單純查看目前條款內容，不強制同意、可正常返回。
 
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
@@ -173,12 +174,37 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
           style: TextStyle(fontSize: 12, color: AppColors.fog),
         ),
         const SizedBox(height: 12),
-        Text(
-          doc.contentMd,
-          style: TextStyle(
-            fontSize: 14,
-            height: 1.6,
-            color: AppColors.ink.withValues(alpha: 0.85),
+        MarkdownBody(
+          data: doc.contentMd,
+          styleSheet: MarkdownStyleSheet(
+            p: TextStyle(
+              fontSize: 14,
+              height: 1.6,
+              color: AppColors.ink.withValues(alpha: 0.85),
+            ),
+            h1: GoogleFonts.notoSerifTc(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
+            ),
+            h2: GoogleFonts.notoSerifTc(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
+            ),
+            h3: GoogleFonts.notoSerifTc(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
+            ),
+            strong: TextStyle(
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
+            ),
+            listBullet: TextStyle(
+              fontSize: 14,
+              color: AppColors.ink.withValues(alpha: 0.85),
+            ),
           ),
         ),
       ],
