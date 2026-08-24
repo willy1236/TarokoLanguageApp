@@ -5,13 +5,13 @@ import '../../core/network/api_client.dart';
 import '../../core/utils/date_format.dart';
 import '../../models/millet_transaction.dart';
 import '../../services/millet_service.dart';
+import '../../shared/widgets/millet_coin_icon.dart';
 
 const _pageSize = 20;
 
 const Map<String, IconData> _reasonIcons = {
   'checkin': Icons.event_available,
   'purchase': Icons.shopping_bag,
-  'opening_balance': Icons.grain,
 };
 
 const Map<String, String> _reasonLabels = {
@@ -233,11 +233,13 @@ class _MilletRow extends StatelessWidget {
               shape: BoxShape.circle,
               color: AppColors.primary.withValues(alpha: 0.12),
             ),
-            child: Icon(
-              _reasonIcons[transaction.reason] ?? Icons.grain,
-              size: 16,
-              color: AppColors.primary,
-            ),
+            child: _reasonIcons[transaction.reason] != null
+                ? Icon(
+                    _reasonIcons[transaction.reason],
+                    size: 16,
+                    color: AppColors.primary,
+                  )
+                : const MilletCoinIcon(size: 16),
           ),
           const SizedBox(width: 10),
           Expanded(

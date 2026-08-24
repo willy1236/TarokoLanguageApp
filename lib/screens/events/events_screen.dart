@@ -18,9 +18,11 @@ class EventsScreen extends StatefulWidget {
 }
 
 class _EventsScreenState extends State<EventsScreen> {
+  // 前兩顆對應後端 scope（全部=all、近期=upcoming，會重新打 API）；
+  // 其餘為分類篩選（對應發起活動表單的分類清單），在目前已載入的 scope 資料上做前端篩選。
+  static const _filters = ['全部', '近期', '族語', '走讀', '工藝', '線上', '音樂', '其他'];
   int _filterIndex = 0;
-  // 目前只有「全部 / 即將到來」對應到後端 scope；其餘為分類，後端列表尚未支援，先保留 UI。
-  static const _filters = ['即將到來', '全部'];
+  String _scope = 'all';
 
   bool _loading = true;
   String? _error;
@@ -38,8 +40,7 @@ class _EventsScreenState extends State<EventsScreen> {
       _error = null;
     });
     try {
-      final scope = _filterIndex == 1 ? 'all' : 'upcoming';
-      final events = await EventService.fetchEvents(scope: scope);
+      final events = await EventService.fetchEvents(scope: _scope);
       if (!mounted) return;
       setState(() {
         _events = events;
@@ -51,6 +52,41 @@ class _EventsScreenState extends State<EventsScreen> {
         _error = e.toString();
         _loading = false;
       });
+    }
+  }
+
+  void _onFilterTap(int i) {
+    final filter = _filters[i];
+    if (filter == '全部' || filter == '近期') {
+      setState(() {
+        _filterIndex = i;
+        _scope = filter == '全部' ? 'all' : 'upcoming';
+      });
+      _load();
+    } else {
+      setState(() => _filterIndex = i);
+    }
+  }
+
+  List<EventSummary> get _filteredEvents {
+    final filter = _filters[_filterIndex];
+    if (filter == '全部' || filter == '近期') return _events;
+    return _events.where((e) => e.category == filter).toList();
+  }
+
+  // 依分類配色（呼應發起活動表單的分類清單），純視覺區隔用。
+  Color _categoryColor(String? category) {
+    switch (category) {
+      case '走讀':
+      case '線上':
+        return AppColors.moss;
+      case '工藝':
+        return AppColors.goldDeep;
+      case '族語':
+      case '音樂':
+        return AppColors.primary;
+      default:
+        return AppColors.inkSoft;
     }
   }
 
@@ -140,13 +176,14 @@ class _EventsScreenState extends State<EventsScreen> {
     if (_error != null) {
       return [SliverToBoxAdapter(child: _buildError())];
     }
-    if (_events.isEmpty) {
+    final events = _filteredEvents;
+    if (events.isEmpty) {
       return [SliverToBoxAdapter(child: _buildEmpty())];
     }
     return [
-      SliverToBoxAdapter(child: _buildFeaturedCard(_events.first)),
-      if (_events.length > 1) SliverToBoxAdapter(child: _buildDivider()),
-      SliverToBoxAdapter(child: _buildList()),
+      SliverToBoxAdapter(child: _buildFeaturedCard(events.first)),
+      if (events.length > 1) SliverToBoxAdapter(child: _buildDivider()),
+      SliverToBoxAdapter(child: _buildList(events)),
     ];
   }
 
@@ -298,38 +335,43 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _buildFilterChips() {
-    return SizedBox(
-      height: 44,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-        itemCount: _filters.length,
-        separatorBuilder: (context, i) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final active = _filterIndex == i;
-          return GestureDetector(
-            onTap: () {
-              setState(() => _filterIndex = i);
-              _load();
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-              decoration: BoxDecoration(
-                color: active ? AppColors.ink : Colors.transparent,
-                borderRadius: BorderRadius.circular(20),
-                border: active ? null : Border.all(color: AppColors.creamDeep),
-              ),
-              child: Text(
-                _filters[i],
-                style: TextStyle(
-                  fontSize: 12,
-                  color: active ? AppColors.creamLight : AppColors.inkSoft,
-                  letterSpacing: 1.0,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 14),
+      child: SizedBox(
+        height: 36,
+        child: ListView.separated(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          itemCount: _filters.length,
+          separatorBuilder: (context, i) => const SizedBox(width: 8),
+          itemBuilder: (_, i) {
+            final active = _filterIndex == i;
+            return GestureDetector(
+              onTap: () => _onFilterTap(i),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  color: active ? AppColors.ink : Colors.transparent,
+                  borderRadius: BorderRadius.circular(20),
+                  border: active
+                      ? null
+                      : Border.all(color: AppColors.creamDeep),
+                ),
+                child: Text(
+                  _filters[i],
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: active ? AppColors.creamLight : AppColors.inkSoft,
+                    letterSpacing: 1.0,
+                  ),
                 ),
               ),
-            ),
-          );
-        },
+            );
+          },
+        ),
       ),
     );
   }
@@ -393,6 +435,18 @@ class _EventsScreenState extends State<EventsScreen> {
                       opacity: 0.25,
                       child: CustomPaint(
                         painter: TrukuWeavePainter(opacity: 1, scale: 0.7),
+                      ),
+                    ),
+                    Positioned(
+                      left: 0,
+                      right: 0,
+                      bottom: 0,
+                      height: 46,
+                      child: CustomPaint(
+                        painter: TrukuMountainsPainter(
+                          color: AppColors.ink,
+                          opacity: 0.9,
+                        ),
                       ),
                     ),
                     if (label.isNotEmpty)
@@ -512,24 +566,8 @@ class _EventsScreenState extends State<EventsScreen> {
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.person_outline,
-                          color: AppColors.gold,
-                          size: 12,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${e.participantCount} 人報名',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.creamLight.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ],
-                    ),
+                    const SizedBox(height: 14),
+                    _buildFeaturedCapacityRow(e),
                   ],
                 ),
               ),
@@ -540,12 +578,99 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
+  Widget _buildFeaturedCapacityRow(EventSummary e) {
+    final max = e.maxParticipants;
+    final remaining = max == null
+        ? null
+        : (max - e.participantCount).clamp(0, max);
+    final capacityText = max == null
+        ? '${e.participantCount} 人報名 · 不限名額'
+        : '${e.participantCount}/$max 人 · 剩 $remaining 個名額';
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        if (max != null)
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(4),
+                  child: LinearProgressIndicator(
+                    value: (e.participantCount / max).clamp(0, 1).toDouble(),
+                    minHeight: 6,
+                    backgroundColor: AppColors.inkSoft,
+                    valueColor: const AlwaysStoppedAnimation(AppColors.gold),
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  capacityText,
+                  style: TextStyle(
+                    fontSize: 11,
+                    color: AppColors.creamLight.withValues(alpha: 0.7),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Expanded(
+            child: Text(
+              capacityText,
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.creamLight.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+        const SizedBox(width: 12),
+        _buildCtaButton(e),
+      ],
+    );
+  }
+
+  Widget _buildCtaButton(EventSummary e) {
+    String text;
+    if (e.isJoined) {
+      text = '已報名';
+    } else if (e.displayStatus == 'ended') {
+      text = '已結束';
+    } else if (e.displayStatus == 'cancelled') {
+      text = '已取消';
+    } else if (e.isFull) {
+      text = '已額滿';
+    } else if (e.registrationOpen) {
+      text = '我要參加';
+    } else {
+      text = '查看';
+    }
+    return GestureDetector(
+      onTap: () => _openDetail(e),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        decoration: BoxDecoration(
+          color: AppColors.gold,
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Text(
+          text,
+          style: GoogleFonts.notoSerifTc(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: AppColors.ink,
+          ),
+        ),
+      ),
+    );
+  }
+
   // ── 其餘活動列表 ─────────────────────────────────────────────
-  Widget _buildList() {
+  Widget _buildList(List<EventSummary> events) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
-        children: _events
+        children: events
             .skip(1)
             .map(
               (e) => Padding(
@@ -560,7 +685,10 @@ class _EventsScreenState extends State<EventsScreen> {
 
   Widget _buildListTile(EventSummary e) {
     final d = e.startsAt.toLocal();
-    final label = _statusLabel(e);
+    final color = _categoryColor(e.category);
+    final capacityText = e.maxParticipants == null
+        ? '${e.participantCount} 人報名'
+        : '${e.participantCount}/${e.maxParticipants}';
     return GestureDetector(
       onTap: () => _openDetail(e),
       child: Container(
@@ -578,7 +706,7 @@ class _EventsScreenState extends State<EventsScreen> {
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppColors.primary,
+                  color: color,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Column(
@@ -618,21 +746,21 @@ class _EventsScreenState extends State<EventsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (label.isNotEmpty)
+                  if (e.category != null)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 7,
                         vertical: 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.08),
+                        color: color.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(3),
                       ),
                       child: Text(
-                        label,
-                        style: const TextStyle(
+                        e.category!,
+                        style: TextStyle(
                           fontSize: 9,
-                          color: AppColors.primary,
+                          color: color,
                           letterSpacing: 1.5,
                         ),
                       ),
@@ -656,7 +784,7 @@ class _EventsScreenState extends State<EventsScreen> {
                       letterSpacing: 0.8,
                     ),
                   ),
-                  const SizedBox(height: 6),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       const Icon(
@@ -666,10 +794,29 @@ class _EventsScreenState extends State<EventsScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        '${e.participantCount} 人報名',
+                        capacityText,
                         style: const TextStyle(
                           fontSize: 11,
                           color: AppColors.inkSoft,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: AppColors.primary),
+                        ),
+                        child: Text(
+                          '查看',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.primary,
+                          ),
                         ),
                       ),
                     ],

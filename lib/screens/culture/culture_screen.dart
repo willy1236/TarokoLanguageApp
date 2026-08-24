@@ -392,52 +392,6 @@ class _CultureScreenState extends State<CultureScreen> {
     );
   }
 
-  // ── Section Header ────────────────────────────────────────────────────────
-
-  Widget _buildSectionHeader(String title, String sub) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.cream,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                sub,
-                style: GoogleFonts.crimsonPro(
-                  fontStyle: FontStyle.italic,
-                  fontSize: 10,
-                  color: AppColors.fog,
-                  letterSpacing: 3.6,
-                ),
-              ),
-            ],
-          ),
-          Text(
-            '查看全部 →',
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColors.gold,
-              letterSpacing: 2.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ── Video Section ────────────────────────────────────────────────────────
 
   Widget _buildVideoSectionHeader() {
@@ -564,16 +518,17 @@ class _CultureScreenState extends State<CultureScreen> {
       future: _articlesFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-            child: _buildSectionHeader('族人寫的文章', 'patas kari'),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [_buildArticleChips(), _buildArticleSectionHeader()],
           );
         }
         if (snapshot.hasError) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionHeader('族人寫的文章', 'patas kari'),
+              _buildArticleChips(),
+              _buildArticleSectionHeader(),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -604,9 +559,8 @@ class _CultureScreenState extends State<CultureScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionHeader('族人寫的文章', 'patas kari'),
               _buildArticleChips(),
-              _buildArticleSortRow(),
+              _buildArticleSectionHeader(),
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -625,12 +579,8 @@ class _CultureScreenState extends State<CultureScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader(
-              '族人寫的文章',
-              'patas kari · 共 ${snapshot.data!.total} 篇',
-            ),
             _buildArticleChips(),
-            _buildArticleSortRow(),
+            _buildArticleSectionHeader(),
             _buildFeaturedArticle(featured),
             _buildArticleList(rest),
           ],
@@ -642,7 +592,7 @@ class _CultureScreenState extends State<CultureScreen> {
   Widget _buildArticleChips() {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: List.generate(_articleChipLabels.length, (i) {
           final active = _articleChipIndex == i;
@@ -687,38 +637,77 @@ class _CultureScreenState extends State<CultureScreen> {
     );
   }
 
-  Widget _buildArticleSortRow() {
-    const options = [
-      ('latest', '最新'),
-      ('popular', '熱門'),
-      ('weekly_popular', '本週熱門'),
-    ];
+  static const _articleSortOptions = [
+    ('latest', '最新文章', '最新'),
+    ('popular', '熱門文章', '熱門'),
+    ('weekly_popular', '本週熱門文章', '本週熱門'),
+  ];
+
+  Widget _buildArticleSectionHeader() {
+    final title = _articleSortOptions
+        .firstWhere((opt) => opt.$1 == _articleSort)
+        .$2;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
       child: Row(
-        children: options.map((opt) {
-          final active = _articleSort == opt.$1;
-          return Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _articleSort = opt.$1;
-                  _articlesFuture = _fetchArticles();
-                });
-              },
-              child: Text(
-                opt.$2,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.normal,
-                  color: active ? AppColors.gold : AppColors.fog,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.cream,
                   letterSpacing: 1.5,
                 ),
               ),
-            ),
-          );
-        }).toList(),
+              const SizedBox(height: 2),
+              Text(
+                'patas kari',
+                style: GoogleFonts.crimsonPro(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 10,
+                  color: AppColors.fog,
+                  letterSpacing: 3.6,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              for (final opt in _articleSortOptions) ...[
+                _articleSortLabel(opt.$1, opt.$3),
+                if (opt != _articleSortOptions.last) const SizedBox(width: 10),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _articleSortLabel(String value, String label) {
+    final active = _articleSort == value;
+    return GestureDetector(
+      onTap: () {
+        if (_articleSort == value) return;
+        setState(() {
+          _articleSort = value;
+          _articlesFuture = _fetchArticles();
+        });
+      },
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: 12,
+          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+          color: active ? AppColors.gold : AppColors.fog,
+          letterSpacing: 1.5,
+        ),
       ),
     );
   }

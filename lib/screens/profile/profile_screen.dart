@@ -13,8 +13,10 @@ import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
+import '../../shared/widgets/millet_coin_icon.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
+import '../../shared/widgets/user_avatar.dart';
 import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
@@ -22,6 +24,7 @@ import '../millet/millet_ledger_screen.dart';
 import '../shop/shop_screen.dart';
 import 'my_bookmarks_screen.dart';
 import 'my_likes_screen.dart';
+import '../terms/terms_consent_screen.dart';
 
 // 頭像檔案限制（後端規則：≤8MB，僅接受 JPEG/PNG/WebP/GIF），前端先擋掉明顯無效
 // 的檔案以減少無效上傳，實際裁切壓縮一律由後端處理。
@@ -118,19 +121,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
           ),
-          Positioned(
-            top: 56,
-            right: 16,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.creamLight.withValues(alpha: 0.15),
-              ),
-              child: CustomPaint(painter: _SettingsIconPainter()),
-            ),
-          ),
         ],
       ),
     );
@@ -159,6 +149,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   scale: 0.8,
                 ),
               ),
+            ),
+          ),
+          Positioned(
+            top: 56,
+            right: 16,
+            child: Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.creamLight.withValues(alpha: 0.15),
+              ),
+              child: CustomPaint(painter: _SettingsIconPainter()),
             ),
           ),
           Padding(
@@ -196,7 +199,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            '銅門部落 · 加入 ${_user?.joinedDays ?? 124} 天',
+                            _user?.isIndigenous == true
+                                ? '${_user?.tribeName ?? "尚未設定"} · 加入 ${_user?.joinedDays ?? 124} 天'
+                                : '加入 ${_user?.joinedDays ?? 124} 天',
                             style: TextStyle(
                               fontSize: 12,
                               color: AppColors.creamLight.withValues(
@@ -257,7 +262,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
               color: AppColors.ink,
               border: Border.all(color: AppColors.gold, width: 2),
             ),
-            child: ClipOval(child: Center(child: _buildAvatarContent())),
+            child: ClipOval(
+              child: Center(
+                child: UserAvatar(
+                  avatarId: _user?.avatarId,
+                  avatarUrl: _user?.avatarUrl,
+                  itemCatalogById: _itemCatalogById,
+                  size: 80,
+                  fallbackIconColor: AppColors.gold.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
           ),
           Positioned(
             bottom: 6,
@@ -278,53 +293,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ),
         ],
       ),
-    );
-  }
-
-  Widget _buildAvatarContent() {
-    final user = _user;
-    final avatarId = user?.avatarId;
-    if (avatarId != null) {
-      // 使用者已選用內建頭像：不 fallback 回 avatarUrl（那會誤導成「顯示的是登入帳號
-      // 頭像」，跟實際配戴狀態不符），拿不到 image_url 就顯示預設圖示。
-      final imageUrl = _itemCatalogById[avatarId]?.imageUrl;
-      if (imageUrl != null) {
-        return Image.network(
-          imageUrl,
-          width: 80,
-          height: 80,
-          fit: BoxFit.cover,
-          errorBuilder: (_, _, _) => Icon(
-            Icons.person,
-            size: 52,
-            color: AppColors.gold.withValues(alpha: 0.7),
-          ),
-        );
-      }
-      return Icon(
-        Icons.person,
-        size: 52,
-        color: AppColors.gold.withValues(alpha: 0.7),
-      );
-    }
-    final avatarUrl = user?.avatarUrl;
-    if (avatarUrl != null) {
-      return Image.network(
-        avatarUrl,
-        width: 80,
-        height: 80,
-        fit: BoxFit.cover,
-        errorBuilder: (_, _, _) => Icon(
-          Icons.person,
-          size: 52,
-          color: AppColors.gold.withValues(alpha: 0.7),
-        ),
-      );
-    }
-    return Icon(
-      Icons.person,
-      size: 52,
-      color: AppColors.gold.withValues(alpha: 0.7),
     );
   }
 
@@ -517,11 +485,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     shape: BoxShape.circle,
                     color: AppColors.gold.withValues(alpha: 0.2),
                   ),
-                  child: const Icon(
-                    Icons.grain,
-                    size: 16,
-                    color: AppColors.gold,
-                  ),
+                  child: const MilletCoinIcon(size: 16),
                 ),
                 const SizedBox(width: 10),
                 Expanded(
@@ -902,31 +866,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── 其他 ──────────────────────────────────────────────────────────────────
 
   Widget _buildOtherSection() {
-    const items = ['關於語見太魯閣', '隱私權政策', '聯絡我們'];
+    const items = ['關於語見太魯閣', '服務條款與隱私權政策', '聯絡我們'];
     return _section(
       'QITA · 其他',
       List.generate(items.length, (i) {
+        final onTap = items[i] == '服務條款與隱私權政策' ? _openTermsView : null;
         return Column(
           children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    items[i],
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: 14,
-                      color: AppColors.ink,
-                      letterSpacing: 0.5,
+            InkWell(
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 14,
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      items[i],
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: 14,
+                        color: AppColors.ink,
+                        letterSpacing: 0.5,
+                      ),
                     ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.fog,
-                    size: 16,
-                  ),
-                ],
+                    const Icon(
+                      Icons.chevron_right,
+                      color: AppColors.fog,
+                      size: 16,
+                    ),
+                  ],
+                ),
               ),
             ),
             if (i < items.length - 1)
@@ -939,6 +910,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         );
       }),
+    );
+  }
+
+  void _openTermsView() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => const TermsConsentScreen(readOnly: true),
+      ),
     );
   }
 

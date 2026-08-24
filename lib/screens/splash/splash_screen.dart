@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
+import '../../services/terms_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
@@ -41,10 +42,20 @@ class _SplashScreenState extends State<SplashScreen> {
       } catch (e) {
         debugPrint('SplashScreen: fetchMe 失敗，略過完善資料檢查：$e');
       }
+      // 同理，離線等原因查不到同意狀態時，不擋既有使用者進首頁。
+      var allConsented = true;
+      try {
+        final status = await TermsService.fetchStatus();
+        allConsented = status.allConsented;
+      } catch (e) {
+        debugPrint('SplashScreen: fetchStatus 失敗，略過同意條款檢查：$e');
+      }
       if (!mounted) return;
       Navigator.pushReplacementNamed(
         context,
-        profileCompleted ? '/home' : '/complete-profile',
+        !profileCompleted
+            ? '/complete-profile'
+            : (!allConsented ? '/terms-consent' : '/home'),
       );
       // 冷啟動由通知帶出的深連結導頁必須排在這裡之後，
       // 否則會被上面這行 pushReplacementNamed 蓋掉（見 fcm_service.dart）。
@@ -162,10 +173,12 @@ class _SplashScreenState extends State<SplashScreen> {
                         ),
                       ),
                     ),
-                    Icon(
-                      Icons.language,
-                      size: 120,
-                      color: AppColors.gold.withValues(alpha: 0.9),
+                    Image.asset(
+                      'assets/icon/logo.png',
+                      width: 120,
+                      height: 120,
+                      color: AppColors.cream,
+                      colorBlendMode: BlendMode.srcIn,
                     ),
                   ],
                 ),

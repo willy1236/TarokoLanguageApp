@@ -41,6 +41,7 @@ class ApiException implements Exception {
   });
 
   bool get isUnauthorized => statusCode == 401;
+  bool get isConsentRequired => code == 'CONSENT_REQUIRED';
   bool get isSessionNotFound => code == 'SESSION_NOT_FOUND';
   bool get isSessionNotCompleted => code == 'SESSION_NOT_COMPLETED';
   bool get isIdentityLocked => code == 'IDENTITY_LOCKED';
@@ -211,6 +212,10 @@ class ApiClient {
       final error = _parseError(resp);
       if (error.isUnauthorized) {
         _forceLogout();
+      } else if (error.isConsentRequired &&
+          resp.request?.url.path != '/api/terms' &&
+          resp.request?.url.path != '/api/terms/consent') {
+        _forceConsent();
       }
       throw error;
     }
@@ -235,6 +240,23 @@ class ApiClient {
         ?..clearSnackBars()
         ..showSnackBar(const SnackBar(content: Text('登入已過期，請重新登入')));
     });
+  }
+
+  static bool _showingConsent = false;
+
+  /// CONSENT_REQUIRED（403）時導去強制同意畫面。
+  /// 用 _showingConsent 防止同時多個請求 403 時重複觸發。
+  static void _forceConsent() {
+    if (_showingConsent) return;
+    _showingConsent = true;
+    final nav = navigatorKey.currentState;
+    if (nav == null) {
+      _showingConsent = false;
+      return;
+    }
+    nav
+        .pushNamed('/terms-consent')
+        .whenComplete(() => _showingConsent = false);
   }
 
   static ApiException _parseError(http.Response resp) {

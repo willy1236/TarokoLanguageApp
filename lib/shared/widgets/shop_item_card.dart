@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import 'millet_coin_icon.dart';
 
 /// 共用道具卡片：頭像與頭像框在商店頁、背包頁都用這個 widget 呈現
 /// owned / locked / 未擁有可兌換 三種視覺狀態，避免重複的圓形圖示 + 名稱 + 價格排版程式碼。
@@ -110,11 +111,7 @@ class ShopItemCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(
-                        Icons.grain,
-                        size: 13,
-                        color: isGold ? AppColors.gold : AppColors.primary,
-                      ),
+                      const MilletCoinIcon(size: 13),
                       const SizedBox(width: 2),
                       Text(
                         '$price',

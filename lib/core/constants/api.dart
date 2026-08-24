@@ -101,4 +101,8 @@ class ApiConfig {
   // 族群/部落（issue #5）
   static const String ethnicGroups = '/api/ethnic-groups';
   static const String tribes = '/api/tribes';
+
+  // 同意條款（見 Truku_backend backend/routes/terms.ts）
+  static const String terms = '/api/terms';
+  static const String termsConsent = '/api/terms/consent';
 }
