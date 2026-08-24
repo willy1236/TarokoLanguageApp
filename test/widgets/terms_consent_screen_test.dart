@@ -79,6 +79,52 @@ void main() {
     expect(find.textContaining('最後更新日期'), findsOneWidget);
   });
 
+  testWidgets('唯讀檢視帶 titleKeyword 時只顯示對應的單一文件', (tester) async {
+    ApiClient.httpClient = MockClient((req) async {
+      return http.Response(
+        jsonEncode({
+          'documents': [
+            {
+              'doc_type': 'tos',
+              'version': 1,
+              'title': '織語者 服務條款',
+              'content_md': '服務條款內文',
+              'published_at': '2026-08-01T00:00:00.000Z',
+              'consented': true,
+              'consented_version': 1,
+            },
+            {
+              'doc_type': 'privacy',
+              'version': 1,
+              'title': '織語者 隱私權政策',
+              'content_md': '隱私權政策內文',
+              'published_at': '2026-08-01T00:00:00.000Z',
+              'consented': true,
+              'consented_version': 1,
+            },
+          ],
+          'all_consented': true,
+        }),
+        200,
+        headers: {'content-type': 'application/json; charset=utf-8'},
+      );
+    });
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: TermsConsentScreen(readOnly: true, titleKeyword: '隱私權政策'),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('織語者 隱私權政策'), findsOneWidget);
+    expect(find.text('隱私權政策內文'), findsOneWidget);
+    expect(find.text('織語者 服務條款'), findsNothing);
+    expect(find.text('服務條款內文'), findsNothing);
+    // 唯讀檢視不出現同意按鈕。
+    expect(find.text('我已閱讀並同意'), findsNothing);
+  });
+
   testWidgets('後端回傳空 documents 時顯示「目前沒有條款內容」提示', (tester) async {
     ApiClient.httpClient = MockClient(
       (_) async => http.Response(

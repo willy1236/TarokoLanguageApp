@@ -2,9 +2,11 @@
 //
 // 兩種用途：
 // - 強制同意（readOnly=false，預設）：登入/啟動時偵測到未同意最新版，或
-//   ApiClient 攔截到 CONSENT_REQUIRED 時導來這裡，不可滑退，同意後才能繼續。
-// - 唯讀檢視（readOnly=true）：profile_screen 的「隱私權政策」項目點進來，
-//   單純查看目前條款內容，不強制同意、可正常返回。
+//   ApiClient 攔截到 CONSENT_REQUIRED 時導來這裡，不可滑退，兩份文件一起顯示，
+//   同意後才能繼續（同意是單一動作，涵蓋當下存在的每一種 doc_type）。
+// - 唯讀檢視（readOnly=true）：profile_screen 的「服務條款」「隱私權政策」兩個
+//   項目分別點進來，用 titleKeyword 篩出各自對應的單一文件顯示，不強制同意、
+//   可正常返回。
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -17,7 +19,11 @@ import '../../services/terms_service.dart';
 class TermsConsentScreen extends StatefulWidget {
   final bool readOnly;
 
-  const TermsConsentScreen({super.key, this.readOnly = false});
+  /// 唯讀檢視時，只顯示標題包含此關鍵字的文件（例如「服務條款」「隱私權政策」）。
+  /// 為 null 時顯示全部文件——用於強制同意流程。
+  final String? titleKeyword;
+
+  const TermsConsentScreen({super.key, this.readOnly = false, this.titleKeyword});
 
   @override
   State<TermsConsentScreen> createState() => _TermsConsentScreenState();
@@ -100,7 +106,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
           elevation: 0,
           automaticallyImplyLeading: readOnly,
           title: Text(
-            '服務條款與隱私權政策',
+            widget.titleKeyword ?? '服務條款與隱私權政策',
             style: GoogleFonts.notoSerifTc(
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -132,7 +138,12 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         ),
       );
     }
-    final documents = _status?.documents ?? [];
+    final keyword = widget.titleKeyword;
+    final documents = keyword == null
+        ? (_status?.documents ?? [])
+        : (_status?.documents ?? [])
+              .where((doc) => doc.title.contains(keyword))
+              .toList();
     if (documents.isEmpty) {
       return Center(
         child: Text(
