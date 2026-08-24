@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import 'millet_coin_icon.dart';
 import 'truku_painters.dart';
 import 'truku_widgets.dart';
 
@@ -271,11 +272,7 @@ class _RewardOverlayState extends State<RewardOverlay>
                     ),
                     Row(
                       children: [
-                        const Icon(
-                          Icons.grain,
-                          size: 22,
-                          color: AppColors.gold,
-                        ),
+                        const MilletCoinIcon(size: 22),
                         const SizedBox(width: 6),
                         Text(
                           '320',
@@ -400,7 +397,7 @@ class _RewardOverlayState extends State<RewardOverlay>
               color: AppColors.gold.withValues(alpha: 0.25),
               border: Border.all(color: AppColors.gold, width: 2),
             ),
-            child: const Icon(Icons.grain, size: 52, color: AppColors.gold),
+            child: const MilletCoinIcon(size: 52),
           ),
         ],
       ),
