@@ -151,6 +151,20 @@
    5. 新增的 4 組搜尋頁（`article_search_screen.dart` 等，8/24 新增，互動密度高但目前文件未評估，需一併納入評估範圍）
    6. `listening_quiz_screen.dart` 系列等 Learn 模組（多步驟測驗，長者實用性較低，**優先級最低**）
 
+   **[2026-08-24 已完成部分實作：個人資料頁 + 精簡模式開關 UI]**
+   - 優先做了「開關 UI」而非完全照順序 1→2→3，因為前 5 步完成後**沒有任何 UI 能觸發 `seniorModeController.setEnabled(true)`**，開關本身必須放在個人資料頁，所以先接通這個入口，讓後續任務 7 其他頁面能被實際測試到。
+   - `lib/screens/profile/profile_screen.dart`：
+     - `build()` 改為 `ListenableBuilder(listenable: seniorModeController, ...)` 包住原本內容（比照 `main.dart` 既有慣例），讀取即時 `seniorModeController.enabled` 並分支組出不同的 section 清單餵給同一個 `ListView`（未在各 helper 內部散落 `if (seniorMode)`）。
+     - `_buildPreferencesSection()` 新增「精簡模式」開關列，重用既有 `_switchRow(label, on, {required onChanged})`（原本唯一可互動的自製 pill switch，用於「是否原住民」鎖定列），呼叫 `seniorModeController.setEnabled(v)`。
+     - 精簡模式開啟時，`ListView` 只保留：`_buildHero`（精簡掉已學詞彙/通話次數/發文 3 個統計 cell，只留頭像/姓名/部落）、`_buildMyLikesBookmarksSection`（我的收藏／我按讚的內容）、`_buildPreferencesSection`（含開關本身）、`_buildOtherSection`（含「聯絡我們」）、`_buildLogout`。**隱藏**：`_buildInventorySection`（小米/背包/商店）、`_buildMyEventsSection`（我發起的活動）、`_buildAccountSection`（姓名/族語名字/部落等可編輯低頻欄位）。
+     - `_navRow`（我的收藏/我按讚的內容）、`_buildOtherSection` 條列項目、`_switchRow`（含精簡模式開關本身）新增 `seniorMode` 參數，精簡模式下字級改用 `AppTypography.headline`（22px，原 14px）、垂直 padding 改用 `AppSpacing.lg`（24px，原 14px）、icon 放大至 24–30px（原 16–18px）、開關滑塊放大至 52×30px（原 36×22px）。首次套用後覺得一般模式本身字級偏小，精簡模式若只小幅放大不夠明顯，故加大到接近 2 倍字級的幅度，而非僅套用相鄰一級 tokens（如 `subtitle` 16px）。這是任務 1 tokens 第一次真正接進實際畫面（先前只套用在全域 `ThemeData`）。
+     - Hero 姓名字級精簡模式下為 28px（一般模式 22px），同樣是「明顯放大」而非沿用 `AppTypography.headline`（22px，與一般模式打平、放大幅度不夠）的教訓後改用自訂值。
+     - import 新增 `app_spacing.dart`、`app_typography.dart`、`senior_mode_controller.dart`。
+   - `lib/services/senior_mode_controller.dart`：`_customLayoutRoutes` 從空集合加入 `'profile'`，並經由既有 `hasCustomLayout('profile')` 查詢介面走通（個人資料頁不是具名路由，用固定字串 key 代表，供後續頁面照樣造句）。
+   - `flutter analyze` 對 `lib/screens/profile/profile_screen.dart`、`lib/services/senior_mode_controller.dart` 無警告/錯誤。
+   - **範圍限制**：本次僅完成個人資料頁；`video_call_screen.dart`、活動、文化影音、表單、搜尋頁、學習測驗系列仍待後續任務 7 步驟。尚未做手動實機驗證（開關持久化重啟還原、底部導覽學習分頁消失/熱區放大、textScaler 實際放大超過 1.15 倍）——這些是前 5 步報告中反覆提到「留待接上 UI 開關時一併驗證」的項目，本次已接上開關但尚未執行手動驗證，留待下次操作 App 時確認。
+   - **與探索推測的差異**：無重大差異；`hasCustomLayout` 的路由 key 命名採用畫面語意（`'profile'`）而非具名路由字串（因個人資料頁本來就不是 `MaterialApp.routes` 具名路由，只能靠 `IndexedStack` tab 切換），與探索報告任務 4 段落預期的用法一致。
+
 8. **動效關閉開關** — 精簡模式下關閉 `video_waiting_screen.dart`、`reward_overlay.dart` 的 `AnimationController`/implicit animation，範圍小、可放最後做。
 
 任務 1→2→3→4 是地基（tokens、狀態架構、縮放策略、密度規則彼此依賴，需連續做，且需在此階段把「精簡為輔、正常為主」與深模組拆分定案），5→6 可平行進行，7→8 是收尾的高成本畫面客製化，其中任務 7 已依長者使用情境重新排序，學習模組排最後。

@@ -6,12 +6,15 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_spacing.dart';
+import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
 import '../../models/tribe_model.dart';
 import '../../models/user_model.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/millet_coin_icon.dart';
@@ -85,23 +88,39 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildScaffold(seniorModeController.enabled),
+    );
+  }
+
+  Widget _buildScaffold(bool seniorMode) {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       body: Stack(
         children: [
           ListView(
             padding: EdgeInsets.zero,
-            children: [
-              _buildHero(),
-              _buildInventorySection(),
-              _buildMyEventsSection(),
-              _buildMyLikesBookmarksSection(),
-              _buildAccountSection(),
-              _buildPreferencesSection(),
-              _buildOtherSection(),
-              _buildLogout(context),
-              const SizedBox(height: 40),
-            ],
+            children: seniorMode
+                ? [
+                    _buildHero(seniorMode: true),
+                    _buildMyLikesBookmarksSection(seniorMode: true),
+                    _buildPreferencesSection(),
+                    _buildOtherSection(seniorMode: true),
+                    _buildLogout(context),
+                    const SizedBox(height: 40),
+                  ]
+                : [
+                    _buildHero(seniorMode: false),
+                    _buildInventorySection(),
+                    _buildMyEventsSection(),
+                    _buildMyLikesBookmarksSection(seniorMode: false),
+                    _buildAccountSection(),
+                    _buildPreferencesSection(),
+                    _buildOtherSection(seniorMode: false),
+                    _buildLogout(context),
+                    const SizedBox(height: 40),
+                  ],
           ),
           Positioned(
             top: 56,
@@ -129,7 +148,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ── Hero ──────────────────────────────────────────────────────────────────
 
-  Widget _buildHero() {
+  Widget _buildHero({required bool seniorMode}) {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -192,7 +211,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           Text(
                             _user?.displayName ?? 'Apyang Imiq',
                             style: GoogleFonts.notoSerifTc(
-                              fontSize: 22,
+                              fontSize: seniorMode ? 28 : 22,
                               fontWeight: FontWeight.w600,
                               color: AppColors.creamLight,
                               letterSpacing: 1,
@@ -200,11 +219,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            _user?.isIndigenous == true
-                                ? '${_user?.tribeName ?? "尚未設定"} · 加入 ${_user?.joinedDays ?? 124} 天'
-                                : '加入 ${_user?.joinedDays ?? 124} 天',
+                            seniorMode
+                                ? (_user?.isIndigenous == true
+                                      ? (_user?.tribeName ?? '尚未設定')
+                                      : '')
+                                : (_user?.isIndigenous == true
+                                      ? '${_user?.tribeName ?? "尚未設定"} · 加入 ${_user?.joinedDays ?? 124} 天'
+                                      : '加入 ${_user?.joinedDays ?? 124} 天'),
                             style: TextStyle(
-                              fontSize: 12,
+                              fontSize: seniorMode
+                                  ? AppTypography.subtitle
+                                  : 12,
                               color: AppColors.creamLight.withValues(
                                 alpha: 0.85,
                               ),
@@ -216,16 +241,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    _statCell('248', '已學詞彙'),
-                    const SizedBox(width: 10),
-                    _statCell('36', '通話次數'),
-                    const SizedBox(width: 10),
-                    _statCell('12', '發文'),
-                  ],
-                ),
+                if (!seniorMode) ...[
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      _statCell('248', '已學詞彙'),
+                      const SizedBox(width: 10),
+                      _statCell('36', '通話次數'),
+                      const SizedBox(width: 10),
+                      _statCell('12', '發文'),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
@@ -666,11 +693,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ]);
   }
 
-  Widget _buildMyLikesBookmarksSection() {
+  Widget _buildMyLikesBookmarksSection({required bool seniorMode}) {
     return _section('SMRATUC · 互動', [
       _navRow(
         icon: Icons.bookmark_outline,
         label: '我的收藏',
+        seniorMode: seniorMode,
         onTap: () => Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const MyBookmarksScreen())),
@@ -679,6 +707,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       _navRow(
         icon: Icons.favorite_border,
         label: '我按讚的內容',
+        seniorMode: seniorMode,
         onTap: () => Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const MyLikesScreen())),
@@ -690,30 +719,43 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required IconData icon,
     required String label,
     required VoidCallback onTap,
+    bool seniorMode = false,
   }) {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: seniorMode ? AppSpacing.lg : 14,
+        ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
             Row(
               children: [
-                Icon(icon, size: 18, color: AppColors.primary),
-                const SizedBox(width: 10),
+                Icon(
+                  icon,
+                  size: seniorMode ? 30 : 18,
+                  color: AppColors.primary,
+                ),
+                SizedBox(width: seniorMode ? AppSpacing.md : 10),
                 Text(
                   label,
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 14,
+                    fontSize: seniorMode ? AppTypography.headline : 14,
+                    fontWeight: seniorMode ? FontWeight.w600 : null,
                     color: AppColors.ink,
                     letterSpacing: 0.5,
                   ),
                 ),
               ],
             ),
-            const Icon(Icons.chevron_right, color: AppColors.fog, size: 16),
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.fog,
+              size: seniorMode ? 24 : 16,
+            ),
           ],
         ),
       ),
@@ -856,7 +898,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── 偏好設定 ──────────────────────────────────────────────────────────────
 
   Widget _buildPreferencesSection() {
+    final seniorMode = seniorModeController.enabled;
     return _section('SMPUNG · 偏好', [
+      _switchRow(
+        '精簡模式',
+        seniorMode,
+        seniorMode: seniorMode,
+        onChanged: (v) => seniorModeController.setEnabled(v),
+      ),
       _toggleRow('通知', '已開啟', true),
       _chevronRow('族語顯示', '優先顯示拼音'),
       _chevronRow('字級大小', '中'),
@@ -866,7 +915,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ── 其他 ──────────────────────────────────────────────────────────────────
 
-  Widget _buildOtherSection() {
+  Widget _buildOtherSection({required bool seniorMode}) {
     const items = ['關於語見太魯閣', '服務條款與隱私權政策', '聯絡我們'];
     return _section(
       'QITA · 其他',
@@ -881,9 +930,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             InkWell(
               onTap: onTap,
               child: Padding(
-                padding: const EdgeInsets.symmetric(
+                padding: EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 14,
+                  vertical: seniorMode ? AppSpacing.lg : 14,
                 ),
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -891,15 +940,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       items[i],
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: 14,
+                        fontSize: seniorMode ? AppTypography.headline : 14,
+                        fontWeight: seniorMode ? FontWeight.w600 : null,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
                       ),
                     ),
-                    const Icon(
+                    Icon(
                       Icons.chevron_right,
                       color: AppColors.fog,
-                      size: 16,
+                      size: seniorMode ? 24 : 16,
                     ),
                   ],
                 ),
@@ -1109,11 +1159,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required ValueChanged<bool> onChanged,
     bool locked = false,
     String? lockedHint,
+    bool seniorMode = false,
   }) {
+    final trackWidth = seniorMode ? 52.0 : 36.0;
+    final trackHeight = seniorMode ? 30.0 : 22.0;
+    final thumbSize = seniorMode ? 26.0 : 18.0;
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: seniorMode ? AppSpacing.lg : 14,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -1124,7 +1181,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       label,
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: 14,
+                        fontSize: seniorMode ? AppTypography.headline : 14,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
@@ -1143,11 +1200,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               GestureDetector(
                 onTap: locked ? null : () => onChanged(!on),
                 child: Container(
-                  width: 36,
-                  height: 22,
+                  width: trackWidth,
+                  height: trackHeight,
                   padding: const EdgeInsets.all(2),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(11),
+                    borderRadius: BorderRadius.circular(trackHeight / 2),
                     color: on
                         ? (locked
                               ? AppColors.primary.withValues(alpha: 0.5)
@@ -1159,8 +1216,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         ? Alignment.centerRight
                         : Alignment.centerLeft,
                     child: Container(
-                      width: 18,
-                      height: 18,
+                      width: thumbSize,
+                      height: thumbSize,
                       decoration: const BoxDecoration(
                         shape: BoxShape.circle,
                         color: AppColors.creamLight,
