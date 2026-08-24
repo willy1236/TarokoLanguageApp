@@ -63,6 +63,8 @@ dependencies:
 
   url_launcher: ^6.3.1 # 個人資料頁「聯絡我們」開啟系統寄信
 
+  shared_preferences: ^2.3.3 # 精簡模式開關等使用者偏好本機持久化
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

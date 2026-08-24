@@ -110,6 +110,13 @@
 
 2. **偏好儲存 + 全域狀態（深模組設計）** — 導入 `shared_preferences` 存精簡模式開關，寫一個 `ChangeNotifier`（如 `SeniorModeController`）讓 `MainContainer` 及各 screen 讀取套用。介面對外只需暴露「開關狀態 + 是否有精簡版可用」，內部的 tokens 換算、密度規則、fallback 判斷都封裝在模組內，避免各 screen 內部散落 `if (seniorMode)` 判斷。這是模式能「打開/記住/生效」的基礎設施，也是後續「精簡為輔、正常為主」架構的落點。
 
+   **[2026-08-24 已完成第二步]**
+   - `pubspec.yaml`：新增 `shared_preferences: ^2.3.3` 依賴。
+   - 新增 `lib/services/senior_mode_controller.dart`：`class SeniorModeController extends ChangeNotifier`，本專案首個具實例、非 static-only 的 service。對外只暴露 `enabled`（getter）與 `setEnabled(bool)`；`load()` 於啟動時從 `SharedPreferences` 還原狀態，`setEnabled` 寫入並 `notifyListeners()`。同檔案提供 top-level 單例 `final seniorModeController = SeniorModeController();`，比照 `lib/main.dart` 既有 `navigatorKey`/`scaffoldMessengerKey` 的宣告方式。
+   - `lib/main.dart`：`main()`（`runApp` 前）新增 `await seniorModeController.load()`，比照 `FcmService.init()` 的 try/catch 保護，讀取失敗不阻斷啟動、維持預設關閉。`KariTrukuApp.build()` 改為用 `ListenableBuilder` 監聽 `seniorModeController` 包住原本的 `MaterialApp`（原 build 內容搬到新增的 `_buildApp()`），開關狀態變化時觸發全域 rebuild——這是任務3（textScaler 依開關切換 clamp 範圍）會用到的掛點，本次僅接好骨架，`builder:` 內部縮放邏輯尚未依開關分支。
+   - `flutter pub get` 成功解析；`flutter analyze` 對 `lib/main.dart`、`lib/services/senior_mode_controller.dart` 無警告/錯誤。
+   - **範圍限制**：本次未加任何 UI 開關（如個人資料頁的 Switch），純粹狀態骨架；也未實作探索報告提到的 `hasCustomLayout(routeName)` 之類任務4查詢介面，僅預留擴充點。尚未做「重啟 App 驗證還原」的手動測試（因無 UI 可觸發 `setEnabled`），留待接上任務3/4/或最小測試開關時一併驗證。
+
 3. **調整 textScaler 策略** — 現有 `main.dart` 的 `clamp(0.85–1.15)` 上限會擋住精簡模式想要的放大字級，需改成依精簡模式開關切換不同 clamp 範圍（例如一般 0.85–1.15、精簡模式 1.0–1.5），並讓 tokens 層（任務1）感知這個縮放。
 
 4. **制定資訊密度規則 + fallback 機制** — 定義精簡模式下的密度上限（如列表卡片最多顯示幾個欄位、首頁區塊數量上限），並確立「未特製精簡版頁面一律 fallback 回正常模式畫面」的規則與程式碼路徑（例如 `SeniorModeController.hasCustomLayout(routeName)` 之類的查詢介面）。此任務決定後續任務 6 每個頁面「要不要做精簡版」的判斷依據，需在任務 6 之前定案。

@@ -24,6 +24,7 @@ import 'core/network/api_client.dart';
 import 'models/shop_item.dart';
 import 'services/checkin_service.dart';
 import 'services/fcm_service.dart';
+import 'services/senior_mode_controller.dart';
 import 'services/shop_service.dart';
 import 'services/user_service.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
@@ -66,6 +67,13 @@ Future<void> main() async {
     debugPrint('FcmService.init 失敗（不影響 App 啟動）：$e');
   }
 
+  // 還原精簡模式開關；失敗不阻斷啟動，維持預設關閉。
+  try {
+    await seniorModeController.load();
+  } catch (e) {
+    debugPrint('SeniorModeController.load 失敗（不影響 App 啟動）：$e');
+  }
+
   runApp(const KariTrukuApp());
 }
 
@@ -74,6 +82,13 @@ class KariTrukuApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildApp(context),
+    );
+  }
+
+  Widget _buildApp(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
       scaffoldMessengerKey: scaffoldMessengerKey,
