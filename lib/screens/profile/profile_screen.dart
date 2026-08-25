@@ -906,10 +906,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         seniorMode: seniorMode,
         onChanged: (v) => seniorModeController.setEnabled(v),
       ),
-      _toggleRow('通知', '已開啟', true),
-      _chevronRow('族語顯示', '優先顯示拼音'),
-      _chevronRow('字級大小', '中'),
-      _toggleRow('通話開放', '所有族人', true),
     ]);
   }
 
@@ -1239,116 +1235,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _toggleRow(String label, String value, bool on) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 14,
-                  color: AppColors.ink,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.fog,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 36,
-                    height: 22,
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(11),
-                      color: on ? AppColors.primary : AppColors.creamDeep,
-                    ),
-                    child: Align(
-                      alignment: on
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        width: 18,
-                        height: 18,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.creamLight,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const Divider(
-          height: 1,
-          color: AppColors.creamDeep,
-          indent: 16,
-          endIndent: 16,
-        ),
-      ],
-    );
-  }
-
-  Widget _chevronRow(String label, String value) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 14,
-                  color: AppColors.ink,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.fog,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.fog,
-                    size: 16,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const Divider(
-          height: 1,
-          color: AppColors.creamDeep,
-          indent: 16,
-          endIndent: 16,
-        ),
-      ],
-    );
-  }
 }
 
 class _RenameDialog extends StatefulWidget {
