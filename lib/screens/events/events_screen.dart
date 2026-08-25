@@ -4,6 +4,7 @@ import '../../core/constants/app_colors.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
+import '../../services/senior_mode_controller.dart';
 import 'event_compose_screen.dart';
 import 'event_detail_screen.dart';
 import 'event_search_screen.dart';
@@ -143,6 +144,13 @@ class _EventsScreenState extends State<EventsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildScaffold(seniorModeController.enabled),
+    );
+  }
+
+  Widget _buildScaffold(bool seniorMode) {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       body: RefreshIndicator(
@@ -150,9 +158,9 @@ class _EventsScreenState extends State<EventsScreen> {
         color: AppColors.primary,
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _buildHeader()),
-            SliverToBoxAdapter(child: _buildFilterChips()),
-            ..._buildContentSlivers(),
+            SliverToBoxAdapter(child: _buildHeader(seniorMode)),
+            SliverToBoxAdapter(child: _buildFilterChips(seniorMode)),
+            ..._buildContentSlivers(seniorMode),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
           ],
         ),
@@ -160,7 +168,7 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
-  List<Widget> _buildContentSlivers() {
+  List<Widget> _buildContentSlivers(bool seniorMode) {
     if (_loading) {
       return [
         const SliverToBoxAdapter(
@@ -174,31 +182,35 @@ class _EventsScreenState extends State<EventsScreen> {
       ];
     }
     if (_error != null) {
-      return [SliverToBoxAdapter(child: _buildError())];
+      return [SliverToBoxAdapter(child: _buildError(seniorMode))];
     }
     final events = _filteredEvents;
     if (events.isEmpty) {
-      return [SliverToBoxAdapter(child: _buildEmpty())];
+      return [SliverToBoxAdapter(child: _buildEmpty(seniorMode))];
     }
     return [
-      SliverToBoxAdapter(child: _buildFeaturedCard(events.first)),
+      SliverToBoxAdapter(child: _buildFeaturedCard(events.first, seniorMode)),
       if (events.length > 1) SliverToBoxAdapter(child: _buildDivider()),
-      SliverToBoxAdapter(child: _buildList(events)),
+      SliverToBoxAdapter(child: _buildList(events, seniorMode)),
     ];
   }
 
-  Widget _buildError() {
+  Widget _buildError(bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 80, 20, 0),
       child: Column(
         children: [
-          const Icon(Icons.cloud_off, size: 40, color: AppColors.fog),
+          Icon(
+            Icons.cloud_off,
+            size: seniorMode ? 56 : 40,
+            color: AppColors.fog,
+          ),
           const SizedBox(height: 12),
           Text(
             '載入活動失敗\n$_error',
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: seniorMode ? 18 : 13,
               color: AppColors.inkSoft,
               height: 1.6,
             ),
@@ -207,7 +219,10 @@ class _EventsScreenState extends State<EventsScreen> {
           GestureDetector(
             onTap: _load,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+              padding: EdgeInsets.symmetric(
+                horizontal: seniorMode ? 32 : 24,
+                vertical: seniorMode ? 16 : 10,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(20),
@@ -215,7 +230,7 @@ class _EventsScreenState extends State<EventsScreen> {
               child: Text(
                 '重試',
                 style: GoogleFonts.notoSerifTc(
-                  fontSize: 13,
+                  fontSize: seniorMode ? 18 : 13,
                   color: AppColors.creamLight,
                   letterSpacing: 1.5,
                 ),
@@ -227,31 +242,38 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 90, 20, 0),
       child: Column(
         children: [
-          const Icon(Icons.event_note_outlined, size: 44, color: AppColors.fog),
+          Icon(
+            Icons.event_note_outlined,
+            size: seniorMode ? 60 : 44,
+            color: AppColors.fog,
+          ),
           const SizedBox(height: 12),
           Text(
             '目前沒有活動',
             style: GoogleFonts.notoSerifTc(
-              fontSize: 16,
+              fontSize: seniorMode ? 22 : 16,
               color: AppColors.inkSoft,
             ),
           ),
           const SizedBox(height: 6),
           Text(
             '點右上角「發起」開一場部落聚會吧',
-            style: TextStyle(fontSize: 12, color: AppColors.fog),
+            style: TextStyle(
+              fontSize: seniorMode ? 16 : 12,
+              color: AppColors.fog,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildHeader() {
+  Widget _buildHeader(bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 14),
       child: Row(
@@ -265,7 +287,7 @@ class _EventsScreenState extends State<EventsScreen> {
                   'SMRATUC · 活動',
                   style: GoogleFonts.crimsonPro(
                     fontStyle: FontStyle.italic,
-                    fontSize: 12,
+                    fontSize: seniorMode ? 16 : 12,
                     color: AppColors.fog,
                     letterSpacing: 3.0,
                   ),
@@ -274,7 +296,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 Text(
                   '近期部落聚會',
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 26,
+                    fontSize: seniorMode ? 32 : 26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 1.0,
@@ -290,23 +312,26 @@ class _EventsScreenState extends State<EventsScreen> {
             ),
             child: Container(
               margin: const EdgeInsets.only(right: 8),
-              padding: const EdgeInsets.all(10),
+              padding: EdgeInsets.all(seniorMode ? 14 : 10),
               decoration: BoxDecoration(
                 color: Colors.transparent,
                 borderRadius: BorderRadius.circular(22),
                 border: Border.all(color: AppColors.creamDeep),
               ),
-              child: const Icon(
+              child: Icon(
                 Icons.search,
                 color: AppColors.inkSoft,
-                size: 16,
+                size: seniorMode ? 24 : 16,
               ),
             ),
           ),
           GestureDetector(
             onTap: _openCompose,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              padding: EdgeInsets.symmetric(
+                horizontal: seniorMode ? 20 : 16,
+                vertical: seniorMode ? 14 : 10,
+              ),
               decoration: BoxDecoration(
                 color: AppColors.primary,
                 borderRadius: BorderRadius.circular(22),
@@ -314,12 +339,16 @@ class _EventsScreenState extends State<EventsScreen> {
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Icon(Icons.add, color: AppColors.creamLight, size: 14),
+                  Icon(
+                    Icons.add,
+                    color: AppColors.creamLight,
+                    size: seniorMode ? 20 : 14,
+                  ),
                   const SizedBox(width: 6),
                   Text(
                     '發起',
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 13,
+                      fontSize: seniorMode ? 18 : 13,
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       letterSpacing: 1.5,
@@ -334,11 +363,11 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
-  Widget _buildFilterChips() {
+  Widget _buildFilterChips(bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: SizedBox(
-        height: 36,
+        height: seniorMode ? 48 : 36,
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -349,9 +378,9 @@ class _EventsScreenState extends State<EventsScreen> {
             return GestureDetector(
               onTap: () => _onFilterTap(i),
               child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 14,
-                  vertical: 7,
+                padding: EdgeInsets.symmetric(
+                  horizontal: seniorMode ? 18 : 14,
+                  vertical: seniorMode ? 12 : 7,
                 ),
                 decoration: BoxDecoration(
                   color: active ? AppColors.ink : Colors.transparent,
@@ -363,7 +392,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 child: Text(
                   _filters[i],
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: seniorMode ? 16 : 12,
                     color: active ? AppColors.creamLight : AppColors.inkSoft,
                     letterSpacing: 1.0,
                   ),
@@ -401,7 +430,7 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   // ── 精選卡片（深色）──────────────────────────────────────────
-  Widget _buildFeaturedCard(EventSummary e) {
+  Widget _buildFeaturedCard(EventSummary e, bool seniorMode) {
     final d = e.startsAt.toLocal();
     final label = _statusLabel(e);
     return GestureDetector(
@@ -523,51 +552,53 @@ class _EventsScreenState extends State<EventsScreen> {
                     Text(
                       e.title,
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: 19,
+                        fontSize: seniorMode ? 26 : 19,
                         fontWeight: FontWeight.w600,
                         color: AppColors.creamLight,
                         letterSpacing: 0.6,
                       ),
                     ),
                     const SizedBox(height: 10),
-                    Row(
+                    Wrap(
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      spacing: 4,
+                      runSpacing: 4,
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.access_time,
                           color: AppColors.gold,
-                          size: 11,
+                          size: seniorMode ? 18 : 11,
                         ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${_wd(d)} ${_time(d)}',
-                          style: TextStyle(
-                            fontSize: 11,
-                            color: AppColors.creamLight.withValues(alpha: 0.85),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        const Icon(
-                          Icons.location_on_outlined,
-                          color: AppColors.gold,
-                          size: 11,
-                        ),
-                        const SizedBox(width: 4),
-                        Flexible(
+                        Padding(
+                          padding: const EdgeInsets.only(right: 10),
                           child: Text(
-                            e.location ?? '線上',
-                            overflow: TextOverflow.ellipsis,
+                            '${_wd(d)} ${_time(d)}',
                             style: TextStyle(
-                              fontSize: 11,
+                              fontSize: seniorMode ? 16 : 11,
                               color: AppColors.creamLight.withValues(
                                 alpha: 0.85,
                               ),
                             ),
                           ),
                         ),
+                        Icon(
+                          Icons.location_on_outlined,
+                          color: AppColors.gold,
+                          size: seniorMode ? 18 : 11,
+                        ),
+                        Text(
+                          e.location ?? '線上',
+                          style: TextStyle(
+                            fontSize: seniorMode ? 16 : 11,
+                            color: AppColors.creamLight.withValues(
+                              alpha: 0.85,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 14),
-                    _buildFeaturedCapacityRow(e),
+                    _buildFeaturedCapacityRow(e, seniorMode),
                   ],
                 ),
               ),
@@ -578,7 +609,7 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
-  Widget _buildFeaturedCapacityRow(EventSummary e) {
+  Widget _buildFeaturedCapacityRow(EventSummary e, bool seniorMode) {
     final max = e.maxParticipants;
     final remaining = max == null
         ? null
@@ -607,7 +638,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 Text(
                   capacityText,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: seniorMode ? 16 : 11,
                     color: AppColors.creamLight.withValues(alpha: 0.7),
                   ),
                 ),
@@ -619,18 +650,18 @@ class _EventsScreenState extends State<EventsScreen> {
             child: Text(
               capacityText,
               style: TextStyle(
-                fontSize: 11,
+                fontSize: seniorMode ? 16 : 11,
                 color: AppColors.creamLight.withValues(alpha: 0.7),
               ),
             ),
           ),
         const SizedBox(width: 12),
-        _buildCtaButton(e),
+        _buildCtaButton(e, seniorMode),
       ],
     );
   }
 
-  Widget _buildCtaButton(EventSummary e) {
+  Widget _buildCtaButton(EventSummary e, bool seniorMode) {
     String text;
     if (e.isJoined) {
       text = '已報名';
@@ -648,7 +679,10 @@ class _EventsScreenState extends State<EventsScreen> {
     return GestureDetector(
       onTap: () => _openDetail(e),
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+        padding: EdgeInsets.symmetric(
+          horizontal: seniorMode ? 20 : 16,
+          vertical: seniorMode ? 13 : 9,
+        ),
         decoration: BoxDecoration(
           color: AppColors.gold,
           borderRadius: BorderRadius.circular(18),
@@ -656,7 +690,7 @@ class _EventsScreenState extends State<EventsScreen> {
         child: Text(
           text,
           style: GoogleFonts.notoSerifTc(
-            fontSize: 12,
+            fontSize: seniorMode ? 17 : 12,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),
@@ -666,7 +700,7 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   // ── 其餘活動列表 ─────────────────────────────────────────────
-  Widget _buildList(List<EventSummary> events) {
+  Widget _buildList(List<EventSummary> events, bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
@@ -675,7 +709,7 @@ class _EventsScreenState extends State<EventsScreen> {
             .map(
               (e) => Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: _buildListTile(e),
+                child: _buildListTile(e, seniorMode),
               ),
             )
             .toList(),
@@ -683,7 +717,7 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 
-  Widget _buildListTile(EventSummary e) {
+  Widget _buildListTile(EventSummary e, bool seniorMode) {
     final d = e.startsAt.toLocal();
     final color = _categoryColor(e.category);
     final capacityText = e.maxParticipants == null
@@ -692,7 +726,7 @@ class _EventsScreenState extends State<EventsScreen> {
     return GestureDetector(
       onTap: () => _openDetail(e),
       child: Container(
-        padding: const EdgeInsets.all(12),
+        padding: EdgeInsets.all(seniorMode ? 16 : 12),
         decoration: BoxDecoration(
           color: AppColors.cream,
           borderRadius: BorderRadius.circular(14),
@@ -702,7 +736,7 @@ class _EventsScreenState extends State<EventsScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: 56,
+              width: seniorMode ? 88 : 56,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 decoration: BoxDecoration(
@@ -714,8 +748,8 @@ class _EventsScreenState extends State<EventsScreen> {
                   children: [
                     Text(
                       _mon(d),
-                      style: const TextStyle(
-                        fontSize: 9,
+                      style: TextStyle(
+                        fontSize: seniorMode ? 14 : 9,
                         color: AppColors.gold,
                         letterSpacing: 0.5,
                       ),
@@ -723,7 +757,7 @@ class _EventsScreenState extends State<EventsScreen> {
                     Text(
                       _day(d),
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: 22,
+                        fontSize: seniorMode ? 32 : 22,
                         fontWeight: FontWeight.w700,
                         color: AppColors.creamLight,
                         height: 1,
@@ -732,7 +766,7 @@ class _EventsScreenState extends State<EventsScreen> {
                     Text(
                       _wd(d),
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: seniorMode ? 14 : 9,
                         color: AppColors.creamLight.withValues(alpha: 0.7),
                         letterSpacing: 1.5,
                       ),
@@ -746,7 +780,7 @@ class _EventsScreenState extends State<EventsScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (e.category != null)
+                  if (e.category != null && !seniorMode)
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 7,
@@ -765,11 +799,12 @@ class _EventsScreenState extends State<EventsScreen> {
                         ),
                       ),
                     ),
-                  const SizedBox(height: 3),
+                  if (e.category != null && !seniorMode)
+                    const SizedBox(height: 3),
                   Text(
                     e.title,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 14,
+                      fontSize: seniorMode ? 20 : 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                       letterSpacing: 0.6,
@@ -778,33 +813,33 @@ class _EventsScreenState extends State<EventsScreen> {
                   const SizedBox(height: 3),
                   Text(
                     '${_time(d)} · ${e.location ?? '線上'}',
-                    style: const TextStyle(
-                      fontSize: 11,
+                    style: TextStyle(
+                      fontSize: seniorMode ? 16 : 11,
                       color: AppColors.fog,
                       letterSpacing: 0.8,
                     ),
                   ),
-                  const SizedBox(height: 8),
+                  SizedBox(height: seniorMode ? 12 : 8),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.person_outline,
-                        size: 11,
+                        size: seniorMode ? 18 : 11,
                         color: AppColors.inkSoft,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         capacityText,
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: seniorMode ? 16 : 11,
                           color: AppColors.inkSoft,
                         ),
                       ),
                       const Spacer(),
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 14,
-                          vertical: 6,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: seniorMode ? 18 : 14,
+                          vertical: seniorMode ? 10 : 6,
                         ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(14),
@@ -813,7 +848,7 @@ class _EventsScreenState extends State<EventsScreen> {
                         child: Text(
                           '查看',
                           style: TextStyle(
-                            fontSize: 11,
+                            fontSize: seniorMode ? 16 : 11,
                             fontWeight: FontWeight.w600,
                             color: AppColors.primary,
                           ),

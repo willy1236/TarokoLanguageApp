@@ -12,6 +12,7 @@ class SeniorModeController extends ChangeNotifier {
     'profile',
     'forum',
     'culture',
+    'events',
   };
 
   bool _enabled = false;

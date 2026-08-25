@@ -197,6 +197,28 @@
    - **與探索推測的差異**：規劃階段原預期沿用論壇段落「元件自監聽、呼叫端零改動」的深模組模式，實作時改採「呼叫端傳參數」模式（見上），原因是本次三個檔案的 widget 樹沒有論壇那種多入口共用元件的情境，強行套用自監聽模式反而會讓 `_VideoCard`/`_ArticleCard` 這類單一畫面內部小元件各自重複訂閱同一個 `ChangeNotifier`，徒增不必要的 rebuild 邊界，故本次依實際結構選擇較單純的參數傳遞。
    - **實機驗證修正**：完成後實際跑在裝置上測試，精簡模式開啟時 `culture_screen.dart` 的影音列表出現 `RenderFlex overflowed by 32 pixels`——原因是精簡模式 1 欄的 `GridView.count` 仍套用固定 `childAspectRatio`（1.7），但縮圖放大到 180px 高、標題又放大且允許 2 行後，卡片實際需要的高度會依標題文字長度浮動，固定比例的格子放不下。修正為：精簡模式改用自然高度的 `Column`（逐張 `_VideoCard` 用 `Padding` 疊加，取消固定 aspect ratio），一般模式維持原本 2 欄 `GridView.count`（`childAspectRatio: 0.78`）完全不動。`flutter analyze` 修正後仍無警告/錯誤。這是任務 7 目前唯一一次有實機動態驗證機會（前幾步因無 UI 開關而只能做靜態檢查）並抓到問題的案例，提醒後續其他頁面用固定 aspect ratio 的 Grid／Card 若要放大字級或圖片，需優先考慮改用自然高度佈局，而非只調整比例數值去試誤。
 
+   **[2026-08-25 已完成部分實作：活動模組（清單／詳情／我發起的活動）]**
+   - 依探索報告任務 7 排序（第 2 順位：活動／文化影音），文化影音已完成，本次接續做活動模組。依使用者本次指示直接指定做「活動模組頁」，涵蓋 `events_screen.dart`（活動清單首頁）、`event_detail_screen.dart`（活動詳情）、`my_events_screen.dart`（我發起的活動）三個檔案。**表單類頁面（`event_compose_screen.dart`、`reminder_compose_screen.dart`）本次不含**——探索報告任務 7 把表單類獨立列為第 4 順位，且與 `forum_compose_screen.dart` 同批處理較有效率，留待後續步驟。
+   - **改用「呼叫端傳參數」模式**（比照 8/25 文化影音那步，非論壇段落的「元件自監聽」模式）：三個檔案的 build() 各自用 `ListenableBuilder(listenable: seniorModeController, ...)` 包住 `_buildScaffold(seniorMode)`／`_buildBody(seniorMode)`，再把 `bool seniorMode` 當一般參數往下傳給所有私有 helper 方法。原因與文化影音段落相同：這三個檔案的卡片/tile 都是各檔案內部私有 builder method，非跨檔案共用元件，用參數傳遞比元件自監聽更直接、也不會讓小 widget 重複訂閱同一個 `ChangeNotifier`。
+   - `events_screen.dart`：
+     - Header 標題（26→32）、SMRATUC 副標（12→16）、搜尋/發起按鈕圖示與熱區、篩選 chips（12→16、高度 36→48）、精選卡標題（19→26）與時間/地點/容量/CTA 文字圖示全數放大。
+     - 精選卡時間/地點原本是 `Row`＋單一 `Flexible`，精簡模式字級放大後容易頂到卡片邊緣，改用 `Wrap` 取代 `Row`（一般模式因字級未變、視覺與原本 `Row` 一致，只是底層换成 `Wrap` 不影響排版）。
+     - **列表 tile 固定寬度日期徽章欄**（原 `width: 56`）：精簡模式下加寬到 88，避免放大後的月/日/星期三個疊字文字被截斷或溢出。
+     - **資訊密度砍除**：列表 tile 原有 4 欄位（分類 chip、標題、時間+地點、容量+按鈕），精簡模式下用 `if (e.category != null && !seniorMode)` 隱藏分類 chip，降到 3 欄位，符合 `AppDensity.maxListCardFields(3)`。
+   - `event_detail_screen.dart`：
+     - Hero（返回鍵、分類標籤、取消/結束標記、日期列、標題）、發起人列（含收藏/按讚 `_engagementButton`）、`_infoRow`（時間/地點/地址/報名截止/Email/電話共用）、名額卡 `_buildCapacity`、活動介紹、提醒事項 `_buildNoteBox`、提醒紀錄 `_buildReminderGroupLabel`/`_buildReminderCard`、聯絡資訊字級/圖示/熱區全數放大，做法與文化影音相同（自訂放大值而非直接套用相鄰 `AppTypography` token）。
+     - Hero 時間/地點的水平 `Row` 因本身不含長文字、放大後仍不溢出，不需改結構。
+     - **底部操作列 `_hostActions`（發送提醒 flex:2／取消活動 flex:1）與 `_joinedActions`（已報名徽章／退出按鈕）**：這是規劃階段標記的主要風險點——字級放大後 `flex:1` 按鈕文字容易換行擠壓。實作改為把按鈕抽成區域變數（`sendReminderButton`/`cancelButton`、`joinedBadge`/`leaveButton`），一般模式維持原本 `Row`＋`Expanded(flex: ...)` 排列不變，精簡模式改用 `Column` 上下堆疊、每顆按鈕 `SizedBox(width: double.infinity)` 撐滿寬度，避免重演文化影音那步 Grid 固定比例 overflow 的問題。
+     - `_CancelReasonDialog`（取消活動理由輸入對話框）**未改動**——屬一次性彈窗、非常駐瀏覽畫面，規劃時已界定為結構不變、字級也維持原樣，範圍限制內。
+   - `my_events_screen.dart`：
+     - AppBar 標題（18→24）、空/錯誤狀態圖示與文字放大。
+     - `_buildTile` 同樣有固定 `width: 52` 的日期徽章欄，精簡模式加寬到 76（略窄於 events_screen 的 88，因這裡只顯示「月」+「日」兩行、無星期，字級放大後仍夠用）。
+     - 現況已是 3 欄位（日期、標題、參加人數+狀態 chip），符合密度上限，本次**未砍欄位**，僅放大字級（標題 15→20、參加人數 12→16、狀態 chip 11→14）/圖示/熱區。
+   - `lib/services/senior_mode_controller.dart`：`_customLayoutRoutes` 加入 `'events'`（模組級 key，比照 `'culture'`/`'forum'` 的用法，活動模組非單一具名路由）。
+   - `flutter analyze` 對 `events_screen.dart`、`event_detail_screen.dart`、`my_events_screen.dart`、`senior_mode_controller.dart` 四個檔案無警告/錯誤。專案內 `test/` 目前無活動模組的既有 widget test 可供回歸驗證（僅論壇模組有），故本次無測試套件可跑。
+   - **範圍限制**：`event_compose_screen.dart`（發起活動表單）、`reminder_compose_screen.dart`（提醒發送表單）本次**未涵蓋**，留待「表單類」步驟（與 `forum_compose_screen.dart` 同批）處理；`event_liked_bookmarked_list.dart`、`event_search_screen.dart` 兩個獨立清單/搜尋畫面本次也**未涵蓋**（規劃時已列為範圍外）。未做手動實機驗證（開關持久化後三畫面實際顯示效果、事件詳情底部操作列在精簡模式下確實堆疊不溢出、日期徽章欄加寬後排版是否符合預期）——這點延續前幾步「留待接上更多頁面或下次操作 App 時一併確認」的做法，本次因無裝置可測，僅完成靜態檢查（`flutter analyze`）。
+   - **與探索推測的差異**：無重大差異；規劃階段標記的兩個高風險點（events_screen/my_events_screen 固定寬度日期徽章欄、event_detail_screen 底部操作列 flex Row）皆依規劃採用「加寬固定寬度」與「精簡模式改 Column 堆疊」的結構性處理，而非僅靠字級縮放硬撐，實作結果與規劃一致。
+
 8. **動效關閉開關** — 精簡模式下關閉 `video_waiting_screen.dart`、`reward_overlay.dart` 的 `AnimationController`/implicit animation，範圍小、可放最後做。
 
 任務 1→2→3→4 是地基（tokens、狀態架構、縮放策略、密度規則彼此依賴，需連續做，且需在此階段把「精簡為輔、正常為主」與深模組拆分定案），5→6 可平行進行，7→8 是收尾的高成本畫面客製化，其中任務 7 已依長者使用情境重新排序，學習模組排最後。
