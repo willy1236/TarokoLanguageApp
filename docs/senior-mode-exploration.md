@@ -222,3 +222,15 @@
 8. **動效關閉開關** — 精簡模式下關閉 `video_waiting_screen.dart`、`reward_overlay.dart` 的 `AnimationController`/implicit animation，範圍小、可放最後做。
 
 任務 1→2→3→4 是地基（tokens、狀態架構、縮放策略、密度規則彼此依賴，需連續做，且需在此階段把「精簡為輔、正常為主」與深模組拆分定案），5→6 可平行進行，7→8 是收尾的高成本畫面客製化，其中任務 7 已依長者使用情境重新排序，學習模組排最後。
+
+**[2026-08-25 已完成部分實作：任務 7 第 5 順位——8/24 新增的 4 組搜尋/收藏清單頁（10 個檔案）]**
+- 涵蓋範圍：`article_search_screen.dart`、`article_liked_bookmarked_list.dart`、`video_search_screen.dart`、`video_liked_bookmarked_list.dart`、`event_search_screen.dart`、`event_liked_bookmarked_list.dart`、`forum_search_screen.dart`、`forum_liked_posts_list.dart`、`forum_liked_comments_list.dart`、`forum_notifications_screen.dart`。這 10 個檔案先前完全沒有任何精簡模式相關程式碼，是全新戰場（唯一例外是 `forum_search_screen.dart` 的結果列表委派給已精簡化的 `ForumBoardView`，只需調整自己的外殼）。
+- **沿用「呼叫端傳參數」模式**（比照文化影音/活動模組，非論壇貼文卡段落的「元件自監聽」模式）：10 個檔案的卡片/tile 全是各檔案內私有 widget，非跨檔案共用元件，故每個 screen 的 `build()` 用 `ListenableBuilder(listenable: seniorModeController, ...)` 包住主體取得 `seniorMode` bool，往下傳給所有私有 helper method 與私有 tile widget。
+- 依探索時歸納的兩種畫面家族分別處理：
+  - **家族 A（搜尋頁，4 檔）**：AppBar 搜尋框字級放大、篩選 chip 列固定 `height: 48` 依 `seniorMode` 分支加高到 64（避免放大後 chip 文字被裁切）、結果 tile 標題/縮圖放大。`event_search_screen.dart` 的日期徽章 `SizedBox(width: 48)` 加寬到 76（比照 `events_screen.dart`/`my_events_screen.dart` 已有做法）。
+  - **家族 B（收藏/按讚清單頁，5 檔）**：loading/error/empty 狀態圖示與文字放大、「重試」按鈕加大到最小 140×52 觸控尺寸（比照 `forum_board_view.dart` 既有 `_ForumErrorState` 做法）；私有 tile 的互動統計 Row（讚數/留言數/瀏覽數，icon+count 原本無 Expanded）改用 `Wrap` 取代 `Row` 避免字級放大後溢出；縮圖固定尺寸放大。`forum_liked_comments_list.dart` 的留言內文 `maxLines` 精簡模式下 3→2（比照論壇貼文卡「資訊密度砍除」原則）。
+  - **forum_notifications_screen.dart（獨立於兩家族）**：結構最單純，僅 AppBar 標題、`ListTile` title/subtitle 字級與 `contentPadding` 放大、「全部已讀」按鈕字級調整，overflow 風險最低。
+- `lib/services/senior_mode_controller.dart`：`_customLayoutRoutes` **未新增任何 key**——這 10 個畫面均為既有 `'forum'`/`'culture'`/`'events'` 模組的延伸（搜尋/收藏功能），沿用既有模組級 key 而非新增細分 key，因 `hasCustomLayout` 呼叫端粒度目前都是模組級，沒有畫面級查詢需求。
+- `flutter analyze`（含全專案掃描）對本次改動的 10 個檔案無新增警告/錯誤（全專案僅剩 8 處與本次無關的既有 `use_null_aware_elements` info）。既有論壇模組 widget test（`forum_post_card_test.dart` 5 個、`forum_board_view_test.dart` 12 個，共 17 個）全數通過，未受影響（本次論壇三檔案為獨立實作，不涉及這兩個測試覆蓋的 `ForumPostCard`/`ForumBoardView` 內部邏輯）。
+- **範圍限制**：文化影音/活動/論壇三模組的表單類頁面（`event_compose_screen.dart`、`reminder_compose_screen.dart`、`forum_compose_screen.dart`）、`avatar_crop_screen.dart`、`video_call_screen.dart`、Learn 模組測驗系列本次均未涵蓋，仍待任務 7 後續步驟（表單類、視訊通話等）與任務 8。因無裝置可測，本次僅完成靜態檢查（`flutter analyze`）與既有測試回歸，未做手動實機驗證（開關持久化後 10 個畫面實際顯示效果、篩選 chip 列加高後排版、統計 Row 改 Wrap 後換行是否符合預期）——留待下次操作 App 時一併確認。
+- **與規劃的差異**：無重大差異；規劃時已預期採用「呼叫端傳參數」模式而非論壇段落的「元件自監聽」模式，實作結果與規劃一致。

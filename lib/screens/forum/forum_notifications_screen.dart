@@ -5,9 +5,12 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import 'forum_theme.dart';
+import '../../core/constants/app_spacing.dart';
+import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
+import '../../services/senior_mode_controller.dart';
 import 'forum_detail_screen.dart';
 import 'widgets/forum_post_card.dart' show forumRelativeTime;
 
@@ -130,10 +133,15 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      Theme(data: forumTheme(context), child: _buildScaffold(context));
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: seniorModeController,
+    builder: (context, _) => Theme(
+      data: forumTheme(context),
+      child: _buildScaffold(context, seniorModeController.enabled),
+    ),
+  );
 
-  Widget _buildScaffold(BuildContext context) => Scaffold(
+  Widget _buildScaffold(BuildContext context, bool seniorMode) => Scaffold(
     backgroundColor: AppColors.creamLight,
     appBar: AppBar(
       backgroundColor: AppColors.creamLight,
@@ -142,7 +150,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       title: Text(
         '通知',
         style: GoogleFonts.notoSerifTc(
-          fontSize: 16,
+          fontSize: seniorMode ? 22 : 16,
           fontWeight: FontWeight.w600,
           color: AppColors.ink,
         ),
@@ -150,14 +158,20 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       actions: [
         TextButton(
           onPressed: _items.isEmpty ? null : _markAllRead,
-          child: const Text('全部已讀', style: TextStyle(color: AppColors.primary)),
+          child: Text(
+            '全部已讀',
+            style: TextStyle(
+              color: AppColors.primary,
+              fontSize: seniorMode ? AppTypography.subtitle : null,
+            ),
+          ),
         ),
       ],
     ),
-    body: _buildBody(),
+    body: _buildBody(seniorMode),
   );
 
-  Widget _buildBody() {
+  Widget _buildBody(bool seniorMode) {
     if (_loading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
@@ -169,9 +183,26 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(error, style: const TextStyle(color: AppColors.inkSoft)),
+            Text(
+              error,
+              style: TextStyle(
+                color: AppColors.inkSoft,
+                fontSize: seniorMode ? AppTypography.title : null,
+              ),
+            ),
             const SizedBox(height: 12),
-            OutlinedButton(onPressed: _load, child: const Text('重試')),
+            OutlinedButton(
+              onPressed: _load,
+              style: seniorMode
+                  ? OutlinedButton.styleFrom(
+                      minimumSize: const Size(140, 52),
+                      textStyle: const TextStyle(
+                        fontSize: AppTypography.subtitle,
+                      ),
+                    )
+                  : null,
+              child: const Text('重試'),
+            ),
           ],
         ),
       );
@@ -180,7 +211,10 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       return Center(
         child: Text(
           '還沒有新的回覆',
-          style: GoogleFonts.notoSerifTc(color: AppColors.fog),
+          style: GoogleFonts.notoSerifTc(
+            color: AppColors.fog,
+            fontSize: seniorMode ? AppTypography.title : null,
+          ),
         ),
       );
     }
@@ -209,11 +243,17 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
         final action = item.type == 'reply_post' ? '回覆了你的貼文' : '回覆了你的留言';
         return ListTile(
           tileColor: item.isRead ? null : AppColors.cream,
+          contentPadding: seniorMode
+              ? const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.md,
+                  vertical: AppSpacing.sm,
+                )
+              : null,
           onTap: () => _open(item),
           title: Text(
             '${item.actor.displayName} $action',
             style: GoogleFonts.notoSerifTc(
-              fontSize: 14,
+              fontSize: seniorMode ? AppTypography.headline : 14,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
             ),
@@ -223,7 +263,10 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
             '${forumRelativeTime(item.createdAt)}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(fontSize: 12, color: AppColors.fog),
+            style: TextStyle(
+              fontSize: seniorMode ? AppTypography.subtitle : 12,
+              color: AppColors.fog,
+            ),
           ),
         );
       },

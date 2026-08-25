@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/article_models.dart';
 import '../../models/tribe_model.dart';
 import '../../services/article_service.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../shared/search_range.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
 import 'article_detail_screen.dart';
@@ -110,6 +112,13 @@ class _ArticleSearchScreenState extends State<ArticleSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildScaffold(seniorModeController.enabled),
+    );
+  }
+
+  Widget _buildScaffold(bool seniorMode) {
     return Scaffold(
       backgroundColor: AppColors.midnight,
       appBar: AppBar(
@@ -119,60 +128,79 @@ class _ArticleSearchScreenState extends State<ArticleSearchScreen> {
         title: TextField(
           controller: _controller,
           autofocus: true,
-          style: const TextStyle(color: AppColors.creamLight),
+          style: TextStyle(
+            color: AppColors.creamLight,
+            fontSize: seniorMode ? AppTypography.title : null,
+          ),
           textInputAction: TextInputAction.search,
           onSubmitted: (_) => _search(),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: '搜尋文章',
-            hintStyle: TextStyle(color: AppColors.fog),
+            hintStyle: TextStyle(
+              color: AppColors.fog,
+              fontSize: seniorMode ? AppTypography.title : null,
+            ),
             border: InputBorder.none,
           ),
         ),
         actions: [
           IconButton(
             onPressed: _search,
-            icon: const Icon(Icons.search, color: AppColors.gold),
+            icon: Icon(
+              Icons.search,
+              color: AppColors.gold,
+              size: seniorMode ? 30 : null,
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
-          _filterRow(),
+          _filterRow(seniorMode),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Text(_error!, style: const TextStyle(color: AppColors.fog)),
+              child: Text(
+                _error!,
+                style: TextStyle(
+                  color: AppColors.fog,
+                  fontSize: seniorMode ? AppTypography.title : null,
+                ),
+              ),
             ),
           if (!_searched && _error == null)
             Padding(
               padding: const EdgeInsets.all(40),
               child: Text(
                 '輸入關鍵字或選擇篩選條件開始搜尋',
-                style: GoogleFonts.notoSerifTc(color: AppColors.fog),
+                style: GoogleFonts.notoSerifTc(
+                  color: AppColors.fog,
+                  fontSize: seniorMode ? AppTypography.title : null,
+                ),
               ),
             ),
-          if (_searched) Expanded(child: _resultList()),
+          if (_searched) Expanded(child: _resultList(seniorMode)),
         ],
       ),
     );
   }
 
-  Widget _filterRow() {
+  Widget _filterRow(bool seniorMode) {
     return SizedBox(
-      height: 48,
+      height: seniorMode ? 64 : 48,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          for (final r in SearchRange.values) _rangeChip(r),
+          for (final r in SearchRange.values) _rangeChip(r, seniorMode),
           const SizedBox(width: 4),
-          _tribeChip(),
+          _tribeChip(seniorMode),
         ],
       ),
     );
   }
 
-  Widget _rangeChip(String range) {
+  Widget _rangeChip(String range, bool seniorMode) {
     final selected = _range == range;
     return Padding(
       padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
@@ -183,7 +211,7 @@ class _ArticleSearchScreenState extends State<ArticleSearchScreen> {
         backgroundColor: AppColors.midnightSoft,
         selectedColor: AppColors.gold.withValues(alpha: 0.2),
         labelStyle: TextStyle(
-          fontSize: 12,
+          fontSize: seniorMode ? AppTypography.subtitle : 12,
           color: selected ? AppColors.gold : AppColors.fog,
         ),
         side: BorderSide(
@@ -196,20 +224,20 @@ class _ArticleSearchScreenState extends State<ArticleSearchScreen> {
     );
   }
 
-  Widget _tribeChip() {
+  Widget _tribeChip(bool seniorMode) {
     final selected = _tribe != null;
     return Padding(
       padding: const EdgeInsets.only(top: 6, bottom: 6),
       child: ActionChip(
         avatar: Icon(
           Icons.place_outlined,
-          size: 16,
+          size: seniorMode ? 22 : 16,
           color: selected ? AppColors.gold : AppColors.fog,
         ),
         label: Text(_tribe?.name ?? '部落'),
         backgroundColor: AppColors.midnightSoft,
         labelStyle: TextStyle(
-          fontSize: 12,
+          fontSize: seniorMode ? AppTypography.subtitle : 12,
           color: selected ? AppColors.gold : AppColors.fog,
         ),
         side: BorderSide(
@@ -222,7 +250,7 @@ class _ArticleSearchScreenState extends State<ArticleSearchScreen> {
     );
   }
 
-  Widget _resultList() {
+  Widget _resultList(bool seniorMode) {
     if (_loading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.gold),
@@ -230,7 +258,13 @@ class _ArticleSearchScreenState extends State<ArticleSearchScreen> {
     }
     if (_articles.isEmpty) {
       return Center(
-        child: Text('找不到符合的文章', style: TextStyle(color: AppColors.fog)),
+        child: Text(
+          '找不到符合的文章',
+          style: TextStyle(
+            color: AppColors.fog,
+            fontSize: seniorMode ? AppTypography.title : null,
+          ),
+        ),
       );
     }
     return NotificationListener<ScrollNotification>(
@@ -251,7 +285,10 @@ class _ArticleSearchScreenState extends State<ArticleSearchScreen> {
               ),
             );
           }
-          return _ArticleResultTile(article: _articles[i]);
+          return _ArticleResultTile(
+            article: _articles[i],
+            seniorMode: seniorMode,
+          );
         },
       ),
     );
@@ -260,10 +297,12 @@ class _ArticleSearchScreenState extends State<ArticleSearchScreen> {
 
 class _ArticleResultTile extends StatelessWidget {
   final ArticleSummary article;
-  const _ArticleResultTile({required this.article});
+  final bool seniorMode;
+  const _ArticleResultTile({required this.article, required this.seniorMode});
 
   @override
   Widget build(BuildContext context) {
+    final thumbSize = seniorMode ? 76.0 : 56.0;
     return GestureDetector(
       onTap: () => Navigator.push(
         context,
@@ -281,8 +320,8 @@ class _ArticleResultTile extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 56,
-              height: 56,
+              width: thumbSize,
+              height: thumbSize,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
@@ -301,19 +340,23 @@ class _ArticleResultTile extends StatelessWidget {
                 children: [
                   Text(
                     article.title,
-                    maxLines: 2,
+                    maxLines: seniorMode ? 1 : 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 13,
+                      fontSize: seniorMode ? AppTypography.title : 13,
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                     ),
                   ),
                   const SizedBox(height: 3),
-                  Text(
-                    '${ArticleCategory.label(article.category)} · ${article.viewCount} 閱讀',
-                    style: const TextStyle(fontSize: 11, color: AppColors.fog),
-                  ),
+                  if (!seniorMode)
+                    Text(
+                      '${ArticleCategory.label(article.category)} · ${article.viewCount} 閱讀',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: AppColors.fog,
+                      ),
+                    ),
                 ],
               ),
             ),

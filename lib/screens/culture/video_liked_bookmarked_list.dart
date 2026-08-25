@@ -3,8 +3,10 @@
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/video_models.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
 import 'video_detail_screen.dart';
 
@@ -101,16 +103,23 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildBody(seniorModeController.enabled),
+    );
+  }
+
+  Widget _buildBody(bool seniorMode) {
     if (_loading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.gold),
       );
     }
     if (_error != null) {
-      return _buildError(_error);
+      return _buildError(_error, seniorMode);
     }
     if (_videos.isEmpty) {
-      return _buildEmpty();
+      return _buildEmpty(seniorMode);
     }
     return RefreshIndicator(
       onRefresh: _load,
@@ -136,13 +145,16 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
               ),
             );
           }
-          return _VideoListItem(video: _videos[index]);
+          return _VideoListItem(
+            video: _videos[index],
+            seniorMode: seniorMode,
+          );
         },
       ),
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(bool seniorMode) {
     final message = widget.mode == VideoListMode.liked
         ? '還沒有按讚任何影片'
         : '還沒有收藏任何影片';
@@ -152,16 +164,26 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.video_library_outlined, color: AppColors.fog, size: 40),
+            Icon(
+              Icons.video_library_outlined,
+              color: AppColors.fog,
+              size: seniorMode ? 56 : 40,
+            ),
             const SizedBox(height: 12),
-            Text(message, style: TextStyle(color: AppColors.fog, fontSize: 14)),
+            Text(
+              message,
+              style: TextStyle(
+                color: AppColors.fog,
+                fontSize: seniorMode ? AppTypography.title : 14,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildError(Object? error) {
+  Widget _buildError(Object? error, bool seniorMode) {
     final message = error is ApiException ? error.message : '發生錯誤，請稍後再試';
     return Center(
       child: Padding(
@@ -169,11 +191,32 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, color: AppColors.fog, size: 40),
+            Icon(
+              Icons.error_outline,
+              color: AppColors.fog,
+              size: seniorMode ? 56 : 40,
+            ),
             const SizedBox(height: 12),
-            Text(message, style: TextStyle(color: AppColors.cream, fontSize: 14)),
+            Text(
+              message,
+              style: TextStyle(
+                color: AppColors.cream,
+                fontSize: seniorMode ? AppTypography.title : 14,
+              ),
+            ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: _load, child: const Text('重試')),
+            OutlinedButton(
+              onPressed: _load,
+              style: seniorMode
+                  ? OutlinedButton.styleFrom(
+                      minimumSize: const Size(140, 52),
+                      textStyle: const TextStyle(
+                        fontSize: AppTypography.subtitle,
+                      ),
+                    )
+                  : null,
+              child: const Text('重試'),
+            ),
           ],
         ),
       ),
@@ -183,10 +226,13 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
 
 class _VideoListItem extends StatelessWidget {
   final VideoSummary video;
-  const _VideoListItem({required this.video});
+  final bool seniorMode;
+  const _VideoListItem({required this.video, required this.seniorMode});
 
   @override
   Widget build(BuildContext context) {
+    final thumbWidth = seniorMode ? 128.0 : 96.0;
+    final thumbHeight = seniorMode ? 80.0 : 60.0;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () => Navigator.push(
@@ -205,8 +251,8 @@ class _VideoListItem extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: SizedBox(
-                width: 96,
-                height: 60,
+                width: thumbWidth,
+                height: thumbHeight,
                 child: video.thumbnailUrl != null
                     ? Image.network(
                         video.thumbnailUrl!,
@@ -237,31 +283,42 @@ class _VideoListItem extends StatelessWidget {
                     video.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.creamLight,
-                      fontSize: 14,
+                      fontSize: seniorMode ? AppTypography.title : 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Icon(
                         video.isLiked ? Icons.favorite : Icons.favorite_border,
-                        size: 14,
+                        size: seniorMode ? 22 : 14,
                         color: video.isLiked ? AppColors.gold : AppColors.fog,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${video.likeCount}',
-                        style: TextStyle(color: AppColors.fog, fontSize: 12),
+                        style: TextStyle(
+                          color: AppColors.fog,
+                          fontSize: seniorMode ? AppTypography.subtitle : 12,
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      Icon(Icons.visibility, size: 14, color: AppColors.fog),
+                      Icon(
+                        Icons.visibility,
+                        size: seniorMode ? 22 : 14,
+                        color: AppColors.fog,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '${video.viewCount}',
-                        style: TextStyle(color: AppColors.fog, fontSize: 12),
+                        style: TextStyle(
+                          color: AppColors.fog,
+                          fontSize: seniorMode ? AppTypography.subtitle : 12,
+                        ),
                       ),
                     ],
                   ),
