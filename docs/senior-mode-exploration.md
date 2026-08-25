@@ -165,6 +165,20 @@
    - **範圍限制**：本次僅完成個人資料頁；`video_call_screen.dart`、活動、文化影音、表單、搜尋頁、學習測驗系列仍待後續任務 7 步驟。尚未做手動實機驗證（開關持久化重啟還原、底部導覽學習分頁消失/熱區放大、textScaler 實際放大超過 1.15 倍）——這些是前 5 步報告中反覆提到「留待接上 UI 開關時一併驗證」的項目，本次已接上開關但尚未執行手動驗證，留待下次操作 App 時確認。
    - **與探索推測的差異**：無重大差異；`hasCustomLayout` 的路由 key 命名採用畫面語意（`'profile'`）而非具名路由字串（因個人資料頁本來就不是 `MaterialApp.routes` 具名路由，只能靠 `IndexedStack` tab 切換），與探索報告任務 4 段落預期的用法一致。
 
+   **[2026-08-25 已完成部分實作：論壇模組（貼文卡片 + 列表空/錯誤狀態）]**
+   - 這次跳過原訂順序（1 視訊通話 → 2 活動/文化影音），改做論壇模組——依使用者本次指示直接指定，非重新排序建議。論壇貼文卡片（`ForumPostCard`）是全模組共用元件，`ForumBoardView` 又被看板、我的收藏、搜尋結果等 4+ 處呼叫，一次改動即覆蓋論壇多數瀏覽情境，槓桿較高。
+   - **元件改為自行監聽全域開關，呼叫端零改動**：`ForumPostCard`、`ForumBoardView` 內部各自用 `ListenableBuilder(listenable: seniorModeController, ...)` 包住 build，直接讀 `seniorModeController.enabled`，而不是新增建構子參數要求呼叫端傳入。因為這兩個元件的呼叫點分散在 `forum_board_view.dart`、`forum_bookmarks_screen.dart`、`forum_search_screen.dart`、`my_bookmarks_screen.dart`、`plaza_screen.dart` 五個檔案，若採 `truku_bottom_tab.dart`（任務5）那種「呼叫端傳參數」模式，需要逐一改五處呼叫；改為元件自行監聽全域單例，這五個呼叫點完全不用動，符合探索報告 8.3 節「深模組」原則——呼叫端改動量趨近於零。這是比先前任務（2/3/5/6 皆走參數注入）更進一步的落地模式，往後其他共用元件（如 `forum_comment_tile.dart`）若要做精簡版，可比照此法。
+   - `lib/screens/forum/widgets/forum_post_card.dart`：
+     - 標題字級 15→`AppTypography.headline`（22px）、內文摘要 14→`AppTypography.title`（18px）、作者名 14→`AppTypography.subtitle`（16px）、看板名/時間 11→`AppTypography.body`（13px）、置頂標記 11→`AppTypography.body`。
+     - 頭像 38→52px（含無圖時的姓名縮寫圓形頭像同步放大）。
+     - 讚/留言 icon 16→30px、收藏 icon 18→34px（使用者反饋原本 24/28px 還不夠明顯後再加大一輪），讚數/留言數文字 12→`AppTypography.subtitle`（16px）；三個互動熱區的垂直 padding 6→12，比照任務6無障礙補強精神加大觸控範圍，避免長者手指誤觸鄰近按鈕。
+     - **資訊密度砍除**（探索報告 8.1 節）：精簡模式下標題從最多 2 行砍到 1 行（放大後 2 行標題常把卡片撐得比內文摘要還高，且長者掃視卡片主要靠標題判斷是否點開）；內文摘要維持顯示但砍到 2 行（原 3 行）；標籤列（`#tag`）整段隱藏——對「要不要點進去」判斷幫助小，卻在字級放大後占用可觀垂直空間。
+   - `lib/screens/forum/forum_board_view.dart`：空狀態標題 18→22px、說明文字與錯誤訊息文字加大到 16px、「重試」按鈕加大到最小 140×52 觸控尺寸。`_ForumEmptyState`/`_ForumErrorState` 新增必填 `seniorMode` 參數（皆為 private class，呼叫方僅限同檔案的 `_buildBody`，改動範圍可控）。
+   - `lib/services/senior_mode_controller.dart`：`_customLayoutRoutes` 加入 `'forum'`。論壇非具名路由（靠廣場頁分頁/看板切換進入），與任務6個人資料頁一致，用畫面語意字串代表。
+   - `flutter analyze` 對改動的三個檔案無新增警告/錯誤（`forum_board_view.dart` 有 1 處既有的 `use_null_aware_elements` info，與本次改動無關、非本次新增）。既有 `test/widgets/forum_post_card_test.dart`（5 個測試）與 `test/widgets/forum_board_view_test.dart`（12 個測試）共 17 個測試全數通過，未被本次改動破壞。
+   - **範圍限制**：本次僅涵蓋論壇列表側（貼文卡片、看板/收藏/搜尋列表的空/錯誤狀態）。**未涵蓋**：`forum_detail_screen.dart`（貼文詳情 + 留言串，含 `forum_comment_tile.dart`）、`forum_compose_screen.dart`（發文表單，探索報告已列為表單類優先處理對象）、`forum_notifications_screen.dart`、`forum_search_screen.dart`/`forum_liked_posts_list.dart`/`forum_liked_comments_list.dart` 這幾個獨立畫面本身的版面（非共用元件的部分，如 AppBar、搜尋框、篩選 UI）、以及 `forum_report_sheet.dart`（檢舉表單）。`forum_theme.dart` 的淺色底色票未受影響，精簡模式不改變論壇配色，只調字級/間距/密度。未做手動實機驗證（開關持久化後論壇列表實際顯示效果），留待接上更多頁面或下次操作 App 時一併確認。
+   - **與探索推測的差異**：無重大差異；`hasCustomLayout('forum')` 的粒度是「整個論壇模組的共用瀏覽元件」，比任務6 `'profile'` 對應單一畫面的粒度更粗——因為論壇沒有單一入口畫面可掛精簡版判斷，是靠元件自我監聽達成跨畫面一致，這點與探索報告任務4原先設想「以路由名查表」的用法略有出入，但介面本身（`hasCustomLayout(routeName)`）不用改，只是這次的呼叫語意從「畫面級」變成「模組級」的代表字串。
+
 8. **動效關閉開關** — 精簡模式下關閉 `video_waiting_screen.dart`、`reward_overlay.dart` 的 `AnimationController`/implicit animation，範圍小、可放最後做。
 
 任務 1→2→3→4 是地基（tokens、狀態架構、縮放策略、密度規則彼此依賴，需連續做，且需在此階段把「精簡為輔、正常為主」與深模組拆分定案），5→6 可平行進行，7→8 是收尾的高成本畫面客製化，其中任務 7 已依長者使用情境重新排序，學習模組排最後。

@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';
+import '../../../services/senior_mode_controller.dart';
 import 'forum_image_grid.dart';
 
 String forumRelativeTime(DateTime time) {
@@ -35,7 +37,12 @@ class ForumPostCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => GestureDetector(
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: seniorModeController,
+    builder: (context, _) => _build(seniorModeController.enabled),
+  );
+
+  Widget _build(bool seniorMode) => GestureDetector(
     onTap: onTap,
     child: Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 14, 10),
@@ -47,14 +54,16 @@ class ForumPostCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _header(),
+          _header(seniorMode),
           const SizedBox(height: 10),
           Text(
             post.title,
-            maxLines: 2,
+            // 精簡模式砍到 1 行：長者掃視卡片時先看標題判斷要不要點進去，
+            // 內容摘要（下面 body）字級放大後 2 行常常整張卡片高度爆版。
+            maxLines: seniorMode ? 1 : 2,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.notoSerifTc(
-              fontSize: 15,
+              fontSize: seniorMode ? AppTypography.headline : 15,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 0.6,
@@ -63,10 +72,10 @@ class ForumPostCard extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             post.body,
-            maxLines: 3,
+            maxLines: seniorMode ? 2 : 3,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: seniorMode ? AppTypography.title : 14,
               color: AppColors.inkSoft,
               height: 1.55,
               letterSpacing: 0.5,
@@ -77,7 +86,9 @@ class ForumPostCard extends StatelessWidget {
             // 列表上點附圖等同點卡片，一律進詳情頁；放大檢視只在詳情頁提供。
             ForumImageGrid(urls: post.images, onTap: onTap),
           ],
-          if (post.tags.isNotEmpty) ...[
+          // 精簡模式隱藏標籤列：任務8.1「資訊密度也是精簡的一環」，標籤對是否
+          // 點開貼文的判斷幫助不大，卻會多佔一整排視覺雜訊。
+          if (post.tags.isNotEmpty && !seniorMode) ...[
             const SizedBox(height: 10),
             Wrap(
               spacing: 6,
@@ -86,15 +97,15 @@ class ForumPostCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 6),
-          _footer(),
+          _footer(seniorMode),
         ],
       ),
     ),
   );
 
-  Widget _initialsAvatar() => Container(
-    width: 38,
-    height: 38,
+  Widget _initialsAvatar(double size) => Container(
+    width: size,
+    height: size,
     decoration: const BoxDecoration(
       shape: BoxShape.circle,
       color: AppColors.primary,
@@ -103,18 +114,19 @@ class ForumPostCard extends StatelessWidget {
     child: Text(
       post.author.displayName.characters.firstOrNull ?? '?',
       style: GoogleFonts.notoSerifTc(
-        fontSize: 14,
+        fontSize: size * 0.37,
         fontWeight: FontWeight.w600,
         color: AppColors.gold,
       ),
     ),
   );
 
-  Widget _avatar() {
+  Widget _avatar(bool seniorMode) {
+    final size = seniorMode ? 52.0 : 38.0;
     final avatarUrl = post.author.avatarUrl;
     return Container(
-      width: 38,
-      height: 38,
+      width: size,
+      height: size,
       decoration: const BoxDecoration(
         shape: BoxShape.circle,
         border: Border.fromBorderSide(
@@ -122,23 +134,23 @@ class ForumPostCard extends StatelessWidget {
         ),
       ),
       child: (avatarUrl == null || avatarUrl.isEmpty)
-          ? _initialsAvatar()
+          ? _initialsAvatar(size)
           : ClipOval(
               child: Image.network(
                 avatarUrl,
-                width: 38,
-                height: 38,
+                width: size,
+                height: size,
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) =>
-                    _initialsAvatar(),
+                    _initialsAvatar(size),
               ),
             ),
     );
   }
 
-  Widget _header() => Row(
+  Widget _header(bool seniorMode) => Row(
     children: [
-      _avatar(),
+      _avatar(seniorMode),
       const SizedBox(width: 10),
       Expanded(
         child: Column(
@@ -147,7 +159,7 @@ class ForumPostCard extends StatelessWidget {
             Text(
               post.author.displayName,
               style: GoogleFonts.notoSerifTc(
-                fontSize: 14,
+                fontSize: seniorMode ? AppTypography.subtitle : 14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
                 letterSpacing: 0.6,
@@ -155,8 +167,8 @@ class ForumPostCard extends StatelessWidget {
             ),
             Text(
               '${post.board.name} · ${forumRelativeTime(post.createdAt)}',
-              style: const TextStyle(
-                fontSize: 11,
+              style: TextStyle(
+                fontSize: seniorMode ? AppTypography.body : 11,
                 color: AppColors.fog,
                 letterSpacing: 0.8,
               ),
@@ -174,7 +186,7 @@ class ForumPostCard extends StatelessWidget {
           child: Text(
             '置頂',
             style: GoogleFonts.notoSerifTc(
-              fontSize: 11,
+              fontSize: seniorMode ? AppTypography.body : 11,
               color: AppColors.goldDeep,
               letterSpacing: 1.2,
             ),
@@ -200,7 +212,7 @@ class ForumPostCard extends StatelessWidget {
     ),
   );
 
-  Widget _footer() => Row(
+  Widget _footer(bool seniorMode) => Row(
     children: [
       _iconCount(
         key: const ValueKey('forum-post-like'),
@@ -208,6 +220,7 @@ class ForumPostCard extends StatelessWidget {
         color: post.isLiked ? AppColors.primary : AppColors.fog,
         count: post.likeCount,
         onTap: onLike,
+        seniorMode: seniorMode,
       ),
       const SizedBox(width: 18),
       _iconCount(
@@ -216,15 +229,16 @@ class ForumPostCard extends StatelessWidget {
         color: AppColors.fog,
         count: post.commentCount,
         onTap: onTap,
+        seniorMode: seniorMode,
       ),
       const Spacer(),
       IconButton(
         key: const ValueKey('forum-post-bookmark'),
         onPressed: onBookmark,
-        visualDensity: VisualDensity.compact,
+        visualDensity: seniorMode ? VisualDensity.standard : VisualDensity.compact,
         icon: Icon(
           post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-          size: 18,
+          size: seniorMode ? 34 : 18,
           color: post.isBookmarked ? AppColors.primary : AppColors.fog,
         ),
       ),
@@ -237,18 +251,27 @@ class ForumPostCard extends StatelessWidget {
     required Color color,
     required int count,
     required VoidCallback onTap,
+    required bool seniorMode,
   }) => GestureDetector(
     key: key,
     behavior: HitTestBehavior.opaque,
     onTap: onTap,
     child: Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      // 精簡模式下加大觸控熱區（探索報告任務6無障礙補強精神一致），
+      // 避免長者手指誤觸鄰近的留言/收藏按鈕。
+      padding: EdgeInsets.symmetric(vertical: seniorMode ? 12 : 6),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
+          Icon(icon, size: seniorMode ? 30 : 16, color: color),
           const SizedBox(width: 5),
-          Text('$count', style: TextStyle(fontSize: 12, color: color)),
+          Text(
+            '$count',
+            style: TextStyle(
+              fontSize: seniorMode ? AppTypography.subtitle : 12,
+              color: color,
+            ),
+          ),
         ],
       ),
     ),

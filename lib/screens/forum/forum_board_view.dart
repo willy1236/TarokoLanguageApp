@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'widgets/forum_post_card.dart';
 
@@ -244,20 +246,23 @@ class ForumBoardViewState extends State<ForumBoardView> {
   }
 
   @override
-  Widget build(BuildContext context) => RefreshIndicator(
-    color: AppColors.primary,
-    onRefresh: refresh,
-    // 所有狀態都包在同一個可捲動容器裡：載入中、載入失敗、空清單也要能下拉。
-    // 失敗時尤其重要——那正是最需要重試的時候。
-    child: ListView(
-      controller: _scrollController,
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.only(bottom: 100),
-      children: _buildBody(),
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: seniorModeController,
+    builder: (context, _) => RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: refresh,
+      // 所有狀態都包在同一個可捲動容器裡：載入中、載入失敗、空清單也要能下拉。
+      // 失敗時尤其重要——那正是最需要重試的時候。
+      child: ListView(
+        controller: _scrollController,
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 100),
+        children: _buildBody(seniorModeController.enabled),
+      ),
     ),
   );
 
-  List<Widget> _buildBody() {
+  List<Widget> _buildBody(bool seniorMode) {
     if (_loading) {
       return const [
         Padding(
@@ -269,12 +274,20 @@ class ForumBoardViewState extends State<ForumBoardView> {
       ];
     }
     if (_error != null) {
-      return [_ForumErrorState(message: _error!, onRetry: _load)];
+      return [
+        _ForumErrorState(
+          message: _error!,
+          onRetry: _load,
+          seniorMode: seniorMode,
+        ),
+      ];
     }
 
     final all = [..._pinned, ..._posts];
     if (all.isEmpty) {
-      return [_ForumEmptyState(message: widget.emptyMessage)];
+      return [
+        _ForumEmptyState(message: widget.emptyMessage, seniorMode: seniorMode),
+      ];
     }
 
     return [
@@ -310,8 +323,9 @@ class ForumBoardViewState extends State<ForumBoardView> {
 
 class _ForumEmptyState extends StatelessWidget {
   final String message;
+  final bool seniorMode;
 
-  const _ForumEmptyState({required this.message});
+  const _ForumEmptyState({required this.message, required this.seniorMode});
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -351,16 +365,19 @@ class _ForumEmptyState extends StatelessWidget {
         Text(
           message,
           style: GoogleFonts.notoSerifTc(
-            fontSize: 18,
+            fontSize: seniorMode ? AppTypography.headline : 18,
             fontWeight: FontWeight.w700,
             color: AppColors.ink,
           ),
         ),
         const SizedBox(height: 6),
-        const Text(
+        Text(
           '下拉重新整理，或成為第一位分享的人。',
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.fog),
+          style: TextStyle(
+            fontSize: seniorMode ? AppTypography.subtitle : null,
+            color: AppColors.fog,
+          ),
         ),
       ],
     ),
@@ -370,8 +387,13 @@ class _ForumEmptyState extends StatelessWidget {
 class _ForumErrorState extends StatelessWidget {
   final String message;
   final VoidCallback onRetry;
+  final bool seniorMode;
 
-  const _ForumErrorState({required this.message, required this.onRetry});
+  const _ForumErrorState({
+    required this.message,
+    required this.onRetry,
+    required this.seniorMode,
+  });
 
   @override
   Widget build(BuildContext context) => Padding(
@@ -383,7 +405,10 @@ class _ForumErrorState extends StatelessWidget {
         Text(
           message,
           textAlign: TextAlign.center,
-          style: const TextStyle(color: AppColors.inkSoft),
+          style: TextStyle(
+            fontSize: seniorMode ? AppTypography.subtitle : null,
+            color: AppColors.inkSoft,
+          ),
         ),
         const SizedBox(height: 14),
         OutlinedButton(
@@ -391,6 +416,10 @@ class _ForumErrorState extends StatelessWidget {
           style: OutlinedButton.styleFrom(
             foregroundColor: AppColors.primary,
             side: const BorderSide(color: AppColors.primary),
+            minimumSize: seniorMode ? const Size(140, 52) : null,
+            textStyle: seniorMode
+                ? const TextStyle(fontSize: AppTypography.subtitle)
+                : null,
           ),
           child: const Text('重試'),
         ),
