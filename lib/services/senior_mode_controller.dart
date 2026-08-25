@@ -8,7 +8,11 @@ class SeniorModeController extends ChangeNotifier {
 
   /// 已做精簡版的路由白名單。頁面做完精簡版後把路由名加進來即可，
   /// 呼叫端（[hasCustomLayout]）邏輯不用改。
-  static const Set<String> _customLayoutRoutes = {'profile', 'forum'};
+  static const Set<String> _customLayoutRoutes = {
+    'profile',
+    'forum',
+    'culture',
+  };
 
   bool _enabled = false;
   bool get enabled => _enabled;

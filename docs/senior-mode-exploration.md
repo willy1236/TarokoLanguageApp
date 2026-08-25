@@ -179,6 +179,24 @@
    - **範圍限制**：本次僅涵蓋論壇列表側（貼文卡片、看板/收藏/搜尋列表的空/錯誤狀態）。**未涵蓋**：`forum_detail_screen.dart`（貼文詳情 + 留言串，含 `forum_comment_tile.dart`）、`forum_compose_screen.dart`（發文表單，探索報告已列為表單類優先處理對象）、`forum_notifications_screen.dart`、`forum_search_screen.dart`/`forum_liked_posts_list.dart`/`forum_liked_comments_list.dart` 這幾個獨立畫面本身的版面（非共用元件的部分，如 AppBar、搜尋框、篩選 UI）、以及 `forum_report_sheet.dart`（檢舉表單）。`forum_theme.dart` 的淺色底色票未受影響，精簡模式不改變論壇配色，只調字級/間距/密度。未做手動實機驗證（開關持久化後論壇列表實際顯示效果），留待接上更多頁面或下次操作 App 時一併確認。
    - **與探索推測的差異**：無重大差異；`hasCustomLayout('forum')` 的粒度是「整個論壇模組的共用瀏覽元件」，比任務6 `'profile'` 對應單一畫面的粒度更粗——因為論壇沒有單一入口畫面可掛精簡版判斷，是靠元件自我監聽達成跨畫面一致，這點與探索報告任務4原先設想「以路由名查表」的用法略有出入，但介面本身（`hasCustomLayout(routeName)`）不用改，只是這次的呼叫語意從「畫面級」變成「模組級」的代表字串。
 
+   **[2026-08-25 已完成部分實作：文化影音/文章模組]**
+   - 依探索報告任務 7 排序（第 2 順位：活動／文化影音），且依使用者本次指示直接指定做「影音與文章模組頁」，涵蓋 `culture_screen.dart`（影音/文章共用清單首頁）、`video_detail_screen.dart`、`article_detail_screen.dart` 三個檔案。
+   - **改用「呼叫端傳參數」模式，而非任務7論壇段落的「元件自行監聽」模式**：`CultureScreen`/`VideoDetailScreen`/`ArticleDetailScreen` 三者 build() 各自獨立 `ListenableBuilder(listenable: seniorModeController, ...)` 包住 `_buildScaffold(seniorMode)`，再把 `seniorMode` 當一般參數往下傳給所有私有 helper 方法與 `_VideoCard`/`_ArticleCard`/`_PlayButton`/`_ArrowIcon` 等子 widget。原因：這三個檔案彼此互不共用元件（`_VideoCard`/`_ArticleCard` 只在 `culture_screen.dart` 內部被呼叫，不像 `ForumPostCard` 有 5 個外部呼叫點），沒有「呼叫端分散難以逐一改」的問題，用參數傳遞比讓每個小 widget 各自監聽全域單例更直接、也更容易在同一個 build 週期內保持三個畫面各自不同區塊的 seniorMode 值一致。
+   - `video_detail_screen.dart` / `article_detail_screen.dart`（結構幾乎相同，共用同一套字級/間距對應表）：
+     - 標題 fontSize 20→26（未用 `AppTypography.headline` 22，因與 forum/profile 段落相同的教訓——相鄰 tokens 放大幅度不夠明顯，改用自訂值）；分類標籤 `_tag()` 10→`AppTypography.body`(13)；觀看數 icon 14→22、文字 12→`AppTypography.subtitle`(16)；`_engagementButton()` icon 18→30、文字 12→16、tap padding 6/4→12/8（比照論壇卡片熱區加大手法）；內文/描述 14→`AppTypography.title`(18)；錯誤狀態 icon 40→56、文字 15→`AppTypography.title`(18)。
+     - **一般模式排版完全不變的做法**：原本 `Row`（分類標籤＋觀看數＋Spacer＋讚/收藏）在精簡模式因字級放大後容易溢出，改成 `seniorMode ? Wrap(...) : Row(...)` 兩條分支——一般模式維持原本單行 `Row` 結構逐字不動，精簡模式才改用可換行的 `Wrap`。初版曾寫成不分模式一律用 `Wrap`+兩個 `Row`，會連帶改變一般模式視覺（多一行），與規劃時「一般模式不受影響」的原則衝突，後續已修正為條件分支。
+     - `article_detail_screen.dart` 額外處理 `MarkdownStyleSheet`：p 14→18、h1 20→26、h2 18→22、h3 16→20，blockquote 底色 box 與 strong/a 樣式不變。
+   - `culture_screen.dart`：
+     - Hero 標題 26→32、小標籤 11→`AppTypography.body`、副說明 12→`AppTypography.subtitle`、`_PlayButton` 加大 padding/icon/文字。
+     - Tab 文字 16→`AppTypography.headline`(22)、族語小字 10→`AppTypography.body`；分類 chips 文字 13→`AppTypography.subtitle`，垂直 padding 8→12；影音/文章排序標籤 12→`AppTypography.subtitle`。
+     - **影音 Grid 精簡模式下 2 欄→1 欄**（`crossAxisCount`、`childAspectRatio` 依 `seniorMode` 分支），避免字級/縮圖放大後 2 欄版位過擠——這是探索報告 8.1 節「資訊密度也是精簡的一環」在本次唯一動到版面欄數的地方。`_VideoCard` 精簡模式下縮圖高度 100→180、標題 14→`AppTypography.title` 且 `maxLines` 1→2（欄寬變寬後可容納 2 行仍不擠）。
+     - `_buildFeaturedArticle`（精選文章卡）精簡模式下標題 19→24 且 `maxLines` 2→1，並**隱藏摘要文字**（比照論壇貼文卡密度砍除手法，標題放大後單行已足夠判斷是否點開）；`_ArticleCard`（一般清單項）精簡模式下縮圖 64→84px、分類標籤/標題放大，**隱藏「閱讀數/本週熱門」統計列**。`_ArrowIcon` 新增可選 `size` 參數供各處放大使用（一般模式維持 16px 預設值不變）。
+   - `lib/services/senior_mode_controller.dart`：`_customLayoutRoutes` 加入 `'culture'`（影音/文章共用同一入口分頁，非具名路由，粒度比照任務7 `'forum'` 的模組級用法）。
+   - `flutter analyze` 對 `video_detail_screen.dart`、`article_detail_screen.dart`、`culture_screen.dart`、`senior_mode_controller.dart` 四個檔案無警告/錯誤。專案內 `test/` 目前沒有 video/article/culture 相關的既有 widget test 可供回歸驗證（僅論壇模組有），故本次無測試套件可跑。
+   - **範圍限制**：`video_search_screen.dart`、`article_search_screen.dart`、`video_liked_bookmarked_list.dart`、`article_liked_bookmarked_list.dart` 四個獨立清單/搜尋畫面本次**未涵蓋**（規劃時已列為後續任務範圍外）；`better_player_plus` 播放器原生控制列（播放/暫停/音量 UI）非本次可控範圍，僅調整播放器外層的標題/互動資訊卡。未做手動實機驗證（開關持久化後三畫面實際顯示效果、Grid 改 1 欄後的實際滾動體驗），留待接上更多頁面或下次操作 App 時一併確認。
+   - **與探索推測的差異**：規劃階段原預期沿用論壇段落「元件自監聽、呼叫端零改動」的深模組模式，實作時改採「呼叫端傳參數」模式（見上），原因是本次三個檔案的 widget 樹沒有論壇那種多入口共用元件的情境，強行套用自監聽模式反而會讓 `_VideoCard`/`_ArticleCard` 這類單一畫面內部小元件各自重複訂閱同一個 `ChangeNotifier`，徒增不必要的 rebuild 邊界，故本次依實際結構選擇較單純的參數傳遞。
+   - **實機驗證修正**：完成後實際跑在裝置上測試，精簡模式開啟時 `culture_screen.dart` 的影音列表出現 `RenderFlex overflowed by 32 pixels`——原因是精簡模式 1 欄的 `GridView.count` 仍套用固定 `childAspectRatio`（1.7），但縮圖放大到 180px 高、標題又放大且允許 2 行後，卡片實際需要的高度會依標題文字長度浮動，固定比例的格子放不下。修正為：精簡模式改用自然高度的 `Column`（逐張 `_VideoCard` 用 `Padding` 疊加，取消固定 aspect ratio），一般模式維持原本 2 欄 `GridView.count`（`childAspectRatio: 0.78`）完全不動。`flutter analyze` 修正後仍無警告/錯誤。這是任務 7 目前唯一一次有實機動態驗證機會（前幾步因無 UI 開關而只能做靜態檢查）並抓到問題的案例，提醒後續其他頁面用固定 aspect ratio 的 Grid／Card 若要放大字級或圖片，需優先考慮改用自然高度佈局，而非只調整比例數值去試誤。
+
 8. **動效關閉開關** — 精簡模式下關閉 `video_waiting_screen.dart`、`reward_overlay.dart` 的 `AnimationController`/implicit animation，範圍小、可放最後做。
 
 任務 1→2→3→4 是地基（tokens、狀態架構、縮放策略、密度規則彼此依賴，需連續做，且需在此階段把「精簡為輔、正常為主」與深模組拆分定案），5→6 可平行進行，7→8 是收尾的高成本畫面客製化，其中任務 7 已依長者使用情境重新排序，學習模組排最後。
