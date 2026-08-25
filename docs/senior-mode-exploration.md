@@ -234,3 +234,17 @@
 - `flutter analyze`（含全專案掃描）對本次改動的 10 個檔案無新增警告/錯誤（全專案僅剩 8 處與本次無關的既有 `use_null_aware_elements` info）。既有論壇模組 widget test（`forum_post_card_test.dart` 5 個、`forum_board_view_test.dart` 12 個，共 17 個）全數通過，未受影響（本次論壇三檔案為獨立實作，不涉及這兩個測試覆蓋的 `ForumPostCard`/`ForumBoardView` 內部邏輯）。
 - **範圍限制**：文化影音/活動/論壇三模組的表單類頁面（`event_compose_screen.dart`、`reminder_compose_screen.dart`、`forum_compose_screen.dart`）、`avatar_crop_screen.dart`、`video_call_screen.dart`、Learn 模組測驗系列本次均未涵蓋，仍待任務 7 後續步驟（表單類、視訊通話等）與任務 8。因無裝置可測，本次僅完成靜態檢查（`flutter analyze`）與既有測試回歸，未做手動實機驗證（開關持久化後 10 個畫面實際顯示效果、篩選 chip 列加高後排版、統計 Row 改 Wrap 後換行是否符合預期）——留待下次操作 App 時一併確認。
 - **與規劃的差異**：無重大差異；規劃時已預期採用「呼叫端傳參數」模式而非論壇段落的「元件自監聽」模式，實作結果與規劃一致。
+
+**[2026-08-25 已完成：任務 7 表單類 + 論壇詳情/留言（7 個檔案）]**
+- 涵蓋範圍：`forum_report_sheet.dart`（檢舉表單）、`forum_comment_tile.dart`＋`forum_detail_screen.dart`（論壇詳情＋留言，論壇模組先前只做了列表側）、`reminder_compose_screen.dart`、`event_compose_screen.dart`、`forum_compose_screen.dart`、`avatar_crop_screen.dart`（拖曳裁切手勢）。依規劃順序（簡單→複雜→最高風險最後）實作。
+- **接線模式**：`forum_report_sheet.dart`（由 `showForumReportSheet(...)` 多處呼叫）與 `forum_comment_tile.dart`（`ListView` 內重複渲染多次，且是 `ForumPostCard` 的同類型 leaf widget）採**自我監聽**；其餘 5 個檔案（`forum_detail_screen.dart`、`reminder_compose_screen.dart`、`event_compose_screen.dart`、`forum_compose_screen.dart`、`avatar_crop_screen.dart`）皆為私有 helper 僅限單檔案使用，採**呼叫端傳參數**（Screen 頂層 `ListenableBuilder` 包一次，`bool seniorMode` 往下傳）。`forum_detail_screen.dart` 呼叫 `ForumCommentTile` 處不傳 `seniorMode`（該元件自我監聽）。
+- **固定寬度/Row 溢位風險處理**：
+  - `forum_comment_tile.dart`：作者名 `Text` 加 `Expanded`+ellipsis 避免擠壓時間戳；操作列（讚/回覆/刪除/檢舉，原本無 `Expanded`）改用 `Wrap` 取代 `Row`。
+  - `event_compose_screen.dart`：參加人數 stepper 固定 32×32 按鈕加寬到 48×48；`IntrinsicHeight`+`Row` 並排的日期/地點卡精簡模式下改 `Column` 上下堆疊（一般模式維持原 Row 不動）。
+  - `forum_compose_screen.dart`：作者頭像 40→56px；圖片刪除 badge 18→28px（原尺寸對長者觸控過小）；縮圖 80/88→100/104px；`AppBar.toolbarHeight` 68px。
+  - `forum_detail_screen.dart`：貼文讚/收藏 icon、回覆輸入列 IconButton 皆加大；回覆對象提示 banner 同步放大。
+- **avatar_crop_screen.dart**：套件 `crop_your_image` 的 `Crop` widget 手勢（pinch/pan）為套件內部處理，無可程式化 API 可疊加方向鍵/滑桿（規劃時列為需 spike 的項目，實作時確認套件未曝露可用的 imperative zoom/pan 介面，故未新增手勢替代方案）。本次僅完成：AppBar 確定/取消放大（icon 24→30、確定按鈕最小觸控 72×48）、新增可視操作提示文字「用兩指縮放，拖曳照片來對齊圓框」（非僅 Semantics，長者能直接看到）。方向鍵/滑桿列為已知限制，留待後續評估是否值得更換裁切套件或另行包一層 `InteractiveViewer`。
+- `lib/services/senior_mode_controller.dart`：`_customLayoutRoutes` **未新增任何 key**——本次 7 個檔案皆屬既有 `'events'`/`'forum'`/`'profile'` 模組 key 的延伸，與規劃預期一致。
+- `flutter analyze`（全專案）除 8 處與本次無關的既有 `use_null_aware_elements` info 外無新增警告/錯誤。既有論壇模組 widget test（`forum_post_card_test.dart`、`forum_board_view_test.dart`，共 17 個）全數通過。
+- **範圍限制**：Learn 模組測驗系列、`video_call_screen.dart` 仍未涵蓋（任務 8 動效關閉開關也還沒做）。因無裝置可測，本次僅完成靜態檢查與既有測試回歸，未做手動實機驗證（開關切換後 7 個畫面實際顯示效果、`Wrap`/`Column` 防溢位是否符合預期、avatar_crop 新增提示文字與放大按鈕的實際手感）——留待下次操作 App 時一併確認。
+- **與規劃的差異**：無重大差異；avatar_crop_screen.dart 的「zoom/pan 輔助控制」在規劃階段已標記為需先 spike 才能定案，實作時確認套件限制後依規劃的 fallback（僅放大確定/取消＋加入提示文字）執行，與規劃一致。
