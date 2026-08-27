@@ -8,7 +8,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';
+import '../../../services/senior_mode_controller.dart';
 import 'forum_post_card.dart' show forumRelativeTime;
 
 class ForumCommentTile extends StatelessWidget {
@@ -33,21 +35,31 @@ class ForumCommentTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (comment.isDeleted) return _deletedPlaceholder();
-    return _tile();
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) {
+        final seniorMode = seniorModeController.enabled;
+        if (comment.isDeleted) return _deletedPlaceholder(seniorMode);
+        return _tile(seniorMode);
+      },
+    );
   }
 
-  Widget _deletedPlaceholder() => Padding(
+  Widget _deletedPlaceholder(bool seniorMode) => Padding(
     key: const ValueKey('forum-comment-indent'),
     padding: EdgeInsets.fromLTRB(isReply ? 34 : 0, 10, 0, 10),
     child: Row(
       children: [
-        Icon(Icons.block, size: isReply ? 14 : 16, color: AppColors.mist),
+        Icon(
+          Icons.block,
+          size: seniorMode ? 22 : (isReply ? 14 : 16),
+          color: AppColors.mist,
+        ),
         const SizedBox(width: 8),
         Text(
           '此留言已刪除',
           style: GoogleFonts.notoSerifTc(
-            fontSize: 13,
+            fontSize: seniorMode ? AppTypography.title : 13,
             fontStyle: FontStyle.italic,
             color: AppColors.fog,
           ),
@@ -56,7 +68,7 @@ class ForumCommentTile extends StatelessWidget {
     ),
   );
 
-  Widget _tile() => Padding(
+  Widget _tile(bool seniorMode) => Padding(
     key: const ValueKey('forum-comment-indent'),
     padding: EdgeInsets.fromLTRB(isReply ? 34 : 0, 10, 0, 10),
     child: Column(
@@ -64,20 +76,28 @@ class ForumCommentTile extends StatelessWidget {
       children: [
         Row(
           children: [
-            _avatar(size: isReply ? 24 : 30),
+            _avatar(
+              size: seniorMode ? (isReply ? 32 : 40) : (isReply ? 24 : 30),
+            ),
             const SizedBox(width: 8),
-            Text(
-              comment.author?.displayName ?? '匿名使用者',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
+            Expanded(
+              child: Text(
+                comment.author?.displayName ?? '匿名使用者',
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: seniorMode ? AppTypography.subtitle : 13,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.ink,
+                ),
               ),
             ),
             const SizedBox(width: 8),
             Text(
               forumRelativeTime(comment.createdAt),
-              style: const TextStyle(fontSize: 11, color: AppColors.fog),
+              style: TextStyle(
+                fontSize: seniorMode ? AppTypography.body : 11,
+                color: AppColors.fog,
+              ),
             ),
           ],
         ),
@@ -86,8 +106,8 @@ class ForumCommentTile extends StatelessWidget {
           padding: EdgeInsets.only(left: isReply ? 32 : 38),
           child: Text(
             comment.body,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: seniorMode ? AppTypography.title : 14,
               color: AppColors.inkSoft,
               height: 1.5,
             ),
@@ -96,7 +116,10 @@ class ForumCommentTile extends StatelessWidget {
         const SizedBox(height: 4),
         Padding(
           padding: EdgeInsets.only(left: isReply ? 32 : 38),
-          child: Row(
+          child: Wrap(
+            spacing: 16,
+            runSpacing: 8,
+            crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               GestureDetector(
                 behavior: HitTestBehavior.opaque,
@@ -106,7 +129,7 @@ class ForumCommentTile extends StatelessWidget {
                   children: [
                     Icon(
                       comment.isLiked ? Icons.favorite : Icons.favorite_border,
-                      size: 14,
+                      size: seniorMode ? 24 : 14,
                       color: comment.isLiked
                           ? AppColors.primary
                           : AppColors.fog,
@@ -114,18 +137,19 @@ class ForumCommentTile extends StatelessWidget {
                     const SizedBox(width: 4),
                     Text(
                       '${comment.likeCount}',
-                      style: const TextStyle(
-                        fontSize: 12,
+                      style: TextStyle(
+                        fontSize: seniorMode ? AppTypography.subtitle : 12,
                         color: AppColors.fog,
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: 16),
-              _action('回覆', onReply),
-              const SizedBox(width: 16),
-              if (isMine) _action('刪除', onDelete) else _action('檢舉', onReport),
+              _action('回覆', onReply, seniorMode),
+              if (isMine)
+                _action('刪除', onDelete, seniorMode)
+              else
+                _action('檢舉', onReport, seniorMode),
             ],
           ),
         ),
@@ -161,12 +185,16 @@ class ForumCommentTile extends StatelessWidget {
     );
   }
 
-  Widget _action(String label, VoidCallback onTap) => GestureDetector(
-    behavior: HitTestBehavior.opaque,
-    onTap: onTap,
-    child: Text(
-      label,
-      style: const TextStyle(fontSize: 12, color: AppColors.fog),
-    ),
-  );
+  Widget _action(String label, VoidCallback onTap, bool seniorMode) =>
+      GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: onTap,
+        child: Text(
+          label,
+          style: TextStyle(
+            fontSize: seniorMode ? AppTypography.subtitle : 12,
+            color: AppColors.fog,
+          ),
+        ),
+      );
 }

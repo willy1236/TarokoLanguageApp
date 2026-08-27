@@ -4,9 +4,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 import '../../models/event_model.dart';
 import '../../models/tribe_model.dart';
 import '../../services/event_service.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../shared/search_range.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
 import 'event_detail_screen.dart';
@@ -109,6 +111,13 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildScaffold(seniorModeController.enabled),
+    );
+  }
+
+  Widget _buildScaffold(bool seniorMode) {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       appBar: AppBar(
@@ -118,55 +127,73 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
         title: TextField(
           controller: _controller,
           autofocus: true,
+          style: TextStyle(
+            fontSize: seniorMode ? AppTypography.title : null,
+          ),
           textInputAction: TextInputAction.search,
           onSubmitted: (_) => _search(),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: '搜尋活動',
+            hintStyle: TextStyle(
+              fontSize: seniorMode ? AppTypography.title : null,
+            ),
             border: InputBorder.none,
           ),
         ),
         actions: [
-          IconButton(onPressed: _search, icon: const Icon(Icons.search)),
+          IconButton(
+            onPressed: _search,
+            icon: Icon(Icons.search, size: seniorMode ? 30 : null),
+          ),
         ],
       ),
       body: Column(
         children: [
-          _filterRow(),
+          _filterRow(seniorMode),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Text(_error!, style: const TextStyle(color: AppColors.fog)),
+              child: Text(
+                _error!,
+                style: TextStyle(
+                  color: AppColors.fog,
+                  fontSize: seniorMode ? AppTypography.title : null,
+                ),
+              ),
             ),
           if (!_searched && _error == null)
             Padding(
               padding: const EdgeInsets.all(40),
               child: Text(
                 '輸入關鍵字或選擇篩選條件開始搜尋',
-                style: GoogleFonts.notoSerifTc(color: AppColors.fog),
+                style: GoogleFonts.notoSerifTc(
+                  color: AppColors.fog,
+                  fontSize: seniorMode ? AppTypography.title : null,
+                ),
               ),
             ),
-          if (_searched) Expanded(child: _resultList()),
+          if (_searched) Expanded(child: _resultList(seniorMode)),
         ],
       ),
     );
   }
 
-  Widget _filterRow() {
+  Widget _filterRow(bool seniorMode) {
     return SizedBox(
-      height: 48,
+      height: seniorMode ? 64 : 48,
       child: ListView(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 16),
         children: [
-          for (final r in SearchRange.values) _rangeChip(r),
+          for (final r in SearchRange.values) _rangeChip(r, seniorMode),
           const SizedBox(width: 4),
-          _tribeChip(),
+          _tribeChip(seniorMode),
         ],
       ),
     );
   }
 
-  Widget _rangeChip(String range) {
+  Widget _rangeChip(String range, bool seniorMode) {
     final selected = _range == range;
     return Padding(
       padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
@@ -177,7 +204,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
         backgroundColor: AppColors.cream,
         selectedColor: AppColors.primary.withValues(alpha: 0.16),
         labelStyle: TextStyle(
-          fontSize: 12,
+          fontSize: seniorMode ? AppTypography.subtitle : 12,
           color: selected ? AppColors.primary : AppColors.inkSoft,
         ),
         side: BorderSide(
@@ -190,20 +217,20 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
     );
   }
 
-  Widget _tribeChip() {
+  Widget _tribeChip(bool seniorMode) {
     final selected = _tribe != null;
     return Padding(
       padding: const EdgeInsets.only(top: 6, bottom: 6),
       child: ActionChip(
         avatar: Icon(
           Icons.place_outlined,
-          size: 16,
+          size: seniorMode ? 22 : 16,
           color: selected ? AppColors.primary : AppColors.inkSoft,
         ),
         label: Text(_tribe?.name ?? '部落'),
         backgroundColor: AppColors.cream,
         labelStyle: TextStyle(
-          fontSize: 12,
+          fontSize: seniorMode ? AppTypography.subtitle : 12,
           color: selected ? AppColors.primary : AppColors.inkSoft,
         ),
         side: BorderSide(
@@ -216,7 +243,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
     );
   }
 
-  Widget _resultList() {
+  Widget _resultList(bool seniorMode) {
     if (_loading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
@@ -224,7 +251,13 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
     }
     if (_events.isEmpty) {
       return Center(
-        child: Text('找不到符合的活動', style: TextStyle(color: AppColors.fog)),
+        child: Text(
+          '找不到符合的活動',
+          style: TextStyle(
+            color: AppColors.fog,
+            fontSize: seniorMode ? AppTypography.title : null,
+          ),
+        ),
       );
     }
     return NotificationListener<ScrollNotification>(
@@ -245,7 +278,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
               ),
             );
           }
-          return _EventResultTile(event: _events[i]);
+          return _EventResultTile(event: _events[i], seniorMode: seniorMode);
         },
       ),
     );
@@ -254,7 +287,8 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
 
 class _EventResultTile extends StatelessWidget {
   final EventSummary event;
-  const _EventResultTile({required this.event});
+  final bool seniorMode;
+  const _EventResultTile({required this.event, required this.seniorMode});
 
   @override
   Widget build(BuildContext context) {
@@ -275,7 +309,7 @@ class _EventResultTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: 48,
+              width: seniorMode ? 76 : 48,
               child: Container(
                 padding: const EdgeInsets.symmetric(vertical: 8),
                 decoration: BoxDecoration(
@@ -287,12 +321,15 @@ class _EventResultTile extends StatelessWidget {
                   children: [
                     Text(
                       '${d.month}月',
-                      style: const TextStyle(fontSize: 9, color: AppColors.gold),
+                      style: TextStyle(
+                        fontSize: seniorMode ? 13 : 9,
+                        color: AppColors.gold,
+                      ),
                     ),
                     Text(
                       '${d.day}',
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: 18,
+                        fontSize: seniorMode ? 26 : 18,
                         fontWeight: FontWeight.w700,
                         color: AppColors.creamLight,
                         height: 1,
@@ -310,7 +347,7 @@ class _EventResultTile extends StatelessWidget {
                   Text(
                     event.title,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 14,
+                      fontSize: seniorMode ? AppTypography.title : 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                     ),
@@ -318,7 +355,10 @@ class _EventResultTile extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     '${event.location ?? '線上'} · ${event.participantCount} 人報名',
-                    style: const TextStyle(fontSize: 11, color: AppColors.fog),
+                    style: TextStyle(
+                      fontSize: seniorMode ? AppTypography.subtitle : 11,
+                      color: AppColors.fog,
+                    ),
                   ),
                 ],
               ),

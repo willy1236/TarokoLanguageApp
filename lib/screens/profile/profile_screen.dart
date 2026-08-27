@@ -226,7 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 : (_user?.isIndigenous == true
                                       ? '${_user?.tribeName ?? "尚未設定"} · 加入 ${_user?.joinedDays ?? 124} 天'
                                       : '加入 ${_user?.joinedDays ?? 124} 天'),
-                            style: TextStyle(
+                            style: GoogleFonts.notoSerifTc(
                               fontSize: seniorMode
                                   ? AppTypography.subtitle
                                   : 12,
@@ -346,8 +346,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 10,
+              style: GoogleFonts.notoSerifTc(
+                fontSize: AppTypography.caption,
                 color: AppColors.creamLight.withValues(alpha: 0.80),
                 letterSpacing: 1,
               ),
@@ -523,7 +523,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       RichText(
                         text: TextSpan(
                           style: GoogleFonts.notoSerifTc(
-                            fontSize: 13,
+                            fontSize: AppTypography.bodyLarge,
                             fontWeight: FontWeight.w600,
                             color: AppColors.ink,
                             letterSpacing: 0.5,
@@ -540,8 +540,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 2),
                       Text(
                         '每日登入 / 完成單元都能得小米',
-                        style: TextStyle(
-                          fontSize: 10,
+                        style: GoogleFonts.notoSerifTc(
+                          fontSize: AppTypography.caption,
                           color: AppColors.fog,
                           letterSpacing: 1,
                         ),
@@ -556,10 +556,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       builder: (_) => const MilletLedgerScreen(),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     '查看明細 →',
-                    style: TextStyle(
-                      fontSize: 10,
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: AppTypography.caption,
                       color: AppColors.primary,
                       letterSpacing: 1,
                     ),
@@ -592,7 +592,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Text(
                       '我的背包 · 查看已擁有的頭像與頭像框',
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: 12,
+                        fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
@@ -632,7 +632,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Text(
                       '小米商店 · 兌換頭像與頭像框',
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: 12,
+                        fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
@@ -678,7 +678,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     '我發起的活動',
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 14,
+                      fontSize: AppTypography.bodyLarge,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                       letterSpacing: 0.5,
                     ),
@@ -743,8 +744,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Text(
                   label,
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? AppTypography.headline : 14,
-                    fontWeight: seniorMode ? FontWeight.w600 : null,
+                    fontSize: seniorMode ? AppTypography.headline : AppTypography.bodyLarge,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 0.5,
                   ),
@@ -906,10 +907,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         seniorMode: seniorMode,
         onChanged: (v) => seniorModeController.setEnabled(v),
       ),
-      _toggleRow('通知', '已開啟', true),
-      _chevronRow('族語顯示', '優先顯示拼音'),
-      _chevronRow('字級大小', '中'),
-      _toggleRow('通話開放', '所有族人', true),
     ]);
   }
 
@@ -940,8 +937,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       items[i],
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode ? AppTypography.headline : 14,
-                        fontWeight: seniorMode ? FontWeight.w600 : null,
+                        fontSize: seniorMode ? AppTypography.headline : AppTypography.bodyLarge,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
                       ),
@@ -1031,7 +1028,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     '登出',
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 14,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
                       letterSpacing: 2,
@@ -1108,8 +1105,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(
                       label,
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: AppTypography.caption,
                         color: AppColors.fog,
                         letterSpacing: 1,
                       ),
@@ -1124,7 +1121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     )
                                   : GoogleFonts.notoSerifTc())
                               .copyWith(
-                                fontSize: 14,
+                                fontSize: AppTypography.bodyLarge,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.ink,
                                 letterSpacing: 0.5,
@@ -1181,7 +1178,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       label,
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode ? AppTypography.headline : 14,
+                        fontSize: seniorMode ? AppTypography.headline : AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
@@ -1191,7 +1188,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 2),
                       Text(
                         lockedHint,
-                        style: TextStyle(fontSize: 10, color: AppColors.fog),
+                        style: GoogleFonts.notoSerifTc(
+                          fontSize: AppTypography.caption,
+                          color: AppColors.fog,
+                        ),
                       ),
                     ],
                   ],
@@ -1239,116 +1239,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _toggleRow(String label, String value, bool on) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 14,
-                  color: AppColors.ink,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.fog,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Container(
-                    width: 36,
-                    height: 22,
-                    padding: const EdgeInsets.all(2),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(11),
-                      color: on ? AppColors.primary : AppColors.creamDeep,
-                    ),
-                    child: Align(
-                      alignment: on
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                      child: Container(
-                        width: 18,
-                        height: 18,
-                        decoration: const BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.creamLight,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const Divider(
-          height: 1,
-          color: AppColors.creamDeep,
-          indent: 16,
-          endIndent: 16,
-        ),
-      ],
-    );
-  }
-
-  Widget _chevronRow(String label, String value) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                label,
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 14,
-                  color: AppColors.ink,
-                  letterSpacing: 0.5,
-                ),
-              ),
-              Row(
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.fog,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.fog,
-                    size: 16,
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-        const Divider(
-          height: 1,
-          color: AppColors.creamDeep,
-          indent: 16,
-          endIndent: 16,
-        ),
-      ],
-    );
-  }
 }
 
 class _RenameDialog extends StatefulWidget {

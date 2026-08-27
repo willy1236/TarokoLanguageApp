@@ -6,6 +6,7 @@ import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/fcm_service.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import 'reminder_compose_screen.dart';
@@ -263,6 +264,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildScaffold(context, seniorModeController.enabled),
+    );
+  }
+
+  Widget _buildScaffold(BuildContext context, bool seniorMode) {
     if (_loading) {
       return const Scaffold(
         backgroundColor: AppColors.creamLight,
@@ -283,11 +291,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, color: AppColors.fog, size: 40),
+              Icon(
+                Icons.error_outline,
+                color: AppColors.fog,
+                size: seniorMode ? 56 : 40,
+              ),
               const SizedBox(height: 12),
               Text(
                 _error ?? '找不到活動',
-                style: TextStyle(color: AppColors.inkSoft, fontSize: 14),
+                style: TextStyle(
+                  color: AppColors.inkSoft,
+                  fontSize: seniorMode ? 18 : 14,
+                ),
               ),
               const SizedBox(height: 16),
               TextButton(onPressed: _refresh, child: const Text('重試')),
@@ -305,18 +320,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         color: AppColors.primary,
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _buildHero(context, e)),
-            SliverToBoxAdapter(child: _buildBody(e)),
+            SliverToBoxAdapter(child: _buildHero(context, e, seniorMode)),
+            SliverToBoxAdapter(child: _buildBody(e, seniorMode)),
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
         ),
       ),
-      bottomNavigationBar: _buildActionBar(context, e),
+      bottomNavigationBar: _buildActionBar(context, e, seniorMode),
     );
   }
 
   // ── 頂部視覺 + 返回鈕 + 日期 ──────────────────────────────────
-  Widget _buildHero(BuildContext context, EventDetail e) {
+  Widget _buildHero(BuildContext context, EventDetail e, bool seniorMode) {
     final start = e.startsAt.toLocal();
     final cancelled = e.displayStatus == 'cancelled';
     final ended = e.displayStatus == 'ended';
@@ -350,8 +365,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             child: GestureDetector(
               onTap: () => Navigator.pop(context),
               child: Container(
-                width: 38,
-                height: 38,
+                width: seniorMode ? 50 : 38,
+                height: seniorMode ? 50 : 38,
                 decoration: BoxDecoration(
                   color: AppColors.ink.withValues(alpha: 0.4),
                   borderRadius: BorderRadius.circular(12),
@@ -359,10 +374,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     color: AppColors.creamLight.withValues(alpha: 0.25),
                   ),
                 ),
-                child: const Icon(
+                child: Icon(
                   Icons.arrow_back,
                   color: AppColors.creamLight,
-                  size: 18,
+                  size: seniorMode ? 26 : 18,
                 ),
               ),
             ),
@@ -383,8 +398,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 ),
                 child: Text(
                   e.category!,
-                  style: const TextStyle(
-                    fontSize: 10,
+                  style: TextStyle(
+                    fontSize: seniorMode ? 14 : 10,
                     color: AppColors.ink,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 2.5,
@@ -414,8 +429,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                       ),
                       child: Text(
                         cancelled ? '已取消' : '已結束',
-                        style: const TextStyle(
-                          fontSize: 11,
+                        style: TextStyle(
+                          fontSize: seniorMode ? 15 : 11,
                           color: AppColors.creamLight,
                           letterSpacing: 1.5,
                         ),
@@ -426,7 +441,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   '${_months[start.month - 1]}${start.day}日 · ${_weekdays[start.weekday - 1]}',
                   style: GoogleFonts.notoSerifTc(
                     fontStyle: FontStyle.italic,
-                    fontSize: 13,
+                    fontSize: seniorMode ? 17 : 13,
                     color: AppColors.gold,
                     letterSpacing: 2.0,
                   ),
@@ -435,7 +450,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 Text(
                   e.title,
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 26,
+                    fontSize: seniorMode ? 32 : 26,
                     fontWeight: FontWeight.w700,
                     color: AppColors.creamLight,
                     letterSpacing: 0.8,
@@ -451,7 +466,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   // ── 內容 ─────────────────────────────────────────────────────
-  Widget _buildBody(EventDetail e) {
+  Widget _buildBody(EventDetail e, bool seniorMode) {
     final start = e.startsAt.toLocal();
     final timeText = formatDateTime(start);
     final hostName =
@@ -471,11 +486,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           Row(
             children: [
               CircleAvatar(
-                radius: 15,
+                radius: seniorMode ? 20 : 15,
                 backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                child: const Icon(
+                child: Icon(
                   Icons.person,
-                  size: 16,
+                  size: seniorMode ? 22 : 16,
                   color: AppColors.primary,
                 ),
               ),
@@ -486,7 +501,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   Text(
                     '發起人',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: seniorMode ? 14 : 10,
                       color: AppColors.fog,
                       letterSpacing: 1.5,
                     ),
@@ -494,7 +509,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                   Text(
                     hostName,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 14,
+                      fontSize: seniorMode ? 19 : 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                     ),
@@ -512,10 +527,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     color: AppColors.gold.withValues(alpha: 0.18),
                     borderRadius: BorderRadius.circular(4),
                   ),
-                  child: const Text(
+                  child: Text(
                     '你發起的',
                     style: TextStyle(
-                      fontSize: 10,
+                      fontSize: seniorMode ? 13 : 10,
                       color: AppColors.goldDeep,
                       letterSpacing: 1.0,
                     ),
@@ -528,25 +543,32 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 active: e.isLiked,
                 count: e.likeCount,
                 onTap: _toggleLike,
+                seniorMode: seniorMode,
               ),
               const SizedBox(width: 6),
               _engagementButton(
                 icon: e.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
                 active: e.isBookmarked,
                 onTap: _toggleBookmark,
+                seniorMode: seniorMode,
               ),
             ],
           ),
           const SizedBox(height: 20),
 
-          _infoRow(Icons.access_time, '時間', timeText),
+          _infoRow(Icons.access_time, '時間', timeText, seniorMode),
           const SizedBox(height: 12),
           if (e.location != null && e.location!.isNotEmpty) ...[
-            _infoRow(Icons.location_on_outlined, '地點', e.location!),
+            _infoRow(
+              Icons.location_on_outlined,
+              '地點',
+              e.location!,
+              seniorMode,
+            ),
             const SizedBox(height: 12),
           ],
           if (e.address != null && e.address!.isNotEmpty) ...[
-            _infoRow(Icons.map_outlined, '地址', e.address!),
+            _infoRow(Icons.map_outlined, '地址', e.address!, seniorMode),
             const SizedBox(height: 12),
           ],
           if (e.registrationDeadline != null) ...[
@@ -554,13 +576,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               Icons.how_to_reg_outlined,
               '報名截止',
               formatDateTime(e.registrationDeadline!.toLocal()),
+              seniorMode,
             ),
             const SizedBox(height: 12),
           ],
           const SizedBox(height: 8),
 
           // 名額
-          _buildCapacity(e),
+          _buildCapacity(e, seniorMode),
           const SizedBox(height: 22),
 
           // 介紹
@@ -568,7 +591,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             Text(
               '活動介紹',
               style: GoogleFonts.notoSerifTc(
-                fontSize: 15,
+                fontSize: seniorMode ? 20 : 15,
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
               ),
@@ -577,7 +600,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             Text(
               e.description!,
               style: TextStyle(
-                fontSize: 13.5,
+                fontSize: seniorMode ? 18 : 13.5,
                 color: AppColors.inkSoft,
                 height: 1.7,
                 letterSpacing: 0.4,
@@ -588,7 +611,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
           // 提醒事項
           if (e.reminderNote != null && e.reminderNote!.isNotEmpty) ...[
-            _buildNoteBox('提醒事項', e.reminderNote!),
+            _buildNoteBox('提醒事項', e.reminderNote!, seniorMode),
             const SizedBox(height: 16),
           ],
 
@@ -597,25 +620,25 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             Text(
               '提醒紀錄',
               style: GoogleFonts.notoSerifTc(
-                fontSize: 15,
+                fontSize: seniorMode ? 20 : 15,
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
               ),
             ),
             const SizedBox(height: 8),
             if (_pendingReminders().isNotEmpty) ...[
-              _buildReminderGroupLabel('排定發送'),
+              _buildReminderGroupLabel('排定發送', seniorMode),
               const SizedBox(height: 6),
               for (final r in _pendingReminders()) ...[
-                _buildReminderCard(r),
+                _buildReminderCard(r, seniorMode),
                 const SizedBox(height: 10),
               ],
             ],
             if (_sentReminders().isNotEmpty) ...[
-              _buildReminderGroupLabel('已發送'),
+              _buildReminderGroupLabel('已發送', seniorMode),
               const SizedBox(height: 6),
               for (final r in _sentReminders()) ...[
-                _buildReminderCard(r),
+                _buildReminderCard(r, seniorMode),
                 const SizedBox(height: 10),
               ],
             ],
@@ -628,17 +651,27 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             Text(
               '聯絡資訊',
               style: GoogleFonts.notoSerifTc(
-                fontSize: 15,
+                fontSize: seniorMode ? 20 : 15,
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
               ),
             ),
             const SizedBox(height: 8),
             if (e.contactEmail != null && e.contactEmail!.isNotEmpty)
-              _infoRow(Icons.email_outlined, 'Email', e.contactEmail!),
+              _infoRow(
+                Icons.email_outlined,
+                'Email',
+                e.contactEmail!,
+                seniorMode,
+              ),
             if (e.contactPhone != null && e.contactPhone!.isNotEmpty) ...[
               const SizedBox(height: 8),
-              _infoRow(Icons.phone_outlined, '電話', e.contactPhone!),
+              _infoRow(
+                Icons.phone_outlined,
+                '電話',
+                e.contactPhone!,
+                seniorMode,
+              ),
             ],
           ],
         ],
@@ -650,6 +683,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     required IconData icon,
     required bool active,
     required VoidCallback onTap,
+    required bool seniorMode,
     int? count,
   }) {
     final color = active ? AppColors.primary : AppColors.fog;
@@ -657,13 +691,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+        padding: EdgeInsets.symmetric(
+          horizontal: seniorMode ? 10 : 6,
+          vertical: seniorMode ? 8 : 4,
+        ),
         child: Row(
           children: [
-            Icon(icon, size: 18, color: color),
+            Icon(icon, size: seniorMode ? 28 : 18, color: color),
             if (count != null) ...[
               const SizedBox(width: 4),
-              Text('$count', style: TextStyle(color: color, fontSize: 12)),
+              Text(
+                '$count',
+                style: TextStyle(color: color, fontSize: seniorMode ? 16 : 12),
+              ),
             ],
           ],
         ),
@@ -671,16 +711,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value) {
+  Widget _infoRow(IconData icon, String label, String value, bool seniorMode) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 16, color: AppColors.primary),
+        Icon(icon, size: seniorMode ? 22 : 16, color: AppColors.primary),
         const SizedBox(width: 12),
         Text(
           '$label ',
           style: TextStyle(
-            fontSize: 12,
+            fontSize: seniorMode ? 16 : 12,
             color: AppColors.fog,
             letterSpacing: 1.0,
           ),
@@ -689,8 +729,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
-              fontSize: 13.5,
+            style: TextStyle(
+              fontSize: seniorMode ? 18 : 13.5,
               color: AppColors.ink,
               letterSpacing: 0.4,
             ),
@@ -700,7 +740,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Widget _buildNoteBox(String title, String body) {
+  Widget _buildNoteBox(String title, String body, bool seniorMode) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(14),
@@ -714,16 +754,16 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         children: [
           Row(
             children: [
-              const Icon(
+              Icon(
                 Icons.push_pin_outlined,
-                size: 14,
+                size: seniorMode ? 18 : 14,
                 color: AppColors.goldDeep,
               ),
               const SizedBox(width: 6),
               Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: seniorMode ? 16 : 12,
                   color: AppColors.goldDeep,
                   letterSpacing: 1.0,
                 ),
@@ -734,7 +774,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           Text(
             body,
             style: TextStyle(
-              fontSize: 13,
+              fontSize: seniorMode ? 17 : 13,
               color: AppColors.inkSoft,
               height: 1.6,
             ),
@@ -759,18 +799,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return list;
   }
 
-  Widget _buildReminderGroupLabel(String text) {
+  Widget _buildReminderGroupLabel(String text, bool seniorMode) {
     return Text(
       text,
       style: TextStyle(
-        fontSize: 11.5,
+        fontSize: seniorMode ? 15 : 11.5,
         color: AppColors.fog,
         letterSpacing: 1.5,
       ),
     );
   }
 
-  Widget _buildReminderCard(EventReminder r) {
+  Widget _buildReminderCard(EventReminder r, bool seniorMode) {
     final (label, color) = switch (r.status) {
       'sent' => (
         '已發送 · ${formatDateTime((r.sentAt ?? r.scheduledAt).toLocal())}',
@@ -796,8 +836,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         children: [
           Text(
             r.message,
-            style: const TextStyle(
-              fontSize: 13.5,
+            style: TextStyle(
+              fontSize: seniorMode ? 17 : 13.5,
               color: AppColors.ink,
               height: 1.6,
             ),
@@ -805,14 +845,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           const SizedBox(height: 8),
           Text(
             label,
-            style: TextStyle(fontSize: 11, color: color, letterSpacing: 0.6),
+            style: TextStyle(
+              fontSize: seniorMode ? 14 : 11,
+              color: color,
+              letterSpacing: 0.6,
+            ),
           ),
         ],
       ),
     );
   }
 
-  Widget _buildCapacity(EventDetail e) {
+  Widget _buildCapacity(EventDetail e, bool seniorMode) {
     final count = e.participantCount;
     final max = e.maxParticipants;
     return Container(
@@ -831,7 +875,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               Text(
                 '報名人數',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: seniorMode ? 16 : 12,
                   color: AppColors.inkSoft,
                   letterSpacing: 1.0,
                 ),
@@ -840,8 +884,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 max == null
                     ? '$count 人 · 不限名額'
                     : '$count / $max 人 · 剩 ${max - count} 個名額',
-                style: const TextStyle(
-                  fontSize: 12,
+                style: TextStyle(
+                  fontSize: seniorMode ? 16 : 12,
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
                 ),
@@ -866,26 +910,26 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   // ── 底部行動列 ───────────────────────────────────────────────
-  Widget _buildActionBar(BuildContext context, EventDetail e) {
+  Widget _buildActionBar(BuildContext context, EventDetail e, bool seniorMode) {
     final isHost = e.isHostedBy(_uid);
     final isJoined = e.isJoinedBy(_uid);
     final status = e.displayStatus;
 
     Widget content;
     if (status == 'cancelled') {
-      content = _disabledButton('活動已取消');
+      content = _disabledButton('活動已取消', seniorMode);
     } else if (status == 'ended') {
-      content = _disabledButton('活動已結束');
+      content = _disabledButton('活動已結束', seniorMode);
     } else if (isHost) {
-      content = _hostActions(context, e);
+      content = _hostActions(context, e, seniorMode);
     } else if (isJoined) {
-      content = _joinedActions();
+      content = _joinedActions(seniorMode);
     } else if (e.registrationOpen && !e.isFull) {
-      content = _primaryButton('我要參加', _acting ? null : _join);
+      content = _primaryButton('我要參加', _acting ? null : _join, seniorMode);
     } else if (e.isFull) {
-      content = _disabledButton('名額已滿');
+      content = _disabledButton('名額已滿', seniorMode);
     } else {
-      content = _disabledButton('報名已截止');
+      content = _disabledButton('報名已截止', seniorMode);
     }
 
     return SafeArea(
@@ -901,141 +945,160 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   // 發起人：發送提醒 + 取消活動
-  Widget _hostActions(BuildContext context, EventDetail e) {
+  Widget _hostActions(BuildContext context, EventDetail e, bool seniorMode) {
+    final sendReminderButton = GestureDetector(
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) =>
+                ReminderComposeScreen(eventId: e.id, eventTitle: e.title),
+          ),
+        );
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.notifications_active_outlined,
+              color: AppColors.creamLight,
+              size: seniorMode ? 24 : 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              '發送提醒',
+              style: GoogleFonts.notoSerifTc(
+                fontSize: seniorMode ? 19 : 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.creamLight,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    final cancelButton = GestureDetector(
+      onTap: _acting ? null : _cancelEvent,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 15),
+        decoration: BoxDecoration(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.danger.withValues(alpha: 0.5)),
+        ),
+        child: Center(
+          heightFactor: 1.0,
+          child: Text(
+            '取消活動',
+            style: GoogleFonts.notoSerifTc(
+              fontSize: seniorMode ? 18 : 14,
+              fontWeight: FontWeight.w600,
+              color: AppColors.dangerDark,
+              letterSpacing: 1.0,
+            ),
+          ),
+        ),
+      ),
+    );
+    if (seniorMode) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(width: double.infinity, child: sendReminderButton),
+          const SizedBox(height: 10),
+          SizedBox(width: double.infinity, child: cancelButton),
+        ],
+      );
+    }
     return Row(
       children: [
-        Expanded(
-          flex: 2,
-          child: GestureDetector(
-            onTap: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      ReminderComposeScreen(eventId: e.id, eventTitle: e.title),
-                ),
-              );
-            },
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.notifications_active_outlined,
-                    color: AppColors.creamLight,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '發送提醒',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.creamLight,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
+        Expanded(flex: 2, child: sendReminderButton),
         const SizedBox(width: 10),
-        Expanded(
-          flex: 1,
-          child: GestureDetector(
-            onTap: _acting ? null : _cancelEvent,
-            child: Container(
-              padding: const EdgeInsets.symmetric(vertical: 15),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppColors.danger.withValues(alpha: 0.5),
-                ),
-              ),
-              child: Center(
-                heightFactor: 1.0,
-                child: Text(
-                  '取消活動',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.dangerDark,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
+        Expanded(flex: 1, child: cancelButton),
       ],
     );
   }
 
   // 參加者：已報名（可退出）
-  Widget _joinedActions() {
+  Widget _joinedActions(bool seniorMode) {
+    final joinedBadge = Container(
+      padding: const EdgeInsets.symmetric(vertical: 15),
+      decoration: BoxDecoration(
+        color: AppColors.moss.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.moss.withValues(alpha: 0.4)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.check_circle_outline,
+            color: AppColors.mossDeep,
+            size: seniorMode ? 24 : 18,
+          ),
+          const SizedBox(width: 8),
+          Text(
+            '已報名',
+            style: GoogleFonts.notoSerifTc(
+              fontSize: seniorMode ? 19 : 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.mossDeep,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
+    final leaveButton = GestureDetector(
+      onTap: _acting ? null : _leave,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: seniorMode ? 24 : 18,
+          vertical: 15,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.fog),
+        ),
+        child: Center(
+          child: Text(
+            '退出',
+            style: TextStyle(
+              fontSize: seniorMode ? 18 : 14,
+              color: AppColors.inkSoft,
+              letterSpacing: 1.0,
+            ),
+          ),
+        ),
+      ),
+    );
+    if (seniorMode) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(width: double.infinity, child: joinedBadge),
+          const SizedBox(height: 10),
+          SizedBox(width: double.infinity, child: leaveButton),
+        ],
+      );
+    }
     return Row(
       children: [
-        Expanded(
-          child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 15),
-            decoration: BoxDecoration(
-              color: AppColors.moss.withValues(alpha: 0.15),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.moss.withValues(alpha: 0.4)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.check_circle_outline,
-                  color: AppColors.mossDeep,
-                  size: 18,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  '已報名',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.mossDeep,
-                    letterSpacing: 1.5,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        Expanded(child: joinedBadge),
         const SizedBox(width: 10),
-        GestureDetector(
-          onTap: _acting ? null : _leave,
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 15),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.fog),
-            ),
-            child: Text(
-              '退出',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.inkSoft,
-                letterSpacing: 1.0,
-              ),
-            ),
-          ),
-        ),
+        leaveButton,
       ],
     );
   }
 
-  Widget _primaryButton(String label, VoidCallback? onTap) {
+  Widget _primaryButton(String label, VoidCallback? onTap, bool seniorMode) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1062,7 +1125,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               : Text(
                   label,
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 15,
+                    fontSize: seniorMode ? 19 : 15,
                     fontWeight: FontWeight.w600,
                     color: AppColors.creamLight,
                     letterSpacing: 2.0,
@@ -1073,7 +1136,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
-  Widget _disabledButton(String label) {
+  Widget _disabledButton(String label, bool seniorMode) {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 15),
       decoration: BoxDecoration(
@@ -1085,7 +1148,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 15,
+            fontSize: seniorMode ? 19 : 15,
             fontWeight: FontWeight.w600,
             color: AppColors.inkSoft,
             letterSpacing: 2.0,

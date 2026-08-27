@@ -4,9 +4,11 @@
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
+import '../../services/senior_mode_controller.dart';
 import 'forum_detail_screen.dart';
 
 class ForumLikedPostsList extends StatefulWidget {
@@ -87,16 +89,23 @@ class _ForumLikedPostsListState extends State<ForumLikedPostsList> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildBody(seniorModeController.enabled),
+    );
+  }
+
+  Widget _buildBody(bool seniorMode) {
     if (_loading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
     if (_error != null) {
-      return _buildError(_error);
+      return _buildError(_error, seniorMode);
     }
     if (_posts.isEmpty) {
-      return _buildEmpty();
+      return _buildEmpty(seniorMode);
     }
     return RefreshIndicator(
       onRefresh: _load,
@@ -122,24 +131,34 @@ class _ForumLikedPostsListState extends State<ForumLikedPostsList> {
               ),
             );
           }
-          return _PostListItem(post: _posts[index]);
+          return _PostListItem(
+            post: _posts[index],
+            seniorMode: seniorMode,
+          );
         },
       ),
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(bool seniorMode) {
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.favorite_border, color: AppColors.fog, size: 40),
+            Icon(
+              Icons.favorite_border,
+              color: AppColors.fog,
+              size: seniorMode ? 56 : 40,
+            ),
             const SizedBox(height: 12),
             Text(
               '還沒有按讚過任何貼文',
-              style: TextStyle(color: AppColors.inkSoft, fontSize: 14),
+              style: TextStyle(
+                color: AppColors.inkSoft,
+                fontSize: seniorMode ? AppTypography.title : 14,
+              ),
             ),
           ],
         ),
@@ -147,7 +166,7 @@ class _ForumLikedPostsListState extends State<ForumLikedPostsList> {
     );
   }
 
-  Widget _buildError(Object? error) {
+  Widget _buildError(Object? error, bool seniorMode) {
     final message = error is ApiException ? error.message : '發生錯誤，請稍後再試';
     return Center(
       child: Padding(
@@ -155,14 +174,32 @@ class _ForumLikedPostsListState extends State<ForumLikedPostsList> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, color: AppColors.fog, size: 40),
+            Icon(
+              Icons.error_outline,
+              color: AppColors.fog,
+              size: seniorMode ? 56 : 40,
+            ),
             const SizedBox(height: 12),
             Text(
               message,
-              style: TextStyle(color: AppColors.inkSoft, fontSize: 14),
+              style: TextStyle(
+                color: AppColors.inkSoft,
+                fontSize: seniorMode ? AppTypography.title : 14,
+              ),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: _load, child: const Text('重試')),
+            OutlinedButton(
+              onPressed: _load,
+              style: seniorMode
+                  ? OutlinedButton.styleFrom(
+                      minimumSize: const Size(140, 52),
+                      textStyle: const TextStyle(
+                        fontSize: AppTypography.subtitle,
+                      ),
+                    )
+                  : null,
+              child: const Text('重試'),
+            ),
           ],
         ),
       ),
@@ -172,7 +209,8 @@ class _ForumLikedPostsListState extends State<ForumLikedPostsList> {
 
 class _PostListItem extends StatelessWidget {
   final ForumPost post;
-  const _PostListItem({required this.post});
+  final bool seniorMode;
+  const _PostListItem({required this.post, required this.seniorMode});
 
   @override
   Widget build(BuildContext context) {
@@ -196,7 +234,7 @@ class _PostListItem extends StatelessWidget {
               post.board.name,
               style: TextStyle(
                 color: AppColors.primary,
-                fontSize: 11,
+                fontSize: seniorMode ? AppTypography.body : 11,
                 letterSpacing: 1.0,
               ),
             ),
@@ -205,35 +243,42 @@ class _PostListItem extends StatelessWidget {
               post.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.ink,
-                fontSize: 14,
+                fontSize: seniorMode ? AppTypography.title : 14,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 8),
-            Row(
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
               children: [
                 Icon(
                   post.isLiked ? Icons.favorite : Icons.favorite_border,
-                  size: 14,
+                  size: seniorMode ? 22 : 14,
                   color: post.isLiked ? AppColors.primary : AppColors.fog,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${post.likeCount}',
-                  style: TextStyle(color: AppColors.fog, fontSize: 12),
+                  style: TextStyle(
+                    color: AppColors.fog,
+                    fontSize: seniorMode ? AppTypography.subtitle : 12,
+                  ),
                 ),
                 const SizedBox(width: 12),
-                const Icon(
+                Icon(
                   Icons.mode_comment_outlined,
-                  size: 14,
+                  size: seniorMode ? 22 : 14,
                   color: AppColors.fog,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${post.commentCount}',
-                  style: TextStyle(color: AppColors.fog, fontSize: 12),
+                  style: TextStyle(
+                    color: AppColors.fog,
+                    fontSize: seniorMode ? AppTypography.subtitle : 12,
+                  ),
                 ),
               ],
             ),

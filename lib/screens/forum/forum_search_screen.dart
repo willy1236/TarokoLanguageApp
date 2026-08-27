@@ -8,9 +8,11 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import 'forum_theme.dart';
+import '../../core/constants/app_typography.dart';
 import '../../models/forum_models.dart';
 import '../../models/tribe_model.dart';
 import '../../services/forum_service.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../shared/search_range.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
 import 'forum_board_view.dart';
@@ -79,10 +81,15 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      Theme(data: forumTheme(context), child: _buildScaffold(context));
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: seniorModeController,
+    builder: (context, _) => Theme(
+      data: forumTheme(context),
+      child: _buildScaffold(context, seniorModeController.enabled),
+    ),
+  );
 
-  Widget _buildScaffold(BuildContext context) {
+  Widget _buildScaffold(BuildContext context, bool seniorMode) {
     final query = _query;
     return Scaffold(
       backgroundColor: AppColors.creamLight,
@@ -93,32 +100,50 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
         title: TextField(
           controller: _controller,
           autofocus: true,
+          style: TextStyle(
+            fontSize: seniorMode ? AppTypography.title : null,
+          ),
           textInputAction: TextInputAction.search,
           onSubmitted: (_) => _submit(),
-          decoration: const InputDecoration(
+          decoration: InputDecoration(
             hintText: '搜尋貼文',
+            hintStyle: TextStyle(
+              fontSize: seniorMode ? AppTypography.title : null,
+            ),
             border: InputBorder.none,
           ),
         ),
         actions: [
-          IconButton(onPressed: _submit, icon: const Icon(Icons.search)),
+          IconButton(
+            onPressed: _submit,
+            icon: Icon(Icons.search, size: seniorMode ? 30 : null),
+          ),
         ],
       ),
       body: Column(
         children: [
-          if (widget.boards.isNotEmpty) _boardFilter(),
-          _rangeTribeFilter(),
+          if (widget.boards.isNotEmpty) _boardFilter(seniorMode),
+          _rangeTribeFilter(seniorMode),
           if (_hint != null)
             Padding(
               padding: const EdgeInsets.all(20),
-              child: Text(_hint!, style: const TextStyle(color: AppColors.fog)),
+              child: Text(
+                _hint!,
+                style: TextStyle(
+                  color: AppColors.fog,
+                  fontSize: seniorMode ? AppTypography.title : null,
+                ),
+              ),
             ),
           if (query == null && _hint == null)
             Padding(
               padding: const EdgeInsets.all(40),
               child: Text(
                 '輸入關鍵字開始搜尋',
-                style: GoogleFonts.notoSerifTc(color: AppColors.fog),
+                style: GoogleFonts.notoSerifTc(
+                  color: AppColors.fog,
+                  fontSize: seniorMode ? AppTypography.title : null,
+                ),
               ),
             ),
           if (query != null)
@@ -171,20 +196,20 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
     );
   }
 
-  Widget _rangeTribeFilter() => SizedBox(
-    height: 48,
+  Widget _rangeTribeFilter(bool seniorMode) => SizedBox(
+    height: seniorMode ? 64 : 48,
     child: ListView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
-        for (final r in SearchRange.values) _rangeChip(r),
+        for (final r in SearchRange.values) _rangeChip(r, seniorMode),
         const SizedBox(width: 4),
-        _tribeChip(),
+        _tribeChip(seniorMode),
       ],
     ),
   );
 
-  Widget _rangeChip(String range) {
+  Widget _rangeChip(String range, bool seniorMode) {
     final selected = _range == range;
     return Padding(
       padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
@@ -195,7 +220,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
         backgroundColor: AppColors.cream,
         selectedColor: AppColors.primary.withValues(alpha: 0.16),
         labelStyle: TextStyle(
-          fontSize: 12,
+          fontSize: seniorMode ? AppTypography.subtitle : 12,
           color: selected ? AppColors.primary : AppColors.inkSoft,
         ),
         side: BorderSide(
@@ -208,20 +233,20 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
     );
   }
 
-  Widget _tribeChip() {
+  Widget _tribeChip(bool seniorMode) {
     final selected = _tribe != null;
     return Padding(
       padding: const EdgeInsets.only(top: 6, bottom: 6),
       child: ActionChip(
         avatar: Icon(
           Icons.place_outlined,
-          size: 16,
+          size: seniorMode ? 22 : 16,
           color: selected ? AppColors.primary : AppColors.inkSoft,
         ),
         label: Text(_tribe?.name ?? '部落'),
         backgroundColor: AppColors.cream,
         labelStyle: TextStyle(
-          fontSize: 12,
+          fontSize: seniorMode ? AppTypography.subtitle : 12,
           color: selected ? AppColors.primary : AppColors.inkSoft,
         ),
         side: BorderSide(
@@ -234,21 +259,22 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
     );
   }
 
-  Widget _boardFilter() => SizedBox(
-    height: 48,
+  Widget _boardFilter(bool seniorMode) => SizedBox(
+    height: seniorMode ? 64 : 48,
     child: ListView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: 16),
       children: [
-        _chip('全部看板', null),
-        for (final board in widget.boards) _chip(board.name, board.slug),
+        _chip('全部看板', null, seniorMode),
+        for (final board in widget.boards)
+          _chip(board.name, board.slug, seniorMode),
       ],
     ),
   );
 
   /// 選中態刻意只用淡淡的酒紅底加同色文字與邊框：整片深色會蓋掉文字，
   /// 太淡又看不出選了哪一個，所以底色壓在 0.16、靠邊框與文字顏色補足對比。
-  Widget _chip(String label, String? slug) {
+  Widget _chip(String label, String? slug, bool seniorMode) {
     final selected = _boardSlug == slug;
     return Padding(
       padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
@@ -259,7 +285,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
         backgroundColor: AppColors.cream,
         selectedColor: AppColors.primary.withValues(alpha: 0.16),
         labelStyle: TextStyle(
-          fontSize: 13,
+          fontSize: seniorMode ? AppTypography.subtitle : 13,
           color: selected ? AppColors.primary : AppColors.inkSoft,
           fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
         ),

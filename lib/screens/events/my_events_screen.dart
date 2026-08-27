@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
+import '../../services/senior_mode_controller.dart';
 import 'event_detail_screen.dart';
 
 /// 我發起的活動總表（GET /api/events/mine）。
@@ -76,6 +77,13 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildScaffold(seniorModeController.enabled),
+    );
+  }
+
+  Widget _buildScaffold(bool seniorMode) {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       appBar: AppBar(
@@ -85,7 +93,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         title: Text(
           '我發起的活動',
           style: GoogleFonts.notoSerifTc(
-            fontSize: 18,
+            fontSize: seniorMode ? 24 : 18,
             fontWeight: FontWeight.w700,
             color: AppColors.ink,
           ),
@@ -94,12 +102,12 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
       body: RefreshIndicator(
         onRefresh: _load,
         color: AppColors.primary,
-        child: _buildBody(),
+        child: _buildBody(seniorMode),
       ),
     );
   }
 
-  Widget _buildBody() {
+  Widget _buildBody(bool seniorMode) {
     if (_loading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
@@ -112,13 +120,17 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
             padding: const EdgeInsets.only(top: 90),
             child: Column(
               children: [
-                const Icon(Icons.cloud_off, size: 40, color: AppColors.fog),
+                Icon(
+                  Icons.cloud_off,
+                  size: seniorMode ? 56 : 40,
+                  color: AppColors.fog,
+                ),
                 const SizedBox(height: 12),
                 Text(
                   '載入失敗\n$_error',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: seniorMode ? 18 : 13,
                     color: AppColors.inkSoft,
                     height: 1.6,
                   ),
@@ -140,16 +152,16 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
             padding: const EdgeInsets.only(top: 100),
             child: Column(
               children: [
-                const Icon(
+                Icon(
                   Icons.event_available_outlined,
-                  size: 44,
+                  size: seniorMode ? 60 : 44,
                   color: AppColors.fog,
                 ),
                 const SizedBox(height: 12),
                 Text(
                   '你還沒發起過活動',
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 16,
+                    fontSize: seniorMode ? 22 : 16,
                     color: AppColors.inkSoft,
                   ),
                 ),
@@ -163,11 +175,11 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
       itemCount: _events.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => _buildTile(_events[i]),
+      itemBuilder: (_, i) => _buildTile(_events[i], seniorMode),
     );
   }
 
-  Widget _buildTile(EventSummary e) {
+  Widget _buildTile(EventSummary e, bool seniorMode) {
     final d = e.startsAt.toLocal();
     final chip = _statusChip(e);
     String two(int n) => n.toString().padLeft(2, '0');
@@ -180,22 +192,23 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         _load(); // 從詳情頁回來（可能剛取消）刷新
       },
       child: Container(
-        padding: const EdgeInsets.all(14),
+        padding: EdgeInsets.all(seniorMode ? 18 : 14),
         decoration: BoxDecoration(
           color: AppColors.cream,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.creamDeep),
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              width: 52,
+              width: seniorMode ? 76 : 52,
               child: Column(
                 children: [
                   Text(
                     _months[d.month - 1],
-                    style: const TextStyle(
-                      fontSize: 9,
+                    style: TextStyle(
+                      fontSize: seniorMode ? 13 : 9,
                       color: AppColors.primary,
                       letterSpacing: 0.5,
                     ),
@@ -203,7 +216,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                   Text(
                     two(d.day),
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 22,
+                      fontSize: seniorMode ? 30 : 22,
                       fontWeight: FontWeight.w700,
                       color: AppColors.ink,
                       height: 1.1,
@@ -222,7 +235,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 15,
+                      fontSize: seniorMode ? 20 : 15,
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                     ),
@@ -230,16 +243,16 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(
+                      Icon(
                         Icons.person_outline,
-                        size: 12,
+                        size: seniorMode ? 18 : 12,
                         color: AppColors.inkSoft,
                       ),
                       const SizedBox(width: 4),
                       Text(
                         '${e.participantCount} 人參加',
-                        style: const TextStyle(
-                          fontSize: 12,
+                        style: TextStyle(
+                          fontSize: seniorMode ? 16 : 12,
                           color: AppColors.inkSoft,
                         ),
                       ),
@@ -249,7 +262,10 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              padding: EdgeInsets.symmetric(
+                horizontal: seniorMode ? 10 : 8,
+                vertical: seniorMode ? 6 : 4,
+              ),
               decoration: BoxDecoration(
                 color: chip.color.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
@@ -257,7 +273,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
               child: Text(
                 chip.text,
                 style: TextStyle(
-                  fontSize: 11,
+                  fontSize: seniorMode ? 14 : 11,
                   color: chip.color,
                   letterSpacing: 0.5,
                 ),

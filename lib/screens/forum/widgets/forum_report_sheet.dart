@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_typography.dart';
 import '../forum_theme.dart';
 import '../../../core/network/api_client.dart';
 import '../../../services/forum_service.dart';
+import '../../../services/senior_mode_controller.dart';
 
 Future<void> showForumReportSheet(
   BuildContext context, {
@@ -70,6 +72,13 @@ class _ReportSheetState extends State<_ReportSheet> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _build(context, seniorModeController.enabled),
+    );
+  }
+
+  Widget _build(BuildContext context, bool seniorMode) {
     final reason = _controller.text.trim();
     final valid = reason.isNotEmpty && reason.length <= ForumService.reasonMax;
     return Padding(
@@ -86,15 +95,18 @@ class _ReportSheetState extends State<_ReportSheet> {
           Text(
             '檢舉',
             style: GoogleFonts.notoSerifTc(
-              fontSize: 18,
+              fontSize: seniorMode ? 26 : 18,
               fontWeight: FontWeight.w700,
               color: AppColors.ink,
             ),
           ),
           const SizedBox(height: 4),
-          const Text(
+          Text(
             '請說明檢舉的原因，管理員會再確認。',
-            style: TextStyle(fontSize: 13, color: AppColors.fog),
+            style: TextStyle(
+              fontSize: seniorMode ? AppTypography.title : 13,
+              color: AppColors.fog,
+            ),
           ),
           const SizedBox(height: 14),
           TextField(
@@ -102,21 +114,31 @@ class _ReportSheetState extends State<_ReportSheet> {
             maxLines: 4,
             maxLength: ForumService.reasonMax,
             onChanged: (_) => setState(() {}),
-            decoration: const InputDecoration(
+            style: TextStyle(fontSize: seniorMode ? AppTypography.title : null),
+            decoration: InputDecoration(
               hintText: '例如：廣告、人身攻擊、不實資訊',
-              border: OutlineInputBorder(),
+              hintStyle: seniorMode
+                  ? const TextStyle(fontSize: AppTypography.title)
+                  : null,
+              border: const OutlineInputBorder(),
             ),
           ),
           const SizedBox(height: 8),
           SizedBox(
             width: double.infinity,
+            height: seniorMode ? 56 : null,
             child: FilledButton(
               onPressed: valid && !_sending ? _submit : null,
               style: FilledButton.styleFrom(
                 backgroundColor: AppColors.primary,
                 foregroundColor: AppColors.creamLight,
               ),
-              child: Text(_sending ? '送出中…' : '送出檢舉'),
+              child: Text(
+                _sending ? '送出中…' : '送出檢舉',
+                style: seniorMode
+                    ? const TextStyle(fontSize: AppTypography.title)
+                    : null,
+              ),
             ),
           ),
         ],

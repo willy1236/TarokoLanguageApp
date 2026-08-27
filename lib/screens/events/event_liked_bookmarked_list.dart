@@ -4,10 +4,12 @@
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
+import '../../services/senior_mode_controller.dart';
 import 'event_detail_screen.dart';
 
 enum EventListMode { liked, bookmarked }
@@ -103,16 +105,23 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildBody(seniorModeController.enabled),
+    );
+  }
+
+  Widget _buildBody(bool seniorMode) {
     if (_loading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
     if (_error != null) {
-      return _buildError(_error);
+      return _buildError(_error, seniorMode);
     }
     if (_events.isEmpty) {
-      return _buildEmpty();
+      return _buildEmpty(seniorMode);
     }
     return RefreshIndicator(
       onRefresh: _load,
@@ -138,13 +147,16 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
               ),
             );
           }
-          return _EventListItem(event: _events[index]);
+          return _EventListItem(
+            event: _events[index],
+            seniorMode: seniorMode,
+          );
         },
       ),
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(bool seniorMode) {
     final message = widget.mode == EventListMode.liked
         ? '還沒有按讚任何活動'
         : '還沒有收藏任何活動';
@@ -154,11 +166,18 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.event_outlined, color: AppColors.fog, size: 40),
+            Icon(
+              Icons.event_outlined,
+              color: AppColors.fog,
+              size: seniorMode ? 56 : 40,
+            ),
             const SizedBox(height: 12),
             Text(
               message,
-              style: TextStyle(color: AppColors.inkSoft, fontSize: 14),
+              style: TextStyle(
+                color: AppColors.inkSoft,
+                fontSize: seniorMode ? AppTypography.title : 14,
+              ),
             ),
           ],
         ),
@@ -166,7 +185,7 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
     );
   }
 
-  Widget _buildError(Object? error) {
+  Widget _buildError(Object? error, bool seniorMode) {
     final message = error is ApiException ? error.message : '發生錯誤，請稍後再試';
     return Center(
       child: Padding(
@@ -174,14 +193,32 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(Icons.error_outline, color: AppColors.fog, size: 40),
+            Icon(
+              Icons.error_outline,
+              color: AppColors.fog,
+              size: seniorMode ? 56 : 40,
+            ),
             const SizedBox(height: 12),
             Text(
               message,
-              style: TextStyle(color: AppColors.inkSoft, fontSize: 14),
+              style: TextStyle(
+                color: AppColors.inkSoft,
+                fontSize: seniorMode ? AppTypography.title : 14,
+              ),
             ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: _load, child: const Text('重試')),
+            OutlinedButton(
+              onPressed: _load,
+              style: seniorMode
+                  ? OutlinedButton.styleFrom(
+                      minimumSize: const Size(140, 52),
+                      textStyle: const TextStyle(
+                        fontSize: AppTypography.subtitle,
+                      ),
+                    )
+                  : null,
+              child: const Text('重試'),
+            ),
           ],
         ),
       ),
@@ -191,7 +228,8 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
 
 class _EventListItem extends StatelessWidget {
   final EventSummary event;
-  const _EventListItem({required this.event});
+  final bool seniorMode;
+  const _EventListItem({required this.event, required this.seniorMode});
 
   @override
   Widget build(BuildContext context) {
@@ -215,24 +253,27 @@ class _EventListItem extends StatelessWidget {
               event.title,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
+              style: TextStyle(
                 color: AppColors.ink,
-                fontSize: 14,
+                fontSize: seniorMode ? AppTypography.title : 14,
                 fontWeight: FontWeight.w600,
               ),
             ),
             const SizedBox(height: 6),
             Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.access_time,
-                  size: 13,
+                  size: seniorMode ? 20 : 13,
                   color: AppColors.fog,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   formatDateTime(event.startsAt.toLocal()),
-                  style: TextStyle(color: AppColors.inkSoft, fontSize: 11.5),
+                  style: TextStyle(
+                    color: AppColors.inkSoft,
+                    fontSize: seniorMode ? AppTypography.subtitle : 11.5,
+                  ),
                 ),
               ],
             ),
@@ -240,9 +281,9 @@ class _EventListItem extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
-                  const Icon(
+                  Icon(
                     Icons.location_on_outlined,
-                    size: 13,
+                    size: seniorMode ? 20 : 13,
                     color: AppColors.fog,
                   ),
                   const SizedBox(width: 4),
@@ -253,7 +294,7 @@ class _EventListItem extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: AppColors.inkSoft,
-                        fontSize: 11.5,
+                        fontSize: seniorMode ? AppTypography.subtitle : 11.5,
                       ),
                     ),
                   ),
@@ -265,13 +306,16 @@ class _EventListItem extends StatelessWidget {
               children: [
                 Icon(
                   event.isLiked ? Icons.favorite : Icons.favorite_border,
-                  size: 14,
+                  size: seniorMode ? 22 : 14,
                   color: event.isLiked ? AppColors.primary : AppColors.fog,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${event.likeCount}',
-                  style: TextStyle(color: AppColors.fog, fontSize: 12),
+                  style: TextStyle(
+                    color: AppColors.fog,
+                    fontSize: seniorMode ? AppTypography.subtitle : 12,
+                  ),
                 ),
               ],
             ),

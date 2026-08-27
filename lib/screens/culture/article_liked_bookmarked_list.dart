@@ -3,9 +3,11 @@
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/article_models.dart';
 import '../../services/article_service.dart';
+import '../../services/senior_mode_controller.dart';
 import 'article_detail_screen.dart';
 
 enum ArticleListMode { liked, bookmarked }
@@ -102,16 +104,23 @@ class _ArticleLikedBookmarkedListState
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildBody(seniorModeController.enabled),
+    );
+  }
+
+  Widget _buildBody(bool seniorMode) {
     if (_loading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.gold),
       );
     }
     if (_error != null) {
-      return _buildError(_error);
+      return _buildError(_error, seniorMode);
     }
     if (_articles.isEmpty) {
-      return _buildEmpty();
+      return _buildEmpty(seniorMode);
     }
     return RefreshIndicator(
       onRefresh: _load,
@@ -137,13 +146,16 @@ class _ArticleLikedBookmarkedListState
               ),
             );
           }
-          return _ArticleListItem(article: _articles[index]);
+          return _ArticleListItem(
+            article: _articles[index],
+            seniorMode: seniorMode,
+          );
         },
       ),
     );
   }
 
-  Widget _buildEmpty() {
+  Widget _buildEmpty(bool seniorMode) {
     final message = widget.mode == ArticleListMode.liked
         ? '還沒有按讚任何文章'
         : '還沒有收藏任何文章';
@@ -153,16 +165,26 @@ class _ArticleLikedBookmarkedListState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.article_outlined, color: AppColors.fog, size: 40),
+            Icon(
+              Icons.article_outlined,
+              color: AppColors.fog,
+              size: seniorMode ? 56 : 40,
+            ),
             const SizedBox(height: 12),
-            Text(message, style: TextStyle(color: AppColors.fog, fontSize: 14)),
+            Text(
+              message,
+              style: TextStyle(
+                color: AppColors.fog,
+                fontSize: seniorMode ? AppTypography.title : 14,
+              ),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildError(Object? error) {
+  Widget _buildError(Object? error, bool seniorMode) {
     final message = error is ApiException ? error.message : '發生錯誤，請稍後再試';
     return Center(
       child: Padding(
@@ -170,11 +192,32 @@ class _ArticleLikedBookmarkedListState
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error_outline, color: AppColors.fog, size: 40),
+            Icon(
+              Icons.error_outline,
+              color: AppColors.fog,
+              size: seniorMode ? 56 : 40,
+            ),
             const SizedBox(height: 12),
-            Text(message, style: TextStyle(color: AppColors.cream, fontSize: 14)),
+            Text(
+              message,
+              style: TextStyle(
+                color: AppColors.cream,
+                fontSize: seniorMode ? AppTypography.title : 14,
+              ),
+            ),
             const SizedBox(height: 16),
-            OutlinedButton(onPressed: _load, child: const Text('重試')),
+            OutlinedButton(
+              onPressed: _load,
+              style: seniorMode
+                  ? OutlinedButton.styleFrom(
+                      minimumSize: const Size(140, 52),
+                      textStyle: const TextStyle(
+                        fontSize: AppTypography.subtitle,
+                      ),
+                    )
+                  : null,
+              child: const Text('重試'),
+            ),
           ],
         ),
       ),
@@ -184,10 +227,13 @@ class _ArticleLikedBookmarkedListState
 
 class _ArticleListItem extends StatelessWidget {
   final ArticleSummary article;
-  const _ArticleListItem({required this.article});
+  final bool seniorMode;
+  const _ArticleListItem({required this.article, required this.seniorMode});
 
   @override
   Widget build(BuildContext context) {
+    final thumbWidth = seniorMode ? 96.0 : 72.0;
+    final thumbHeight = seniorMode ? 80.0 : 60.0;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () => Navigator.push(
@@ -208,8 +254,8 @@ class _ArticleListItem extends StatelessWidget {
             ClipRRect(
               borderRadius: BorderRadius.circular(8),
               child: SizedBox(
-                width: 72,
-                height: 60,
+                width: thumbWidth,
+                height: thumbHeight,
                 child: article.coverImageUrl != null
                     ? Image.network(
                         article.coverImageUrl!,
@@ -240,20 +286,21 @@ class _ArticleListItem extends StatelessWidget {
                     article.title,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
+                    style: TextStyle(
                       color: AppColors.creamLight,
-                      fontSize: 14,
+                      fontSize: seniorMode ? AppTypography.title : 14,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Row(
+                  Wrap(
+                    crossAxisAlignment: WrapCrossAlignment.center,
                     children: [
                       Icon(
                         article.isLiked
                             ? Icons.favorite
                             : Icons.favorite_border,
-                        size: 14,
+                        size: seniorMode ? 22 : 14,
                         color: article.isLiked
                             ? AppColors.gold
                             : AppColors.fog,
@@ -261,14 +308,24 @@ class _ArticleListItem extends StatelessWidget {
                       const SizedBox(width: 4),
                       Text(
                         '${article.likeCount}',
-                        style: TextStyle(color: AppColors.fog, fontSize: 12),
+                        style: TextStyle(
+                          color: AppColors.fog,
+                          fontSize: seniorMode ? AppTypography.subtitle : 12,
+                        ),
                       ),
                       const SizedBox(width: 12),
-                      Icon(Icons.visibility, size: 14, color: AppColors.fog),
+                      Icon(
+                        Icons.visibility,
+                        size: seniorMode ? 22 : 14,
+                        color: AppColors.fog,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         '${article.viewCount}',
-                        style: TextStyle(color: AppColors.fog, fontSize: 12),
+                        style: TextStyle(
+                          color: AppColors.fog,
+                          fontSize: seniorMode ? AppTypography.subtitle : 12,
+                        ),
                       ),
                     ],
                   ),

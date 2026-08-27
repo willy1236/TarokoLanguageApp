@@ -7,10 +7,12 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import 'forum_compose_screen.dart';
 import 'widgets/forum_comment_tile.dart';
@@ -355,10 +357,16 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 
   @override
-  Widget build(BuildContext context) =>
-      Theme(data: forumTheme(context), child: _buildScaffold(context));
+  Widget build(BuildContext context) => Theme(
+    data: forumTheme(context),
+    child: ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) =>
+          _buildScaffold(context, seniorModeController.enabled),
+    ),
+  );
 
-  Widget _buildScaffold(BuildContext context) {
+  Widget _buildScaffold(BuildContext context, bool seniorMode) {
     final post = _post;
     return Scaffold(
       backgroundColor: AppColors.creamLight,
@@ -369,7 +377,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         title: Text(
           '貼文',
           style: GoogleFonts.notoSerifTc(
-            fontSize: 16,
+            fontSize: seniorMode ? AppTypography.title : 16,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),
@@ -377,6 +385,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         actions: [
           if (post != null)
             PopupMenuButton<String>(
+              iconSize: seniorMode ? 30 : 24,
               onSelected: (value) {
                 if (value == 'edit') _edit();
                 if (value == 'delete') _deletePost();
@@ -397,11 +406,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             ),
         ],
       ),
-      body: _buildBody(post),
+      body: _buildBody(post, seniorMode),
     );
   }
 
-  Widget _buildBody(ForumPost? post) {
+  Widget _buildBody(ForumPost? post, bool seniorMode) {
     if (_loading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.primary),
@@ -415,7 +424,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           children: [
             Text(
               error ?? '載入失敗',
-              style: const TextStyle(color: AppColors.inkSoft),
+              style: TextStyle(
+                color: AppColors.inkSoft,
+                fontSize: seniorMode ? AppTypography.title : null,
+              ),
             ),
             const SizedBox(height: 12),
             OutlinedButton(onPressed: _load, child: const Text('重試')),
@@ -439,22 +451,25 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
               children: [
-                _postBody(post),
+                _postBody(post, seniorMode),
                 const Divider(color: AppColors.creamDeep, height: 28),
                 Text(
                   '留言 ${post.commentCount}',
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 14,
+                    fontSize: seniorMode ? AppTypography.subtitle : 14,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                   ),
                 ),
                 if (threads.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 24),
                     child: Text(
                       '還沒有人留言，來說第一句吧。',
-                      style: TextStyle(color: AppColors.fog),
+                      style: TextStyle(
+                        color: AppColors.fog,
+                        fontSize: seniorMode ? AppTypography.title : null,
+                      ),
                     ),
                   ),
                 for (final thread in threads) ...[
@@ -491,18 +506,18 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             ),
           ),
         ),
-        _inputBar(),
+        _inputBar(seniorMode),
       ],
     );
   }
 
-  Widget _postBody(ForumPost post) => Column(
+  Widget _postBody(ForumPost post, bool seniorMode) => Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Text(
         post.title,
         style: GoogleFonts.notoSerifTc(
-          fontSize: 20,
+          fontSize: seniorMode ? 26 : 20,
           fontWeight: FontWeight.w700,
           color: AppColors.ink,
           height: 1.4,
@@ -512,13 +527,16 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       Text(
         '${post.author.displayName} · ${post.board.name} · '
         '${forumRelativeTime(post.createdAt)}',
-        style: const TextStyle(fontSize: 12, color: AppColors.fog),
+        style: TextStyle(
+          fontSize: seniorMode ? AppTypography.subtitle : 12,
+          color: AppColors.fog,
+        ),
       ),
       const SizedBox(height: 14),
       Text(
         post.body,
-        style: const TextStyle(
-          fontSize: 15,
+        style: TextStyle(
+          fontSize: seniorMode ? AppTypography.title : 15,
           color: AppColors.inkSoft,
           height: 1.7,
         ),
@@ -537,7 +555,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 '#${tag.name}',
                 style: GoogleFonts.crimsonPro(
                   fontStyle: FontStyle.italic,
-                  fontSize: 12,
+                  fontSize: seniorMode ? AppTypography.body : 12,
                   color: AppColors.primary,
                 ),
               ),
@@ -555,13 +573,16 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               children: [
                 Icon(
                   post.isLiked ? Icons.favorite : Icons.favorite_border,
-                  size: 18,
+                  size: seniorMode ? 30 : 18,
                   color: post.isLiked ? AppColors.primary : AppColors.fog,
                 ),
                 const SizedBox(width: 6),
                 Text(
                   '${post.likeCount}',
-                  style: const TextStyle(fontSize: 13, color: AppColors.fog),
+                  style: TextStyle(
+                    fontSize: seniorMode ? AppTypography.subtitle : 13,
+                    color: AppColors.fog,
+                  ),
                 ),
               ],
             ),
@@ -572,7 +593,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             onTap: _bookmarkPost,
             child: Icon(
               post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-              size: 18,
+              size: seniorMode ? 30 : 18,
               color: post.isBookmarked ? AppColors.primary : AppColors.fog,
             ),
           ),
@@ -581,7 +602,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     ],
   );
 
-  Widget _inputBar() {
+  Widget _inputBar(bool seniorMode) {
     final target = _replyTarget;
     return Container(
       decoration: const BoxDecoration(
@@ -603,14 +624,17 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 Expanded(
                   child: Text(
                     '回覆 @${target.author?.displayName ?? '匿名使用者'}',
-                    style: const TextStyle(fontSize: 12, color: AppColors.fog),
+                    style: TextStyle(
+                      fontSize: seniorMode ? AppTypography.body : 12,
+                      color: AppColors.fog,
+                    ),
                   ),
                 ),
                 GestureDetector(
                   onTap: () => setState(() => _replyTarget = null),
-                  child: const Icon(
+                  child: Icon(
                     Icons.close,
-                    size: 16,
+                    size: seniorMode ? 24 : 16,
                     color: AppColors.fog,
                   ),
                 ),
@@ -625,6 +649,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                   minLines: 1,
                   maxLines: 4,
                   onChanged: (_) => setState(() {}),
+                  style: TextStyle(
+                    fontSize: seniorMode ? AppTypography.title : null,
+                  ),
                   decoration: const InputDecoration(
                     hintText: '說點什麼…',
                     counterText: '',
@@ -636,11 +663,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 onPressed: _sending || _inputController.text.trim().isEmpty
                     ? null
                     : _send,
-                icon: const Icon(
-                  Icons.send,
-                  color: AppColors.primary,
-                  size: 20,
-                ),
+                iconSize: seniorMode ? 30 : 20,
+                icon: const Icon(Icons.send, color: AppColors.primary),
               ),
             ],
           ),
