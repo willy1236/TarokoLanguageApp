@@ -226,7 +226,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                 : (_user?.isIndigenous == true
                                       ? '${_user?.tribeName ?? "尚未設定"} · 加入 ${_user?.joinedDays ?? 124} 天'
                                       : '加入 ${_user?.joinedDays ?? 124} 天'),
-                            style: TextStyle(
+                            style: GoogleFonts.notoSerifTc(
                               fontSize: seniorMode
                                   ? AppTypography.subtitle
                                   : 12,
@@ -346,8 +346,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 2),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 10,
+              style: GoogleFonts.notoSerifTc(
+                fontSize: AppTypography.caption,
                 color: AppColors.creamLight.withValues(alpha: 0.80),
                 letterSpacing: 1,
               ),
@@ -523,7 +523,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       RichText(
                         text: TextSpan(
                           style: GoogleFonts.notoSerifTc(
-                            fontSize: 13,
+                            fontSize: AppTypography.bodyLarge,
                             fontWeight: FontWeight.w600,
                             color: AppColors.ink,
                             letterSpacing: 0.5,
@@ -540,8 +540,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 2),
                       Text(
                         '每日登入 / 完成單元都能得小米',
-                        style: TextStyle(
-                          fontSize: 10,
+                        style: GoogleFonts.notoSerifTc(
+                          fontSize: AppTypography.caption,
                           color: AppColors.fog,
                           letterSpacing: 1,
                         ),
@@ -556,10 +556,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       builder: (_) => const MilletLedgerScreen(),
                     ),
                   ),
-                  child: const Text(
+                  child: Text(
                     '查看明細 →',
-                    style: TextStyle(
-                      fontSize: 10,
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: AppTypography.caption,
                       color: AppColors.primary,
                       letterSpacing: 1,
                     ),
@@ -592,7 +592,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Text(
                       '我的背包 · 查看已擁有的頭像與頭像框',
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: 12,
+                        fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
@@ -632,7 +632,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     child: Text(
                       '小米商店 · 兌換頭像與頭像框',
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: 12,
+                        fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
@@ -678,7 +678,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     '我發起的活動',
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 14,
+                      fontSize: AppTypography.bodyLarge,
+                      fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                       letterSpacing: 0.5,
                     ),
@@ -743,8 +744,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Text(
                   label,
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? AppTypography.headline : 14,
-                    fontWeight: seniorMode ? FontWeight.w600 : null,
+                    fontSize: seniorMode ? AppTypography.headline : AppTypography.bodyLarge,
+                    fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 0.5,
                   ),
@@ -936,8 +937,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       items[i],
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode ? AppTypography.headline : 14,
-                        fontWeight: seniorMode ? FontWeight.w600 : null,
+                        fontSize: seniorMode ? AppTypography.headline : AppTypography.bodyLarge,
+                        fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
                       ),
@@ -1027,7 +1028,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   Text(
                     '登出',
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 14,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
                       letterSpacing: 2,
@@ -1104,8 +1105,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(
                       label,
-                      style: TextStyle(
-                        fontSize: 11,
+                      style: GoogleFonts.notoSerifTc(
+                        fontSize: AppTypography.caption,
                         color: AppColors.fog,
                         letterSpacing: 1,
                       ),
@@ -1120,7 +1121,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                                     )
                                   : GoogleFonts.notoSerifTc())
                               .copyWith(
-                                fontSize: 14,
+                                fontSize: AppTypography.bodyLarge,
                                 fontWeight: FontWeight.w600,
                                 color: AppColors.ink,
                                 letterSpacing: 0.5,
@@ -1177,7 +1178,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       label,
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode ? AppTypography.headline : 14,
+                        fontSize: seniorMode ? AppTypography.headline : AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
@@ -1187,7 +1188,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       const SizedBox(height: 2),
                       Text(
                         lockedHint,
-                        style: TextStyle(fontSize: 10, color: AppColors.fog),
+                        style: GoogleFonts.notoSerifTc(
+                          fontSize: AppTypography.caption,
+                          color: AppColors.fog,
+                        ),
                       ),
                     ],
                   ],
