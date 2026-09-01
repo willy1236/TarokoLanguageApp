@@ -3,7 +3,7 @@
     <!-- Android 13 (API 33)+ 需宣告才能請求通知權限（FCM 活動提醒） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <application
-        android:label="Kari Truku"
+        android:label="語見・太魯閣"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
