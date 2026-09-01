@@ -96,27 +96,36 @@ class _Thumb extends StatelessWidget {
       imageUrl: url,
       fit: BoxFit.cover,
       placeholder: (_, _) => Container(color: AppColors.creamDeep),
-      errorWidget: (_, _, _) => GestureDetector(
-        onTap: onExpired,
-        child: Container(
-          color: AppColors.creamDeep,
-          alignment: Alignment.center,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Icon(
-                Icons.broken_image_outlined,
-                color: AppColors.fog,
-                size: 20,
-              ),
-              if (onExpired != null) ...[
-                const SizedBox(height: 4),
-                const Icon(Icons.refresh, color: AppColors.fog, size: 16),
+      errorWidget: (_, _, _) {
+        // 過期網址載入失敗時自動觸發一次重新整理，不必使用者手動點——呼叫端
+        // （ForumDetailScreen）用旗標保證同一次瀏覽只自動重打一次貼文 API，
+        // 就算九宮格裡好幾張圖同時過期也不會連環重打造成後端壓力。
+        final expired = onExpired;
+        if (expired != null) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => expired());
+        }
+        return GestureDetector(
+          onTap: onExpired,
+          child: Container(
+            color: AppColors.creamDeep,
+            alignment: Alignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.broken_image_outlined,
+                  color: AppColors.fog,
+                  size: 20,
+                ),
+                if (onExpired != null) ...[
+                  const SizedBox(height: 4),
+                  const Icon(Icons.refresh, color: AppColors.fog, size: 16),
+                ],
               ],
-            ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     ),
   );
 }
