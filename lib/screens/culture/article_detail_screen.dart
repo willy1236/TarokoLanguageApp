@@ -8,6 +8,7 @@ import '../../core/network/api_client.dart';
 import '../../models/article_models.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../shared/widgets/engagement_icon_button.dart';
 
 class ArticleDetailScreen extends StatefulWidget {
   final int articleId;
@@ -235,20 +236,24 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              _engagementButton(
+                              EngagementIconButton(
                                 icon: article.isLiked
                                     ? Icons.favorite
                                     : Icons.favorite_border,
-                                active: article.isLiked,
+                                color: article.isLiked
+                                    ? AppColors.gold
+                                    : AppColors.fog,
                                 count: article.likeCount,
                                 onTap: _toggleLike,
                                 seniorMode: true,
                               ),
-                              _engagementButton(
+                              EngagementIconButton(
                                 icon: article.isBookmarked
                                     ? Icons.bookmark
                                     : Icons.bookmark_border,
-                                active: article.isBookmarked,
+                                color: article.isBookmarked
+                                    ? AppColors.gold
+                                    : AppColors.fog,
                                 onTap: _toggleBookmark,
                                 seniorMode: true,
                               ),
@@ -278,21 +283,25 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             ),
                           ],
                           const Spacer(),
-                          _engagementButton(
+                          EngagementIconButton(
                             icon: article.isLiked
                                 ? Icons.favorite
                                 : Icons.favorite_border,
-                            active: article.isLiked,
+                            color: article.isLiked
+                                ? AppColors.gold
+                                : AppColors.fog,
                             count: article.likeCount,
                             onTap: _toggleLike,
                             seniorMode: false,
                           ),
                           const SizedBox(width: 8),
-                          _engagementButton(
+                          EngagementIconButton(
                             icon: article.isBookmarked
                                 ? Icons.bookmark
                                 : Icons.bookmark_border,
-                            active: article.isBookmarked,
+                            color: article.isBookmarked
+                                ? AppColors.gold
+                                : AppColors.fog,
                             onTap: _toggleBookmark,
                             seniorMode: false,
                           ),
@@ -367,38 +376,4 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
   }
 
-  Widget _engagementButton({
-    required IconData icon,
-    required bool active,
-    required VoidCallback onTap,
-    required bool seniorMode,
-    int? count,
-  }) {
-    final color = active ? AppColors.gold : AppColors.fog;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: seniorMode ? 12 : 6,
-          vertical: seniorMode ? 8 : 4,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: seniorMode ? 30 : 18, color: color),
-            if (count != null) ...[
-              const SizedBox(width: 4),
-              Text(
-                '$count',
-                style: TextStyle(
-                  color: color,
-                  fontSize: seniorMode ? AppTypography.subtitle : 12,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 }

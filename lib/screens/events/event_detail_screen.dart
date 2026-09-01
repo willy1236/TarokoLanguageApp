@@ -8,6 +8,7 @@ import '../../services/event_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
+import '../../shared/widgets/engagement_icon_button.dart';
 import '../../shared/widgets/truku_painters.dart';
 import 'event_compose_screen.dart';
 import 'reminder_compose_screen.dart';
@@ -591,17 +592,17 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 ),
               ],
               const Spacer(),
-              _engagementButton(
+              EngagementIconButton(
                 icon: e.isLiked ? Icons.favorite : Icons.favorite_border,
-                active: e.isLiked,
+                color: e.isLiked ? AppColors.primary : AppColors.fog,
                 count: e.likeCount,
                 onTap: _toggleLike,
                 seniorMode: seniorMode,
               ),
               const SizedBox(width: 6),
-              _engagementButton(
+              EngagementIconButton(
                 icon: e.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                active: e.isBookmarked,
+                color: e.isBookmarked ? AppColors.primary : AppColors.fog,
                 onTap: _toggleBookmark,
                 seniorMode: seniorMode,
               ),
@@ -728,38 +729,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             ],
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _engagementButton({
-    required IconData icon,
-    required bool active,
-    required VoidCallback onTap,
-    required bool seniorMode,
-    int? count,
-  }) {
-    final color = active ? AppColors.primary : AppColors.fog;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: seniorMode ? 10 : 6,
-          vertical: seniorMode ? 8 : 4,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: seniorMode ? 28 : 18, color: color),
-            if (count != null) ...[
-              const SizedBox(width: 4),
-              Text(
-                '$count',
-                style: TextStyle(color: color, fontSize: seniorMode ? 16 : 12),
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }
