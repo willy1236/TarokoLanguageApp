@@ -34,6 +34,9 @@ class EventDetail {
   final bool registrationOpen; // 仍 active、未過截止、未開始
   final DateTime? createdAt;
   final List<EventParticipant> participants;
+  // 後端直接算好的人數；非發起人只會收到空 participants 陣列，這時仍要靠這個
+  // 欄位顯示正確人數，不能用 participants.length（見 EventSummary 的同名欄位）。
+  final int? participantCountRaw;
   final int likeCount; // 即時 COUNT，非反正規化欄位
   final bool isLiked;
   final bool isBookmarked;
@@ -57,6 +60,7 @@ class EventDetail {
     this.registrationOpen = false,
     this.createdAt,
     this.participants = const [],
+    this.participantCountRaw,
     this.likeCount = 0,
     this.isLiked = false,
     this.isBookmarked = false,
@@ -65,7 +69,9 @@ class EventDetail {
   /// 目前登入者是否為發起人（判斷要不要顯示「發送提醒」「取消活動」）。
   bool isHostedBy(int? uid) => uid != null && uid == hostUid;
 
-  int get participantCount => participants.length;
+  /// 優先用後端算好的計數；只有在後端沒帶這個欄位時才 fallback 用陣列長度
+  /// （這種情況只在拿得到完整 participants 時才準）。
+  int get participantCount => participantCountRaw ?? participants.length;
 
   /// 目前登入者是否已報名。
   bool isJoinedBy(int? uid) =>
@@ -105,6 +111,7 @@ class EventDetail {
       participants: rawParts
           .map((e) => EventParticipant.fromJson(e as Map<String, dynamic>))
           .toList(),
+      participantCountRaw: asEventInt(json['participant_count']),
       likeCount: asEventInt(json['like_count']) ?? 0,
       isLiked: json['is_liked'] as bool? ?? false,
       isBookmarked: json['is_bookmarked'] as bool? ?? false,
@@ -143,6 +150,7 @@ class EventDetail {
         registrationOpen: registrationOpen,
         createdAt: createdAt,
         participants: participants,
+        participantCountRaw: participantCountRaw,
         likeCount: likeCount ?? this.likeCount,
         isLiked: isLiked ?? this.isLiked,
         isBookmarked: isBookmarked ?? this.isBookmarked,
