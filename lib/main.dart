@@ -174,6 +174,7 @@ class _MainContainerState extends State<MainContainer> {
 
   int _currentIndex = 0;
   int _previousIndex = 0;
+  int _profileOpenCount = 0;
   String? _displayName;
   int? _millet;
   String? _avatarId;
@@ -276,6 +277,7 @@ class _MainContainerState extends State<MainContainer> {
   void _openProfile() => setState(() {
     _previousIndex = _currentIndex;
     _currentIndex = _profileIndex;
+    _profileOpenCount++;
   });
 
   void _closeProfile() {
@@ -358,7 +360,10 @@ class _MainContainerState extends State<MainContainer> {
                 const CommunityScreen(),
                 const PlazaScreen(),
                 const EventsScreen(),
-                ProfileScreen(onClose: _closeProfile),
+                ProfileScreen(
+                  refreshToken: _profileOpenCount,
+                  onClose: _closeProfile,
+                ),
               ],
             ),
             bottomNavigationBar: _currentIndex == _profileIndex

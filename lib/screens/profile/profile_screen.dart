@@ -38,7 +38,9 @@ const _kAllowedAvatarExtensions = {'jpg', 'jpeg', 'png', 'webp', 'gif'};
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onClose;
-  const ProfileScreen({super.key, this.onClose});
+  // 每次打開個人資料頁時遞增，用來觸發重新讀取使用者資料（不含商店目錄，避免無謂重打）。
+  final int refreshToken;
+  const ProfileScreen({super.key, this.onClose, this.refreshToken = 0});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -56,6 +58,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _loadUser();
     _loadItemCatalog();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.refreshToken != oldWidget.refreshToken) {
+      _loadUser();
+    }
   }
 
   Future<void> _loadUser() async {
