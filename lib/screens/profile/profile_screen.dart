@@ -21,6 +21,7 @@ import '../../shared/widgets/millet_coin_icon.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
 import '../../shared/widgets/user_avatar.dart';
+import 'about_app_screen.dart';
 import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
@@ -921,6 +922,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ? _openTermsView
             : items[i] == '聯絡我們'
             ? _openContactEmail
+            : items[i] == '關於語見太魯閣'
+            ? _openAboutApp
             : null;
         return Column(
           children: [
@@ -963,6 +966,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }),
     );
+  }
+
+  void _openAboutApp() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const AboutAppScreen()));
   }
 
   void _openTermsView() {

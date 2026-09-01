@@ -7,6 +7,7 @@ import '../../shared/widgets/truku_widgets.dart';
 import '../../shared/widgets/mode_card.dart';
 import '../../shared/widgets/millet_coin_icon.dart';
 import '../../shared/widgets/user_avatar.dart';
+import '../profile/about_app_screen.dart';
 import '../shop/shop_screen.dart';
 
 // 五張模式卡資料（依設計稿）
@@ -137,12 +138,18 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo
+                // Logo（點擊開啟「關於語見太魯閣」）
                 Center(
-                  child: Image.asset(
-                    'assets/icon/logo.png',
-                    width: 120,
-                    height: 120,
+                  child: GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AboutAppScreen()),
+                    ),
+                    child: Image.asset(
+                      'assets/icon/logo.png',
+                      width: 120,
+                      height: 120,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
