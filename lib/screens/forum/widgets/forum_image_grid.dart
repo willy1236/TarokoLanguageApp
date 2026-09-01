@@ -17,7 +17,16 @@ class ForumImageGrid extends StatelessWidget {
   /// 給定時取代「開啟全螢幕檢視」的預設行為。
   final VoidCallback? onTap;
 
-  const ForumImageGrid({super.key, required this.urls, this.onTap});
+  /// 圖片載入失敗時觸發（多半是簽章網址已過期，15 分鐘效期）。
+  /// 呼叫端可用它重新打貼文 API 拿新網址，而不是要求使用者手動下拉整頁。
+  final VoidCallback? onImageExpired;
+
+  const ForumImageGrid({
+    super.key,
+    required this.urls,
+    this.onTap,
+    this.onImageExpired,
+  });
 
   void _open(BuildContext context, int index) {
     final override = onTap;
@@ -44,7 +53,11 @@ class ForumImageGrid extends StatelessWidget {
         borderRadius: BorderRadius.circular(10),
         child: AspectRatio(
           aspectRatio: 16 / 10,
-          child: _Thumb(url: urls.first, onTap: () => _open(context, 0)),
+          child: _Thumb(
+            url: urls.first,
+            onTap: () => _open(context, 0),
+            onExpired: onImageExpired,
+          ),
         ),
       );
     }
@@ -58,7 +71,11 @@ class ForumImageGrid extends StatelessWidget {
         for (var i = 0; i < urls.length; i++)
           ClipRRect(
             borderRadius: BorderRadius.circular(8),
-            child: _Thumb(url: urls[i], onTap: () => _open(context, i)),
+            child: _Thumb(
+              url: urls[i],
+              onTap: () => _open(context, i),
+              onExpired: onImageExpired,
+            ),
           ),
       ],
     );
@@ -68,8 +85,9 @@ class ForumImageGrid extends StatelessWidget {
 class _Thumb extends StatelessWidget {
   final String url;
   final VoidCallback onTap;
+  final VoidCallback? onExpired;
 
-  const _Thumb({required this.url, required this.onTap});
+  const _Thumb({required this.url, required this.onTap, this.onExpired});
 
   @override
   Widget build(BuildContext context) => GestureDetector(
@@ -78,13 +96,25 @@ class _Thumb extends StatelessWidget {
       imageUrl: url,
       fit: BoxFit.cover,
       placeholder: (_, _) => Container(color: AppColors.creamDeep),
-      errorWidget: (_, _, _) => Container(
-        color: AppColors.creamDeep,
-        alignment: Alignment.center,
-        child: const Icon(
-          Icons.broken_image_outlined,
-          color: AppColors.fog,
-          size: 20,
+      errorWidget: (_, _, _) => GestureDetector(
+        onTap: onExpired,
+        child: Container(
+          color: AppColors.creamDeep,
+          alignment: Alignment.center,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(
+                Icons.broken_image_outlined,
+                color: AppColors.fog,
+                size: 20,
+              ),
+              if (onExpired != null) ...[
+                const SizedBox(height: 4),
+                const Icon(Icons.refresh, color: AppColors.fog, size: 16),
+              ],
+            ],
+          ),
         ),
       ),
     ),

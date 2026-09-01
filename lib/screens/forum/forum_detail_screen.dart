@@ -543,7 +543,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       ),
       if (post.images.isNotEmpty) ...[
         const SizedBox(height: 14),
-        ForumImageGrid(urls: post.images),
+        ForumImageGrid(urls: post.images, onImageExpired: _load),
       ],
       if (post.tags.isNotEmpty) ...[
         const SizedBox(height: 12),
