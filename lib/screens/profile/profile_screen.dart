@@ -246,11 +246,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 20),
                   Row(
                     children: [
-                      _statCell('248', '已學詞彙'),
+                      _statCell('${_user?.checkinStreak ?? 0}', '連續簽到'),
                       const SizedBox(width: 10),
-                      _statCell('36', '通話次數'),
+                      _statCell('${_user?.videoCallCount ?? 0}', '通話次數'),
                       const SizedBox(width: 10),
-                      _statCell('12', '發文'),
+                      _statCell('${_user?.forumPostCount ?? 0}', '發文'),
                     ],
                   ),
                 ],

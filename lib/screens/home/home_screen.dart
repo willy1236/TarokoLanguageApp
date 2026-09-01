@@ -83,6 +83,7 @@ class HomeScreen extends StatelessWidget {
   final Map<String, ShopItem> itemCatalogById;
   final bool checkedInToday;
   final int checkinStreak;
+  final int studyStreak;
   final VoidCallback? onCheckin;
 
   const HomeScreen({
@@ -96,6 +97,7 @@ class HomeScreen extends StatelessWidget {
     this.itemCatalogById = const {},
     this.checkedInToday = false,
     this.checkinStreak = 0,
+    this.studyStreak = 0,
     this.onCheckin,
   });
 
@@ -215,6 +217,7 @@ class HomeScreen extends StatelessWidget {
                   millet: millet,
                   checkedInToday: checkedInToday,
                   checkinStreak: checkinStreak,
+                  studyStreak: studyStreak,
                   onCheckin: onCheckin,
                 ),
               ],
@@ -282,12 +285,14 @@ class _TodayProgressCard extends StatelessWidget {
   final int? millet;
   final bool checkedInToday;
   final int checkinStreak;
+  final int studyStreak;
   final VoidCallback? onCheckin;
 
   const _TodayProgressCard({
     this.millet,
     this.checkedInToday = false,
     this.checkinStreak = 0,
+    this.studyStreak = 0,
     this.onCheckin,
   });
 
@@ -385,7 +390,7 @@ class _TodayProgressCard extends StatelessWidget {
                     children: [
                       const TextSpan(text: '連續學習 '),
                       TextSpan(
-                        text: '12',
+                        text: '$studyStreak',
                         style: const TextStyle(color: AppColors.gold),
                       ),
                       const TextSpan(text: ' 天'),

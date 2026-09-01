@@ -181,6 +181,7 @@ class _MainContainerState extends State<MainContainer> {
   Map<String, ShopItem> _itemCatalogById = const {};
   bool _checkedInToday = false;
   int _checkinStreak = 0;
+  int _studyStreak = 0;
 
   @override
   void initState() {
@@ -199,6 +200,7 @@ class _MainContainerState extends State<MainContainer> {
           _millet = user.millet;
           _avatarId = user.avatarId;
           _avatarUrl = user.avatarUrl;
+          _studyStreak = user.studyStreak;
         });
       }
     } catch (e, st) {
@@ -346,6 +348,7 @@ class _MainContainerState extends State<MainContainer> {
                   itemCatalogById: _itemCatalogById,
                   checkedInToday: _checkedInToday,
                   checkinStreak: _checkinStreak,
+                  studyStreak: _studyStreak,
                   onCheckin: _checkin,
                   onShowProfile: _openProfile,
                   onNavigateToTab: _navigate,
