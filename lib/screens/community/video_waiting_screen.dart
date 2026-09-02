@@ -127,26 +127,9 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
   }
 
   Widget _buildTopBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 0),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => _cancel(context),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
-              child: const Center(child: _XIcon()),
-            ),
-          ),
-          const Expanded(child: Center(child: _SmtrungLabel())),
-          const SizedBox(width: 36),
-        ],
-      ),
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(20, 60, 20, 0),
+      child: Center(child: _SmtrungLabel()),
     );
   }
 
@@ -258,37 +241,6 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
       ),
     );
   }
-}
-
-class _XIcon extends StatelessWidget {
-  const _XIcon();
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(size: const Size(18, 18), painter: _XPainter());
-  }
-}
-
-class _XPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.creamLight
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(size.width * 0.25, size.height * 0.25),
-      Offset(size.width * 0.75, size.height * 0.75),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.75, size.height * 0.25),
-      Offset(size.width * 0.25, size.height * 0.75),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_XPainter old) => false;
 }
 
 class _SmtrungLabel extends StatelessWidget {
