@@ -81,10 +81,19 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         _eventsLoading = false;
       });
     } on ApiException catch (e) {
+      debugPrint('[PlazaScreen] _loadEvents ApiException: ${e.message}');
       if (!mounted) return;
       setState(() {
         _events = [];
         _eventsError = e.message;
+        _eventsLoading = false;
+      });
+    } catch (e) {
+      debugPrint('[PlazaScreen] _loadEvents error: $e');
+      if (!mounted) return;
+      setState(() {
+        _events = [];
+        _eventsError = '活動載入失敗，請稍後再試';
         _eventsLoading = false;
       });
     }
@@ -99,8 +108,13 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         // 預設停在「全部」，不自動選第一個看板。
         _boardsLoading = false;
       });
-    } on ApiException {
+    } on ApiException catch (e) {
       // 看板載不到不應該讓整頁失效，活動小卡仍要顯示。
+      debugPrint('[PlazaScreen] _loadBoards ApiException: ${e.message}');
+      if (!mounted) return;
+      setState(() => _boardsLoading = false);
+    } catch (e) {
+      debugPrint('[PlazaScreen] _loadBoards error: $e');
       if (!mounted) return;
       setState(() => _boardsLoading = false);
     }
@@ -111,8 +125,11 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       final page = await ForumService.notifications();
       if (!mounted) return;
       setState(() => _unread = page.unreadCount);
-    } on ApiException {
+    } on ApiException catch (e) {
       // 紅點拿不到就不顯示，不干擾主要內容。
+      debugPrint('[PlazaScreen] _loadUnread ApiException: ${e.message}');
+    } catch (e) {
+      debugPrint('[PlazaScreen] _loadUnread error: $e');
     }
   }
 
@@ -507,6 +524,7 @@ class _EventMessageCard extends StatelessWidget {
       ],
     ),
   );
+}
 
 // ── 看板 Tab 元件 ──────────────────────────────────────────────
 
