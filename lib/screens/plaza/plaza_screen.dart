@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../data/demo_content.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_model.dart';
@@ -30,7 +29,7 @@ class PlazaScreen extends StatefulWidget {
 class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   bool _eventsLoading = true;
   List<EventSummary> _events = [];
-  bool _usingDemoEvents = false;
+  String? _eventsError;
 
   List<ForumBoard> _boards = [];
 
@@ -77,15 +76,15 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       final events = await EventService.fetchEvents(scope: 'upcoming');
       if (!mounted) return;
       setState(() {
-        _usingDemoEvents = events.isEmpty;
-        _events = events.isEmpty ? DemoContent.events : events;
+        _events = events;
+        _eventsError = null;
         _eventsLoading = false;
       });
-    } catch (_) {
+    } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
-        _events = DemoContent.events;
-        _usingDemoEvents = true;
+        _events = [];
+        _eventsError = e.message;
         _eventsLoading = false;
       });
     }
@@ -96,17 +95,14 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       final boards = await ForumService.boards();
       if (!mounted) return;
       setState(() {
-        _boards = boards.isEmpty ? DemoContent.boards : boards;
+        _boards = boards;
         // 預設停在「全部」，不自動選第一個看板。
         _boardsLoading = false;
       });
     } on ApiException {
       // 看板載不到不應該讓整頁失效，活動小卡仍要顯示。
       if (!mounted) return;
-      setState(() {
-        _boards = DemoContent.boards;
-        _boardsLoading = false;
-      });
+      setState(() => _boardsLoading = false);
     }
   }
 
@@ -121,12 +117,6 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   }
 
   void _openEventDetail(EventSummary e) {
-    if (_usingDemoEvents || DemoContent.isDemoId(e.id)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('這是本機展示活動，正式活動資料上線後可查看詳情。')));
-      return;
-    }
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: e.id)),
@@ -142,12 +132,6 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _openPost(ForumPost post) async {
-    if (DemoContent.isDemoId(post.id)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('這是本機展示貼文，正式貼文資料上線後可查看詳情。')));
-      return;
-    }
     final result = await Navigator.push<ForumDetailResult>(
       context,
       MaterialPageRoute(
@@ -416,37 +400,22 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
               ),
             ),
           )
+        else if (_eventsError != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+            child: _EventMessageCard(
+              icon: Icons.cloud_off_outlined,
+              message: _eventsError!,
+              actionLabel: '重試',
+              onAction: _loadEvents,
+            ),
+          )
         else if (_events.isEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: AppColors.cream,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.creamDeep),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.event_available_outlined,
-                    size: 18,
-                    color: AppColors.fog,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      '近期暫無活動，敬請期待',
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: 13,
-                        color: AppColors.fog,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            child: const _EventMessageCard(
+              icon: Icons.event_available_outlined,
+              message: '近期暫無活動，敬請期待',
             ),
           )
         else
@@ -492,11 +461,52 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         toggleBookmark: ForumService.bookmarkPost,
         onOpenPost: _openPost,
         onRefresh: _refreshHeader,
-        fallbackPage: DemoContent.forumPage(boardSlug: slug),
       ),
     );
   }
 }
+
+class _EventMessageCard extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const _EventMessageCard({
+    required this.icon,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    decoration: BoxDecoration(
+      color: AppColors.cream,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: AppColors.creamDeep),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.fog),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            message,
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 13,
+              color: AppColors.fog,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        if (actionLabel != null && onAction != null)
+          TextButton(onPressed: onAction, child: Text(actionLabel!)),
+      ],
+    ),
+  );
 
 // ── 看板 Tab 元件 ──────────────────────────────────────────────
 
