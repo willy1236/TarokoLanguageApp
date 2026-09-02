@@ -487,14 +487,27 @@ class _CultureScreenState extends State<CultureScreen> {
                 : '影片載入失敗，請稍後再試';
             return Padding(
               padding: const EdgeInsets.symmetric(vertical: 40),
-              child: Center(
-                child: Text(
-                  message,
-                  style: TextStyle(
-                    color: AppColors.fog,
-                    fontSize: seniorMode ? AppTypography.subtitle : 13,
+              child: Column(
+                children: [
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.fog,
+                      fontSize: seniorMode ? AppTypography.subtitle : 13,
+                    ),
                   ),
-                ),
+                  const SizedBox(height: 8),
+                  OutlinedButton(
+                    onPressed: _reloadVideos,
+                    child: Text(
+                      '重試',
+                      style: seniorMode
+                          ? const TextStyle(fontSize: AppTypography.subtitle)
+                          : null,
+                    ),
+                  ),
+                ],
               ),
             );
           }
