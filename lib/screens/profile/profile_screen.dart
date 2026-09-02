@@ -256,7 +256,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 20),
                   Row(
                     children: [
-                      _statCell('${_user?.checkinStreak ?? 0}', '連續簽到'),
+                      _statCell('${_user?.studyStreak ?? 0}', '連續學習'),
                       const SizedBox(width: 10),
                       _statCell('${_user?.videoCallCount ?? 0}', '通話次數'),
                       const SizedBox(width: 10),
