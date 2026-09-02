@@ -28,6 +28,8 @@ class ApiException implements Exception {
   bool get isSessionNotCompleted => code == 'SESSION_NOT_COMPLETED';
   bool get isVideoUnavailable =>
       statusCode == 503 && code == 'VIDEO_UNAVAILABLE';
+  bool get isVideoNicknameRequired =>
+      statusCode == 403 && code == 'VIDEO_NICKNAME_REQUIRED';
   bool get isSessionEnded => code == 'SESSION_ENDED';
 
   @override

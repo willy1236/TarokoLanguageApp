@@ -8,18 +8,20 @@
 
 import 'event_model.dart' show asEventInt;
 
-/// 一次配對成立的通話房。後端只給 peer_uid，沒有對方姓名/頭像/部落資料——
-/// 前端一律用通用「語伴」文案顯示，不要假裝有真資料。
+/// 一次配對成立的通話房。peerNickname 為對方的視訊暱稱；理論上配對雙方都已
+/// 必填視訊暱稱才能入列，但仍保留 null 容錯，顯示端 fallback 用通用「語伴」文案。
 class VideoSession {
   final int id;
   final String channel;
   final int peerUid;
+  final String? peerNickname;
   final DateTime expiresAt; // 通話硬上限（token 效期即為此時間）
 
   const VideoSession({
     required this.id,
     required this.channel,
     required this.peerUid,
+    this.peerNickname,
     required this.expiresAt,
   });
 
@@ -30,6 +32,7 @@ class VideoSession {
       id: asEventInt(json['id'])!,
       channel: json['channel'] as String,
       peerUid: asEventInt(json['peer_uid'])!,
+      peerNickname: json['peer_nickname'] as String?,
       expiresAt: DateTime.parse(json['expires_at'] as String),
     );
   }

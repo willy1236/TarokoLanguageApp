@@ -6,6 +6,7 @@ import '../../core/network/api_client.dart';
 import '../../main.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
+import '../profile/profile_screen.dart';
 import 'video_call_screen.dart';
 import 'video_waiting_screen.dart';
 
@@ -267,7 +268,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
         );
       }
     } on ApiException catch (e) {
-      _showMessage(e.isVideoUnavailable ? '視訊功能暫時無法使用，請稍後再試' : e.message);
+      if (e.isVideoNicknameRequired) {
+        _showVideoNicknameRequiredDialog();
+      } else {
+        _showMessage(e.isVideoUnavailable ? '視訊功能暫時無法使用，請稍後再試' : e.message);
+      }
     } catch (_) {
       _showMessage('連線失敗，請稍後再試');
     } finally {
@@ -279,6 +284,33 @@ class _CommunityScreenState extends State<CommunityScreen> {
     scaffoldMessengerKey.currentState
       ?..clearSnackBars()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showVideoNicknameRequiredDialog() async {
+    if (!mounted) return;
+    final goToProfile = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('請先設定視訊暱稱'),
+        content: const Text('視訊配對前需要先在個人資料設定一個視訊暱稱，讓對方在通話時看到。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('前往設定'),
+          ),
+        ],
+      ),
+    );
+    if (goToProfile == true && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      );
+    }
   }
 
   Widget _buildStartButton() {

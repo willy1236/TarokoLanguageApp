@@ -22,6 +22,7 @@ class UserService {
     String? ethnicGroup,
     int? tribeId,
     bool clearTribeId = false,
+    String? videoNickname,
   }) async {
     final body = <String, dynamic>{
       if (displayName != null) 'display_name': displayName,
@@ -30,6 +31,7 @@ class UserService {
         'tribe_id': null
       else if (tribeId != null)
         'tribe_id': tribeId,
+      if (videoNickname != null) 'video_nickname': videoNickname,
     };
     final data = await ApiClient.patch(ApiConfig.me, body);
     return UserModel.fromJson(data);

@@ -422,7 +422,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       child: Column(
         children: [
           Text(
-            '語伴',
+            _session.peerNickname ?? '語伴',
             textAlign: TextAlign.center,
             style: GoogleFonts.notoSerifTc(
               fontSize: 24,

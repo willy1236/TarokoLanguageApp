@@ -23,6 +23,7 @@ class UserModel {
   final String? ethnicGroup; // 族群，見 00_核心與認證.md §2.5；未設為 null
   final int? tribeId; // 部落 id，對應 tribes.id；未設為 null
   final String? tribeName; // 部落中文名，由後端 join tribes 帶出
+  final String? videoNickname; // 視訊暱稱，未設為 null；視訊配對前必填
 
   const UserModel({
     required this.uid,
@@ -40,6 +41,7 @@ class UserModel {
     this.ethnicGroup,
     this.tribeId,
     this.tribeName,
+    this.videoNickname,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -63,6 +65,7 @@ class UserModel {
       ethnicGroup: json['ethnic_group'] as String?,
       tribeId: json['tribe_id'] as int?,
       tribeName: json['tribe_name'] as String?,
+      videoNickname: json['video_nickname'] as String?,
     );
   }
 
@@ -82,6 +85,7 @@ class UserModel {
         'ethnic_group': ethnicGroup,
         'tribe_id': tribeId,
         'tribe_name': tribeName,
+        'video_nickname': videoNickname,
       };
 
   int get joinedDays => DateTime.now().difference(createdAt).inDays;
@@ -102,6 +106,7 @@ class UserModel {
     String? ethnicGroup,
     int? tribeId,
     String? tribeName,
+    String? videoNickname,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -119,6 +124,7 @@ class UserModel {
       ethnicGroup: ethnicGroup ?? this.ethnicGroup,
       tribeId: tribeId ?? this.tribeId,
       tribeName: tribeName ?? this.tribeName,
+      videoNickname: videoNickname ?? this.videoNickname,
     );
   }
 }
