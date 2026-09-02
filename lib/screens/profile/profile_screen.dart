@@ -855,7 +855,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _editVideoNickname() async {
     final newName = await showDialog<String>(
       context: context,
-      builder: (ctx) => _RenameDialog(initialValue: _user?.videoNickname ?? ''),
+      builder: (ctx) => _RenameDialog(
+        title: '修改視訊暱稱',
+        label: '視訊暱稱',
+        initialValue: _user?.videoNickname ?? '',
+      ),
     );
     if (newName == null || newName == _user?.videoNickname) return;
     try {
