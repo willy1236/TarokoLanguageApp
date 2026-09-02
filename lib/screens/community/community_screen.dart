@@ -370,7 +370,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
               return GestureDetector(
                 onTap: () => setState(() => _activeTopicIndex = i),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: active ? AppColors.primary : Colors.transparent,
                     borderRadius: BorderRadius.circular(20),
@@ -385,7 +388,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         _topics[i].$1,
                         style: TextStyle(
                           fontSize: 12,
-                          color: active ? AppColors.creamLight : AppColors.inkSoft,
+                          color: active
+                              ? AppColors.creamLight
+                              : AppColors.inkSoft,
                           letterSpacing: 1.5,
                         ),
                       ),
@@ -395,8 +400,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         style: GoogleFonts.crimsonPro(
                           fontStyle: FontStyle.italic,
                           fontSize: 10,
-                          color: (active ? AppColors.creamLight : AppColors.inkSoft)
-                              .withValues(alpha: 0.7),
+                          color:
+                              (active
+                                      ? AppColors.creamLight
+                                      : AppColors.inkSoft)
+                                  .withValues(alpha: 0.7),
                         ),
                       ),
                     ],
@@ -644,7 +652,10 @@ class _RudanTile extends StatelessWidget {
                   spacing: 4,
                   children: data.themes.map((t) {
                     return Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(3),

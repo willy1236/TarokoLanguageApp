@@ -24,6 +24,11 @@ class UserModel {
   final int? tribeId; // 部落 id，對應 tribes.id；未設為 null
   final String? tribeName; // 部落中文名，由後端 join tribes 帶出
   final String? videoNickname; // 視訊暱稱，未設為 null；視訊配對前必填
+  final bool? isIndigenous; // 是否原住民；ethnicGroup 一經設定即永久鎖定
+  final String? tribalName; // 本人族語名，不受 ethnicGroup 鎖定限制，可隨時修改
+  final bool profileCompleted; // 首次登入完善資料是否已完成，見 issue #43
+  final String? quizSuggestedLevel; // 分級測驗建議的單字起始等級；null=尚未分級
+  final String? listeningSuggestedLevel; // 分級測驗建議的聽力起始等級；null=尚未分級
 
   const UserModel({
     required this.uid,
@@ -42,6 +47,11 @@ class UserModel {
     this.tribeId,
     this.tribeName,
     this.videoNickname,
+    this.isIndigenous,
+    this.tribalName,
+    this.profileCompleted = false,
+    this.quizSuggestedLevel,
+    this.listeningSuggestedLevel,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -66,6 +76,11 @@ class UserModel {
       tribeId: json['tribe_id'] as int?,
       tribeName: json['tribe_name'] as String?,
       videoNickname: json['video_nickname'] as String?,
+      isIndigenous: json['is_indigenous'] as bool?,
+      tribalName: json['tribal_name'] as String?,
+      profileCompleted: json['profile_completed'] as bool? ?? false,
+      quizSuggestedLevel: json['quiz_suggested_level'] as String?,
+      listeningSuggestedLevel: json['listening_suggested_level'] as String?,
     );
   }
 
@@ -86,6 +101,11 @@ class UserModel {
         'tribe_id': tribeId,
         'tribe_name': tribeName,
         'video_nickname': videoNickname,
+        'is_indigenous': isIndigenous,
+        'tribal_name': tribalName,
+        'profile_completed': profileCompleted,
+        'quiz_suggested_level': quizSuggestedLevel,
+        'listening_suggested_level': listeningSuggestedLevel,
       };
 
   int get joinedDays => DateTime.now().difference(createdAt).inDays;
@@ -107,6 +127,11 @@ class UserModel {
     int? tribeId,
     String? tribeName,
     String? videoNickname,
+    bool? isIndigenous,
+    String? tribalName,
+    bool? profileCompleted,
+    String? quizSuggestedLevel,
+    String? listeningSuggestedLevel,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -125,6 +150,12 @@ class UserModel {
       tribeId: tribeId ?? this.tribeId,
       tribeName: tribeName ?? this.tribeName,
       videoNickname: videoNickname ?? this.videoNickname,
+      isIndigenous: isIndigenous ?? this.isIndigenous,
+      tribalName: tribalName ?? this.tribalName,
+      profileCompleted: profileCompleted ?? this.profileCompleted,
+      quizSuggestedLevel: quizSuggestedLevel ?? this.quizSuggestedLevel,
+      listeningSuggestedLevel:
+          listeningSuggestedLevel ?? this.listeningSuggestedLevel,
     );
   }
 }

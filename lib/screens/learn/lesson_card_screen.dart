@@ -63,8 +63,10 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
       }
 
       if (session.conflictingLevel != null) {
-        final shouldContinue =
-            await _showConflictDialog(session.level, session.conflictingLevel!);
+        final shouldContinue = await _showConflictDialog(
+          session.level,
+          session.conflictingLevel!,
+        );
         if (!mounted) return;
         if (!shouldContinue) {
           Navigator.pop(context);
@@ -84,15 +86,20 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
 
   void _applySession(QuizSession session) {
     // 找第一題還沒作答的位置（續接時據此跳到未完成的題目，而非重回第一題）
-    final firstUnanswered =
-        session.questions.indexWhere((q) => q.selectedOptionId == null);
-    final startIndex =
-        firstUnanswered == -1 ? session.questions.length - 1 : firstUnanswered;
+    final firstUnanswered = session.questions.indexWhere(
+      (q) => q.selectedOptionId == null,
+    );
+    final startIndex = firstUnanswered == -1
+        ? session.questions.length - 1
+        : firstUnanswered;
 
     final restoredAnswers = <QuizAnswer>[
       for (final q in session.questions.take(startIndex))
         if (q.selectedOptionId != null)
-          QuizAnswer(questionId: q.questionId, selectedOptionId: q.selectedOptionId!),
+          QuizAnswer(
+            questionId: q.questionId,
+            selectedOptionId: q.selectedOptionId!,
+          ),
     ];
 
     setState(() {
@@ -150,9 +157,9 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
     } catch (e) {
       debugPrint('LessonCardScreen._play failed: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('發音播放失敗，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('發音播放失敗，請稍後再試')));
     }
   }
 
@@ -171,10 +178,12 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
   Future<void> _confirmAndNext() async {
     final selected = _selectedOptionId;
     if (selected == null) return;
-    _answers.add(QuizAnswer(
-      questionId: _currentQuestion.questionId,
-      selectedOptionId: selected,
-    ));
+    _answers.add(
+      QuizAnswer(
+        questionId: _currentQuestion.questionId,
+        selectedOptionId: selected,
+      ),
+    );
 
     if (_currentIndex < _session!.questions.length - 1) {
       setState(() {
@@ -186,7 +195,10 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
 
     setState(() => _phase = _Phase.loading);
     try {
-      final result = await LearnService.submitQuiz(_session!.sessionId, _answers);
+      final result = await LearnService.submitQuiz(
+        _session!.sessionId,
+        _answers,
+      );
       setState(() {
         _result = result;
         _phase = _Phase.result;
@@ -205,26 +217,27 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
       backgroundColor: AppColors.creamLight,
       body: SafeArea(
         bottom: false,
-        child: Builder(builder: (context) {
-          switch (_phase) {
-            case _Phase.loading:
-              return const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              );
-            case _Phase.error:
-              return _buildError();
-            case _Phase.result:
-              return _buildResult();
-            case _Phase.quiz:
-              return _buildQuiz();
-          }
-        }),
+        child: Builder(
+          builder: (context) {
+            switch (_phase) {
+              case _Phase.loading:
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                );
+              case _Phase.error:
+                return _buildError();
+              case _Phase.result:
+                return _buildResult();
+              case _Phase.quiz:
+                return _buildQuiz();
+            }
+          },
+        ),
       ),
     );
   }
 
-  bool get _isUnauthorized =>
-      _error is ApiException && (_error as ApiException).isUnauthorized;
+  bool get _isUnauthorized => isAuthError(_error);
 
   Widget _buildError() {
     return Center(
@@ -297,11 +310,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                _buildBottomButton(
-                  label: '重新測驗',
-                  primary: false,
-                  onTap: _load,
-                ),
+                _buildBottomButton(label: '重新測驗', primary: false, onTap: _load),
                 const SizedBox(width: 10),
                 _buildBottomButton(
                   label: '返回 →',
@@ -522,7 +531,9 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
                             children: [
                               CustomPaint(
                                 size: const Size(20, 20),
-                                painter: SpeakerIconPainter(color: AppColors.ink),
+                                painter: SpeakerIconPainter(
+                                  color: AppColors.ink,
+                                ),
                               ),
                               const SizedBox(width: 10),
                               Text(
@@ -540,19 +551,36 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: () => _play(rate: 0.6),
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.gold, width: 1),
-                        ),
-                        child: Center(
-                          child: CustomPaint(
-                            size: const Size(24, 24),
-                            painter: const SlowIconPainter(),
+                    Semantics(
+                      button: true,
+                      label: '慢速播放發音',
+                      child: GestureDetector(
+                        onTap: () => _play(rate: 0.6),
+                        child: Container(
+                          height: 56,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.gold, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CustomPaint(
+                                size: Size(20, 20),
+                                painter: SlowIconPainter(),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '慢速',
+                                style: GoogleFonts.notoSerifTc(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.gold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -587,12 +615,6 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
     final isLast = _currentIndex == _session!.questions.length - 1;
     return Row(
       children: [
-        _buildBottomButton(
-          label: '再聽一次',
-          primary: false,
-          onTap: () => _play(),
-        ),
-        const SizedBox(width: 10),
         _buildBottomButton(
           label: isLast ? '完成測驗 →' : '下一題 →',
           primary: true,
@@ -684,4 +706,3 @@ class _OptionTile extends StatelessWidget {
     );
   }
 }
-

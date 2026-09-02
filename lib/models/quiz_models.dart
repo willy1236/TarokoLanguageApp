@@ -96,9 +96,9 @@ class QuizAnswer {
   const QuizAnswer({required this.questionId, required this.selectedOptionId});
 
   Map<String, dynamic> toJson() => {
-        'question_id': questionId,
-        'selected_option_id': selectedOptionId,
-      };
+    'question_id': questionId,
+    'selected_option_id': selectedOptionId,
+  };
 }
 
 class QuizResult {

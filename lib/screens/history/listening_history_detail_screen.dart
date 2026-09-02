@@ -105,6 +105,9 @@ class _ListeningHistoryDetailScreenState
                   explanation: item.detail.explanation,
                   detailAudioUrl: item.detail.audioUrl,
                   player: _player,
+                  sessionId: widget.sessionId,
+                  questionId: item.questionId,
+                  questionType: 'listening',
                 ),
             ],
           ),
@@ -115,12 +118,13 @@ class _ListeningHistoryDetailScreenState
 
   Widget _buildError(Object? error) {
     final isSessionNotFound = error is ApiException && error.isSessionNotFound;
-    final isSessionNotCompleted = error is ApiException && error.isSessionNotCompleted;
+    final isSessionNotCompleted =
+        error is ApiException && error.isSessionNotCompleted;
     final message = isSessionNotFound
         ? '找不到此測驗紀錄'
         : isSessionNotCompleted
-            ? '此測驗仍進行中，請至測驗紀錄續接'
-            : (error is ApiException ? error.message : '載入失敗，請稍後再試');
+        ? '此測驗仍進行中，請至測驗紀錄續接'
+        : (error is ApiException ? error.message : '載入失敗，請稍後再試');
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),

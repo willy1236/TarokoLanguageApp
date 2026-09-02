@@ -31,8 +31,7 @@ class ShopService {
   /// 呼叫 POST /api/shop/items/{id}/purchase。頭像與頭像框走同一支端點，
   /// 後端依 item_catalog.type 自動判斷，呼叫端不需分開處理。
   static Future<UserModel> purchaseItem(String itemId) async {
-    final json =
-        await ApiClient.post(ApiConfig.itemPurchaseEndpoint(itemId));
+    final json = await ApiClient.post(ApiConfig.itemPurchaseEndpoint(itemId));
     return UserModel.fromJson(json);
   }
 
@@ -85,8 +84,8 @@ class ShopService {
 
   /// 後端回 200 但未真正持久化（回傳值與請求不符）時拋出的防呆錯誤。
   static ApiException _updateNotApplied() => ApiException(
-        statusCode: 200,
-        code: 'UPDATE_NOT_APPLIED',
-        message: '更新未生效，請稍後再試',
-      );
+    statusCode: 200,
+    code: 'UPDATE_NOT_APPLIED',
+    message: '更新未生效，請稍後再試',
+  );
 }

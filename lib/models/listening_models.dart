@@ -92,9 +92,9 @@ class ListeningAnswer {
   });
 
   Map<String, dynamic> toJson() => {
-        'question_id': questionId,
-        'selected_option_id': selectedOptionId,
-      };
+    'question_id': questionId,
+    'selected_option_id': selectedOptionId,
+  };
 }
 
 class ListeningAnswerRef {
@@ -186,9 +186,7 @@ class ListeningResultItem {
       correctAnswer: ListeningAnswerRef.fromJson(
         json['correct_answer'] as Map<String, dynamic>,
       ),
-      detail: ListeningDetail.fromJson(
-        json['detail'] as Map<String, dynamic>,
-      ),
+      detail: ListeningDetail.fromJson(json['detail'] as Map<String, dynamic>),
     );
   }
 }

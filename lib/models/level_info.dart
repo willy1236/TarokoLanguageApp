@@ -10,7 +10,9 @@ class LevelInfo {
   factory LevelInfo.fromJson(Map<String, dynamic> json) {
     return LevelInfo(
       level: (json['code'] ?? json['label'] ?? json['level']) as String,
-      wordCount: (json['available_words'] ?? json['word_count'] ?? json['count']) as int,
+      wordCount:
+          (json['available_words'] ?? json['word_count'] ?? json['count'])
+              as int,
     );
   }
 }

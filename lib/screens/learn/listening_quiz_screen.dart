@@ -8,6 +8,7 @@ import '../../core/network/api_client.dart';
 import '../../core/utils/audio_url.dart';
 import '../../models/listening_models.dart';
 import '../../services/listening_service.dart';
+import '../../shared/widgets/confirm_dialog.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'listening_correction_screen.dart';
@@ -74,8 +75,10 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
   Future<void> _load() async {
     setState(() => _phase = _ListenPhase.loading);
     try {
-      final session =
-          await ListeningService.startListening(widget.mode, widget.level);
+      final session = await ListeningService.startListening(
+        widget.mode,
+        widget.level,
+      );
       if (session.questions.isEmpty) {
         setState(() {
           _error = ApiException(
@@ -89,8 +92,10 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       }
 
       if (session.conflictingLevel != null) {
-        final shouldContinue =
-            await _showConflictDialog(session.level, session.conflictingLevel!);
+        final shouldContinue = await _showConflictDialog(
+          session.level,
+          session.conflictingLevel!,
+        );
         if (!mounted) return;
         if (!shouldContinue) {
           Navigator.pop(context);
@@ -104,16 +109,22 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
           _answeredOptions[q.questionId] = q.selectedOptionId!;
         }
       }
-      final firstUnanswered =
-          session.questions.indexWhere((q) => q.selectedOptionId == null);
-      final startIndex =
-          firstUnanswered == -1 ? session.questions.length - 1 : firstUnanswered;
+      final firstUnanswered = session.questions.indexWhere(
+        (q) => q.selectedOptionId == null,
+      );
+      final startIndex = firstUnanswered == -1
+          ? session.questions.length - 1
+          : firstUnanswered;
 
       setState(() {
         _session = session;
         _effectiveLevel = session.level;
         _currentIndex = startIndex;
-        _selectedOptionId = _answeredOptions[_currentQuestionOf(session, startIndex).questionId];
+        _selectedOptionId =
+            _answeredOptions[_currentQuestionOf(
+              session,
+              startIndex,
+            ).questionId];
         _phase = _ListenPhase.quiz;
       });
     } catch (e) {
@@ -124,29 +135,16 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
     }
   }
 
-  Future<bool> _showConflictDialog(String oldLevel, String wantedLevel) async {
-    final result = await showDialog<bool>(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text('有未完成的聽力測驗'),
-        content: Text(
-          '你還有未完成的「$oldLevel」聽力測驗，要繼續完成，還是先返回？\n'
+  Future<bool> _showConflictDialog(String oldLevel, String wantedLevel) {
+    return showConfirmDialog(
+      context,
+      title: '有未完成的聽力測驗',
+      message: '你還有未完成的「$oldLevel」聽力測驗，要繼續完成，還是先返回？\n'
           '（目前尚不支援直接放棄舊測驗，需完成後才能開始「$wantedLevel」）',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('返回'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: Text('繼續「$oldLevel」測驗'),
-          ),
-        ],
-      ),
+      cancelText: '返回',
+      confirmText: '繼續「$oldLevel」測驗',
+      barrierDismissible: false,
     );
-    return result ?? false;
   }
 
   String get _displayLevel => _effectiveLevel ?? widget.level;
@@ -166,9 +164,9 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
     } catch (e) {
       debugPrint('ListeningQuizScreen._play failed: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('發音播放失敗，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('發音播放失敗，請稍後再試')));
     }
   }
 
@@ -188,11 +186,12 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      final message =
-          e is ApiException ? _listeningErrorMessage(e) : '儲存答案失敗，請稍後再試';
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(message)),
-      );
+      final message = e is ApiException
+          ? _listeningErrorMessage(e)
+          : '儲存答案失敗，請稍後再試';
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     }
   }
 
@@ -208,8 +207,9 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       return;
     }
 
-    final unansweredIndex = _session!.questions
-        .indexWhere((q) => !_answeredOptions.containsKey(q.questionId));
+    final unansweredIndex = _session!.questions.indexWhere(
+      (q) => !_answeredOptions.containsKey(q.questionId),
+    );
     if (unansweredIndex != -1) {
       setState(() {
         _currentIndex = unansweredIndex;
@@ -222,21 +222,23 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
     setState(() => _phase = _ListenPhase.loading);
     try {
       final answers = _session!.questions
-          .map((q) => ListeningAnswer(
-                questionId: q.questionId,
-                selectedOptionId: _answeredOptions[q.questionId]!,
-              ))
+          .map(
+            (q) => ListeningAnswer(
+              questionId: q.questionId,
+              selectedOptionId: _answeredOptions[q.questionId]!,
+            ),
+          )
           .toList();
-      final result =
-          await ListeningService.submitListening(_session!.sessionId, answers);
+      final result = await ListeningService.submitListening(
+        _session!.sessionId,
+        answers,
+      );
       if (!mounted) return;
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-          builder: (_) => ListeningCorrectionScreen(
-            result: result,
-            level: _displayLevel,
-          ),
+          builder: (_) =>
+              ListeningCorrectionScreen(result: result, level: _displayLevel),
         ),
       );
     } catch (e) {
@@ -253,24 +255,25 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       backgroundColor: AppColors.creamLight,
       body: SafeArea(
         bottom: false,
-        child: Builder(builder: (context) {
-          switch (_phase) {
-            case _ListenPhase.loading:
-              return const Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              );
-            case _ListenPhase.error:
-              return _buildError();
-            case _ListenPhase.quiz:
-              return _buildQuiz();
-          }
-        }),
+        child: Builder(
+          builder: (context) {
+            switch (_phase) {
+              case _ListenPhase.loading:
+                return const Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                );
+              case _ListenPhase.error:
+                return _buildError();
+              case _ListenPhase.quiz:
+                return _buildQuiz();
+            }
+          },
+        ),
       ),
     );
   }
 
-  bool get _isUnauthorized =>
-      _error is ApiException && (_error as ApiException).isUnauthorized;
+  bool get _isUnauthorized => isAuthError(_error);
 
   Widget _buildError() {
     final err = _error;
@@ -487,7 +490,9 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
                             children: [
                               CustomPaint(
                                 size: const Size(20, 20),
-                                painter: SpeakerIconPainter(color: AppColors.ink),
+                                painter: SpeakerIconPainter(
+                                  color: AppColors.ink,
+                                ),
                               ),
                               const SizedBox(width: 10),
                               Text(
@@ -505,19 +510,36 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
                       ),
                     ),
                     const SizedBox(width: 10),
-                    GestureDetector(
-                      onTap: () => _play(rate: 0.6),
-                      child: Container(
-                        width: 56,
-                        height: 56,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.gold, width: 1),
-                        ),
-                        child: const Center(
-                          child: CustomPaint(
-                            size: Size(24, 24),
-                            painter: SlowIconPainter(),
+                    Semantics(
+                      button: true,
+                      label: '慢速播放發音',
+                      child: GestureDetector(
+                        onTap: () => _play(rate: 0.6),
+                        child: Container(
+                          height: 56,
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: AppColors.gold, width: 1),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const CustomPaint(
+                                size: Size(20, 20),
+                                painter: SlowIconPainter(),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '慢速',
+                                style: GoogleFonts.notoSerifTc(
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.gold,
+                                  letterSpacing: 1.2,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -552,12 +574,6 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
     final isLast = _currentIndex == _session!.questions.length - 1;
     return Row(
       children: [
-        _buildBottomButton(
-          label: '再聽一次',
-          primary: false,
-          onTap: () => _play(),
-        ),
-        const SizedBox(width: 10),
         _buildBottomButton(
           label: isLast ? '完成測驗 →' : '下一題 →',
           primary: true,

@@ -87,11 +87,7 @@ class SlowIconPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round;
 
-    canvas.drawCircle(
-      Offset(w * 12 / 24, h * 13 / 24),
-      w * 7 / 24,
-      paint,
-    );
+    canvas.drawCircle(Offset(w * 12 / 24, h * 13 / 24), w * 7 / 24, paint);
 
     final hands = Path()
       ..moveTo(w * 12 / 24, h * 9 / 24)
@@ -162,7 +158,11 @@ class TrukuWeavePainter extends CustomPainter {
         canvas.drawPath(inner, strokePaint);
 
         // 中心點
-        canvas.drawCircle(Offset(x + s * 0.5, y + s * 0.5), 1.2 * scale, dotPaint);
+        canvas.drawCircle(
+          Offset(x + s * 0.5, y + s * 0.5),
+          1.2 * scale,
+          dotPaint,
+        );
       }
     }
   }

@@ -34,6 +34,9 @@ class EventDetail {
   final bool registrationOpen; // 仍 active、未過截止、未開始
   final DateTime? createdAt;
   final List<EventParticipant> participants;
+  final int likeCount; // 即時 COUNT，非反正規化欄位
+  final bool isLiked;
+  final bool isBookmarked;
 
   const EventDetail({
     required this.id,
@@ -54,6 +57,9 @@ class EventDetail {
     this.registrationOpen = false,
     this.createdAt,
     this.participants = const [],
+    this.likeCount = 0,
+    this.isLiked = false,
+    this.isBookmarked = false,
   });
 
   /// 目前登入者是否為發起人（判斷要不要顯示「發送提醒」「取消活動」）。
@@ -99,8 +105,48 @@ class EventDetail {
       participants: rawParts
           .map((e) => EventParticipant.fromJson(e as Map<String, dynamic>))
           .toList(),
+      likeCount: asEventInt(json['like_count']) ?? 0,
+      isLiked: json['is_liked'] as bool? ?? false,
+      isBookmarked: json['is_bookmarked'] as bool? ?? false,
     );
   }
+
+  /// 樂觀更新用：切換按讚狀態並同步計數，等後端真實回應後再校正。
+  EventDetail toggledLike() => _copyWith(
+    likeCount: isLiked ? likeCount - 1 : likeCount + 1,
+    isLiked: !isLiked,
+  );
+
+  EventDetail toggledBookmark() => _copyWith(isBookmarked: !isBookmarked);
+
+  /// API 回傳真實計數後校正，避免樂觀更新的本地累加值飄移。
+  EventDetail withLikeResult({required bool liked, required int likeCount}) =>
+      _copyWith(isLiked: liked, likeCount: likeCount);
+
+  EventDetail _copyWith({int? likeCount, bool? isLiked, bool? isBookmarked}) =>
+      EventDetail(
+        id: id,
+        hostUid: hostUid,
+        title: title,
+        description: description,
+        startsAt: startsAt,
+        location: location,
+        address: address,
+        registrationDeadline: registrationDeadline,
+        contactEmail: contactEmail,
+        contactPhone: contactPhone,
+        reminderNote: reminderNote,
+        maxParticipants: maxParticipants,
+        category: category,
+        status: status,
+        effectiveStatus: effectiveStatus,
+        registrationOpen: registrationOpen,
+        createdAt: createdAt,
+        participants: participants,
+        likeCount: likeCount ?? this.likeCount,
+        isLiked: isLiked ?? this.isLiked,
+        isBookmarked: isBookmarked ?? this.isBookmarked,
+      );
 }
 
 /// 活動列表項目（GET /api/events 回傳的 events[]，欄位比詳情頁精簡，
@@ -119,6 +165,9 @@ class EventSummary {
   final DateTime? registrationDeadline;
   final String? effectiveStatus; // 後端即時算：active / ended / cancelled
   final bool registrationOpen;
+  final int likeCount; // 即時 COUNT，非反正規化欄位
+  final bool isLiked;
+  final bool isBookmarked;
 
   const EventSummary({
     required this.id,
@@ -134,6 +183,9 @@ class EventSummary {
     this.registrationDeadline,
     this.effectiveStatus,
     this.registrationOpen = false,
+    this.likeCount = 0,
+    this.isLiked = false,
+    this.isBookmarked = false,
   });
 
   bool isHostedBy(int? uid) => uid != null && uid == hostUid;
@@ -162,6 +214,9 @@ class EventSummary {
           : null,
       effectiveStatus: json['effective_status'] as String?,
       registrationOpen: json['registration_open'] as bool? ?? false,
+      likeCount: asEventInt(json['like_count']) ?? 0,
+      isLiked: json['is_liked'] as bool? ?? false,
+      isBookmarked: json['is_bookmarked'] as bool? ?? false,
     );
   }
 }

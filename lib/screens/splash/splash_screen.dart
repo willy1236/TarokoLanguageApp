@@ -4,6 +4,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
+import '../../services/terms_service.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 
@@ -18,20 +20,46 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ));
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+      ),
+    );
     Future.delayed(const Duration(milliseconds: 2500), () async {
       if (!mounted) return;
       final loggedIn = await AuthService.isLoggedIn();
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, loggedIn ? '/home' : '/login');
+      if (!loggedIn) {
+        Navigator.pushReplacementNamed(context, '/login');
+        return;
+      }
+      // 離線等原因查不到 profile_completed 時，不擋既有使用者進首頁。
+      var profileCompleted = true;
+      try {
+        final user = await UserService.fetchMe();
+        profileCompleted = user.profileCompleted;
+      } catch (e) {
+        debugPrint('SplashScreen: fetchMe 失敗，略過完善資料檢查：$e');
+      }
+      // 同理，離線等原因查不到同意狀態時，不擋既有使用者進首頁。
+      var allConsented = true;
+      try {
+        final status = await TermsService.fetchStatus();
+        allConsented = status.allConsented;
+      } catch (e) {
+        debugPrint('SplashScreen: fetchStatus 失敗，略過同意條款檢查：$e');
+      }
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(
+        context,
+        !profileCompleted
+            ? '/complete-profile'
+            : (!allConsented ? '/terms-consent' : '/home'),
+      );
       // 冷啟動由通知帶出的深連結導頁必須排在這裡之後，
       // 否則會被上面這行 pushReplacementNamed 蓋掉（見 fcm_service.dart）。
-      if (loggedIn) {
-        FcmService.consumePendingInitialMessage();
-      }
+      FcmService.consumePendingInitialMessage();
     });
   }
 
@@ -49,7 +77,11 @@ class _SplashScreenState extends State<SplashScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 stops: [0.0, 0.6, 1.0],
-                colors: [AppColors.midnight, AppColors.primaryDeep, AppColors.primary],
+                colors: [
+                  AppColors.midnight,
+                  AppColors.primaryDeep,
+                  AppColors.primary,
+                ],
               ),
             ),
           ),
@@ -59,47 +91,68 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Opacity(
               opacity: 0.18,
               child: CustomPaint(
-                painter: const TrukuWeavePainter(color: AppColors.gold, opacity: 1.0),
+                painter: const TrukuWeavePainter(
+                  color: AppColors.gold,
+                  opacity: 1.0,
+                ),
               ),
             ),
           ),
 
           // 山脈剪影（後層）
           Positioned(
-            bottom: 0, left: 0, right: 0,
+            bottom: 0,
+            left: 0,
+            right: 0,
             child: Opacity(
               opacity: 0.85,
               child: CustomPaint(
                 size: Size(size.width, 180),
-                painter: const TrukuMountainsPainter(color: Color(0xFF0E0604), opacity: 0.7),
+                painter: const TrukuMountainsPainter(
+                  color: Color(0xFF0E0604),
+                  opacity: 0.7,
+                ),
               ),
             ),
           ),
 
           // 山脈剪影（前層）
           Positioned(
-            bottom: 30, left: 0, right: 0,
+            bottom: 30,
+            left: 0,
+            right: 0,
             child: Opacity(
               opacity: 0.6,
               child: CustomPaint(
                 size: Size(size.width, 120),
-                painter: const TrukuMountainsPainter(color: Color(0xFF0E0604), opacity: 0.5),
+                painter: const TrukuMountainsPainter(
+                  color: Color(0xFF0E0604),
+                  opacity: 0.5,
+                ),
               ),
             ),
           ),
 
           // 頂部菱形鏈（top: 90）
           const Positioned(
-            top: 90, left: 0, right: 0,
+            top: 90,
+            left: 0,
+            right: 0,
             child: Center(
-              child: TrukuChain(count: 9, size: 10, color: AppColors.gold, gap: 6),
+              child: TrukuChain(
+                count: 9,
+                size: 10,
+                color: AppColors.gold,
+                gap: 6,
+              ),
             ),
           ),
 
           // 中央 logo 區（top: 32%）
           Positioned(
             top: size.height * 0.32,
-            left: 0, right: 0,
+            left: 0,
+            right: 0,
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -107,7 +160,8 @@ class _SplashScreenState extends State<SplashScreen> {
                   alignment: Alignment.center,
                   children: [
                     Container(
-                      width: 220, height: 220,
+                      width: 220,
+                      height: 220,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         gradient: RadialGradient(
@@ -119,10 +173,12 @@ class _SplashScreenState extends State<SplashScreen> {
                         ),
                       ),
                     ),
-                    Icon(
-                      Icons.language,
-                      size: 120,
-                      color: AppColors.gold.withValues(alpha: 0.9),
+                    Image.asset(
+                      'assets/icon/logo.png',
+                      width: 120,
+                      height: 120,
+                      color: AppColors.cream,
+                      colorBlendMode: BlendMode.srcIn,
                     ),
                   ],
                 ),
@@ -138,14 +194,21 @@ class _SplashScreenState extends State<SplashScreen> {
                   ),
                 ),
                 const SizedBox(height: 8),
-                const TrukuChain(count: 5, size: 8, color: AppColors.gold, gap: 5),
+                const TrukuChain(
+                  count: 5,
+                  size: 8,
+                  color: AppColors.gold,
+                  gap: 5,
+                ),
               ],
             ),
           ),
 
           // 底部 tagline（bottom: 70）
           Positioned(
-            bottom: 70, left: 0, right: 0,
+            bottom: 70,
+            left: 0,
+            right: 0,
             child: Text(
               '說我們的話 · 走我們的山',
               textAlign: TextAlign.center,

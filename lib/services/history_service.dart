@@ -10,11 +10,7 @@ class HistoryService {
   }) async {
     final json = await ApiClient.get(
       ApiConfig.historyList,
-      query: {
-        'type': ?type,
-        'page': '$page',
-        'page_size': '$pageSize',
-      },
+      query: {'type': ?type, 'page': '$page', 'page_size': '$pageSize'},
     );
     return HistoryListResult.fromJson(json);
   }
@@ -25,8 +21,23 @@ class HistoryService {
   }
 
   static Future<ListeningHistoryDetail> fetchListeningDetail(
-      String sessionId) async {
+    String sessionId,
+  ) async {
     final json = await ApiClient.get('/api/history/listening/$sessionId');
     return ListeningHistoryDetail.fromJson(json);
+  }
+
+  static Future<void> reportQuestion({
+    required String questionType,
+    required String sessionId,
+    required String questionId,
+    required String message,
+  }) async {
+    await ApiClient.post(ApiConfig.historyReport, {
+      'question_type': questionType,
+      'session_id': sessionId,
+      'question_id': questionId,
+      'message': message,
+    });
   }
 }

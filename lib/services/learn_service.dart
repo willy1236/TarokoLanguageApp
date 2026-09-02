@@ -9,7 +9,9 @@ class LearnService {
     final list = ApiClient.unwrapList(json, 'levels');
     return list
         .cast<Map<String, dynamic>>()
-        .where((e) => e['code'] != null || e['label'] != null || e['level'] != null)
+        .where(
+          (e) => e['code'] != null || e['label'] != null || e['level'] != null,
+        )
         .map(LevelInfo.fromJson)
         .toList();
   }

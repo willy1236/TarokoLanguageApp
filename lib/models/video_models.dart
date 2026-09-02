@@ -35,6 +35,9 @@ class VideoSummary {
   final String? thumbnailUrl;
   final int viewCount;
   final int weeklyViewCount;
+  final int likeCount;
+  final bool isLiked;
+  final bool isBookmarked;
   final DateTime? publishedAt;
 
   const VideoSummary({
@@ -46,6 +49,9 @@ class VideoSummary {
     this.thumbnailUrl,
     required this.viewCount,
     required this.weeklyViewCount,
+    this.likeCount = 0,
+    this.isLiked = false,
+    this.isBookmarked = false,
     this.publishedAt,
   });
 
@@ -59,6 +65,9 @@ class VideoSummary {
       thumbnailUrl: json['thumbnail_url'] as String?,
       viewCount: json['view_count'] as int? ?? 0,
       weeklyViewCount: json['weekly_view_count'] as int? ?? 0,
+      likeCount: json['like_count'] as int? ?? 0,
+      isLiked: json['is_liked'] as bool? ?? false,
+      isBookmarked: json['is_bookmarked'] as bool? ?? false,
       publishedAt: json['published_at'] != null
           ? DateTime.tryParse(json['published_at'] as String)
           : null,
@@ -79,6 +88,9 @@ class VideoDetail extends VideoSummary {
     super.thumbnailUrl,
     required super.viewCount,
     required super.weeklyViewCount,
+    super.likeCount,
+    super.isLiked,
+    super.isBookmarked,
     super.publishedAt,
     required this.hlsUrl,
     this.originalSizeMb,
@@ -94,6 +106,9 @@ class VideoDetail extends VideoSummary {
       thumbnailUrl: json['thumbnail_url'] as String?,
       viewCount: json['view_count'] as int? ?? 0,
       weeklyViewCount: json['weekly_view_count'] as int? ?? 0,
+      likeCount: json['like_count'] as int? ?? 0,
+      isLiked: json['is_liked'] as bool? ?? false,
+      isBookmarked: json['is_bookmarked'] as bool? ?? false,
       publishedAt: json['published_at'] != null
           ? DateTime.tryParse(json['published_at'] as String)
           : null,
@@ -101,6 +116,60 @@ class VideoDetail extends VideoSummary {
       originalSizeMb: json['original_size_mb'] as int?,
     );
   }
+
+  /// 樂觀更新用：切換按讚狀態並同步計數，等後端真實回應後再校正。
+  VideoDetail toggledLike() => VideoDetail(
+    id: id,
+    title: title,
+    description: description,
+    category: category,
+    durationSec: durationSec,
+    thumbnailUrl: thumbnailUrl,
+    viewCount: viewCount,
+    weeklyViewCount: weeklyViewCount,
+    likeCount: isLiked ? likeCount - 1 : likeCount + 1,
+    isLiked: !isLiked,
+    isBookmarked: isBookmarked,
+    publishedAt: publishedAt,
+    hlsUrl: hlsUrl,
+    originalSizeMb: originalSizeMb,
+  );
+
+  VideoDetail toggledBookmark() => VideoDetail(
+    id: id,
+    title: title,
+    description: description,
+    category: category,
+    durationSec: durationSec,
+    thumbnailUrl: thumbnailUrl,
+    viewCount: viewCount,
+    weeklyViewCount: weeklyViewCount,
+    likeCount: likeCount,
+    isLiked: isLiked,
+    isBookmarked: !isBookmarked,
+    publishedAt: publishedAt,
+    hlsUrl: hlsUrl,
+    originalSizeMb: originalSizeMb,
+  );
+
+  /// API 回傳真實計數後校正，避免樂觀更新的本地累加值飄移。
+  VideoDetail withLikeResult({required bool liked, required int likeCount}) =>
+      VideoDetail(
+        id: id,
+        title: title,
+        description: description,
+        category: category,
+        durationSec: durationSec,
+        thumbnailUrl: thumbnailUrl,
+        viewCount: viewCount,
+        weeklyViewCount: weeklyViewCount,
+        likeCount: likeCount,
+        isLiked: liked,
+        isBookmarked: isBookmarked,
+        publishedAt: publishedAt,
+        hlsUrl: hlsUrl,
+        originalSizeMb: originalSizeMb,
+      );
 }
 
 class VideoListResponse {

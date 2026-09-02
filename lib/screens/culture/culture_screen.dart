@@ -2,14 +2,18 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/article_models.dart';
 import '../../models/video_models.dart';
 import '../../services/article_service.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import 'article_detail_screen.dart';
+import 'article_search_screen.dart';
 import 'video_detail_screen.dart';
+import 'video_search_screen.dart';
 
 class CultureScreen extends StatefulWidget {
   const CultureScreen({super.key});
@@ -44,8 +48,9 @@ class _CultureScreenState extends State<CultureScreen> {
     _featuredFuture = _fetchFeatured();
   }
 
-  String? get _selectedArticleCategory =>
-      _articleChipIndex == 0 ? null : ArticleCategory.all[_articleChipIndex - 1];
+  String? get _selectedArticleCategory => _articleChipIndex == 0
+      ? null
+      : ArticleCategory.all[_articleChipIndex - 1];
 
   Future<ArticleListResponse> _fetchArticles() {
     return ArticleService.fetchArticles(
@@ -62,8 +67,10 @@ class _CultureScreenState extends State<CultureScreen> {
 
   // 後端無獨立「精選」欄位/endpoint，改用本週熱門第一名頂替本週精選。
   Future<VideoSummary?> _fetchFeatured() async {
-    final res =
-        await VideoService.fetchVideos(sort: 'weekly_popular', pageSize: 1);
+    final res = await VideoService.fetchVideos(
+      sort: 'weekly_popular',
+      pageSize: 1,
+    );
     return res.videos.isEmpty ? null : res.videos.first;
   }
 
@@ -82,18 +89,25 @@ class _CultureScreenState extends State<CultureScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildScaffold(seniorModeController.enabled),
+    );
+  }
+
+  Widget _buildScaffold(bool seniorMode) {
     return Scaffold(
       backgroundColor: AppColors.midnight,
       body: CustomScrollView(
         slivers: [
-          SliverToBoxAdapter(child: _buildHero()),
-          SliverToBoxAdapter(child: _buildTabBar()),
+          SliverToBoxAdapter(child: _buildHero(seniorMode)),
+          SliverToBoxAdapter(child: _buildTabBar(seniorMode)),
           if (_tabIndex == 0) ...[
-            SliverToBoxAdapter(child: _buildChips()),
-            SliverToBoxAdapter(child: _buildVideoSectionHeader()),
-            SliverToBoxAdapter(child: _buildVideoGrid()),
+            SliverToBoxAdapter(child: _buildChips(seniorMode)),
+            SliverToBoxAdapter(child: _buildVideoSectionHeader(seniorMode)),
+            SliverToBoxAdapter(child: _buildVideoGrid(seniorMode)),
           ] else ...[
-            SliverToBoxAdapter(child: _buildArticleSection()),
+            SliverToBoxAdapter(child: _buildArticleSection(seniorMode)),
           ],
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
         ],
@@ -103,7 +117,7 @@ class _CultureScreenState extends State<CultureScreen> {
 
   // ── Hero ──────────────────────────────────────────────────────────────────
 
-  Widget _buildHero() {
+  Widget _buildHero(bool seniorMode) {
     return FutureBuilder<VideoSummary?>(
       future: _featuredFuture,
       builder: (context, snapshot) {
@@ -129,7 +143,11 @@ class _CultureScreenState extends State<CultureScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     stops: [0.0, 0.5, 1.0],
-                    colors: [Colors.transparent, Colors.transparent, AppColors.midnight],
+                    colors: [
+                      Colors.transparent,
+                      Colors.transparent,
+                      AppColors.midnight,
+                    ],
                   ),
                 ),
               ),
@@ -150,16 +168,25 @@ class _CultureScreenState extends State<CultureScreen> {
                         letterSpacing: 4.0,
                       ),
                     ),
-                    Container(
-                      width: 36,
-                      height: 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.black.withValues(alpha: 0.4),
-                        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => _tabIndex == 0
+                              ? const VideoSearchScreen()
+                              : const ArticleSearchScreen(),
+                        ),
                       ),
-                      child: const Center(
-                        child: _SearchIcon(),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black.withValues(alpha: 0.4),
+                          border: Border.all(
+                            color: AppColors.gold.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: const Center(child: _SearchIcon()),
                       ),
                     ),
                   ],
@@ -176,7 +203,7 @@ class _CultureScreenState extends State<CultureScreen> {
                     Text(
                       featured != null ? '本週精選 · 熱門' : '本週精選',
                       style: GoogleFonts.jetBrainsMono(
-                        fontSize: 11,
+                        fontSize: seniorMode ? AppTypography.body : 11,
                         color: AppColors.gold,
                         letterSpacing: 4.0,
                       ),
@@ -185,7 +212,7 @@ class _CultureScreenState extends State<CultureScreen> {
                     Text(
                       featured?.title ?? '太魯閣族影音',
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: 26,
+                        fontSize: seniorMode ? 32 : 26,
                         fontWeight: FontWeight.w600,
                         color: AppColors.creamLight,
                         letterSpacing: 1.0,
@@ -198,7 +225,7 @@ class _CultureScreenState extends State<CultureScreen> {
                           ? '${VideoCategory.label(featured.category)}　|　本週 ${featured.weeklyViewCount} 次觀看'
                           : '精選內容載入中…',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: seniorMode ? AppTypography.subtitle : 12,
                         color: AppColors.creamLight.withValues(alpha: 0.7),
                         letterSpacing: 1.2,
                       ),
@@ -206,6 +233,7 @@ class _CultureScreenState extends State<CultureScreen> {
                     const SizedBox(height: 14),
                     _PlayButton(
                       label: '立即觀看',
+                      seniorMode: seniorMode,
                       onTap: featured == null
                           ? null
                           : () {
@@ -255,16 +283,16 @@ class _CultureScreenState extends State<CultureScreen> {
 
   // ── Tab Bar ───────────────────────────────────────────────────────────────
 
-  Widget _buildTabBar() {
-    final tabs = [
-      ('影音', 'patas hngak'),
-      ('文章', 'patas kari'),
-    ];
+  Widget _buildTabBar(bool seniorMode) {
+    final tabs = [('影音', 'patas hngak'), ('文章', 'patas kari')];
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppColors.cream.withValues(alpha: 0.09), width: 1),
+          bottom: BorderSide(
+            color: AppColors.cream.withValues(alpha: 0.09),
+            width: 1,
+          ),
         ),
       ),
       child: Row(
@@ -278,14 +306,14 @@ class _CultureScreenState extends State<CultureScreen> {
                 alignment: Alignment.bottomCenter,
                 children: [
                   Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
+                    padding: EdgeInsets.only(bottom: seniorMode ? 16 : 12),
                     child: Column(
                       children: [
                         Text(
                           tabs[i].$1,
                           textAlign: TextAlign.center,
                           style: GoogleFonts.notoSerifTc(
-                            fontSize: 16,
+                            fontSize: seniorMode ? AppTypography.headline : 16,
                             fontWeight: FontWeight.w600,
                             color: active ? AppColors.gold : AppColors.fog,
                             letterSpacing: 2.0,
@@ -297,7 +325,7 @@ class _CultureScreenState extends State<CultureScreen> {
                           textAlign: TextAlign.center,
                           style: GoogleFonts.crimsonPro(
                             fontStyle: FontStyle.italic,
-                            fontSize: 10,
+                            fontSize: seniorMode ? AppTypography.body : 10,
                             color: active
                                 ? AppColors.cream.withValues(alpha: 0.7)
                                 : AppColors.fog.withValues(alpha: 0.5),
@@ -330,7 +358,7 @@ class _CultureScreenState extends State<CultureScreen> {
 
   // ── Category Chips ────────────────────────────────────────────────────────
 
-  Widget _buildChips() {
+  Widget _buildChips(bool seniorMode) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
@@ -345,18 +373,23 @@ class _CultureScreenState extends State<CultureScreen> {
                 _reloadVideos();
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: seniorMode ? 12 : 8,
+                ),
                 decoration: BoxDecoration(
                   color: active ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                   border: active
                       ? null
-                      : Border.all(color: AppColors.cream.withValues(alpha: 0.19)),
+                      : Border.all(
+                          color: AppColors.cream.withValues(alpha: 0.19),
+                        ),
                 ),
                 child: Text(
                   _chips[i],
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: seniorMode ? AppTypography.subtitle : 13,
                     color: active ? AppColors.creamLight : AppColors.cream,
                     letterSpacing: 2.0,
                   ),
@@ -369,55 +402,9 @@ class _CultureScreenState extends State<CultureScreen> {
     );
   }
 
-  // ── Section Header ────────────────────────────────────────────────────────
-
-  Widget _buildSectionHeader(String title, String sub) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.cream,
-                  letterSpacing: 1.5,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                sub,
-                style: GoogleFonts.crimsonPro(
-                  fontStyle: FontStyle.italic,
-                  fontSize: 10,
-                  color: AppColors.fog,
-                  letterSpacing: 3.6,
-                ),
-              ),
-            ],
-          ),
-          Text(
-            '查看全部 →',
-            style: TextStyle(
-              fontSize: 11,
-              color: AppColors.gold,
-              letterSpacing: 2.4,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   // ── Video Section ────────────────────────────────────────────────────────
 
-  Widget _buildVideoSectionHeader() {
+  Widget _buildVideoSectionHeader(bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
       child: Row(
@@ -430,7 +417,7 @@ class _CultureScreenState extends State<CultureScreen> {
               Text(
                 _sort == 'popular' ? '熱門影片' : '最新影片',
                 style: GoogleFonts.notoSerifTc(
-                  fontSize: 15,
+                  fontSize: seniorMode ? AppTypography.title : 15,
                   fontWeight: FontWeight.w600,
                   color: AppColors.cream,
                   letterSpacing: 1.5,
@@ -441,7 +428,7 @@ class _CultureScreenState extends State<CultureScreen> {
                 'patas hngak',
                 style: GoogleFonts.crimsonPro(
                   fontStyle: FontStyle.italic,
-                  fontSize: 10,
+                  fontSize: seniorMode ? AppTypography.body : 10,
                   color: AppColors.fog,
                   letterSpacing: 3.6,
                 ),
@@ -450,9 +437,9 @@ class _CultureScreenState extends State<CultureScreen> {
           ),
           Row(
             children: [
-              _sortLabel('latest', '最新'),
+              _sortLabel('latest', '最新', seniorMode),
               const SizedBox(width: 10),
-              _sortLabel('popular', '熱門'),
+              _sortLabel('popular', '熱門', seniorMode),
             ],
           ),
         ],
@@ -460,7 +447,7 @@ class _CultureScreenState extends State<CultureScreen> {
     );
   }
 
-  Widget _sortLabel(String value, String label) {
+  Widget _sortLabel(String value, String label, bool seniorMode) {
     final active = _sort == value;
     return GestureDetector(
       onTap: () {
@@ -471,7 +458,7 @@ class _CultureScreenState extends State<CultureScreen> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 12,
+          fontSize: seniorMode ? AppTypography.subtitle : 12,
           fontWeight: active ? FontWeight.w700 : FontWeight.w400,
           color: active ? AppColors.gold : AppColors.fog,
           letterSpacing: 1.5,
@@ -480,7 +467,7 @@ class _CultureScreenState extends State<CultureScreen> {
     );
   }
 
-  Widget _buildVideoGrid() {
+  Widget _buildVideoGrid(bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: FutureBuilder<VideoListResponse>(
@@ -503,7 +490,10 @@ class _CultureScreenState extends State<CultureScreen> {
               child: Center(
                 child: Text(
                   message,
-                  style: TextStyle(color: AppColors.fog, fontSize: 13),
+                  style: TextStyle(
+                    color: AppColors.fog,
+                    fontSize: seniorMode ? AppTypography.subtitle : 13,
+                  ),
                 ),
               ),
             );
@@ -515,9 +505,27 @@ class _CultureScreenState extends State<CultureScreen> {
               child: Center(
                 child: Text(
                   '目前沒有影片',
-                  style: TextStyle(color: AppColors.fog, fontSize: 13),
+                  style: TextStyle(
+                    color: AppColors.fog,
+                    fontSize: seniorMode ? AppTypography.subtitle : 13,
+                  ),
                 ),
               ),
+            );
+          }
+          // 精簡模式下 2 欄改 1 欄，避免字級放大後卡片過擠（探索報告 8.1 節資訊密度原則）。
+          // 改用固定 aspect ratio 的 Grid 會因放大後標題行高不固定而溢位，故精簡模式改用
+          // 自然高度的 Column 逐張排列；一般模式維持原本 GridView 兩欄版面不變。
+          if (seniorMode) {
+            return Column(
+              children: videos
+                  .map(
+                    (v) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _VideoCard(video: v, seniorMode: true),
+                    ),
+                  )
+                  .toList(),
             );
           }
           return GridView.count(
@@ -527,7 +535,9 @@ class _CultureScreenState extends State<CultureScreen> {
             crossAxisSpacing: 12,
             mainAxisSpacing: 12,
             childAspectRatio: 0.78,
-            children: videos.map((v) => _VideoCard(video: v)).toList(),
+            children: videos
+                .map((v) => _VideoCard(video: v, seniorMode: false))
+                .toList(),
           );
         },
       ),
@@ -536,23 +546,30 @@ class _CultureScreenState extends State<CultureScreen> {
 
   // ── Article Section ──────────────────────────────────────────────────────
 
-  Widget _buildArticleSection() {
+  Widget _buildArticleSection(bool seniorMode) {
     return FutureBuilder<ArticleListResponse>(
       future: _articlesFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return Padding(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 12),
-            child: _buildSectionHeader('族人寫的文章', 'patas kari'),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildArticleChips(seniorMode),
+              _buildArticleSectionHeader(seniorMode),
+            ],
           );
         }
         if (snapshot.hasError) {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionHeader('族人寫的文章', 'patas kari'),
+              _buildArticleChips(seniorMode),
+              _buildArticleSectionHeader(seniorMode),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -560,12 +577,20 @@ class _CultureScreenState extends State<CultureScreen> {
                       snapshot.error is ApiException
                           ? (snapshot.error as ApiException).message
                           : '文章載入失敗，請稍後再試',
-                      style: TextStyle(color: AppColors.fog, fontSize: 13),
+                      style: TextStyle(
+                        color: AppColors.fog,
+                        fontSize: seniorMode ? AppTypography.subtitle : 13,
+                      ),
                     ),
                     const SizedBox(height: 8),
                     OutlinedButton(
                       onPressed: _reloadArticles,
-                      child: const Text('重試'),
+                      child: Text(
+                        '重試',
+                        style: seniorMode
+                            ? const TextStyle(fontSize: AppTypography.subtitle)
+                            : null,
+                      ),
                     ),
                   ],
                 ),
@@ -578,12 +603,20 @@ class _CultureScreenState extends State<CultureScreen> {
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildSectionHeader('族人寫的文章', 'patas kari'),
-              _buildArticleChips(),
-              _buildArticleSortRow(),
+              _buildArticleChips(seniorMode),
+              _buildArticleSectionHeader(seniorMode),
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                child: Text('目前沒有文章', style: TextStyle(color: AppColors.fog, fontSize: 13)),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: Text(
+                  '目前沒有文章',
+                  style: TextStyle(
+                    color: AppColors.fog,
+                    fontSize: seniorMode ? AppTypography.subtitle : 13,
+                  ),
+                ),
               ),
             ],
           );
@@ -593,26 +626,27 @@ class _CultureScreenState extends State<CultureScreen> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader('族人寫的文章', 'patas kari · 共 ${snapshot.data!.total} 篇'),
-            _buildArticleChips(),
-            _buildArticleSortRow(),
-            _buildFeaturedArticle(featured),
-            _buildArticleList(rest),
+            _buildArticleChips(seniorMode),
+            _buildArticleSectionHeader(seniorMode),
+            _buildFeaturedArticle(featured, seniorMode),
+            _buildArticleList(rest, seniorMode),
           ],
         );
       },
     );
   }
 
-  Widget _buildArticleChips() {
+  Widget _buildArticleChips(bool seniorMode) {
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
       child: Row(
         children: List.generate(_articleChipLabels.length, (i) {
           final active = _articleChipIndex == i;
           return Padding(
-            padding: EdgeInsets.only(right: i < _articleChipLabels.length - 1 ? 8 : 0),
+            padding: EdgeInsets.only(
+              right: i < _articleChipLabels.length - 1 ? 8 : 0,
+            ),
             child: GestureDetector(
               onTap: () {
                 setState(() {
@@ -621,18 +655,23 @@ class _CultureScreenState extends State<CultureScreen> {
                 });
               },
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: seniorMode ? 12 : 8,
+                ),
                 decoration: BoxDecoration(
                   color: active ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                   border: active
                       ? null
-                      : Border.all(color: AppColors.cream.withValues(alpha: 0.19)),
+                      : Border.all(
+                          color: AppColors.cream.withValues(alpha: 0.19),
+                        ),
                 ),
                 child: Text(
                   _articleChipLabels[i],
                   style: TextStyle(
-                    fontSize: 13,
+                    fontSize: seniorMode ? AppTypography.subtitle : 13,
                     color: active ? AppColors.creamLight : AppColors.cream,
                     letterSpacing: 2.0,
                   ),
@@ -645,45 +684,84 @@ class _CultureScreenState extends State<CultureScreen> {
     );
   }
 
-  Widget _buildArticleSortRow() {
-    const options = [
-      ('latest', '最新'),
-      ('popular', '熱門'),
-      ('weekly_popular', '本週熱門'),
-    ];
+  static const _articleSortOptions = [
+    ('latest', '最新文章', '最新'),
+    ('popular', '熱門文章', '熱門'),
+    ('weekly_popular', '本週熱門文章', '本週熱門'),
+  ];
+
+  Widget _buildArticleSectionHeader(bool seniorMode) {
+    final title = _articleSortOptions
+        .firstWhere((opt) => opt.$1 == _articleSort)
+        .$2;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+      padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
       child: Row(
-        children: options.map((opt) {
-          final active = _articleSort == opt.$1;
-          return Padding(
-            padding: const EdgeInsets.only(right: 16),
-            child: GestureDetector(
-              onTap: () {
-                setState(() {
-                  _articleSort = opt.$1;
-                  _articlesFuture = _fetchArticles();
-                });
-              },
-              child: Text(
-                opt.$2,
-                style: TextStyle(
-                  fontSize: 12,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.normal,
-                  color: active ? AppColors.gold : AppColors.fog,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: seniorMode ? AppTypography.title : 15,
+                  fontWeight: FontWeight.w600,
+                  color: AppColors.cream,
                   letterSpacing: 1.5,
                 ),
               ),
-            ),
-          );
-        }).toList(),
+              const SizedBox(height: 2),
+              Text(
+                'patas kari',
+                style: GoogleFonts.crimsonPro(
+                  fontStyle: FontStyle.italic,
+                  fontSize: seniorMode ? AppTypography.body : 10,
+                  color: AppColors.fog,
+                  letterSpacing: 3.6,
+                ),
+              ),
+            ],
+          ),
+          Row(
+            children: [
+              for (final opt in _articleSortOptions) ...[
+                _articleSortLabel(opt.$1, opt.$3, seniorMode),
+                if (opt != _articleSortOptions.last) const SizedBox(width: 10),
+              ],
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _articleSortLabel(String value, String label, bool seniorMode) {
+    final active = _articleSort == value;
+    return GestureDetector(
+      onTap: () {
+        if (_articleSort == value) return;
+        setState(() {
+          _articleSort = value;
+          _articlesFuture = _fetchArticles();
+        });
+      },
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: seniorMode ? AppTypography.subtitle : 12,
+          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+          color: active ? AppColors.gold : AppColors.fog,
+          letterSpacing: 1.5,
+        ),
       ),
     );
   }
 
   // ── Featured Article ──────────────────────────────────────────────────────
 
-  Widget _buildFeaturedArticle(ArticleSummary article) {
+  Widget _buildFeaturedArticle(ArticleSummary article, bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
       child: GestureDetector(
@@ -700,7 +778,7 @@ class _CultureScreenState extends State<CultureScreen> {
             children: [
               // 圖片區
               SizedBox(
-                height: 120,
+                height: seniorMode ? 140 : 120,
                 child: Stack(
                   fit: StackFit.expand,
                   children: [
@@ -717,7 +795,10 @@ class _CultureScreenState extends State<CultureScreen> {
                       top: 12,
                       left: 12,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.gold,
                           borderRadius: BorderRadius.circular(4),
@@ -725,7 +806,7 @@ class _CultureScreenState extends State<CultureScreen> {
                         child: Text(
                           ArticleCategory.label(article.category),
                           style: TextStyle(
-                            fontSize: 10,
+                            fontSize: seniorMode ? AppTypography.body : 10,
                             color: AppColors.ink,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 2.8,
@@ -733,49 +814,94 @@ class _CultureScreenState extends State<CultureScreen> {
                         ),
                       ),
                     ),
-                    Positioned(
-                      bottom: 14,
-                      left: 16,
-                      right: 16,
-                      child: Text(
-                        article.title,
-                        style: GoogleFonts.notoSerifTc(
-                          fontSize: 19,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.creamLight,
-                          letterSpacing: 1.0,
-                          height: 1.25,
+                    // 底部漸層遮罩，避免淺色封面圖讓標題文字失去對比而看不清（一般模式標題疊在圖上）
+                    if (!seniorMode) ...[
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        child: Container(
+                          height: 64,
+                          decoration: const BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [Colors.transparent, Colors.black87],
+                            ),
+                          ),
                         ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
                       ),
-                    ),
+                      Positioned(
+                        bottom: 14,
+                        left: 16,
+                        right: 16,
+                        child: Text(
+                          article.title,
+                          style: GoogleFonts.notoSerifTc(
+                            fontSize: 19,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.creamLight,
+                            letterSpacing: 1.0,
+                            height: 1.25,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
-              // 摘要 / 統計列
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        article.summary ?? '這篇文章還沒有摘要，點進去看看內容吧',
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: AppColors.fog,
-                          letterSpacing: 1.0,
-                          height: 1.4,
+              // 摘要 / 統計列。精簡模式下改把標題移到這塊實色底色區塊顯示（而非疊在封面圖上），
+              // 避免圖片色彩複雜時蓋掉放大後的標題文字，同時隱藏摘要維持密度精簡
+              if (!seniorMode)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          article.summary ?? '這篇文章還沒有摘要，點進去看看內容吧',
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: AppColors.fog,
+                            letterSpacing: 1.0,
+                            height: 1.4,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const _ArrowIcon(),
-                  ],
+                      const SizedBox(width: 8),
+                      const _ArrowIcon(),
+                    ],
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          article.title,
+                          style: GoogleFonts.notoSerifTc(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.creamLight,
+                            letterSpacing: 1.0,
+                            height: 1.3,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const _ArrowIcon(size: 24),
+                    ],
+                  ),
                 ),
-              ),
             ],
           ),
         ),
@@ -809,15 +935,21 @@ class _CultureScreenState extends State<CultureScreen> {
 
   // ── Article List ──────────────────────────────────────────────────────────
 
-  Widget _buildArticleList(List<ArticleSummary> articles) {
+  Widget _buildArticleList(List<ArticleSummary> articles, bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: articles
-            .map((a) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _ArticleCard(item: a, onTap: () => _openArticle(a.id)),
-                ))
+            .map(
+              (a) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _ArticleCard(
+                  item: a,
+                  seniorMode: seniorMode,
+                  onTap: () => _openArticle(a.id),
+                ),
+              ),
+            )
             .toList(),
       ),
     );
@@ -835,14 +967,22 @@ class _CultureScreenState extends State<CultureScreen> {
 class _PlayButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
-  const _PlayButton({required this.label, this.onTap});
+  final bool seniorMode;
+  const _PlayButton({
+    required this.label,
+    this.onTap,
+    this.seniorMode = false,
+  });
 
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        padding: EdgeInsets.symmetric(
+          horizontal: seniorMode ? 26 : 20,
+          vertical: seniorMode ? 14 : 10,
+        ),
         decoration: BoxDecoration(
           color: AppColors.gold,
           borderRadius: BorderRadius.circular(30),
@@ -850,12 +990,12 @@ class _PlayButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const _PlayIcon(size: 12, color: AppColors.ink),
+            _PlayIcon(size: seniorMode ? 16 : 12, color: AppColors.ink),
             const SizedBox(width: 10),
             Text(
               label,
               style: GoogleFonts.notoSerifTc(
-                fontSize: 14,
+                fontSize: seniorMode ? AppTypography.subtitle : 14,
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
                 letterSpacing: 2.4,
@@ -870,7 +1010,8 @@ class _PlayButton extends StatelessWidget {
 
 class _VideoCard extends StatelessWidget {
   final VideoSummary video;
-  const _VideoCard({required this.video});
+  final bool seniorMode;
+  const _VideoCard({required this.video, this.seniorMode = false});
 
   static String _formatDuration(int? sec) {
     if (sec == null) return '--:--';
@@ -900,7 +1041,7 @@ class _VideoCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             SizedBox(
-              height: 100,
+              height: seniorMode ? 180 : 100,
               child: Stack(
                 fit: StackFit.expand,
                 children: [
@@ -916,8 +1057,10 @@ class _VideoCard extends StatelessWidget {
                     top: 8,
                     left: 8,
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: seniorMode ? 5 : 3,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.5),
                         borderRadius: BorderRadius.circular(4),
@@ -925,7 +1068,7 @@ class _VideoCard extends StatelessWidget {
                       child: Text(
                         VideoCategory.label(video.category),
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: seniorMode ? AppTypography.body : 10,
                           color: AppColors.gold,
                           letterSpacing: 2.4,
                         ),
@@ -936,8 +1079,10 @@ class _VideoCard extends StatelessWidget {
                     bottom: 8,
                     right: 8,
                     child: Container(
-                      padding:
-                          const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: seniorMode ? 8 : 6,
+                        vertical: seniorMode ? 3 : 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.black.withValues(alpha: 0.7),
                         borderRadius: BorderRadius.circular(3),
@@ -945,7 +1090,7 @@ class _VideoCard extends StatelessWidget {
                       child: Text(
                         _formatDuration(video.durationSec),
                         style: GoogleFonts.jetBrainsMono(
-                          fontSize: 10,
+                          fontSize: seniorMode ? AppTypography.body : 10,
                           color: AppColors.creamLight,
                         ),
                       ),
@@ -953,16 +1098,20 @@ class _VideoCard extends StatelessWidget {
                   ),
                   Center(
                     child: Container(
-                      width: 36,
-                      height: 36,
+                      width: seniorMode ? 52 : 36,
+                      height: seniorMode ? 52 : 36,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
                         color: Colors.black.withValues(alpha: 0.5),
                         border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.5)),
+                          color: AppColors.gold.withValues(alpha: 0.5),
+                        ),
                       ),
-                      child: const Center(
-                        child: _PlayIcon(size: 12, color: AppColors.gold),
+                      child: Center(
+                        child: _PlayIcon(
+                          size: seniorMode ? 18 : 12,
+                          color: AppColors.gold,
+                        ),
                       ),
                     ),
                   ),
@@ -976,10 +1125,10 @@ class _VideoCard extends StatelessWidget {
                 children: [
                   Text(
                     video.title,
-                    maxLines: 1,
+                    maxLines: seniorMode ? 2 : 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 14,
+                      fontSize: seniorMode ? AppTypography.title : 14,
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       letterSpacing: 1.0,
@@ -989,7 +1138,7 @@ class _VideoCard extends StatelessWidget {
                   Text(
                     '${video.viewCount} 次觀看',
                     style: TextStyle(
-                      fontSize: 11,
+                      fontSize: seniorMode ? AppTypography.body : 11,
                       color: AppColors.fog,
                       letterSpacing: 1.2,
                     ),
@@ -1031,10 +1180,16 @@ class _VideoCard extends StatelessWidget {
 class _ArticleCard extends StatelessWidget {
   final ArticleSummary item;
   final VoidCallback onTap;
-  const _ArticleCard({required this.item, required this.onTap});
+  final bool seniorMode;
+  const _ArticleCard({
+    required this.item,
+    required this.onTap,
+    this.seniorMode = false,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final thumbSize = seniorMode ? 84.0 : 64.0;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -1047,8 +1202,8 @@ class _ArticleCard extends StatelessWidget {
         child: Row(
           children: [
             Container(
-              width: 64,
-              height: 64,
+              width: thumbSize,
+              height: thumbSize,
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
@@ -1074,7 +1229,10 @@ class _ArticleCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: seniorMode ? 4 : 2,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.gold.withValues(alpha: 0.12),
                       borderRadius: BorderRadius.circular(3),
@@ -1082,7 +1240,7 @@ class _ArticleCard extends StatelessWidget {
                     child: Text(
                       ArticleCategory.label(item.category),
                       style: TextStyle(
-                        fontSize: 9,
+                        fontSize: seniorMode ? AppTypography.body : 9,
                         color: AppColors.gold,
                         letterSpacing: 2.8,
                       ),
@@ -1092,29 +1250,32 @@ class _ArticleCard extends StatelessWidget {
                   Text(
                     item.title,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 13,
+                      fontSize: seniorMode ? AppTypography.subtitle : 13,
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       letterSpacing: 0.5,
                       height: 1.35,
                     ),
-                    maxLines: 2,
+                    maxLines: seniorMode ? 1 : 2,
                     overflow: TextOverflow.ellipsis,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${item.viewCount} 閱讀 · 本週 ${item.weeklyViewCount}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: AppColors.fog,
-                      letterSpacing: 1.2,
+                  // 精簡模式下隱藏閱讀/本週統計數字，密度砍除聚焦標題判讀
+                  if (!seniorMode) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '${item.viewCount} 閱讀 · 本週 ${item.weeklyViewCount}',
+                      style: TextStyle(
+                        fontSize: 10,
+                        color: AppColors.fog,
+                        letterSpacing: 1.2,
+                      ),
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
             const SizedBox(width: 8),
-            const _ArrowIcon(),
+            _ArrowIcon(size: seniorMode ? 22 : 16),
           ],
         ),
       ),
@@ -1195,7 +1356,9 @@ class _PlayIconPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color..style = PaintingStyle.fill;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
     final path = Path()
       ..moveTo(0, 0)
       ..lineTo(size.width, size.height / 2)
@@ -1213,10 +1376,7 @@ class _SearchIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(16, 16),
-      painter: _SearchIconPainter(),
-    );
+    return CustomPaint(size: const Size(16, 16), painter: _SearchIconPainter());
   }
 }
 
@@ -1254,14 +1414,12 @@ class _SearchIconPainter extends CustomPainter {
 }
 
 class _ArrowIcon extends StatelessWidget {
-  const _ArrowIcon();
+  final double size;
+  const _ArrowIcon({this.size = 16});
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(16, 16),
-      painter: _ArrowIconPainter(),
-    );
+    return CustomPaint(size: Size(size, size), painter: _ArrowIconPainter());
   }
 }
 

@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../models/shop_item.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../../shared/widgets/mode_card.dart';
+import '../../shared/widgets/millet_coin_icon.dart';
+import '../../shared/widgets/user_avatar.dart';
+import '../shop/shop_screen.dart';
 
 // 五張模式卡資料（依設計稿）
 const List<ModeData> _modes = [
@@ -73,6 +77,9 @@ class HomeScreen extends StatelessWidget {
   final void Function(int tabIndex)? onNavigateToTab;
   final String? displayName;
   final int? millet;
+  final String? avatarId;
+  final String? avatarUrl;
+  final Map<String, ShopItem> itemCatalogById;
   final bool checkedInToday;
   final int checkinStreak;
   final VoidCallback? onCheckin;
@@ -83,6 +90,9 @@ class HomeScreen extends StatelessWidget {
     this.onNavigateToTab,
     this.displayName,
     this.millet,
+    this.avatarId,
+    this.avatarUrl,
+    this.itemCatalogById = const {},
     this.checkedInToday = false,
     this.checkinStreak = 0,
     this.onCheckin,
@@ -127,12 +137,12 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo（暫以語言圖示代替）
+                // Logo
                 Center(
-                  child: Icon(
-                    Icons.language,
-                    size: 78,
-                    color: AppColors.primary,
+                  child: Image.asset(
+                    'assets/icon/logo.png',
+                    width: 120,
+                    height: 120,
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -177,9 +187,14 @@ class HomeScreen extends StatelessWidget {
                           color: AppColors.primary,
                           border: Border.all(color: AppColors.gold, width: 2),
                         ),
-                        child: const Icon(
-                          Icons.person,
-                          color: AppColors.creamLight,
+                        child: ClipOval(
+                          child: UserAvatar(
+                            avatarId: avatarId,
+                            avatarUrl: avatarUrl,
+                            itemCatalogById: itemCatalogById,
+                            size: 48,
+                            fallbackIconColor: AppColors.creamLight,
+                          ),
                         ),
                       ),
                     ),
@@ -313,30 +328,37 @@ class _TodayProgressCard extends StatelessWidget {
                       ),
                     ),
                     // 小米幣 chip
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(6, 4, 10, 4),
-                      decoration: BoxDecoration(
-                        color: AppColors.gold.withValues(alpha: 0.18),
-                        border: Border.all(
-                          color: AppColors.gold.withValues(alpha: 0.5),
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ShopScreen(),
                         ),
-                        borderRadius: BorderRadius.circular(16),
                       ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.grain, size: 18, color: AppColors.gold),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${millet ?? 0}',
-                            style: GoogleFonts.notoSerifTc(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.gold,
-                              letterSpacing: 0.5,
-                            ),
+                      child: Container(
+                        padding: const EdgeInsets.fromLTRB(6, 4, 10, 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.gold.withValues(alpha: 0.18),
+                          border: Border.all(
+                            color: AppColors.gold.withValues(alpha: 0.5),
                           ),
-                        ],
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const MilletCoinIcon(size: 18),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${millet ?? 0}',
+                              style: GoogleFonts.notoSerifTc(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.gold,
+                                letterSpacing: 0.5,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
@@ -421,7 +443,10 @@ class _TodayProgressCard extends StatelessWidget {
                     GestureDetector(
                       onTap: checkedInToday ? null : onCheckin,
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(

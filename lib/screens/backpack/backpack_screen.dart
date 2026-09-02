@@ -80,20 +80,20 @@ class _BackpackScreenState extends State<BackpackScreen> {
           : await ShopService.equipAvatar(item.id);
       if (!mounted) return;
       setState(() => _user = updated);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已配戴')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('已配戴')));
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       debugPrint('BackpackScreen._equipItem failed: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('配戴失敗，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('配戴失敗，請稍後再試')));
     }
   }
 
@@ -103,20 +103,20 @@ class _BackpackScreenState extends State<BackpackScreen> {
       final updated = await ShopService.clearAvatar();
       if (!mounted) return;
       setState(() => _user = updated);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已恢復預設頭貼')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('已恢復預設頭貼')));
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       debugPrint('BackpackScreen._setDefaultAvatar failed: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('配戴失敗，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('配戴失敗，請稍後再試')));
     }
   }
 
@@ -126,27 +126,27 @@ class _BackpackScreenState extends State<BackpackScreen> {
       final updated = await ShopService.clearFrame();
       if (!mounted) return;
       setState(() => _user = updated);
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已取消配戴頭像框')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('已取消配戴頭像框')));
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       debugPrint('BackpackScreen._clearFrame failed: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('配戴失敗，請稍後再試')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('配戴失敗，請稍後再試')));
     }
   }
 
   Future<void> _openShop() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<UserModel?>(builder: (_) => const ShopScreen()),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<UserModel?>(builder: (_) => const ShopScreen()));
     if (!mounted) return;
     _load();
   }
@@ -156,13 +156,19 @@ class _BackpackScreenState extends State<BackpackScreen> {
     if (_loading) {
       return const Scaffold(
         backgroundColor: AppColors.creamLight,
-        body: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
       );
     }
 
-    final ownedItems = (_serverItems ?? const <ShopItem>[]).where((i) => i.isOwned).toList();
-    final showAvatars = _selectedCategory == _catAll || _selectedCategory == _catAvatar;
-    final showFrames = _selectedCategory == _catAll || _selectedCategory == _catFrame;
+    final ownedItems = (_serverItems ?? const <ShopItem>[])
+        .where((i) => i.isOwned)
+        .toList();
+    final showAvatars =
+        _selectedCategory == _catAll || _selectedCategory == _catAvatar;
+    final showFrames =
+        _selectedCategory == _catAll || _selectedCategory == _catFrame;
     final avatarList = ownedItems.where((i) => i.type == 'avatar').toList();
     final frameList = ownedItems.where((i) => i.type == 'frame').toList();
 
@@ -172,8 +178,10 @@ class _BackpackScreenState extends State<BackpackScreen> {
         slivers: [
           SliverToBoxAdapter(child: _buildHero(context)),
           SliverToBoxAdapter(child: _buildCategories()),
-          if (showAvatars) SliverToBoxAdapter(child: _buildAvatarSection(avatarList)),
-          if (showFrames) SliverToBoxAdapter(child: _buildFrameSection(frameList)),
+          if (showAvatars)
+            SliverToBoxAdapter(child: _buildAvatarSection(avatarList)),
+          if (showFrames)
+            SliverToBoxAdapter(child: _buildFrameSection(frameList)),
           const SliverToBoxAdapter(child: SizedBox(height: 100)),
         ],
       ),
@@ -195,7 +203,13 @@ class _BackpackScreenState extends State<BackpackScreen> {
           Positioned.fill(
             child: Opacity(
               opacity: 0.15,
-              child: CustomPaint(painter: TrukuWeavePainter(color: AppColors.gold, opacity: 1.0, scale: 0.7)),
+              child: CustomPaint(
+                painter: TrukuWeavePainter(
+                  color: AppColors.gold,
+                  opacity: 1.0,
+                  scale: 0.7,
+                ),
+              ),
             ),
           ),
           Padding(
@@ -212,7 +226,11 @@ class _BackpackScreenState extends State<BackpackScreen> {
                       shape: BoxShape.circle,
                       color: AppColors.creamLight.withValues(alpha: 0.15),
                     ),
-                    child: const Icon(Icons.chevron_left, color: AppColors.creamLight, size: 18),
+                    child: const Icon(
+                      Icons.chevron_left,
+                      color: AppColors.creamLight,
+                      size: 18,
+                    ),
                   ),
                 ),
                 Text(
@@ -233,7 +251,11 @@ class _BackpackScreenState extends State<BackpackScreen> {
                       shape: BoxShape.circle,
                       color: AppColors.creamLight.withValues(alpha: 0.15),
                     ),
-                    child: const Icon(Icons.storefront_outlined, color: AppColors.creamLight, size: 16),
+                    child: const Icon(
+                      Icons.storefront_outlined,
+                      color: AppColors.creamLight,
+                      size: 16,
+                    ),
                   ),
                 ),
               ],
@@ -289,12 +311,22 @@ class _BackpackScreenState extends State<BackpackScreen> {
         children: [
           Text(
             '頭像 Lukus',
-            style: GoogleFonts.notoSerifTc(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.ink, letterSpacing: 1),
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
+              letterSpacing: 1,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             'lukus · 共 ${items.length + 1} 款',
-            style: GoogleFonts.crimsonPro(fontStyle: FontStyle.italic, fontSize: 10, color: AppColors.fog, letterSpacing: 2),
+            style: GoogleFonts.crimsonPro(
+              fontStyle: FontStyle.italic,
+              fontSize: 10,
+              color: AppColors.fog,
+              letterSpacing: 2,
+            ),
           ),
           const SizedBox(height: 10),
           GridView.count(
@@ -339,12 +371,22 @@ class _BackpackScreenState extends State<BackpackScreen> {
         children: [
           Text(
             '頭像框',
-            style: GoogleFonts.notoSerifTc(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.ink, letterSpacing: 1),
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 15,
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
+              letterSpacing: 1,
+            ),
           ),
           const SizedBox(height: 2),
           Text(
             'rangi · 共 ${items.length + 1} 款',
-            style: GoogleFonts.crimsonPro(fontStyle: FontStyle.italic, fontSize: 10, color: AppColors.fog, letterSpacing: 2),
+            style: GoogleFonts.crimsonPro(
+              fontStyle: FontStyle.italic,
+              fontSize: 10,
+              color: AppColors.fog,
+              letterSpacing: 2,
+            ),
           ),
           const SizedBox(height: 10),
           GridView.count(
@@ -381,11 +423,15 @@ class _BackpackScreenState extends State<BackpackScreen> {
   Widget _buildItemCard(ShopItem item) {
     final isGold = item.rarity == 'gold';
     final rarityColor = _rarityColors[item.rarity];
-    final equipped = item.type == 'frame' ? _user?.frameId == item.id : _user?.avatarId == item.id;
+    final equipped = item.type == 'frame'
+        ? _user?.frameId == item.id
+        : _user?.avatarId == item.id;
 
     return ShopItemCard(
       name: item.name,
-      subtitle: item.rarity != null ? _rarityLabels[item.rarity] ?? item.rarity! : null,
+      subtitle: item.rarity != null
+          ? _rarityLabels[item.rarity] ?? item.rarity!
+          : null,
       price: item.price,
       isGold: isGold,
       rarityColor: rarityColor,

@@ -2,15 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/date_format.dart';
 import '../../models/millet_transaction.dart';
 import '../../services/millet_service.dart';
+import '../../shared/widgets/millet_coin_icon.dart';
 
 const _pageSize = 20;
 
 const Map<String, IconData> _reasonIcons = {
   'checkin': Icons.event_available,
   'purchase': Icons.shopping_bag,
-  'opening_balance': Icons.grain,
 };
 
 const Map<String, String> _reasonLabels = {
@@ -127,8 +128,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
       );
     }
     if (_error != null) {
-      final isUnauthorized =
-          _error is ApiException && (_error as ApiException).isUnauthorized;
+      final isUnauthorized = isAuthError(_error);
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
@@ -137,7 +137,10 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
             children: [
               Text(
                 isUnauthorized ? '請先登入' : '載入失敗，請稍後再試',
-                style: GoogleFonts.notoSerifTc(fontSize: 15, color: AppColors.ink),
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 15,
+                  color: AppColors.ink,
+                ),
               ),
               const SizedBox(height: 16),
               ElevatedButton(
@@ -206,9 +209,7 @@ class _MilletRow extends StatelessWidget {
   String _timeLabel() {
     final dt = DateTime.tryParse(transaction.createdAt);
     if (dt == null) return transaction.createdAt;
-    final local = dt.toLocal();
-    return '${local.year}/${local.month.toString().padLeft(2, '0')}/${local.day.toString().padLeft(2, '0')} '
-        '${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+    return formatDateTime(dt.toLocal());
   }
 
   @override
@@ -232,11 +233,13 @@ class _MilletRow extends StatelessWidget {
               shape: BoxShape.circle,
               color: AppColors.primary.withValues(alpha: 0.12),
             ),
-            child: Icon(
-              _reasonIcons[transaction.reason] ?? Icons.grain,
-              size: 16,
-              color: AppColors.primary,
-            ),
+            child: _reasonIcons[transaction.reason] != null
+                ? Icon(
+                    _reasonIcons[transaction.reason],
+                    size: 16,
+                    color: AppColors.primary,
+                  )
+                : const MilletCoinIcon(size: 16),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -253,7 +256,9 @@ class _MilletRow extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  subtitle != null ? '$subtitle · ${_timeLabel()}' : _timeLabel(),
+                  subtitle != null
+                      ? '$subtitle · ${_timeLabel()}'
+                      : _timeLabel(),
                   style: const TextStyle(fontSize: 11, color: AppColors.fog),
                 ),
               ],

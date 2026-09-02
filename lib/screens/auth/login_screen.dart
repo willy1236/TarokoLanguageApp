@@ -3,6 +3,8 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
+import '../../services/terms_service.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 
@@ -40,26 +42,44 @@ class _LoginScreenState extends State<LoginScreen> {
         await FcmService.registerDevice();
       } catch (_) {}
       if (!mounted) return;
-      Navigator.pushReplacementNamed(context, '/home');
+      final user = await UserService.fetchMe();
+      if (!mounted) return;
+      final profileCompleted = user.profileCompleted;
+      var allConsented = true;
+      if (profileCompleted) {
+        try {
+          final status = await TermsService.fetchStatus();
+          allConsented = status.allConsented;
+        } catch (e) {
+          debugPrint('LoginScreen: fetchStatus 失敗，略過同意條款檢查：$e');
+        }
+      }
+      if (!mounted) return;
+      Navigator.pushReplacementNamed(
+        context,
+        !profileCompleted
+            ? '/complete-profile'
+            : (!allConsented ? '/terms-consent' : '/home'),
+      );
     } on AuthException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(e.message)),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('登入發生未預期錯誤：$e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('登入發生未預期錯誤：$e')));
     } finally {
       if (mounted) setState(() => _loggingIn = false);
     }
   }
 
   void _showSoon(String name) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('$name 登入即將推出')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('$name 登入即將推出')));
   }
 
   @override
@@ -89,10 +109,7 @@ class _LoginScreenState extends State<LoginScreen> {
           // 織紋紋理
           Positioned.fill(
             child: CustomPaint(
-              painter: TrukuWeavePainter(
-                color: AppColors.gold,
-                opacity: 0.12,
-              ),
+              painter: TrukuWeavePainter(color: AppColors.gold, opacity: 0.12),
             ),
           ),
 
@@ -152,7 +169,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget _buildLogoSection() {
     return Column(
       children: [
-        // Logo 框（暫以圖示代替圖片）
+        // Logo 框
         Container(
           width: 100,
           height: 100,
@@ -163,10 +180,11 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             borderRadius: BorderRadius.circular(24),
           ),
-          child: const Icon(
-            Icons.language_rounded,
-            size: 52,
+          padding: const EdgeInsets.all(20),
+          child: Image.asset(
+            'assets/icon/logo.png',
             color: AppColors.gold,
+            colorBlendMode: BlendMode.srcIn,
           ),
         ),
         const SizedBox(height: 14),
@@ -216,7 +234,11 @@ class _LoginScreenState extends State<LoginScreen> {
           controller: _accountController,
           labelTriku: 'HANGAN · 帳號',
           hint: 'yudaw.bakan',
-          prefixIcon: const Icon(Icons.person_outline_rounded, size: 17, color: AppColors.cream),
+          prefixIcon: const Icon(
+            Icons.person_outline_rounded,
+            size: 17,
+            color: AppColors.cream,
+          ),
           isGold: true,
         ),
         const SizedBox(height: 12),
@@ -226,7 +248,11 @@ class _LoginScreenState extends State<LoginScreen> {
           controller: _passwordController,
           labelTriku: 'PASWAD · 密碼',
           hint: '••••••••',
-          prefixIcon: const Icon(Icons.lock_outline_rounded, size: 17, color: AppColors.cream),
+          prefixIcon: const Icon(
+            Icons.lock_outline_rounded,
+            size: 17,
+            color: AppColors.cream,
+          ),
           obscureText: _obscurePassword,
           suffixIcon: GestureDetector(
             onTap: () => setState(() => _obscurePassword = !_obscurePassword),
@@ -290,7 +316,12 @@ class _LoginScreenState extends State<LoginScreen> {
         // OR 分隔
         Row(
           children: [
-            Expanded(child: Divider(color: AppColors.cream.withValues(alpha: 0.2), height: 1)),
+            Expanded(
+              child: Divider(
+                color: AppColors.cream.withValues(alpha: 0.2),
+                height: 1,
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 14),
               child: Text(
@@ -302,7 +333,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 ),
               ),
             ),
-            Expanded(child: Divider(color: AppColors.cream.withValues(alpha: 0.2), height: 1)),
+            Expanded(
+              child: Divider(
+                color: AppColors.cream.withValues(alpha: 0.2),
+                height: 1,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 16),
@@ -311,13 +347,22 @@ class _LoginScreenState extends State<LoginScreen> {
         Row(
           children: [
             _buildSocialButton(
-              icon: const Icon(Icons.apple, color: AppColors.creamLight, size: 20),
+              icon: const Icon(
+                Icons.apple,
+                color: AppColors.creamLight,
+                size: 20,
+              ),
               label: 'Apple',
               onTap: () => _showSoon('Apple'),
             ),
             const SizedBox(width: 10),
             _buildSocialButton(
-              icon: const TrukuDiamond(size: 18, color: AppColors.gold, filled: true, strokeWidth: 1.2),
+              icon: const TrukuDiamond(
+                size: 18,
+                color: AppColors.gold,
+                filled: true,
+                strokeWidth: 1.2,
+              ),
               label: '部落帳號',
               onTap: () => _showSoon('部落帳號'),
             ),
@@ -332,7 +377,11 @@ class _LoginScreenState extends State<LoginScreen> {
                         color: AppColors.gold,
                       ),
                     )
-                  : const Icon(Icons.g_mobiledata_rounded, color: AppColors.creamLight, size: 24),
+                  : const Icon(
+                      Icons.g_mobiledata_rounded,
+                      color: AppColors.creamLight,
+                      size: 24,
+                    ),
               label: 'Google',
               onTap: _loggingIn ? null : _handleGoogleLogin,
             ),
@@ -456,9 +505,7 @@ class _LoginScreenState extends State<LoginScreen> {
           height: 52,
           decoration: BoxDecoration(
             color: AppColors.creamLight.withValues(alpha: 0.05),
-            border: Border.all(
-              color: AppColors.cream.withValues(alpha: 0.18),
-            ),
+            border: Border.all(color: AppColors.cream.withValues(alpha: 0.18)),
             borderRadius: BorderRadius.circular(12),
           ),
           child: Column(

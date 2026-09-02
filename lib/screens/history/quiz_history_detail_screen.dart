@@ -18,7 +18,8 @@ class QuizHistoryDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<QuizHistoryDetailScreen> createState() => _QuizHistoryDetailScreenState();
+  State<QuizHistoryDetailScreen> createState() =>
+      _QuizHistoryDetailScreenState();
 }
 
 class _QuizHistoryDetailScreenState extends State<QuizHistoryDetailScreen> {
@@ -94,11 +95,15 @@ class _QuizHistoryDetailScreenState extends State<QuizHistoryDetailScreen> {
                   isCorrect: item.isCorrect,
                   yourAnswerText: item.yourAnswer.text,
                   correctAnswerText: item.correctAnswer.text,
-                  detailTitle: '${item.wordDetail.truku} · ${item.wordDetail.zh}',
+                  detailTitle:
+                      '${item.wordDetail.truku} · ${item.wordDetail.zh}',
                   detailSubtitle: item.wordDetail.en,
                   explanation: item.wordDetail.explanation,
                   detailAudioUrl: item.wordDetail.audioUrl,
                   player: _player,
+                  sessionId: widget.sessionId,
+                  questionId: item.questionId,
+                  questionType: 'quiz',
                 ),
             ],
           ),
@@ -109,12 +114,13 @@ class _QuizHistoryDetailScreenState extends State<QuizHistoryDetailScreen> {
 
   Widget _buildError(Object? error) {
     final isSessionNotFound = error is ApiException && error.isSessionNotFound;
-    final isSessionNotCompleted = error is ApiException && error.isSessionNotCompleted;
+    final isSessionNotCompleted =
+        error is ApiException && error.isSessionNotCompleted;
     final message = isSessionNotFound
         ? '找不到此測驗紀錄'
         : isSessionNotCompleted
-            ? '此測驗仍進行中，請至測驗紀錄續接'
-            : (error is ApiException ? error.message : '載入失敗，請稍後再試');
+        ? '此測驗仍進行中，請至測驗紀錄續接'
+        : (error is ApiException ? error.message : '載入失敗，請稍後再試');
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(24),

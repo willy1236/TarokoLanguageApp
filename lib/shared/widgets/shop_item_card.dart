@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import 'millet_coin_icon.dart';
 
 /// 共用道具卡片：頭像與頭像框在商店頁、背包頁都用這個 widget 呈現
 /// owned / locked / 未擁有可兌換 三種視覺狀態，避免重複的圓形圖示 + 名稱 + 價格排版程式碼。
@@ -50,8 +51,8 @@ class ShopItemCard extends StatelessWidget {
     final borderColor = owned
         ? _ownedColor.withValues(alpha: 0.7)
         : (isGold
-            ? AppColors.gold.withValues(alpha: 0.31)
-            : AppColors.creamDeep);
+              ? AppColors.gold.withValues(alpha: 0.31)
+              : AppColors.creamDeep);
 
     return Opacity(
       opacity: lockedText != null ? 0.55 : 1.0,
@@ -110,7 +111,7 @@ class ShopItemCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.grain, size: 13, color: isGold ? AppColors.gold : AppColors.primary),
+                      const MilletCoinIcon(size: 13),
                       const SizedBox(width: 2),
                       Text(
                         '$price',
@@ -125,7 +126,15 @@ class ShopItemCard extends StatelessWidget {
                 ],
                 if (lockedText != null) ...[
                   const SizedBox(height: 4),
-                  Text(lockedText!, textAlign: TextAlign.center, style: TextStyle(fontSize: 9, color: AppColors.fog, letterSpacing: 0.5)),
+                  Text(
+                    lockedText!,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 9,
+                      color: AppColors.fog,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ],
                 if (lockedText == null && actionLabel != null) ...[
                   const SizedBox(height: 4),
@@ -136,7 +145,9 @@ class ShopItemCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(vertical: 4),
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(10),
-                        color: onAction != null ? AppColors.gold : AppColors.creamDeep,
+                        color: onAction != null
+                            ? AppColors.gold
+                            : AppColors.creamDeep,
                       ),
                       child: Text(
                         actionLabel!,
@@ -144,7 +155,9 @@ class ShopItemCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.w700,
-                          color: onAction != null ? AppColors.ink : AppColors.fog,
+                          color: onAction != null
+                              ? AppColors.ink
+                              : AppColors.fog,
                         ),
                       ),
                     ),
@@ -157,9 +170,23 @@ class ShopItemCard extends StatelessWidget {
                 top: 0,
                 right: 0,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                  decoration: BoxDecoration(borderRadius: BorderRadius.circular(8), color: _ownedColor),
-                  child: Text('已擁有', style: TextStyle(fontSize: 8, fontWeight: FontWeight.w700, color: AppColors.ink, letterSpacing: 1)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 1,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(8),
+                    color: _ownedColor,
+                  ),
+                  child: Text(
+                    '已擁有',
+                    style: TextStyle(
+                      fontSize: 8,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.ink,
+                      letterSpacing: 1,
+                    ),
+                  ),
                 ),
               ),
             if (lockedText != null)
@@ -169,8 +196,15 @@ class ShopItemCard extends StatelessWidget {
                 child: Container(
                   width: 18,
                   height: 18,
-                  decoration: BoxDecoration(shape: BoxShape.circle, color: Colors.black.withValues(alpha: 0.5)),
-                  child: Icon(Icons.lock_outline_rounded, size: 10, color: AppColors.gold),
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.black.withValues(alpha: 0.5),
+                  ),
+                  child: Icon(
+                    Icons.lock_outline_rounded,
+                    size: 10,
+                    color: AppColors.gold,
+                  ),
                 ),
               ),
           ],
@@ -183,14 +217,19 @@ class ShopItemCard extends StatelessWidget {
   // 防禦性 fallback，不是本地素材 fallback。
   Widget _buildItemImage() {
     if (imageUrl == null) {
-      return Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog);
+      return Icon(
+        icon,
+        size: 44,
+        color: isGold ? AppColors.gold : AppColors.fog,
+      );
     }
     return Image.network(
       imageUrl!,
       width: 64,
       height: 64,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) => Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog),
+      errorBuilder: (_, _, _) =>
+          Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog),
     );
   }
 }

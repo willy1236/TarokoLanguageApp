@@ -43,6 +43,7 @@ dependencies:
 
   # Backend 通訊與 token 儲存
   http: ^1.2.2
+  http_parser: ^4.1.2 # multipart 的 Content-Type（後端 multer 以 MIME 過濾附圖）
   flutter_secure_storage: ^10.3.1
 
   # 測驗題目發音播放
@@ -53,6 +54,16 @@ dependencies:
 
   # 影音模組：HLS 串流播放（better_player 已停止維護，改用維護中的 fork）
   better_player_plus: ^1.3.4
+  image_picker: ^1.2.3
+  crop_your_image: ^2.0.0
+
+  # 論壇附圖：列表捲動時避免重複下載
+  cached_network_image: ^3.4.1
+  flutter_image_compress: ^2.3.0 # 上傳前壓縮（後端不做伺服器端壓縮）
+
+  url_launcher: ^6.3.1 # 個人資料頁「聯絡我們」開啟系統寄信
+
+  shared_preferences: ^2.3.3 # 精簡模式開關等使用者偏好本機持久化
 
   # 1 對 1 視訊配對（issue #10）：Agora RTC 用戶端 SDK + 相機/麥克風權限管理
   agora_rtc_engine: ^6.5.2
@@ -71,6 +82,8 @@ dev_dependencies:
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
 
+  flutter_launcher_icons: ^0.14.3
+
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec
 
@@ -81,6 +94,10 @@ flutter:
   # included with your application, so that you can use the icons in
   # the material Icons class.
   uses-material-design: true
+
+  assets:
+    - assets/icon/logo.png
+    - assets/icon/millet_coin.png
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -112,3 +129,11 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/logo_color.png"
+  remove_alpha_ios: true
+  adaptive_icon_background: "#FFFFFF"
+  adaptive_icon_foreground: "assets/icon/logo_color.png"
