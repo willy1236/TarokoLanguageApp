@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Flutter Application 1</string>
+	<string>語見・太魯閣</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>flutter_application_1</string>
+	<string>truku</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -47,5 +47,20 @@
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>需要存取相簿以選擇照片作為頭像</string>
+	<key>NSCameraUsageDescription</key>
+	<string>需要使用相機以拍攝照片作為頭像</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>需要使用麥克風以播放影音內容</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.230831538559-qpbohb53gfr9tuqvktr0sdv326al0dcc</string>
+			</array>
+		</dict>
+	</array>
 </dict>
 </plist>
