@@ -264,7 +264,9 @@ class _PlazaScreenState extends State<PlazaScreen> {
           ),
         ),
         SizedBox(
-          height: 120,
+          // The title of a demo event may wrap to two lines; leave enough
+          // room for the action row on smaller Android screens.
+          height: 128,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
