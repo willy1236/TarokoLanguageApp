@@ -17,48 +17,123 @@ class _PlazaScreenState extends State<PlazaScreen> {
 
   static const _posts = [
     _PostData(
-      name: 'Sayun', sub: '銅門部落 · 3 小時前',
-      text: '今天跟 yaki 學了「mhuway」這個詞，原來是「謝謝」也是「祝福」的意思 ✦',
-      tag: 'Mhuway', likes: 24, comments: 6,
+      name: 'Lawa',
+      sub: '富世部落 · 18 分鐘前',
+      text: '剛讀到資料才知道，布洛灣在太魯閣語裡有「追蹤獵物的地方」的意思。下次去走步道時想帶著這個故事一起看。',
+      tag: '文化筆記',
+      likes: 37,
+      comments: 8,
     ),
     _PostData(
-      name: 'Pisaw', sub: '太管處青年志工 · 昨天',
-      text: '誰知道立霧溪的族語怎麼念？我聽過長輩說 Yayung Bsngun 但不確定拼法...',
-      tag: '求救', likes: 8, comments: 12,
+      name: 'Sayun',
+      sub: '銅門部落 · 2 小時前',
+      text: '今晚的族語練習，我們用三句話介紹自己的部落。大家平常都怎麼跟家裡的長輩開話題呢？',
+      tag: '族語練習',
+      likes: 21,
+      comments: 14,
     ),
     _PostData(
-      name: 'Bakan', sub: '秀林部落 · 2 天前',
-      text: '上週末跟著耆老去採苧麻，第一次看到整片山坡的青色，真的很美。',
-      tag: '走讀', likes: 56, comments: 9,
+      name: 'Bakan',
+      sub: '秀林鄉青年志工 · 昨天',
+      text: '上週走讀聽到耆老說，以前山裡的路不只是往返的路，也連著部落、獵場和彼此的照應。想把這段話記下來。',
+      tag: '走讀',
+      likes: 68,
+      comments: 11,
+    ),
+    _PostData(
+      name: 'Mona',
+      sub: '萬榮部落 · 昨天',
+      text: '分享今天整理的織布練習照片：先把材料備好，再慢慢學圖紋。每一步都比想像中需要耐心。',
+      tag: '工藝日常',
+      likes: 43,
+      comments: 7,
     ),
   ];
 
   static const _miniEvents = [
-    _MiniEventData(month: 'JUN', day: '15', title: '青年族語營', loc: '秀林部落', count: 23, isPrimary: true),
-    _MiniEventData(month: 'JUN', day: '22', title: '苧麻採集走讀', loc: '銅門部落', count: 12, isPrimary: false),
-    _MiniEventData(month: 'JUL', day: '03', title: '部落歌謠之夜', loc: '富世社區', count: 41, isPrimary: true),
+    _MiniEventData(
+      month: 'SEP',
+      day: '12',
+      title: '布洛灣文化走讀',
+      loc: '布洛灣臺地',
+      count: 18,
+      isPrimary: true,
+    ),
+    _MiniEventData(
+      month: 'SEP',
+      day: '20',
+      title: '太魯閣語家庭練習夜',
+      loc: '富世社區',
+      count: 14,
+      isPrimary: false,
+    ),
+    _MiniEventData(
+      month: 'OCT',
+      day: '03',
+      title: '部落歌謠分享會',
+      loc: '秀林鄉',
+      count: 32,
+      isPrimary: true,
+    ),
   ];
 
   static const _events = [
     _EventData(
-      month: 'JUN', day: '15', dayOfWeek: '週六', title: '青年族語營', loc: '秀林部落',
-      time: '09:00 — 17:00', count: 23, max: 30, tag: '族語', host: 'Sayun Lowking',
-      desc: '三天兩夜，跟著耆老學族語、織布、聽部落故事。', isPrimary: true, featured: true,
+      month: 'SEP',
+      day: '12',
+      dayOfWeek: '週六',
+      title: '布洛灣文化走讀',
+      loc: '布洛灣臺地',
+      time: '09:00 — 12:00',
+      count: 18,
+      max: 25,
+      tag: '走讀',
+      host: 'Alang 走讀團隊',
+      desc: '從布洛灣臺地出發，認識地景、部落記憶與太魯閣族文化故事。',
+      isPrimary: true,
+      featured: true,
     ),
     _EventData(
-      month: 'JUN', day: '22', dayOfWeek: '週六', title: '苧麻採集走讀', loc: '銅門部落',
-      time: '06:00 — 12:00', count: 12, max: 20, tag: '走讀', host: 'Bakan Nawi',
-      desc: '', isPrimary: false,
+      month: 'SEP',
+      day: '20',
+      dayOfWeek: '週日',
+      title: '太魯閣語家庭練習夜',
+      loc: '富世社區活動中心',
+      time: '19:00 — 20:30',
+      count: 14,
+      max: 20,
+      tag: '族語',
+      host: 'Sayun',
+      desc: '以日常問候、家人稱謂與自我介紹為主題的輕量練習。',
+      isPrimary: false,
     ),
     _EventData(
-      month: 'JUL', day: '03', dayOfWeek: '週日', title: '部落歌謠之夜', loc: '富世社區活動中心',
-      time: '19:00 — 21:00', count: 41, max: 60, tag: '音樂', host: 'Pisaw baki',
-      desc: '', isPrimary: true,
+      month: 'OCT',
+      day: '03',
+      dayOfWeek: '週六',
+      title: '部落歌謠分享會',
+      loc: '秀林鄉文化廣場',
+      time: '18:30 — 20:30',
+      count: 32,
+      max: 45,
+      tag: '音樂',
+      host: 'Bakan',
+      desc: '一起聽歌、學唱與分享歌謠記憶，歡迎親子同行。',
+      isPrimary: true,
     ),
     _EventData(
-      month: 'JUL', day: '12', dayOfWeek: '週六', title: '太魯閣語讀書會', loc: '線上',
-      time: '20:00 — 21:30', count: 8, max: 15, tag: '線上', host: 'Yudaw',
-      desc: '', isPrimary: false,
+      month: 'OCT',
+      day: '10',
+      dayOfWeek: '週六',
+      title: '立霧溪故事線上讀書會',
+      loc: 'Google Meet',
+      time: '20:00 — 21:00',
+      count: 11,
+      max: 30,
+      tag: '線上',
+      host: 'Pisaw',
+      desc: '從立霧溪流域的人文故事出發，聊聊我們想保存的部落記憶。',
+      isPrimary: false,
     ),
   ];
 
@@ -156,9 +231,17 @@ class _PlazaScreenState extends State<PlazaScreen> {
       ),
       child: Row(
         children: [
-          _Tab(label: '動態', active: _tabIndex == 0, onTap: () => setState(() => _tabIndex = 0)),
+          _Tab(
+            label: '動態',
+            active: _tabIndex == 0,
+            onTap: () => setState(() => _tabIndex = 0),
+          ),
           const SizedBox(width: 24),
-          _Tab(label: '活動', active: _tabIndex == 1, onTap: () => setState(() => _tabIndex = 1)),
+          _Tab(
+            label: '活動',
+            active: _tabIndex == 1,
+            onTap: () => setState(() => _tabIndex = 1),
+          ),
         ],
       ),
     );
@@ -248,10 +331,14 @@ class _PlazaScreenState extends State<PlazaScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          ..._events.skip(1).map((e) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: _EventListTile(event: e),
-              )),
+          ..._events
+              .skip(1)
+              .map(
+                (e) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: _EventListTile(event: e),
+                ),
+              ),
         ],
       ),
     );
@@ -420,7 +507,10 @@ class _PostCard extends StatelessWidget {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 3,
+                ),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withValues(alpha: 0.08),
                   borderRadius: BorderRadius.circular(12),
@@ -450,9 +540,15 @@ class _PostCard extends StatelessWidget {
           const SizedBox(height: 10),
           Row(
             children: [
-              Text('♡ ${post.likes}', style: const TextStyle(fontSize: 12, color: AppColors.fog)),
+              Text(
+                '♡ ${post.likes}',
+                style: const TextStyle(fontSize: 12, color: AppColors.fog),
+              ),
               const SizedBox(width: 18),
-              Text('💬 ${post.comments}', style: const TextStyle(fontSize: 12, color: AppColors.fog)),
+              Text(
+                '💬 ${post.comments}',
+                style: const TextStyle(fontSize: 12, color: AppColors.fog),
+              ),
             ],
           ),
         ],
@@ -497,7 +593,9 @@ class _MiniEventCard extends StatelessWidget {
                     width: 44,
                     height: 44,
                     decoration: BoxDecoration(
-                      color: event.isPrimary ? AppColors.primary : AppColors.moss,
+                      color: event.isPrimary
+                          ? AppColors.primary
+                          : AppColors.moss,
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Column(
@@ -564,9 +662,14 @@ class _MiniEventCard extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
-                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: AppColors.gold.withValues(alpha: 0.5),
+                      ),
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: const Text(
@@ -630,7 +733,10 @@ class _FeaturedEventCard extends StatelessWidget {
                   top: 14,
                   left: 14,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.gold,
                       borderRadius: BorderRadius.circular(4),
@@ -650,11 +756,16 @@ class _FeaturedEventCard extends StatelessWidget {
                   top: 14,
                   right: 14,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: AppColors.ink.withValues(alpha: 0.55),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppColors.gold.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
@@ -710,7 +821,11 @@ class _FeaturedEventCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Row(
                   children: [
-                    const Icon(Icons.access_time, color: AppColors.gold, size: 11),
+                    const Icon(
+                      Icons.access_time,
+                      color: AppColors.gold,
+                      size: 11,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       event.time,
@@ -720,7 +835,11 @@ class _FeaturedEventCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 14),
-                    const Icon(Icons.location_on_outlined, color: AppColors.gold, size: 11),
+                    const Icon(
+                      Icons.location_on_outlined,
+                      color: AppColors.gold,
+                      size: 11,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       event.loc,
@@ -742,8 +861,12 @@ class _FeaturedEventCard extends StatelessWidget {
                             borderRadius: BorderRadius.circular(3),
                             child: LinearProgressIndicator(
                               value: event.count / event.max,
-                              backgroundColor: Colors.white.withValues(alpha: 0.15),
-                              valueColor: const AlwaysStoppedAnimation(AppColors.gold),
+                              backgroundColor: Colors.white.withValues(
+                                alpha: 0.15,
+                              ),
+                              valueColor: const AlwaysStoppedAnimation(
+                                AppColors.gold,
+                              ),
                               minHeight: 5,
                             ),
                           ),
@@ -752,7 +875,9 @@ class _FeaturedEventCard extends StatelessWidget {
                             '${event.count}/${event.max} 人 · 剩 ${event.max - event.count} 個名額',
                             style: TextStyle(
                               fontSize: 10,
-                              color: AppColors.creamLight.withValues(alpha: 0.7),
+                              color: AppColors.creamLight.withValues(
+                                alpha: 0.7,
+                              ),
                             ),
                           ),
                         ],
@@ -760,7 +885,10 @@ class _FeaturedEventCard extends StatelessWidget {
                     ),
                     const SizedBox(width: 12),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 10,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.gold,
                         borderRadius: BorderRadius.circular(22),
@@ -867,7 +995,10 @@ class _EventListTile extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(3),
@@ -884,9 +1015,14 @@ class _EventListTile extends StatelessWidget {
                     if (isNearlyFull) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFAA3333).withValues(alpha: 0.08),
+                          color: const Color(
+                            0xFFAA3333,
+                          ).withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(3),
                         ),
                         child: const Text(
@@ -926,16 +1062,26 @@ class _EventListTile extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.person_outline, size: 11, color: AppColors.inkSoft),
+                        const Icon(
+                          Icons.person_outline,
+                          size: 11,
+                          color: AppColors.inkSoft,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${event.count}/${event.max}',
-                          style: const TextStyle(fontSize: 11, color: AppColors.inkSoft),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.inkSoft,
+                          ),
                         ),
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(color: AppColors.primary),
                         borderRadius: BorderRadius.circular(12),

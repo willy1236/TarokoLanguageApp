@@ -18,29 +18,75 @@ class _EventsScreenState extends State<EventsScreen> {
 
   static const _events = [
     _EventData(
-      month: 'JUN', day: '15', dayOfWeek: '週六', title: '青年族語營', loc: '秀林部落',
-      time: '09:00 — 17:00', count: 23, max: 30, tag: '族語', host: 'Sayun Lowking',
-      desc: '三天兩夜，跟著耆老學族語、織布、聽部落故事。', isPrimary: true, featured: true,
+      month: 'SEP',
+      day: '12',
+      dayOfWeek: '週六',
+      title: '布洛灣文化走讀',
+      loc: '布洛灣臺地',
+      time: '09:00 — 12:00',
+      count: 18,
+      max: 25,
+      tag: '走讀',
+      host: 'Alang 走讀團隊',
+      desc: '從布洛灣臺地出發，認識地景、部落記憶與太魯閣族文化故事。',
+      isPrimary: true,
+      featured: true,
     ),
     _EventData(
-      month: 'JUN', day: '22', dayOfWeek: '週六', title: '苧麻採集走讀', loc: '銅門部落',
-      time: '06:00 — 12:00', count: 12, max: 20, tag: '走讀', host: 'Bakan Nawi',
-      desc: '', isPrimary: false,
+      month: 'SEP',
+      day: '20',
+      dayOfWeek: '週日',
+      title: '太魯閣語家庭練習夜',
+      loc: '富世社區活動中心',
+      time: '19:00 — 20:30',
+      count: 14,
+      max: 20,
+      tag: '族語',
+      host: 'Sayun',
+      desc: '以日常問候、家人稱謂與自我介紹為主題的輕量練習。',
+      isPrimary: false,
     ),
     _EventData(
-      month: 'JUL', day: '03', dayOfWeek: '週日', title: '部落歌謠之夜', loc: '富世社區活動中心',
-      time: '19:00 — 21:00', count: 41, max: 60, tag: '音樂', host: 'Pisaw baki',
-      desc: '', isPrimary: true,
+      month: 'OCT',
+      day: '03',
+      dayOfWeek: '週六',
+      title: '部落歌謠分享會',
+      loc: '秀林鄉文化廣場',
+      time: '18:30 — 20:30',
+      count: 32,
+      max: 45,
+      tag: '音樂',
+      host: 'Bakan',
+      desc: '一起聽歌、學唱與分享歌謠記憶，歡迎親子同行。',
+      isPrimary: true,
     ),
     _EventData(
-      month: 'JUL', day: '12', dayOfWeek: '週六', title: '太魯閣語讀書會', loc: '線上',
-      time: '20:00 — 21:30', count: 8, max: 15, tag: '線上', host: 'Yudaw',
-      desc: '', isPrimary: false,
+      month: 'OCT',
+      day: '10',
+      dayOfWeek: '週六',
+      title: '立霧溪故事線上讀書會',
+      loc: 'Google Meet',
+      time: '20:00 — 21:00',
+      count: 11,
+      max: 30,
+      tag: '線上',
+      host: 'Pisaw',
+      desc: '從立霧溪流域的人文故事出發，聊聊我們想保存的部落記憶。',
+      isPrimary: false,
     ),
     _EventData(
-      month: 'JUL', day: '20', dayOfWeek: '週日', title: '織布工坊體驗', loc: '銅門工藝坊',
-      time: '13:00 — 17:00', count: 6, max: 10, tag: '工藝', host: 'Iwan yaki',
-      desc: '', isPrimary: true,
+      month: 'OCT',
+      day: '17',
+      dayOfWeek: '週六',
+      title: '苧麻與織布體驗下午',
+      loc: '銅門社區活動中心',
+      time: '13:30 — 16:30',
+      count: 9,
+      max: 12,
+      tag: '工藝',
+      host: 'Mona',
+      desc: '認識苧麻、材料準備與基本織作流程；初學者也可參加。',
+      isPrimary: true,
     ),
   ];
 
@@ -199,7 +245,10 @@ class _EventsScreenState extends State<EventsScreen> {
                     top: 14,
                     left: 14,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.gold,
                         borderRadius: BorderRadius.circular(4),
@@ -219,11 +268,16 @@ class _EventsScreenState extends State<EventsScreen> {
                     top: 14,
                     right: 14,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.ink.withValues(alpha: 0.55),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: AppColors.gold.withValues(alpha: 0.3)),
+                        border: Border.all(
+                          color: AppColors.gold.withValues(alpha: 0.3),
+                        ),
                       ),
                       child: Column(
                         mainAxisSize: MainAxisSize.min,
@@ -280,7 +334,11 @@ class _EventsScreenState extends State<EventsScreen> {
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      const Icon(Icons.access_time, color: AppColors.gold, size: 11),
+                      const Icon(
+                        Icons.access_time,
+                        color: AppColors.gold,
+                        size: 11,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         e.time,
@@ -290,7 +348,11 @@ class _EventsScreenState extends State<EventsScreen> {
                         ),
                       ),
                       const SizedBox(width: 14),
-                      const Icon(Icons.location_on_outlined, color: AppColors.gold, size: 11),
+                      const Icon(
+                        Icons.location_on_outlined,
+                        color: AppColors.gold,
+                        size: 11,
+                      ),
                       const SizedBox(width: 4),
                       Text(
                         e.loc,
@@ -312,8 +374,12 @@ class _EventsScreenState extends State<EventsScreen> {
                               borderRadius: BorderRadius.circular(3),
                               child: LinearProgressIndicator(
                                 value: e.count / e.max,
-                                backgroundColor: Colors.white.withValues(alpha: 0.15),
-                                valueColor: const AlwaysStoppedAnimation(AppColors.gold),
+                                backgroundColor: Colors.white.withValues(
+                                  alpha: 0.15,
+                                ),
+                                valueColor: const AlwaysStoppedAnimation(
+                                  AppColors.gold,
+                                ),
                                 minHeight: 5,
                               ),
                             ),
@@ -322,7 +388,9 @@ class _EventsScreenState extends State<EventsScreen> {
                               '${e.count}/${e.max} 人 · 剩 ${e.max - e.count} 個名額',
                               style: TextStyle(
                                 fontSize: 10,
-                                color: AppColors.creamLight.withValues(alpha: 0.7),
+                                color: AppColors.creamLight.withValues(
+                                  alpha: 0.7,
+                                ),
                               ),
                             ),
                           ],
@@ -330,7 +398,10 @@ class _EventsScreenState extends State<EventsScreen> {
                       ),
                       const SizedBox(width: 12),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.gold,
                           borderRadius: BorderRadius.circular(22),
@@ -384,10 +455,15 @@ class _EventsScreenState extends State<EventsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
-        children: _events.skip(1).map((e) => Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: _EventListTile(event: e),
-        )).toList(),
+        children: _events
+            .skip(1)
+            .map(
+              (e) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _EventListTile(event: e),
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -498,7 +574,10 @@ class _EventListTile extends StatelessWidget {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 7,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.primary.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(3),
@@ -515,9 +594,14 @@ class _EventListTile extends StatelessWidget {
                     if (isNearlyFull) ...[
                       const SizedBox(width: 6),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 7,
+                          vertical: 2,
+                        ),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFAA3333).withValues(alpha: 0.08),
+                          color: const Color(
+                            0xFFAA3333,
+                          ).withValues(alpha: 0.08),
                           borderRadius: BorderRadius.circular(3),
                         ),
                         child: const Text(
@@ -557,16 +641,26 @@ class _EventListTile extends StatelessWidget {
                   children: [
                     Row(
                       children: [
-                        const Icon(Icons.person_outline, size: 11, color: AppColors.inkSoft),
+                        const Icon(
+                          Icons.person_outline,
+                          size: 11,
+                          color: AppColors.inkSoft,
+                        ),
                         const SizedBox(width: 4),
                         Text(
                           '${event.count}/${event.max}',
-                          style: const TextStyle(fontSize: 11, color: AppColors.inkSoft),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: AppColors.inkSoft,
+                          ),
                         ),
                       ],
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 5,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(color: AppColors.primary),
                         borderRadius: BorderRadius.circular(12),

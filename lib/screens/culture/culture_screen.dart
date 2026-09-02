@@ -18,16 +18,16 @@ class _CultureScreenState extends State<CultureScreen> {
   static const _chips = ['全部', '口述歷史', '織布傳統', '祭儀', '部落音樂', '美食'];
 
   static const _videos = [
-    _VideoItem('苧麻怎麼種', 'Yudaw', '6:20', '織布', true),
-    _VideoItem('溪流命名史', 'Pisaw', '8:14', '地景', false),
-    _VideoItem('小米播種祭', 'Sayun', '15:02', '祭儀', true),
-    _VideoItem('老人家的歌', 'Bakan', '4:36', '音樂', false),
+    _VideoItem('布洛灣臺地：追蹤獵物的地方', 'Alang 走讀團隊', '8:42', '地景', true),
+    _VideoItem('山徑百年：從部落獵徑走進立霧溪', 'Pisaw', '12:18', '口述歷史', false),
+    _VideoItem('苧麻到麻布：太魯閣族的織作記憶', 'Yudaw', '9:35', '織布傳統', true),
+    _VideoItem('一起唱回部落：歌謠練習的晚上', 'Bakan', '6:07', '部落音樂', false),
   ];
 
   static const _articles = [
-    _ArticleItem('走過立霧溪——一條河的族語名字', 'Pisaw', '5 分鐘', '486', '地景', true),
-    _ArticleItem('Gaya 不是規矩，是呼吸的方式', 'Yudaw', '12 分鐘', '892', '文化', false),
-    _ArticleItem('阿公教我打獵那天說的話', 'Watan', '7 分鐘', '634', '口述', true),
+    _ArticleItem('從立霧溪認識太魯閣族的遷徙與聚落', '太魯閣文化整理小組', '6 分鐘', '1,248', '地景', true),
+    _ArticleItem('布洛灣：追蹤獵物的地方', 'Alang 走讀團隊', '4 分鐘', '936', '文化', false),
+    _ArticleItem('山徑不只是道路：部落獵徑的記憶', 'Pisaw', '8 分鐘', '782', '口述', true),
   ];
 
   @override
@@ -39,9 +39,13 @@ class _CultureScreenState extends State<CultureScreen> {
           SliverToBoxAdapter(child: _buildHero()),
           SliverToBoxAdapter(child: _buildTabBar()),
           SliverToBoxAdapter(child: _buildChips()),
-          SliverToBoxAdapter(child: _buildSectionHeader('最新影片', 'patas hngak · 共 24 部')),
+          SliverToBoxAdapter(
+            child: _buildSectionHeader('最新影片', 'patas hngak · 共 24 部'),
+          ),
           SliverToBoxAdapter(child: _buildVideoGrid()),
-          SliverToBoxAdapter(child: _buildSectionHeader('族人寫的文章', 'patas kari · 共 18 篇')),
+          SliverToBoxAdapter(
+            child: _buildSectionHeader('族人寫的文章', 'patas kari · 共 18 篇'),
+          ),
           SliverToBoxAdapter(child: _buildFeaturedArticle()),
           SliverToBoxAdapter(child: _buildArticleList()),
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
@@ -85,7 +89,11 @@ class _CultureScreenState extends State<CultureScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 stops: [0.0, 0.5, 1.0],
-                colors: [Colors.transparent, Colors.transparent, AppColors.midnight],
+                colors: [
+                  Colors.transparent,
+                  Colors.transparent,
+                  AppColors.midnight,
+                ],
               ),
             ),
           ),
@@ -112,11 +120,11 @@ class _CultureScreenState extends State<CultureScreen> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.black.withValues(alpha: 0.4),
-                    border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+                    border: Border.all(
+                      color: AppColors.gold.withValues(alpha: 0.25),
+                    ),
                   ),
-                  child: const Center(
-                    child: _SearchIcon(),
-                  ),
+                  child: const Center(child: _SearchIcon()),
                 ),
               ],
             ),
@@ -170,15 +178,15 @@ class _CultureScreenState extends State<CultureScreen> {
   // ── Tab Bar ───────────────────────────────────────────────────────────────
 
   Widget _buildTabBar() {
-    final tabs = [
-      ('影音', 'patas hngak'),
-      ('文章', 'patas kari'),
-    ];
+    final tabs = [('影音', 'patas hngak'), ('文章', 'patas kari')];
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       decoration: BoxDecoration(
         border: Border(
-          bottom: BorderSide(color: AppColors.cream.withValues(alpha: 0.09), width: 1),
+          bottom: BorderSide(
+            color: AppColors.cream.withValues(alpha: 0.09),
+            width: 1,
+          ),
         ),
       ),
       child: Row(
@@ -256,13 +264,18 @@ class _CultureScreenState extends State<CultureScreen> {
             child: GestureDetector(
               onTap: () => setState(() => _chipIndex = i),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: active ? AppColors.primary : Colors.transparent,
                   borderRadius: BorderRadius.circular(20),
                   border: active
                       ? null
-                      : Border.all(color: AppColors.cream.withValues(alpha: 0.19)),
+                      : Border.all(
+                          color: AppColors.cream.withValues(alpha: 0.19),
+                        ),
                 ),
                 child: Text(
                   _chips[i],
@@ -384,7 +397,10 @@ class _CultureScreenState extends State<CultureScreen> {
                     top: 12,
                     left: 12,
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: AppColors.gold,
                         borderRadius: BorderRadius.circular(4),
@@ -485,10 +501,12 @@ class _CultureScreenState extends State<CultureScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Column(
         children: _articles
-            .map((a) => Padding(
-                  padding: const EdgeInsets.only(bottom: 10),
-                  child: _ArticleCard(item: a),
-                ))
+            .map(
+              (a) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _ArticleCard(item: a),
+              ),
+            )
             .toList(),
       ),
     );
@@ -575,7 +593,10 @@ class _VideoCard extends StatelessWidget {
                   top: 8,
                   left: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.5),
                       borderRadius: BorderRadius.circular(4),
@@ -594,7 +615,10 @@ class _VideoCard extends StatelessWidget {
                   bottom: 8,
                   right: 8,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.7),
                       borderRadius: BorderRadius.circular(3),
@@ -615,7 +639,9 @@ class _VideoCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: Colors.black.withValues(alpha: 0.5),
-                      border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: AppColors.gold.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: const Center(
                       child: _PlayIcon(size: 12, color: AppColors.gold),
@@ -684,7 +710,7 @@ class _ArticleCard extends StatelessWidget {
                     ? [AppColors.moss, AppColors.mossDeep]
                     : [
                         AppColors.primary.withValues(alpha: 0.25),
-                        AppColors.ink
+                        AppColors.ink,
                       ],
               ),
             ),
@@ -717,7 +743,10 @@ class _ArticleCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 7,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: AppColors.gold.withValues(alpha: 0.12),
                     borderRadius: BorderRadius.circular(3),
@@ -769,13 +798,26 @@ class _ArticleCard extends StatelessWidget {
 class _VideoItem {
   final String title, author, duration, tag;
   final bool primaryTheme;
-  const _VideoItem(this.title, this.author, this.duration, this.tag, this.primaryTheme);
+  const _VideoItem(
+    this.title,
+    this.author,
+    this.duration,
+    this.tag,
+    this.primaryTheme,
+  );
 }
 
 class _ArticleItem {
   final String title, author, readTime, views, category;
   final bool primaryTheme;
-  const _ArticleItem(this.title, this.author, this.readTime, this.views, this.category, this.primaryTheme);
+  const _ArticleItem(
+    this.title,
+    this.author,
+    this.readTime,
+    this.views,
+    this.category,
+    this.primaryTheme,
+  );
 }
 
 // ─── Painters / Icons ─────────────────────────────────────────────────────────
@@ -827,7 +869,9 @@ class _PlayIconPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = color..style = PaintingStyle.fill;
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
     final path = Path()
       ..moveTo(0, 0)
       ..lineTo(size.width, size.height / 2)
@@ -845,10 +889,7 @@ class _SearchIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(16, 16),
-      painter: _SearchIconPainter(),
-    );
+    return CustomPaint(size: const Size(16, 16), painter: _SearchIconPainter());
   }
 }
 
@@ -890,10 +931,7 @@ class _ArrowIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: const Size(16, 16),
-      painter: _ArrowIconPainter(),
-    );
+    return CustomPaint(size: const Size(16, 16), painter: _ArrowIconPainter());
   }
 }
 
