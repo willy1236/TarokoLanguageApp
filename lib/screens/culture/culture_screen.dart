@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../data/demo_content.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
@@ -52,11 +53,24 @@ class _CultureScreenState extends State<CultureScreen> {
       ? null
       : ArticleCategory.all[_articleChipIndex - 1];
 
-  Future<ArticleListResponse> _fetchArticles() {
-    return ArticleService.fetchArticles(
-      category: _selectedArticleCategory,
-      sort: _articleSort,
-    );
+  Future<ArticleListResponse> _fetchArticles() async {
+    try {
+      final response = await ArticleService.fetchArticles(
+        category: _selectedArticleCategory,
+        sort: _articleSort,
+      );
+      return response.articles.isEmpty
+          ? DemoContent.articles(
+              category: _selectedArticleCategory,
+              sort: _articleSort,
+            )
+          : response;
+    } catch (_) {
+      return DemoContent.articles(
+        category: _selectedArticleCategory,
+        sort: _articleSort,
+      );
+    }
   }
 
   void _reloadArticles() {
@@ -67,18 +81,30 @@ class _CultureScreenState extends State<CultureScreen> {
 
   // 後端無獨立「精選」欄位/endpoint，改用本週熱門第一名頂替本週精選。
   Future<VideoSummary?> _fetchFeatured() async {
-    final res = await VideoService.fetchVideos(
-      sort: 'weekly_popular',
-      pageSize: 1,
-    );
+    final res = await _fetchVideos(sort: 'weekly_popular', pageSize: 1);
     return res.videos.isEmpty ? null : res.videos.first;
   }
 
   String? get _selectedCategory =>
       _chipIndex == 0 ? null : VideoCategory.all[_chipIndex - 1];
 
-  Future<VideoListResponse> _fetchVideos() {
-    return VideoService.fetchVideos(category: _selectedCategory, sort: _sort);
+  Future<VideoListResponse> _fetchVideos({String? sort, int? pageSize}) async {
+    final selectedSort = sort ?? _sort;
+    try {
+      final response = await VideoService.fetchVideos(
+        category: _selectedCategory,
+        sort: selectedSort,
+        pageSize: pageSize ?? 20,
+      );
+      return response.videos.isEmpty
+          ? DemoContent.videos(category: _selectedCategory, sort: selectedSort)
+          : response;
+    } catch (_) {
+      return DemoContent.videos(
+        category: _selectedCategory,
+        sort: selectedSort,
+      );
+    }
   }
 
   void _reloadVideos() {
@@ -237,6 +263,14 @@ class _CultureScreenState extends State<CultureScreen> {
                       onTap: featured == null
                           ? null
                           : () {
+                              if (DemoContent.isDemoId(featured.id)) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('這是本機展示影音，正式資料上線後可播放。'),
+                                  ),
+                                );
+                                return;
+                              }
                               Navigator.of(context).push(
                                 MaterialPageRoute(
                                   builder: (_) =>
@@ -956,6 +990,12 @@ class _CultureScreenState extends State<CultureScreen> {
   }
 
   void _openArticle(int id) {
+    if (DemoContent.isDemoId(id)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('這是本機展示文章，正式資料上線後可查看全文。')));
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => ArticleDetailScreen(articleId: id)),
     );
@@ -968,11 +1008,7 @@ class _PlayButton extends StatelessWidget {
   final String label;
   final VoidCallback? onTap;
   final bool seniorMode;
-  const _PlayButton({
-    required this.label,
-    this.onTap,
-    this.seniorMode = false,
-  });
+  const _PlayButton({required this.label, this.onTap, this.seniorMode = false});
 
   @override
   Widget build(BuildContext context) {
@@ -1024,6 +1060,12 @@ class _VideoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () {
+        if (DemoContent.isDemoId(video.id)) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('這是本機展示影音，正式資料上線後可播放。')));
+          return;
+        }
         Navigator.of(context).push(
           MaterialPageRoute(
             builder: (_) => VideoDetailScreen(videoId: video.id),

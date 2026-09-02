@@ -41,6 +41,10 @@ class ForumBoardView extends StatefulWidget {
   /// 使用者下拉時預期的是「整頁更新」，只更新貼文會與這個直覺不符。
   final Future<void> Function()? onRefresh;
 
+  /// API 無資料或暫時讀取失敗時顯示的本機展示貼文。
+  /// 只用在需要展示內容的入口頁，正式資料存在時不會取代它。
+  final ForumPostPage? fallbackPage;
+
   const ForumBoardView({
     super.key,
     required this.loadPage,
@@ -51,6 +55,7 @@ class ForumBoardView extends StatefulWidget {
     this.prependOnRefresh = true,
     this.reloadKey,
     this.onRefresh,
+    this.fallbackPage,
   });
 
   @override
@@ -100,7 +105,12 @@ class ForumBoardViewState extends State<ForumBoardView> {
       _error = null;
     });
     try {
-      final page = await widget.loadPage();
+      var page = await widget.loadPage();
+      if (page.pinned.isEmpty &&
+          page.posts.isEmpty &&
+          widget.fallbackPage != null) {
+        page = widget.fallbackPage!;
+      }
       if (!mounted) return;
       setState(() {
         _pinned
@@ -114,6 +124,19 @@ class ForumBoardViewState extends State<ForumBoardView> {
       });
     } on ApiException catch (e) {
       if (!mounted) return;
+      if (widget.fallbackPage != null) {
+        setState(() {
+          _pinned
+            ..clear()
+            ..addAll(widget.fallbackPage!.pinned);
+          _posts
+            ..clear()
+            ..addAll(widget.fallbackPage!.posts);
+          _nextCursor = null;
+          _loading = false;
+        });
+        return;
+      }
       setState(() {
         _error = e.message;
         _loading = false;

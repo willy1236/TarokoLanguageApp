@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../data/demo_content.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_model.dart';
@@ -29,6 +30,7 @@ class PlazaScreen extends StatefulWidget {
 class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   bool _eventsLoading = true;
   List<EventSummary> _events = [];
+  bool _usingDemoEvents = false;
 
   List<ForumBoard> _boards = [];
 
@@ -75,12 +77,17 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       final events = await EventService.fetchEvents(scope: 'upcoming');
       if (!mounted) return;
       setState(() {
-        _events = events;
+        _usingDemoEvents = events.isEmpty;
+        _events = events.isEmpty ? DemoContent.events : events;
         _eventsLoading = false;
       });
     } catch (_) {
       if (!mounted) return;
-      setState(() => _eventsLoading = false);
+      setState(() {
+        _events = DemoContent.events;
+        _usingDemoEvents = true;
+        _eventsLoading = false;
+      });
     }
   }
 
@@ -89,14 +96,17 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       final boards = await ForumService.boards();
       if (!mounted) return;
       setState(() {
-        _boards = boards;
+        _boards = boards.isEmpty ? DemoContent.boards : boards;
         // 預設停在「全部」，不自動選第一個看板。
         _boardsLoading = false;
       });
     } on ApiException {
       // 看板載不到不應該讓整頁失效，活動小卡仍要顯示。
       if (!mounted) return;
-      setState(() => _boardsLoading = false);
+      setState(() {
+        _boards = DemoContent.boards;
+        _boardsLoading = false;
+      });
     }
   }
 
@@ -111,6 +121,12 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   }
 
   void _openEventDetail(EventSummary e) {
+    if (_usingDemoEvents || DemoContent.isDemoId(e.id)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('這是本機展示活動，正式活動資料上線後可查看詳情。')));
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: e.id)),
@@ -126,6 +142,12 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _openPost(ForumPost post) async {
+    if (DemoContent.isDemoId(post.id)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('這是本機展示貼文，正式貼文資料上線後可查看詳情。')));
+      return;
+    }
     final result = await Navigator.push<ForumDetailResult>(
       context,
       MaterialPageRoute(
@@ -470,6 +492,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         toggleBookmark: ForumService.bookmarkPost,
         onOpenPost: _openPost,
         onRefresh: _refreshHeader,
+        fallbackPage: DemoContent.forumPage(boardSlug: slug),
       ),
     );
   }
