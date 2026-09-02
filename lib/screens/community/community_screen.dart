@@ -7,6 +7,7 @@ import '../../main.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../profile/profile_screen.dart';
+import 'video_call_notice_screen.dart';
 import 'video_call_screen.dart';
 import 'video_waiting_screen.dart';
 
@@ -46,6 +47,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           children: [
             _buildHeader(),
             _buildHeroCard(),
+            _buildNoticeLink(),
             _buildTopics(),
             _buildRudanList(),
             _buildRecentCall(),
@@ -177,6 +179,34 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
+  Widget _buildNoticeLink() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const VideoCallNoticeScreen()),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.shield_outlined, size: 14, color: AppColors.fog),
+            const SizedBox(width: 6),
+            Text(
+              '查看視訊配對須知',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.fog,
+                decoration: TextDecoration.underline,
+                decorationColor: AppColors.fog,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAvatarRow() {
     const initials = ['B', 'Y', 'P', 'S'];
     return Row(
@@ -247,6 +277,18 @@ class _CommunityScreenState extends State<CommunityScreen> {
       if (!camera.isGranted || !mic.isGranted) {
         _showMessage('需要相機與麥克風權限才能開始視訊配對');
         return;
+      }
+
+      if (!await hasSeenVideoCallNotice()) {
+        if (!mounted) return;
+        final agreed = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(builder: (_) => const VideoCallNoticeScreen()),
+        );
+        if (agreed != true) {
+          return;
+        }
+        await markVideoCallNoticeSeen();
       }
 
       final result = await VideoCallService.joinQueue();
