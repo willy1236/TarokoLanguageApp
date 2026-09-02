@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CLIENT_ID</key>
+	<string>230831538559-qpbohb53gfr9tuqvktr0sdv326al0dcc.apps.googleusercontent.com</string>
+	<key>REVERSED_CLIENT_ID</key>
+	<string>com.googleusercontent.apps.230831538559-qpbohb53gfr9tuqvktr0sdv326al0dcc</string>
+	<key>ANDROID_CLIENT_ID</key>
+	<string>230831538559-3quakpe7lkqcnn65r3q5pfa2c8rlh4o4.apps.googleusercontent.com</string>
+	<key>API_KEY</key>
+	<string>AIzaSyAdCeNFpKr-R2dQWElYhzrMoDN_qAYG_Jc</string>
+	<key>GCM_SENDER_ID</key>
+	<string>230831538559</string>
+	<key>PLIST_VERSION</key>
+	<string>1</string>
+	<key>BUNDLE_ID</key>
+	<string>tw.idv.willy1236.truku</string>
+	<key>PROJECT_ID</key>
+	<string>extreme-quasar-494406-v7</string>
+	<key>STORAGE_BUCKET</key>
+	<string>extreme-quasar-494406-v7.firebasestorage.app</string>
+	<key>IS_ADS_ENABLED</key>
+	<false></false>
+	<key>IS_ANALYTICS_ENABLED</key>
+	<false></false>
+	<key>IS_APPINVITE_ENABLED</key>
+	<true></true>
+	<key>IS_GCM_ENABLED</key>
+	<true></true>
+	<key>IS_SIGNIN_ENABLED</key>
+	<true></true>
+	<key>GOOGLE_APP_ID</key>
+	<string>1:230831538559:ios:1db1b527a77a49e3109a4a</string>
+</dict>
+</plist>
