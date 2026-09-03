@@ -8,6 +8,7 @@ import '../../services/senior_mode_controller.dart';
 import 'event_bookmarks_screen.dart';
 import 'event_compose_screen.dart';
 import 'event_detail_screen.dart';
+import 'event_notifications_screen.dart';
 import 'event_search_screen.dart';
 
 /// 活動列表 —— 真資料版（GET /api/events）。
@@ -29,11 +30,13 @@ class _EventsScreenState extends State<EventsScreen> {
   bool _loading = true;
   String? _error;
   List<EventSummary> _events = [];
+  int _unread = 0;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadUnread();
   }
 
   Future<void> _load() async {
@@ -54,6 +57,16 @@ class _EventsScreenState extends State<EventsScreen> {
         _error = e.toString();
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _loadUnread() async {
+    try {
+      final page = await EventService.notifications();
+      if (!mounted) return;
+      setState(() => _unread = page.unreadCount);
+    } catch (_) {
+      // 紅點拿不到就不顯示，不干擾主要內容。
     }
   }
 
@@ -384,10 +397,40 @@ class _EventsScreenState extends State<EventsScreen> {
           size: seniorMode ? 24 : 20,
         ),
       ),
-      // 通知 icon 先不加：後端沒有跨活動的通知收件匣端點，前端硬湊
-      // （GET /api/events 篩 isJoined 再逐一查 /reminders）在 code review 被
-      // block（N+1、50 筆活動上限漏抓、錯誤被 catchError 吞掉），等後端補上
-      // 正式端點（例如 GET /api/notifications）再做。
+      IconButton(
+        tooltip: '活動通知',
+        visualDensity: VisualDensity.compact,
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const EventNotificationsScreen()),
+          );
+          if (mounted) _loadUnread();
+        },
+        icon: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(
+              Icons.notifications_none,
+              color: AppColors.ink,
+              size: seniorMode ? 24 : 20,
+            ),
+            if (_unread > 0)
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
     ],
   );
 

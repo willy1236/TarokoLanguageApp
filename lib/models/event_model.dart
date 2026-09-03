@@ -278,3 +278,56 @@ class EventReminder {
     );
   }
 }
+
+/// GET /api/events/notifications 單筆通知——我有報名的活動，發起人發出的提醒。
+class EventNotification {
+  final int id;
+  final int eventId;
+  final String eventTitle;
+  final String message;
+  final DateTime sentAt;
+  final bool isRead;
+
+  const EventNotification({
+    required this.id,
+    required this.eventId,
+    required this.eventTitle,
+    required this.message,
+    required this.sentAt,
+    required this.isRead,
+  });
+
+  factory EventNotification.fromJson(Map<String, dynamic> json) {
+    return EventNotification(
+      id: asEventInt(json['id'])!,
+      eventId: asEventInt(json['event_id'])!,
+      eventTitle: json['event_title'] as String? ?? '',
+      message: json['message'] as String,
+      sentAt: DateTime.parse(json['sent_at'] as String),
+      isRead: json['is_read'] == true,
+    );
+  }
+}
+
+class EventNotificationPage {
+  final List<EventNotification> items;
+  final int unreadCount;
+  final int? nextCursor;
+
+  const EventNotificationPage({
+    required this.items,
+    required this.unreadCount,
+    required this.nextCursor,
+  });
+
+  factory EventNotificationPage.fromJson(Map<String, dynamic> json) {
+    final list = json['notifications'] as List<dynamic>? ?? const [];
+    return EventNotificationPage(
+      items: list
+          .map((e) => EventNotification.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      unreadCount: asEventInt(json['unread_count']) ?? 0,
+      nextCursor: asEventInt(json['next_cursor']),
+    );
+  }
+}
