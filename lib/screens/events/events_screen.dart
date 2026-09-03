@@ -8,7 +8,6 @@ import '../../services/senior_mode_controller.dart';
 import 'event_bookmarks_screen.dart';
 import 'event_compose_screen.dart';
 import 'event_detail_screen.dart';
-import 'event_notifications_screen.dart';
 import 'event_search_screen.dart';
 
 /// 活動列表 —— 真資料版（GET /api/events）。
@@ -385,19 +384,10 @@ class _EventsScreenState extends State<EventsScreen> {
           size: seniorMode ? 24 : 20,
         ),
       ),
-      IconButton(
-        tooltip: '活動通知',
-        visualDensity: VisualDensity.compact,
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const EventNotificationsScreen()),
-        ),
-        icon: Icon(
-          Icons.notifications_none,
-          color: AppColors.ink,
-          size: seniorMode ? 24 : 20,
-        ),
-      ),
+      // 通知 icon 先不加：後端沒有跨活動的通知收件匣端點，前端硬湊
+      // （GET /api/events 篩 isJoined 再逐一查 /reminders）在 code review 被
+      // block（N+1、50 筆活動上限漏抓、錯誤被 catchError 吞掉），等後端補上
+      // 正式端點（例如 GET /api/notifications）再做。
     ],
   );
 
