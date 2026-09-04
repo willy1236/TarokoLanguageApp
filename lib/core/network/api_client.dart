@@ -41,6 +41,7 @@ class ApiException implements Exception {
   });
 
   bool get isUnauthorized => statusCode == 401;
+  bool get isRateLimited => statusCode == 429;
   bool get isConsentRequired => code == 'CONSENT_REQUIRED';
   bool get isSessionNotFound => code == 'SESSION_NOT_FOUND';
   bool get isSessionNotCompleted => code == 'SESSION_NOT_COMPLETED';
@@ -260,6 +261,15 @@ class ApiClient {
   }
 
   static ApiException _parseError(http.Response resp) {
+    // 全域速率限制（每 IP 每分鐘 200 次、上傳類 15 次）：訊息統一換成固定文案，
+    // 不做自動重試——429 當下立刻重打只會讓限流更嚴重，交給使用者自己重試。
+    if (resp.statusCode == 429) {
+      return ApiException(
+        statusCode: 429,
+        code: 'RATE_LIMITED',
+        message: '操作太頻繁，請稍後再試',
+      );
+    }
     try {
       final j = jsonDecode(resp.body);
       final error = j['error'] as Map<String, dynamic>?;

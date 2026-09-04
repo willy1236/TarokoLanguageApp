@@ -7,6 +7,7 @@ import '../../shared/widgets/truku_widgets.dart';
 import '../../shared/widgets/mode_card.dart';
 import '../../shared/widgets/millet_coin_icon.dart';
 import '../../shared/widgets/user_avatar.dart';
+import '../profile/about_app_screen.dart';
 import '../shop/shop_screen.dart';
 
 // 五張模式卡資料（依設計稿）
@@ -82,6 +83,8 @@ class HomeScreen extends StatelessWidget {
   final Map<String, ShopItem> itemCatalogById;
   final bool checkedInToday;
   final int checkinStreak;
+  final int weeklyCheckinCount;
+  final bool weeklyBonusEarned;
   final VoidCallback? onCheckin;
 
   const HomeScreen({
@@ -95,6 +98,8 @@ class HomeScreen extends StatelessWidget {
     this.itemCatalogById = const {},
     this.checkedInToday = false,
     this.checkinStreak = 0,
+    this.weeklyCheckinCount = 0,
+    this.weeklyBonusEarned = false,
     this.onCheckin,
   });
 
@@ -137,12 +142,18 @@ class HomeScreen extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo
+                // Logo（點擊開啟「關於語見太魯閣」）
                 Center(
-                  child: Image.asset(
-                    'assets/icon/logo.png',
-                    width: 120,
-                    height: 120,
+                  child: GestureDetector(
+                    onTap: () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const AboutAppScreen()),
+                    ),
+                    child: Image.asset(
+                      'assets/icon/logo.png',
+                      width: 120,
+                      height: 120,
+                    ),
                   ),
                 ),
                 const SizedBox(height: 14),
@@ -208,6 +219,8 @@ class HomeScreen extends StatelessWidget {
                   millet: millet,
                   checkedInToday: checkedInToday,
                   checkinStreak: checkinStreak,
+                  weeklyCheckinCount: weeklyCheckinCount,
+                  weeklyBonusEarned: weeklyBonusEarned,
                   onCheckin: onCheckin,
                 ),
               ],
@@ -275,12 +288,16 @@ class _TodayProgressCard extends StatelessWidget {
   final int? millet;
   final bool checkedInToday;
   final int checkinStreak;
+  final int weeklyCheckinCount;
+  final bool weeklyBonusEarned;
   final VoidCallback? onCheckin;
 
   const _TodayProgressCard({
     this.millet,
     this.checkedInToday = false,
     this.checkinStreak = 0,
+    this.weeklyCheckinCount = 0,
+    this.weeklyBonusEarned = false,
     this.onCheckin,
   });
 
@@ -366,7 +383,7 @@ class _TodayProgressCard extends StatelessWidget {
 
                 const SizedBox(height: 6),
 
-                // 「連續學習 12 天」
+                // 「本週簽到 N/7 天」
                 RichText(
                   text: TextSpan(
                     style: GoogleFonts.notoSerifTc(
@@ -376,19 +393,19 @@ class _TodayProgressCard extends StatelessWidget {
                       height: 1.3,
                     ),
                     children: [
-                      const TextSpan(text: '連續學習 '),
+                      const TextSpan(text: '本週簽到 '),
                       TextSpan(
-                        text: '12',
+                        text: '$weeklyCheckinCount',
                         style: const TextStyle(color: AppColors.gold),
                       ),
-                      const TextSpan(text: ' 天'),
+                      const TextSpan(text: '/7 天'),
                     ],
                   ),
                 ),
 
                 const SizedBox(height: 10),
 
-                // 七格進度條（5 金色 + 2 淡白）
+                // 七格進度條：亮起的格數 = 本週已簽到天數（非星期幾）
                 Row(
                   children: List.generate(
                     7,
@@ -397,7 +414,7 @@ class _TodayProgressCard extends StatelessWidget {
                         height: 6,
                         margin: EdgeInsets.only(right: i < 6 ? 4 : 0),
                         decoration: BoxDecoration(
-                          color: i < 5
+                          color: i < weeklyCheckinCount
                               ? AppColors.gold
                               : Colors.white.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(2),
@@ -413,7 +430,9 @@ class _TodayProgressCard extends StatelessWidget {
                 Opacity(
                   opacity: 0.85,
                   child: Text(
-                    '本週目標 5/7 · 完成下個單元再得 +10 小米幣',
+                    weeklyBonusEarned
+                        ? '本週已集滿 7 天 · 已獲得 +50 小米幣'
+                        : '再簽到 ${7 - weeklyCheckinCount} 天，本週集滿再得 +50 小米幣',
                     style: GoogleFonts.notoSansTc(
                       fontSize: 12,
                       color: AppColors.creamLight,

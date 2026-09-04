@@ -8,6 +8,7 @@ import '../../core/network/api_client.dart';
 import '../../models/video_models.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
+import '../../shared/widgets/engagement_icon_button.dart';
 
 class VideoDetailScreen extends StatefulWidget {
   final int videoId;
@@ -243,20 +244,24 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                           Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              _engagementButton(
+                              EngagementIconButton(
                                 icon: video.isLiked
                                     ? Icons.favorite
                                     : Icons.favorite_border,
-                                active: video.isLiked,
+                                color: video.isLiked
+                                    ? AppColors.gold
+                                    : AppColors.fog,
                                 count: video.likeCount,
                                 onTap: _toggleLike,
                                 seniorMode: true,
                               ),
-                              _engagementButton(
+                              EngagementIconButton(
                                 icon: video.isBookmarked
                                     ? Icons.bookmark
                                     : Icons.bookmark_border,
-                                active: video.isBookmarked,
+                                color: video.isBookmarked
+                                    ? AppColors.gold
+                                    : AppColors.fog,
                                 onTap: _toggleBookmark,
                                 seniorMode: true,
                               ),
@@ -279,21 +284,25 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                             style: TextStyle(color: AppColors.fog, fontSize: 12),
                           ),
                           const Spacer(),
-                          _engagementButton(
+                          EngagementIconButton(
                             icon: video.isLiked
                                 ? Icons.favorite
                                 : Icons.favorite_border,
-                            active: video.isLiked,
+                            color: video.isLiked
+                                ? AppColors.gold
+                                : AppColors.fog,
                             count: video.likeCount,
                             onTap: _toggleLike,
                             seniorMode: false,
                           ),
                           const SizedBox(width: 8),
-                          _engagementButton(
+                          EngagementIconButton(
                             icon: video.isBookmarked
                                 ? Icons.bookmark
                                 : Icons.bookmark_border,
-                            active: video.isBookmarked,
+                            color: video.isBookmarked
+                                ? AppColors.gold
+                                : AppColors.fog,
                             onTap: _toggleBookmark,
                             seniorMode: false,
                           ),
@@ -340,38 +349,4 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     );
   }
 
-  Widget _engagementButton({
-    required IconData icon,
-    required bool active,
-    required VoidCallback onTap,
-    required bool seniorMode,
-    int? count,
-  }) {
-    final color = active ? AppColors.gold : AppColors.fog;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: seniorMode ? 12 : 6,
-          vertical: seniorMode ? 8 : 4,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: seniorMode ? 30 : 18, color: color),
-            if (count != null) ...[
-              const SizedBox(width: 4),
-              Text(
-                '$count',
-                style: TextStyle(
-                  color: color,
-                  fontSize: seniorMode ? AppTypography.subtitle : 12,
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
 }

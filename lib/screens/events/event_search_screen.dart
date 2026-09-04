@@ -9,8 +9,7 @@ import '../../models/event_model.dart';
 import '../../models/tribe_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
-import '../../shared/search_range.dart';
-import '../../shared/widgets/tribe_picker_sheet.dart';
+import '../../shared/widgets/module_search_bar.dart';
 import 'event_detail_screen.dart';
 
 class EventSearchScreen extends StatefulWidget {
@@ -92,20 +91,13 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
     }
   }
 
-  Future<void> _pickTribe() async {
-    final tribe = await showModalBottomSheet<Tribe>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => const TribePickerSheet(),
-    );
-    if (tribe == null) return;
-    setState(() => _tribe = tribe.id == kClearTribeId ? null : tribe);
+  void _onTribeSelected(Tribe? tribe) {
+    setState(() => _tribe = tribe);
     _search();
   }
 
   void _setRange(String? range) {
-    setState(() => _range = _range == range ? null : range);
+    setState(() => _range = range);
     _search();
   }
 
@@ -120,36 +112,25 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
   Widget _buildScaffold(bool seniorMode) {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
-      appBar: AppBar(
-        backgroundColor: AppColors.creamLight,
-        elevation: 0,
-        foregroundColor: AppColors.ink,
-        title: TextField(
-          controller: _controller,
-          autofocus: true,
-          style: TextStyle(
-            fontSize: seniorMode ? AppTypography.title : null,
-          ),
-          textInputAction: TextInputAction.search,
-          onSubmitted: (_) => _search(),
-          decoration: InputDecoration(
-            hintText: '搜尋活動',
-            hintStyle: TextStyle(
-              fontSize: seniorMode ? AppTypography.title : null,
-            ),
-            border: InputBorder.none,
-          ),
-        ),
-        actions: [
-          IconButton(
-            onPressed: _search,
-            icon: Icon(Icons.search, size: seniorMode ? 30 : null),
-          ),
-        ],
+      appBar: ModuleSearchAppBar(
+        controller: _controller,
+        hint: '搜尋活動',
+        onSubmit: _search,
+        palette: SearchBarPalette.light,
+        seniorMode: seniorMode,
+        titleFontSize: AppTypography.title,
       ),
       body: Column(
         children: [
-          _filterRow(seniorMode),
+          ModuleSearchFilterRow(
+            range: _range,
+            onRangeSelected: _setRange,
+            tribe: _tribe,
+            onTribeSelected: _onTribeSelected,
+            palette: SearchBarPalette.light,
+            seniorMode: seniorMode,
+            chipFontSize: AppTypography.subtitle,
+          ),
           if (_error != null)
             Padding(
               padding: const EdgeInsets.all(20),
@@ -174,71 +155,6 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
             ),
           if (_searched) Expanded(child: _resultList(seniorMode)),
         ],
-      ),
-    );
-  }
-
-  Widget _filterRow(bool seniorMode) {
-    return SizedBox(
-      height: seniorMode ? 64 : 48,
-      child: ListView(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        children: [
-          for (final r in SearchRange.values) _rangeChip(r, seniorMode),
-          const SizedBox(width: 4),
-          _tribeChip(seniorMode),
-        ],
-      ),
-    );
-  }
-
-  Widget _rangeChip(String range, bool seniorMode) {
-    final selected = _range == range;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
-      child: ChoiceChip(
-        label: Text(SearchRange.label(range)),
-        selected: selected,
-        showCheckmark: false,
-        backgroundColor: AppColors.cream,
-        selectedColor: AppColors.primary.withValues(alpha: 0.16),
-        labelStyle: TextStyle(
-          fontSize: seniorMode ? AppTypography.subtitle : 12,
-          color: selected ? AppColors.primary : AppColors.inkSoft,
-        ),
-        side: BorderSide(
-          color: selected
-              ? AppColors.primary.withValues(alpha: 0.45)
-              : AppColors.creamDeep,
-        ),
-        onSelected: (_) => _setRange(range),
-      ),
-    );
-  }
-
-  Widget _tribeChip(bool seniorMode) {
-    final selected = _tribe != null;
-    return Padding(
-      padding: const EdgeInsets.only(top: 6, bottom: 6),
-      child: ActionChip(
-        avatar: Icon(
-          Icons.place_outlined,
-          size: seniorMode ? 22 : 16,
-          color: selected ? AppColors.primary : AppColors.inkSoft,
-        ),
-        label: Text(_tribe?.name ?? '部落'),
-        backgroundColor: AppColors.cream,
-        labelStyle: TextStyle(
-          fontSize: seniorMode ? AppTypography.subtitle : 12,
-          color: selected ? AppColors.primary : AppColors.inkSoft,
-        ),
-        side: BorderSide(
-          color: selected
-              ? AppColors.primary.withValues(alpha: 0.45)
-              : AppColors.creamDeep,
-        ),
-        onPressed: _pickTribe,
       ),
     );
   }

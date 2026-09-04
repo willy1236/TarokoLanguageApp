@@ -56,6 +56,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   bool _sending = false;
   String? _error;
 
+  /// 圖片過期自動重整每次載入只做一次，避免多張圖同時過期時連環重打 API。
+  bool _imageAutoRefreshed = false;
+
   /// 正在回覆的第一層留言；null 代表回覆貼文本身。
   ForumComment? _replyTarget;
 
@@ -78,6 +81,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     setState(() {
       _loading = true;
       _error = null;
+      _imageAutoRefreshed = false;
     });
     try {
       final post = await ForumService.post(widget.postId);
@@ -126,6 +130,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       setState(() => _loadingMore = false);
       _toast(e.message);
     }
+  }
+
+  /// 圖片簽章網址過期時自動重打貼文 API 拿新網址；用旗標保證每次進頁最多
+  /// 自動重試一次，避免多張圖同時過期或重整後仍失敗時無限連環重打。
+  void _onImageExpired() {
+    if (_imageAutoRefreshed || _loading) return;
+    _imageAutoRefreshed = true;
+    _load();
   }
 
   void _toast(String message) {
@@ -543,7 +555,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       ),
       if (post.images.isNotEmpty) ...[
         const SizedBox(height: 14),
-        ForumImageGrid(urls: post.images),
+        ForumImageGrid(urls: post.images, onImageExpired: _onImageExpired),
       ],
       if (post.tags.isNotEmpty) ...[
         const SizedBox(height: 12),

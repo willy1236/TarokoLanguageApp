@@ -174,6 +174,7 @@ class _MainContainerState extends State<MainContainer> {
 
   int _currentIndex = 0;
   int _previousIndex = 0;
+  int _profileOpenCount = 0;
   String? _displayName;
   int? _millet;
   String? _avatarId;
@@ -181,6 +182,8 @@ class _MainContainerState extends State<MainContainer> {
   Map<String, ShopItem> _itemCatalogById = const {};
   bool _checkedInToday = false;
   int _checkinStreak = 0;
+  int _weeklyCheckinCount = 0;
+  bool _weeklyBonusEarned = false;
 
   @override
   void initState() {
@@ -228,6 +231,8 @@ class _MainContainerState extends State<MainContainer> {
         _checkedInToday = status.checkedInToday;
         _checkinStreak = status.checkinStreak;
         _millet = status.millet;
+        _weeklyCheckinCount = status.weeklyCheckinCount;
+        _weeklyBonusEarned = status.weeklyBonusEarned;
       });
     } catch (e) {
       // 功能尚未開放或發生錯誤：維持現狀，簽到按鈕保持預設（可點）樣式。
@@ -243,10 +248,18 @@ class _MainContainerState extends State<MainContainer> {
         _checkedInToday = status.checkedInToday;
         _checkinStreak = status.checkinStreak;
         _millet = status.millet;
+        _weeklyCheckinCount = status.weeklyCheckinCount;
+        _weeklyBonusEarned = status.weeklyBonusEarned;
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('簽到成功，+50 小米')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            status.weeklyBonusEarned
+                ? '簽到成功，+50 小米・週全勤再 +50！'
+                : '簽到成功，+50 小米',
+          ),
+        ),
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       if (e.code == 'ALREADY_CHECKED_IN') {
@@ -274,6 +287,7 @@ class _MainContainerState extends State<MainContainer> {
   void _openProfile() => setState(() {
     _previousIndex = _currentIndex;
     _currentIndex = _profileIndex;
+    _profileOpenCount++;
   });
 
   void _closeProfile() {
@@ -346,6 +360,8 @@ class _MainContainerState extends State<MainContainer> {
                   itemCatalogById: _itemCatalogById,
                   checkedInToday: _checkedInToday,
                   checkinStreak: _checkinStreak,
+                  weeklyCheckinCount: _weeklyCheckinCount,
+                  weeklyBonusEarned: _weeklyBonusEarned,
                   onCheckin: _checkin,
                   onShowProfile: _openProfile,
                   onNavigateToTab: _navigate,
@@ -355,7 +371,10 @@ class _MainContainerState extends State<MainContainer> {
                 const CommunityScreen(),
                 const PlazaScreen(),
                 const EventsScreen(),
-                ProfileScreen(onClose: _closeProfile),
+                ProfileScreen(
+                  refreshToken: _profileOpenCount,
+                  onClose: _closeProfile,
+                ),
               ],
             ),
             bottomNavigationBar: _currentIndex == _profileIndex
