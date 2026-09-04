@@ -1,6 +1,7 @@
 import 'package:better_player_plus/better_player_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
@@ -34,18 +35,24 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
   Future<void> _load() async {
     try {
       final detail = await VideoService.fetchVideoDetail(widget.videoId);
-      _playerController = BetterPlayerController(
-        const BetterPlayerConfiguration(
-          aspectRatio: 16 / 9,
-          autoPlay: true,
-          fit: BoxFit.contain,
-        ),
-        betterPlayerDataSource: BetterPlayerDataSource(
-          BetterPlayerDataSourceType.network,
-          detail.hlsUrl,
-          videoFormat: BetterPlayerVideoFormat.hls,
-        ),
-      );
+      if (detail.externalUrl == null) {
+        final hlsUrl = detail.hlsUrl;
+        if (hlsUrl == null || hlsUrl.isEmpty) {
+          throw StateError('影片資源不存在');
+        }
+        _playerController = BetterPlayerController(
+          const BetterPlayerConfiguration(
+            aspectRatio: 16 / 9,
+            autoPlay: true,
+            fit: BoxFit.contain,
+          ),
+          betterPlayerDataSource: BetterPlayerDataSource(
+            BetterPlayerDataSourceType.network,
+            hlsUrl,
+            videoFormat: BetterPlayerVideoFormat.hls,
+          ),
+        );
+      }
       _video = detail;
     } catch (e) {
       _error = e;
@@ -196,9 +203,11 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
         children: [
           AspectRatio(
             aspectRatio: 16 / 9,
-            child: _playerController != null
-                ? BetterPlayer(controller: _playerController!)
-                : const SizedBox.shrink(),
+            child: video.externalUrl != null
+                ? _buildExternalVideoCard(video.externalUrl!, seniorMode)
+                : _playerController != null
+                    ? BetterPlayer(controller: _playerController!)
+                    : const SizedBox.shrink(),
           ),
           Padding(
             padding: EdgeInsets.all(seniorMode ? AppSpacing.lg : 20),
@@ -317,6 +326,47 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildExternalVideoCard(String url, bool seniorMode) {
+    return Container(
+      color: AppColors.ink,
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.ondemand_video, color: AppColors.gold, size: seniorMode ? 52 : 42),
+          const SizedBox(height: 12),
+          Text(
+            '此影片由官方 YouTube 頻道提供',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: AppColors.cream,
+              fontSize: seniorMode ? AppTypography.subtitle : 15,
+            ),
+          ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: () => _openExternalVideo(url),
+            icon: const Icon(Icons.open_in_new),
+            label: Text(seniorMode ? '前往官方 YouTube 觀看' : '前往 YouTube 觀看'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _openExternalVideo(String rawUrl) async {
+    final uri = Uri.tryParse(rawUrl);
+    final opened = uri != null && uri.scheme == 'https'
+        ? await launchUrl(uri, mode: LaunchMode.externalApplication)
+        : false;
+    if (!opened && mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('無法開啟官方影片連結')),
+      );
+    }
   }
 
   Widget _tag(String label, bool seniorMode) {

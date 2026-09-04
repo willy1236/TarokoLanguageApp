@@ -76,7 +76,8 @@ class VideoSummary {
 }
 
 class VideoDetail extends VideoSummary {
-  final String hlsUrl;
+  final String? hlsUrl;
+  final String? externalUrl;
   final int? originalSizeMb;
 
   const VideoDetail({
@@ -92,7 +93,8 @@ class VideoDetail extends VideoSummary {
     super.isLiked,
     super.isBookmarked,
     super.publishedAt,
-    required this.hlsUrl,
+    this.hlsUrl,
+    this.externalUrl,
     this.originalSizeMb,
   });
 
@@ -112,7 +114,8 @@ class VideoDetail extends VideoSummary {
       publishedAt: json['published_at'] != null
           ? DateTime.tryParse(json['published_at'] as String)
           : null,
-      hlsUrl: json['hls_url'] as String,
+      hlsUrl: json['hls_url'] as String?,
+      externalUrl: json['external_url'] as String?,
       originalSizeMb: json['original_size_mb'] as int?,
     );
   }
@@ -132,6 +135,7 @@ class VideoDetail extends VideoSummary {
     isBookmarked: isBookmarked,
     publishedAt: publishedAt,
     hlsUrl: hlsUrl,
+    externalUrl: externalUrl,
     originalSizeMb: originalSizeMb,
   );
 
@@ -149,6 +153,7 @@ class VideoDetail extends VideoSummary {
     isBookmarked: !isBookmarked,
     publishedAt: publishedAt,
     hlsUrl: hlsUrl,
+    externalUrl: externalUrl,
     originalSizeMb: originalSizeMb,
   );
 
@@ -168,6 +173,7 @@ class VideoDetail extends VideoSummary {
         isBookmarked: isBookmarked,
         publishedAt: publishedAt,
         hlsUrl: hlsUrl,
+        externalUrl: externalUrl,
         originalSizeMb: originalSizeMb,
       );
 }
