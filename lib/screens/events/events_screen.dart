@@ -5,8 +5,10 @@ import '../../shared/widgets/truku_painters.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
+import 'event_bookmarks_screen.dart';
 import 'event_compose_screen.dart';
 import 'event_detail_screen.dart';
+import 'event_notifications_screen.dart';
 import 'event_search_screen.dart';
 
 /// 活動列表 —— 真資料版（GET /api/events）。
@@ -28,11 +30,13 @@ class _EventsScreenState extends State<EventsScreen> {
   bool _loading = true;
   String? _error;
   List<EventSummary> _events = [];
+  int _unread = 0;
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadUnread();
   }
 
   Future<void> _load() async {
@@ -53,6 +57,16 @@ class _EventsScreenState extends State<EventsScreen> {
         _error = e.toString();
         _loading = false;
       });
+    }
+  }
+
+  Future<void> _loadUnread() async {
+    try {
+      final page = await EventService.notifications();
+      if (!mounted) return;
+      setState(() => _unread = page.unreadCount);
+    } catch (_) {
+      // 紅點拿不到就不顯示，不干擾主要內容。
     }
   }
 
@@ -277,7 +291,7 @@ class _EventsScreenState extends State<EventsScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 14),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Expanded(
             child: Column(
@@ -305,63 +319,120 @@ class _EventsScreenState extends State<EventsScreen> {
               ],
             ),
           ),
-          GestureDetector(
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const EventSearchScreen()),
-            ),
-            child: Container(
-              margin: const EdgeInsets.only(right: 8),
-              padding: EdgeInsets.all(seniorMode ? 14 : 10),
-              decoration: BoxDecoration(
-                color: Colors.transparent,
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(color: AppColors.creamDeep),
-              ),
-              child: Icon(
-                Icons.search,
-                color: AppColors.inkSoft,
-                size: seniorMode ? 24 : 16,
-              ),
-            ),
-          ),
-          GestureDetector(
-            onTap: _openCompose,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: seniorMode ? 20 : 16,
-                vertical: seniorMode ? 14 : 10,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(22),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    Icons.add,
-                    color: AppColors.creamLight,
-                    size: seniorMode ? 20 : 14,
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    '發起',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? 18 : 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.creamLight,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ],
-              ),
-            ),
+          // 發起是主要動作放上排，三個次要入口收在它下面：
+          // 全部擠在同一列時，標題可用的寬度會被壓到換行。
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              _composeButton(seniorMode),
+              const SizedBox(height: 2),
+              _actionIcons(seniorMode),
+            ],
           ),
         ],
       ),
     );
   }
+
+  Widget _composeButton(bool seniorMode) => GestureDetector(
+    onTap: _openCompose,
+    child: Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: seniorMode ? 20 : 16,
+        vertical: seniorMode ? 14 : 10,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(22),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.add,
+            color: AppColors.creamLight,
+            size: seniorMode ? 20 : 14,
+          ),
+          const SizedBox(width: 6),
+          Text(
+            '發起',
+            style: GoogleFonts.notoSerifTc(
+              fontSize: seniorMode ? 18 : 13,
+              fontWeight: FontWeight.w600,
+              color: AppColors.creamLight,
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
+    ),
+  );
+
+  Widget _actionIcons(bool seniorMode) => Row(
+    mainAxisSize: MainAxisSize.min,
+    children: [
+      IconButton(
+        tooltip: '搜尋',
+        visualDensity: VisualDensity.compact,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const EventSearchScreen()),
+        ),
+        icon: Icon(
+          Icons.search,
+          color: AppColors.ink,
+          size: seniorMode ? 24 : 20,
+        ),
+      ),
+      IconButton(
+        tooltip: '我收藏的活動',
+        visualDensity: VisualDensity.compact,
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const EventBookmarksScreen()),
+        ),
+        icon: Icon(
+          Icons.bookmark_border,
+          color: AppColors.ink,
+          size: seniorMode ? 24 : 20,
+        ),
+      ),
+      IconButton(
+        tooltip: '活動通知',
+        visualDensity: VisualDensity.compact,
+        onPressed: () async {
+          await Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const EventNotificationsScreen()),
+          );
+          if (mounted) _loadUnread();
+        },
+        icon: Stack(
+          clipBehavior: Clip.none,
+          children: [
+            Icon(
+              Icons.notifications_none,
+              color: AppColors.ink,
+              size: seniorMode ? 24 : 20,
+            ),
+            if (_unread > 0)
+              Positioned(
+                right: -2,
+                top: -2,
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primary,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ],
+  );
 
   Widget _buildFilterChips(bool seniorMode) {
     return Padding(

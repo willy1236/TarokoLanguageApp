@@ -72,6 +72,9 @@ class ApiConfig {
   static const String eventLikes = '/api/events/likes';
   static const String eventBookmarks = '/api/events/bookmarks';
   static const String eventSearch = '/api/events/search';
+  static const String eventNotifications = '/api/events/notifications';
+  static const String eventNotificationsRead =
+      '/api/events/notifications/read';
   static const String devices = '/api/devices';
 
   // 每日簽到（issue #24，見 每日簽到.md）

@@ -1128,6 +1128,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           border: Border.all(color: AppColors.fog),
         ),
         child: Center(
+          heightFactor: 1.0,
           child: Text(
             '退出',
             style: TextStyle(

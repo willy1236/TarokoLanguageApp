@@ -22,6 +22,8 @@
 //   POST   / DELETE /api/events/:id/bookmark 收藏 / 取消
 //   GET    /api/events/likes              我按讚過的活動
 //   GET    /api/events/bookmarks          我收藏的活動
+//   GET    /api/events/notifications         我有報名的活動收到的通知（含 unread_count）
+//   POST   /api/events/notifications/read    標記通知已讀
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
@@ -288,6 +290,23 @@ class EventService {
   static Future<void> cancelReminder(int reminderId) async {
     await ApiClient.delete(ApiConfig.reminderDetail(reminderId));
   }
+
+  // ── 通知 ────────────────────────────────────────────────────
+
+  /// 我有報名的活動收到的通知（發起人發出的已送出提醒），比照論壇通知分頁方式。
+  static Future<EventNotificationPage> notifications({int? cursor}) async {
+    final data = await ApiClient.get(
+      ApiConfig.eventNotifications,
+      query: {if (cursor != null) 'cursor': '$cursor'},
+    );
+    return EventNotificationPage.fromJson(data);
+  }
+
+  /// 不帶 [ids] 代表全部標記已讀。
+  static Future<void> markNotificationsRead({List<int>? ids}) => ApiClient.post(
+    ApiConfig.eventNotificationsRead,
+    {'ids': ?ids},
+  );
 
   // ── 裝置推播 token ──────────────────────────────────────────
 
