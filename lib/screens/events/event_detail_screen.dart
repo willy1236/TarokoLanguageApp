@@ -8,7 +8,9 @@ import '../../services/event_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
+import '../../shared/widgets/engagement_icon_button.dart';
 import '../../shared/widgets/truku_painters.dart';
+import 'event_compose_screen.dart';
 import 'reminder_compose_screen.dart';
 
 /// 活動詳情頁 — 進頁後以 [eventId] 打 GET /api/events/:id 取真資料。
@@ -260,6 +262,58 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       context: context,
       builder: (ctx) => const _CancelReasonDialog(),
     );
+  }
+
+  // ── 編輯 / 刪除（僅發起人） ────────────────────────────────────
+  Future<void> _editEvent() async {
+    final event = _event;
+    if (event == null) return;
+    final updated = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EventComposeScreen(editing: event),
+      ),
+    );
+    if (updated == true && mounted) await _silentRefresh();
+  }
+
+  Future<void> _deleteEvent() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('刪除活動？'),
+        content: const Text('刪除後將無法復原，已報名的參加者也會看不到這個活動。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('刪除'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || _acting) return;
+    setState(() => _acting = true);
+    try {
+      await EventService.deleteEvent(widget.eventId);
+      if (!mounted) return;
+      Navigator.pop(context, true); // 通知活動列表刷新
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _acting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _acting = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('刪除失敗：$e')));
+    }
   }
 
   @override
@@ -538,17 +592,17 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 ),
               ],
               const Spacer(),
-              _engagementButton(
+              EngagementIconButton(
                 icon: e.isLiked ? Icons.favorite : Icons.favorite_border,
-                active: e.isLiked,
+                color: e.isLiked ? AppColors.primary : AppColors.fog,
                 count: e.likeCount,
                 onTap: _toggleLike,
                 seniorMode: seniorMode,
               ),
               const SizedBox(width: 6),
-              _engagementButton(
+              EngagementIconButton(
                 icon: e.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                active: e.isBookmarked,
+                color: e.isBookmarked ? AppColors.primary : AppColors.fog,
                 onTap: _toggleBookmark,
                 seniorMode: seniorMode,
               ),
@@ -675,38 +729,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             ],
           ],
         ],
-      ),
-    );
-  }
-
-  Widget _engagementButton({
-    required IconData icon,
-    required bool active,
-    required VoidCallback onTap,
-    required bool seniorMode,
-    int? count,
-  }) {
-    final color = active ? AppColors.primary : AppColors.fog;
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: seniorMode ? 10 : 6,
-          vertical: seniorMode ? 8 : 4,
-        ),
-        child: Row(
-          children: [
-            Icon(icon, size: seniorMode ? 28 : 18, color: color),
-            if (count != null) ...[
-              const SizedBox(width: 4),
-              Text(
-                '$count',
-                style: TextStyle(color: color, fontSize: seniorMode ? 16 : 12),
-              ),
-            ],
-          ],
-        ),
       ),
     );
   }
@@ -1007,21 +1029,59 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         ),
       ),
     );
+    final notStarted = e.startsAt.isAfter(DateTime.now());
+    final manageRow = Row(
+      children: [
+        TextButton.icon(
+          onPressed: _acting ? null : _editEvent,
+          icon: Icon(Icons.edit_outlined, size: seniorMode ? 22 : 16),
+          label: Text(
+            '編輯活動',
+            style: TextStyle(fontSize: seniorMode ? 16 : 13),
+          ),
+        ),
+        if (notStarted)
+          TextButton.icon(
+            onPressed: _acting ? null : _deleteEvent,
+            icon: Icon(
+              Icons.delete_outline,
+              size: seniorMode ? 22 : 16,
+              color: AppColors.dangerDark,
+            ),
+            label: Text(
+              '刪除活動',
+              style: TextStyle(
+                fontSize: seniorMode ? 16 : 13,
+                color: AppColors.dangerDark,
+              ),
+            ),
+          ),
+      ],
+    );
     if (seniorMode) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          manageRow,
+          const SizedBox(height: 4),
           SizedBox(width: double.infinity, child: sendReminderButton),
           const SizedBox(height: 10),
           SizedBox(width: double.infinity, child: cancelButton),
         ],
       );
     }
-    return Row(
+    return Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
-        Expanded(flex: 2, child: sendReminderButton),
-        const SizedBox(width: 10),
-        Expanded(flex: 1, child: cancelButton),
+        manageRow,
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Expanded(flex: 2, child: sendReminderButton),
+            const SizedBox(width: 10),
+            Expanded(flex: 1, child: cancelButton),
+          ],
+        ),
       ],
     );
   }
@@ -1068,6 +1128,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           border: Border.all(color: AppColors.fog),
         ),
         child: Center(
+          heightFactor: 1.0,
           child: Text(
             '退出',
             style: TextStyle(

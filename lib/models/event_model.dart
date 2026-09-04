@@ -34,6 +34,9 @@ class EventDetail {
   final bool registrationOpen; // 仍 active、未過截止、未開始
   final DateTime? createdAt;
   final List<EventParticipant> participants;
+  // 後端直接算好的人數；非發起人只會收到空 participants 陣列，這時仍要靠這個
+  // 欄位顯示正確人數，不能用 participants.length（見 EventSummary 的同名欄位）。
+  final int? participantCountRaw;
   final int likeCount; // 即時 COUNT，非反正規化欄位
   final bool isLiked;
   final bool isBookmarked;
@@ -57,6 +60,7 @@ class EventDetail {
     this.registrationOpen = false,
     this.createdAt,
     this.participants = const [],
+    this.participantCountRaw,
     this.likeCount = 0,
     this.isLiked = false,
     this.isBookmarked = false,
@@ -65,7 +69,9 @@ class EventDetail {
   /// 目前登入者是否為發起人（判斷要不要顯示「發送提醒」「取消活動」）。
   bool isHostedBy(int? uid) => uid != null && uid == hostUid;
 
-  int get participantCount => participants.length;
+  /// 優先用後端算好的計數；只有在後端沒帶這個欄位時才 fallback 用陣列長度
+  /// （這種情況只在拿得到完整 participants 時才準）。
+  int get participantCount => participantCountRaw ?? participants.length;
 
   /// 目前登入者是否已報名。
   bool isJoinedBy(int? uid) =>
@@ -105,6 +111,7 @@ class EventDetail {
       participants: rawParts
           .map((e) => EventParticipant.fromJson(e as Map<String, dynamic>))
           .toList(),
+      participantCountRaw: asEventInt(json['participant_count']),
       likeCount: asEventInt(json['like_count']) ?? 0,
       isLiked: json['is_liked'] as bool? ?? false,
       isBookmarked: json['is_bookmarked'] as bool? ?? false,
@@ -143,6 +150,7 @@ class EventDetail {
         registrationOpen: registrationOpen,
         createdAt: createdAt,
         participants: participants,
+        participantCountRaw: participantCountRaw,
         likeCount: likeCount ?? this.likeCount,
         isLiked: isLiked ?? this.isLiked,
         isBookmarked: isBookmarked ?? this.isBookmarked,
@@ -275,6 +283,59 @@ class EventReminder {
       sentAt: json['sent_at'] != null
           ? DateTime.parse(json['sent_at'] as String)
           : null,
+    );
+  }
+}
+
+/// GET /api/events/notifications 單筆通知——我有報名的活動，發起人發出的提醒。
+class EventNotification {
+  final int id;
+  final int eventId;
+  final String eventTitle;
+  final String message;
+  final DateTime sentAt;
+  final bool isRead;
+
+  const EventNotification({
+    required this.id,
+    required this.eventId,
+    required this.eventTitle,
+    required this.message,
+    required this.sentAt,
+    required this.isRead,
+  });
+
+  factory EventNotification.fromJson(Map<String, dynamic> json) {
+    return EventNotification(
+      id: asEventInt(json['id'])!,
+      eventId: asEventInt(json['event_id'])!,
+      eventTitle: json['event_title'] as String? ?? '',
+      message: json['message'] as String,
+      sentAt: DateTime.parse(json['sent_at'] as String),
+      isRead: json['is_read'] == true,
+    );
+  }
+}
+
+class EventNotificationPage {
+  final List<EventNotification> items;
+  final int unreadCount;
+  final int? nextCursor;
+
+  const EventNotificationPage({
+    required this.items,
+    required this.unreadCount,
+    required this.nextCursor,
+  });
+
+  factory EventNotificationPage.fromJson(Map<String, dynamic> json) {
+    final list = json['notifications'] as List<dynamic>? ?? const [];
+    return EventNotificationPage(
+      items: list
+          .map((e) => EventNotification.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      unreadCount: asEventInt(json['unread_count']) ?? 0,
+      nextCursor: asEventInt(json['next_cursor']),
     );
   }
 }

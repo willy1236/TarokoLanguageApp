@@ -2,18 +2,26 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 
-/// 發起活動表單，送出時呼叫 EventService.createEvent（POST /api/events）。
+/// 發起／編輯活動表單。
+///
+/// [editing] 為 null 時是發起新活動，送出呼叫 EventService.createEvent
+/// （POST /api/events）；帶入既有 EventDetail 時是編輯模式，預填欄位，
+/// 送出呼叫 EventService.updateEvent（PATCH /api/events/:id），且聯絡
+/// email/電話清空時會明確送出清空指令，而非略過該欄位。
 ///
 /// 後端五個必填：標題 / 活動介紹 / 地點名稱 / 詳細地址 / 開始時間（需未來、1 年內）。
 /// 聯絡 email、電話為選填。
 /// 權限：僅 organizer / admin 角色可發起，一般帳號會收到 403，表單會顯示錯誤訊息。
 ///
-/// 成功時 Navigator.pop(context, true)，呼叫端（活動列表）據此刷新。
+/// 成功時 Navigator.pop(context, true)，呼叫端（活動列表/詳情頁）據此刷新。
 class EventComposeScreen extends StatefulWidget {
-  const EventComposeScreen({super.key});
+  final EventDetail? editing;
+
+  const EventComposeScreen({super.key, this.editing});
 
   @override
   State<EventComposeScreen> createState() => _EventComposeScreenState();
@@ -37,6 +45,25 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
 
   // 常用分類（對應活動列表的篩選標籤）；點一下切換，可不選。
   static const _categories = ['族語', '走讀', '工藝', '線上', '音樂', '其他'];
+
+  bool get _isEditing => widget.editing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.editing;
+    if (e == null) return;
+    _title.text = e.title;
+    _desc.text = e.description ?? '';
+    _location.text = e.location ?? '';
+    _address.text = e.address ?? '';
+    _email.text = e.contactEmail ?? '';
+    _phone.text = e.contactPhone ?? '';
+    _maxParticipants.text = e.maxParticipants?.toString() ?? '';
+    _startsAt = e.startsAt;
+    _registrationDeadline = e.registrationDeadline;
+    _category = e.category;
+  }
 
   @override
   void dispose() {
@@ -171,23 +198,47 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
 
     setState(() => _submitting = true);
     try {
-      await EventService.createEvent(
-        title: title,
-        description: desc,
-        location: location,
-        address: address,
-        startsAt: _startsAt!,
-        registrationDeadline: _registrationDeadline,
-        contactEmail: _email.text,
-        contactPhone: _phone.text,
-        maxParticipants: maxPeople,
-        category: _category,
-      );
+      final editing = widget.editing;
+      if (editing == null) {
+        await EventService.createEvent(
+          title: title,
+          description: desc,
+          location: location,
+          address: address,
+          startsAt: _startsAt!,
+          registrationDeadline: _registrationDeadline,
+          contactEmail: _email.text,
+          contactPhone: _phone.text,
+          maxParticipants: maxPeople,
+          category: _category,
+        );
+      } else {
+        final emailText = _email.text.trim();
+        final phoneText = _phone.text.trim();
+        await EventService.updateEvent(
+          editing.id,
+          title: title,
+          description: desc,
+          location: location,
+          address: address,
+          startsAt: _startsAt,
+          registrationDeadline: _registrationDeadline,
+          clearRegistrationDeadline:
+              _registrationDeadline == null &&
+              editing.registrationDeadline != null,
+          contactEmail: emailText,
+          clearContactEmail: emailText.isEmpty && editing.contactEmail != null,
+          contactPhone: phoneText,
+          clearContactPhone: phoneText.isEmpty && editing.contactPhone != null,
+          maxParticipants: maxPeople,
+          category: _category,
+        );
+      }
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('活動已發起')));
-      Navigator.pop(context, true); // 通知列表刷新
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(editing == null ? '活動已發起' : '活動已更新')),
+      );
+      Navigator.pop(context, true); // 通知列表/詳情頁刷新
     } catch (e) {
       if (!mounted) return;
       setState(() {
@@ -362,7 +413,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           ),
           Expanded(
             child: Text(
-              '新發布',
+              _isEditing ? '編輯活動' : '新發布',
               textAlign: TextAlign.center,
               style: GoogleFonts.notoSerifTc(
                 fontSize: seniorMode ? 24 : 17,
@@ -394,7 +445,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                       ),
                     )
                   : Text(
-                      '發布',
+                      _isEditing ? '儲存' : '發布',
                       style: TextStyle(
                         fontSize: seniorMode ? AppTypography.title : 14,
                         fontWeight: FontWeight.w600,

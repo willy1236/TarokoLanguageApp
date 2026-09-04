@@ -8,7 +8,7 @@
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS"/>
     <application
-        android:label="Kari Truku"
+        android:label="語見・太魯閣"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity

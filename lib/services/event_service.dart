@@ -8,6 +8,8 @@
 //   GET    /api/events/mine               我發起的活動
 //   POST   /api/events                    發起活動（限 organizer/admin）
 //   GET    /api/events/:id                活動詳情 + 參加者
+//   PATCH  /api/events/:id                編輯活動（僅發起人）
+//   DELETE /api/events/:id                軟刪除活動（僅發起人，限未開始）
 //   POST   /api/events/:id/join           參加
 //   DELETE /api/events/:id/join           退出
 //   POST   /api/events/:id/cancel         取消活動（僅發起人，須填理由）
@@ -20,6 +22,8 @@
 //   POST   / DELETE /api/events/:id/bookmark 收藏 / 取消
 //   GET    /api/events/likes              我按讚過的活動
 //   GET    /api/events/bookmarks          我收藏的活動
+//   GET    /api/events/notifications         我有報名的活動收到的通知（含 unread_count）
+//   POST   /api/events/notifications/read    標記通知已讀
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
@@ -149,6 +153,59 @@ class EventService {
     await ApiClient.post(ApiConfig.eventCancel(eventId), {'reason': reason});
   }
 
+  /// 編輯活動（僅發起人）。只送有變動的欄位；clearXxx 系列用於明確清空該欄位
+  /// （PATCH 語意下，欄位缺席 = 不變更，欄位為 null = 清空，兩者不同）。
+  static Future<void> updateEvent(
+    int eventId, {
+    String? title,
+    String? description,
+    String? location,
+    String? address,
+    DateTime? startsAt,
+    DateTime? registrationDeadline,
+    bool clearRegistrationDeadline = false,
+    String? contactEmail,
+    bool clearContactEmail = false,
+    String? contactPhone,
+    bool clearContactPhone = false,
+    String? reminderNote,
+    int? maxParticipants,
+    String? category,
+  }) async {
+    final body = <String, dynamic>{};
+    if (title != null) body['title'] = title;
+    if (description != null) body['description'] = description;
+    if (location != null) body['location'] = location;
+    if (address != null) body['address'] = address;
+    if (startsAt != null) body['starts_at'] = startsAt.toUtc().toIso8601String();
+    if (clearRegistrationDeadline) {
+      body['registration_deadline'] = null;
+    } else if (registrationDeadline != null) {
+      body['registration_deadline'] = registrationDeadline
+          .toUtc()
+          .toIso8601String();
+    }
+    if (clearContactEmail) {
+      body['contact_email'] = null;
+    } else if (contactEmail != null && contactEmail.trim().isNotEmpty) {
+      body['contact_email'] = contactEmail.trim();
+    }
+    if (clearContactPhone) {
+      body['contact_phone'] = null;
+    } else if (contactPhone != null && contactPhone.trim().isNotEmpty) {
+      body['contact_phone'] = contactPhone.trim();
+    }
+    if (reminderNote != null) body['reminder_note'] = reminderNote.trim();
+    if (maxParticipants != null) body['max_participants'] = maxParticipants;
+    if (category != null) body['category'] = category.trim();
+    await ApiClient.patch(ApiConfig.eventDetail(eventId), body);
+  }
+
+  /// 軟刪除活動（僅發起人；後端限未開始的活動才可刪除）。
+  static Future<void> deleteEvent(int eventId) async {
+    await ApiClient.delete(ApiConfig.eventDetail(eventId));
+  }
+
   // ── 按讚／收藏 ──────────────────────────────────────────────
   // 任何活動狀態（含 cancelled/已結束）皆可操作；讚數為即時 COUNT，非反正規化。
 
@@ -233,6 +290,23 @@ class EventService {
   static Future<void> cancelReminder(int reminderId) async {
     await ApiClient.delete(ApiConfig.reminderDetail(reminderId));
   }
+
+  // ── 通知 ────────────────────────────────────────────────────
+
+  /// 我有報名的活動收到的通知（發起人發出的已送出提醒），比照論壇通知分頁方式。
+  static Future<EventNotificationPage> notifications({int? cursor}) async {
+    final data = await ApiClient.get(
+      ApiConfig.eventNotifications,
+      query: {if (cursor != null) 'cursor': '$cursor'},
+    );
+    return EventNotificationPage.fromJson(data);
+  }
+
+  /// 不帶 [ids] 代表全部標記已讀。
+  static Future<void> markNotificationsRead({List<int>? ids}) => ApiClient.post(
+    ApiConfig.eventNotificationsRead,
+    {'ids': ?ids},
+  );
 
   // ── 裝置推播 token ──────────────────────────────────────────
 

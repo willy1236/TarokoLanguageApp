@@ -29,6 +29,9 @@ class UserModel {
   final bool profileCompleted; // 首次登入完善資料是否已完成，見 issue #43
   final String? quizSuggestedLevel; // 分級測驗建議的單字起始等級；null=尚未分級
   final String? listeningSuggestedLevel; // 分級測驗建議的聽力起始等級；null=尚未分級
+  final int studyStreak; // 連續學習天數（測驗/聽力交卷觸發，斷了即時回 0），與 checkinStreak（每日簽到）為不同機制
+  final int videoCallCount; // 累計視訊通話次數（配對成功雙方各 +1）
+  final int forumPostCount; // 目前有效發文篇數（軟刪除會扣減）
 
   const UserModel({
     required this.uid,
@@ -52,6 +55,9 @@ class UserModel {
     this.profileCompleted = false,
     this.quizSuggestedLevel,
     this.listeningSuggestedLevel,
+    this.studyStreak = 0,
+    this.videoCallCount = 0,
+    this.forumPostCount = 0,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -81,6 +87,9 @@ class UserModel {
       profileCompleted: json['profile_completed'] as bool? ?? false,
       quizSuggestedLevel: json['quiz_suggested_level'] as String?,
       listeningSuggestedLevel: json['listening_suggested_level'] as String?,
+      studyStreak: json['study_streak'] as int? ?? 0,
+      videoCallCount: json['video_call_count'] as int? ?? 0,
+      forumPostCount: json['forum_post_count'] as int? ?? 0,
     );
   }
 
@@ -106,6 +115,9 @@ class UserModel {
         'profile_completed': profileCompleted,
         'quiz_suggested_level': quizSuggestedLevel,
         'listening_suggested_level': listeningSuggestedLevel,
+        'study_streak': studyStreak,
+        'video_call_count': videoCallCount,
+        'forum_post_count': forumPostCount,
       };
 
   int get joinedDays => DateTime.now().difference(createdAt).inDays;
@@ -132,6 +144,9 @@ class UserModel {
     bool? profileCompleted,
     String? quizSuggestedLevel,
     String? listeningSuggestedLevel,
+    int? studyStreak,
+    int? videoCallCount,
+    int? forumPostCount,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -156,6 +171,9 @@ class UserModel {
       quizSuggestedLevel: quizSuggestedLevel ?? this.quizSuggestedLevel,
       listeningSuggestedLevel:
           listeningSuggestedLevel ?? this.listeningSuggestedLevel,
+      studyStreak: studyStreak ?? this.studyStreak,
+      videoCallCount: videoCallCount ?? this.videoCallCount,
+      forumPostCount: forumPostCount ?? this.forumPostCount,
     );
   }
 }

@@ -21,6 +21,7 @@ import '../../shared/widgets/millet_coin_icon.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
 import '../../shared/widgets/user_avatar.dart';
+import 'about_app_screen.dart';
 import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
@@ -37,7 +38,9 @@ const _kAllowedAvatarExtensions = {'jpg', 'jpeg', 'png', 'webp', 'gif'};
 
 class ProfileScreen extends StatefulWidget {
   final VoidCallback? onClose;
-  const ProfileScreen({super.key, this.onClose});
+  // 每次打開個人資料頁時遞增，用來觸發重新讀取使用者資料（不含商店目錄，避免無謂重打）。
+  final int refreshToken;
+  const ProfileScreen({super.key, this.onClose, this.refreshToken = 0});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -55,6 +58,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _loadUser();
     _loadItemCatalog();
+  }
+
+  @override
+  void didUpdateWidget(covariant ProfileScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.refreshToken != oldWidget.refreshToken) {
+      _loadUser();
+    }
   }
 
   Future<void> _loadUser() async {
@@ -245,11 +256,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   const SizedBox(height: 20),
                   Row(
                     children: [
-                      _statCell('248', '已學詞彙'),
+                      _statCell('${_user?.studyStreak ?? 0}', '連續學習'),
                       const SizedBox(width: 10),
-                      _statCell('36', '通話次數'),
+                      _statCell('${_user?.videoCallCount ?? 0}', '通話次數'),
                       const SizedBox(width: 10),
-                      _statCell('12', '發文'),
+                      _statCell('${_user?.forumPostCount ?? 0}', '發文'),
                     ],
                   ),
                 ],
@@ -947,6 +958,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ? _openTermsView
             : items[i] == '聯絡我們'
             ? _openContactEmail
+            : items[i] == '關於語見太魯閣'
+            ? _openAboutApp
             : null;
         return Column(
           children: [
@@ -989,6 +1002,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }),
     );
+  }
+
+  void _openAboutApp() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const AboutAppScreen()));
   }
 
   void _openTermsView() {

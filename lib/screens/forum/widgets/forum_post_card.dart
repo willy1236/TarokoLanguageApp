@@ -11,6 +11,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';
 import '../../../services/senior_mode_controller.dart';
+import '../../../shared/widgets/engagement_icon_button.dart';
 import 'forum_image_grid.dart';
 
 String forumRelativeTime(DateTime time) {
@@ -214,7 +215,7 @@ class ForumPostCard extends StatelessWidget {
 
   Widget _footer(bool seniorMode) => Row(
     children: [
-      _iconCount(
+      EngagementIconButton(
         key: const ValueKey('forum-post-like'),
         icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
         color: post.isLiked ? AppColors.primary : AppColors.fog,
@@ -223,7 +224,7 @@ class ForumPostCard extends StatelessWidget {
         seniorMode: seniorMode,
       ),
       const SizedBox(width: 18),
-      _iconCount(
+      EngagementIconButton(
         key: const ValueKey('forum-post-comment'),
         icon: Icons.mode_comment_outlined,
         color: AppColors.fog,
@@ -245,35 +246,4 @@ class ForumPostCard extends StatelessWidget {
     ],
   );
 
-  Widget _iconCount({
-    required Key key,
-    required IconData icon,
-    required Color color,
-    required int count,
-    required VoidCallback onTap,
-    required bool seniorMode,
-  }) => GestureDetector(
-    key: key,
-    behavior: HitTestBehavior.opaque,
-    onTap: onTap,
-    child: Padding(
-      // 精簡模式下加大觸控熱區（探索報告任務6無障礙補強精神一致），
-      // 避免長者手指誤觸鄰近的留言/收藏按鈕。
-      padding: EdgeInsets.symmetric(vertical: seniorMode ? 12 : 6),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, size: seniorMode ? 30 : 16, color: color),
-          const SizedBox(width: 5),
-          Text(
-            '$count',
-            style: TextStyle(
-              fontSize: seniorMode ? AppTypography.subtitle : 12,
-              color: color,
-            ),
-          ),
-        ],
-      ),
-    ),
-  );
 }

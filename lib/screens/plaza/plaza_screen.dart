@@ -29,6 +29,7 @@ class PlazaScreen extends StatefulWidget {
 class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   bool _eventsLoading = true;
   List<EventSummary> _events = [];
+  String? _eventsError;
 
   List<ForumBoard> _boards = [];
 
@@ -76,11 +77,25 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       if (!mounted) return;
       setState(() {
         _events = events;
+        _eventsError = null;
         _eventsLoading = false;
       });
-    } catch (_) {
+    } on ApiException catch (e) {
+      debugPrint('[PlazaScreen] _loadEvents ApiException: ${e.message}');
       if (!mounted) return;
-      setState(() => _eventsLoading = false);
+      setState(() {
+        _events = [];
+        _eventsError = e.message;
+        _eventsLoading = false;
+      });
+    } catch (e) {
+      debugPrint('[PlazaScreen] _loadEvents error: $e');
+      if (!mounted) return;
+      setState(() {
+        _events = [];
+        _eventsError = '活動載入失敗，請稍後再試';
+        _eventsLoading = false;
+      });
     }
   }
 
@@ -93,8 +108,13 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         // 預設停在「全部」，不自動選第一個看板。
         _boardsLoading = false;
       });
-    } on ApiException {
+    } on ApiException catch (e) {
       // 看板載不到不應該讓整頁失效，活動小卡仍要顯示。
+      debugPrint('[PlazaScreen] _loadBoards ApiException: ${e.message}');
+      if (!mounted) return;
+      setState(() => _boardsLoading = false);
+    } catch (e) {
+      debugPrint('[PlazaScreen] _loadBoards error: $e');
       if (!mounted) return;
       setState(() => _boardsLoading = false);
     }
@@ -105,8 +125,11 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       final page = await ForumService.notifications();
       if (!mounted) return;
       setState(() => _unread = page.unreadCount);
-    } on ApiException {
+    } on ApiException catch (e) {
       // 紅點拿不到就不顯示，不干擾主要內容。
+      debugPrint('[PlazaScreen] _loadUnread ApiException: ${e.message}');
+    } catch (e) {
+      debugPrint('[PlazaScreen] _loadUnread error: $e');
     }
   }
 
@@ -394,37 +417,22 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
               ),
             ),
           )
+        else if (_eventsError != null)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
+            child: _EventMessageCard(
+              icon: Icons.cloud_off_outlined,
+              message: _eventsError!,
+              actionLabel: '重試',
+              onAction: _loadEvents,
+            ),
+          )
         else if (_events.isEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-              decoration: BoxDecoration(
-                color: AppColors.cream,
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(color: AppColors.creamDeep),
-              ),
-              child: Row(
-                children: [
-                  const Icon(
-                    Icons.event_available_outlined,
-                    size: 18,
-                    color: AppColors.fog,
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      '近期暫無活動，敬請期待',
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: 13,
-                        color: AppColors.fog,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            child: const _EventMessageCard(
+              icon: Icons.event_available_outlined,
+              message: '近期暫無活動，敬請期待',
             ),
           )
         else
@@ -473,6 +481,49 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       ),
     );
   }
+}
+
+class _EventMessageCard extends StatelessWidget {
+  final IconData icon;
+  final String message;
+  final String? actionLabel;
+  final VoidCallback? onAction;
+
+  const _EventMessageCard({
+    required this.icon,
+    required this.message,
+    this.actionLabel,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) => Container(
+    width: double.infinity,
+    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    decoration: BoxDecoration(
+      color: AppColors.cream,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: AppColors.creamDeep),
+    ),
+    child: Row(
+      children: [
+        Icon(icon, size: 18, color: AppColors.fog),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            message,
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 13,
+              color: AppColors.fog,
+              letterSpacing: 0.8,
+            ),
+          ),
+        ),
+        if (actionLabel != null && onAction != null)
+          TextButton(onPressed: onAction, child: Text(actionLabel!)),
+      ],
+    ),
+  );
 }
 
 // ── 看板 Tab 元件 ──────────────────────────────────────────────
