@@ -19,16 +19,7 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  int _activeTopicIndex = 0;
   bool _isJoining = false;
-
-  static const _topics = [
-    ('日常問候', 'mhuway'),
-    ('家人稱謂', 'qbsuran'),
-    ('部落故事', 'kari rudan'),
-    ('織布技藝', 'tminun'),
-    ('山林知識', 'dgiyaq'),
-  ];
 
   static const _rudans = [
     _RudanData('Bakan rudan', '銅門部落', 78, true, 124, ['日常問候', '部落故事'], true),
@@ -48,7 +39,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
             _buildHeader(),
             _buildHeroCard(),
             _buildNoticeLink(),
-            _buildTopics(),
             _buildRudanList(),
             _buildRecentCall(),
           ],
@@ -384,78 +374,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTopics() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '想聊什麼主題？',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: List.generate(_topics.length, (i) {
-              final active = i == _activeTopicIndex;
-              return GestureDetector(
-                onTap: () => setState(() => _activeTopicIndex = i),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: active ? AppColors.primary : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    border: active
-                        ? null
-                        : Border.all(color: AppColors.creamDeep),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _topics[i].$1,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: active
-                              ? AppColors.creamLight
-                              : AppColors.inkSoft,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '· ${_topics[i].$2}',
-                        style: GoogleFonts.crimsonPro(
-                          fontStyle: FontStyle.italic,
-                          fontSize: 10,
-                          color:
-                              (active
-                                      ? AppColors.creamLight
-                                      : AppColors.inkSoft)
-                                  .withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
       ),
     );
   }
