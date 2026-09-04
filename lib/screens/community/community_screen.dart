@@ -1,7 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
+import '../../main.dart';
+import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
+import '../profile/profile_screen.dart';
+import 'video_call_notice_screen.dart';
+import 'video_call_screen.dart';
 import 'video_waiting_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
@@ -12,15 +19,7 @@ class CommunityScreen extends StatefulWidget {
 }
 
 class _CommunityScreenState extends State<CommunityScreen> {
-  int _activeTopicIndex = 0;
-
-  static const _topics = [
-    ('日常問候', 'mhuway'),
-    ('家人稱謂', 'qbsuran'),
-    ('部落故事', 'kari rudan'),
-    ('織布技藝', 'tminun'),
-    ('山林知識', 'dgiyaq'),
-  ];
+  bool _isJoining = false;
 
   static const _rudans = [
     _RudanData('Bakan rudan', '銅門部落', 78, true, 124, ['日常問候', '部落故事'], true),
@@ -39,7 +38,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           children: [
             _buildHeader(),
             _buildHeroCard(),
-            _buildTopics(),
+            _buildNoticeLink(),
             _buildRudanList(),
             _buildRecentCall(),
           ],
@@ -170,6 +169,34 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
+  Widget _buildNoticeLink() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+      child: GestureDetector(
+        onTap: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const VideoCallNoticeScreen()),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.shield_outlined, size: 14, color: AppColors.fog),
+            const SizedBox(width: 6),
+            Text(
+              '查看視訊配對須知',
+              style: TextStyle(
+                fontSize: 12,
+                color: AppColors.fog,
+                decoration: TextDecoration.underline,
+                decorationColor: AppColors.fog,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildAvatarRow() {
     const initials = ['B', 'Y', 'P', 'S'];
     return Row(
@@ -229,17 +256,103 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
+  /// 開始配對：先要相機/麥克風權限，再呼叫後端佇列 API。配到直接進通話畫面，
+  /// 否則進等待畫面排隊。後端 FIFO 配對，不區分/不針對特定 rudan。
+  Future<void> _startMatching() async {
+    if (_isJoining) return;
+    setState(() => _isJoining = true);
+    try {
+      final camera = await Permission.camera.request();
+      final mic = await Permission.microphone.request();
+      if (!camera.isGranted || !mic.isGranted) {
+        _showMessage('需要相機與麥克風權限才能開始視訊配對');
+        return;
+      }
+
+      if (!await hasSeenVideoCallNotice()) {
+        if (!mounted) return;
+        final agreed = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(builder: (_) => const VideoCallNoticeScreen()),
+        );
+        if (agreed != true) {
+          return;
+        }
+        await markVideoCallNoticeSeen();
+      }
+
+      final result = await VideoCallService.joinQueue();
+      if (!mounted) return;
+      if (result.matched) {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VideoCallScreen(
+              session: result.session!,
+              credentials: result.credentials!,
+            ),
+          ),
+        );
+      } else {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const VideoWaitingScreen()),
+        );
+      }
+    } on ApiException catch (e) {
+      if (e.isVideoNicknameRequired) {
+        _showVideoNicknameRequiredDialog();
+      } else {
+        _showMessage(e.isVideoUnavailable ? '視訊功能暫時無法使用，請稍後再試' : e.message);
+      }
+    } catch (_) {
+      _showMessage('連線失敗，請稍後再試');
+    } finally {
+      if (mounted) setState(() => _isJoining = false);
+    }
+  }
+
+  void _showMessage(String message) {
+    scaffoldMessengerKey.currentState
+      ?..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _showVideoNicknameRequiredDialog() async {
+    if (!mounted) return;
+    final goToProfile = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('請先設定視訊暱稱'),
+        content: const Text('視訊配對前需要先在個人資料設定一個視訊暱稱，讓對方在通話時看到。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('前往設定'),
+          ),
+        ],
+      ),
+    );
+    if (goToProfile == true && mounted) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ProfileScreen()),
+      );
+    }
+  }
+
   Widget _buildStartButton() {
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => const VideoWaitingScreen()),
-      ),
+      onTap: _isJoining ? null : _startMatching,
       child: Container(
         width: double.infinity,
         height: 52,
         decoration: BoxDecoration(
-          color: AppColors.gold,
+          color: AppColors.gold.withValues(alpha: _isJoining ? 0.6 : 1.0),
           borderRadius: BorderRadius.circular(30),
         ),
         child: Row(
@@ -251,7 +364,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
             const SizedBox(width: 8),
             Text(
-              '開始配對',
+              _isJoining ? '配對中…' : '開始配對',
               style: GoogleFonts.notoSerifTc(
                 fontSize: 15,
                 fontWeight: FontWeight.w600,
@@ -261,78 +374,6 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildTopics() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '想聊什麼主題？',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: List.generate(_topics.length, (i) {
-              final active = i == _activeTopicIndex;
-              return GestureDetector(
-                onTap: () => setState(() => _activeTopicIndex = i),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: active ? AppColors.primary : Colors.transparent,
-                    borderRadius: BorderRadius.circular(20),
-                    border: active
-                        ? null
-                        : Border.all(color: AppColors.creamDeep),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        _topics[i].$1,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: active
-                              ? AppColors.creamLight
-                              : AppColors.inkSoft,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        '· ${_topics[i].$2}',
-                        style: GoogleFonts.crimsonPro(
-                          fontStyle: FontStyle.italic,
-                          fontSize: 10,
-                          color:
-                              (active
-                                      ? AppColors.creamLight
-                                      : AppColors.inkSoft)
-                                  .withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            }),
-          ),
-        ],
       ),
     );
   }
@@ -594,44 +635,22 @@ class _RudanTile extends StatelessWidget {
             ),
           ),
           const SizedBox(width: 8),
-          // Call/Reserve button
-          GestureDetector(
-            onTap: data.online
-                ? () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const VideoWaitingScreen(),
-                    ),
-                  )
-                : null,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: data.online ? AppColors.primary : Colors.transparent,
-                borderRadius: BorderRadius.circular(18),
-                border: data.online
-                    ? null
-                    : Border.all(color: AppColors.creamDeep),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (data.online) ...[
-                    CustomPaint(
-                      size: const Size(11, 11),
-                      painter: _VideoIconPainter(AppColors.creamLight),
-                    ),
-                    const SizedBox(width: 4),
-                  ],
-                  Text(
-                    data.online ? '通話' : '預約',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: data.online ? AppColors.creamLight : AppColors.fog,
-                      letterSpacing: 2.0,
-                    ),
-                  ),
-                ],
+          // 純展示用線上狀態標籤：後端為 FIFO 配對，不支援指定對象通話，
+          // 逐條「通話」按鈕已移除，避免使用者誤以為能指定配對對象。
+          // 一律導向 community_screen 頂部的「開始配對」統一入口。
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: AppColors.creamDeep),
+            ),
+            child: Text(
+              data.online ? '在線' : '離線',
+              style: TextStyle(
+                fontSize: 11,
+                color: AppColors.fog,
+                letterSpacing: 2.0,
               ),
             ),
           ),

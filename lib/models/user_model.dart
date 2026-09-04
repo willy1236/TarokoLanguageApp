@@ -23,6 +23,7 @@ class UserModel {
   final String? ethnicGroup; // 族群，見 00_核心與認證.md §2.5；未設為 null
   final int? tribeId; // 部落 id，對應 tribes.id；未設為 null
   final String? tribeName; // 部落中文名，由後端 join tribes 帶出
+  final String? videoNickname; // 視訊暱稱，未設為 null；視訊配對前必填
   final bool? isIndigenous; // 是否原住民；ethnicGroup 一經設定即永久鎖定
   final String? tribalName; // 本人族語名，不受 ethnicGroup 鎖定限制，可隨時修改
   final bool profileCompleted; // 首次登入完善資料是否已完成，見 issue #43
@@ -48,6 +49,7 @@ class UserModel {
     this.ethnicGroup,
     this.tribeId,
     this.tribeName,
+    this.videoNickname,
     this.isIndigenous,
     this.tribalName,
     this.profileCompleted = false,
@@ -79,6 +81,7 @@ class UserModel {
       ethnicGroup: json['ethnic_group'] as String?,
       tribeId: json['tribe_id'] as int?,
       tribeName: json['tribe_name'] as String?,
+      videoNickname: json['video_nickname'] as String?,
       isIndigenous: json['is_indigenous'] as bool?,
       tribalName: json['tribal_name'] as String?,
       profileCompleted: json['profile_completed'] as bool? ?? false,
@@ -106,6 +109,7 @@ class UserModel {
         'ethnic_group': ethnicGroup,
         'tribe_id': tribeId,
         'tribe_name': tribeName,
+        'video_nickname': videoNickname,
         'is_indigenous': isIndigenous,
         'tribal_name': tribalName,
         'profile_completed': profileCompleted,
@@ -134,6 +138,7 @@ class UserModel {
     String? ethnicGroup,
     int? tribeId,
     String? tribeName,
+    String? videoNickname,
     bool? isIndigenous,
     String? tribalName,
     bool? profileCompleted,
@@ -159,6 +164,7 @@ class UserModel {
       ethnicGroup: ethnicGroup ?? this.ethnicGroup,
       tribeId: tribeId ?? this.tribeId,
       tribeName: tribeName ?? this.tribeName,
+      videoNickname: videoNickname ?? this.videoNickname,
       isIndigenous: isIndigenous ?? this.isIndigenous,
       tribalName: tribalName ?? this.tribalName,
       profileCompleted: profileCompleted ?? this.profileCompleted,
