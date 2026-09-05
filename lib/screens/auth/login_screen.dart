@@ -16,21 +16,7 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  final _accountController = TextEditingController();
-  final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
   bool _loggingIn = false;
-
-  @override
-  void dispose() {
-    _accountController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
-
-  void _handleLogin() {
-    Navigator.pushReplacementNamed(context, '/home');
-  }
 
   Future<void> _handleGoogleLogin() async {
     if (_loggingIn) return;
@@ -142,17 +128,14 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                     child: IntrinsicHeight(
                       child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Logo 區（上半）
-                          const SizedBox(height: 56),
+                          // Logo 區
                           _buildLogoSection(),
+                          const SizedBox(height: 48),
 
-                          // 彈性間距
-                          const Expanded(child: SizedBox()),
-
-                          // 表單區（下半）
+                          // 表單區
                           _buildFormSection(),
-                          const SizedBox(height: 52),
                         ],
                       ),
                     ),
@@ -205,11 +188,12 @@ class _LoginScreenState extends State<LoginScreen> {
 
   Widget _buildFormSection() {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // 問候語
         Text(
           'MHUWAY SU · 歡迎回來',
+          textAlign: TextAlign.center,
           style: GoogleFonts.crimsonPro(
             fontStyle: FontStyle.italic,
             fontSize: 11,
@@ -220,6 +204,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 6),
         Text(
           '登入，繼續說我們的話',
+          textAlign: TextAlign.center,
           style: GoogleFonts.notoSerifTc(
             fontSize: 20,
             fontWeight: FontWeight.w600,
@@ -227,121 +212,7 @@ class _LoginScreenState extends State<LoginScreen> {
             letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 20),
-
-        // 帳號輸入框
-        _buildInputField(
-          controller: _accountController,
-          labelTriku: 'HANGAN · 帳號',
-          hint: 'yudaw.bakan',
-          prefixIcon: const Icon(
-            Icons.person_outline_rounded,
-            size: 17,
-            color: AppColors.cream,
-          ),
-          isGold: true,
-        ),
-        const SizedBox(height: 12),
-
-        // 密碼輸入框
-        _buildInputField(
-          controller: _passwordController,
-          labelTriku: 'PASWAD · 密碼',
-          hint: '••••••••',
-          prefixIcon: const Icon(
-            Icons.lock_outline_rounded,
-            size: 17,
-            color: AppColors.cream,
-          ),
-          obscureText: _obscurePassword,
-          suffixIcon: GestureDetector(
-            onTap: () => setState(() => _obscurePassword = !_obscurePassword),
-            child: Icon(
-              _obscurePassword
-                  ? Icons.visibility_off_rounded
-                  : Icons.visibility_rounded,
-              size: 18,
-              color: AppColors.cream.withValues(alpha: 0.7),
-            ),
-          ),
-          isGold: false,
-        ),
-        const SizedBox(height: 10),
-
-        // 忘記密碼
-        Align(
-          alignment: Alignment.centerRight,
-          child: GestureDetector(
-            onTap: () {},
-            child: Text(
-              '忘記密碼？',
-              style: TextStyle(
-                fontSize: 12,
-                color: AppColors.cream.withValues(alpha: 0.7),
-                letterSpacing: 0.6,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 18),
-
-        // 登入按鈕（帳密版本暫時保留，導向 /home）
-        SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _handleLogin,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.gold,
-              foregroundColor: AppColors.ink,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              elevation: 0,
-              shadowColor: AppColors.gold.withValues(alpha: 0.25),
-            ),
-            child: Text(
-              '登　入',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 4,
-                color: AppColors.ink,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-
-        // OR 分隔
-        Row(
-          children: [
-            Expanded(
-              child: Divider(
-                color: AppColors.cream.withValues(alpha: 0.2),
-                height: 1,
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14),
-              child: Text(
-                'OR',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.cream.withValues(alpha: 0.55),
-                  letterSpacing: 2,
-                ),
-              ),
-            ),
-            Expanded(
-              child: Divider(
-                color: AppColors.cream.withValues(alpha: 0.2),
-                height: 1,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 32),
 
         // 第三方登入
         Row(
@@ -354,17 +225,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
               label: 'Apple',
               onTap: () => _showSoon('Apple'),
-            ),
-            const SizedBox(width: 10),
-            _buildSocialButton(
-              icon: const TrukuDiamond(
-                size: 18,
-                color: AppColors.gold,
-                filled: true,
-                strokeWidth: 1.2,
-              ),
-              label: '部落帳號',
-              onTap: () => _showSoon('部落帳號'),
             ),
             const SizedBox(width: 10),
             _buildSocialButton(
@@ -387,108 +247,7 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
           ],
         ),
-        const SizedBox(height: 20),
-
-        // 註冊提示
-        Center(
-          child: GestureDetector(
-            onTap: () {},
-            child: RichText(
-              text: TextSpan(
-                style: TextStyle(
-                  fontSize: 13,
-                  color: AppColors.cream.withValues(alpha: 0.85),
-                  letterSpacing: 0.5,
-                ),
-                children: [
-                  const TextSpan(text: '還沒有帳號？'),
-                  TextSpan(
-                    text: '　立即註冊',
-                    style: GoogleFonts.notoSerifTc(
-                      color: AppColors.gold,
-                      fontWeight: FontWeight.w600,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ],
-    );
-  }
-
-  Widget _buildInputField({
-    required TextEditingController controller,
-    required String labelTriku,
-    required String hint,
-    required Widget prefixIcon,
-    Widget? suffixIcon,
-    bool obscureText = false,
-    bool isGold = false,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.creamLight.withValues(alpha: 0.08),
-        border: Border.all(
-          color: isGold
-              ? AppColors.gold.withValues(alpha: 0.30)
-              : AppColors.cream.withValues(alpha: 0.18),
-        ),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            labelTriku,
-            style: TextStyle(
-              fontSize: 10,
-              color: isGold
-                  ? AppColors.gold
-                  : AppColors.cream.withValues(alpha: 0.65),
-              letterSpacing: 2.5,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Row(
-            children: [
-              prefixIcon,
-              const SizedBox(width: 10),
-              Expanded(
-                child: TextField(
-                  controller: controller,
-                  obscureText: obscureText,
-                  style: TextStyle(
-                    fontSize: 15,
-                    color: AppColors.creamLight,
-                    letterSpacing: obscureText ? 5 : 0.8,
-                  ),
-                  decoration: InputDecoration(
-                    isDense: true,
-                    contentPadding: EdgeInsets.zero,
-                    border: InputBorder.none,
-                    hintText: hint,
-                    hintStyle: TextStyle(
-                      color: AppColors.cream.withValues(alpha: 0.35),
-                      fontSize: 15,
-                    ),
-                    suffixIcon: suffixIcon != null
-                        ? Padding(
-                            padding: const EdgeInsets.only(left: 8),
-                            child: suffixIcon,
-                          )
-                        : null,
-                    suffixIconConstraints: const BoxConstraints(),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 
