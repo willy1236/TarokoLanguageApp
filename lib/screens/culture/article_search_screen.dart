@@ -9,6 +9,7 @@ import '../../models/article_models.dart';
 import '../../models/tribe_model.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../shared/widgets/article_cover_placeholder.dart';
 import '../../shared/widgets/module_search_bar.dart';
 import 'article_detail_screen.dart';
 
@@ -235,13 +236,10 @@ class _ArticleResultTile extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                gradient: const LinearGradient(
-                  colors: [AppColors.moss, AppColors.mossDeep],
-                ),
               ),
               child: article.coverImageUrl != null
                   ? Image.network(article.coverImageUrl!, fit: BoxFit.cover)
-                  : null,
+                  : ArticleCoverPlaceholder(category: article.category),
             ),
             const SizedBox(width: 12),
             Expanded(

@@ -8,6 +8,7 @@ import '../../core/network/api_client.dart';
 import '../../models/article_models.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../shared/widgets/article_cover_placeholder.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'article_detail_screen.dart';
 
@@ -244,21 +245,10 @@ class _ArticleListItem extends StatelessWidget {
                     ? Image.network(
                         article.coverImageUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          color: AppColors.midnight,
-                          child: const Icon(
-                            Icons.article_outlined,
-                            color: AppColors.fog,
-                          ),
-                        ),
+                        errorBuilder: (_, _, _) =>
+                            ArticleCoverPlaceholder(category: article.category),
                       )
-                    : Container(
-                        color: AppColors.midnight,
-                        child: const Icon(
-                          Icons.article_outlined,
-                          color: AppColors.fog,
-                        ),
-                      ),
+                    : ArticleCoverPlaceholder(category: article.category),
               ),
             ),
             const SizedBox(width: 12),
