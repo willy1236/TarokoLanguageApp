@@ -8,6 +8,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/tribe_model.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
@@ -128,8 +129,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             ),
           ),
           SafeArea(
-            child: LayoutBuilder(
+            child: ListenableBuilder(
+              listenable: seniorModeController,
+              builder: (context, _) => LayoutBuilder(
               builder: (context, constraints) {
+                final seniorMode = seniorModeController.enabled;
                 return SingleChildScrollView(
                   padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
                   child: ConstrainedBox(
@@ -144,7 +148,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           'MHUWAY SU · 歡迎加入',
                           style: GoogleFonts.crimsonPro(
                             fontStyle: FontStyle.italic,
-                            fontSize: 11,
+                            fontSize: seniorMode ? 14 : 11,
                             color: AppColors.gold,
                             letterSpacing: 3.5,
                           ),
@@ -153,7 +157,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         Text(
                           '完善你的個人資料',
                           style: GoogleFonts.notoSerifTc(
-                            fontSize: 20,
+                            fontSize: seniorMode ? 26 : 20,
                             fontWeight: FontWeight.w600,
                             color: AppColors.creamLight,
                             letterSpacing: 1.2,
@@ -163,7 +167,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         Text(
                           '這些資料會用於配對語伴與活動報名資格判斷',
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: seniorMode ? 16 : 12,
                             color: AppColors.cream.withValues(alpha: 0.7),
                           ),
                         ),
@@ -172,23 +176,27 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           controller: _displayNameController,
                           labelTriku: 'HANGAN · 中文姓名',
                           hint: '請輸入姓名',
+                          seniorMode: seniorMode,
                         ),
                         const SizedBox(height: 16),
-                        _buildSwitchRow(),
+                        _buildSwitchRow(seniorMode),
+                        const SizedBox(height: 16),
+                        _buildSeniorModeRow(),
                         if (_isIndigenous) ...[
                           const SizedBox(height: 16),
-                          _buildTribeRow(),
+                          _buildTribeRow(seniorMode),
                           const SizedBox(height: 16),
                           _buildTextField(
                             controller: _tribalNameController,
                             labelTriku: '族語名字（選填）',
                             hint: '例如 Apyang Imiq',
+                            seniorMode: seniorMode,
                           ),
                         ],
                         const SizedBox(height: 28),
                         SizedBox(
                           width: double.infinity,
-                          height: 52,
+                          height: seniorMode ? 60 : 52,
                           child: ElevatedButton(
                             onPressed: _submitting ? null : _submit,
                             style: ElevatedButton.styleFrom(
@@ -211,7 +219,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                 : Text(
                                     '完　成',
                                     style: GoogleFonts.notoSerifTc(
-                                      fontSize: 16,
+                                      fontSize: seniorMode ? 20 : 16,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 4,
                                       color: AppColors.ink,
@@ -224,6 +232,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   ),
                 );
               },
+              ),
             ),
           ),
         ],
@@ -235,6 +244,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     required TextEditingController controller,
     required String labelTriku,
     required String hint,
+    bool seniorMode = false,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -249,7 +259,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           Text(
             labelTriku,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: seniorMode ? 13 : 10,
               color: AppColors.cream.withValues(alpha: 0.65),
               letterSpacing: 2.5,
             ),
@@ -257,8 +267,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           const SizedBox(height: 6),
           TextField(
             controller: controller,
-            style: const TextStyle(
-              fontSize: 15,
+            style: TextStyle(
+              fontSize: seniorMode ? 19 : 15,
               color: AppColors.creamLight,
               letterSpacing: 0.8,
             ),
@@ -269,7 +279,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               hintText: hint,
               hintStyle: TextStyle(
                 color: AppColors.cream.withValues(alpha: 0.35),
-                fontSize: 15,
+                fontSize: seniorMode ? 19 : 15,
               ),
             ),
           ),
@@ -278,7 +288,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     );
   }
 
-  Widget _buildSwitchRow() {
+  Widget _buildSwitchRow(bool seniorMode) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.creamLight.withValues(alpha: 0.08),
@@ -294,7 +304,10 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               Expanded(
                 child: Text(
                   '是否原住民',
-                  style: TextStyle(fontSize: 14, color: AppColors.creamLight),
+                  style: TextStyle(
+                    fontSize: seniorMode ? 18 : 14,
+                    color: AppColors.creamLight,
+                  ),
                 ),
               ),
               Switch(
@@ -315,7 +328,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             child: Text(
               '設定後無法自行更改，如需更正請聯繫管理員',
               style: TextStyle(
-                fontSize: 11,
+                fontSize: seniorMode ? 14 : 11,
                 color: AppColors.cream.withValues(alpha: 0.55),
               ),
             ),
@@ -325,7 +338,52 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     );
   }
 
-  Widget _buildTribeRow() {
+  Widget _buildSeniorModeRow() {
+    final seniorMode = seniorModeController.enabled;
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.creamLight.withValues(alpha: 0.08),
+        border: Border.all(color: AppColors.cream.withValues(alpha: 0.18)),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      padding: const EdgeInsets.fromLTRB(16, 10, 8, 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '精簡模式',
+                  style: TextStyle(
+                    fontSize: seniorMode ? 18 : 14,
+                    color: AppColors.creamLight,
+                  ),
+                ),
+              ),
+              Switch(
+                value: seniorMode,
+                activeThumbColor: AppColors.gold,
+                onChanged: (v) => seniorModeController.setEnabled(v),
+              ),
+            ],
+          ),
+          Padding(
+            padding: const EdgeInsets.only(top: 2, bottom: 4),
+            child: Text(
+              '放大文字與簡化畫面，適合長輩或視力不便使用者',
+              style: TextStyle(
+                fontSize: seniorMode ? 14 : 11,
+                color: AppColors.cream.withValues(alpha: 0.55),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTribeRow(bool seniorMode) {
     return InkWell(
       onTap: _pickTribe,
       borderRadius: BorderRadius.circular(12),
@@ -342,7 +400,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             Text(
               '部落',
               style: TextStyle(
-                fontSize: 10,
+                fontSize: seniorMode ? 13 : 10,
                 color: AppColors.cream.withValues(alpha: 0.65),
                 letterSpacing: 2.5,
               ),
@@ -354,7 +412,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   child: Text(
                     _tribe?.name ?? '請選擇部落',
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: seniorMode ? 19 : 15,
                       color: _tribe == null
                           ? AppColors.cream.withValues(alpha: 0.35)
                           : AppColors.creamLight,
@@ -364,7 +422,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 Icon(
                   Icons.chevron_right,
                   color: AppColors.cream.withValues(alpha: 0.5),
-                  size: 18,
+                  size: seniorMode ? 22 : 18,
                 ),
               ],
             ),
