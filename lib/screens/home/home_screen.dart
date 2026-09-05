@@ -6,6 +6,7 @@ import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../../shared/widgets/mode_card.dart';
 import '../../shared/widgets/millet_coin_icon.dart';
+import '../../shared/widgets/senior_mode_toggle_icon.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../profile/about_app_screen.dart';
 import '../shop/shop_screen.dart';
@@ -188,6 +189,8 @@ class HomeScreen extends StatelessWidget {
                         ],
                       ),
                     ),
+                    const SeniorModeToggleIcon(),
+                    const SizedBox(width: 10),
                     GestureDetector(
                       onTap: onShowProfile,
                       child: Container(
