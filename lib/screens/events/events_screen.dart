@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../shared/widgets/truku_empty_state.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
@@ -257,33 +258,11 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _buildEmpty(bool seniorMode) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 90, 20, 0),
-      child: Column(
-        children: [
-          Icon(
-            Icons.event_note_outlined,
-            size: seniorMode ? 60 : 44,
-            color: AppColors.fog,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '目前沒有活動',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? 22 : 16,
-              color: AppColors.inkSoft,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '點右上角「發起」開一場部落聚會吧',
-            style: TextStyle(
-              fontSize: seniorMode ? 16 : 12,
-              color: AppColors.fog,
-            ),
-          ),
-        ],
-      ),
+    return TrukuEmptyState(
+      icon: Icons.event_note_outlined,
+      message: '目前沒有活動',
+      subtitle: '點右上角「發起」開一場部落聚會吧',
+      seniorMode: seniorMode,
     );
   }
 

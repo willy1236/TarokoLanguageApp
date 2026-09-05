@@ -10,6 +10,7 @@ import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../shared/widgets/truku_empty_state.dart';
 import 'event_detail_screen.dart';
 
 enum EventListMode { liked, bookmarked }
@@ -160,28 +161,11 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
     final message = widget.mode == EventListMode.liked
         ? '還沒有按讚任何活動'
         : '還沒有收藏任何活動';
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.event_outlined,
-              color: AppColors.fog,
-              size: seniorMode ? 56 : 40,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              style: TextStyle(
-                color: AppColors.inkSoft,
-                fontSize: seniorMode ? AppTypography.title : 14,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return TrukuEmptyState(
+      icon: Icons.event_outlined,
+      message: message,
+      subtitle: '下拉重新整理，看看有沒有新活動。',
+      seniorMode: seniorMode,
     );
   }
 
