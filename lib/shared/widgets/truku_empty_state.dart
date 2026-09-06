@@ -23,54 +23,57 @@ class TrukuEmptyState extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-    child: Column(
-      children: [
-        SizedBox(
-          width: 76,
-          height: 76,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  color: AppColors.creamDeep,
-                  shape: BoxShape.circle,
+  Widget build(BuildContext context) => Center(
+    child: SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: 76,
+            height: 76,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                const DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: AppColors.creamDeep,
+                    shape: BoxShape.circle,
+                  ),
+                  child: SizedBox.expand(),
                 ),
-                child: SizedBox.expand(),
-              ),
-              Positioned(
-                right: -6,
-                top: -6,
-                child: Opacity(
-                  opacity: 0.13,
-                  child: TrukuDiamond(size: 40, color: AppColors.primary),
+                Positioned(
+                  right: -6,
+                  top: -6,
+                  child: Opacity(
+                    opacity: 0.13,
+                    child: TrukuDiamond(size: 40, color: AppColors.primary),
+                  ),
                 ),
-              ),
-              Icon(icon, color: AppColors.primary, size: 34),
-            ],
+                Icon(icon, color: AppColors.primary, size: 34),
+              ],
+            ),
           ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          message,
-          style: GoogleFonts.notoSerifTc(
-            fontSize: seniorMode ? AppTypography.headline : 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.ink,
+          const SizedBox(height: 16),
+          Text(
+            message,
+            style: GoogleFonts.notoSerifTc(
+              fontSize: seniorMode ? AppTypography.headline : 18,
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
+            ),
           ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          subtitle,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: seniorMode ? AppTypography.subtitle : null,
-            color: AppColors.fog,
+          const SizedBox(height: 6),
+          Text(
+            subtitle,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: seniorMode ? AppTypography.subtitle : null,
+              color: AppColors.fog,
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     ),
   );
 }
