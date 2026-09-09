@@ -1,7 +1,7 @@
 import 'dart:io';
 import 'dart:math' as math;
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -786,6 +786,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onTap: _editDisplayName,
       ),
       _settingRow(
+        '公開暱稱',
+        _user?.videoNickname ?? '尚未設定',
+        editable: true,
+        onTap: _editVideoNickname,
+      ),
+      _settingRow(
+        '自我介紹',
+        (_user?.selfIntro == null || _user!.selfIntro!.isEmpty)
+            ? '尚未填寫'
+            : _user!.selfIntro!,
+        editable: true,
+        onTap: _editSelfIntro,
+      ),
+      _settingRow(
+        '好友碼',
+        _user?.friendCode ?? '—',
+        editable: _user?.friendCode != null,
+        onTap: _copyFriendCode,
+      ),
+      _settingRow(
         '族語名字',
         _user?.tribalName ?? '尚未設定',
         // 尚未設定時顯示中文提示字，不套用族語專用的斜體字型，避免字型跟中文不搭。
@@ -854,6 +874,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
       debugPrintStack(stackTrace: st);
       _showError('更新失敗，請稍後再試');
     }
+  }
+
+  Future<void> _editVideoNickname() async {
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _RenameDialog(
+        title: '修改公開暱稱',
+        label: '公開暱稱',
+        initialValue: _user?.videoNickname ?? '',
+      ),
+    );
+    if (newName == null || newName.isEmpty || newName == _user?.videoNickname) {
+      return;
+    }
+    try {
+      final updated = await UserService.updateMe(videoNickname: newName);
+      if (mounted) setState(() => _user = updated);
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (e, st) {
+      debugPrint('Failed to update video nickname: $e');
+      debugPrintStack(stackTrace: st);
+      _showError('更新失敗，請稍後再試');
+    }
+  }
+
+  Future<void> _editSelfIntro() async {
+    final newIntro = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _RenameDialog(
+        title: '修改自我介紹',
+        label: '自我介紹',
+        initialValue: _user?.selfIntro ?? '',
+      ),
+    );
+    if (newIntro == null || newIntro == _user?.selfIntro) return;
+    try {
+      final updated = await UserService.updateMe(selfIntro: newIntro);
+      if (mounted) setState(() => _user = updated);
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (e, st) {
+      debugPrint('Failed to update self intro: $e');
+      debugPrintStack(stackTrace: st);
+      _showError('更新失敗，請稍後再試');
+    }
+  }
+
+  Future<void> _copyFriendCode() async {
+    final code = _user?.friendCode;
+    if (code == null) return;
+    await Clipboard.setData(ClipboardData(text: code));
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('已複製好友碼')));
   }
 
   // 目前僅太魯閣族一個族群，選部落時固定連同 ethnic_group 一起送，
