@@ -50,6 +50,18 @@ class ApiException implements Exception {
   bool get isInvalidFileType => code == 'INVALID_FILE_TYPE';
   bool get isQuestionNotFound => code == 'QUESTION_NOT_FOUND';
 
+  // 好友/聊天/通話（見 Truku_backend backend/routes/friends.ts、friendCalls.ts、friendMessages.ts）
+  bool get isAlreadyFriends => code == 'ALREADY_FRIENDS';
+  bool get isRequestAlreadySent => code == 'REQUEST_ALREADY_SENT';
+  bool get isBlocked => code == 'BLOCKED';
+  bool get isNotFriends => code == 'NOT_FRIENDS';
+  bool get isVideoNicknameRequired => code == 'VIDEO_NICKNAME_REQUIRED';
+  bool get isMuted => code == 'MUTED';
+  bool get isCalleeBusy => code == 'CALLEE_BUSY';
+  bool get isAlreadyInCall => code == 'ALREADY_IN_CALL';
+  bool get isCallNotRinging => code == 'CALL_NOT_RINGING';
+  bool get isNeedFriend => code == 'NEED_FRIEND';
+
   @override
   String toString() => message;
 }

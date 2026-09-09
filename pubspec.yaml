@@ -65,6 +65,11 @@ dependencies:
 
   shared_preferences: ^2.3.3 # 精簡模式開關等使用者偏好本機持久化
 
+  # 好友聊天 WebSocket 即時連線
+  web_socket_channel: ^3.0.1
+  # 定向通話：真實 Agora 視訊/語音引擎
+  agora_rtc_engine: ^6.5.2
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
