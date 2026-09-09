@@ -1012,35 +1012,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         seniorMode: seniorMode,
         onChanged: (v) => seniorModeController.setEnabled(v),
       ),
-      const Divider(height: 1, color: AppColors.creamDeep),
-      _switchRow(
-        '讓好友看到我的羈絆等級',
-        _user?.bondShow ?? false,
-        seniorMode: seniorMode,
-        onChanged: _setBondShow,
-      ),
     ]);
-  }
-
-  Future<void> _setBondShow(bool value) async {
-    final previous = _user;
-    if (previous == null) return;
-    setState(() => _user = previous.copyWith(bondShow: value));
-    try {
-      final updated = await UserService.updateMe(bondShow: value);
-      if (!mounted) return;
-      setState(() => _user = updated);
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() => _user = previous);
-      _showError(e.message);
-    } catch (e, st) {
-      debugPrint('Failed to update bond_show: $e');
-      debugPrintStack(stackTrace: st);
-      if (!mounted) return;
-      setState(() => _user = previous);
-      _showError('更新失敗，請稍後再試');
-    }
   }
 
   // ── 其他 ──────────────────────────────────────────────────────────────────

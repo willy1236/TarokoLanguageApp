@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/network/api_client.dart';
 import '../../models/friend_model.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -17,6 +18,7 @@ import 'directed_call_waiting_screen.dart';
 import 'friend_requests_screen.dart';
 import 'public_profile_screen.dart';
 import 'widgets/bond_level_badge.dart';
+import 'widgets/showcase_chip.dart';
 
 class FriendsListScreen extends StatefulWidget {
   const FriendsListScreen({super.key});
@@ -100,6 +102,76 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         ),
       ),
     );
+  }
+
+  Future<void> _toggleShowcase(Friendship f) async {
+    final friends = _friends;
+    if (friends == null) return;
+    final idx = friends.indexOf(f);
+    if (idx == -1) return;
+    if (f.showcase.mutual) {
+      final confirmed = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('取消顯示羈絆？'),
+          content: const Text('對方檔案上將立即看不到你們的羈絆等級。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('返回'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('取消顯示'),
+            ),
+          ],
+        ),
+      );
+      if (confirmed != true || !mounted) return;
+    }
+    final previous = List<Friendship>.from(friends);
+    final requesting = !f.showcase.mine;
+    setState(() {
+      _friends = List<Friendship>.from(friends)
+        ..[idx] = f.copyWith(
+          showcase: requesting
+              ? Showcase(mine: true, theirs: f.showcase.theirs, mutual: false)
+              : Showcase.none,
+        );
+    });
+    try {
+      if (requesting) {
+        final result = await FriendService.setShowcase(f.uid);
+        if (!mounted) return;
+        setState(() {
+          final current = _friends;
+          if (current == null) return;
+          final i = current.indexWhere((e) => e.uid == f.uid);
+          if (i == -1) return;
+          _friends = List<Friendship>.from(current)
+            ..[i] = current[i].copyWith(showcase: result);
+        });
+      } else {
+        await FriendService.unsetShowcase(f.uid);
+      }
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _friends = previous);
+      _showError(e.message);
+    } catch (e, st) {
+      debugPrint('Failed to toggle showcase: $e');
+      debugPrintStack(stackTrace: st);
+      if (!mounted) return;
+      setState(() => _friends = previous);
+      _showError('操作失敗，請稍後再試');
+    }
+  }
+
+  void _showError(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _callFriend(Friendship f) {
@@ -216,10 +288,22 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.ink),
                 ),
                 const SizedBox(height: 4),
-                BondLevelBadge(
-                  level: f.bondLevel.level,
-                  name: f.bondLevel.name,
-                  seniorMode: seniorMode,
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 4,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    BondLevelBadge(
+                      level: f.bondLevel.level,
+                      name: f.bondLevel.name,
+                      seniorMode: seniorMode,
+                    ),
+                    ShowcaseChip(
+                      showcase: f.showcase,
+                      seniorMode: seniorMode,
+                      onTap: () => _toggleShowcase(f),
+                    ),
+                  ],
                 ),
               ],
             ),

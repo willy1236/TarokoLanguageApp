@@ -60,10 +60,29 @@ class FriendRequest extends FriendUser {
   );
 }
 
+/// 羈絆展示同意狀態（POST/DELETE /api/friends/:uid/showcase、GET /api/friends）。
+/// mine=我是否已同意展示；theirs=對方是否已同意；mutual=雙方皆同意（僅此時對外公開檔案可見）。
+class Showcase {
+  final bool mine;
+  final bool theirs;
+  final bool mutual;
+
+  const Showcase({required this.mine, required this.theirs, required this.mutual});
+
+  factory Showcase.fromJson(Map<String, dynamic> j) => Showcase(
+    mine: j['mine'] as bool? ?? false,
+    theirs: j['theirs'] as bool? ?? false,
+    mutual: j['mutual'] as bool? ?? false,
+  );
+
+  static const none = Showcase(mine: false, theirs: false, mutual: false);
+}
+
 class Friendship extends FriendUser {
   final int bondPoints;
   final BondLevelInfo bondLevel;
   final DateTime? acceptedAt;
+  final Showcase showcase;
 
   const Friendship({
     required super.uid,
@@ -74,6 +93,7 @@ class Friendship extends FriendUser {
     required this.bondPoints,
     required this.bondLevel,
     this.acceptedAt,
+    this.showcase = Showcase.none,
   });
 
   factory Friendship.fromJson(Map<String, dynamic> j) => Friendship(
@@ -89,6 +109,30 @@ class Friendship extends FriendUser {
     acceptedAt: j['accepted_at'] == null
         ? null
         : DateTime.tryParse(j['accepted_at'].toString()),
+    showcase: j['showcase'] is Map<String, dynamic>
+        ? Showcase.fromJson(j['showcase'] as Map<String, dynamic>)
+        : Showcase.none,
+  );
+
+  Friendship copyWith({
+    String? nickname,
+    String? friendCode,
+    String? avatarUrl,
+    String? selfIntro,
+    int? bondPoints,
+    BondLevelInfo? bondLevel,
+    DateTime? acceptedAt,
+    Showcase? showcase,
+  }) => Friendship(
+    uid: uid,
+    nickname: nickname ?? this.nickname,
+    friendCode: friendCode ?? this.friendCode,
+    avatarUrl: avatarUrl ?? this.avatarUrl,
+    selfIntro: selfIntro ?? this.selfIntro,
+    bondPoints: bondPoints ?? this.bondPoints,
+    bondLevel: bondLevel ?? this.bondLevel,
+    acceptedAt: acceptedAt ?? this.acceptedAt,
+    showcase: showcase ?? this.showcase,
   );
 }
 

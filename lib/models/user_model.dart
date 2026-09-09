@@ -34,7 +34,6 @@ class UserModel {
   final int studyStreak; // 連續學習天數（測驗/聽力交卷觸發，斷了即時回 0），與 checkinStreak（每日簽到）為不同機制
   final int videoCallCount; // 累計視訊通話次數（配對成功雙方各 +1）
   final int forumPostCount; // 目前有效發文篇數（軟刪除會扣減）
-  final bool bondShow; // 是否讓好友在公開檔案看到我的羈絆等級
 
   const UserModel({
     required this.uid,
@@ -63,7 +62,6 @@ class UserModel {
     this.studyStreak = 0,
     this.videoCallCount = 0,
     this.forumPostCount = 0,
-    this.bondShow = false,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -98,7 +96,6 @@ class UserModel {
       studyStreak: json['study_streak'] as int? ?? 0,
       videoCallCount: json['video_call_count'] as int? ?? 0,
       forumPostCount: json['forum_post_count'] as int? ?? 0,
-      bondShow: json['bond_show'] as bool? ?? false,
     );
   }
 
@@ -129,7 +126,6 @@ class UserModel {
         'study_streak': studyStreak,
         'video_call_count': videoCallCount,
         'forum_post_count': forumPostCount,
-        'bond_show': bondShow,
       };
 
   int get joinedDays => DateTime.now().difference(createdAt).inDays;
@@ -161,7 +157,6 @@ class UserModel {
     int? studyStreak,
     int? videoCallCount,
     int? forumPostCount,
-    bool? bondShow,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -191,7 +186,6 @@ class UserModel {
       studyStreak: studyStreak ?? this.studyStreak,
       videoCallCount: videoCallCount ?? this.videoCallCount,
       forumPostCount: forumPostCount ?? this.forumPostCount,
-      bondShow: bondShow ?? this.bondShow,
     );
   }
 }

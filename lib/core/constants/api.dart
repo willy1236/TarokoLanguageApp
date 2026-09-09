@@ -126,6 +126,7 @@ class ApiConfig {
   static String friendDetail(int uid) => '/api/friends/$uid';
   static const String friendBlocks = '/api/friends/blocks';
   static String friendBlockDetail(int uid) => '/api/friends/blocks/$uid';
+  static String friendShowcase(int uid) => '/api/friends/$uid/showcase';
 
   // 定向通話（見 Truku_backend backend/routes/friendCalls.ts）
   static String friendCall(int uid) => '/api/friends/$uid/call';

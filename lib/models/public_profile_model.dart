@@ -13,6 +13,33 @@ class BondLevel {
   );
 }
 
+/// 雙方皆同意展示的一位羈絆好友（bond_showcase 陣列中的一筆，最多 4 筆）。
+class BondShowcaseItem {
+  final int uid;
+  final String? nickname;
+  final String? friendCode;
+  final String? avatarUrl;
+  final BondLevel bondLevel;
+
+  const BondShowcaseItem({
+    required this.uid,
+    this.nickname,
+    this.friendCode,
+    this.avatarUrl,
+    required this.bondLevel,
+  });
+
+  factory BondShowcaseItem.fromJson(Map<String, dynamic> j) => BondShowcaseItem(
+    uid: (j['uid'] as num?)?.toInt() ?? 0,
+    nickname: j['nickname'] as String?,
+    friendCode: j['friend_code'] as String?,
+    avatarUrl: j['avatar_url'] as String?,
+    bondLevel: j['bond_level'] is Map<String, dynamic>
+        ? BondLevel.fromJson(j['bond_level'] as Map<String, dynamic>)
+        : const BondLevel(level: 1, name: '初識'),
+  );
+}
+
 class PublicProfile {
   final int uid;
   final String? nickname;
@@ -22,7 +49,7 @@ class PublicProfile {
   final String? avatarId;
   final String? frameId;
   final DateTime joinedAt;
-  final BondLevel? bondLevel;
+  final List<BondShowcaseItem> bondShowcase;
 
   const PublicProfile({
     required this.uid,
@@ -33,7 +60,7 @@ class PublicProfile {
     this.avatarId,
     this.frameId,
     required this.joinedAt,
-    this.bondLevel,
+    this.bondShowcase = const [],
   });
 
   factory PublicProfile.fromJson(Map<String, dynamic> j) => PublicProfile(
@@ -45,9 +72,10 @@ class PublicProfile {
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,
     joinedAt: DateTime.tryParse(j['joined_at']?.toString() ?? '') ?? DateTime.now(),
-    bondLevel: j['bond_level'] is Map<String, dynamic>
-        ? BondLevel.fromJson(j['bond_level'] as Map<String, dynamic>)
-        : null,
+    bondShowcase: (j['bond_showcase'] as List?)
+            ?.map((e) => BondShowcaseItem.fromJson(e as Map<String, dynamic>))
+            .toList() ??
+        const [],
   );
 
   int get joinedDays => DateTime.now().difference(joinedAt).inDays;

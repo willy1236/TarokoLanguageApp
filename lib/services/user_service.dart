@@ -28,7 +28,6 @@ class UserService {
     String? tribalName,
     String? videoNickname,
     String? selfIntro,
-    bool? bondShow,
   }) async {
     final body = <String, dynamic>{
       'display_name': ?displayName,
@@ -38,7 +37,6 @@ class UserService {
       'tribal_name': ?tribalName,
       'video_nickname': ?videoNickname,
       'self_intro': ?selfIntro,
-      'bond_show': ?bondShow,
     };
     final data = await ApiClient.patch(ApiConfig.me, body);
     return UserModel.fromJson(data);

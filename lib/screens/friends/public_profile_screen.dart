@@ -16,6 +16,7 @@ import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../chat/chat_screen.dart';
+import 'widgets/bond_level_badge.dart';
 
 enum _ProfileAction { addFriend, removeFriend, block, unblock }
 
@@ -200,9 +201,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             '加入 ${profile.joinedDays} 天',
             style: AppTypography.captionStyle(seniorMode: seniorMode, color: AppColors.fog),
           ),
-          if (profile.bondLevel != null) ...[
+          if (profile.bondShowcase.isNotEmpty) ...[
             const SizedBox(height: 10),
-            _bondBadge(profile.bondLevel!, seniorMode),
+            _bondShowcaseRow(profile.bondShowcase, seniorMode),
           ],
           const SizedBox(height: 20),
           if (profile.selfIntro != null && profile.selfIntro!.isNotEmpty) ...[
@@ -296,16 +297,27 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     ),
   );
 
-  Widget _bondBadge(BondLevel level, bool seniorMode) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
-    decoration: BoxDecoration(
-      color: AppColors.gold.withValues(alpha: 0.18),
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: Text(
-      '羈絆 · ${level.name}',
-      style: AppTypography.captionStyle(seniorMode: seniorMode, color: AppColors.goldDeep),
-    ),
+  Widget _bondShowcaseRow(List<BondShowcaseItem> items, bool seniorMode) => Column(
+    crossAxisAlignment: CrossAxisAlignment.center,
+    children: [
+      Text(
+        '羈絆好友',
+        style: AppTypography.captionStyle(seniorMode: seniorMode, color: AppColors.fog),
+      ),
+      const SizedBox(height: 6),
+      Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        alignment: WrapAlignment.center,
+        children: items
+            .map((item) => BondLevelBadge(
+                  level: item.bondLevel.level,
+                  name: item.bondLevel.name,
+                  seniorMode: seniorMode,
+                ))
+            .toList(),
+      ),
+    ],
   );
 
   Widget _card({required Widget child}) => Container(

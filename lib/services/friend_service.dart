@@ -72,6 +72,17 @@ class FriendService {
         .toList();
   }
 
+  /// 同意展示與此好友的羈絆（雙方皆同意才會出現在雙方公開檔案上）。
+  static Future<Showcase> setShowcase(int uid) async {
+    final data = await ApiClient.post(ApiConfig.friendShowcase(uid));
+    return Showcase.fromJson(data);
+  }
+
+  /// 單方撤回展示同意，不需對方確認。
+  static Future<void> unsetShowcase(int uid) async {
+    await ApiClient.delete(ApiConfig.friendShowcase(uid));
+  }
+
   static Future<FriendMessage> sendMessage(int uid, String body) async {
     final data = await ApiClient.post(ApiConfig.friendMessagesSend(uid), {'body': body});
     return FriendMessage.fromJson(data['message'] as Map<String, dynamic>);
