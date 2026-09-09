@@ -26,6 +26,8 @@ class UserService {
     bool clearTribeId = false,
     bool? isIndigenous,
     String? tribalName,
+    String? videoNickname,
+    String? selfIntro,
   }) async {
     final body = <String, dynamic>{
       'display_name': ?displayName,
@@ -33,6 +35,8 @@ class UserService {
       if (clearTribeId) 'tribe_id': null else 'tribe_id': ?tribeId,
       'is_indigenous': ?isIndigenous,
       'tribal_name': ?tribalName,
+      'video_nickname': ?videoNickname,
+      'self_intro': ?selfIntro,
     };
     final data = await ApiClient.patch(ApiConfig.me, body);
     return UserModel.fromJson(data);
@@ -54,16 +58,20 @@ class UserService {
   static Future<UserModel> completeProfile({
     required String displayName,
     required bool isIndigenous,
+    required String videoNickname,
     String? ethnicGroup,
     int? tribeId,
     String? tribalName,
+    String? selfIntro,
   }) async {
     final body = <String, dynamic>{
       'display_name': displayName,
       'is_indigenous': isIndigenous,
+      'video_nickname': videoNickname,
       'ethnic_group': ?ethnicGroup,
       'tribe_id': ?tribeId,
       'tribal_name': ?tribalName,
+      'self_intro': ?selfIntro,
     };
     final data = await ApiClient.post(ApiConfig.completeProfile, body);
     return UserModel.fromJson(data);

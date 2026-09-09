@@ -26,6 +26,9 @@ class UserModel {
   final bool? isIndigenous; // 是否原住民；ethnicGroup 一經設定即永久鎖定
   final String? tribalName; // 本人族語名，不受 ethnicGroup 鎖定限制，可隨時修改
   final bool profileCompleted; // 首次登入完善資料是否已完成，見 issue #43
+  final String? videoNickname; // 公開暱稱，論壇/好友/視訊等公開場合顯示；complete-profile 必填
+  final String? selfIntro; // 自我介紹，公開檔案顯示；未填為 null
+  final String? friendCode; // 8 碼公開識別碼，唯讀，供他人加好友用
   final String? quizSuggestedLevel; // 分級測驗建議的單字起始等級；null=尚未分級
   final String? listeningSuggestedLevel; // 分級測驗建議的聽力起始等級；null=尚未分級
   final int studyStreak; // 連續學習天數（測驗/聽力交卷觸發，斷了即時回 0），與 checkinStreak（每日簽到）為不同機制
@@ -51,6 +54,9 @@ class UserModel {
     this.isIndigenous,
     this.tribalName,
     this.profileCompleted = false,
+    this.videoNickname,
+    this.selfIntro,
+    this.friendCode,
     this.quizSuggestedLevel,
     this.listeningSuggestedLevel,
     this.studyStreak = 0,
@@ -82,6 +88,9 @@ class UserModel {
       isIndigenous: json['is_indigenous'] as bool?,
       tribalName: json['tribal_name'] as String?,
       profileCompleted: json['profile_completed'] as bool? ?? false,
+      videoNickname: json['video_nickname'] as String?,
+      selfIntro: json['self_intro'] as String?,
+      friendCode: json['friend_code'] as String?,
       quizSuggestedLevel: json['quiz_suggested_level'] as String?,
       listeningSuggestedLevel: json['listening_suggested_level'] as String?,
       studyStreak: json['study_streak'] as int? ?? 0,
@@ -109,6 +118,9 @@ class UserModel {
         'is_indigenous': isIndigenous,
         'tribal_name': tribalName,
         'profile_completed': profileCompleted,
+        'video_nickname': videoNickname,
+        'self_intro': selfIntro,
+        'friend_code': friendCode,
         'quiz_suggested_level': quizSuggestedLevel,
         'listening_suggested_level': listeningSuggestedLevel,
         'study_streak': studyStreak,
@@ -137,6 +149,9 @@ class UserModel {
     bool? isIndigenous,
     String? tribalName,
     bool? profileCompleted,
+    String? videoNickname,
+    String? selfIntro,
+    String? friendCode,
     String? quizSuggestedLevel,
     String? listeningSuggestedLevel,
     int? studyStreak,
@@ -162,6 +177,9 @@ class UserModel {
       isIndigenous: isIndigenous ?? this.isIndigenous,
       tribalName: tribalName ?? this.tribalName,
       profileCompleted: profileCompleted ?? this.profileCompleted,
+      videoNickname: videoNickname ?? this.videoNickname,
+      selfIntro: selfIntro ?? this.selfIntro,
+      friendCode: friendCode ?? this.friendCode,
       quizSuggestedLevel: quizSuggestedLevel ?? this.quizSuggestedLevel,
       listeningSuggestedLevel:
           listeningSuggestedLevel ?? this.listeningSuggestedLevel,
