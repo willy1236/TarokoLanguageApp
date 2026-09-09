@@ -233,12 +233,15 @@ class EventParticipant {
   final int uid;
   final String? displayName;
   final String? avatarUrl;
+  // 僅發起人視角的 GET /api/events/:id 會帶值；其他人看到的名單一律是 null。
+  final String? contactEmail;
   final DateTime? joinedAt;
 
   const EventParticipant({
     required this.uid,
     this.displayName,
     this.avatarUrl,
+    this.contactEmail,
     this.joinedAt,
   });
 
@@ -247,6 +250,7 @@ class EventParticipant {
       uid: asEventInt(json['uid'])!,
       displayName: json['display_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
+      contactEmail: json['contact_email'] as String?,
       joinedAt: json['joined_at'] != null
           ? DateTime.parse(json['joined_at'] as String)
           : null,

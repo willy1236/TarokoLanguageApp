@@ -138,9 +138,11 @@ class EventService {
     return EventDetail.fromJson(data);
   }
 
-  /// 參加活動。
-  static Future<void> joinEvent(int eventId) async {
-    await ApiClient.post(ApiConfig.eventJoin(eventId));
+  /// 參加活動。[contactEmail] 為後端必填欄位（供主辦聯繫用，可與帳號 email 不同）。
+  static Future<void> joinEvent(int eventId, {required String contactEmail}) async {
+    await ApiClient.post(ApiConfig.eventJoin(eventId), {
+      'contact_email': contactEmail.trim(),
+    });
   }
 
   /// 退出活動（發起人不可退出，後端會擋）。

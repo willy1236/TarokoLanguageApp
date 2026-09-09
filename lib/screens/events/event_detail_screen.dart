@@ -157,9 +157,26 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   // ── 行動：參加 / 退出 / 取消 ─────────────────────────────────
   Future<void> _join() async {
+    final email = await _askJoinEmail();
+    if (email == null) return;
     await _runAction(
-      () => EventService.joinEvent(widget.eventId),
+      () => EventService.joinEvent(widget.eventId, contactEmail: email),
       success: '已報名',
+    );
+  }
+
+  /// 報名前彈窗要求聯絡 email（後端必填）；預填帳號 email 供使用者確認/修改。
+  Future<String?> _askJoinEmail() async {
+    String? prefill;
+    try {
+      prefill = (await UserService.fetchMe()).email;
+    } catch (_) {
+      // 拿不到就讓使用者自己輸入，不阻斷報名流程。
+    }
+    if (!mounted) return null;
+    return showDialog<String>(
+      context: context,
+      builder: (ctx) => _JoinEmailDialog(initialEmail: prefill),
     );
   }
 
@@ -1226,6 +1243,89 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 /// 此時 dialog 的關閉動畫可能還沒跑完，仍持有該 controller 的 TextField
 /// 尚未真正 unmount，手動提早 dispose 會丟出
 /// "A TextEditingController was used after being disposed." 例外。
+/// 報名前要求聯絡 email（後端必填，供主辦聯繫）。[initialEmail] 為帳號 email 預填值。
+class _JoinEmailDialog extends StatefulWidget {
+  final String? initialEmail;
+
+  const _JoinEmailDialog({this.initialEmail});
+
+  @override
+  State<_JoinEmailDialog> createState() => _JoinEmailDialogState();
+}
+
+class _JoinEmailDialogState extends State<_JoinEmailDialog> {
+  late final _controller = TextEditingController(text: widget.initialEmail);
+  String? _error;
+
+  static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+$');
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final email = _controller.text.trim();
+    if (email.isEmpty || !_emailPattern.hasMatch(email) || email.length > 254) {
+      setState(() => _error = '請輸入有效的 Email');
+      return;
+    }
+    Navigator.pop(context, email);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: AppColors.creamLight,
+      title: Text(
+        '填寫聯絡 Email',
+        style: GoogleFonts.notoSerifTc(
+          fontWeight: FontWeight.w700,
+          color: AppColors.ink,
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '報名需提供聯絡 Email，供主辦聯繫使用，可與帳號 Email 不同。',
+            style: TextStyle(
+              fontSize: 13,
+              color: AppColors.inkSoft,
+              height: 1.5,
+            ),
+          ),
+          const SizedBox(height: 12),
+          TextField(
+            controller: _controller,
+            keyboardType: TextInputType.emailAddress,
+            autofocus: true,
+            style: const TextStyle(fontSize: 14, color: AppColors.ink),
+            decoration: InputDecoration(
+              hintText: 'name@example.com',
+              hintStyle: TextStyle(color: AppColors.fog),
+              errorText: _error,
+              border: const OutlineInputBorder(),
+            ),
+          ),
+        ],
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: const Text('取消', style: TextStyle(color: AppColors.inkSoft)),
+        ),
+        TextButton(
+          onPressed: _submit,
+          child: const Text('確認報名'),
+        ),
+      ],
+    );
+  }
+}
+
 class _CancelReasonDialog extends StatefulWidget {
   const _CancelReasonDialog();
 
