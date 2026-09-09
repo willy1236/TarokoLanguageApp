@@ -12,6 +12,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';
 import '../../../services/senior_mode_controller.dart';
 import '../../../shared/widgets/engagement_icon_button.dart';
+import '../../friends/public_profile_screen.dart';
 import 'forum_image_grid.dart';
 
 String forumRelativeTime(DateTime time) {
@@ -149,32 +150,54 @@ class ForumPostCard extends StatelessWidget {
     );
   }
 
+  void _openAuthorProfile(BuildContext context) {
+    final friendCode = post.author.friendCode;
+    if (friendCode == null || friendCode.isEmpty) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PublicProfileScreen(friendCode: friendCode),
+      ),
+    );
+  }
+
   Widget _header(bool seniorMode) => Row(
     children: [
-      _avatar(seniorMode),
+      Builder(
+        builder: (context) => GestureDetector(
+          onTap: () => _openAuthorProfile(context),
+          child: _avatar(seniorMode),
+        ),
+      ),
       const SizedBox(width: 10),
       Expanded(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              post.author.displayName,
-              style: GoogleFonts.notoSerifTc(
-                fontSize: seniorMode ? AppTypography.subtitle : 14,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-                letterSpacing: 0.6,
-              ),
+        child: Builder(
+          builder: (context) => GestureDetector(
+            onTap: () => _openAuthorProfile(context),
+            behavior: HitTestBehavior.opaque,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  post.author.displayName,
+                  style: GoogleFonts.notoSerifTc(
+                    fontSize: seniorMode ? AppTypography.subtitle : 14,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                    letterSpacing: 0.6,
+                  ),
+                ),
+                Text(
+                  '${post.board.name} · ${forumRelativeTime(post.createdAt)}',
+                  style: TextStyle(
+                    fontSize: seniorMode ? AppTypography.body : 11,
+                    color: AppColors.fog,
+                    letterSpacing: 0.8,
+                  ),
+                ),
+              ],
             ),
-            Text(
-              '${post.board.name} · ${forumRelativeTime(post.createdAt)}',
-              style: TextStyle(
-                fontSize: seniorMode ? AppTypography.body : 11,
-                color: AppColors.fog,
-                letterSpacing: 0.8,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
       if (post.isPinned)

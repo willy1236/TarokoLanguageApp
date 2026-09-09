@@ -38,17 +38,20 @@ class ForumAuthor {
   final int uid;
   final String displayName;
   final String? avatarUrl;
+  final String? friendCode;
 
   const ForumAuthor({
     required this.uid,
     required this.displayName,
     this.avatarUrl,
+    this.friendCode,
   });
 
   factory ForumAuthor.fromJson(Map<String, dynamic> j) => ForumAuthor(
     uid: _asInt(j['uid']),
     displayName: j['display_name'] as String? ?? '匿名使用者',
     avatarUrl: j['avatar_url'] as String?,
+    friendCode: j['friend_code'] as String?,
   );
 }
 
