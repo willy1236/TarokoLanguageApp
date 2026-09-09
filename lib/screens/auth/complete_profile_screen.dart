@@ -26,6 +26,7 @@ class CompleteProfileScreen extends StatefulWidget {
 
 class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _displayNameController = TextEditingController();
+  final _videoNicknameController = TextEditingController();
   final _tribalNameController = TextEditingController();
   bool _isIndigenous = false;
   Tribe? _tribe;
@@ -44,6 +45,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   @override
   void dispose() {
     _displayNameController.dispose();
+    _videoNicknameController.dispose();
     _tribalNameController.dispose();
     super.dispose();
   }
@@ -69,6 +71,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       _showError('請輸入中文姓名');
       return;
     }
+    final videoNickname = _videoNicknameController.text.trim();
+    if (videoNickname.isEmpty) {
+      _showError('請輸入公開暱稱');
+      return;
+    }
     if (_isIndigenous && _tribe == null) {
       _showError('請選擇部落');
       return;
@@ -78,6 +85,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       await UserService.completeProfile(
         displayName: displayName,
         isIndigenous: _isIndigenous,
+        videoNickname: videoNickname,
         ethnicGroup: _isIndigenous ? _defaultEthnicGroup : null,
         tribeId: _isIndigenous ? _tribe?.id : null,
         tribalName: _tribalNameController.text.trim().isEmpty
@@ -176,6 +184,13 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                           controller: _displayNameController,
                           labelTriku: 'HANGAN · 中文姓名',
                           hint: '請輸入姓名',
+                          seniorMode: seniorMode,
+                        ),
+                        const SizedBox(height: 16),
+                        _buildTextField(
+                          controller: _videoNicknameController,
+                          labelTriku: 'NGALAN · 公開暱稱',
+                          hint: '論壇、視訊、好友都會顯示這個名字',
                           seniorMode: seniorMode,
                         ),
                         const SizedBox(height: 16),
