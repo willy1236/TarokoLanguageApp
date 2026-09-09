@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/agora_call_service.dart';
+import '../../services/directed_call_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 
@@ -14,6 +15,11 @@ class VideoCallScreen extends StatefulWidget {
   final int uid;
   final String? peerNickname;
 
+  /// 若這通通話是從好友定向撥號接通的，帶入該通話 id：掛斷時改呼叫
+  /// DirectedCallService.endCall（會一併結束底層 session 並判定羈絆 +5），
+  /// 不重複呼叫 VideoCallService.endSession。null 代表隨機配對通話。
+  final int? directedCallId;
+
   const VideoCallScreen({
     super.key,
     required this.sessionId,
@@ -22,6 +28,7 @@ class VideoCallScreen extends StatefulWidget {
     required this.channel,
     required this.uid,
     required this.peerNickname,
+    this.directedCallId,
   });
 
   @override
@@ -80,7 +87,12 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     _ended = true;
     _timer?.cancel();
     try {
-      await VideoCallService.endSession(widget.sessionId);
+      final directedCallId = widget.directedCallId;
+      if (directedCallId != null) {
+        await DirectedCallService.endCall(directedCallId);
+      } else {
+        await VideoCallService.endSession(widget.sessionId);
+      }
     } catch (_) {
       // 掛斷仍優先讓使用者離開畫面，忽略結束端點的錯誤。
     }

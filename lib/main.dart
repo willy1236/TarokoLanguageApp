@@ -15,6 +15,7 @@ import 'screens/learn/learn_screen.dart';
 import 'screens/events/event_detail_screen.dart';
 import 'screens/events/events_screen.dart';
 import 'screens/forum/forum_detail_screen.dart';
+import 'screens/friends/incoming_call_screen.dart';
 import 'screens/plaza/plaza_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
@@ -58,6 +59,12 @@ Future<void> main() async {
   FcmService.onForumReplyTapped = (postId) {
     navigatorKey.currentState?.push(
       MaterialPageRoute(builder: (_) => ForumDetailScreen(postId: postId)),
+    );
+  };
+  // 收到好友定向來電（前景推播、或背景點擊通知開啟）→ 導到響鈴畫面。
+  FcmService.onFriendCallIncoming = (call) {
+    navigatorKey.currentState?.push(
+      MaterialPageRoute(builder: (_) => IncomingCallScreen(call: call)),
     );
   };
   // FCM 掛載（要權限、掛前景/點擊監聽）。失敗不阻斷 App 啟動；token 上傳待登入後。

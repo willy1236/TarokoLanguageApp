@@ -11,6 +11,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'add_friend_screen.dart';
 import 'blocked_users_screen.dart';
+import 'directed_call_waiting_screen.dart';
 import 'friend_requests_screen.dart';
 import 'public_profile_screen.dart';
 
@@ -78,6 +79,17 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       MaterialPageRoute(builder: (_) => PublicProfileScreen(friendCode: code)),
     );
     if (changed == true) _load();
+  }
+
+  void _callFriend(Friendship f) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DirectedCallWaitingScreen(
+          calleeUid: f.uid,
+          calleeNickname: f.nickname,
+        ),
+      ),
+    );
   }
 
   @override
@@ -184,6 +196,11 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                 ),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: () => _callFriend(f),
+            icon: const Icon(Icons.videocam_outlined, color: AppColors.primary),
+            tooltip: '視訊通話',
           ),
           const Icon(Icons.chevron_right, color: AppColors.fog, size: 18),
         ],
