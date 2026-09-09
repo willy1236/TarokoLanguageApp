@@ -47,5 +47,9 @@
 	<true/>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>需要存取相簿以選擇照片作為頭像</string>
+	<key>NSCameraUsageDescription</key>
+	<string>需要使用相機以進行視訊通話</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>需要使用麥克風以進行視訊通話</string>
 </dict>
 </plist>

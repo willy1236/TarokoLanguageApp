@@ -69,6 +69,7 @@ dependencies:
   web_socket_channel: ^3.0.1
   # 定向通話：真實 Agora 視訊/語音引擎
   agora_rtc_engine: ^6.5.2
+  permission_handler: ^11.3.1
 
 dev_dependencies:
   flutter_test:
