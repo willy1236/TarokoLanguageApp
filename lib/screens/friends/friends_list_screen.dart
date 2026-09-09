@@ -9,11 +9,14 @@ import '../../models/friend_model.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_empty_state.dart';
+import '../chat/chat_screen.dart';
+import '../chat/conversations_list_screen.dart';
 import 'add_friend_screen.dart';
 import 'blocked_users_screen.dart';
 import 'directed_call_waiting_screen.dart';
 import 'friend_requests_screen.dart';
 import 'public_profile_screen.dart';
+import 'widgets/bond_level_badge.dart';
 
 class FriendsListScreen extends StatefulWidget {
   const FriendsListScreen({super.key});
@@ -81,6 +84,24 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     if (changed == true) _load();
   }
 
+  void _openConversations() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => const ConversationsListScreen()),
+    );
+  }
+
+  void _chatWithFriend(Friendship f) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          partnerUid: f.uid,
+          partnerNickname: f.nickname,
+          partnerAvatarUrl: f.avatarUrl,
+        ),
+      ),
+    );
+  }
+
   void _callFriend(Friendship f) {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -123,6 +144,11 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             '好友',
             style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
           ),
+        ),
+        IconButton(
+          onPressed: _openConversations,
+          icon: const Icon(Icons.chat_bubble_outline, color: AppColors.primary),
+          tooltip: '訊息',
         ),
         IconButton(
           onPressed: _openRequests,
@@ -189,13 +215,19 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   f.nickname?.isNotEmpty == true ? f.nickname! : '未命名旅人',
                   style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.ink),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '羈絆 · ${f.bondLevel.name}',
-                  style: AppTypography.captionStyle(seniorMode: seniorMode, color: AppColors.goldDeep),
+                const SizedBox(height: 4),
+                BondLevelBadge(
+                  level: f.bondLevel.level,
+                  name: f.bondLevel.name,
+                  seniorMode: seniorMode,
                 ),
               ],
             ),
+          ),
+          IconButton(
+            onPressed: () => _chatWithFriend(f),
+            icon: const Icon(Icons.chat_bubble_outline, color: AppColors.primary),
+            tooltip: '傳訊息',
           ),
           IconButton(
             onPressed: () => _callFriend(f),

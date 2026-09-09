@@ -15,6 +15,7 @@ import '../../models/public_profile_model.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_empty_state.dart';
+import '../chat/chat_screen.dart';
 
 enum _ProfileAction { addFriend, removeFriend, block, unblock }
 
@@ -108,6 +109,20 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       ],
     ),
   );
+
+  void _openChat() {
+    final profile = _profile;
+    if (profile == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => ChatScreen(
+          partnerUid: profile.uid,
+          partnerNickname: profile.nickname,
+          partnerAvatarUrl: profile.avatarUrl,
+        ),
+      ),
+    );
+  }
 
   Future<void> _handleAction(_ProfileAction action) async {
     final profile = _profile;
@@ -221,6 +236,23 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                   ),
                   const Icon(Icons.copy, size: 18, color: AppColors.primary),
                 ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 14),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton.icon(
+              onPressed: _openChat,
+              icon: const Icon(Icons.chat_bubble_outline, color: AppColors.primary),
+              label: Text(
+                '傳訊息',
+                style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.primary),
+              ),
+              style: OutlinedButton.styleFrom(
+                padding: const EdgeInsets.symmetric(vertical: 12),
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
           ),
