@@ -77,6 +77,22 @@ class ApiClient {
     return _handle(resp);
   }
 
+  /// 取回非 JSON 回應的原始文字內容（例如 CSV 匯出），錯誤處理沿用 [_handle]
+  /// 的狀態碼判斷，但成功時不做 jsonDecode，直接回傳 body 原文。
+  static Future<String> getRaw(String path) async {
+    final token = await AuthService.currentToken();
+    final uri = Uri.parse(ApiConfig.baseUrl + path);
+    final resp = await _send(
+      () => httpClient.get(uri, headers: _headers(token)),
+    );
+    if (resp.statusCode < 200 || resp.statusCode >= 300) {
+      final error = _parseError(resp);
+      if (error.isUnauthorized) _forceLogout();
+      throw error;
+    }
+    return resp.body;
+  }
+
   static Future<Map<String, dynamic>> post(
     String path, [
     Map<String, dynamic>? body,

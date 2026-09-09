@@ -65,6 +65,10 @@ dependencies:
 
   shared_preferences: ^2.3.3 # 精簡模式開關等使用者偏好本機持久化
 
+  # 發起人匯出報名名單 CSV：寫暫存檔後跳系統分享選單
+  share_plus: ^13.3.0
+  path_provider: ^2.1.5
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

@@ -145,6 +145,11 @@ class EventService {
     });
   }
 
+  /// 匯出報名名單 CSV（僅發起人；回傳的字串已含 UTF-8 BOM，可直接寫檔）。
+  static Future<String> exportRoster(int eventId) async {
+    return ApiClient.getRaw(ApiConfig.eventExport(eventId));
+  }
+
   /// 退出活動（發起人不可退出，後端會擋）。
   static Future<void> leaveEvent(int eventId) async {
     await ApiClient.delete(ApiConfig.eventJoin(eventId));

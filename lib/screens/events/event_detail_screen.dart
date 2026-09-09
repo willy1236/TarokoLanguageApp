@@ -1,5 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/date_format.dart';
@@ -292,6 +296,39 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       ),
     );
     if (updated == true && mounted) await _silentRefresh();
+  }
+
+  /// 匯出報名名單 CSV（僅發起人）：拿到後端組好的 CSV 文字，寫成暫存檔再跳系統
+  /// 分享選單（存檔/寄信/傳送皆可），錯誤處理沿用 [_runAction] 同款文案呈現。
+  Future<void> _exportRoster() async {
+    final event = _event;
+    if (event == null || _acting) return;
+    setState(() => _acting = true);
+    try {
+      final csv = await EventService.exportRoster(widget.eventId);
+      final dir = await getTemporaryDirectory();
+      final file = File('${dir.path}/event_${event.id}_roster.csv');
+      await file.writeAsString(csv, flush: true);
+      if (!mounted) return;
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [XFile(file.path, mimeType: 'text/csv')],
+          subject: '${event.title} 報名名單',
+        ),
+      );
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(e.message)));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('匯出失敗：$e')));
+    } finally {
+      if (mounted) setState(() => _acting = false);
+    }
   }
 
   Future<void> _deleteEvent() async {
@@ -1054,6 +1091,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           icon: Icon(Icons.edit_outlined, size: seniorMode ? 22 : 16),
           label: Text(
             '編輯活動',
+            style: TextStyle(fontSize: seniorMode ? 16 : 13),
+          ),
+        ),
+        TextButton.icon(
+          onPressed: _acting ? null : _exportRoster,
+          icon: Icon(Icons.file_download_outlined, size: seniorMode ? 22 : 16),
+          label: Text(
+            '匯出名單',
             style: TextStyle(fontSize: seniorMode ? 16 : 13),
           ),
         ),
