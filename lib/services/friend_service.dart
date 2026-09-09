@@ -3,8 +3,16 @@
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
+import '../models/friend_message_model.dart';
 import '../models/friend_model.dart';
 import '../models/public_profile_model.dart';
+
+class ChatMessagePage {
+  final List<FriendMessage> messages;
+  final int? nextCursor;
+
+  const ChatMessagePage({required this.messages, this.nextCursor});
+}
 
 class FriendService {
   static Future<PublicProfile> getPublicProfile(String friendCode) async {
@@ -62,5 +70,38 @@ class FriendService {
     return ApiClient.unwrapList(data, 'blocks')
         .map((e) => BlockedUser.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  static Future<FriendMessage> sendMessage(int uid, String body) async {
+    final data = await ApiClient.post(ApiConfig.friendMessagesSend(uid), {'body': body});
+    return FriendMessage.fromJson(data['message'] as Map<String, dynamic>);
+  }
+
+  static Future<List<Conversation>> getConversations() async {
+    final data = await ApiClient.get(ApiConfig.friendConversations);
+    return ApiClient.unwrapList(data, 'conversations')
+        .map((e) => Conversation.fromJson(e as Map<String, dynamic>))
+        .toList();
+  }
+
+  /// 依 cursor（訊息 id）往舊訊息分頁；cursor 為 null 取最新一頁。
+  static Future<ChatMessagePage> getMessages(int uid, {int? cursor, int limit = 30}) async {
+    final data = await ApiClient.get(
+      ApiConfig.friendMessages(uid),
+      query: {'limit': '$limit', if (cursor != null) 'cursor': '$cursor'},
+    );
+    final messages = ApiClient.unwrapList(data, 'messages')
+        .map((e) => FriendMessage.fromJson(e as Map<String, dynamic>))
+        .toList();
+    return ChatMessagePage(messages: messages, nextCursor: (data['next_cursor'] as num?)?.toInt());
+  }
+
+  static Future<int> markRead(int uid) async {
+    final data = await ApiClient.post(ApiConfig.friendMessagesRead(uid));
+    return (data['marked'] as num?)?.toInt() ?? 0;
+  }
+
+  static Future<void> reportMessage(int id, String reason) async {
+    await ApiClient.post(ApiConfig.friendMessageReport(id), {'reason': reason});
   }
 }

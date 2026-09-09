@@ -63,6 +63,7 @@ class ApiException implements Exception {
   bool get isNeedFriend => code == 'NEED_FRIEND';
   bool get isVideoUnavailable => code == 'VIDEO_UNAVAILABLE';
   bool get isSessionEnded => code == 'SESSION_ENDED';
+  bool get isProfanity => code == 'PROFANITY';
 
   @override
   String toString() => message;
