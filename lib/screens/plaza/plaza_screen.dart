@@ -173,11 +173,11 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
 
   Widget _buildScaffold(bool seniorMode) => Theme(
     data: forumTheme(context),
-    child: Scaffold(
-      backgroundColor: AppColors.creamLight,
+    child: ColoredBox(
+      color: AppColors.creamLight,
       // 順序沿用改版前：標題、近期活動橫向小卡、看板 tab，最後才是貼文列表。
       // 只有貼文列表捲動，上面三段固定。
-      body: Column(
+      child: Column(
         children: [
           _buildHeader(context, seniorMode),
           // 近期活動固定在看板 tab 上方不隨貼文捲動。代價是它不在下拉手勢的

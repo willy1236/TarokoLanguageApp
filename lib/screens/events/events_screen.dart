@@ -166,9 +166,9 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _buildScaffold(bool seniorMode) {
-    return Scaffold(
-      backgroundColor: AppColors.creamLight,
-      body: RefreshIndicator(
+    return ColoredBox(
+      color: AppColors.creamLight,
+      child: RefreshIndicator(
         onRefresh: _load,
         color: AppColors.primary,
         child: CustomScrollView(

@@ -65,18 +65,29 @@ const List<ModeData> _modes = [
   ),
 ];
 
-// ModeData.key → MainContainer 的分頁 index（見 lib/main.dart 的 IndexedStack 順序）
+// ModeData.key → MainContainer 的分頁 index（見 lib/main.dart 的 IndexedStack 順序）。
+// learn/culture 共用「學習影音」分頁、plaza/event 共用「廣場活動」分頁，
+// 落在哪個子分頁由 _modeSubTab 決定。
 const Map<String, int> _modeTabIndex = {
   'learn': 1,
-  'culture': 2,
-  'video': 3, // 視訊功能在「交流」分頁（CommunityScreen）內
-  'plaza': 4,
-  'event': 5,
+  'culture': 1,
+  'video': 2, // 視訊功能在「交流」分頁（CommunityScreen）內
+  'plaza': 3,
+  'event': 3,
+};
+
+// learn/culture 的子分頁（LearnCultureScreen: 0=學習,1=影音）、
+// plaza/event 的子分頁（PlazaEventScreen: 0=廣場,1=活動）。
+const Map<String, int> _modeSubTab = {
+  'learn': 0,
+  'culture': 1,
+  'plaza': 0,
+  'event': 1,
 };
 
 class HomeScreen extends StatelessWidget {
   final VoidCallback? onShowProfile;
-  final void Function(int tabIndex)? onNavigateToTab;
+  final void Function(int tabIndex, {int? subTab})? onNavigateToTab;
   final String? displayName;
   final int? millet;
   final String? avatarId;
@@ -106,7 +117,9 @@ class HomeScreen extends StatelessWidget {
 
   void _onModeTap(ModeData mode) {
     final index = _modeTabIndex[mode.key];
-    if (index != null) onNavigateToTab?.call(index);
+    if (index != null) {
+      onNavigateToTab?.call(index, subTab: _modeSubTab[mode.key]);
+    }
   }
 
   @override

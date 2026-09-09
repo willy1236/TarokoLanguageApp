@@ -97,9 +97,9 @@ class _CultureScreenState extends State<CultureScreen> {
   }
 
   Widget _buildScaffold(bool seniorMode) {
-    return Scaffold(
-      backgroundColor: AppColors.midnight,
-      body: CustomScrollView(
+    return ColoredBox(
+      color: AppColors.midnight,
+      child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildHero(seniorMode)),
           SliverToBoxAdapter(child: _buildTabBar(seniorMode)),

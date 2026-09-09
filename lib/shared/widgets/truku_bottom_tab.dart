@@ -14,9 +14,9 @@ class TrukuBottomTab extends StatelessWidget {
     this.seniorMode = false,
   });
 
-  static const _keys = ['home', 'learn', 'culture', 'comm', 'plaza', 'event'];
-  static const _labels = ['首頁', '學習', '影音', '視訊', '廣場', '活動'];
-  static const _seniorHiddenKeys = {'learn'};
+  static const _keys = ['home', 'learn_culture', 'comm', 'plaza_event', 'profile'];
+  static const _labels = ['首頁', '學習影音', '視訊', '廣場活動', '個人資料'];
+  static const _seniorHiddenKeys = <String>{};
 
   @override
   Widget build(BuildContext context) {
@@ -145,25 +145,18 @@ class _TabIconPainter extends CustomPainter {
           stroke,
         );
 
-      case 'learn':
-        // 書：兩個矩形 M4 4h7v16H4z  M13 4h7v16h-7z
+      case 'learn_culture':
+        // 書（學習）+ 播放三角（影音）合併圖示：一本書配一個播放鍵
         canvas.drawPath(
-          Path()..addRect(const Rect.fromLTWH(4, 4, 7, 16)),
+          Path()..addRect(const Rect.fromLTWH(3, 4, 8, 16)),
           stroke,
         );
-        canvas.drawPath(
-          Path()..addRect(const Rect.fromLTWH(13, 4, 7, 16)),
-          stroke,
-        );
-
-      case 'culture':
-        // 播放圓圈 + 填充三角
-        canvas.drawCircle(const Offset(12, 12), 9, stroke);
+        canvas.drawCircle(const Offset(17, 12), 6, stroke);
         canvas.drawPath(
           Path()
-            ..moveTo(10, 8)
-            ..lineTo(16, 12)
-            ..lineTo(10, 16)
+            ..moveTo(15.3, 9)
+            ..lineTo(19.5, 12)
+            ..lineTo(15.3, 15)
             ..close(),
           fill,
         );
@@ -181,29 +174,35 @@ class _TabIconPainter extends CustomPainter {
           stroke,
         );
 
-      case 'plaza':
-        // 人群：circle cx=12 cy=9 r=4 + body arc
-        canvas.drawCircle(const Offset(12, 9), 4, stroke);
+      case 'plaza_event':
+        // 人群（廣場）+ 日曆（活動）合併圖示
+        canvas.drawCircle(const Offset(8, 7), 3, stroke);
         canvas.drawPath(
           Path()
-            ..moveTo(4, 21)
-            ..cubicTo(5, 17, 9, 15, 12, 15)
-            ..cubicTo(15, 15, 19, 17, 20, 21),
+            ..moveTo(2, 16)
+            ..cubicTo(2.5, 13, 5.5, 11.5, 8, 11.5)
+            ..cubicTo(10.5, 11.5, 13.5, 13, 14, 16),
           stroke,
         );
-
-      case 'event':
-        // 日曆：rect + 橫線 + 兩條豎線
         canvas.drawRRect(
           RRect.fromRectAndRadius(
-            const Rect.fromLTWH(3, 5, 18, 16),
-            const Radius.circular(2),
+            const Rect.fromLTWH(13, 6, 9, 9),
+            const Radius.circular(1.5),
           ),
           stroke,
         );
-        canvas.drawLine(const Offset(3, 10), const Offset(21, 10), stroke);
-        canvas.drawLine(const Offset(8, 3), const Offset(8, 7), stroke);
-        canvas.drawLine(const Offset(16, 3), const Offset(16, 7), stroke);
+        canvas.drawLine(const Offset(13, 9.5), const Offset(22, 9.5), stroke);
+
+      case 'profile':
+        // 頭像：圓形頭 + 肩膀弧線
+        canvas.drawCircle(const Offset(12, 8), 4, stroke);
+        canvas.drawPath(
+          Path()
+            ..moveTo(4, 21)
+            ..cubicTo(5, 16, 8.5, 14, 12, 14)
+            ..cubicTo(15.5, 14, 19, 16, 20, 21),
+          stroke,
+        );
     }
 
     canvas.restore();

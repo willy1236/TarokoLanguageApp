@@ -132,9 +132,9 @@ class _LearnScreenState extends State<LearnScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.creamLight,
-      body: FutureBuilder<List<LevelInfo>>(
+    return ColoredBox(
+      color: AppColors.creamLight,
+      child: FutureBuilder<List<LevelInfo>>(
         future: _levelsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

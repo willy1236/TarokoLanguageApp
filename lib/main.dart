@@ -9,14 +9,12 @@ import 'screens/auth/complete_profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/backpack/backpack_screen.dart';
 import 'screens/community/community_screen.dart';
-import 'screens/culture/culture_screen.dart';
 import 'screens/home/home_screen.dart';
-import 'screens/learn/learn_screen.dart';
+import 'screens/learn/learn_culture_screen.dart';
 import 'screens/events/event_detail_screen.dart';
-import 'screens/events/events_screen.dart';
 import 'screens/forum/forum_detail_screen.dart';
 import 'screens/friends/incoming_call_screen.dart';
-import 'screens/plaza/plaza_screen.dart';
+import 'screens/plaza/plaza_event_screen.dart';
 import 'screens/profile/profile_screen.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/splash/splash_screen.dart';
@@ -177,11 +175,11 @@ class MainContainer extends StatefulWidget {
 }
 
 class _MainContainerState extends State<MainContainer> {
-  static const int _profileIndex = 6;
+  static const int _profileIndex = 4;
 
   int _currentIndex = 0;
-  int _previousIndex = 0;
-  int _profileOpenCount = 0;
+  int _learnCultureSubTab = 0;
+  int _plazaEventSubTab = 0;
   String? _displayName;
   int? _millet;
   String? _avatarId;
@@ -287,26 +285,15 @@ class _MainContainerState extends State<MainContainer> {
     }
   }
 
-  void _navigate(int index) => setState(() {
+  void _navigate(int index, {int? subTab}) => setState(() {
     _currentIndex = index;
+    if (subTab != null) {
+      if (index == 1) _learnCultureSubTab = subTab;
+      if (index == 3) _plazaEventSubTab = subTab;
+    }
   });
-
-  void _openProfile() => setState(() {
-    _previousIndex = _currentIndex;
-    _currentIndex = _profileIndex;
-    _profileOpenCount++;
-  });
-
-  void _closeProfile() {
-    setState(() => _currentIndex = _previousIndex);
-    _fetchUserSummary();
-  }
 
   Future<void> _handleBack() async {
-    if (_currentIndex == _profileIndex) {
-      _closeProfile();
-      return;
-    }
     if (_currentIndex != 0) {
       _navigate(0);
       return;
@@ -365,27 +352,26 @@ class _MainContainerState extends State<MainContainer> {
                   weeklyCheckinCount: _weeklyCheckinCount,
                   weeklyBonusEarned: _weeklyBonusEarned,
                   onCheckin: _checkin,
-                  onShowProfile: _openProfile,
+                  onShowProfile: () => _navigate(_profileIndex),
                   onNavigateToTab: _navigate,
                 ),
-                const LearnScreen(),
-                const CultureScreen(),
-                const CommunityScreen(),
-                const PlazaScreen(),
-                const EventsScreen(),
-                ProfileScreen(
-                  refreshToken: _profileOpenCount,
-                  onClose: _closeProfile,
+                LearnCultureScreen(
+                  key: ValueKey('learn_culture_$_learnCultureSubTab'),
+                  initialTabIndex: _learnCultureSubTab,
                 ),
+                const CommunityScreen(),
+                PlazaEventScreen(
+                  key: ValueKey('plaza_event_$_plazaEventSubTab'),
+                  initialTabIndex: _plazaEventSubTab,
+                ),
+                const ProfileScreen(),
               ],
             ),
-            bottomNavigationBar: _currentIndex == _profileIndex
-                ? null
-                : TrukuBottomTab(
-                    currentIndex: _currentIndex,
-                    onTap: _navigate,
-                    seniorMode: seniorMode,
-                  ),
+            bottomNavigationBar: TrukuBottomTab(
+              currentIndex: _currentIndex,
+              onTap: _navigate,
+              seniorMode: seniorMode,
+            ),
           ),
         );
       },

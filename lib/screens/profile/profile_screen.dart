@@ -38,10 +38,7 @@ const int _kMaxAvatarBytes = 8 * 1024 * 1024;
 const _kAllowedAvatarExtensions = {'jpg', 'jpeg', 'png', 'webp', 'gif'};
 
 class ProfileScreen extends StatefulWidget {
-  final VoidCallback? onClose;
-  // 每次打開個人資料頁時遞增，用來觸發重新讀取使用者資料（不含商店目錄，避免無謂重打）。
-  final int refreshToken;
-  const ProfileScreen({super.key, this.onClose, this.refreshToken = 0});
+  const ProfileScreen({super.key});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -59,14 +56,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _loadUser();
     _loadItemCatalog();
-  }
-
-  @override
-  void didUpdateWidget(covariant ProfileScreen oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.refreshToken != oldWidget.refreshToken) {
-      _loadUser();
-    }
   }
 
   Future<void> _loadUser() async {
@@ -109,53 +98,30 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildScaffold(bool seniorMode) {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
-      body: Stack(
-        children: [
-          ListView(
-            padding: EdgeInsets.zero,
-            children: seniorMode
-                ? [
-                    _buildHero(seniorMode: true),
-                    _buildFriendsSection(seniorMode: true),
-                    _buildMyLikesBookmarksSection(seniorMode: true),
-                    _buildPreferencesSection(),
-                    _buildOtherSection(seniorMode: true),
-                    _buildLogout(context),
-                    const SizedBox(height: 40),
-                  ]
-                : [
-                    _buildHero(seniorMode: false),
-                    _buildFriendsSection(seniorMode: false),
-                    _buildInventorySection(),
-                    _buildMyEventsSection(),
-                    _buildMyLikesBookmarksSection(seniorMode: false),
-                    _buildAccountSection(),
-                    _buildPreferencesSection(),
-                    _buildOtherSection(seniorMode: false),
-                    _buildLogout(context),
-                    const SizedBox(height: 40),
-                  ],
-          ),
-          Positioned(
-            top: 56,
-            left: 16,
-            child: GestureDetector(
-              onTap: widget.onClose ?? () => Navigator.of(context).maybePop(),
-              child: Container(
-                width: 36,
-                height: 36,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.creamLight.withValues(alpha: 0.15),
-                ),
-                child: const Icon(
-                  Icons.chevron_left,
-                  color: AppColors.creamLight,
-                ),
-              ),
-            ),
-          ),
-        ],
+      body: ListView(
+        padding: EdgeInsets.zero,
+        children: seniorMode
+            ? [
+                _buildHero(seniorMode: true),
+                _buildFriendsSection(seniorMode: true),
+                _buildMyLikesBookmarksSection(seniorMode: true),
+                _buildPreferencesSection(),
+                _buildOtherSection(seniorMode: true),
+                _buildLogout(context),
+                const SizedBox(height: 40),
+              ]
+            : [
+                _buildHero(seniorMode: false),
+                _buildFriendsSection(seniorMode: false),
+                _buildInventorySection(),
+                _buildMyEventsSection(),
+                _buildMyLikesBookmarksSection(seniorMode: false),
+                _buildAccountSection(),
+                _buildPreferencesSection(),
+                _buildOtherSection(seniorMode: false),
+                _buildLogout(context),
+                const SizedBox(height: 40),
+              ],
       ),
     );
   }
