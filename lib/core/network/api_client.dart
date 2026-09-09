@@ -61,6 +61,8 @@ class ApiException implements Exception {
   bool get isAlreadyInCall => code == 'ALREADY_IN_CALL';
   bool get isCallNotRinging => code == 'CALL_NOT_RINGING';
   bool get isNeedFriend => code == 'NEED_FRIEND';
+  bool get isVideoUnavailable => code == 'VIDEO_UNAVAILABLE';
+  bool get isSessionEnded => code == 'SESSION_ENDED';
 
   @override
   String toString() => message;

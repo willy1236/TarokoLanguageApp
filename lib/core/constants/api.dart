@@ -51,6 +51,12 @@ class ApiConfig {
   static String itemPurchaseEndpoint(String itemId) =>
       '/api/shop/items/$itemId/purchase';
 
+  // 用戶間互動視訊配對（見 Truku_backend backend/routes/video.ts）
+  static const String videoQueue = '/api/video/queue';
+  static const String videoSessionCurrent = '/api/video/session/current';
+  static String videoSessionToken(int id) => '/api/video/session/$id/token';
+  static String videoSessionEnd(int id) => '/api/video/session/$id/end';
+
   static const String videos = '/api/videos';
   static String videoDetail(int id) => '/api/videos/$id';
   static String videoLike(int id) => '/api/videos/$id/like';
