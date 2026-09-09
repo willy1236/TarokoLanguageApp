@@ -1,5 +1,9 @@
-// 公開個人檔案唯讀頁。目前僅顯示暱稱/自我介紹/好友碼/加入天數/羈絆等級，
-// 加好友／封鎖／刪除好友等操作按鈕在 Stage 3 加入。
+// 公開個人檔案唯讀頁。顯示暱稱/自我介紹/好友碼/加入天數/羈絆等級，
+// 並提供加好友／封鎖／解除封鎖／刪除好友等操作（見右上角選單）。
+//
+// 後端 GET /api/users/:friend_code 不回傳「我與對方的關係狀態」，因此選單一律列出
+// 全部操作，實際結果與衝突狀態（ALREADY_FRIENDS/NOT_FRIENDS/BLOCKED 等）交由 API
+// 回應決定並用 SnackBar 呈現，不在前端猜測目前關係。
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -11,6 +15,8 @@ import '../../models/public_profile_model.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_empty_state.dart';
+
+enum _ProfileAction { addFriend, removeFriend, block, unblock }
 
 class PublicProfileScreen extends StatefulWidget {
   final String friendCode;
@@ -87,9 +93,68 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           onPressed: () => Navigator.of(context).maybePop(),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink),
         ),
+        const Spacer(),
+        if (_profile != null)
+          PopupMenuButton<_ProfileAction>(
+            icon: const Icon(Icons.more_vert, color: AppColors.ink),
+            onSelected: _handleAction,
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: _ProfileAction.addFriend, child: Text('加好友')),
+              PopupMenuItem(value: _ProfileAction.removeFriend, child: Text('刪除好友')),
+              PopupMenuItem(value: _ProfileAction.block, child: Text('封鎖')),
+              PopupMenuItem(value: _ProfileAction.unblock, child: Text('解除封鎖')),
+            ],
+          ),
       ],
     ),
   );
+
+  Future<void> _handleAction(_ProfileAction action) async {
+    final profile = _profile;
+    if (profile == null) return;
+    try {
+      switch (action) {
+        case _ProfileAction.addFriend:
+          final status = await FriendService.sendRequest(uid: profile.uid);
+          _showMessage(status == 'accepted' ? '你們已成為好友！' : '已送出好友邀請');
+          break;
+        case _ProfileAction.removeFriend:
+          await FriendService.removeFriend(profile.uid);
+          _showMessage('已刪除好友');
+          break;
+        case _ProfileAction.block:
+          await FriendService.blockUser(profile.uid);
+          _showMessage('已封鎖此使用者');
+          break;
+        case _ProfileAction.unblock:
+          await FriendService.unblockUser(profile.uid);
+          _showMessage('已解除封鎖');
+          break;
+      }
+    } on ApiException catch (e) {
+      _showMessage(_friendlyErrorMessage(e));
+    } catch (e, st) {
+      debugPrint('Failed to $action on public profile: $e');
+      debugPrintStack(stackTrace: st);
+      _showMessage('操作失敗，請稍後再試');
+    }
+  }
+
+  String _friendlyErrorMessage(ApiException e) {
+    if (e.isAlreadyFriends) return '你們已經是好友';
+    if (e.isRequestAlreadySent) return '已送出邀請，等待對方回覆';
+    if (e.isBlocked) return '因封鎖關係，無法執行此操作';
+    if (e.isNotFriends) return '你們還不是好友';
+    if (e.code == 'NOT_BLOCKED') return '你沒有封鎖此使用者';
+    return e.message;
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context)
+      ..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(message)));
+  }
 
   Widget _buildBody(bool seniorMode) {
     if (_loading) {

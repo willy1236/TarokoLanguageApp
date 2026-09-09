@@ -30,6 +30,7 @@ import '../shop/shop_screen.dart';
 import 'my_bookmarks_screen.dart';
 import 'my_likes_screen.dart';
 import '../terms/terms_consent_screen.dart';
+import '../friends/friends_list_screen.dart';
 
 // 頭像檔案限制（後端規則：≤8MB，僅接受 JPEG/PNG/WebP/GIF），前端先擋掉明顯無效
 // 的檔案以減少無效上傳，實際裁切壓縮一律由後端處理。
@@ -115,6 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             children: seniorMode
                 ? [
                     _buildHero(seniorMode: true),
+                    _buildFriendsSection(seniorMode: true),
                     _buildMyLikesBookmarksSection(seniorMode: true),
                     _buildPreferencesSection(),
                     _buildOtherSection(seniorMode: true),
@@ -123,6 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   ]
                 : [
                     _buildHero(seniorMode: false),
+                    _buildFriendsSection(seniorMode: false),
                     _buildInventorySection(),
                     _buildMyEventsSection(),
                     _buildMyLikesBookmarksSection(seniorMode: false),
@@ -662,6 +665,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ),
       ),
     );
+  }
+
+  // ── 好友 ──────────────────────────────────────────────────────────────────
+
+  Widget _buildFriendsSection({required bool seniorMode}) {
+    return _section('SBRIGAN · 好友', [
+      _navRow(
+        icon: Icons.people_outline,
+        label: '好友',
+        seniorMode: seniorMode,
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const FriendsListScreen())),
+      ),
+    ]);
   }
 
   // ── 我的活動 ──────────────────────────────────────────────────────────────
