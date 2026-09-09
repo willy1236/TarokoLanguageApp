@@ -1,6 +1,10 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
+import '../../models/video_call_model.dart';
+import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'video_call_screen.dart';
@@ -15,6 +19,9 @@ class VideoWaitingScreen extends StatefulWidget {
 class _VideoWaitingScreenState extends State<VideoWaitingScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  Timer? _pollTimer;
+  bool _queued = false;
+  String? _errorMessage;
 
   @override
   void initState() {
@@ -23,12 +30,71 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
+    _startMatching();
   }
 
   @override
   void dispose() {
     _controller.dispose();
+    _pollTimer?.cancel();
+    if (_queued) VideoCallService.leaveQueue();
     super.dispose();
+  }
+
+  Future<void> _startMatching() async {
+    try {
+      final result = await VideoCallService.joinQueue();
+      if (!mounted) return;
+      if (result.matched) {
+        _navigateToCall(result.session!, result.token!);
+        return;
+      }
+      setState(() => _queued = true);
+      _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) => _poll());
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _errorMessage = _describeError(e));
+    }
+  }
+
+  Future<void> _poll() async {
+    try {
+      final session = await VideoCallService.getCurrentSession();
+      if (session == null || !mounted) return;
+      _pollTimer?.cancel();
+      final token = await VideoCallService.getToken(session.id);
+      if (!mounted) return;
+      _navigateToCall(session, token);
+    } catch (_) {
+      // 輪詢期間的暫時性錯誤忽略，下次輪詢再試。
+    }
+  }
+
+  void _navigateToCall(VideoCallSession session, VideoCallToken token) {
+    _pollTimer?.cancel();
+    _queued = false; // 已配對成功，不必再送離開佇列
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => VideoCallScreen(
+          sessionId: session.id,
+          appId: token.appId,
+          rtcToken: token.token,
+          channel: token.channel,
+          uid: token.uid,
+          peerNickname: session.peerNickname,
+        ),
+      ),
+    );
+  }
+
+  String _describeError(Object e) {
+    if (e is ApiException) {
+      if (e.isVideoNicknameRequired) return '請先在個人資料設定視訊暱稱';
+      if (e.isVideoUnavailable) return '視訊服務目前無法使用';
+      return e.message;
+    }
+    return '配對失敗，請稍後再試';
   }
 
   @override
@@ -100,6 +166,21 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
   }
 
   Widget _buildCenter() {
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Text(
+            _errorMessage!,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.creamLight.withValues(alpha: 0.9),
+            ),
+          ),
+        ),
+      );
+    }
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -169,19 +250,13 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
           ),
         ),
         const SizedBox(height: 32),
-        GestureDetector(
-          onTap: () => Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => const VideoCallScreen()),
-          ),
-          child: Text(
-            '正在尋找',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 24,
-              fontWeight: FontWeight.w600,
-              color: AppColors.creamLight,
-              letterSpacing: 2.0,
-            ),
+        Text(
+          '正在尋找',
+          style: GoogleFonts.notoSerifTc(
+            fontSize: 24,
+            fontWeight: FontWeight.w600,
+            color: AppColors.creamLight,
+            letterSpacing: 2.0,
           ),
         ),
       ],
@@ -202,7 +277,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
             ),
           ),
           child: Text(
-            '取消配對',
+            _errorMessage != null ? '返回' : '取消配對',
             style: GoogleFonts.notoSerifTc(
               fontSize: 14,
               color: AppColors.creamLight,

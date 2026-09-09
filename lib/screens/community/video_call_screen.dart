@@ -2,31 +2,90 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../services/agora_call_service.dart';
+import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 
 class VideoCallScreen extends StatefulWidget {
-  const VideoCallScreen({super.key});
+  final int sessionId;
+  final String appId;
+  final String rtcToken;
+  final String channel;
+  final int uid;
+  final String? peerNickname;
+
+  const VideoCallScreen({
+    super.key,
+    required this.sessionId,
+    required this.appId,
+    required this.rtcToken,
+    required this.channel,
+    required this.uid,
+    required this.peerNickname,
+  });
 
   @override
   State<VideoCallScreen> createState() => _VideoCallScreenState();
 }
 
 class _VideoCallScreenState extends State<VideoCallScreen> {
-  int _seconds = 222; // 03:42
-  late final Timer _timer;
+  final AgoraCallService _agora = AgoraCallService();
+  int _seconds = 0;
+  Timer? _timer;
+  String? _initError;
+  bool _ended = false;
 
   @override
   void initState() {
     super.initState();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      if (mounted) setState(() => _seconds++);
-    });
+    _agora.addListener(_onAgoraChanged);
+    _init();
+  }
+
+  Future<void> _init() async {
+    try {
+      await _agora.initAndJoin(
+        appId: widget.appId,
+        token: widget.rtcToken,
+        channel: widget.channel,
+        uid: widget.uid,
+      );
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        if (mounted) setState(() => _seconds++);
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _initError = e is AgoraPermissionDeniedException
+            ? '請允許相機與麥克風權限才能通話'
+            : '通話初始化失敗，請稍後再試';
+      });
+    }
+  }
+
+  void _onAgoraChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    _timer?.cancel();
+    _agora.removeListener(_onAgoraChanged);
+    _agora.dispose();
     super.dispose();
+  }
+
+  Future<void> _endCall() async {
+    if (_ended) return;
+    _ended = true;
+    _timer?.cancel();
+    try {
+      await VideoCallService.endSession(widget.sessionId);
+    } catch (_) {
+      // 掛斷仍優先讓使用者離開畫面，忽略結束端點的錯誤。
+    }
+    await _agora.leave();
+    if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
   }
 
   String get _timeLabel {
@@ -35,7 +94,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  int get _remaining => (600 - _seconds).clamp(0, 600);
+  int get _remaining => (1800 - _seconds).clamp(0, 1800);
   String get _remainingLabel => '剩 ${_remaining ~/ 60} 分';
 
   @override
@@ -46,10 +105,11 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         fit: StackFit.expand,
         children: [
           _buildFullScreenVideo(),
-          _buildTopBar(),
-          _buildPersonName(),
-          _buildSelfView(),
-          _buildTopicChip(),
+          if (_initError == null) ...[
+            _buildTopBar(),
+            _buildPersonName(),
+            _buildSelfView(),
+          ],
           _buildControlBar(context),
         ],
       ),
@@ -57,70 +117,63 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   }
 
   Widget _buildFullScreenVideo() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                AppColors.mossDeep,
-                AppColors.ink,
-                AppColors.primaryDeep,
-              ],
-              stops: [0.0, 0.6, 1.0],
+    if (_initError != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 32),
+          child: Text(
+            _initError!,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              color: AppColors.creamLight.withValues(alpha: 0.9),
             ),
           ),
         ),
-        Opacity(
-          opacity: 0.1,
-          child: CustomPaint(
-            painter: TrukuWeavePainter(
-              color: AppColors.gold,
-              opacity: 1.0,
-              scale: 1.0,
-            ),
-          ),
-        ),
-        // Simulated person silhouette
-        Positioned(
-          left: 0,
-          right: 0,
-          top: MediaQuery.of(context).size.height * 0.42 - 90,
-          child: Center(
-            child: Container(
-              width: 180,
-              height: 180,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: RadialGradient(
-                  center: const Alignment(0, -0.3),
-                  colors: [
-                    AppColors.primaryLight.withValues(alpha: 0.5),
-                    AppColors.primaryDeep,
-                  ],
-                ),
-                border: Border.all(
-                  color: AppColors.gold.withValues(alpha: 0.25),
-                  width: 2,
-                ),
-              ),
-              alignment: Alignment.center,
-              child: Text(
-                'B',
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 56,
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.gold,
-                ),
+      );
+    }
+    final remoteView = _agora.remoteView(widget.channel);
+    if (remoteView == null) {
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  AppColors.mossDeep,
+                  AppColors.ink,
+                  AppColors.primaryDeep,
+                ],
+                stops: [0.0, 0.6, 1.0],
               ),
             ),
           ),
-        ),
-      ],
-    );
+          Opacity(
+            opacity: 0.1,
+            child: CustomPaint(
+              painter: TrukuWeavePainter(
+                color: AppColors.gold,
+                opacity: 1.0,
+                scale: 1.0,
+              ),
+            ),
+          ),
+          Center(
+            child: Text(
+              '等待對方畫面…',
+              style: TextStyle(
+                fontSize: 14,
+                color: AppColors.creamLight.withValues(alpha: 0.7),
+              ),
+            ),
+          ),
+        ],
+      );
+    }
+    return remoteView;
   }
 
   Widget _buildTopBar() {
@@ -131,7 +184,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          // Timer chip
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             decoration: BoxDecoration(
@@ -174,16 +226,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
               ],
             ),
           ),
-          // More options
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.ink.withValues(alpha: 0.6),
-            ),
-            child: const Center(child: _DotsIcon()),
-          ),
         ],
       ),
     );
@@ -193,11 +235,11 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     return Positioned(
       left: 0,
       right: 0,
-      top: MediaQuery.of(context).size.height * 0.62,
+      top: MediaQuery.of(context).size.height * 0.08,
       child: Column(
         children: [
           Text(
-            'Bakan rudan',
+            widget.peerNickname ?? '語伴',
             textAlign: TextAlign.center,
             style: GoogleFonts.notoSerifTc(
               fontSize: 24,
@@ -207,23 +249,13 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
               shadows: const [Shadow(color: Colors.black54, blurRadius: 12)],
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            '銅門部落 · 78 歲',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 12,
-              color: AppColors.creamLight.withValues(alpha: 0.85),
-              letterSpacing: 2.5,
-              shadows: const [Shadow(color: Colors.black54, blurRadius: 8)],
-            ),
-          ),
         ],
       ),
     );
   }
 
   Widget _buildSelfView() {
+    final localView = _agora.localView();
     return Positioned(
       top: 110,
       right: 16,
@@ -232,11 +264,6 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         height: 140,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.moss, AppColors.mossDeep],
-          ),
           border: Border.all(
             color: AppColors.gold.withValues(alpha: 0.5),
             width: 1.5,
@@ -249,80 +276,17 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             ),
           ],
         ),
-        child: Stack(
-          children: [
-            Center(
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.primary,
-                  border: Border.all(color: AppColors.gold, width: 1.5),
-                ),
-                alignment: Alignment.center,
-                child: Text(
-                  'S',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.gold,
-                  ),
+        clipBehavior: Clip.antiAlias,
+        child: localView ??
+            Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [AppColors.moss, AppColors.mossDeep],
                 ),
               ),
             ),
-            Positioned(
-              bottom: 6,
-              left: 6,
-              child: Text(
-                '你',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: AppColors.creamLight,
-                  letterSpacing: 1.2,
-                  shadows: const [Shadow(color: Colors.black, blurRadius: 4)],
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTopicChip() {
-    return Positioned(
-      left: 16,
-      bottom: 150,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color: AppColors.gold.withValues(alpha: 0.15),
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.gold.withValues(alpha: 0.31)),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'kari',
-              style: GoogleFonts.crimsonPro(
-                fontStyle: FontStyle.italic,
-                fontSize: 11,
-                color: AppColors.gold,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              '主題：日常問候',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.gold,
-                letterSpacing: 2.0,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -344,14 +308,23 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceAround,
           children: [
-            _ControlButton(icon: _ControlIcon.mic, label: '靜音'),
-            _ControlButton(icon: _ControlIcon.cam, label: '鏡頭'),
-            _ControlButton(icon: _ControlIcon.note, label: '筆記'),
+            _ControlButton(
+              icon: _ControlIcon.mic,
+              label: _agora.muted ? '取消靜音' : '靜音',
+              active: _agora.muted,
+              onTap: _initError == null ? () => _agora.toggleMute() : null,
+            ),
+            _ControlButton(
+              icon: _ControlIcon.cam,
+              label: _agora.cameraOff ? '開啟鏡頭' : '鏡頭',
+              active: _agora.cameraOff,
+              onTap: _initError == null ? () => _agora.toggleCamera() : null,
+            ),
             _ControlButton(
               icon: _ControlIcon.end,
               label: '結束',
               danger: true,
-              onTap: () => Navigator.popUntil(context, (r) => r.isFirst),
+              onTap: _endCall,
             ),
           ],
         ),
@@ -362,18 +335,20 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
 
 // ─── Control button ────────────────────────────────────────────────────────────
 
-enum _ControlIcon { mic, cam, note, end }
+enum _ControlIcon { mic, cam, end }
 
 class _ControlButton extends StatelessWidget {
   final _ControlIcon icon;
   final String label;
   final bool danger;
+  final bool active;
   final VoidCallback? onTap;
 
   const _ControlButton({
     required this.icon,
     required this.label,
     this.danger = false,
+    this.active = false,
     this.onTap,
   });
 
@@ -392,7 +367,9 @@ class _ControlButton extends StatelessWidget {
               shape: BoxShape.circle,
               color: danger
                   ? const Color(0xFFD8392C)
-                  : Colors.white.withValues(alpha: 0.12),
+                  : active
+                      ? AppColors.gold.withValues(alpha: 0.35)
+                      : Colors.white.withValues(alpha: 0.12),
               border: danger
                   ? null
                   : Border.all(
@@ -421,8 +398,6 @@ class _ControlButton extends StatelessWidget {
         return CustomPaint(size: const Size(22, 22), painter: _MicPainter());
       case _ControlIcon.cam:
         return CustomPaint(size: const Size(24, 24), painter: _CamPainter());
-      case _ControlIcon.note:
-        return CustomPaint(size: const Size(22, 22), painter: _NotePainter());
       case _ControlIcon.end:
         return CustomPaint(size: const Size(26, 26), painter: _EndPainter());
     }
@@ -441,7 +416,6 @@ class _MicPainter extends CustomPainter {
       ..style = PaintingStyle.stroke;
     final w = size.width;
     final h = size.height;
-    // Microphone body (filled rect with rx)
     final body = RRect.fromRectAndRadius(
       Rect.fromLTWH(w * 9 / 24, h * 3 / 24, w * 6 / 24, h * 12 / 24),
       Radius.circular(w * 3 / 24),
@@ -452,13 +426,11 @@ class _MicPainter extends CustomPainter {
         ..color = AppColors.creamLight
         ..style = PaintingStyle.fill,
     );
-    // Arc below
     final arcPath = Path()
       ..moveTo(w * 5 / 24, h * 11 / 24)
       ..quadraticBezierTo(w * 5 / 24, h * 18 / 24, w * 12 / 24, h * 18 / 24)
       ..quadraticBezierTo(w * 19 / 24, h * 18 / 24, w * 19 / 24, h * 11 / 24);
     canvas.drawPath(arcPath, p);
-    // Stem
     canvas.drawLine(
       Offset(w * 12 / 24, h * 18 / 24),
       Offset(w * 12 / 24, h * 21 / 24),
@@ -476,7 +448,6 @@ class _CamPainter extends CustomPainter {
     final cream = AppColors.creamLight;
     final w = size.width;
     final h = size.height;
-    // Camera body rect
     final body = RRect.fromRectAndRadius(
       Rect.fromLTWH(w * 3 / 24, h * 6 / 24, w * 13 / 24, h * 12 / 24),
       Radius.circular(w * 2 / 24),
@@ -487,7 +458,6 @@ class _CamPainter extends CustomPainter {
         ..color = cream
         ..style = PaintingStyle.fill,
     );
-    // Lens triangle
     final tri = Path()
       ..moveTo(w * 16 / 24, h * 10 / 24)
       ..lineTo(w * 21 / 24, h * 7 / 24)
@@ -505,48 +475,11 @@ class _CamPainter extends CustomPainter {
   bool shouldRepaint(_CamPainter _) => false;
 }
 
-class _NotePainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = AppColors.creamLight
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round
-      ..style = PaintingStyle.stroke;
-    final w = size.width;
-    final h = size.height;
-    // Document outline
-    final doc = Path()
-      ..moveTo(w * 5 / 24, h * 4 / 24)
-      ..lineTo(w * 16 / 24, h * 4 / 24)
-      ..lineTo(w * 19 / 24, h * 7 / 24)
-      ..lineTo(w * 19 / 24, h * 20 / 24)
-      ..lineTo(w * 5 / 24, h * 20 / 24)
-      ..close();
-    canvas.drawPath(doc, p);
-    // Lines
-    canvas.drawLine(
-      Offset(w * 9 / 24, h * 11 / 24),
-      Offset(w * 15 / 24, h * 11 / 24),
-      p,
-    );
-    canvas.drawLine(
-      Offset(w * 9 / 24, h * 15 / 24),
-      Offset(w * 13 / 24, h * 15 / 24),
-      p,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_NotePainter _) => false;
-}
-
 class _EndPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final w = size.width;
     final h = size.height;
-    // Phone handset rotated 135° — simplified as a filled phone path
     canvas.save();
     canvas.translate(w / 2, h / 2);
     canvas.rotate(2.356); // ~135 degrees
@@ -665,35 +598,4 @@ class _EndPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_EndPainter _) => false;
-}
-
-// ─── More-options dots icon ────────────────────────────────────────────────────
-
-class _DotsIcon extends StatelessWidget {
-  const _DotsIcon();
-
-  @override
-  Widget build(BuildContext context) =>
-      CustomPaint(size: const Size(18, 18), painter: _DotsPainter());
-}
-
-class _DotsPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.creamLight
-      ..style = PaintingStyle.fill;
-    final r = size.width * 1.5 / 24;
-    final cx = size.width / 2;
-    for (final cy in [
-      size.height * 6 / 24,
-      size.height * 12 / 24,
-      size.height * 18 / 24,
-    ]) {
-      canvas.drawCircle(Offset(cx, cy), r, paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(_DotsPainter _) => false;
 }
