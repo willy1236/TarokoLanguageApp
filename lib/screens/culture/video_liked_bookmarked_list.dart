@@ -8,6 +8,7 @@ import '../../core/network/api_client.dart';
 import '../../models/video_models.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
+import '../../shared/widgets/truku_empty_state.dart';
 import 'video_detail_screen.dart';
 
 enum VideoListMode { liked, bookmarked }
@@ -158,28 +159,11 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
     final message = widget.mode == VideoListMode.liked
         ? '還沒有按讚任何影片'
         : '還沒有收藏任何影片';
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.video_library_outlined,
-              color: AppColors.fog,
-              size: seniorMode ? 56 : 40,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              style: TextStyle(
-                color: AppColors.fog,
-                fontSize: seniorMode ? AppTypography.title : 14,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return TrukuEmptyState(
+      icon: Icons.video_library_outlined,
+      message: message,
+      subtitle: '下拉重新整理，看看有沒有新影片。',
+      seniorMode: seniorMode,
     );
   }
 

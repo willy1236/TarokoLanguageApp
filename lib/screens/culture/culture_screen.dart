@@ -9,6 +9,7 @@ import '../../models/video_models.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
+import '../../shared/widgets/article_cover_placeholder.dart';
 import '../../shared/widgets/truku_painters.dart';
 import 'article_detail_screen.dart';
 import 'article_search_screen.dart';
@@ -1220,20 +1221,15 @@ class _ArticleCard extends StatelessWidget {
               clipBehavior: Clip.antiAlias,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(8),
-                gradient: const LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.moss, AppColors.mossDeep],
-                ),
               ),
               child: item.coverImageUrl != null
                   ? Image.network(
                       item.coverImageUrl!,
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
-                          _thumbnailPlaceholder(),
+                          ArticleCoverPlaceholder(category: item.category),
                     )
-                  : _thumbnailPlaceholder(),
+                  : ArticleCoverPlaceholder(category: item.category),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -1295,29 +1291,6 @@ class _ArticleCard extends StatelessWidget {
     );
   }
 
-  Widget _thumbnailPlaceholder() {
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        CustomPaint(
-          size: const Size(64, 64),
-          painter: TrukuWeavePainter(
-            color: AppColors.gold,
-            opacity: 0.4,
-            scale: 0.4,
-          ),
-        ),
-        Text(
-          '文',
-          style: GoogleFonts.notoSerifTc(
-            fontSize: 22,
-            fontWeight: FontWeight.w600,
-            color: AppColors.gold,
-          ),
-        ),
-      ],
-    );
-  }
 }
 
 // ─── Painters / Icons ─────────────────────────────────────────────────────────

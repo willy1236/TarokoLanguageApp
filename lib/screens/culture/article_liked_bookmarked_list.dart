@@ -8,6 +8,8 @@ import '../../core/network/api_client.dart';
 import '../../models/article_models.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../shared/widgets/article_cover_placeholder.dart';
+import '../../shared/widgets/truku_empty_state.dart';
 import 'article_detail_screen.dart';
 
 enum ArticleListMode { liked, bookmarked }
@@ -159,28 +161,11 @@ class _ArticleLikedBookmarkedListState
     final message = widget.mode == ArticleListMode.liked
         ? '還沒有按讚任何文章'
         : '還沒有收藏任何文章';
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.article_outlined,
-              color: AppColors.fog,
-              size: seniorMode ? 56 : 40,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              style: TextStyle(
-                color: AppColors.fog,
-                fontSize: seniorMode ? AppTypography.title : 14,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return TrukuEmptyState(
+      icon: Icons.article_outlined,
+      message: message,
+      subtitle: '下拉重新整理，看看有沒有新文章。',
+      seniorMode: seniorMode,
     );
   }
 
@@ -260,21 +245,10 @@ class _ArticleListItem extends StatelessWidget {
                     ? Image.network(
                         article.coverImageUrl!,
                         fit: BoxFit.cover,
-                        errorBuilder: (_, _, _) => Container(
-                          color: AppColors.midnight,
-                          child: const Icon(
-                            Icons.article_outlined,
-                            color: AppColors.fog,
-                          ),
-                        ),
+                        errorBuilder: (_, _, _) =>
+                            ArticleCoverPlaceholder(category: article.category),
                       )
-                    : Container(
-                        color: AppColors.midnight,
-                        child: const Icon(
-                          Icons.article_outlined,
-                          color: AppColors.fog,
-                        ),
-                      ),
+                    : ArticleCoverPlaceholder(category: article.category),
               ),
             ),
             const SizedBox(width: 12),

@@ -8,6 +8,7 @@ import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../shared/widgets/truku_empty_state.dart';
 import 'forum_detail_screen.dart';
 
 class ForumLikedCommentsList extends StatefulWidget {
@@ -141,28 +142,11 @@ class _ForumLikedCommentsListState extends State<ForumLikedCommentsList> {
   }
 
   Widget _buildEmpty(bool seniorMode) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.favorite_border,
-              color: AppColors.fog,
-              size: seniorMode ? 56 : 40,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              '還沒有按讚過任何留言',
-              style: TextStyle(
-                color: AppColors.inkSoft,
-                fontSize: seniorMode ? AppTypography.title : 14,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return TrukuEmptyState(
+      icon: Icons.favorite_border,
+      message: '還沒有按讚過任何留言',
+      subtitle: '下拉重新整理，看看有沒有新留言。',
+      seniorMode: seniorMode,
     );
   }
 

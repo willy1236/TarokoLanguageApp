@@ -6,6 +6,7 @@ import '../../models/event_model.dart';
 import '../../models/forum_models.dart';
 import '../../services/event_service.dart';
 import '../../services/forum_service.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../forum/forum_board_view.dart';
 import '../forum/forum_bookmarks_screen.dart';
@@ -165,7 +166,12 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   }
 
   @override
-  Widget build(BuildContext context) => Theme(
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: seniorModeController,
+    builder: (context, _) => _buildScaffold(seniorModeController.enabled),
+  );
+
+  Widget _buildScaffold(bool seniorMode) => Theme(
     data: forumTheme(context),
     child: Scaffold(
       backgroundColor: AppColors.creamLight,
@@ -173,10 +179,11 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       // 只有貼文列表捲動，上面三段固定。
       body: Column(
         children: [
-          _buildHeader(context),
+          _buildHeader(context, seniorMode),
           // 近期活動固定在看板 tab 上方不隨貼文捲動。代價是它不在下拉手勢的
           // 範圍內——刷新要從貼文區下拉，或等 App 回到前景。
-          _buildMiniEventCards(),
+          // 精簡模式不顯示活動，避免與族語學習內容混雜。
+          if (!seniorMode) _buildMiniEventCards(),
           _buildTabBar(),
           Expanded(child: _buildPostsSection()),
         ],
@@ -184,7 +191,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     ),
   );
 
-  Widget _buildHeader(BuildContext context) {
+  Widget _buildHeader(BuildContext context, bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 12),
       child: Row(
@@ -198,7 +205,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
                   'ALANG · 廣場',
                   style: GoogleFonts.crimsonPro(
                     fontStyle: FontStyle.italic,
-                    fontSize: 12,
+                    fontSize: seniorMode ? 16 : 12,
                     color: AppColors.fog,
                     letterSpacing: 3.0,
                   ),
@@ -207,7 +214,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
                 Text(
                   '族人在這裡',
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 26,
+                    fontSize: seniorMode ? 32 : 26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 1.0,
@@ -221,9 +228,9 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              _composeButton(),
+              _composeButton(seniorMode),
               const SizedBox(height: 2),
-              _actionIcons(),
+              _actionIcons(seniorMode),
             ],
           ),
         ],
@@ -231,7 +238,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _composeButton() => GestureDetector(
+  Widget _composeButton(bool seniorMode) => GestureDetector(
     onTap: () async {
       if (_boardsLoading) {
         ScaffoldMessenger.of(
@@ -257,7 +264,10 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       }
     },
     child: Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      padding: EdgeInsets.symmetric(
+        horizontal: seniorMode ? 20 : 16,
+        vertical: seniorMode ? 14 : 10,
+      ),
       decoration: BoxDecoration(
         color: AppColors.primary,
         borderRadius: BorderRadius.circular(22),
@@ -265,12 +275,16 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.add, color: AppColors.creamLight, size: 14),
+          Icon(
+            Icons.add,
+            color: AppColors.creamLight,
+            size: seniorMode ? 20 : 14,
+          ),
           const SizedBox(width: 6),
           Text(
             '發布',
             style: GoogleFonts.notoSerifTc(
-              fontSize: 13,
+              fontSize: seniorMode ? 18 : 13,
               fontWeight: FontWeight.w600,
               color: AppColors.creamLight,
               letterSpacing: 1.5,
@@ -281,7 +295,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     ),
   );
 
-  Widget _actionIcons() => Row(
+  Widget _actionIcons(bool seniorMode) => Row(
     mainAxisSize: MainAxisSize.min,
     children: [
       IconButton(
@@ -296,7 +310,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
             ),
           ),
         ),
-        icon: const Icon(Icons.search, color: AppColors.ink, size: 20),
+        icon: Icon(Icons.search, color: AppColors.ink, size: seniorMode ? 24 : 20),
       ),
       IconButton(
         tooltip: '我的收藏',
@@ -308,7 +322,11 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
                 ForumBookmarksScreen(onBookmarkChanged: _syncBookmark),
           ),
         ),
-        icon: const Icon(Icons.bookmark_border, color: AppColors.ink, size: 20),
+        icon: Icon(
+          Icons.bookmark_border,
+          color: AppColors.ink,
+          size: seniorMode ? 24 : 20,
+        ),
       ),
       IconButton(
         tooltip: '通知',
@@ -323,10 +341,10 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         icon: Stack(
           clipBehavior: Clip.none,
           children: [
-            const Icon(
+            Icon(
               Icons.notifications_none,
               color: AppColors.ink,
-              size: 20,
+              size: seniorMode ? 24 : 20,
             ),
             if (_unread > 0)
               Positioned(

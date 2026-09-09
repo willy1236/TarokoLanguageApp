@@ -4,14 +4,13 @@
 // 情況下驅動分頁與回滾，同一個元件也能被「我的收藏」與搜尋結果重複使用。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../services/senior_mode_controller.dart';
-import '../../shared/widgets/truku_widgets.dart';
+import '../../shared/widgets/truku_empty_state.dart';
 import 'widgets/forum_post_card.dart';
 
 typedef ForumPageLoader =
@@ -286,7 +285,12 @@ class ForumBoardViewState extends State<ForumBoardView> {
     final all = [..._pinned, ..._posts];
     if (all.isEmpty) {
       return [
-        _ForumEmptyState(message: widget.emptyMessage, seniorMode: seniorMode),
+        TrukuEmptyState(
+          icon: Icons.forum_outlined,
+          message: widget.emptyMessage,
+          subtitle: '下拉重新整理，或成為第一位分享的人。',
+          seniorMode: seniorMode,
+        ),
       ];
     }
 
@@ -319,69 +323,6 @@ class ForumBoardViewState extends State<ForumBoardView> {
         ),
     ];
   }
-}
-
-class _ForumEmptyState extends StatelessWidget {
-  final String message;
-  final bool seniorMode;
-
-  const _ForumEmptyState({required this.message, required this.seniorMode});
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-    child: Column(
-      children: [
-        SizedBox(
-          width: 76,
-          height: 76,
-          child: Stack(
-            alignment: Alignment.center,
-            children: [
-              const DecoratedBox(
-                decoration: BoxDecoration(
-                  color: AppColors.creamDeep,
-                  shape: BoxShape.circle,
-                ),
-                child: SizedBox.expand(),
-              ),
-              Positioned(
-                right: -6,
-                top: -6,
-                child: Opacity(
-                  opacity: 0.13,
-                  child: TrukuDiamond(size: 40, color: AppColors.primary),
-                ),
-              ),
-              const Icon(
-                Icons.forum_outlined,
-                color: AppColors.primary,
-                size: 34,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 16),
-        Text(
-          message,
-          style: GoogleFonts.notoSerifTc(
-            fontSize: seniorMode ? AppTypography.headline : 18,
-            fontWeight: FontWeight.w700,
-            color: AppColors.ink,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '下拉重新整理，或成為第一位分享的人。',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: seniorMode ? AppTypography.subtitle : null,
-            color: AppColors.fog,
-          ),
-        ),
-      ],
-    ),
-  );
 }
 
 class _ForumErrorState extends StatelessWidget {

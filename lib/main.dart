@@ -330,17 +330,12 @@ class _MainContainerState extends State<MainContainer> {
     }
   }
 
-  static const int _seniorHiddenIndex = 1; // LearnScreen
-
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: seniorModeController,
       builder: (context, _) {
         final seniorMode = seniorModeController.enabled;
-        if (seniorMode && _currentIndex == _seniorHiddenIndex) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => _navigate(0));
-        }
         return PopScope(
           canPop: false,
           onPopInvokedWithResult: (didPop, result) {
