@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
 import '../../services/agora_call_service.dart';
 import '../../services/directed_call_service.dart';
 import '../../services/video_call_service.dart';
@@ -86,8 +87,8 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     if (_ended) return;
     _ended = true;
     _timer?.cancel();
+    final directedCallId = widget.directedCallId;
     try {
-      final directedCallId = widget.directedCallId;
       if (directedCallId != null) {
         await DirectedCallService.endCall(directedCallId);
       } else {
@@ -97,7 +98,53 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
       // 掛斷仍優先讓使用者離開畫面，忽略結束端點的錯誤。
     }
     await _agora.leave();
+    if (!mounted) return;
+    if (directedCallId != null) {
+      await _offerReport(directedCallId);
+    }
     if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+  }
+
+  Future<void> _offerReport(int callId) async {
+    final shouldReport = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('通話已結束'),
+        content: const Text('若這通通話有不當內容，可以在此檢舉。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('返回'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('檢舉此通話'),
+          ),
+        ],
+      ),
+    );
+    if (shouldReport != true || !mounted) return;
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => const _CallReportDialog(),
+    );
+    if (reason == null || reason.trim().isEmpty || !mounted) return;
+    try {
+      await DirectedCallService.reportCall(callId, reason.trim());
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('已送出檢舉')));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('檢舉失敗，請稍後再試')));
+      }
+    }
   }
 
   String get _timeLabel {
@@ -610,4 +657,44 @@ class _EndPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_EndPainter _) => false;
+}
+
+// ─── Call report dialog ─────────────────────────────────────────────────────
+
+class _CallReportDialog extends StatefulWidget {
+  const _CallReportDialog();
+
+  @override
+  State<_CallReportDialog> createState() => _CallReportDialogState();
+}
+
+class _CallReportDialogState extends State<_CallReportDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('檢舉此通話'),
+    content: TextField(
+      controller: _controller,
+      maxLines: 3,
+      maxLength: 500,
+      decoration: const InputDecoration(hintText: '請說明檢舉原因'),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('取消'),
+      ),
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(_controller.text),
+        child: const Text('送出'),
+      ),
+    ],
+  );
 }

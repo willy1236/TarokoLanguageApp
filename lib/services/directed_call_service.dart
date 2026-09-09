@@ -53,4 +53,9 @@ class DirectedCallService {
   static Future<void> endCall(int callId) async {
     await ApiClient.post(ApiConfig.friendCallEnd(callId));
   }
+
+  /// 檢舉一通我參與過的通話，reason 為 1-500 字的檢舉原因。
+  static Future<void> reportCall(int callId, String reason) async {
+    await ApiClient.post(ApiConfig.friendCallReport(callId), {'reason': reason});
+  }
 }
