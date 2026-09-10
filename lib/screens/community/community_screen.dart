@@ -4,8 +4,15 @@ import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../main.dart';
+import '../../models/friend_model.dart';
+import '../../models/shop_item.dart';
+import '../../services/friend_service.dart';
+import '../../services/shop_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
+import '../../shared/widgets/user_avatar.dart';
+import '../friends/directed_call_waiting_screen.dart';
+import '../friends/friends_list_screen.dart';
 import '../profile/profile_screen.dart';
 import 'video_call_notice_screen.dart';
 import 'video_call_screen.dart';
@@ -21,11 +28,56 @@ class CommunityScreen extends StatefulWidget {
 class _CommunityScreenState extends State<CommunityScreen> {
   bool _isJoining = false;
 
-  static const _rudans = [
-    _RudanData('Bakan rudan', '銅門部落', 78, true, 124, ['日常問候', '部落故事'], true),
-    _RudanData('Yudaw baki', '秀林部落', 82, true, 89, ['山林知識'], false),
-    _RudanData('Iwan yaki', '富世部落', 71, false, 56, ['織布技藝'], true),
-  ];
+  List<Friendship>? _friends;
+  bool _friendsLoading = true;
+  Map<String, ShopItem> _itemCatalogById = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFriends();
+    _loadItemCatalog();
+  }
+
+  Future<void> _loadFriends() async {
+    setState(() => _friendsLoading = true);
+    try {
+      final friends = await FriendService.getFriends();
+      if (!mounted) return;
+      setState(() {
+        _friends = friends;
+        _friendsLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Failed to fetch friends: $e');
+      if (!mounted) return;
+      setState(() {
+        _friends = const [];
+        _friendsLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadItemCatalog() async {
+    try {
+      final catalog = await ShopService.fetchItemCatalogCached();
+      if (!mounted) return;
+      setState(() => _itemCatalogById = catalog);
+    } catch (e) {
+      debugPrint('Failed to fetch item catalog: $e');
+    }
+  }
+
+  void _callFriend(Friendship f) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DirectedCallWaitingScreen(
+          calleeUid: f.uid,
+          calleeNickname: f.nickname,
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,8 +91,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             _buildHeader(),
             _buildHeroCard(),
             _buildNoticeLink(),
-            _buildRudanList(),
-            _buildRecentCall(),
+            _buildFriendList(),
           ],
         ),
       ),
@@ -378,7 +429,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  Widget _buildRudanList() {
+  Widget _buildFriendList() {
+    const maxShown = 5;
+    final friends = _friends;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
       child: Column(
@@ -390,7 +443,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             textBaseline: TextBaseline.alphabetic,
             children: [
               Text(
-                '線上 rudan',
+                '我的好友',
                 style: GoogleFonts.notoSerifTc(
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
@@ -398,263 +451,143 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   letterSpacing: 1.5,
                 ),
               ),
-              Text(
-                '查看全部 →',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.primary,
-                  letterSpacing: 2.5,
+              GestureDetector(
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const FriendsListScreen()),
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...List.generate(_rudans.length, (i) {
-            return Padding(
-              padding: EdgeInsets.only(bottom: i < _rudans.length - 1 ? 10 : 0),
-              child: _RudanTile(data: _rudans[i], isAlt: !_rudans[i].isPrimary),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildRecentCall() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '最近通話',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-              letterSpacing: 1.5,
-            ),
-          ),
-          const SizedBox(height: 10),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: BoxDecoration(
-              color: AppColors.cream,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.creamDeep),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  width: 38,
-                  height: 38,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.moss,
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    'P',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.gold,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Pisaw baki',
-                        style: GoogleFonts.notoSerifTc(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.ink,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '昨天 · 12 分 28 秒 · 學了 8 個新詞',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: AppColors.fog,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Text(
-                  '再聊 →',
+                child: Text(
+                  '查看全部 →',
                   style: TextStyle(
                     fontSize: 11,
                     color: AppColors.primary,
                     letterSpacing: 2.5,
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
+          const SizedBox(height: 12),
+          if (_friendsLoading)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 20),
+              child: Center(child: CircularProgressIndicator()),
+            )
+          else if (friends == null || friends.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 12),
+              child: Text(
+                '尚無好友，先去加好友吧',
+                style: TextStyle(fontSize: 12, color: AppColors.fog),
+              ),
+            )
+          else
+            ...List.generate(
+              friends.length > maxShown ? maxShown : friends.length,
+              (i) {
+                final shown = friends.length > maxShown ? maxShown : friends.length;
+                return Padding(
+                  padding: EdgeInsets.only(bottom: i < shown - 1 ? 10 : 0),
+                  child: _FriendTile(
+                    friend: friends[i],
+                    itemCatalogById: _itemCatalogById,
+                    onTap: () => _callFriend(friends[i]),
+                  ),
+                );
+              },
+            ),
         ],
       ),
     );
   }
 }
 
-// ─── 耆老列表項目 ──────────────────────────────────────────────────────────────
+// ─── 好友列表項目 ──────────────────────────────────────────────────────────────
 
-class _RudanData {
-  final String name;
-  final String tribe;
-  final int age;
-  final bool online;
-  final int calls;
-  final List<String> themes;
-  final bool isPrimary;
+class _FriendTile extends StatelessWidget {
+  final Friendship friend;
+  final Map<String, ShopItem> itemCatalogById;
+  final VoidCallback onTap;
 
-  const _RudanData(
-    this.name,
-    this.tribe,
-    this.age,
-    this.online,
-    this.calls,
-    this.themes,
-    this.isPrimary,
-  );
-}
-
-class _RudanTile extends StatelessWidget {
-  final _RudanData data;
-  final bool isAlt;
-
-  const _RudanTile({required this.data, required this.isAlt});
+  const _FriendTile({
+    required this.friend,
+    required this.itemCatalogById,
+    required this.onTap,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.cream,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.creamDeep),
-      ),
-      child: Row(
-        children: [
-          // Avatar with online dot
-          SizedBox(
-            width: 52,
-            height: 52,
-            child: Stack(
-              children: [
-                Container(
-                  width: 48,
-                  height: 48,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: isAlt ? AppColors.moss : AppColors.primary,
-                    border: Border.all(color: AppColors.gold, width: 1.5),
-                  ),
-                  alignment: Alignment.center,
-                  child: Text(
-                    data.name[0],
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.gold,
-                    ),
-                  ),
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.creamDeep),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: 52,
+              height: 52,
+              child: Center(
+                child: FramedUserAvatar(
+                  avatarId: friend.avatarId,
+                  avatarUrl: friend.avatarUrl,
+                  frameId: friend.frameId,
+                  itemCatalogById: itemCatalogById,
+                  size: 44,
+                  fallbackIconColor: AppColors.gold,
                 ),
-                Positioned(
-                  bottom: 2,
-                  right: 2,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: data.online ? AppColors.online : AppColors.fog,
-                      border: Border.all(color: AppColors.cream, width: 2),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  data.name,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-                const SizedBox(height: 1),
-                Text(
-                  '${data.tribe} · ${data.age} 歲 · 已通話 ${data.calls} 次',
-                  style: TextStyle(
-                    fontSize: 11,
-                    color: AppColors.fog,
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 5),
-                Wrap(
-                  spacing: 4,
-                  children: data.themes.map((t) {
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 7,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: Text(
-                        t,
-                        style: const TextStyle(
-                          fontSize: 10,
-                          color: AppColors.primary,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 8),
-          // 純展示用線上狀態標籤：後端為 FIFO 配對，不支援指定對象通話，
-          // 逐條「通話」按鈕已移除，避免使用者誤以為能指定配對對象。
-          // 一律導向 community_screen 頂部的「開始配對」統一入口。
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(18),
-              border: Border.all(color: AppColors.creamDeep),
-            ),
-            child: Text(
-              data.online ? '在線' : '離線',
-              style: TextStyle(
-                fontSize: 11,
-                color: AppColors.fog,
-                letterSpacing: 2.0,
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 12),
+            // Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    friend.nickname ?? friend.friendCode ?? '未命名好友',
+                    style: GoogleFonts.notoSerifTc(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
+                  const SizedBox(height: 1),
+                  Text(
+                    friend.bondLevel.name,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: AppColors.fog,
+                      letterSpacing: 1.2,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.transparent,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: AppColors.creamDeep),
+              ),
+              child: Text(
+                '撥打',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: AppColors.primary,
+                  letterSpacing: 2.0,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
