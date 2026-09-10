@@ -337,7 +337,7 @@ class _MainContainerState extends State<MainContainer> {
             _handleBack();
           },
           child: Scaffold(
-            extendBody: true,
+            extendBody: false,
             body: IndexedStack(
               index: _currentIndex,
               children: [
