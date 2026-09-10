@@ -106,6 +106,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _buildQuickLinksGrid(seniorMode: seniorMode),
           _buildMoreSection(seniorMode: seniorMode),
           _buildSettingsSection(seniorMode: seniorMode),
+          _buildAppSettingsSection(seniorMode: seniorMode),
           _buildOtherSection(seniorMode: seniorMode),
           _buildLogout(context),
           const SizedBox(height: 40),
@@ -678,7 +679,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildSettingsSection({required bool seniorMode}) {
     final identityLocked = _user?.ethnicGroup != null;
-    return _section('PSPUNG · 設定', [
+    return _section('PSPUNG · 個人資料設定', [
       _settingRow(
         '中文姓名',
         _user?.displayName ?? 'Apyang Imiq',
@@ -728,6 +729,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onTap: identityLocked ? null : _editTribe,
       ),
       _settingRow('電子信箱', _user?.email ?? 'apyang@truku.org', editable: false),
+    ]);
+  }
+
+  Widget _buildAppSettingsSection({required bool seniorMode}) {
+    return _section('PUSU · App 設定', [
       _switchRow(
         '精簡模式',
         seniorMode,
