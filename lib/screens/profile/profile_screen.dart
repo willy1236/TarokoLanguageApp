@@ -214,44 +214,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildAvatar() {
-    // 頭像框疊加在頭像外圍：frame_id 對應圖 + avatar_id 對應圖，框在外、頭像在中間
-    // 疊加顯示（見 頭像商店.md §5）。無 frame_id 時維持純頭像圓形。
-    final frameId = _user?.frameId;
-    final frameImageUrl = frameId != null
-        ? _itemCatalogById[frameId]?.imageUrl
-        : null;
+    // 頭像框疊加在頭像外圍：見共用元件 FramedUserAvatar（lib/shared/widgets/user_avatar.dart）。
     return SizedBox(
       width: 96,
       height: 96,
       child: Stack(
         alignment: Alignment.center,
         children: [
-          if (frameImageUrl != null)
-            Image.network(
-              frameImageUrl,
-              width: 96,
-              height: 96,
-              fit: BoxFit.contain,
-              errorBuilder: (_, _, _) => const SizedBox.shrink(),
-            ),
           Container(
-            width: 80,
-            height: 80,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.ink,
-              border: Border.all(color: AppColors.gold, width: 2),
-            ),
-            child: ClipOval(
-              child: Center(
-                child: UserAvatar(
-                  avatarId: _user?.avatarId,
-                  avatarUrl: _user?.avatarUrl,
-                  itemCatalogById: _itemCatalogById,
-                  size: 80,
-                  fallbackIconColor: AppColors.gold.withValues(alpha: 0.7),
-                ),
-              ),
+            decoration: _user?.frameId == null
+                ? BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(color: AppColors.gold, width: 2),
+                  )
+                : null,
+            child: FramedUserAvatar(
+              avatarId: _user?.avatarId,
+              avatarUrl: _user?.avatarUrl,
+              frameId: _user?.frameId,
+              itemCatalogById: _itemCatalogById,
+              size: 80,
+              fallbackIconColor: AppColors.gold.withValues(alpha: 0.7),
             ),
           ),
           Positioned(

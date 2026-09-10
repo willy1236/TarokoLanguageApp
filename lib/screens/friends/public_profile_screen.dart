@@ -12,9 +12,12 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/public_profile_model.dart';
+import '../../models/shop_item.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
+import '../../shared/widgets/user_avatar.dart';
 import '../chat/chat_screen.dart';
 import 'widgets/bond_level_badge.dart';
 
@@ -33,11 +36,23 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   PublicProfile? _profile;
   bool _loading = true;
   bool _notFound = false;
+  Map<String, ShopItem> _itemCatalogById = const {};
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadItemCatalog();
+  }
+
+  Future<void> _loadItemCatalog() async {
+    try {
+      final catalog = await ShopService.fetchItemCatalogCached();
+      if (!mounted) return;
+      setState(() => _itemCatalogById = catalog);
+    } catch (e) {
+      debugPrint('Failed to fetch item catalog: $e');
+    }
   }
 
   Future<void> _load() async {
@@ -264,25 +279,24 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
   Widget _avatar(PublicProfile profile, bool seniorMode) {
     final size = seniorMode ? 104.0 : 88.0;
-    final avatarUrl = profile.avatarUrl;
     return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AppColors.ink,
-        border: Border.all(color: AppColors.gold, width: 2),
-      ),
-      child: ClipOval(
-        child: (avatarUrl == null || avatarUrl.isEmpty)
-            ? _initialsAvatar(profile, size)
-            : Image.network(
-                avatarUrl,
-                width: size,
-                height: size,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => _initialsAvatar(profile, size),
-              ),
+      decoration: profile.frameId == null
+          ? BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.gold, width: 2),
+            )
+          : null,
+      child: FramedUserAvatar(
+        avatarId: profile.avatarId,
+        avatarUrl: profile.avatarUrl,
+        frameId: profile.frameId,
+        itemCatalogById: _itemCatalogById,
+        size: size,
+        fallbackIconColor: AppColors.gold,
+        fallback: DecoratedBox(
+          decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.ink),
+          child: _initialsAvatar(profile, size),
+        ),
       ),
     );
   }

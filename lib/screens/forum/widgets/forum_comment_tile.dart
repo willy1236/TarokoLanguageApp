@@ -10,7 +10,9 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';
+import '../../../models/shop_item.dart';
 import '../../../services/senior_mode_controller.dart';
+import '../../../shared/widgets/user_avatar.dart';
 import 'forum_post_card.dart' show forumRelativeTime;
 
 class ForumCommentTile extends StatelessWidget {
@@ -21,6 +23,7 @@ class ForumCommentTile extends StatelessWidget {
   final VoidCallback onReply;
   final VoidCallback onDelete;
   final VoidCallback onReport;
+  final Map<String, ShopItem> itemCatalogById;
 
   const ForumCommentTile({
     super.key,
@@ -31,6 +34,7 @@ class ForumCommentTile extends StatelessWidget {
     required this.onReply,
     required this.onDelete,
     required this.onReport,
+    this.itemCatalogById = const {},
   });
 
   @override
@@ -172,16 +176,15 @@ class ForumCommentTile extends StatelessWidget {
   );
 
   Widget _avatar({required double size}) {
-    final avatarUrl = comment.author?.avatarUrl;
-    if (avatarUrl == null || avatarUrl.isEmpty) return _initialsAvatar(size);
-    return ClipOval(
-      child: Image.network(
-        avatarUrl,
-        width: size,
-        height: size,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) => _initialsAvatar(size),
-      ),
+    final author = comment.author;
+    return FramedUserAvatar(
+      avatarId: author?.avatarId,
+      avatarUrl: author?.avatarUrl,
+      frameId: author?.frameId,
+      itemCatalogById: itemCatalogById,
+      size: size,
+      fallbackIconColor: AppColors.gold,
+      fallback: _initialsAvatar(size),
     );
   }
 

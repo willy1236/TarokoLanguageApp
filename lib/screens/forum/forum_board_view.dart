@@ -9,7 +9,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
+import '../../models/shop_item.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'widgets/forum_post_card.dart';
 
@@ -71,12 +73,24 @@ class ForumBoardViewState extends State<ForumBoardView> {
   bool _loadingMore = false;
   String? _error;
   int? _nextCursor;
+  Map<String, ShopItem> _itemCatalogById = const {};
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     _load();
+    _loadItemCatalog();
+  }
+
+  Future<void> _loadItemCatalog() async {
+    try {
+      final catalog = await ShopService.fetchItemCatalogCached();
+      if (!mounted) return;
+      setState(() => _itemCatalogById = catalog);
+    } catch (e) {
+      debugPrint('Failed to fetch item catalog: $e');
+    }
   }
 
   @override
@@ -317,6 +331,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
             onTap: () => widget.onOpenPost(post),
             onLike: () => _like(post),
             onBookmark: () => _bookmark(post),
+            itemCatalogById: _itemCatalogById,
           ),
         ),
       if (_loadingMore)

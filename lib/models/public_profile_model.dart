@@ -19,6 +19,8 @@ class BondShowcaseItem {
   final String? nickname;
   final String? friendCode;
   final String? avatarUrl;
+  final String? avatarId;
+  final String? frameId;
   final BondLevel bondLevel;
 
   const BondShowcaseItem({
@@ -26,6 +28,8 @@ class BondShowcaseItem {
     this.nickname,
     this.friendCode,
     this.avatarUrl,
+    this.avatarId,
+    this.frameId,
     required this.bondLevel,
   });
 
@@ -34,6 +38,8 @@ class BondShowcaseItem {
     nickname: j['nickname'] as String?,
     friendCode: j['friend_code'] as String?,
     avatarUrl: j['avatar_url'] as String?,
+    avatarId: j['avatar_id'] as String?,
+    frameId: j['frame_id'] as String?,
     bondLevel: j['bond_level'] is Map<String, dynamic>
         ? BondLevel.fromJson(j['bond_level'] as Map<String, dynamic>)
         : const BondLevel(level: 1, name: '初識'),

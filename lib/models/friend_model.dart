@@ -19,6 +19,8 @@ class FriendUser {
   final String? nickname;
   final String? friendCode;
   final String? avatarUrl;
+  final String? avatarId;
+  final String? frameId;
   final String? selfIntro;
 
   const FriendUser({
@@ -26,6 +28,8 @@ class FriendUser {
     this.nickname,
     this.friendCode,
     this.avatarUrl,
+    this.avatarId,
+    this.frameId,
     this.selfIntro,
   });
 
@@ -34,6 +38,8 @@ class FriendUser {
     nickname: j['nickname'] as String?,
     friendCode: j['friend_code'] as String?,
     avatarUrl: j['avatar_url'] as String?,
+    avatarId: j['avatar_id'] as String?,
+    frameId: j['frame_id'] as String?,
     selfIntro: j['self_intro'] as String?,
   );
 }
@@ -46,6 +52,8 @@ class FriendRequest extends FriendUser {
     super.nickname,
     super.friendCode,
     super.avatarUrl,
+    super.avatarId,
+    super.frameId,
     super.selfIntro,
     required this.createdAt,
   });
@@ -55,6 +63,8 @@ class FriendRequest extends FriendUser {
     nickname: j['nickname'] as String?,
     friendCode: j['friend_code'] as String?,
     avatarUrl: j['avatar_url'] as String?,
+    avatarId: j['avatar_id'] as String?,
+    frameId: j['frame_id'] as String?,
     selfIntro: j['self_intro'] as String?,
     createdAt: DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
   );
@@ -89,6 +99,8 @@ class Friendship extends FriendUser {
     super.nickname,
     super.friendCode,
     super.avatarUrl,
+    super.avatarId,
+    super.frameId,
     super.selfIntro,
     required this.bondPoints,
     required this.bondLevel,
@@ -101,6 +113,8 @@ class Friendship extends FriendUser {
     nickname: j['nickname'] as String?,
     friendCode: j['friend_code'] as String?,
     avatarUrl: j['avatar_url'] as String?,
+    avatarId: j['avatar_id'] as String?,
+    frameId: j['frame_id'] as String?,
     selfIntro: j['self_intro'] as String?,
     bondPoints: (j['bond_points'] as num?)?.toInt() ?? 0,
     bondLevel: j['bond_level'] is Map<String, dynamic>
@@ -118,6 +132,8 @@ class Friendship extends FriendUser {
     String? nickname,
     String? friendCode,
     String? avatarUrl,
+    String? avatarId,
+    String? frameId,
     String? selfIntro,
     int? bondPoints,
     BondLevelInfo? bondLevel,
@@ -128,6 +144,8 @@ class Friendship extends FriendUser {
     nickname: nickname ?? this.nickname,
     friendCode: friendCode ?? this.friendCode,
     avatarUrl: avatarUrl ?? this.avatarUrl,
+    avatarId: avatarId ?? this.avatarId,
+    frameId: frameId ?? this.frameId,
     selfIntro: selfIntro ?? this.selfIntro,
     bondPoints: bondPoints ?? this.bondPoints,
     bondLevel: bondLevel ?? this.bondLevel,
@@ -143,6 +161,8 @@ class IncomingCall {
   final String? callerNickname;
   final String? callerFriendCode;
   final String? callerAvatarUrl;
+  final String? callerAvatarId;
+  final String? callerFrameId;
   final DateTime createdAt;
 
   const IncomingCall({
@@ -151,6 +171,8 @@ class IncomingCall {
     this.callerNickname,
     this.callerFriendCode,
     this.callerAvatarUrl,
+    this.callerAvatarId,
+    this.callerFrameId,
     required this.createdAt,
   });
 
@@ -160,6 +182,8 @@ class IncomingCall {
     callerNickname: j['caller_nickname'] as String?,
     callerFriendCode: j['caller_friend_code'] as String?,
     callerAvatarUrl: j['caller_avatar_url'] as String?,
+    callerAvatarId: j['caller_avatar_id'] as String?,
+    callerFrameId: j['caller_frame_id'] as String?,
     createdAt: DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
   );
 }
@@ -197,6 +221,8 @@ class BlockedUser extends FriendUser {
     super.nickname,
     super.friendCode,
     super.avatarUrl,
+    super.avatarId,
+    super.frameId,
     super.selfIntro,
     required this.createdAt,
   });
@@ -206,6 +232,8 @@ class BlockedUser extends FriendUser {
     nickname: j['nickname'] as String?,
     friendCode: j['friend_code'] as String?,
     avatarUrl: j['avatar_url'] as String?,
+    avatarId: j['avatar_id'] as String?,
+    frameId: j['frame_id'] as String?,
     selfIntro: j['self_intro'] as String?,
     createdAt: DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
   );

@@ -10,8 +10,10 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';
+import '../../../models/shop_item.dart';
 import '../../../services/senior_mode_controller.dart';
 import '../../../shared/widgets/engagement_icon_button.dart';
+import '../../../shared/widgets/user_avatar.dart';
 import '../../friends/public_profile_screen.dart';
 import 'forum_image_grid.dart';
 
@@ -29,6 +31,7 @@ class ForumPostCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onLike;
   final VoidCallback onBookmark;
+  final Map<String, ShopItem> itemCatalogById;
 
   const ForumPostCard({
     super.key,
@@ -36,6 +39,7 @@ class ForumPostCard extends StatelessWidget {
     required this.onTap,
     required this.onLike,
     required this.onBookmark,
+    this.itemCatalogById = const {},
   });
 
   @override
@@ -125,28 +129,25 @@ class ForumPostCard extends StatelessWidget {
 
   Widget _avatar(bool seniorMode) {
     final size = seniorMode ? 52.0 : 38.0;
-    final avatarUrl = post.author.avatarUrl;
+    final author = post.author;
     return Container(
-      width: size,
-      height: size,
-      decoration: const BoxDecoration(
-        shape: BoxShape.circle,
-        border: Border.fromBorderSide(
-          BorderSide(color: AppColors.gold, width: 1.5),
-        ),
-      ),
-      child: (avatarUrl == null || avatarUrl.isEmpty)
-          ? _initialsAvatar(size)
-          : ClipOval(
-              child: Image.network(
-                avatarUrl,
-                width: size,
-                height: size,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    _initialsAvatar(size),
+      decoration: author.frameId == null
+          ? const BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.fromBorderSide(
+                BorderSide(color: AppColors.gold, width: 1.5),
               ),
-            ),
+            )
+          : null,
+      child: FramedUserAvatar(
+        avatarId: author.avatarId,
+        avatarUrl: author.avatarUrl,
+        frameId: author.frameId,
+        itemCatalogById: itemCatalogById,
+        size: size,
+        fallbackIconColor: AppColors.gold,
+        fallback: _initialsAvatar(size),
+      ),
     );
   }
 

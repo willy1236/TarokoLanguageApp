@@ -6,8 +6,11 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/friend_model.dart';
+import '../../models/shop_item.dart';
 import '../../services/directed_call_service.dart';
+import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_painters.dart';
+import '../../shared/widgets/user_avatar.dart';
 import '../community/video_call_screen.dart';
 
 class IncomingCallScreen extends StatefulWidget {
@@ -22,6 +25,23 @@ class IncomingCallScreen extends StatefulWidget {
 class _IncomingCallScreenState extends State<IncomingCallScreen> {
   bool _busy = false;
   String? _errorMessage;
+  Map<String, ShopItem> _itemCatalogById = const {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadItemCatalog();
+  }
+
+  Future<void> _loadItemCatalog() async {
+    try {
+      final catalog = await ShopService.fetchItemCatalogCached();
+      if (!mounted) return;
+      setState(() => _itemCatalogById = catalog);
+    } catch (e) {
+      debugPrint('Failed to fetch item catalog: $e');
+    }
+  }
 
   Future<void> _accept() async {
     setState(() => _busy = true);
@@ -137,14 +157,10 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   }
 
   Widget _avatar() {
-    final url = widget.call.callerAvatarUrl;
+    final call = widget.call;
     return Container(
-      width: 120,
-      height: 120,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: AppColors.ink,
-        border: Border.all(color: AppColors.gold, width: 2),
         boxShadow: [
           BoxShadow(
             color: AppColors.primary.withValues(alpha: 0.38),
@@ -153,18 +169,33 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
           ),
         ],
       ),
-      child: ClipOval(
-        child: (url == null || url.isEmpty)
-            ? Center(
-                child: Text(
-                  widget.call.callerNickname?.characters.firstOrNull ?? '?',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 40,
-                    color: AppColors.gold,
-                  ),
-                ),
+      child: Container(
+        decoration: call.callerFrameId == null
+            ? BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(color: AppColors.gold, width: 2),
               )
-            : Image.network(url, width: 120, height: 120, fit: BoxFit.cover),
+            : null,
+        child: FramedUserAvatar(
+          avatarId: call.callerAvatarId,
+          avatarUrl: call.callerAvatarUrl,
+          frameId: call.callerFrameId,
+          itemCatalogById: _itemCatalogById,
+          size: 120,
+          fallbackIconColor: AppColors.gold,
+          fallback: DecoratedBox(
+            decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.ink),
+            child: Center(
+              child: Text(
+                call.callerNickname?.characters.firstOrNull ?? '?',
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 40,
+                  color: AppColors.gold,
+                ),
+              ),
+            ),
+          ),
+        ),
       ),
     );
   }

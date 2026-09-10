@@ -59,6 +59,8 @@ class Conversation {
   final String? nickname;
   final String? friendCode;
   final String? avatarUrl;
+  final String? avatarId;
+  final String? frameId;
   final int unreadCount;
   final ConversationPreview? lastMessage;
 
@@ -67,6 +69,8 @@ class Conversation {
     this.nickname,
     this.friendCode,
     this.avatarUrl,
+    this.avatarId,
+    this.frameId,
     required this.unreadCount,
     this.lastMessage,
   });
@@ -76,6 +80,8 @@ class Conversation {
     nickname: j['nickname'] as String?,
     friendCode: j['friend_code'] as String?,
     avatarUrl: j['avatar_url'] as String?,
+    avatarId: j['avatar_id'] as String?,
+    frameId: j['frame_id'] as String?,
     unreadCount: (j['unread_count'] as num?)?.toInt() ?? 0,
     lastMessage: j['last_message'] is Map<String, dynamic>
         ? ConversationPreview.fromJson(j['last_message'] as Map<String, dynamic>)

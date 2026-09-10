@@ -6,10 +6,13 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/friend_message_model.dart';
+import '../../models/shop_item.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
+import '../../shared/widgets/user_avatar.dart';
 import 'chat_screen.dart';
 
 class ConversationsListScreen extends StatefulWidget {
@@ -22,6 +25,7 @@ class ConversationsListScreen extends StatefulWidget {
 class _ConversationsListScreenState extends State<ConversationsListScreen> {
   List<Conversation>? _conversations;
   bool _loading = true;
+  Map<String, ShopItem> _itemCatalogById = const {};
 
   @override
   void initState() {
@@ -29,6 +33,17 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
     chatController.connect();
     chatController.addListener(_onChatEvent);
     _load();
+    _loadItemCatalog();
+  }
+
+  Future<void> _loadItemCatalog() async {
+    try {
+      final catalog = await ShopService.fetchItemCatalogCached();
+      if (!mounted) return;
+      setState(() => _itemCatalogById = catalog);
+    } catch (e) {
+      debugPrint('Failed to fetch item catalog: $e');
+    }
   }
 
   @override
@@ -187,35 +202,29 @@ class _ConversationsListScreenState extends State<ConversationsListScreen> {
 
   Widget _avatar(Conversation c, bool seniorMode) {
     final size = seniorMode ? 52.0 : 44.0;
-    final avatarUrl = c.avatarUrl;
     return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AppColors.ink,
-        border: Border.all(color: AppColors.gold, width: 1.5),
-      ),
-      child: ClipOval(
-        child: (avatarUrl == null || avatarUrl.isEmpty)
-            ? Center(
-                child: Text(
-                  c.nickname?.characters.firstOrNull ?? '?',
-                  style: AppTypography.bodyLargeStyle(color: AppColors.gold),
-                ),
-              )
-            : Image.network(
-                avatarUrl,
-                width: size,
-                height: size,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Center(
-                  child: Text(
-                    c.nickname?.characters.firstOrNull ?? '?',
-                    style: AppTypography.bodyLargeStyle(color: AppColors.gold),
-                  ),
-                ),
-              ),
+      decoration: c.frameId == null
+          ? BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.gold, width: 1.5),
+            )
+          : null,
+      child: FramedUserAvatar(
+        avatarId: c.avatarId,
+        avatarUrl: c.avatarUrl,
+        frameId: c.frameId,
+        itemCatalogById: _itemCatalogById,
+        size: size,
+        fallbackIconColor: AppColors.gold,
+        fallback: DecoratedBox(
+          decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.ink),
+          child: Center(
+            child: Text(
+              c.nickname?.characters.firstOrNull ?? '?',
+              style: AppTypography.bodyLargeStyle(color: AppColors.gold),
+            ),
+          ),
+        ),
       ),
     );
   }

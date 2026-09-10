@@ -7,9 +7,12 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/friend_model.dart';
+import '../../models/shop_item.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
+import '../../shared/widgets/user_avatar.dart';
 import '../chat/chat_screen.dart';
 import '../chat/conversations_list_screen.dart';
 import 'add_friend_screen.dart';
@@ -30,11 +33,23 @@ class FriendsListScreen extends StatefulWidget {
 class _FriendsListScreenState extends State<FriendsListScreen> {
   List<Friendship>? _friends;
   bool _loading = true;
+  Map<String, ShopItem> _itemCatalogById = const {};
 
   @override
   void initState() {
     super.initState();
     _load();
+    _loadItemCatalog();
+  }
+
+  Future<void> _loadItemCatalog() async {
+    try {
+      final catalog = await ShopService.fetchItemCatalogCached();
+      if (!mounted) return;
+      setState(() => _itemCatalogById = catalog);
+    } catch (e) {
+      debugPrint('Failed to fetch item catalog: $e');
+    }
   }
 
   Future<void> _load() async {
@@ -326,35 +341,29 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
   Widget _avatar(Friendship f, bool seniorMode) {
     final size = seniorMode ? 52.0 : 44.0;
-    final avatarUrl = f.avatarUrl;
     return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: AppColors.ink,
-        border: Border.all(color: AppColors.gold, width: 1.5),
-      ),
-      child: ClipOval(
-        child: (avatarUrl == null || avatarUrl.isEmpty)
-            ? Center(
-                child: Text(
-                  f.nickname?.characters.firstOrNull ?? '?',
-                  style: AppTypography.bodyLargeStyle(color: AppColors.gold),
-                ),
-              )
-            : Image.network(
-                avatarUrl,
-                width: size,
-                height: size,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Center(
-                  child: Text(
-                    f.nickname?.characters.firstOrNull ?? '?',
-                    style: AppTypography.bodyLargeStyle(color: AppColors.gold),
-                  ),
-                ),
-              ),
+      decoration: f.frameId == null
+          ? BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.gold, width: 1.5),
+            )
+          : null,
+      child: FramedUserAvatar(
+        avatarId: f.avatarId,
+        avatarUrl: f.avatarUrl,
+        frameId: f.frameId,
+        itemCatalogById: _itemCatalogById,
+        size: size,
+        fallbackIconColor: AppColors.gold,
+        fallback: DecoratedBox(
+          decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.ink),
+          child: Center(
+            child: Text(
+              f.nickname?.characters.firstOrNull ?? '?',
+              style: AppTypography.bodyLargeStyle(color: AppColors.gold),
+            ),
+          ),
+        ),
       ),
     );
   }
