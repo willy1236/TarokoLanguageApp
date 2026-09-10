@@ -11,7 +11,7 @@ class DirectedCallService {
   /// 撥號給好友，回傳新建（或既有響鈴中同一通）的 call id。
   static Future<int> callFriend(int uid) async {
     final data = await ApiClient.post(ApiConfig.friendCall(uid));
-    return (data['call_id'] as num).toInt();
+    return int.parse(data['call_id'].toString());
   }
 
   static Future<DirectedCallStatus> getCall(int callId) async {

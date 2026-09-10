@@ -155,8 +155,8 @@ class IncomingCall {
   });
 
   factory IncomingCall.fromJson(Map<String, dynamic> j) => IncomingCall(
-    callId: (j['call_id'] as num?)?.toInt() ?? 0,
-    callerUid: (j['caller_uid'] as num?)?.toInt() ?? 0,
+    callId: int.tryParse(j['call_id']?.toString() ?? '') ?? 0,
+    callerUid: int.tryParse(j['caller_uid']?.toString() ?? '') ?? 0,
     callerNickname: j['caller_nickname'] as String?,
     callerFriendCode: j['caller_friend_code'] as String?,
     callerAvatarUrl: j['caller_avatar_url'] as String?,
@@ -181,10 +181,10 @@ class DirectedCallStatus {
   });
 
   factory DirectedCallStatus.fromJson(Map<String, dynamic> j) => DirectedCallStatus(
-    callId: (j['call_id'] as num?)?.toInt() ?? 0,
+    callId: int.tryParse(j['call_id']?.toString() ?? '') ?? 0,
     status: j['status'] as String? ?? '',
-    sessionId: (j['session_id'] as num?)?.toInt(),
-    peerUid: (j['peer_uid'] as num?)?.toInt() ?? 0,
+    sessionId: int.tryParse(j['session_id']?.toString() ?? ''),
+    peerUid: int.tryParse(j['peer_uid']?.toString() ?? '') ?? 0,
     peerNickname: j['peer_nickname'] as String?,
   );
 }
