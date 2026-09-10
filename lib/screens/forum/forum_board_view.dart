@@ -284,6 +284,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
                   constraints: BoxConstraints(minHeight: constraints.maxHeight),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: _buildBody(seniorModeController.enabled),
                   ),
                 ),
@@ -330,15 +331,12 @@ class ForumBoardViewState extends State<ForumBoardView> {
     if (all.isEmpty) {
       return [
         ?header,
-        Expanded(
-          child: Center(
-            child: TrukuEmptyState(
-              icon: Icons.forum_outlined,
-              message: widget.emptyMessage,
-              subtitle: '下拉重新整理，或成為第一位分享的人。',
-              seniorMode: seniorMode,
-            ),
-          ),
+        TrukuEmptyState(
+          icon: Icons.forum_outlined,
+          message: widget.emptyMessage,
+          subtitle: '下拉重新整理，或成為第一位分享的人。',
+          seniorMode: seniorMode,
+          scrollable: false,
         ),
       ];
     }
