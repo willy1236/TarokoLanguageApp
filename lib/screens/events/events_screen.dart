@@ -15,7 +15,10 @@ import 'event_search_screen.dart';
 /// 活動列表 —— 真資料版（GET /api/events）。
 /// 發起活動返回後自動刷新；下拉可重新整理。需登入（未登入 API 會 401 導回登入）。
 class EventsScreen extends StatefulWidget {
-  const EventsScreen({super.key});
+  /// 由外層（合併分頁的膠囊切換）注入，顯示在標題與篩選 chips 之間。
+  final Widget? topToggle;
+
+  const EventsScreen({super.key, this.topToggle});
 
   @override
   State<EventsScreen> createState() => _EventsScreenState();
@@ -174,6 +177,13 @@ class _EventsScreenState extends State<EventsScreen> {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _buildHeader(seniorMode)),
+            if (widget.topToggle != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: widget.topToggle,
+                ),
+              ),
             SliverToBoxAdapter(child: _buildFilterChips(seniorMode)),
             ..._buildContentSlivers(seniorMode),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),

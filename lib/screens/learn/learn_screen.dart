@@ -16,7 +16,10 @@ import 'vocab_level_screen.dart';
 // ── LearnScreen ───────────────────────────────────────────────────────────────
 
 class LearnScreen extends StatefulWidget {
-  const LearnScreen({super.key});
+  /// 由外層（合併分頁的膠囊切換）注入，顯示在紅色頭卡片底部。
+  final Widget? topToggle;
+
+  const LearnScreen({super.key, this.topToggle});
 
   @override
   State<LearnScreen> createState() => _LearnScreenState();
@@ -301,6 +304,10 @@ class _LearnScreenState extends State<LearnScreen> {
                     ),
                   ],
                 ),
+                if (widget.topToggle != null) ...[
+                  const SizedBox(height: 20),
+                  widget.topToggle!,
+                ],
               ],
             ),
           ),

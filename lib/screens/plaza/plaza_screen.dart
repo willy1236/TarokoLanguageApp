@@ -18,7 +18,10 @@ import '../forum/forum_theme.dart';
 import '../events/event_detail_screen.dart';
 
 class PlazaScreen extends StatefulWidget {
-  const PlazaScreen({super.key});
+  /// 由外層（合併分頁的膠囊切換）注入，顯示在標題與近期活動之間。
+  final Widget? topToggle;
+
+  const PlazaScreen({super.key, this.topToggle});
 
   @override
   State<PlazaScreen> createState() => _PlazaScreenState();
@@ -180,6 +183,11 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       child: Column(
         children: [
           _buildHeader(context, seniorMode),
+          if (widget.topToggle != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+              child: widget.topToggle,
+            ),
           // 近期活動固定在看板 tab 上方不隨貼文捲動。代價是它不在下拉手勢的
           // 範圍內——刷新要從貼文區下拉，或等 App 回到前景。
           // 精簡模式不顯示活動，避免與族語學習內容混雜。

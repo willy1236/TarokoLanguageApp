@@ -17,7 +17,10 @@ import 'video_detail_screen.dart';
 import 'video_search_screen.dart';
 
 class CultureScreen extends StatefulWidget {
-  const CultureScreen({super.key});
+  /// 由外層（合併分頁的膠囊切換）注入，顯示在 hero 與影音/文章分頁之間。
+  final Widget? topToggle;
+
+  const CultureScreen({super.key, this.topToggle});
 
   @override
   State<CultureScreen> createState() => _CultureScreenState();
@@ -102,6 +105,13 @@ class _CultureScreenState extends State<CultureScreen> {
       child: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildHero(seniorMode)),
+          if (widget.topToggle != null)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+                child: widget.topToggle,
+              ),
+            ),
           SliverToBoxAdapter(child: _buildTabBar(seniorMode)),
           if (_tabIndex == 0) ...[
             SliverToBoxAdapter(child: _buildChips(seniorMode)),
@@ -157,38 +167,43 @@ class _CultureScreenState extends State<CultureScreen> {
                 top: 60,
                 left: 20,
                 right: 20,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'LNGLUNGAN',
-                      style: GoogleFonts.crimsonPro(
-                        fontStyle: FontStyle.italic,
-                        fontSize: 13,
-                        color: AppColors.gold,
-                        letterSpacing: 4.0,
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => _tabIndex == 0
-                              ? const VideoSearchScreen()
-                              : const ArticleSearchScreen(),
-                        ),
-                      ),
-                      child: Container(
-                        width: 36,
-                        height: 36,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withValues(alpha: 0.4),
-                          border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.25),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'LNGLUNGAN',
+                          style: GoogleFonts.crimsonPro(
+                            fontStyle: FontStyle.italic,
+                            fontSize: 13,
+                            color: AppColors.gold,
+                            letterSpacing: 4.0,
                           ),
                         ),
-                        child: const Center(child: _SearchIcon()),
-                      ),
+                        GestureDetector(
+                          onTap: () => Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => _tabIndex == 0
+                                  ? const VideoSearchScreen()
+                                  : const ArticleSearchScreen(),
+                            ),
+                          ),
+                          child: Container(
+                            width: 36,
+                            height: 36,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              color: Colors.black.withValues(alpha: 0.4),
+                              border: Border.all(
+                                color: AppColors.gold.withValues(alpha: 0.25),
+                              ),
+                            ),
+                            child: const Center(child: _SearchIcon()),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
