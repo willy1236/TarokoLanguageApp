@@ -73,6 +73,8 @@ class ApiClient {
     ).replace(queryParameters: query);
     final resp = await _send(
       () => httpClient.get(uri, headers: _headers(token)),
+      method: 'GET',
+      url: uri,
     );
     return _handle(resp);
   }
@@ -84,6 +86,8 @@ class ApiClient {
     final uri = Uri.parse(ApiConfig.baseUrl + path);
     final resp = await _send(
       () => httpClient.get(uri, headers: _headers(token)),
+      method: 'GET',
+      url: uri,
     );
     if (resp.statusCode < 200 || resp.statusCode >= 300) {
       final error = _parseError(resp);
@@ -98,12 +102,13 @@ class ApiClient {
     Map<String, dynamic>? body,
   ]) async {
     final token = await AuthService.currentToken();
+    final uri = Uri.parse(ApiConfig.baseUrl + path);
+    final encodedBody = body == null ? null : jsonEncode(body);
     final resp = await _send(
-      () => httpClient.post(
-        Uri.parse(ApiConfig.baseUrl + path),
-        headers: _headers(token),
-        body: body == null ? null : jsonEncode(body),
-      ),
+      () => httpClient.post(uri, headers: _headers(token), body: encodedBody),
+      method: 'POST',
+      url: uri,
+      body: encodedBody,
     );
     return _handle(resp);
   }
@@ -113,12 +118,13 @@ class ApiClient {
     Map<String, dynamic>? body,
   ]) async {
     final token = await AuthService.currentToken();
+    final uri = Uri.parse(ApiConfig.baseUrl + path);
+    final encodedBody = body == null ? null : jsonEncode(body);
     final resp = await _send(
-      () => httpClient.patch(
-        Uri.parse(ApiConfig.baseUrl + path),
-        headers: _headers(token),
-        body: body == null ? null : jsonEncode(body),
-      ),
+      () => httpClient.patch(uri, headers: _headers(token), body: encodedBody),
+      method: 'PATCH',
+      url: uri,
+      body: encodedBody,
     );
     return _handle(resp);
   }
@@ -130,10 +136,8 @@ class ApiClient {
     required List<MultipartFileData> files,
   }) async {
     final token = await AuthService.currentToken();
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse(ApiConfig.baseUrl + path),
-    );
+    final uri = Uri.parse(ApiConfig.baseUrl + path);
+    final request = http.MultipartRequest('POST', uri);
     if (token != null) request.headers['Authorization'] = 'Bearer $token';
     request.fields.addAll(fields);
     for (final file in files) {
@@ -148,6 +152,9 @@ class ApiClient {
     }
     final resp = await _send(
       () async => http.Response.fromStream(await httpClient.send(request)),
+      method: 'POST(multipart)',
+      url: uri,
+      body: 'fields=$fields, files=${files.map((f) => f.filename).toList()}',
     );
     return _handle(resp);
   }
@@ -157,12 +164,13 @@ class ApiClient {
     Map<String, dynamic>? body,
   ]) async {
     final token = await AuthService.currentToken();
+    final uri = Uri.parse(ApiConfig.baseUrl + path);
+    final encodedBody = body == null ? null : jsonEncode(body);
     final resp = await _send(
-      () => httpClient.delete(
-        Uri.parse(ApiConfig.baseUrl + path),
-        headers: _headers(token),
-        body: body == null ? null : jsonEncode(body),
-      ),
+      () => httpClient.delete(uri, headers: _headers(token), body: encodedBody),
+      method: 'DELETE',
+      url: uri,
+      body: encodedBody,
     );
     return _handle(resp);
   }
@@ -176,10 +184,8 @@ class ApiClient {
     String? contentType,
   }) async {
     final token = await AuthService.currentToken();
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse(ApiConfig.baseUrl + path),
-    );
+    final uri = Uri.parse(ApiConfig.baseUrl + path);
+    final request = http.MultipartRequest('POST', uri);
     if (token != null) {
       request.headers['Authorization'] = 'Bearer $token';
     }
@@ -188,10 +194,15 @@ class ApiClient {
       file.path,
       contentType: contentType == null ? null : MediaType.parse(contentType),
     ));
-    final resp = await _send(() async {
-      final streamed = await request.send();
-      return http.Response.fromStream(streamed);
-    });
+    final resp = await _send(
+      () async {
+        final streamed = await request.send();
+        return http.Response.fromStream(streamed);
+      },
+      method: 'POST(multipart)',
+      url: uri,
+      body: 'field=$fieldName, file=${file.path}',
+    );
     return _handle(resp);
   }
 
@@ -202,12 +213,22 @@ class ApiClient {
 
   /// 統一攔截離線（SocketException），轉成一致的 NETWORK_ERROR ApiException，
   /// 讓所有 service 不必各自 catch SocketException。
+  /// method/url/body 僅用於 debug log，不影響實際請求。
   static Future<http.Response> _send(
-    Future<http.Response> Function() doRequest,
-  ) async {
+    Future<http.Response> Function() doRequest, {
+    String? method,
+    Object? url,
+    String? body,
+  }) async {
+    debugPrint('ApiClient →  $method $url${body != null ? '\n  body: $body' : ''}');
     try {
-      return await doRequest();
+      final resp = await doRequest();
+      debugPrint(
+        'ApiClient ←  ${resp.statusCode} $method $url\n  body: ${resp.body}',
+      );
+      return resp;
     } on SocketException {
+      debugPrint('ApiClient ←  NETWORK_ERROR $method $url');
       throw ApiException(
         statusCode: 0,
         code: 'NETWORK_ERROR',
