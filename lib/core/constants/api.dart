@@ -64,6 +64,7 @@ class ApiConfig {
   static const String eventsMine = '/api/events/mine';
   static String eventDetail(int id) => '/api/events/$id';
   static String eventJoin(int id) => '/api/events/$id/join';
+  static String eventExport(int id) => '/api/events/$id/export';
   static String eventCancel(int id) => '/api/events/$id/cancel';
   static String eventReminders(int id) => '/api/events/$id/reminders';
   static String reminderDetail(int id) => '/api/reminders/$id';
