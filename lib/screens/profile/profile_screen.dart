@@ -703,6 +703,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         '好友碼',
         _user?.friendCode ?? '—',
         editable: _user?.friendCode != null,
+        copyable: true,
         onTap: _copyFriendCode,
       ),
       _settingRow(
@@ -1076,6 +1077,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     String value, {
     bool truku = false,
     bool editable = true,
+    bool copyable = false,
     VoidCallback? onTap,
   }) {
     return Column(
@@ -1116,7 +1118,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                   ],
                 ),
-                if (editable)
+                if (copyable)
+                  Icon(Icons.copy_rounded, size: 16, color: AppColors.primary)
+                else if (editable)
                   CustomPaint(
                     size: const Size(16, 16),
                     painter: _EditPenPainter(),
