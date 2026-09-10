@@ -185,7 +185,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    '系統會幫你配對線上的 rudan',
+                    '系統會幫你配對線上的族人',
                     style: TextStyle(
                       fontSize: 12,
                       color: AppColors.creamLight.withValues(alpha: 0.7),
@@ -294,7 +294,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
             const SizedBox(width: 4),
             Text(
-              '4 位 rudan 在線',
+              '族人在線中',
               style: TextStyle(
                 fontSize: 11,
                 color: AppColors.creamLight.withValues(alpha: 0.85),

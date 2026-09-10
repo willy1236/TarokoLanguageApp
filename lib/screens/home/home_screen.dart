@@ -135,6 +135,7 @@ class HomeScreen extends StatelessWidget {
             width: double.infinity,
             child: Stack(
               fit: StackFit.expand,
+              clipBehavior: Clip.none,
               children: [
                 const ColoredBox(color: AppColors.primary),
                 Opacity(
@@ -144,6 +145,19 @@ class HomeScreen extends StatelessWidget {
                       color: AppColors.gold,
                       opacity: 1.0,
                       scale: 0.4,
+                    ),
+                  ),
+                ),
+                // 上方對稱菱形裝飾，呼應下方今日進度卡右上角的菱形
+                Positioned(
+                  top: -14,
+                  right: 16,
+                  child: Opacity(
+                    opacity: 0.18,
+                    child: TrukuDiamond(
+                      size: 40,
+                      color: AppColors.gold,
+                      strokeWidth: 1.5,
                     ),
                   ),
                 ),

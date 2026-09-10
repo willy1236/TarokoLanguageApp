@@ -350,6 +350,7 @@ class _ChatScreenState extends State<ChatScreen> {
               style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.ink),
               decoration: InputDecoration(
                 hintText: '傳送訊息…',
+                hintStyle: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.fog),
                 filled: true,
                 fillColor: AppColors.cream,
                 contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),

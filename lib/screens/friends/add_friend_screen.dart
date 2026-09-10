@@ -124,6 +124,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           style: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.ink),
           decoration: InputDecoration(
             hintText: '例如 A7C9K2XZ',
+            hintStyle: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.fog),
             errorText: _error,
             filled: true,
             fillColor: AppColors.cream,

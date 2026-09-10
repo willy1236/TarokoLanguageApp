@@ -272,14 +272,34 @@ class ForumBoardViewState extends State<ForumBoardView> {
       onRefresh: refresh,
       // 所有狀態都包在同一個可捲動容器裡：載入中、載入失敗、空清單也要能下拉。
       // 失敗時尤其重要——那正是最需要重試的時候。
-      child: ListView(
-        controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 100),
-        children: _buildBody(seniorModeController.enabled),
-      ),
+      // 空清單時用 LayoutBuilder 撐滿可視高度，讓 TrukuEmptyState 能真正垂直置中，
+      // 而不是像一般清單項目一樣貼在頂端。
+      child: _isEmptyState
+          ? LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 100),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: _buildBody(seniorModeController.enabled),
+                  ),
+                ),
+              ),
+            )
+          : ListView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 100),
+              children: _buildBody(seniorModeController.enabled),
+            ),
     ),
   );
+
+  bool get _isEmptyState =>
+      !_loading && _error == null && _pinned.isEmpty && _posts.isEmpty;
 
   List<Widget> _buildBody(bool seniorMode) {
     final header = widget.header;
@@ -310,11 +330,15 @@ class ForumBoardViewState extends State<ForumBoardView> {
     if (all.isEmpty) {
       return [
         ?header,
-        TrukuEmptyState(
-          icon: Icons.forum_outlined,
-          message: widget.emptyMessage,
-          subtitle: '下拉重新整理，或成為第一位分享的人。',
-          seniorMode: seniorMode,
+        Expanded(
+          child: Center(
+            child: TrukuEmptyState(
+              icon: Icons.forum_outlined,
+              message: widget.emptyMessage,
+              subtitle: '下拉重新整理，或成為第一位分享的人。',
+              seniorMode: seniorMode,
+            ),
+          ),
         ),
       ];
     }

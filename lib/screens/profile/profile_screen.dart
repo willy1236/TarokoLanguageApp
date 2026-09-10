@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -136,19 +135,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   scale: 0.8,
                 ),
               ),
-            ),
-          ),
-          Positioned(
-            top: 56,
-            right: 16,
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.creamLight.withValues(alpha: 0.15),
-              ),
-              child: CustomPaint(painter: _SettingsIconPainter()),
             ),
           ),
           Padding(
@@ -1373,34 +1359,6 @@ class _LogoutIconPainter extends CustomPainter {
       )
       ..lineTo(size.width * 0.45, size.height * 0.87);
     canvas.drawPath(door, p);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
-}
-
-class _SettingsIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = AppColors.creamLight
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round;
-    final cx = size.width / 2;
-    final cy = size.height / 2;
-    final r = size.width * 0.16;
-    canvas.drawCircle(Offset(cx, cy), r, p);
-    for (int i = 0; i < 8; i++) {
-      final a = i * math.pi / 4;
-      final inner = r + size.width * 0.08;
-      final outer = r + size.width * 0.22;
-      canvas.drawLine(
-        Offset(cx + inner * math.cos(a), cy + inner * math.sin(a)),
-        Offset(cx + outer * math.cos(a), cy + outer * math.sin(a)),
-        p,
-      );
-    }
   }
 
   @override
