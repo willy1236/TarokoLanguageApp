@@ -149,9 +149,8 @@ class _LearnScreenState extends State<LearnScreen> {
           final levels = snapshot.data ?? const [];
           return Column(
             children: [
-              Expanded(flex: 3, child: _buildHero(levels)),
+              _buildHero(levels),
               Expanded(
-                flex: 7,
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                   child: Column(
@@ -829,13 +828,15 @@ class _QuizEntryCard extends StatelessWidget {
           color: isDark ? AppColors.ink : AppColors.primary,
           borderRadius: BorderRadius.circular(16),
         ),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Icon(icon, color: iconColor, size: 28),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
+                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
