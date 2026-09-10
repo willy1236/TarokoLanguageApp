@@ -159,7 +159,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       if (tribeLine != null)
                         Text(
                           tribeLine,
-                          style: AppTypography.bodyStyle(
+                          style: AppTypography.titleStyle(
                             seniorMode: seniorMode,
                             color: AppColors.creamLight.withValues(alpha: 0.75),
                           ),
@@ -194,7 +194,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ),
       child: Text(
         text,
-        style: AppTypography.captionStyle(color: AppColors.goldDeep),
+        style: AppTypography.bodyLargeStyle(color: AppColors.goldDeep),
       ),
     );
   }
