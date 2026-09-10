@@ -806,6 +806,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         editable: !identityLocked,
         onTap: identityLocked ? null : _editTribe,
       ),
+      _settingRow(
+        '視訊暱稱',
+        _user?.videoNickname ?? '尚未設定',
+        editable: true,
+        onTap: _editVideoNickname,
+      ),
       _settingRow('電子信箱', _user?.email ?? 'apyang@truku.org', editable: false),
     ]);
   }
@@ -853,6 +859,26 @@ class _ProfileScreenState extends State<ProfileScreen> {
       debugPrint('Failed to update tribal name: $e');
       debugPrintStack(stackTrace: st);
       _showError('更新失敗，請稍後再試');
+    }
+  }
+
+  // 視訊配對前必填；空字串視為清空，後端規則相同。
+  Future<void> _editVideoNickname() async {
+    final newName = await showDialog<String>(
+      context: context,
+      builder: (ctx) => _RenameDialog(
+        title: '修改視訊暱稱',
+        label: '視訊暱稱',
+        initialValue: _user?.videoNickname ?? '',
+      ),
+    );
+    if (newName == null || newName == _user?.videoNickname) return;
+    try {
+      final updated = await UserService.updateMe(videoNickname: newName);
+      if (mounted) setState(() => _user = updated);
+    } catch (e, st) {
+      debugPrint('Failed to update video nickname: $e');
+      debugPrintStack(stackTrace: st);
     }
   }
 

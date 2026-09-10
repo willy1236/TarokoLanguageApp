@@ -24,6 +24,7 @@ class UserService {
     String? ethnicGroup,
     int? tribeId,
     bool clearTribeId = false,
+    String? videoNickname,
     bool? isIndigenous,
     String? tribalName,
   }) async {
@@ -31,6 +32,7 @@ class UserService {
       'display_name': ?displayName,
       'ethnic_group': ?ethnicGroup,
       if (clearTribeId) 'tribe_id': null else 'tribe_id': ?tribeId,
+      'video_nickname': ?videoNickname,
       'is_indigenous': ?isIndigenous,
       'tribal_name': ?tribalName,
     };
