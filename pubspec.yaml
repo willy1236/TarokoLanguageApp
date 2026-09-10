@@ -69,6 +69,10 @@ dependencies:
   share_plus: ^13.3.0
   path_provider: ^2.1.5
 
+  # 1 對 1 視訊配對（issue #10）：Agora RTC 用戶端 SDK + 相機/麥克風權限管理
+  agora_rtc_engine: ^6.5.2
+  permission_handler: ^11.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

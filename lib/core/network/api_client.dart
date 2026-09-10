@@ -45,6 +45,11 @@ class ApiException implements Exception {
   bool get isConsentRequired => code == 'CONSENT_REQUIRED';
   bool get isSessionNotFound => code == 'SESSION_NOT_FOUND';
   bool get isSessionNotCompleted => code == 'SESSION_NOT_COMPLETED';
+  bool get isVideoUnavailable =>
+      statusCode == 503 && code == 'VIDEO_UNAVAILABLE';
+  bool get isVideoNicknameRequired =>
+      statusCode == 403 && code == 'VIDEO_NICKNAME_REQUIRED';
+  bool get isSessionEnded => code == 'SESSION_ENDED';
   bool get isIdentityLocked => code == 'IDENTITY_LOCKED';
   bool get isFileTooLarge => code == 'FILE_TOO_LARGE';
   bool get isInvalidFileType => code == 'INVALID_FILE_TYPE';
