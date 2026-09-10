@@ -40,6 +40,7 @@ class EventDetail {
   final int likeCount; // 即時 COUNT，非反正規化欄位
   final bool isLiked;
   final bool isBookmarked;
+  final bool isJoined; // 後端直接算好；非發起人的 participants 是空陣列，不能靠它判斷
 
   const EventDetail({
     required this.id,
@@ -64,6 +65,7 @@ class EventDetail {
     this.likeCount = 0,
     this.isLiked = false,
     this.isBookmarked = false,
+    this.isJoined = false,
   });
 
   /// 目前登入者是否為發起人（判斷要不要顯示「發送提醒」「取消活動」）。
@@ -73,9 +75,10 @@ class EventDetail {
   /// （這種情況只在拿得到完整 participants 時才準）。
   int get participantCount => participantCountRaw ?? participants.length;
 
-  /// 目前登入者是否已報名。
+  /// 目前登入者是否已報名。優先用後端算好的 isJoined；participants 只有發起人
+  /// 拿得到完整名單，當 fallback 用。
   bool isJoinedBy(int? uid) =>
-      uid != null && participants.any((p) => p.uid == uid);
+      isJoined || (uid != null && participants.any((p) => p.uid == uid));
 
   /// 名額是否已滿（不限名額時永遠 false）。
   bool get isFull =>
@@ -115,6 +118,7 @@ class EventDetail {
       likeCount: asEventInt(json['like_count']) ?? 0,
       isLiked: json['is_liked'] as bool? ?? false,
       isBookmarked: json['is_bookmarked'] as bool? ?? false,
+      isJoined: json['is_joined'] as bool? ?? false,
     );
   }
 
@@ -154,6 +158,7 @@ class EventDetail {
         likeCount: likeCount ?? this.likeCount,
         isLiked: isLiked ?? this.isLiked,
         isBookmarked: isBookmarked ?? this.isBookmarked,
+        isJoined: isJoined,
       );
 }
 
