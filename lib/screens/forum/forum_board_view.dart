@@ -40,6 +40,11 @@ class ForumBoardView extends StatefulWidget {
   /// 使用者下拉時預期的是「整頁更新」，只更新貼文會與這個直覺不符。
   final Future<void> Function()? onRefresh;
 
+  /// 貼文列表上方要一起捲動的內容（標題、篩選 tab 等）。放進同一個 ListView
+  /// 而不是外層另一個 Column，這樣才會跟著貼文一起往上捲，而不是浮在畫面上。
+  /// 不論載入中／失敗／空清單都會顯示，避免捲動內容忽有忽無。
+  final Widget? header;
+
   const ForumBoardView({
     super.key,
     required this.loadPage,
@@ -50,6 +55,7 @@ class ForumBoardView extends StatefulWidget {
     this.prependOnRefresh = true,
     this.reloadKey,
     this.onRefresh,
+    this.header,
   });
 
   @override
@@ -262,9 +268,12 @@ class ForumBoardViewState extends State<ForumBoardView> {
   );
 
   List<Widget> _buildBody(bool seniorMode) {
+    final header = widget.header;
+
     if (_loading) {
-      return const [
-        Padding(
+      return [
+        ?header,
+        const Padding(
           padding: EdgeInsets.symmetric(vertical: 60),
           child: Center(
             child: CircularProgressIndicator(color: AppColors.primary),
@@ -274,6 +283,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
     }
     if (_error != null) {
       return [
+        ?header,
         _ForumErrorState(
           message: _error!,
           onRetry: _load,
@@ -285,6 +295,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
     final all = [..._pinned, ..._posts];
     if (all.isEmpty) {
       return [
+        ?header,
         TrukuEmptyState(
           icon: Icons.forum_outlined,
           message: widget.emptyMessage,
@@ -295,6 +306,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
     }
 
     return [
+      ?header,
       // 上方留白讓第一張卡片與上面的內容分開，不會黏在一起。
       const SizedBox(height: 14),
       for (final post in all)

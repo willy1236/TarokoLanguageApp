@@ -178,25 +178,29 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     data: forumTheme(context),
     child: ColoredBox(
       color: AppColors.creamLight,
-      // 順序沿用改版前：標題、近期活動橫向小卡、看板 tab，最後才是貼文列表。
-      // 只有貼文列表捲動，上面三段固定。
+      // 只有看板 tab 固定在頂端；標題、近期活動小卡都併入貼文列表一起捲動，
+      // 不再浮在畫面上——下拉手勢因此也涵蓋得到頁首（見 ForumBoardView.header）。
       child: Column(
         children: [
-          _buildHeader(context, seniorMode),
-          if (widget.topToggle != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-              child: widget.topToggle,
-            ),
-          // 近期活動固定在看板 tab 上方不隨貼文捲動。代價是它不在下拉手勢的
-          // 範圍內——刷新要從貼文區下拉，或等 App 回到前景。
-          // 精簡模式不顯示活動，避免與族語學習內容混雜。
-          if (!seniorMode) _buildMiniEventCards(),
           _buildTabBar(),
-          Expanded(child: _buildPostsSection()),
+          Expanded(child: _buildPostsSection(seniorMode)),
         ],
       ),
     ),
+  );
+
+  Widget _buildScrollingHeader(bool seniorMode) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildHeader(context, seniorMode),
+      if (widget.topToggle != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: widget.topToggle,
+        ),
+      // 精簡模式不顯示活動，避免與族語學習內容混雜。
+      if (!seniorMode) _buildMiniEventCards(),
+    ],
   );
 
   Widget _buildHeader(BuildContext context, bool seniorMode) {
@@ -479,7 +483,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildPostsSection() {
+  Widget _buildPostsSection(bool seniorMode) {
     final slug = _boardSlug;
     if (_boardsLoading) {
       return const Padding(
@@ -496,6 +500,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       child: ForumBoardView(
         key: _boardViewKey,
         reloadKey: reloadKey,
+        header: _buildScrollingHeader(seniorMode),
         emptyMessage: slug == null ? '還沒有人發文' : '這個分類還沒有貼文',
         loadPage: ({cursor, after}) => slug == null
             ? ForumService.allPosts(cursor: cursor, after: after)
