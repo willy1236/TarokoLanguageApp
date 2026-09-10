@@ -26,6 +26,7 @@ import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
 import '../shop/shop_screen.dart';
+import '../millet/millet_ledger_screen.dart';
 import 'my_bookmarks_screen.dart';
 import 'my_likes_screen.dart';
 import '../terms/terms_consent_screen.dart';
@@ -408,6 +409,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUser();
   }
 
+  Future<void> _openMilletLedger() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute<void>(builder: (_) => const MilletLedgerScreen()),
+    );
+  }
+
   Widget _buildCoinBanner() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
@@ -446,7 +453,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               ),
             ),
             OutlinedButton(
-              onPressed: _openShop,
+              onPressed: _openMilletLedger,
               style: OutlinedButton.styleFrom(
                 foregroundColor: AppColors.primary,
                 side: const BorderSide(color: AppColors.primary),
@@ -454,7 +461,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
-              child: const Text('去商店'),
+              child: const Text('明細'),
             ),
           ],
         ),
