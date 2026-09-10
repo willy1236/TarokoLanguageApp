@@ -151,64 +151,50 @@ class _LearnScreenState extends State<LearnScreen> {
             children: [
               _buildHero(levels),
               Expanded(
-                child: Padding(
+                child: ListView(
                   padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                  child: Column(
-                    children: [
-                      Expanded(
-                        flex: 2,
-                        child: _suggestedLevelLoaded && _hasAnyPlacement
-                            ? _PlacementSummaryCard(
-                                quizLevel: _quizSuggestedLevel,
-                                listeningLevel: _listeningSuggestedLevel,
-                                onTap: () => _showPlacementPicker(context),
-                              )
-                            : _PlacementQuizCard(
-                                onTap: () => _showPlacementPicker(context),
-                              ),
-                      ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        flex: 4,
-                        child: _VocabQuizCard(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const VocabLevelScreen(),
-                            ),
+                  children: [
+                    _suggestedLevelLoaded && _hasAnyPlacement
+                        ? _PlacementSummaryCard(
+                            quizLevel: _quizSuggestedLevel,
+                            listeningLevel: _listeningSuggestedLevel,
+                            onTap: () => _showPlacementPicker(context),
+                          )
+                        : _PlacementQuizCard(
+                            onTap: () => _showPlacementPicker(context),
                           ),
+                    const SizedBox(height: 16),
+                    _VocabQuizCard(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const VocabLevelScreen(),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Expanded(
-                        flex: 4,
-                        child: _ListeningQuizCard(
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const ListeningModeScreen(),
-                            ),
-                          ),
+                    ),
+                    const SizedBox(height: 16),
+                    _ListeningQuizCard(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const ListeningModeScreen(),
                         ),
                       ),
-                      const SizedBox(height: 12),
-                      Expanded(
-                        flex: 2,
-                        child: _QuizEntryCard(
-                          icon: Icons.history,
-                          title: '測驗紀錄',
-                          subtitle: '查看歷史測驗結果',
-                          tone: _CardTone.primary,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => const HistoryScreen(),
-                            ),
-                          ),
+                    ),
+                    const SizedBox(height: 12),
+                    _QuizEntryCard(
+                      icon: Icons.history,
+                      title: '測驗紀錄',
+                      subtitle: '查看歷史測驗結果',
+                      tone: _CardTone.primary,
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const HistoryScreen(),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
             ],
