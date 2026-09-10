@@ -19,8 +19,14 @@ class FriendMessage {
 
   bool get isRead => readAt != null;
 
+  static int _toInt(dynamic v) => switch (v) {
+    num n => n.toInt(),
+    String s => int.tryParse(s) ?? 0,
+    _ => 0,
+  };
+
   factory FriendMessage.fromJson(Map<String, dynamic> j) => FriendMessage(
-    id: (j['id'] as num?)?.toInt() ?? 0,
+    id: _toInt(j['id']),
     senderUid: (j['sender_uid'] as num?)?.toInt() ?? 0,
     recipientUid: (j['recipient_uid'] as num?)?.toInt() ?? 0,
     body: j['body'] as String? ?? '',
