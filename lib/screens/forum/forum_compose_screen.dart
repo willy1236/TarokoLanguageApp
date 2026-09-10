@@ -268,6 +268,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
       elevation: 0,
       foregroundColor: AppColors.ink,
       toolbarHeight: seniorMode ? 68 : kToolbarHeight,
+      centerTitle: true,
       title: Text(
         _isEditing ? '編輯貼文' : '發文',
         style: GoogleFonts.notoSerifTc(
