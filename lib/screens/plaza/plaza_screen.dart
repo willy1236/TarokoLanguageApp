@@ -178,14 +178,9 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     data: forumTheme(context),
     child: ColoredBox(
       color: AppColors.creamLight,
-      // 只有看板 tab 固定在頂端；標題、近期活動小卡都併入貼文列表一起捲動，
-      // 不再浮在畫面上——下拉手勢因此也涵蓋得到頁首（見 ForumBoardView.header）。
-      child: Column(
-        children: [
-          _buildTabBar(),
-          Expanded(child: _buildPostsSection(seniorMode)),
-        ],
-      ),
+      // 標題、近期活動小卡、看板 tab 都併入貼文列表一起捲動，不再浮在畫面上
+      // ——下拉手勢因此也涵蓋得到頁首（見 ForumBoardView.header）。
+      child: _buildPostsSection(seniorMode),
     ),
   );
 
@@ -200,6 +195,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         ),
       // 精簡模式不顯示活動，避免與族語學習內容混雜。
       if (!seniorMode) _buildMiniEventCards(),
+      _buildTabBar(),
     ],
   );
 
@@ -377,8 +373,9 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     ],
   );
 
-  /// 看板 tab。名稱短時平均分佈填滿整列，多到放不下才變成可捲動——
-  /// 固定間距在只有六個兩字看板時會全部擠在左半邊，右邊留一大片空白。
+  /// 看板 tab，併入 [_buildScrollingHeader] 隨頁首一起捲動，接在近期活動
+  /// 小卡之後、貼文列表之前。名稱短時平均分佈填滿整列，多到放不下才變成
+  /// 可捲動——固定間距在只有六個兩字看板時會全部擠在左半邊，右邊留一大片空白。
   Widget _buildTabBar() => Container(
     decoration: const BoxDecoration(
       border: Border(bottom: BorderSide(color: AppColors.creamDeep)),
