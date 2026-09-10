@@ -25,7 +25,6 @@ import 'about_app_screen.dart';
 import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
-import '../millet/millet_ledger_screen.dart';
 import '../shop/shop_screen.dart';
 import 'my_bookmarks_screen.dart';
 import 'my_likes_screen.dart';
@@ -100,28 +99,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
       backgroundColor: AppColors.creamLight,
       body: ListView(
         padding: EdgeInsets.zero,
-        children: seniorMode
-            ? [
-                _buildHero(seniorMode: true),
-                _buildFriendsSection(seniorMode: true),
-                _buildMyLikesBookmarksSection(seniorMode: true),
-                _buildPreferencesSection(),
-                _buildOtherSection(seniorMode: true),
-                _buildLogout(context),
-                const SizedBox(height: 40),
-              ]
-            : [
-                _buildHero(seniorMode: false),
-                _buildFriendsSection(seniorMode: false),
-                _buildInventorySection(),
-                _buildMyEventsSection(),
-                _buildMyLikesBookmarksSection(seniorMode: false),
-                _buildAccountSection(),
-                _buildPreferencesSection(),
-                _buildOtherSection(seniorMode: false),
-                _buildLogout(context),
-                const SizedBox(height: 40),
-              ],
+        children: [
+          _buildHero(seniorMode: seniorMode),
+          _buildCoinBanner(),
+          _buildStatsRow(seniorMode: seniorMode),
+          _buildQuickLinksGrid(seniorMode: seniorMode),
+          _buildMoreSection(seniorMode: seniorMode),
+          _buildSettingsSection(seniorMode: seniorMode),
+          _buildOtherSection(seniorMode: seniorMode),
+          _buildLogout(context),
+          const SizedBox(height: 40),
+        ],
       ),
     );
   }
@@ -129,14 +117,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── Hero ──────────────────────────────────────────────────────────────────
 
   Widget _buildHero({required bool seniorMode}) {
+    final tribeLine = _user?.isIndigenous == true
+        ? (_user?.tribeName ?? '尚未設定')
+        : null;
     return Container(
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [AppColors.primary, AppColors.primaryDeep],
-        ),
-      ),
+      decoration: const BoxDecoration(color: AppColors.midnight),
       child: Stack(
         children: [
           Positioned.fill(
@@ -165,78 +150,63 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 100, 20, 28),
-            child: Column(
+            padding: const EdgeInsets.fromLTRB(20, 76, 20, 28),
+            child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    _buildAvatar(),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                _buildAvatar(),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _user?.displayName ?? 'Apyang Imiq',
+                        style: AppTypography.headlineStyle(
+                          seniorMode: seniorMode,
+                          color: AppColors.creamLight,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      if (tribeLine != null)
+                        Text(
+                          tribeLine,
+                          style: AppTypography.bodyStyle(
+                            seniorMode: seniorMode,
+                            color: AppColors.creamLight.withValues(alpha: 0.75),
+                          ),
+                        ),
+                      const SizedBox(height: 10),
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
                         children: [
-                          Text(
-                            _user?.displayName?.toUpperCase() ??
-                                'SAYUN LOWKING',
-                            style: GoogleFonts.crimsonPro(
-                              fontStyle: FontStyle.italic,
-                              fontSize: 11,
-                              color: AppColors.gold,
-                              letterSpacing: 3,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _user?.displayName ?? 'Apyang Imiq',
-                            style: GoogleFonts.notoSerifTc(
-                              fontSize: seniorMode ? 28 : 22,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.creamLight,
-                              letterSpacing: 1,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            seniorMode
-                                ? (_user?.isIndigenous == true
-                                      ? (_user?.tribeName ?? '尚未設定')
-                                      : '')
-                                : (_user?.isIndigenous == true
-                                      ? '${_user?.tribeName ?? "尚未設定"} · 加入 ${_user?.joinedDays ?? 124} 天'
-                                      : '加入 ${_user?.joinedDays ?? 124} 天'),
-                            style: GoogleFonts.notoSerifTc(
-                              fontSize: seniorMode
-                                  ? AppTypography.subtitle
-                                  : 12,
-                              color: AppColors.creamLight.withValues(
-                                alpha: 0.85,
-                              ),
-                              letterSpacing: 1,
-                            ),
-                          ),
+                          if (_user?.studyStreak != null && _user!.studyStreak > 0)
+                            _infoBadge('連續 ${_user!.studyStreak} 天'),
                         ],
                       ),
-                    ),
-                  ],
-                ),
-                if (!seniorMode) ...[
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      _statCell('${_user?.studyStreak ?? 0}', '連續學習'),
-                      const SizedBox(width: 10),
-                      _statCell('${_user?.videoCallCount ?? 0}', '通話次數'),
-                      const SizedBox(width: 10),
-                      _statCell('${_user?.forumPostCount ?? 0}', '發文'),
                     ],
                   ),
-                ],
+                ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _infoBadge(String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.gold.withValues(alpha: 0.18),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
+      ),
+      child: Text(
+        text,
+        style: AppTypography.captionStyle(color: AppColors.goldDeep),
       ),
     );
   }
@@ -300,40 +270,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _statCell(String value, String label) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-        decoration: BoxDecoration(
-          color: AppColors.creamLight.withValues(alpha: 0.10),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
-        ),
-        child: Column(
-          children: [
-            Text(
-              value,
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: AppColors.gold,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              label,
-              style: GoogleFonts.notoSerifTc(
-                fontSize: AppTypography.caption,
-                color: AppColors.creamLight.withValues(alpha: 0.80),
-                letterSpacing: 1,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }
@@ -471,7 +407,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUser();
   }
 
-  Widget _buildInventorySection() {
+  Widget _buildCoinBanner() {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
       child: Container(
@@ -481,150 +417,184 @@ class _ProfileScreenState extends State<ProfileScreen> {
           borderRadius: BorderRadius.circular(14),
           border: Border.all(color: AppColors.creamDeep),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Row(
-              children: [
-                Container(
-                  width: 26,
-                  height: 26,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: AppColors.gold.withValues(alpha: 0.2),
-                  ),
-                  child: const MilletCoinIcon(size: 16),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      RichText(
-                        text: TextSpan(
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: AppTypography.bodyLarge,
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.ink,
-                            letterSpacing: 0.5,
-                          ),
-                          children: [
-                            const TextSpan(text: '目前小米：'),
-                            TextSpan(
-                              text: '${_user?.millet ?? 0}',
-                              style: const TextStyle(color: AppColors.primary),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        '每日登入 / 完成單元都能得小米',
-                        style: GoogleFonts.notoSerifTc(
-                          fontSize: AppTypography.caption,
-                          color: AppColors.fog,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => const MilletLedgerScreen(),
-                    ),
-                  ),
-                  child: Text(
-                    '查看明細 →',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.caption,
-                      color: AppColors.primary,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                ),
-              ],
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.gold.withValues(alpha: 0.2),
+              ),
+              child: const MilletCoinIcon(size: 20),
             ),
-            const SizedBox(height: 12),
-            const Divider(height: 1, color: AppColors.creamDeep),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: _openBackpack,
-              child: Row(
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                    ),
-                    child: const Icon(
-                      Icons.inventory_2_outlined,
-                      size: 15,
-                      color: AppColors.primary,
-                    ),
+                  Text(
+                    '${_user?.millet ?? 0}',
+                    style: AppTypography.headlineStyle(color: AppColors.primary),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      '我的背包 · 查看已擁有的頭像與頭像框',
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: AppTypography.bodyLarge,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.fog,
-                    size: 16,
+                  Text(
+                    '小米 · 每日登入／完成單元可得',
+                    style: AppTypography.captionStyle(color: AppColors.fog),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 12),
-            const Divider(height: 1, color: AppColors.creamDeep),
-            const SizedBox(height: 12),
-            GestureDetector(
-              onTap: _openShop,
-              child: Row(
-                children: [
-                  Container(
-                    width: 26,
-                    height: 26,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.primary.withValues(alpha: 0.12),
-                    ),
-                    child: const Icon(
-                      Icons.storefront_outlined,
-                      size: 15,
-                      color: AppColors.primary,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      '小米商店 · 兌換頭像與頭像框',
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: AppTypography.bodyLarge,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                  const Icon(
-                    Icons.chevron_right,
-                    color: AppColors.fog,
-                    size: 16,
-                  ),
-                ],
+            OutlinedButton(
+              onPressed: _openShop,
+              style: OutlinedButton.styleFrom(
+                foregroundColor: AppColors.primary,
+                side: const BorderSide(color: AppColors.primary),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(999),
+                ),
+              ),
+              child: const Text('去商店'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ── 統計 ──────────────────────────────────────────────────────────────────
+
+  Widget _buildStatsRow({required bool seniorMode}) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.creamDeep),
+        ),
+        child: Row(
+          children: [
+            _statCell(seniorMode, '${_user?.studyStreak ?? 0}', '連續學習'),
+            _statDivider(),
+            _statCell(seniorMode, '${_user?.videoCallCount ?? 0}', '通話次數'),
+            _statDivider(),
+            _statCell(seniorMode, '${_user?.forumPostCount ?? 0}', '發文'),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _statDivider() =>
+      const SizedBox(height: 32, child: VerticalDivider(color: AppColors.creamDeep, width: 1));
+
+  Widget _statCell(bool seniorMode, String value, String label) {
+    return Expanded(
+      child: Column(
+        children: [
+          Text(
+            value,
+            style: AppTypography.titleStyle(
+              seniorMode: seniorMode,
+              color: AppColors.primary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: AppTypography.captionStyle(
+              seniorMode: seniorMode,
+              color: AppColors.fog,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── 快速入口（好友／背包／商店／收藏）─────────────────────────────────────
+
+  Widget _buildQuickLinksGrid({required bool seniorMode}) {
+    final links = [
+      _QuickLink(
+        icon: Icons.people_outline,
+        label: '好友',
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const FriendsListScreen()),
+        ),
+      ),
+      _QuickLink(
+        icon: Icons.inventory_2_outlined,
+        label: '背包',
+        onTap: _openBackpack,
+      ),
+      _QuickLink(
+        icon: Icons.storefront_outlined,
+        label: '商店',
+        onTap: _openShop,
+      ),
+      _QuickLink(
+        icon: Icons.bookmark_outline,
+        label: '收藏',
+        onTap: () => Navigator.of(context).push(
+          MaterialPageRoute(builder: (_) => const MyBookmarksScreen()),
+        ),
+      ),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(child: _quickLinkCard(links[0], seniorMode: seniorMode)),
+              const SizedBox(width: 12),
+              Expanded(child: _quickLinkCard(links[1], seniorMode: seniorMode)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(child: _quickLinkCard(links[2], seniorMode: seniorMode)),
+              const SizedBox(width: 12),
+              Expanded(child: _quickLinkCard(links[3], seniorMode: seniorMode)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _quickLinkCard(_QuickLink link, {required bool seniorMode}) {
+    return GestureDetector(
+      onTap: link.onTap,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.creamDeep),
+        ),
+        child: Row(
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.primary.withValues(alpha: 0.12),
+              ),
+              child: Icon(link.icon, size: 18, color: AppColors.primary),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                link.label,
+                style: AppTypography.subtitleStyle(
+                  seniorMode: seniorMode,
+                  color: AppColors.ink,
+                ),
               ),
             ),
           ],
@@ -633,71 +603,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  // ── 好友 ──────────────────────────────────────────────────────────────────
+  // ── 更多（活動／按讚）────────────────────────────────────────────────────
 
-  Widget _buildFriendsSection({required bool seniorMode}) {
-    return _section('SBRIGAN · 好友', [
+  Widget _buildMoreSection({required bool seniorMode}) {
+    return _section('SMRATUC · 更多', [
       _navRow(
-        icon: Icons.people_outline,
-        label: '好友',
+        icon: Icons.event_note_outlined,
+        label: '我發起的活動',
         seniorMode: seniorMode,
-        onTap: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const FriendsListScreen())),
-      ),
-    ]);
-  }
-
-  // ── 我的活動 ──────────────────────────────────────────────────────────────
-
-  Widget _buildMyEventsSection() {
-    return _section('SMRATUC · 活動', [
-      GestureDetector(
-        behavior: HitTestBehavior.opaque,
         onTap: () => Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const MyEventsScreen())),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.event_note_outlined,
-                    size: 18,
-                    color: AppColors.primary,
-                  ),
-                  const SizedBox(width: 10),
-                  Text(
-                    '我發起的活動',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.bodyLarge,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ],
-              ),
-              const Icon(Icons.chevron_right, color: AppColors.fog, size: 16),
-            ],
-          ),
-        ),
-      ),
-    ]);
-  }
-
-  Widget _buildMyLikesBookmarksSection({required bool seniorMode}) {
-    return _section('SMRATUC · 互動', [
-      _navRow(
-        icon: Icons.bookmark_outline,
-        label: '我的收藏',
-        seniorMode: seniorMode,
-        onTap: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const MyBookmarksScreen())),
       ),
       const Divider(height: 1, color: AppColors.creamDeep),
       _navRow(
@@ -760,9 +676,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   // ── 帳號設定 ──────────────────────────────────────────────────────────────
 
-  Widget _buildAccountSection() {
+  Widget _buildSettingsSection({required bool seniorMode}) {
     final identityLocked = _user?.ethnicGroup != null;
-    return _section('HANGAN · 帳號', [
+    return _section('PSPUNG · 設定', [
       _settingRow(
         '中文姓名',
         _user?.displayName ?? 'Apyang Imiq',
@@ -811,6 +727,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onTap: identityLocked ? null : _editTribe,
       ),
       _settingRow('電子信箱', _user?.email ?? 'apyang@truku.org', editable: false),
+      _switchRow(
+        '精簡模式',
+        seniorMode,
+        seniorMode: seniorMode,
+        onChanged: (v) => seniorModeController.setEnabled(v),
+      ),
     ]);
   }
 
@@ -967,30 +889,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  // ── 偏好設定 ──────────────────────────────────────────────────────────────
-
-  Widget _buildPreferencesSection() {
-    final seniorMode = seniorModeController.enabled;
-    return _section('SMPUNG · 偏好', [
-      _switchRow(
-        '精簡模式',
-        seniorMode,
-        seniorMode: seniorMode,
-        onChanged: (v) => seniorModeController.setEnabled(v),
-      ),
-    ]);
-  }
-
   // ── 其他 ──────────────────────────────────────────────────────────────────
 
   Widget _buildOtherSection({required bool seniorMode}) {
-    const items = ['關於語見太魯閣', '服務條款與隱私權政策', '聯絡我們'];
+    const items = ['意見回饋', '關於語見太魯閣', '服務條款與隱私權政策'];
     return _section(
-      'QITA · 其他',
+      'DUMA · 其他',
       List.generate(items.length, (i) {
         final onTap = items[i] == '服務條款與隱私權政策'
             ? _openTermsView
-            : items[i] == '聯絡我們'
+            : items[i] == '意見回饋'
             ? _openContactEmail
             : items[i] == '關於語見太魯閣'
             ? _openAboutApp
@@ -1318,6 +1226,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+}
+
+class _QuickLink {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  const _QuickLink({required this.icon, required this.label, required this.onTap});
 }
 
 class _RenameDialog extends StatefulWidget {
