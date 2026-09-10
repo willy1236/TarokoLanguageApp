@@ -67,7 +67,12 @@ dependencies:
 
   # 好友聊天 WebSocket 即時連線
   web_socket_channel: ^3.0.1
-  # 定向通話：真實 Agora 視訊/語音引擎
+
+  # 發起人匯出報名名單 CSV：寫暫存檔後跳系統分享選單
+  share_plus: ^13.3.0
+  path_provider: ^2.1.5
+
+  # 視訊通話（定向通話 + 1 對 1 配對，issue #10）：Agora RTC 用戶端 SDK + 相機/麥克風權限管理
   agora_rtc_engine: ^6.5.2
   permission_handler: ^11.3.1
 

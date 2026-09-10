@@ -1,6 +1,6 @@
 // 定向通話：撥給指定好友（見 Truku_backend backend/routes/friendCalls.ts）。
-// 接通後複用既有 video_sessions／Agora，撥出方接通後用既有 VideoCallService.getToken
-// 取得自己的 token；被叫方 accept 端點直接回自己的 session+token。
+// 接通後複用既有 video_sessions／Agora，撥出方接通後用既有 VideoCallService.refreshToken
+// 取得自己的 Agora 憑證；被叫方 accept 端點直接回自己的 session+憑證。
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
@@ -26,20 +26,13 @@ class DirectedCallService {
         .toList();
   }
 
-  /// 被叫方接聽，回傳可直接進通話畫面的 session + token。
-  static Future<(VideoCallSession, VideoCallToken)> acceptCall(int callId) async {
+  /// 被叫方接聽，回傳可直接進通話畫面的 session + Agora 憑證。
+  static Future<(VideoSession, AgoraCallCredentials)> acceptCall(int callId) async {
     final data = await ApiClient.post(ApiConfig.friendCallAccept(callId));
     final sessionJson = data['session'] as Map<String, dynamic>;
-    final session = VideoCallSession.fromJson(sessionJson);
-    final token = VideoCallToken.fromJson({
-      'token': data['token'],
-      'app_id': data['app_id'],
-      'channel': sessionJson['channel'],
-      'uid': data['uid'],
-      'peer_nickname': sessionJson['peer_nickname'],
-      'expires_at': sessionJson['expires_at'],
-    });
-    return (session, token);
+    final session = VideoSession.fromJson(sessionJson);
+    final credentials = AgoraCallCredentials.fromJson(data);
+    return (session, credentials);
   }
 
   static Future<void> declineCall(int callId) async {

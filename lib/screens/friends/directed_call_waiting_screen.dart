@@ -1,5 +1,5 @@
 // 撥打好友定向通話的「撥出中」畫面。撥號後輪詢來電狀態，接通時用既有
-// VideoCallService.getToken 取得自己的 token 再進通話畫面（見 friendCalls.ts 註解）。
+// VideoCallService.refreshToken 取得自己的 Agora 憑證再進通話畫面（見 friendCalls.ts 註解）。
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../models/video_call_model.dart';
 import '../../services/directed_call_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
@@ -77,7 +78,11 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
       if (!mounted) return;
       switch (status.status) {
         case 'accepted':
-          await _navigateToCall(status.sessionId!, status.peerNickname);
+          await _navigateToCall(
+            status.sessionId!,
+            status.peerUid,
+            status.peerNickname,
+          );
           break;
         case 'declined':
           _pollTimer?.cancel();
@@ -94,21 +99,33 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
     }
   }
 
-  Future<void> _navigateToCall(int sessionId, String? peerNickname) async {
+  Future<void> _navigateToCall(
+    int sessionId,
+    int peerUid,
+    String? peerNickname,
+  ) async {
     _pollTimer?.cancel();
     try {
-      final token = await VideoCallService.getToken(sessionId);
+      final refreshed = await VideoCallService.refreshToken(sessionId);
       if (!mounted) return;
       _navigated = true;
+      final session = VideoSession(
+        id: sessionId,
+        channel: refreshed.channel,
+        peerUid: peerUid,
+        peerNickname: peerNickname,
+        expiresAt: refreshed.expiresAt,
+      );
+      final credentials = AgoraCallCredentials(
+        token: refreshed.token,
+        appId: refreshed.appId,
+        uid: refreshed.uid,
+      );
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => VideoCallScreen(
-            sessionId: sessionId,
-            appId: token.appId,
-            rtcToken: token.token,
-            channel: token.channel,
-            uid: token.uid,
-            peerNickname: peerNickname,
+            session: session,
+            credentials: credentials,
             directedCallId: _callId,
           ),
         ),

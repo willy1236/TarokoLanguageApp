@@ -26,19 +26,15 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   Future<void> _accept() async {
     setState(() => _busy = true);
     try {
-      final (session, token) = await DirectedCallService.acceptCall(
+      final (session, credentials) = await DirectedCallService.acceptCall(
         widget.call.callId,
       );
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
           builder: (_) => VideoCallScreen(
-            sessionId: session.id,
-            appId: token.appId,
-            rtcToken: token.token,
-            channel: token.channel,
-            uid: token.uid,
-            peerNickname: session.peerNickname,
+            session: session,
+            credentials: credentials,
             directedCallId: widget.call.callId,
           ),
         ),

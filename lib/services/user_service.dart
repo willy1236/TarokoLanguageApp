@@ -33,18 +33,18 @@ class UserService {
     String? ethnicGroup,
     int? tribeId,
     bool clearTribeId = false,
+    String? videoNickname,
     bool? isIndigenous,
     String? tribalName,
-    String? videoNickname,
     String? selfIntro,
   }) async {
     final body = <String, dynamic>{
       'display_name': ?displayName,
       'ethnic_group': ?ethnicGroup,
       if (clearTribeId) 'tribe_id': null else 'tribe_id': ?tribeId,
+      'video_nickname': ?videoNickname,
       'is_indigenous': ?isIndigenous,
       'tribal_name': ?tribalName,
-      'video_nickname': ?videoNickname,
       'self_intro': ?selfIntro,
     };
     final data = await ApiClient.patch(ApiConfig.me, body);

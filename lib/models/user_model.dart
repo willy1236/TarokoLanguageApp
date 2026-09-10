@@ -23,10 +23,10 @@ class UserModel {
   final String? ethnicGroup; // 族群，見 00_核心與認證.md §2.5；未設為 null
   final int? tribeId; // 部落 id，對應 tribes.id；未設為 null
   final String? tribeName; // 部落中文名，由後端 join tribes 帶出
+  final String? videoNickname; // 視訊暱稱，論壇/好友/視訊等公開場合顯示；未設為 null，視訊配對前必填
   final bool? isIndigenous; // 是否原住民；ethnicGroup 一經設定即永久鎖定
   final String? tribalName; // 本人族語名，不受 ethnicGroup 鎖定限制，可隨時修改
   final bool profileCompleted; // 首次登入完善資料是否已完成，見 issue #43
-  final String? videoNickname; // 公開暱稱，論壇/好友/視訊等公開場合顯示；complete-profile 必填
   final String? selfIntro; // 自我介紹，公開檔案顯示；未填為 null
   final String? friendCode; // 8 碼公開識別碼，唯讀，供他人加好友用
   final String? quizSuggestedLevel; // 分級測驗建議的單字起始等級；null=尚未分級
@@ -52,10 +52,10 @@ class UserModel {
     this.ethnicGroup,
     this.tribeId,
     this.tribeName,
+    this.videoNickname,
     this.isIndigenous,
     this.tribalName,
     this.profileCompleted = false,
-    this.videoNickname,
     this.selfIntro,
     this.friendCode,
     this.quizSuggestedLevel,
@@ -87,10 +87,10 @@ class UserModel {
       ethnicGroup: json['ethnic_group'] as String?,
       tribeId: json['tribe_id'] as int?,
       tribeName: json['tribe_name'] as String?,
+      videoNickname: json['video_nickname'] as String?,
       isIndigenous: json['is_indigenous'] as bool?,
       tribalName: json['tribal_name'] as String?,
       profileCompleted: json['profile_completed'] as bool? ?? false,
-      videoNickname: json['video_nickname'] as String?,
       selfIntro: json['self_intro'] as String?,
       friendCode: json['friend_code'] as String?,
       quizSuggestedLevel: json['quiz_suggested_level'] as String?,
@@ -118,10 +118,10 @@ class UserModel {
         'ethnic_group': ethnicGroup,
         'tribe_id': tribeId,
         'tribe_name': tribeName,
+        'video_nickname': videoNickname,
         'is_indigenous': isIndigenous,
         'tribal_name': tribalName,
         'profile_completed': profileCompleted,
-        'video_nickname': videoNickname,
         'self_intro': selfIntro,
         'friend_code': friendCode,
         'quiz_suggested_level': quizSuggestedLevel,
@@ -152,10 +152,10 @@ class UserModel {
     String? ethnicGroup,
     int? tribeId,
     String? tribeName,
+    String? videoNickname,
     bool? isIndigenous,
     String? tribalName,
     bool? profileCompleted,
-    String? videoNickname,
     String? selfIntro,
     String? friendCode,
     String? quizSuggestedLevel,
@@ -181,10 +181,10 @@ class UserModel {
       ethnicGroup: ethnicGroup ?? this.ethnicGroup,
       tribeId: tribeId ?? this.tribeId,
       tribeName: tribeName ?? this.tribeName,
+      videoNickname: videoNickname ?? this.videoNickname,
       isIndigenous: isIndigenous ?? this.isIndigenous,
       tribalName: tribalName ?? this.tribalName,
       profileCompleted: profileCompleted ?? this.profileCompleted,
-      videoNickname: videoNickname ?? this.videoNickname,
       selfIntro: selfIntro ?? this.selfIntro,
       friendCode: friendCode ?? this.friendCode,
       quizSuggestedLevel: quizSuggestedLevel ?? this.quizSuggestedLevel,

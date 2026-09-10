@@ -1,20 +1,23 @@
 import 'dart:async';
+
+import 'package:agora_rtc_engine/agora_rtc_engine.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
-import '../../services/agora_call_service.dart';
+import '../../models/video_call_model.dart';
 import '../../services/directed_call_service.dart';
+import '../../services/fcm_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 
+/// 通話畫面。[credentials] 可為 null（例如從 VideoWaitingScreen 輪詢配到時，
+/// GET /session/current 只回 session、沒有 token）——此時 initState 會自行呼叫
+/// VideoCallService.refreshToken 取得 Agora 憑證。
 class VideoCallScreen extends StatefulWidget {
-  final int sessionId;
-  final String appId;
-  final String rtcToken;
-  final String channel;
-  final int uid;
-  final String? peerNickname;
+  final VideoSession session;
+  final AgoraCallCredentials? credentials;
 
   /// 若這通通話是從好友定向撥號接通的，帶入該通話 id：掛斷時改呼叫
   /// DirectedCallService.endCall（會一併結束底層 session 並判定羈絆 +5），
@@ -23,12 +26,8 @@ class VideoCallScreen extends StatefulWidget {
 
   const VideoCallScreen({
     super.key,
-    required this.sessionId,
-    required this.appId,
-    required this.rtcToken,
-    required this.channel,
-    required this.uid,
-    required this.peerNickname,
+    required this.session,
+    this.credentials,
     this.directedCallId,
   });
 
@@ -36,73 +35,188 @@ class VideoCallScreen extends StatefulWidget {
   State<VideoCallScreen> createState() => _VideoCallScreenState();
 }
 
-class _VideoCallScreenState extends State<VideoCallScreen> {
-  final AgoraCallService _agora = AgoraCallService();
-  int _seconds = 0;
-  Timer? _timer;
-  String? _initError;
+class _VideoCallScreenState extends State<VideoCallScreen>
+    with WidgetsBindingObserver {
+  late VideoSession _session;
+  RtcEngine? _engine;
+  int? _remoteUid;
   bool _ended = false;
+  bool _joining = true;
+  bool _muted = false;
+  bool _camOff = false;
+  bool _remoteCamOff = false;
+  String? _joinError;
+  Timer? _countdownTimer;
+  Duration _remaining = Duration.zero;
 
   @override
   void initState() {
     super.initState();
-    _agora.addListener(_onAgoraChanged);
-    _init();
-  }
-
-  Future<void> _init() async {
-    try {
-      await _agora.initAndJoin(
-        appId: widget.appId,
-        token: widget.rtcToken,
-        channel: widget.channel,
-        uid: widget.uid,
-      );
-      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-        if (mounted) setState(() => _seconds++);
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _initError = e is AgoraPermissionDeniedException
-            ? '請允許相機與麥克風權限才能通話'
-            : '通話初始化失敗，請稍後再試';
-      });
-    }
-  }
-
-  void _onAgoraChanged() {
-    if (mounted) setState(() {});
+    _session = widget.session;
+    WidgetsBinding.instance.addObserver(this);
+    FcmService.onVideoSessionEnded = _onPeerEnded;
+    _countdownTimer =
+        Timer.periodic(const Duration(seconds: 1), (_) => _tickCountdown());
+    _tickCountdown();
+    unawaited(_setup());
   }
 
   @override
-  void dispose() {
-    _timer?.cancel();
-    _agora.removeListener(_onAgoraChanged);
-    _agora.dispose();
-    super.dispose();
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || _ended) return;
+    if (_session.isExpired) _endCall(auto: true);
   }
 
-  Future<void> _endCall() async {
+  Future<void> _setup() async {
+    final camera = await Permission.camera.status;
+    final mic = await Permission.microphone.status;
+    if (!camera.isGranted || !mic.isGranted) {
+      final results = await [Permission.camera, Permission.microphone].request();
+      if (!(results[Permission.camera]?.isGranted ?? false) ||
+          !(results[Permission.microphone]?.isGranted ?? false)) {
+        if (!mounted) return;
+        setState(() => _joinError = '需要相機與麥克風權限才能通話');
+        return;
+      }
+    }
+
+    AgoraCallCredentials? credentials = widget.credentials;
+    try {
+      credentials ??= await _fetchCredentials();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _joinError = '無法取得視訊憑證，請稍後再試');
+      return;
+    }
+    if (!mounted || credentials == null) return;
+
+    final engine = createAgoraRtcEngine();
+    _engine = engine;
+    await engine.initialize(RtcEngineContext(appId: credentials.appId));
+    engine.registerEventHandler(RtcEngineEventHandler(
+      onJoinChannelSuccess: (connection, elapsed) {
+        if (mounted) setState(() => _joining = false);
+      },
+      onUserJoined: (connection, remoteUid, elapsed) {
+        if (mounted) setState(() => _remoteUid = remoteUid);
+      },
+      onUserOffline: (connection, remoteUid, reason) {
+        // 對方畫面離開不等於通話結束；真正的結束交給 FCM
+        // video_session_ended 或倒數/手動按鈕決定。
+        if (mounted) setState(() => _remoteUid = null);
+      },
+      onUserMuteVideo: (connection, remoteUid, muted) {
+        if (mounted) setState(() => _remoteCamOff = muted);
+      },
+      onTokenPrivilegeWillExpire: (connection, token) async {
+        if (_session.isExpired) return;
+        try {
+          final refreshed = await VideoCallService.refreshToken(_session.id);
+          await engine.renewToken(refreshed.token);
+        } catch (e) {
+          debugPrint('VideoCallScreen: token 續期失敗：$e');
+        }
+      },
+    ));
+
+    await engine.enableVideo();
+    await engine.setVideoEncoderConfiguration(const VideoEncoderConfiguration(
+      dimensions: VideoDimensions(width: 1280, height: 720),
+    ));
+    await engine.startPreview();
+    await engine.joinChannel(
+      token: credentials.token,
+      channelId: _session.channel,
+      uid: credentials.uid,
+      options: const ChannelMediaOptions(
+        clientRoleType: ClientRoleType.clientRoleBroadcaster,
+        channelProfile: ChannelProfileType.channelProfileCommunication,
+      ),
+    );
+  }
+
+  Future<AgoraCallCredentials?> _fetchCredentials() async {
+    final refreshed = await VideoCallService.refreshToken(_session.id);
+    return AgoraCallCredentials(
+      token: refreshed.token,
+      appId: refreshed.appId,
+      uid: refreshed.uid,
+    );
+  }
+
+  void _tickCountdown() {
+    final remaining = _session.expiresAt.difference(DateTime.now().toUtc());
+    if (!mounted) return;
+    setState(() => _remaining = remaining.isNegative ? Duration.zero : remaining);
+    if (remaining <= Duration.zero && !_ended) {
+      _endCall(auto: true);
+    }
+  }
+
+  /// 對方結束通話：走跟手動結束一樣的本地清理，但不再呼叫 POST /end
+  /// （對方已呼叫過，沒必要重複）。
+  void _onPeerEnded(int? sessionId) {
+    if (_ended || sessionId != _session.id) return;
+    _cleanupAndLeave(notifyBackend: false);
+  }
+
+  Future<void> _toggleMute() async {
+    final next = !_muted;
+    await _engine?.muteLocalAudioStream(next);
+    if (!mounted) return;
+    setState(() => _muted = next);
+  }
+
+  Future<void> _toggleCamera() async {
+    final next = !_camOff;
+    await _engine?.muteLocalVideoStream(next);
+    if (!mounted) return;
+    setState(() => _camOff = next);
+  }
+
+  Future<void> _endCall({required bool auto}) async {
+    if (_ended) return;
+    await _cleanupAndLeave(notifyBackend: true);
+  }
+
+  /// 通知後端結束通話：定向通話呼叫 DirectedCallService.endCall（不重複呼叫
+  /// VideoCallService.endSession），隨機配對通話呼叫 VideoCallService.endSession。
+  Future<void> _notifyBackendEnded() async {
+    final directedCallId = widget.directedCallId;
+    if (directedCallId != null) {
+      await DirectedCallService.endCall(directedCallId);
+    } else {
+      await VideoCallService.endSession(_session.id);
+    }
+  }
+
+  Future<void> _cleanupAndLeave({required bool notifyBackend}) async {
     if (_ended) return;
     _ended = true;
-    _timer?.cancel();
-    final directedCallId = widget.directedCallId;
-    try {
-      if (directedCallId != null) {
-        await DirectedCallService.endCall(directedCallId);
-      } else {
-        await VideoCallService.endSession(widget.sessionId);
+    _countdownTimer?.cancel();
+    if (notifyBackend) {
+      try {
+        await _notifyBackendEnded();
+      } catch (e) {
+        debugPrint('VideoCallScreen: 結束通話通知後端失敗（忽略）：$e');
       }
-    } catch (_) {
-      // 掛斷仍優先讓使用者離開畫面，忽略結束端點的錯誤。
     }
-    await _agora.leave();
+    final engine = _engine;
+    if (engine != null) {
+      try {
+        await engine.leaveChannel();
+        await engine.release();
+      } catch (e) {
+        debugPrint('VideoCallScreen: 釋放 Agora engine 失敗（忽略）：$e');
+      }
+    }
     if (!mounted) return;
+    final directedCallId = widget.directedCallId;
     if (directedCallId != null) {
       await _offerReport(directedCallId);
     }
-    if (mounted) Navigator.popUntil(context, (r) => r.isFirst);
+    if (!mounted) return;
+    Navigator.popUntil(context, (r) => r.isFirst);
   }
 
   Future<void> _offerReport(int callId) async {
@@ -147,92 +261,159 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     }
   }
 
+  @override
+  void dispose() {
+    _countdownTimer?.cancel();
+    FcmService.onVideoSessionEnded = null;
+    WidgetsBinding.instance.removeObserver(this);
+    // dispose() 不適合塞 await 網路呼叫；正常結束流程一律走 _cleanupAndLeave，
+    // 這裡只兜底釋放引擎，避免使用者用手勢/返回鍵繞過 PopScope 時資源洩漏。
+    _engine?.leaveChannel();
+    _engine?.release();
+    super.dispose();
+  }
+
   String get _timeLabel {
-    final m = _seconds ~/ 60;
-    final s = _seconds % 60;
+    final elapsed = _session.expiresAt.difference(DateTime.now().toUtc()) < Duration.zero
+        ? Duration.zero
+        : (const Duration(minutes: 30) - _remaining);
+    final m = elapsed.inMinutes.clamp(0, 999);
+    final s = elapsed.inSeconds % 60;
     return '${m.toString().padLeft(2, '0')}:${s.toString().padLeft(2, '0')}';
   }
 
-  int get _remaining => (1800 - _seconds).clamp(0, 1800);
-  String get _remainingLabel => '剩 ${_remaining ~/ 60} 分';
+  String get _remainingLabel => '剩 ${_remaining.inMinutes} 分';
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: AppColors.ink,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          _buildFullScreenVideo(),
-          if (_initError == null) ...[
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _endCall(auto: false);
+      },
+      child: Scaffold(
+        backgroundColor: AppColors.ink,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            _buildFullScreenVideo(),
             _buildTopBar(),
             _buildPersonName(),
             _buildSelfView(),
+            _buildTopicChip(),
+            _buildControlBar(context),
+            if (_joinError != null) _buildErrorOverlay(),
           ],
-          _buildControlBar(context),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorOverlay() {
+    return Container(
+      color: AppColors.ink.withValues(alpha: 0.92),
+      alignment: Alignment.center,
+      padding: const EdgeInsets.all(32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            _joinError!,
+            textAlign: TextAlign.center,
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 16,
+              color: AppColors.creamLight,
+            ),
+          ),
+          const SizedBox(height: 20),
+          GestureDetector(
+            onTap: () => Navigator.pop(context),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              decoration: BoxDecoration(
+                color: AppColors.gold,
+                borderRadius: BorderRadius.circular(24),
+              ),
+              child: Text('返回', style: GoogleFonts.notoSerifTc(color: AppColors.ink)),
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildFullScreenVideo() {
-    if (_initError != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Text(
-            _initError!,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.creamLight.withValues(alpha: 0.9),
-            ),
-          ),
-        ),
-      );
-    }
-    final remoteView = _agora.remoteView(widget.channel);
-    if (remoteView == null) {
+    final engine = _engine;
+    final remoteUid = _remoteUid;
+    if (engine != null && remoteUid != null) {
       return Stack(
         fit: StackFit.expand,
         children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  AppColors.mossDeep,
-                  AppColors.ink,
-                  AppColors.primaryDeep,
-                ],
-                stops: [0.0, 0.6, 1.0],
-              ),
+          AgoraVideoView(
+            controller: VideoViewController.remote(
+              rtcEngine: engine,
+              canvas: VideoCanvas(uid: remoteUid),
+              connection: RtcConnection(channelId: _session.channel),
             ),
           ),
-          Opacity(
-            opacity: 0.1,
-            child: CustomPaint(
-              painter: TrukuWeavePainter(
-                color: AppColors.gold,
-                opacity: 1.0,
-                scale: 1.0,
-              ),
-            ),
-          ),
-          Center(
-            child: Text(
-              '等待對方畫面…',
-              style: TextStyle(
-                fontSize: 14,
-                color: AppColors.creamLight.withValues(alpha: 0.7),
-              ),
-            ),
-          ),
+          if (_remoteCamOff) _buildCameraOffOverlay('對方已關閉鏡頭'),
         ],
       );
     }
-    return remoteView;
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.mossDeep, AppColors.ink, AppColors.primaryDeep],
+              stops: [0.0, 0.6, 1.0],
+            ),
+          ),
+        ),
+        Opacity(
+          opacity: 0.1,
+          child: CustomPaint(
+            painter: TrukuWeavePainter(color: AppColors.gold, opacity: 1.0, scale: 1.0),
+          ),
+        ),
+        Center(
+          child: Text(
+            _joining ? '正在加入視訊房…' : '等待對方加入視訊',
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 16,
+              color: AppColors.creamLight.withValues(alpha: 0.85),
+              letterSpacing: 1.5,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCameraOffOverlay(String label) {
+    return Container(
+      color: AppColors.ink.withValues(alpha: 0.85),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CustomPaint(size: const Size(28, 28), painter: _CamOffPainter()),
+          const SizedBox(height: 10),
+          Text(
+            label,
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 13,
+              color: AppColors.creamLight.withValues(alpha: 0.85),
+              letterSpacing: 1.5,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildTopBar() {
@@ -285,6 +466,15 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
               ],
             ),
           ),
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.ink.withValues(alpha: 0.6),
+            ),
+            child: const Center(child: _DotsIcon()),
+          ),
         ],
       ),
     );
@@ -294,11 +484,11 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
     return Positioned(
       left: 0,
       right: 0,
-      top: MediaQuery.of(context).size.height * 0.08,
+      top: MediaQuery.of(context).size.height * 0.62,
       child: Column(
         children: [
           Text(
-            widget.peerNickname ?? '語伴',
+            _session.peerNickname ?? '語伴',
             textAlign: TextAlign.center,
             style: GoogleFonts.notoSerifTc(
               fontSize: 24,
@@ -314,7 +504,7 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
   }
 
   Widget _buildSelfView() {
-    final localView = _agora.localView();
+    final engine = _engine;
     return Positioned(
       top: 110,
       right: 16,
@@ -323,6 +513,11 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
         height: 140,
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
+          gradient: const LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [AppColors.moss, AppColors.mossDeep],
+          ),
           border: Border.all(
             color: AppColors.gold.withValues(alpha: 0.5),
             width: 1.5,
@@ -335,19 +530,28 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
             ),
           ],
         ),
-        clipBehavior: Clip.antiAlias,
-        child: localView ??
-            Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [AppColors.moss, AppColors.mossDeep],
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12.5),
+          child: Stack(
+            fit: StackFit.expand,
+            children: [
+              if (engine != null)
+                AgoraVideoView(
+                  controller: VideoViewController(
+                    rtcEngine: engine,
+                    canvas: const VideoCanvas(uid: 0),
+                  ),
                 ),
-              ),
-            ),
+              if (_camOff) _buildCameraOffOverlay('已關閉鏡頭'),
+            ],
+          ),
+        ),
       ),
     );
+  }
+
+  Widget _buildTopicChip() {
+    return const SizedBox.shrink();
   }
 
   Widget _buildControlBar(BuildContext context) {
@@ -369,21 +573,21 @@ class _VideoCallScreenState extends State<VideoCallScreen> {
           children: [
             _ControlButton(
               icon: _ControlIcon.mic,
-              label: _agora.muted ? '取消靜音' : '靜音',
-              active: _agora.muted,
-              onTap: _initError == null ? () => _agora.toggleMute() : null,
+              label: '靜音',
+              active: _muted,
+              onTap: _toggleMute,
             ),
             _ControlButton(
               icon: _ControlIcon.cam,
-              label: _agora.cameraOff ? '開啟鏡頭' : '鏡頭',
-              active: _agora.cameraOff,
-              onTap: _initError == null ? () => _agora.toggleCamera() : null,
+              label: '鏡頭',
+              active: _camOff,
+              onTap: _toggleCamera,
             ),
             _ControlButton(
               icon: _ControlIcon.end,
               label: '結束',
               danger: true,
-              onTap: _endCall,
+              onTap: () => _endCall(auto: false),
             ),
           ],
         ),
@@ -427,9 +631,9 @@ class _ControlButton extends StatelessWidget {
               color: danger
                   ? const Color(0xFFD8392C)
                   : active
-                      ? AppColors.gold.withValues(alpha: 0.35)
+                      ? AppColors.dangerDark
                       : Colors.white.withValues(alpha: 0.12),
-              border: danger
+              border: danger || active
                   ? null
                   : Border.all(
                       color: AppColors.creamLight.withValues(alpha: 0.12),
@@ -480,21 +684,14 @@ class _MicPainter extends CustomPainter {
       Radius.circular(w * 3 / 24),
     );
     canvas.drawRRect(
-      body,
-      Paint()
-        ..color = AppColors.creamLight
-        ..style = PaintingStyle.fill,
-    );
+        body, Paint()..color = AppColors.creamLight..style = PaintingStyle.fill);
     final arcPath = Path()
       ..moveTo(w * 5 / 24, h * 11 / 24)
       ..quadraticBezierTo(w * 5 / 24, h * 18 / 24, w * 12 / 24, h * 18 / 24)
       ..quadraticBezierTo(w * 19 / 24, h * 18 / 24, w * 19 / 24, h * 11 / 24);
     canvas.drawPath(arcPath, p);
-    canvas.drawLine(
-      Offset(w * 12 / 24, h * 18 / 24),
-      Offset(w * 12 / 24, h * 21 / 24),
-      p,
-    );
+    canvas.drawLine(Offset(w * 12 / 24, h * 18 / 24),
+        Offset(w * 12 / 24, h * 21 / 24), p);
   }
 
   @override
@@ -512,26 +709,49 @@ class _CamPainter extends CustomPainter {
       Radius.circular(w * 2 / 24),
     );
     canvas.drawRRect(
-      body,
-      Paint()
-        ..color = cream
-        ..style = PaintingStyle.fill,
-    );
+        body,
+        Paint()
+          ..color = cream
+          ..style = PaintingStyle.fill);
     final tri = Path()
       ..moveTo(w * 16 / 24, h * 10 / 24)
       ..lineTo(w * 21 / 24, h * 7 / 24)
       ..lineTo(w * 21 / 24, h * 17 / 24)
       ..close();
-    canvas.drawPath(
-      tri,
-      Paint()
-        ..color = cream
-        ..style = PaintingStyle.fill,
-    );
+    canvas.drawPath(tri, Paint()..color = cream..style = PaintingStyle.fill);
   }
 
   @override
   bool shouldRepaint(_CamPainter _) => false;
+}
+
+class _CamOffPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final cream = AppColors.creamLight.withValues(alpha: 0.85);
+    final w = size.width;
+    final h = size.height;
+    final body = RRect.fromRectAndRadius(
+      Rect.fromLTWH(w * 3 / 24, h * 6 / 24, w * 13 / 24, h * 12 / 24),
+      Radius.circular(w * 2 / 24),
+    );
+    canvas.drawRRect(body, Paint()..color = cream..style = PaintingStyle.fill);
+    final tri = Path()
+      ..moveTo(w * 16 / 24, h * 10 / 24)
+      ..lineTo(w * 21 / 24, h * 7 / 24)
+      ..lineTo(w * 21 / 24, h * 17 / 24)
+      ..close();
+    canvas.drawPath(tri, Paint()..color = cream..style = PaintingStyle.fill);
+    final slash = Paint()
+      ..color = AppColors.danger
+      ..strokeWidth = 2.4
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(w * 2 / 24, h * 2 / 24),
+        Offset(w * 22 / 24, h * 22 / 24), slash);
+  }
+
+  @override
+  bool shouldRepaint(_CamOffPainter _) => false;
 }
 
 class _EndPainter extends CustomPainter {
@@ -541,122 +761,73 @@ class _EndPainter extends CustomPainter {
     final h = size.height;
     canvas.save();
     canvas.translate(w / 2, h / 2);
-    canvas.rotate(2.356); // ~135 degrees
+    canvas.rotate(2.356);
     canvas.translate(-w / 2, -h / 2);
     final path = Path()
       ..moveTo(w * 22 / 24, h * 16.92 / 24)
       ..lineTo(w * 22 / 24, h * 19 / 24)
-      ..cubicTo(
-        w * 22 / 24,
-        h * 20.1 / 24,
-        w * 21.1 / 24,
-        h * 21 / 24,
-        w * 19.82 / 24,
-        h * 21 / 24,
-      )
-      ..cubicTo(
-        w * 17.33 / 24,
-        h * 20.79 / 24,
-        w * 15.19 / 24,
-        h * 19.92 / 24,
-        w * 11.19 / 24,
-        h * 17.93 / 24,
-      )
-      ..cubicTo(
-        w * 8.4 / 24,
-        h * 16.43 / 24,
-        w * 7.57 / 24,
-        h * 15.6 / 24,
-        w * 5.07 / 24,
-        h * 11.93 / 24,
-      )
-      ..cubicTo(
-        w * 2.79 / 24,
-        h * 8.13 / 24,
-        w * 2 / 24,
-        h * 5.9 / 24,
-        w * 2 / 24,
-        h * 3.11 / 24,
-      )
-      ..cubicTo(
-        w * 2 / 24,
-        h * 2.1 / 24,
-        w * 2.9 / 24,
-        h * 2 / 24,
-        w * 4 / 24,
-        h * 2 / 24,
-      )
+      ..cubicTo(w * 22 / 24, h * 20.1 / 24, w * 21.1 / 24, h * 21 / 24,
+          w * 19.82 / 24, h * 21 / 24)
+      ..cubicTo(w * 17.33 / 24, h * 20.79 / 24, w * 15.19 / 24,
+          h * 19.92 / 24, w * 11.19 / 24, h * 17.93 / 24)
+      ..cubicTo(w * 8.4 / 24, h * 16.43 / 24, w * 7.57 / 24, h * 15.6 / 24,
+          w * 5.07 / 24, h * 11.93 / 24)
+      ..cubicTo(w * 2.79 / 24, h * 8.13 / 24, w * 2 / 24, h * 5.9 / 24,
+          w * 2 / 24, h * 3.11 / 24)
+      ..cubicTo(w * 2 / 24, h * 2.1 / 24, w * 2.9 / 24, h * 2 / 24,
+          w * 4 / 24, h * 2 / 24)
       ..lineTo(w * 7 / 24, h * 2 / 24)
-      ..cubicTo(
-        w * 8.1 / 24,
-        h * 2 / 24,
-        w * 9 / 24,
-        h * 2.72 / 24,
-        w * 9 / 24,
-        h * 3.72 / 24,
-      )
-      ..cubicTo(
-        w * 9.13 / 24,
-        h * 4.68 / 24,
-        w * 9.37 / 24,
-        h * 5.63 / 24,
-        w * 9.71 / 24,
-        h * 6.53 / 24,
-      )
-      ..cubicTo(
-        w * 10.04 / 24,
-        h * 7.11 / 24,
-        w * 9.71 / 24,
-        h * 8.11 / 24,
-        w * 9.26 / 24,
-        h * 8.64 / 24,
-      )
+      ..cubicTo(w * 8.1 / 24, h * 2 / 24, w * 9 / 24, h * 2.72 / 24,
+          w * 9 / 24, h * 3.72 / 24)
+      ..cubicTo(w * 9.13 / 24, h * 4.68 / 24, w * 9.37 / 24, h * 5.63 / 24,
+          w * 9.71 / 24, h * 6.53 / 24)
+      ..cubicTo(w * 10.04 / 24, h * 7.11 / 24, w * 9.71 / 24, h * 8.11 / 24,
+          w * 9.26 / 24, h * 8.64 / 24)
       ..lineTo(w * 8.09 / 24, h * 9.91 / 24)
-      ..cubicTo(
-        w * 10 / 24,
-        h * 12.9 / 24,
-        w * 13.1 / 24,
-        h * 14.9 / 24,
-        w * 14.09 / 24,
-        h * 15.91 / 24,
-      )
+      ..cubicTo(w * 10 / 24, h * 12.9 / 24, w * 13.1 / 24, h * 14.9 / 24,
+          w * 14.09 / 24, h * 15.91 / 24)
       ..lineTo(w * 15.36 / 24, h * 14.64 / 24)
-      ..cubicTo(
-        w * 15.89 / 24,
-        h * 14.19 / 24,
-        w * 16.89 / 24,
-        h * 13.96 / 24,
-        w * 18 / 24,
-        h * 14.29 / 24,
-      )
-      ..cubicTo(
-        w * 18.9 / 24,
-        h * 14.63 / 24,
-        w * 19.85 / 24,
-        h * 14.87 / 24,
-        w * 20.81 / 24,
-        h * 15 / 24,
-      )
-      ..cubicTo(
-        w * 21.92 / 24,
-        h * 15.08 / 24,
-        w * 22 / 24,
-        h * 15.8 / 24,
-        w * 22 / 24,
-        h * 16.92 / 24,
-      )
+      ..cubicTo(w * 15.89 / 24, h * 14.19 / 24, w * 16.89 / 24,
+          h * 13.96 / 24, w * 18 / 24, h * 14.29 / 24)
+      ..cubicTo(w * 18.9 / 24, h * 14.63 / 24, w * 19.85 / 24,
+          h * 14.87 / 24, w * 20.81 / 24, h * 15 / 24)
+      ..cubicTo(w * 21.92 / 24, h * 15.08 / 24, w * 22 / 24, h * 15.8 / 24,
+          w * 22 / 24, h * 16.92 / 24)
       ..close();
     canvas.drawPath(
-      path,
-      Paint()
-        ..color = AppColors.creamLight
-        ..style = PaintingStyle.fill,
-    );
+        path, Paint()..color = AppColors.creamLight..style = PaintingStyle.fill);
     canvas.restore();
   }
 
   @override
   bool shouldRepaint(_EndPainter _) => false;
+}
+
+// ─── More-options dots icon ────────────────────────────────────────────────────
+
+class _DotsIcon extends StatelessWidget {
+  const _DotsIcon();
+
+  @override
+  Widget build(BuildContext context) =>
+      CustomPaint(size: const Size(18, 18), painter: _DotsPainter());
+}
+
+class _DotsPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = AppColors.creamLight
+      ..style = PaintingStyle.fill;
+    final r = size.width * 1.5 / 24;
+    final cx = size.width / 2;
+    for (final cy in [size.height * 6 / 24, size.height * 12 / 24, size.height * 18 / 24]) {
+      canvas.drawCircle(Offset(cx, cy), r, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DotsPainter _) => false;
 }
 
 // ─── Call report dialog ─────────────────────────────────────────────────────

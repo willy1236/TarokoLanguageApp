@@ -1,9 +1,9 @@
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/network/api_client.dart';
-import '../../models/video_call_model.dart';
+import '../../services/fcm_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
@@ -17,11 +17,11 @@ class VideoWaitingScreen extends StatefulWidget {
 }
 
 class _VideoWaitingScreenState extends State<VideoWaitingScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController _controller;
   Timer? _pollTimer;
-  bool _queued = false;
-  String? _errorMessage;
+  bool _isPolling = false;
+  bool _matched = false;
 
   @override
   void initState() {
@@ -30,71 +30,56 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
-    _startMatching();
+
+    WidgetsBinding.instance.addObserver(this);
+    FcmService.onVideoMatchedForeground = (_, _) => _poll();
+    _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) => _poll());
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) _poll();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
     _pollTimer?.cancel();
-    if (_queued) VideoCallService.leaveQueue();
+    FcmService.onVideoMatchedForeground = null;
+    WidgetsBinding.instance.removeObserver(this);
+    _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _startMatching() async {
-    try {
-      final result = await VideoCallService.joinQueue();
-      if (!mounted) return;
-      if (result.matched) {
-        _navigateToCall(result.session!, result.token!);
-        return;
-      }
-      setState(() => _queued = true);
-      _pollTimer = Timer.periodic(const Duration(seconds: 3), (_) => _poll());
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _errorMessage = _describeError(e));
-    }
-  }
-
+  /// 查詢目前 active session；配到就取消輪詢並導向通話畫面。單次查詢失敗只記
+  /// log，不中斷輪詢迴圈——佇列狀態在後端維護，前端輪詢只是查詢動作。
   Future<void> _poll() async {
+    if (_isPolling || _matched) return;
+    _isPolling = true;
     try {
-      final session = await VideoCallService.getCurrentSession();
-      if (session == null || !mounted) return;
+      final session = await VideoCallService.fetchCurrentSession();
+      if (session == null || !mounted || _matched) return;
+      _matched = true;
       _pollTimer?.cancel();
-      final token = await VideoCallService.getToken(session.id);
-      if (!mounted) return;
-      _navigateToCall(session, token);
-    } catch (_) {
-      // 輪詢期間的暫時性錯誤忽略，下次輪詢再試。
-    }
-  }
-
-  void _navigateToCall(VideoCallSession session, VideoCallToken token) {
-    _pollTimer?.cancel();
-    _queued = false; // 已配對成功，不必再送離開佇列
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(
-        builder: (_) => VideoCallScreen(
-          sessionId: session.id,
-          appId: token.appId,
-          rtcToken: token.token,
-          channel: token.channel,
-          uid: token.uid,
-          peerNickname: session.peerNickname,
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => VideoCallScreen(
+            session: session,
+            credentials: null, // 由 VideoCallScreen 自行 refreshToken 取得
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      debugPrint('VideoWaitingScreen: 輪詢失敗，忽略並等下一輪：$e');
+    } finally {
+      _isPolling = false;
+    }
   }
 
-  String _describeError(Object e) {
-    if (e is ApiException) {
-      if (e.isVideoNicknameRequired) return '請先在個人資料設定視訊暱稱';
-      if (e.isVideoUnavailable) return '視訊服務目前無法使用';
-      return e.message;
-    }
-    return '配對失敗，請稍後再試';
+  /// 取消配對：離開佇列。不必等後端確認即可讓使用者感覺立即返回。
+  void _cancel(BuildContext context) {
+    unawaited(VideoCallService.leaveQueue());
+    Navigator.pop(context);
   }
 
   @override
@@ -142,45 +127,13 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
   }
 
   Widget _buildTopBar(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 0),
-      child: Row(
-        children: [
-          GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: Colors.white.withValues(alpha: 0.1),
-              ),
-              child: const Center(child: _XIcon()),
-            ),
-          ),
-          const Expanded(child: Center(child: _SmtrungLabel())),
-          const SizedBox(width: 36),
-        ],
-      ),
+    return const Padding(
+      padding: EdgeInsets.fromLTRB(20, 60, 20, 0),
+      child: Center(child: _SmtrungLabel()),
     );
   }
 
   Widget _buildCenter() {
-    if (_errorMessage != null) {
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Text(
-            _errorMessage!,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 15,
-              color: AppColors.creamLight.withValues(alpha: 0.9),
-            ),
-          ),
-        ),
-      );
-    }
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -267,7 +220,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 50),
       child: GestureDetector(
-        onTap: () => Navigator.pop(context),
+        onTap: () => _cancel(context),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
           decoration: BoxDecoration(
@@ -277,7 +230,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
             ),
           ),
           child: Text(
-            _errorMessage != null ? '返回' : '取消配對',
+            '取消配對',
             style: GoogleFonts.notoSerifTc(
               fontSize: 14,
               color: AppColors.creamLight,
@@ -288,37 +241,6 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
       ),
     );
   }
-}
-
-class _XIcon extends StatelessWidget {
-  const _XIcon();
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(size: const Size(18, 18), painter: _XPainter());
-  }
-}
-
-class _XPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.creamLight
-      ..strokeWidth = 2
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(size.width * 0.25, size.height * 0.25),
-      Offset(size.width * 0.75, size.height * 0.75),
-      paint,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.75, size.height * 0.25),
-      Offset(size.width * 0.25, size.height * 0.75),
-      paint,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_XPainter old) => false;
 }
 
 class _SmtrungLabel extends StatelessWidget {
