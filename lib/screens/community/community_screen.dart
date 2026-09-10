@@ -11,7 +11,7 @@ import '../../services/shop_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/user_avatar.dart';
-import '../friends/directed_call_waiting_screen.dart';
+import '../chat/chat_screen.dart';
 import '../friends/friends_list_screen.dart';
 import '../profile/profile_screen.dart';
 import 'video_call_notice_screen.dart';
@@ -68,12 +68,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
     }
   }
 
-  void _callFriend(Friendship f) {
+  void _chatWithFriend(Friendship f) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) => DirectedCallWaitingScreen(
-          calleeUid: f.uid,
-          calleeNickname: f.nickname,
+        builder: (_) => ChatScreen(
+          partnerUid: f.uid,
+          partnerNickname: f.nickname,
+          partnerAvatarUrl: f.avatarUrl,
         ),
       ),
     );
@@ -491,7 +492,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   child: _FriendTile(
                     friend: friends[i],
                     itemCatalogById: _itemCatalogById,
-                    onTap: () => _callFriend(friends[i]),
+                    onTap: () => _chatWithFriend(friends[i]),
                   ),
                 );
               },
@@ -578,7 +579,7 @@ class _FriendTile extends StatelessWidget {
                 border: Border.all(color: AppColors.creamDeep),
               ),
               child: Text(
-                '撥打',
+                '聊天',
                 style: TextStyle(
                   fontSize: 11,
                   color: AppColors.primary,

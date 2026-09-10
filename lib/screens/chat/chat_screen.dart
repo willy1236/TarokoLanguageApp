@@ -13,7 +13,7 @@ import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
-import '../friends/add_friend_screen.dart';
+import '../friends/directed_call_waiting_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final int partnerUid;
@@ -197,9 +197,14 @@ class _ChatScreenState extends State<ChatScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  Future<void> _openAddFriend() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const AddFriendScreen()),
+  void _startVideoCall() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => DirectedCallWaitingScreen(
+          calleeUid: widget.partnerUid,
+          calleeNickname: widget.partnerNickname,
+        ),
+      ),
     );
   }
 
@@ -237,9 +242,9 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
         ),
         IconButton(
-          onPressed: _openAddFriend,
-          icon: const Icon(Icons.person_add_alt_1, color: AppColors.primary),
-          tooltip: '加好友',
+          onPressed: _startVideoCall,
+          icon: const Icon(Icons.videocam_outlined, color: AppColors.primary),
+          tooltip: '視訊通話',
         ),
       ],
     ),
@@ -269,12 +274,14 @@ class _ChatScreenState extends State<ChatScreen> {
             child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
           );
         }
-        return _bubble(_messages[i], seniorMode);
+        final isLastMine = i ==
+            _messages.indexWhere((m) => m.senderUid == UserService.currentUid);
+        return _bubble(_messages[i], seniorMode, showStatus: isLastMine);
       },
     );
   }
 
-  Widget _bubble(FriendMessage m, bool seniorMode) {
+  Widget _bubble(FriendMessage m, bool seniorMode, {required bool showStatus}) {
     final mine = m.senderUid == UserService.currentUid;
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
@@ -300,7 +307,7 @@ class _ChatScreenState extends State<ChatScreen> {
                   color: mine ? Colors.white : AppColors.ink,
                 ),
               ),
-              if (mine) ...[
+              if (mine && showStatus) ...[
                 const SizedBox(height: 2),
                 Text(
                   m.isRead ? '已讀' : '已送出',

@@ -6,18 +6,18 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../models/friend_message_model.dart';
 import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
+import '../../services/chat_socket_service.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../chat/chat_screen.dart';
-import '../chat/conversations_list_screen.dart';
 import 'add_friend_screen.dart';
 import 'blocked_users_screen.dart';
-import 'directed_call_waiting_screen.dart';
 import 'friend_requests_screen.dart';
 import 'public_profile_screen.dart';
 import 'widgets/bond_level_badge.dart';
@@ -34,12 +34,39 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   List<Friendship>? _friends;
   bool _loading = true;
   Map<String, ShopItem> _itemCatalogById = const {};
+  Map<int, Conversation> _conversationsByUid = const {};
 
   @override
   void initState() {
     super.initState();
+    chatController.connect();
+    chatController.addListener(_onChatEvent);
     _load();
     _loadItemCatalog();
+  }
+
+  @override
+  void dispose() {
+    chatController.removeListener(_onChatEvent);
+    super.dispose();
+  }
+
+  void _onChatEvent() {
+    final event = chatController.lastEvent;
+    if (event == null) return;
+    if (event.type == ChatSocketEventType.message) _loadConversations();
+  }
+
+  Future<void> _loadConversations() async {
+    try {
+      final conversations = await FriendService.getConversations();
+      if (!mounted) return;
+      setState(() {
+        _conversationsByUid = {for (final c in conversations) c.partnerUid: c};
+      });
+    } catch (e) {
+      debugPrint('Failed to fetch conversations: $e');
+    }
   }
 
   Future<void> _loadItemCatalog() async {
@@ -70,6 +97,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         _loading = false;
       });
     }
+    _loadConversations();
   }
 
   Future<void> _openAddFriend() async {
@@ -99,12 +127,6 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       MaterialPageRoute(builder: (_) => PublicProfileScreen(friendCode: code)),
     );
     if (changed == true) _load();
-  }
-
-  void _openConversations() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const ConversationsListScreen()),
-    );
   }
 
   void _chatWithFriend(Friendship f) {
@@ -189,17 +211,6 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       ..showSnackBar(SnackBar(content: Text(message)));
   }
 
-  void _callFriend(Friendship f) {
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => DirectedCallWaitingScreen(
-          calleeUid: f.uid,
-          calleeNickname: f.nickname,
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: seniorModeController,
@@ -231,11 +242,6 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             '好友',
             style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
           ),
-        ),
-        IconButton(
-          onPressed: _openConversations,
-          icon: const Icon(Icons.chat_bubble_outline, color: AppColors.primary),
-          tooltip: '訊息',
         ),
         IconButton(
           onPressed: _openRequests,
@@ -281,61 +287,83 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     );
   }
 
-  Widget _friendCard(Friendship f, bool seniorMode) => GestureDetector(
-    onTap: () => _openFriendProfile(f),
-    child: Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.cream,
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.creamDeep),
-      ),
-      child: Row(
-        children: [
-          _avatar(f, seniorMode),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  f.nickname?.isNotEmpty == true ? f.nickname! : '未命名旅人',
-                  style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.ink),
-                ),
-                const SizedBox(height: 4),
-                Wrap(
-                  spacing: 6,
-                  runSpacing: 4,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    BondLevelBadge(
-                      level: f.bondLevel.level,
-                      name: f.bondLevel.name,
-                      seniorMode: seniorMode,
-                    ),
-                    ShowcaseChip(
-                      showcase: f.showcase,
-                      seniorMode: seniorMode,
-                      onTap: () => _toggleShowcase(f),
+  Widget _friendCard(Friendship f, bool seniorMode) {
+    final conversation = _conversationsByUid[f.uid];
+    return GestureDetector(
+      onTap: () => _openFriendProfile(f),
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.creamDeep),
+        ),
+        child: Row(
+          children: [
+            _avatar(f, seniorMode),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    f.nickname?.isNotEmpty == true ? f.nickname! : '未命名旅人',
+                    style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.ink),
+                  ),
+                  const SizedBox(height: 4),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 4,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      BondLevelBadge(
+                        level: f.bondLevel.level,
+                        name: f.bondLevel.name,
+                        seniorMode: seniorMode,
+                      ),
+                      ShowcaseChip(
+                        showcase: f.showcase,
+                        seniorMode: seniorMode,
+                        onTap: () => _toggleShowcase(f),
+                      ),
+                    ],
+                  ),
+                  if (conversation?.lastMessage != null) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      conversation!.lastMessage!.mine
+                          ? '你：${conversation.lastMessage!.body}'
+                          : conversation.lastMessage!.body,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodyStyle(seniorMode: seniorMode, color: AppColors.fog),
                     ),
                   ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-          IconButton(
-            onPressed: () => _chatWithFriend(f),
-            icon: const Icon(Icons.chat_bubble_outline, color: AppColors.primary),
-            tooltip: '傳訊息',
-          ),
-          IconButton(
-            onPressed: () => _callFriend(f),
-            icon: const Icon(Icons.videocam_outlined, color: AppColors.primary),
-            tooltip: '視訊通話',
-          ),
-          const Icon(Icons.chevron_right, color: AppColors.fog, size: 18),
-        ],
+            if ((conversation?.unreadCount ?? 0) > 0) ...[
+              _unreadBadge(conversation!.unreadCount, seniorMode),
+              const SizedBox(width: 4),
+            ],
+            IconButton(
+              onPressed: () => _chatWithFriend(f),
+              icon: const Icon(Icons.chat_bubble_outline, color: AppColors.primary),
+              tooltip: '傳訊息',
+            ),
+            const Icon(Icons.chevron_right, color: AppColors.fog, size: 18),
+          ],
+        ),
       ),
+    );
+  }
+
+  Widget _unreadBadge(int count, bool seniorMode) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(10)),
+    child: Text(
+      count > 99 ? '99+' : '$count',
+      style: AppTypography.captionStyle(seniorMode: seniorMode, color: Colors.white),
     ),
   );
 

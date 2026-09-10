@@ -19,15 +19,15 @@ class BondLevelBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
     decoration: BoxDecoration(
       color: AppColors.gold.withValues(alpha: 0.18),
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
     ),
     child: Text(
       '羈絆 · $name',
-      style: AppTypography.captionStyle(seniorMode: seniorMode, color: AppColors.goldDeep),
+      style: AppTypography.subtitleStyle(seniorMode: seniorMode, color: AppColors.goldDeep),
     ),
   );
 }
