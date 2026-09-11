@@ -22,6 +22,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
   Timer? _pollTimer;
   bool _isPolling = false;
   bool _matched = false;
+
   /// 取消處理中：擋住重複點擊與返回鍵重入。
   bool _cancelling = false;
 
@@ -85,8 +86,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
     if (_cancelling || _matched) return;
     setState(() => _cancelling = true);
     try {
-      await VideoCallService.leaveQueue()
-          .timeout(const Duration(seconds: 5));
+      await VideoCallService.leaveQueue().timeout(const Duration(seconds: 5));
       if (!mounted) return;
       Navigator.pop(context);
     } catch (e) {

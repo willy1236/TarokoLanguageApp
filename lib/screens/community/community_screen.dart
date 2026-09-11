@@ -486,7 +486,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ...List.generate(
               friends.length > maxShown ? maxShown : friends.length,
               (i) {
-                final shown = friends.length > maxShown ? maxShown : friends.length;
+                final shown = friends.length > maxShown
+                    ? maxShown
+                    : friends.length;
                 return Padding(
                   padding: EdgeInsets.only(bottom: i < shown - 1 ? 10 : 0),
                   child: _FriendTile(
