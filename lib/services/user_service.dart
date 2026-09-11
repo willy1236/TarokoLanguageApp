@@ -1,3 +1,4 @@
+import 'dart:io';
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
@@ -64,12 +65,25 @@ class UserService {
 
   /// 上傳自訂頭像（multipart，欄位名固定 avatar）。後端會自動裁正方形、轉 WebP
   /// 並清空 avatar_id；回傳完整 user 物件，不需再呼叫一次 fetchMe()。
-  static Future<UserModel> uploadAvatar(
+  static Future<UserModel> uploadAvatar(File file, {String? contentType}) async {
+    final data = await ApiClient.postMultipartFile(
+      ApiConfig.meAvatar,
+      fieldName: 'avatar',
+      file: file,
+      contentType: contentType,
+    );
+    final user = UserModel.fromJson(data);
+    cachedUser = user;
+    return user;
+  }
+
+  /// [uploadAvatar] 的 Web 版：Web 沒有本機檔案可讀，改傳 bytes。
+  static Future<UserModel> uploadAvatarBytes(
     List<int> bytes, {
     required String filename,
     String? contentType,
   }) async {
-    final data = await ApiClient.postMultipartFile(
+    final data = await ApiClient.postMultipartBytes(
       ApiConfig.meAvatar,
       fieldName: 'avatar',
       bytes: bytes,

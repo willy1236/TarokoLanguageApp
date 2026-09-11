@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -7,6 +8,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../core/platform/platform_features.dart';
 import '../../models/shop_item.dart';
 import '../../models/tribe_model.dart';
 import '../../models/user_model.dart';
@@ -186,7 +188,62 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    // 全程只處理 bytes、不寫暫存檔：Web 沒有本機檔案系統可用。
+    if (!PlatformFeatures.hasFileSystem) {
+      await _uploadAvatarWithoutFileSystem(picked, ext);
+      return;
+    }
+
+    File file = File(picked.path);
+    var mimeType = 'image/${ext == 'jpg' ? 'jpeg' : ext}';
+    // 裁切產生的暫存目錄：無論成功、失敗或提早 return 都要刪掉，
+    // 否則每換一次頭像就在裝置上多留一份圖。
+    Directory? cropTempDir;
+
+    try {
+      // GIF 為動態圖，裁切會破壞動畫，跳過裁切步驟直接上傳原圖。
+      if (ext != 'gif') {
+        final originalBytes = await file.readAsBytes();
+        if (!mounted) return;
+        final croppedBytes = await Navigator.push<Uint8List>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AvatarCropScreen(imageBytes: originalBytes),
+          ),
+        );
+        if (croppedBytes == null) return; // 使用者取消裁切，中止整個上傳流程
+
+        final tempDir = await Directory.systemTemp.createTemp('avatar_crop_');
+        cropTempDir = tempDir;
+        final croppedFile = File('${tempDir.path}/avatar.png');
+        await croppedFile.writeAsBytes(croppedBytes);
+        file = croppedFile;
+        mimeType = 'image/png';
+      }
+
+      final size = await file.length();
+      if (size > _kMaxAvatarBytes) {
+        _showError('檔案大小不可超過 8MB');
+        return;
+      }
+
+      final updated = await UserService.uploadAvatar(
+        file,
+        contentType: mimeType,
+      );
+      if (mounted) setState(() => _user = updated);
+    } catch (e, st) {
+      _showAvatarUploadError(e, st);
+    } finally {
+      try {
+        await cropTempDir?.delete(recursive: true);
+      } catch (e) {
+        debugPrint('ProfileScreen: 刪除頭像裁切暫存檔失敗（忽略）：$e');
+      }
+    }
+  }
+
+  /// Web 版頭像上傳：沒有本機檔案系統，全程只處理 bytes、不寫暫存檔。
+  Future<void> _uploadAvatarWithoutFileSystem(XFile picked, String ext) async {
     var mimeType = 'image/${ext == 'jpg' ? 'jpeg' : ext}';
     var filename = picked.name;
 
@@ -212,13 +269,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
-      final updated = await UserService.uploadAvatar(
+      final updated = await UserService.uploadAvatarBytes(
         bytes,
         filename: filename,
         contentType: mimeType,
       );
       if (mounted) setState(() => _user = updated);
-    } on ApiException catch (e) {
+    } catch (e, st) {
+      _showAvatarUploadError(e, st);
+    }
+  }
+
+  void _showAvatarUploadError(Object e, StackTrace st) {
+    if (e is ApiException) {
       if (e.isFileTooLarge) {
         _showError('檔案大小不可超過 8MB');
       } else if (e.isInvalidFileType) {
@@ -226,7 +289,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       } else {
         _showError(e.message);
       }
-    } catch (e, st) {
+    } else {
       debugPrint('Failed to upload avatar: $e');
       debugPrintStack(stackTrace: st);
       _showError('頭像上傳失敗，請稍後再試');

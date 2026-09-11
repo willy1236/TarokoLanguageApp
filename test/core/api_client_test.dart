@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -35,6 +36,19 @@ void main() {
   });
 
   test('delete 離線時轉成 NETWORK_ERROR', () async {
+    ApiClient.httpClient = MockClient(
+      (_) async => throw const SocketException('offline'),
+    );
+
+    expect(
+      () => ApiClient.delete('/api/thing'),
+      throwsA(
+        isA<ApiException>().having((e) => e.code, 'code', 'NETWORK_ERROR'),
+      ),
+    );
+  });
+
+  test('Web 離線（ClientException）也轉成 NETWORK_ERROR', () async {
     ApiClient.httpClient = MockClient(
       (_) async => throw http.ClientException('offline'),
     );

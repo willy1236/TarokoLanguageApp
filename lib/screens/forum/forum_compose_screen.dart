@@ -15,6 +15,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
+import '../../core/platform/platform_features.dart';
 import '../../models/forum_models.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
@@ -156,14 +157,26 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
 
     for (final file in picked) {
       // 後端不做伺服器端壓縮，且限制單張 5 MB，所以壓縮必須在這裡完成。
-      // 用 bytes 版本：Web 沒有檔案路徑，compressWithFile 不可用。
-      final compressed = await FlutterImageCompress.compressWithList(
-        await file.readAsBytes(),
-        minWidth: 1920,
-        minHeight: 1920,
-        quality: 85,
-        format: CompressFormat.jpeg,
-      );
+      // Web 沒有檔案路徑，compressWithFile 不可用，改走 bytes 版本。
+      final compressed = PlatformFeatures.hasFileSystem
+          ? await FlutterImageCompress.compressWithFile(
+              file.path,
+              minWidth: 1920,
+              minHeight: 1920,
+              quality: 85,
+              format: CompressFormat.jpeg,
+            )
+          : await FlutterImageCompress.compressWithList(
+              await file.readAsBytes(),
+              minWidth: 1920,
+              minHeight: 1920,
+              quality: 85,
+              format: CompressFormat.jpeg,
+            );
+      if (compressed == null) {
+        _toast('無法處理 ${file.name}，請換一張');
+        continue;
+      }
       if (compressed.length > ForumService.imageMaxBytes) {
         _toast('${file.name} 壓縮後仍超過 5 MB，請換一張較小的圖');
         continue;
