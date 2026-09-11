@@ -26,7 +26,10 @@ class PlatformFeatures {
   /// 有本機檔案系統可寫暫存檔（Web 沒有，改傳 bytes）。
   static bool get hasFileSystem => !kIsWeb;
 
-  /// 後端 POST /api/devices 的 platform 欄位。
-  static String get devicePlatform =>
-      defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
+  /// 後端 POST /api/devices 的 platform 欄位。只在 [supportsPush] 為 true
+  /// 時有意義；Web/桌面沒有對應值，呼叫前必須先確認 [supportsPush]。
+  static String get devicePlatform {
+    assert(isMobile, 'devicePlatform 只能在行動平台使用（先檢查 supportsPush）');
+    return defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
+  }
 }

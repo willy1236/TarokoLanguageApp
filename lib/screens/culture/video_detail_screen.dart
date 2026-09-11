@@ -201,16 +201,19 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
   }
 
   /// 不支援內嵌 HLS 播放的平台：提示並提供以瀏覽器開啟串流網址。
-  Widget _buildExternalPlayerFallback(VideoDetail video) {
+  Widget _buildExternalPlayerFallback(VideoDetail video, bool seniorMode) {
     return ColoredBox(
       color: Colors.black,
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Text(
+            Text(
               '此平台暫不支援內嵌播放',
-              style: TextStyle(color: Colors.white),
+              style: AppTypography.bodyStyle(
+                seniorMode: seniorMode,
+                color: Colors.white,
+              ),
             ),
             const SizedBox(height: 12),
             OutlinedButton.icon(
@@ -237,7 +240,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
             aspectRatio: 16 / 9,
             child: _playerController != null
                 ? BetterPlayer(controller: _playerController!)
-                : _buildExternalPlayerFallback(video),
+                : _buildExternalPlayerFallback(video, seniorMode),
           ),
           Padding(
             padding: EdgeInsets.all(seniorMode ? AppSpacing.lg : 20),
