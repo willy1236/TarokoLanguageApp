@@ -11,16 +11,16 @@ import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
 import '../../models/tribe_model.dart';
 import '../../models/user_model.dart';
-import '../../services/auth_service.dart';
-import '../../services/fcm_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
-import '../../shared/widgets/millet_coin_icon.dart';
-import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
-import '../../shared/widgets/user_avatar.dart';
 import 'about_app_screen.dart';
+import 'widgets/profile_hero.dart';
+import 'widgets/profile_logout_button.dart';
+import 'widgets/profile_rename_dialog.dart';
+import 'widgets/profile_rows.dart';
+import 'widgets/profile_stats.dart';
 import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/my_events_screen.dart';
@@ -100,146 +100,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
-          _buildHero(seniorMode: seniorMode),
-          _buildCoinBanner(),
-          _buildStatsRow(seniorMode: seniorMode),
+          ProfileHero(
+            user: _user,
+            itemCatalogById: _itemCatalogById,
+            seniorMode: seniorMode,
+            onAvatarTap: _openAvatarOptions,
+          ),
+          ProfileCoinBanner(user: _user, onTap: _openMilletLedger),
+          ProfileStatsRow(user: _user, seniorMode: seniorMode),
           _buildQuickLinksGrid(seniorMode: seniorMode),
           _buildMoreSection(seniorMode: seniorMode),
           _buildSettingsSection(seniorMode: seniorMode),
           _buildAppSettingsSection(seniorMode: seniorMode),
           _buildOtherSection(seniorMode: seniorMode),
-          _buildLogout(context),
+          const ProfileLogoutButton(),
           const SizedBox(height: 40),
-        ],
-      ),
-    );
-  }
-
-  // ── Hero ──────────────────────────────────────────────────────────────────
-
-  Widget _buildHero({required bool seniorMode}) {
-    final tribeLine = _user?.isIndigenous == true
-        ? (_user?.tribeName ?? '尚未設定')
-        : null;
-    return Container(
-      decoration: const BoxDecoration(color: AppColors.midnight),
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.15,
-              child: CustomPaint(
-                painter: TrukuWeavePainter(
-                  color: AppColors.gold,
-                  opacity: 1.0,
-                  scale: 0.8,
-                ),
-              ),
-            ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 76, 20, 28),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildAvatar(),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _user?.displayName ?? 'Apyang Imiq',
-                        style: AppTypography.headlineStyle(
-                          seniorMode: seniorMode,
-                          color: AppColors.creamLight,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (tribeLine != null)
-                        Text(
-                          tribeLine,
-                          style: AppTypography.titleStyle(
-                            seniorMode: seniorMode,
-                            color: AppColors.creamLight.withValues(alpha: 0.75),
-                          ),
-                        ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (_user?.studyStreak != null && _user!.studyStreak > 0)
-                            _infoBadge('連續 ${_user!.studyStreak} 天'),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _infoBadge(String text) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: AppColors.gold.withValues(alpha: 0.18),
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
-      ),
-      child: Text(
-        text,
-        style: AppTypography.bodyLargeStyle(color: AppColors.goldDeep),
-      ),
-    );
-  }
-
-  Widget _buildAvatar() {
-    // 頭像框疊加在頭像外圍：見共用元件 FramedUserAvatar（lib/shared/widgets/user_avatar.dart）。
-    return SizedBox(
-      width: 96,
-      height: 96,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            decoration: _user?.frameId == null
-                ? BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.gold, width: 2),
-                  )
-                : null,
-            child: FramedUserAvatar(
-              avatarId: _user?.avatarId,
-              avatarUrl: _user?.avatarUrl,
-              frameId: _user?.frameId,
-              itemCatalogById: _itemCatalogById,
-              size: 80,
-              fallbackIconColor: AppColors.gold.withValues(alpha: 0.7),
-            ),
-          ),
-          Positioned(
-            bottom: 6,
-            right: 6,
-            child: GestureDetector(
-              onTap: _openAvatarOptions,
-              child: Container(
-                width: 26,
-                height: 26,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: AppColors.gold,
-                  border: Border.all(color: AppColors.primary, width: 2),
-                ),
-                child: CustomPaint(painter: _EditIconPainter()),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -276,10 +151,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 Icons.photo_library_outlined,
                 color: Colors.black,
               ),
-              title: const Text(
-                '上傳照片',
-                style: TextStyle(color: Colors.black),
-              ),
+              title: const Text('上傳照片', style: TextStyle(color: Colors.black)),
               onTap: () => Navigator.pop(ctx, 'upload'),
             ),
             ListTile(
@@ -348,7 +220,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         return;
       }
 
-      final updated = await UserService.uploadAvatar(file, contentType: mimeType);
+      final updated = await UserService.uploadAvatar(
+        file,
+        contentType: mimeType,
+      );
       if (mounted) setState(() => _user = updated);
     } on ApiException catch (e) {
       if (e.isFileTooLarge) {
@@ -389,144 +264,38 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _openMilletLedger() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute<void>(builder: (_) => const MilletLedgerScreen()),
-    );
-  }
-
-  Widget _buildCoinBanner() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.cream,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.creamDeep),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.gold.withValues(alpha: 0.2),
-              ),
-              child: const MilletCoinIcon(size: 20),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '${_user?.millet ?? 0}',
-                    style: AppTypography.headlineStyle(color: AppColors.primary),
-                  ),
-                  Text(
-                    '小米 · 每日登入／完成單元可得',
-                    style: AppTypography.captionStyle(color: AppColors.fog),
-                  ),
-                ],
-              ),
-            ),
-            OutlinedButton(
-              onPressed: _openMilletLedger,
-              style: OutlinedButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(999),
-                ),
-              ),
-              child: const Text('明細'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // ── 統計 ──────────────────────────────────────────────────────────────────
-
-  Widget _buildStatsRow({required bool seniorMode}) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 10),
-        decoration: BoxDecoration(
-          color: AppColors.cream,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.creamDeep),
-        ),
-        child: Row(
-          children: [
-            _statCell(seniorMode, '${_user?.studyStreak ?? 0}', '連續學習'),
-            _statDivider(),
-            _statCell(seniorMode, '${_user?.videoCallCount ?? 0}', '通話次數'),
-            _statDivider(),
-            _statCell(seniorMode, '${_user?.forumPostCount ?? 0}', '發文'),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _statDivider() =>
-      const SizedBox(height: 32, child: VerticalDivider(color: AppColors.creamDeep, width: 1));
-
-  Widget _statCell(bool seniorMode, String value, String label) {
-    return Expanded(
-      child: Column(
-        children: [
-          Text(
-            value,
-            style: AppTypography.titleStyle(
-              seniorMode: seniorMode,
-              color: AppColors.primary,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Text(
-            label,
-            style: AppTypography.captionStyle(
-              seniorMode: seniorMode,
-              color: AppColors.fog,
-            ),
-          ),
-        ],
-      ),
-    );
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const MilletLedgerScreen()));
   }
 
   // ── 快速入口（好友／背包／商店／收藏）─────────────────────────────────────
 
   Widget _buildQuickLinksGrid({required bool seniorMode}) {
     final links = [
-      _QuickLink(
+      ProfileQuickLink(
         icon: Icons.people_outline,
         label: '好友',
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const FriendsListScreen()),
-        ),
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const FriendsListScreen())),
       ),
-      _QuickLink(
+      ProfileQuickLink(
         icon: Icons.inventory_2_outlined,
         label: '背包',
         onTap: _openBackpack,
       ),
-      _QuickLink(
+      ProfileQuickLink(
         icon: Icons.storefront_outlined,
         label: '商店',
         onTap: _openShop,
       ),
-      _QuickLink(
+      ProfileQuickLink(
         icon: Icons.bookmark_outline,
         label: '收藏',
-        onTap: () => Navigator.of(context).push(
-          MaterialPageRoute(builder: (_) => const MyBookmarksScreen()),
-        ),
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const MyBookmarksScreen())),
       ),
     ];
     return Padding(
@@ -535,17 +304,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Row(
             children: [
-              Expanded(child: _quickLinkCard(links[0], seniorMode: seniorMode)),
+              Expanded(
+                child: profileQuickLinkCard(links[0], seniorMode: seniorMode),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _quickLinkCard(links[1], seniorMode: seniorMode)),
+              Expanded(
+                child: profileQuickLinkCard(links[1], seniorMode: seniorMode),
+              ),
             ],
           ),
           const SizedBox(height: 12),
           Row(
             children: [
-              Expanded(child: _quickLinkCard(links[2], seniorMode: seniorMode)),
+              Expanded(
+                child: profileQuickLinkCard(links[2], seniorMode: seniorMode),
+              ),
               const SizedBox(width: 12),
-              Expanded(child: _quickLinkCard(links[3], seniorMode: seniorMode)),
+              Expanded(
+                child: profileQuickLinkCard(links[3], seniorMode: seniorMode),
+              ),
             ],
           ),
         ],
@@ -553,48 +330,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
-  Widget _quickLinkCard(_QuickLink link, {required bool seniorMode}) {
-    return GestureDetector(
-      onTap: link.onTap,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.cream,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.creamDeep),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: 36,
-              height: 36,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                color: AppColors.primary.withValues(alpha: 0.12),
-              ),
-              child: Icon(link.icon, size: 18, color: AppColors.primary),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                link.label,
-                style: AppTypography.subtitleStyle(
-                  seniorMode: seniorMode,
-                  color: AppColors.ink,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ── 更多（活動／按讚）────────────────────────────────────────────────────
 
   Widget _buildMoreSection({required bool seniorMode}) {
-    return _section('SMRATUC · 更多', [
-      _navRow(
+    return profileSection('SMRATUC · 更多', [
+      profileNavRow(
         icon: Icons.event_note_outlined,
         label: '我發起的活動',
         seniorMode: seniorMode,
@@ -603,7 +343,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         ).push(MaterialPageRoute(builder: (_) => const MyEventsScreen())),
       ),
       const Divider(height: 1, color: AppColors.creamDeep),
-      _navRow(
+      profileNavRow(
         icon: Icons.favorite_border,
         label: '我按讚的內容',
         seniorMode: seniorMode,
@@ -614,71 +354,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ]);
   }
 
-  Widget _navRow({
-    required IconData icon,
-    required String label,
-    required VoidCallback onTap,
-    bool seniorMode = false,
-  }) {
-    return GestureDetector(
-      behavior: HitTestBehavior.opaque,
-      onTap: onTap,
-      child: Padding(
-        padding: EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: seniorMode ? AppSpacing.lg : 14,
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                Icon(
-                  icon,
-                  size: seniorMode ? 30 : 18,
-                  color: AppColors.primary,
-                ),
-                SizedBox(width: seniorMode ? AppSpacing.md : 10),
-                Text(
-                  label,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? AppTypography.headline : AppTypography.bodyLarge,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ],
-            ),
-            Icon(
-              Icons.chevron_right,
-              color: AppColors.fog,
-              size: seniorMode ? 24 : 16,
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // ── 帳號設定 ──────────────────────────────────────────────────────────────
 
   Widget _buildSettingsSection({required bool seniorMode}) {
     final identityLocked = _user?.ethnicGroup != null;
-    return _section('PSPUNG · 個人資料設定', [
-      _settingRow(
+    return profileSection('PSPUNG · 個人資料設定', [
+      profileSettingRow(
         '中文姓名',
         _user?.displayName ?? 'Apyang Imiq',
         editable: true,
         onTap: _editDisplayName,
       ),
-      _settingRow(
+      profileSettingRow(
         '公開暱稱',
         _user?.videoNickname ?? '尚未設定',
         editable: true,
         onTap: _editVideoNickname,
       ),
-      _settingRow(
+      profileSettingRow(
         '自我介紹',
         (_user?.selfIntro == null || _user!.selfIntro!.isEmpty)
             ? '尚未填寫'
@@ -686,14 +379,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         editable: true,
         onTap: _editSelfIntro,
       ),
-      _settingRow(
+      profileSettingRow(
         '好友碼',
         _user?.friendCode ?? '—',
         editable: _user?.friendCode != null,
         copyable: true,
         onTap: _copyFriendCode,
       ),
-      _settingRow(
+      profileSettingRow(
         '族語名字',
         _user?.tribalName ?? '尚未設定',
         // 尚未設定時顯示中文提示字，不套用族語專用的斜體字型，避免字型跟中文不搭。
@@ -701,32 +394,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
         editable: true,
         onTap: _editTribalName,
       ),
-      _switchRow(
+      profileSwitchRow(
         '是否原住民',
         _user?.isIndigenous ?? false,
         locked: true,
         lockedHint: '已設定，如需更正請聯繫管理員',
         onChanged: (_) {},
       ),
-      _settingRow(
+      profileSettingRow(
         '部落',
         _user?.tribeName ?? '尚未設定',
         editable: !identityLocked,
         onTap: identityLocked ? null : _editTribe,
       ),
-      _settingRow(
+      profileSettingRow(
         '視訊暱稱',
         _user?.videoNickname ?? '尚未設定',
         editable: true,
         onTap: _editVideoNickname,
       ),
-      _settingRow('電子信箱', _user?.email ?? 'apyang@truku.org', editable: false),
+      profileSettingRow(
+        '電子信箱',
+        _user?.email ?? 'apyang@truku.org',
+        editable: false,
+      ),
     ]);
   }
 
   Widget _buildAppSettingsSection({required bool seniorMode}) {
-    return _section('PUSU · App 設定', [
-      _switchRow(
+    return profileSection('PUSU · App 設定', [
+      profileSwitchRow(
         '精簡模式',
         seniorMode,
         seniorMode: seniorMode,
@@ -738,7 +435,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _editDisplayName() async {
     final newName = await showDialog<String>(
       context: context,
-      builder: (ctx) => _RenameDialog(
+      builder: (ctx) => ProfileRenameDialog(
         title: '修改姓名',
         label: '中文姓名',
         initialValue: _user?.displayName ?? '',
@@ -762,7 +459,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _editTribalName() async {
     final newName = await showDialog<String>(
       context: context,
-      builder: (ctx) => _RenameDialog(
+      builder: (ctx) => ProfileRenameDialog(
         title: '修改族語名字',
         label: '族語名字',
         initialValue: _user?.tribalName ?? '',
@@ -785,7 +482,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _editVideoNickname() async {
     final newName = await showDialog<String>(
       context: context,
-      builder: (ctx) => _RenameDialog(
+      builder: (ctx) => ProfileRenameDialog(
         title: '修改視訊暱稱',
         label: '視訊暱稱',
         initialValue: _user?.videoNickname ?? '',
@@ -807,7 +504,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Future<void> _editSelfIntro() async {
     final newIntro = await showDialog<String>(
       context: context,
-      builder: (ctx) => _RenameDialog(
+      builder: (ctx) => ProfileRenameDialog(
         title: '修改自我介紹',
         label: '自我介紹',
         initialValue: _user?.selfIntro ?? '',
@@ -891,7 +588,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildOtherSection({required bool seniorMode}) {
     const items = ['意見回饋', '關於語見太魯閣', '服務條款與隱私權政策'];
-    return _section(
+    return profileSection(
       'DUMA · 其他',
       List.generate(items.length, (i) {
         final onTap = items[i] == '服務條款與隱私權政策'
@@ -916,7 +613,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       items[i],
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode ? AppTypography.headline : AppTypography.bodyLarge,
+                        fontSize: seniorMode
+                            ? AppTypography.headline
+                            : AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
@@ -971,417 +670,4 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ).showSnackBar(const SnackBar(content: Text('無法開啟郵件應用程式')));
     }
   }
-
-  // ── 登出 ──────────────────────────────────────────────────────────────────
-
-  Widget _buildLogout(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 0),
-      child: Column(
-        children: [
-          GestureDetector(
-            onTap: () async {
-              // 先移除本裝置 FCM token（需 JWT，故在 signOut 之前），再登出。
-              // 註銷失敗（離線、後端錯誤）不該擋住登出——否則使用者卡在此頁
-              // 且沒有任何錯誤提示。最壞情況是這台裝置仍留著 token，
-              // 後端推播時會因 token 失效自行清除。
-              try {
-                await FcmService.unregisterDevice();
-              } catch (e) {
-                debugPrint('ProfileScreen: 註銷裝置 FCM token 失敗（忽略）：$e');
-              }
-              UserService.clearCache();
-              try {
-                await AuthService.signOut();
-              } catch (e) {
-                debugPrint('ProfileScreen: signOut 失敗，仍導回登入頁：$e');
-              }
-              if (context.mounted) {
-                Navigator.pushNamedAndRemoveUntil(
-                  context,
-                  '/login',
-                  (_) => false,
-                );
-              }
-            },
-            child: Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 14),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(14),
-                border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.4),
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CustomPaint(
-                    size: const Size(16, 16),
-                    painter: _LogoutIconPainter(),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    '登出',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.bodyLarge,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 14),
-          Text(
-            'v1.0.0 · MHUWAY SU',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 10,
-              color: AppColors.fog,
-              letterSpacing: 2,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // ── 共用 section 外框 ─────────────────────────────────────────────────────
-
-  Widget _section(String label, List<Widget> children) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: GoogleFonts.crimsonPro(
-              fontStyle: FontStyle.italic,
-              fontSize: 10,
-              color: AppColors.fog,
-              letterSpacing: 3,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            decoration: BoxDecoration(
-              color: AppColors.cream,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: AppColors.creamDeep),
-            ),
-            clipBehavior: Clip.hardEdge,
-            child: Column(children: children),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _settingRow(
-    String label,
-    String value, {
-    bool truku = false,
-    bool editable = true,
-    bool copyable = false,
-    VoidCallback? onTap,
-  }) {
-    return Column(
-      children: [
-        GestureDetector(
-          onTap: editable ? onTap : null,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: AppTypography.caption,
-                        color: AppColors.fog,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      value,
-                      style:
-                          (truku
-                                  ? GoogleFonts.crimsonPro(
-                                      fontStyle: FontStyle.italic,
-                                    )
-                                  : GoogleFonts.notoSerifTc())
-                              .copyWith(
-                                fontSize: AppTypography.bodyLarge,
-                                fontWeight: FontWeight.w600,
-                                color: AppColors.ink,
-                                letterSpacing: 0.5,
-                              ),
-                    ),
-                  ],
-                ),
-                if (copyable)
-                  Icon(Icons.copy_rounded, size: 16, color: AppColors.primary)
-                else if (editable)
-                  CustomPaint(
-                    size: const Size(16, 16),
-                    painter: _EditPenPainter(),
-                  ),
-              ],
-            ),
-          ),
-        ),
-        const Divider(
-          height: 1,
-          color: AppColors.creamDeep,
-          indent: 16,
-          endIndent: 16,
-        ),
-      ],
-    );
-  }
-
-  /// 可互動的開關列，供族群鎖定等需要送出 PATCH 的設定使用（區別於純顯示用的
-  /// [_toggleRow]）。locked=true 時停用點擊，並在下方顯示 lockedHint 提示。
-  Widget _switchRow(
-    String label,
-    bool on, {
-    required ValueChanged<bool> onChanged,
-    bool locked = false,
-    String? lockedHint,
-    bool seniorMode = false,
-  }) {
-    final trackWidth = seniorMode ? 52.0 : 36.0;
-    final trackHeight = seniorMode ? 30.0 : 22.0;
-    final thumbSize = seniorMode ? 26.0 : 18.0;
-    return Column(
-      children: [
-        Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: 16,
-            vertical: seniorMode ? AppSpacing.lg : 14,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      label,
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode ? AppTypography.headline : AppTypography.bodyLarge,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    if (locked && lockedHint != null) ...[
-                      const SizedBox(height: 2),
-                      Text(
-                        lockedHint,
-                        style: GoogleFonts.notoSerifTc(
-                          fontSize: AppTypography.caption,
-                          color: AppColors.fog,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
-              ),
-              GestureDetector(
-                onTap: locked ? null : () => onChanged(!on),
-                child: Container(
-                  width: trackWidth,
-                  height: trackHeight,
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(trackHeight / 2),
-                    color: on
-                        ? (locked
-                              ? AppColors.primary.withValues(alpha: 0.5)
-                              : AppColors.primary)
-                        : AppColors.creamDeep,
-                  ),
-                  child: Align(
-                    alignment: on
-                        ? Alignment.centerRight
-                        : Alignment.centerLeft,
-                    child: Container(
-                      width: thumbSize,
-                      height: thumbSize,
-                      decoration: const BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: AppColors.creamLight,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-        const Divider(
-          height: 1,
-          color: AppColors.creamDeep,
-          indent: 16,
-          endIndent: 16,
-        ),
-      ],
-    );
-  }
-
-}
-
-class _QuickLink {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-  const _QuickLink({required this.icon, required this.label, required this.onTap});
-}
-
-class _RenameDialog extends StatefulWidget {
-  final String title;
-  final String label;
-  final String initialValue;
-  const _RenameDialog({
-    required this.title,
-    required this.label,
-    required this.initialValue,
-  });
-
-  @override
-  State<_RenameDialog> createState() => _RenameDialogState();
-}
-
-class _RenameDialogState extends State<_RenameDialog> {
-  late final TextEditingController _controller = TextEditingController(
-    text: widget.initialValue,
-  );
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Text(widget.title),
-      content: TextField(
-        controller: _controller,
-        autofocus: true,
-        decoration: InputDecoration(labelText: widget.label),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('取消'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, _controller.text.trim()),
-          child: const Text('儲存'),
-        ),
-      ],
-    );
-  }
-}
-
-// ── SVG 圖示 Painters ─────────────────────────────────────────────────────────
-
-class _EditIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = AppColors.ink
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.5
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final path = Path()
-      ..moveTo(size.width * 0.58, size.height * 0.17)
-      ..lineTo(size.width * 0.83, size.height * 0.42)
-      ..lineTo(size.width * 0.33, size.height * 0.92)
-      ..lineTo(size.width * 0.08, size.height * 0.92)
-      ..lineTo(size.width * 0.08, size.height * 0.67)
-      ..close();
-    canvas.drawPath(path, p);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
-}
-
-class _EditPenPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = AppColors.primary
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-    final path = Path()
-      ..moveTo(size.width * 0.58, size.height * 0.17)
-      ..lineTo(size.width * 0.83, size.height * 0.42)
-      ..lineTo(size.width * 0.33, size.height * 0.92)
-      ..lineTo(size.width * 0.08, size.height * 0.92)
-      ..lineTo(size.width * 0.08, size.height * 0.67)
-      ..close();
-    canvas.drawPath(path, p);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
-}
-
-class _LogoutIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final p = Paint()
-      ..color = AppColors.primary
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2.0
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(
-      Offset(size.width * 0.55, size.height * 0.5),
-      Offset(size.width, size.height * 0.5),
-      p,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.75, size.height * 0.25),
-      Offset(size.width, size.height * 0.5),
-      p,
-    );
-    canvas.drawLine(
-      Offset(size.width * 0.75, size.height * 0.75),
-      Offset(size.width, size.height * 0.5),
-      p,
-    );
-    final door = Path()
-      ..moveTo(size.width * 0.45, size.height * 0.13)
-      ..lineTo(size.width * 0.2, size.height * 0.13)
-      ..arcToPoint(
-        Offset(size.width * 0.08, size.height * 0.25),
-        radius: Radius.circular(size.width * 0.12),
-      )
-      ..lineTo(size.width * 0.08, size.height * 0.75)
-      ..arcToPoint(
-        Offset(size.width * 0.2, size.height * 0.87),
-        radius: Radius.circular(size.width * 0.12),
-      )
-      ..lineTo(size.width * 0.45, size.height * 0.87);
-    canvas.drawPath(door, p);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter _) => false;
 }

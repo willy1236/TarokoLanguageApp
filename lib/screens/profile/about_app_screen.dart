@@ -19,7 +19,8 @@ class AboutAppScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListenableBuilder(
     listenable: seniorModeController,
-    builder: (context, _) => _buildScaffold(context, seniorModeController.enabled),
+    builder: (context, _) =>
+        _buildScaffold(context, seniorModeController.enabled),
   );
 
   Widget _buildScaffold(BuildContext context, bool seniorMode) {
@@ -125,10 +126,19 @@ class AboutAppScreen extends StatelessWidget {
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: AppColors.midnightSoft,
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.6), width: 1.5),
+        border: Border.all(
+          color: AppColors.gold.withValues(alpha: 0.6),
+          width: 1.5,
+        ),
       ),
       child: ClipOval(
-        child: CustomPaint(painter: TrukuWeavePainter(color: AppColors.gold, opacity: 0.9, scale: 0.5)),
+        child: CustomPaint(
+          painter: TrukuWeavePainter(
+            color: AppColors.gold,
+            opacity: 0.9,
+            scale: 0.5,
+          ),
+        ),
       ),
     );
   }
@@ -148,7 +158,9 @@ class AboutAppScreen extends StatelessWidget {
             '社群交流，降低族語學習門檻，讓語言與文化不只被保存，更能持續'
             '被使用與傳承。',
             style: TextStyle(
-              fontSize: seniorMode ? AppTypography.title : AppTypography.bodyLarge,
+              fontSize: seniorMode
+                  ? AppTypography.title
+                  : AppTypography.bodyLarge,
               color: AppColors.inkSoft,
               height: 1.9,
               letterSpacing: 0.3,
@@ -167,7 +179,11 @@ class AboutAppScreen extends StatelessWidget {
 
   Widget _sectionLabel(String text, bool seniorMode) => Row(
     children: [
-      Container(width: 4, height: seniorMode ? 22 : 18, color: AppColors.primary),
+      Container(
+        width: 4,
+        height: seniorMode ? 22 : 18,
+        color: AppColors.primary,
+      ),
       const SizedBox(width: 8),
       Text(
         text,
@@ -205,7 +221,9 @@ class AboutAppScreen extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              Expanded(child: Divider(color: AppColors.gold.withValues(alpha: 0.3))),
+              Expanded(
+                child: Divider(color: AppColors.gold.withValues(alpha: 0.3)),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -226,7 +244,9 @@ class AboutAppScreen extends StatelessWidget {
             '以太魯閣族為起點，透過數位專屬平台，讓這些族語不僅被保存，'
             '更能透過互動與交流，在每個世代間繼續傳承。',
             style: TextStyle(
-              fontSize: seniorMode ? AppTypography.title : AppTypography.bodyLarge,
+              fontSize: seniorMode
+                  ? AppTypography.title
+                  : AppTypography.bodyLarge,
               color: AppColors.mist,
               height: 1.9,
               letterSpacing: 0.3,
@@ -242,7 +262,11 @@ class AboutAppScreen extends StatelessWidget {
   Widget _buildStrands(bool seniorMode) {
     const strands = [
       (label: '語言', icon: Icons.translate, color: AppColors.primaryLight),
-      (label: '文化', icon: Icons.temple_buddhist_outlined, color: AppColors.moss),
+      (
+        label: '文化',
+        icon: Icons.temple_buddhist_outlined,
+        color: AppColors.moss,
+      ),
       (label: '記憶', icon: Icons.auto_stories_outlined, color: AppColors.gold),
     ];
     return SizedBox(
@@ -261,17 +285,25 @@ class AboutAppScreen extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: strands[i].color.withValues(alpha: 0.22),
                       borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: strands[i].color.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: strands[i].color.withValues(alpha: 0.5),
+                      ),
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(strands[i].icon, color: strands[i].color, size: seniorMode ? 26 : 20),
+                        Icon(
+                          strands[i].icon,
+                          color: strands[i].color,
+                          size: seniorMode ? 26 : 20,
+                        ),
                         const SizedBox(height: 6),
                         Text(
                           strands[i].label,
                           style: TextStyle(
-                            fontSize: seniorMode ? AppTypography.subtitle : AppTypography.body,
+                            fontSize: seniorMode
+                                ? AppTypography.subtitle
+                                : AppTypography.body,
                             fontWeight: FontWeight.w600,
                             color: AppColors.creamLight,
                           ),
@@ -344,7 +376,9 @@ class AboutAppScreen extends StatelessWidget {
                       Text(
                         pillars[i].title,
                         style: GoogleFonts.notoSerifTc(
-                          fontSize: seniorMode ? AppTypography.title : AppTypography.bodyLarge,
+                          fontSize: seniorMode
+                              ? AppTypography.title
+                              : AppTypography.bodyLarge,
                           fontWeight: FontWeight.w600,
                           color: AppColors.ink,
                         ),
@@ -353,7 +387,9 @@ class AboutAppScreen extends StatelessWidget {
                       Text(
                         pillars[i].desc,
                         style: TextStyle(
-                          fontSize: seniorMode ? AppTypography.subtitle : AppTypography.body,
+                          fontSize: seniorMode
+                              ? AppTypography.subtitle
+                              : AppTypography.body,
                           color: AppColors.inkSoft,
                           height: 1.5,
                         ),
