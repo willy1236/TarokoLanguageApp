@@ -317,33 +317,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
     File file = File(picked.path);
     var mimeType = 'image/${ext == 'jpg' ? 'jpeg' : ext}';
-
-    // GIF 為動態圖，裁切會破壞動畫，跳過裁切步驟直接上傳原圖。
-    if (ext != 'gif') {
-      final originalBytes = await file.readAsBytes();
-      if (!mounted) return;
-      final croppedBytes = await Navigator.push<Uint8List>(
-        context,
-        MaterialPageRoute(
-          builder: (_) => AvatarCropScreen(imageBytes: originalBytes),
-        ),
-      );
-      if (croppedBytes == null) return; // 使用者取消裁切，中止整個上傳流程
-
-      final tempDir = await Directory.systemTemp.createTemp('avatar_crop_');
-      final croppedFile = File('${tempDir.path}/avatar.png');
-      await croppedFile.writeAsBytes(croppedBytes);
-      file = croppedFile;
-      mimeType = 'image/png';
-    }
-
-    final size = await file.length();
-    if (size > _kMaxAvatarBytes) {
-      _showError('檔案大小不可超過 8MB');
-      return;
-    }
+    // 裁切產生的暫存目錄：無論成功、失敗或提早 return 都要刪掉，
+    // 否則每換一次頭像就在裝置上多留一份圖。
+    Directory? cropTempDir;
 
     try {
+      // GIF 為動態圖，裁切會破壞動畫，跳過裁切步驟直接上傳原圖。
+      if (ext != 'gif') {
+        final originalBytes = await file.readAsBytes();
+        if (!mounted) return;
+        final croppedBytes = await Navigator.push<Uint8List>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AvatarCropScreen(imageBytes: originalBytes),
+          ),
+        );
+        if (croppedBytes == null) return; // 使用者取消裁切，中止整個上傳流程
+
+        final tempDir = await Directory.systemTemp.createTemp('avatar_crop_');
+        cropTempDir = tempDir;
+        final croppedFile = File('${tempDir.path}/avatar.png');
+        await croppedFile.writeAsBytes(croppedBytes);
+        file = croppedFile;
+        mimeType = 'image/png';
+      }
+
+      final size = await file.length();
+      if (size > _kMaxAvatarBytes) {
+        _showError('檔案大小不可超過 8MB');
+        return;
+      }
+
       final updated = await UserService.uploadAvatar(file, contentType: mimeType);
       if (mounted) setState(() => _user = updated);
     } on ApiException catch (e) {
@@ -358,6 +362,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       debugPrint('Failed to upload avatar: $e');
       debugPrintStack(stackTrace: st);
       _showError('頭像上傳失敗，請稍後再試');
+    } finally {
+      try {
+        await cropTempDir?.delete(recursive: true);
+      } catch (e) {
+        debugPrint('ProfileScreen: 刪除頭像裁切暫存檔失敗（忽略）：$e');
+      }
     }
   }
 
@@ -972,9 +982,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
           GestureDetector(
             onTap: () async {
               // 先移除本裝置 FCM token（需 JWT，故在 signOut 之前），再登出。
-              await FcmService.unregisterDevice();
+              // 註銷失敗（離線、後端錯誤）不該擋住登出——否則使用者卡在此頁
+              // 且沒有任何錯誤提示。最壞情況是這台裝置仍留著 token，
+              // 後端推播時會因 token 失效自行清除。
+              try {
+                await FcmService.unregisterDevice();
+              } catch (e) {
+                debugPrint('ProfileScreen: 註銷裝置 FCM token 失敗（忽略）：$e');
+              }
               UserService.clearCache();
-              await AuthService.signOut();
+              try {
+                await AuthService.signOut();
+              } catch (e) {
+                debugPrint('ProfileScreen: signOut 失敗，仍導回登入頁：$e');
+              }
               if (context.mounted) {
                 Navigator.pushNamedAndRemoveUntil(
                   context,

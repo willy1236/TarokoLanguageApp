@@ -44,6 +44,8 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   static const _allBoardsKey = '__all__';
 
   bool _boardsLoading = true;
+  /// 發文畫面開啟中：擋住連點疊出第二個 ForumComposeScreen。
+  bool _composing = false;
   int _unread = 0;
   final _boardViewKey = GlobalKey<ForumBoardViewState>();
 
@@ -248,6 +250,8 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
 
   Widget _composeButton(bool seniorMode) => GestureDetector(
     onTap: () async {
+      // 連點會疊出兩個發文畫面：async onTap 沒有 in-flight 防護。
+      if (_composing) return;
       if (_boardsLoading) {
         ScaffoldMessenger.of(
           context,
@@ -263,12 +267,17 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         );
         return;
       }
-      final created = await Navigator.push<bool>(
-        context,
-        MaterialPageRoute(builder: (_) => ForumComposeScreen(boards: _boards)),
-      );
-      if (created == true) {
-        _boardViewKey.currentState?.refresh();
+      _composing = true;
+      try {
+        final created = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(builder: (_) => ForumComposeScreen(boards: _boards)),
+        );
+        if (created == true) {
+          _boardViewKey.currentState?.refresh();
+        }
+      } finally {
+        _composing = false;
       }
     },
     child: Container(

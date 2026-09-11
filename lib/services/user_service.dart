@@ -14,16 +14,25 @@ class UserService {
   /// 只在 [fetchMe] 被呼叫時刷新；需要保證最新值時傳 forceRefresh: true。
   static UserModel? cachedUser;
 
+  /// session 世代：每次 [clearCache]（登出）遞增。使用者在 fetchMe() 進行中
+  /// 登出時，晚 resolve 的舊回應不能把前一個帳號寫回快取——否則下一位登入者
+  /// 會在論壇/活動頁看到錯誤的「這是我的貼文／我是主辦人」判斷。
+  static int _sessionGen = 0;
+
   static Future<UserModel> fetchMe({bool forceRefresh = false}) async {
     if (!forceRefresh && cachedUser != null) return cachedUser!;
+    final gen = _sessionGen;
     final data = await ApiClient.get(ApiConfig.me);
     final user = UserModel.fromJson(data);
+    // 回應期間已登出：把結果回傳給呼叫端，但不污染快取。
+    if (gen != _sessionGen) return user;
     currentUid = user.uid;
     cachedUser = user;
     return user;
   }
 
   static void clearCache() {
+    _sessionGen++;
     currentUid = null;
     cachedUser = null;
   }
@@ -47,9 +56,10 @@ class UserService {
       'tribal_name': ?tribalName,
       'self_intro': ?selfIntro,
     };
+    final gen = _sessionGen;
     final data = await ApiClient.patch(ApiConfig.me, body);
     final user = UserModel.fromJson(data);
-    cachedUser = user;
+    if (gen == _sessionGen) cachedUser = user;
     return user;
   }
 
