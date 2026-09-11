@@ -410,7 +410,10 @@ class _VocabQuizCard extends StatelessWidget {
               Positioned(
                 top: 16,
                 right: 16,
-                child: TrukuDiamond(size: 40, color: AppColors.gold.withValues(alpha: 0.4)),
+                child: TrukuDiamond(
+                  size: 40,
+                  color: AppColors.gold.withValues(alpha: 0.4),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.all(20),
@@ -492,7 +495,10 @@ class _ListeningQuizCard extends StatelessWidget {
               Positioned(
                 top: 16,
                 right: 16,
-                child: TrukuDiamond(size: 40, color: AppColors.gold.withValues(alpha: 0.4)),
+                child: TrukuDiamond(
+                  size: 40,
+                  color: AppColors.gold.withValues(alpha: 0.4),
+                ),
               ),
               Padding(
                 padding: const EdgeInsets.all(20),
@@ -564,7 +570,11 @@ class _PlacementSummaryCard extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         child: Row(
           children: [
-            const TrukuDiamond(size: 28, color: AppColors.primary, filled: true),
+            const TrukuDiamond(
+              size: 28,
+              color: AppColors.primary,
+              filled: true,
+            ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
@@ -618,7 +628,10 @@ class _PlacementQuizCard extends StatelessWidget {
           Positioned(
             top: 16,
             right: 16,
-            child: TrukuDiamond(size: 40, color: AppColors.primary.withValues(alpha: 0.15)),
+            child: TrukuDiamond(
+              size: 40,
+              color: AppColors.primary.withValues(alpha: 0.15),
+            ),
           ),
           Padding(
             padding: const EdgeInsets.all(20),

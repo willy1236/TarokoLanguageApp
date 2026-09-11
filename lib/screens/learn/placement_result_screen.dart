@@ -51,7 +51,11 @@ class PlacementResultScreen extends StatelessWidget {
             const SizedBox(height: 24),
             Row(
               children: [
-                const TrukuDiamond(size: 12, color: AppColors.primary, filled: true),
+                const TrukuDiamond(
+                  size: 12,
+                  color: AppColors.primary,
+                  filled: true,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   '逐題詳解',
@@ -210,7 +214,10 @@ class _ResultItemCard extends StatelessWidget {
             ),
           Text(
             '正確答案：$correctText',
-            style: GoogleFonts.notoSansTc(fontSize: 12, color: AppColors.inkSoft),
+            style: GoogleFonts.notoSansTc(
+              fontSize: 12,
+              color: AppColors.inkSoft,
+            ),
           ),
         ],
       ),

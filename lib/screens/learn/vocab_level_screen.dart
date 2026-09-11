@@ -29,8 +29,11 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
   void initState() {
     super.initState();
     _levelsFuture = LearnService.fetchLevels();
-    _recentQuizzesFuture =
-        HistoryService.fetchHistory(type: 'quiz', page: 1, pageSize: 5);
+    _recentQuizzesFuture = HistoryService.fetchHistory(
+      type: 'quiz',
+      page: 1,
+      pageSize: 5,
+    );
     _loadSuggestedLevel();
   }
 
@@ -86,9 +89,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
                 if (_suggestedLevelLoaded && _quizSuggestedLevel != null)
                   Padding(
                     padding: const EdgeInsets.only(bottom: 20),
-                    child: _PlacementResultBanner(
-                      level: _quizSuggestedLevel!,
-                    ),
+                    child: _PlacementResultBanner(level: _quizSuggestedLevel!),
                   ),
                 _buildSectionLabel('選擇級別'),
                 const SizedBox(height: 10),
@@ -105,7 +106,8 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
                     if (i > 0) const SizedBox(height: 12),
                     _LevelRow(
                       level: levels[i],
-                      isRecommended: _suggestedLevelLoaded &&
+                      isRecommended:
+                          _suggestedLevelLoaded &&
                           _quizSuggestedLevel != null &&
                           levels[i].level == _quizSuggestedLevel,
                     ),
@@ -312,7 +314,9 @@ class _LevelRow extends StatelessWidget {
           '${level.wordCount} 個單字',
           style: TextStyle(
             fontSize: 11,
-            color: isRecommended ? AppColors.creamLight.withValues(alpha: 0.7) : AppColors.fog,
+            color: isRecommended
+                ? AppColors.creamLight.withValues(alpha: 0.7)
+                : AppColors.fog,
             letterSpacing: 0.55,
           ),
         ),
@@ -437,7 +441,11 @@ class _RecentPracticeRow extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
       ),
     );
   }

@@ -33,7 +33,9 @@ class _LearnCultureScreenState extends State<LearnCultureScreen> {
       ],
     );
     return Scaffold(
-      backgroundColor: _tabIndex == 0 ? AppColors.creamLight : AppColors.midnight,
+      backgroundColor: _tabIndex == 0
+          ? AppColors.creamLight
+          : AppColors.midnight,
       body: IndexedStack(
         index: _tabIndex,
         sizing: StackFit.expand,
