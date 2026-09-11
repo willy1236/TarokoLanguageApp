@@ -9,9 +9,15 @@ import 'profile_rows.dart';
 
 class ProfileCoinBanner extends StatelessWidget {
   final UserModel? user;
+  final bool seniorMode;
   final VoidCallback onTap;
 
-  const ProfileCoinBanner({super.key, required this.user, required this.onTap});
+  const ProfileCoinBanner({
+    super.key,
+    required this.user,
+    required this.onTap,
+    this.seniorMode = false,
+  });
 
   @override
   Widget build(BuildContext context) => _buildCoinBanner();
@@ -45,12 +51,16 @@ class ProfileCoinBanner extends StatelessWidget {
                   Text(
                     '${user?.millet ?? 0}',
                     style: AppTypography.headlineStyle(
+                      seniorMode: seniorMode,
                       color: AppColors.primary,
                     ),
                   ),
                   Text(
                     '小米 · 每日登入／完成單元可得',
-                    style: AppTypography.captionStyle(color: AppColors.fog),
+                    style: AppTypography.bodyLargeStyle(
+                      seniorMode: seniorMode,
+                      color: AppColors.fog,
+                    ),
                   ),
                 ],
               ),

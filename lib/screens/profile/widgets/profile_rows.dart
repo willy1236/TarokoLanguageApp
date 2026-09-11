@@ -41,7 +41,7 @@ Widget profileStatCell(bool seniorMode, String value, String label) {
         const SizedBox(height: 2),
         Text(
           label,
-          style: AppTypography.captionStyle(
+          style: AppTypography.bodyLargeStyle(
             seniorMode: seniorMode,
             color: AppColors.fog,
           ),
@@ -87,7 +87,7 @@ Widget profileQuickLinkCard(ProfileQuickLink link, {required bool seniorMode}) {
           Expanded(
             child: Text(
               link.label,
-              style: AppTypography.subtitleStyle(
+              style: AppTypography.titleStyle(
                 seniorMode: seniorMode,
                 color: AppColors.ink,
               ),
