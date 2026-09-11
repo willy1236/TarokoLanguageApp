@@ -6,7 +6,6 @@
 
 import 'dart:typed_data';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -24,6 +23,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/user_avatar.dart';
+import 'widgets/forum_compose_images.dart';
 import 'widgets/forum_image_grid.dart' show ForumImageViewer;
 import 'widgets/forum_toast.dart';
 
@@ -612,142 +612,18 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     ],
   );
 
-  Widget _imageSection(bool seniorMode) {
-    final thumbSize = seniorMode ? 100.0 : 80.0;
-    final editThumbSize = seniorMode ? 104.0 : 88.0;
-    final deleteBadgeSize = seniorMode ? 28.0 : 18.0;
-    if (_isEditing) {
-      final images = widget.editing!.images;
-      if (images.isEmpty) return const SizedBox.shrink();
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '附圖無法在編輯時變更',
-            style: TextStyle(
-              fontSize: seniorMode ? AppTypography.body : 12,
-              color: AppColors.fog,
-            ),
-          ),
-          const SizedBox(height: 10),
-          SizedBox(
-            height: editThumbSize,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: images.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 8),
-              itemBuilder: (_, i) => ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: CachedNetworkImage(
-                  imageUrl: images[i],
-                  width: editThumbSize,
-                  height: editThumbSize,
-                  fit: BoxFit.cover,
-                  placeholder: (_, _) => Container(
-                    width: editThumbSize,
-                    height: editThumbSize,
-                    color: AppColors.creamDeep,
-                  ),
-                  errorWidget: (_, _, _) => Container(
-                    width: editThumbSize,
-                    height: editThumbSize,
-                    color: AppColors.creamDeep,
-                    alignment: Alignment.center,
-                    child: Icon(
-                      Icons.broken_image_outlined,
-                      color: AppColors.fog,
-                      size: seniorMode ? 26 : 20,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      );
-    }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              for (final image in _images)
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: Stack(
-                    children: [
-                      GestureDetector(
-                        // 點縮圖看原圖：縮圖只有 80px，選錯圖在這個尺寸下看不出來。
-                        onTap: () => _previewPicked(_images.indexOf(image)),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.memory(
-                            image.bytes,
-                            width: thumbSize,
-                            height: thumbSize,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                      ),
-                      Positioned(
-                        top: 4,
-                        right: 4,
-                        child: GestureDetector(
-                          onTap: () => setState(() => _images.remove(image)),
-                          child: Container(
-                            width: deleteBadgeSize,
-                            height: deleteBadgeSize,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.black.withValues(alpha: 0.6),
-                            ),
-                            child: Icon(
-                              Icons.close,
-                              size: seniorMode ? 16 : 10,
-                              color: AppColors.creamLight,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              if (_images.length < ForumService.imageMaxCount)
-                GestureDetector(
-                  onTap: _pickImages,
-                  child: Container(
-                    width: thumbSize,
-                    height: thumbSize,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(
-                        color: AppColors.fog.withValues(alpha: 0.5),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Icon(
-                      Icons.add,
-                      color: AppColors.fog,
-                      size: seniorMode ? 28 : 22,
-                    ),
-                  ),
-                ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 6),
-        Text(
-          '${_images.length}/${ForumService.imageMaxCount} 張',
-          style: TextStyle(
-            fontSize: seniorMode ? AppTypography.body : 11,
-            color: AppColors.fog,
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _imageSection(bool seniorMode) => _isEditing
+      ? ForumComposeEditImages(
+          urls: widget.editing!.images,
+          seniorMode: seniorMode,
+        )
+      : ForumComposePickedImages(
+          images: [for (final image in _images) image.bytes],
+          seniorMode: seniorMode,
+          onPreview: _previewPicked,
+          onRemove: (i) => setState(() => _images.removeAt(i)),
+          onAdd: _pickImages,
+        );
 }
 
 /// 標籤 pill：已加入的標籤填色顯示為「已選中」，熱門標籤建議則是外框樣式。
@@ -771,7 +647,9 @@ class _TagPill extends StatelessWidget {
     final pill = Container(
       padding: EdgeInsets.only(
         left: seniorMode ? 16 : 12,
-        right: onDeleted != null ? (seniorMode ? 8 : 6) : (seniorMode ? 16 : 12),
+        right: onDeleted != null
+            ? (seniorMode ? 8 : 6)
+            : (seniorMode ? 16 : 12),
         top: seniorMode ? 10 : 6,
         bottom: seniorMode ? 10 : 6,
       ),

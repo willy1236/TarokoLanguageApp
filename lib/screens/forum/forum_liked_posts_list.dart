@@ -134,10 +134,7 @@ class _ForumLikedPostsListState extends State<ForumLikedPostsList> {
               ),
             );
           }
-          return _PostListItem(
-            post: _posts[index],
-            seniorMode: seniorMode,
-          );
+          return _PostListItem(post: _posts[index], seniorMode: seniorMode);
         },
       ),
     );

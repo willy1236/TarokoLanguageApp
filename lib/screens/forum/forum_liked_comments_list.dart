@@ -15,8 +15,7 @@ class ForumLikedCommentsList extends StatefulWidget {
   const ForumLikedCommentsList({super.key});
 
   @override
-  State<ForumLikedCommentsList> createState() =>
-      _ForumLikedCommentsListState();
+  State<ForumLikedCommentsList> createState() => _ForumLikedCommentsListState();
 }
 
 class _ForumLikedCommentsListState extends State<ForumLikedCommentsList> {
