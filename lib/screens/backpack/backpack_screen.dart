@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/shop_item_card.dart';
+import '../../shared/widgets/shop_shared.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../shop/shop_screen.dart';
 
@@ -22,24 +22,6 @@ class BackpackScreen extends StatefulWidget {
 const int _catAll = 0;
 const int _catAvatar = 1;
 const int _catFrame = 2;
-
-const Map<String, Color> _rarityColors = {
-  'red': AppColors.rose,
-  'orange': AppColors.orangeLight,
-  'yellow': AppColors.amber,
-  'green': AppColors.greenLight,
-  'blue': AppColors.blue,
-  'gold': AppColors.gold,
-};
-
-const Map<String, String> _rarityLabels = {
-  'red': '紅',
-  'orange': '橙',
-  'yellow': '黃',
-  'green': '綠',
-  'blue': '藍',
-  'gold': '金',
-};
 
 class _BackpackScreenState extends State<BackpackScreen> {
   int _selectedCategory = _catAll;
@@ -73,75 +55,35 @@ class _BackpackScreenState extends State<BackpackScreen> {
     }
   }
 
-  Future<void> _equipItem(ShopItem item) async {
-    try {
-      final updated = item.type == 'frame'
-          ? await ShopService.equipFrame(item.id)
-          : await ShopService.equipAvatar(item.id);
-      if (!mounted) return;
-      setState(() => _user = updated);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('已配戴')));
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      debugPrint('BackpackScreen._equipItem failed: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('配戴失敗，請稍後再試')));
-    }
+  Future<void> _runAction(
+    Future<UserModel> Function() action,
+    String successMessage,
+    String logTag,
+  ) async {
+    final updated = await runShopAction(
+      context,
+      action: action,
+      successMessage: successMessage,
+      logTag: 'BackpackScreen.$logTag',
+    );
+    if (updated != null && mounted) setState(() => _user = updated);
   }
+
+  Future<void> _equipItem(ShopItem item) => _runAction(
+    () => item.type == 'frame'
+        ? ShopService.equipFrame(item.id)
+        : ShopService.equipAvatar(item.id),
+    '已配戴',
+    '_equipItem',
+  );
 
   /// 恢復顯示預設（登入帳號）頭貼，對應 _user?.avatarId == null 的狀態。
-  Future<void> _setDefaultAvatar() async {
-    try {
-      final updated = await ShopService.clearAvatar();
-      if (!mounted) return;
-      setState(() => _user = updated);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('已恢復預設頭貼')));
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      debugPrint('BackpackScreen._setDefaultAvatar failed: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('配戴失敗，請稍後再試')));
-    }
-  }
+  Future<void> _setDefaultAvatar() =>
+      _runAction(ShopService.clearAvatar, '已恢復預設頭貼', '_setDefaultAvatar');
 
   /// 取消配戴頭像框，對應 _user?.frameId == null 的狀態。
-  Future<void> _clearFrame() async {
-    try {
-      final updated = await ShopService.clearFrame();
-      if (!mounted) return;
-      setState(() => _user = updated);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('已取消配戴頭像框')));
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      debugPrint('BackpackScreen._clearFrame failed: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('配戴失敗，請稍後再試')));
-    }
-  }
+  Future<void> _clearFrame() =>
+      _runAction(ShopService.clearFrame, '已取消配戴頭像框', '_clearFrame');
 
   Future<void> _openShop() async {
     await Navigator.of(
@@ -267,37 +209,10 @@ class _BackpackScreenState extends State<BackpackScreen> {
   }
 
   Widget _buildCategories() {
-    return SizedBox(
-      height: 64,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
-        itemCount: _categories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final active = i == _selectedCategory;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = i),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: active ? AppColors.ink : Colors.transparent,
-                border: active ? null : Border.all(color: AppColors.creamDeep),
-              ),
-              child: Text(
-                _categories[i],
-                style: TextStyle(
-                  fontSize: 12,
-                  color: active ? AppColors.creamLight : AppColors.inkSoft,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+    return ShopCategoryChips(
+      labels: _categories,
+      selected: _selectedCategory,
+      onSelected: (i) => setState(() => _selectedCategory = i),
     );
   }
 
@@ -422,16 +337,14 @@ class _BackpackScreenState extends State<BackpackScreen> {
 
   Widget _buildItemCard(ShopItem item) {
     final isGold = item.rarity == 'gold';
-    final rarityColor = _rarityColors[item.rarity];
+    final rarityColor = rarityColors[item.rarity];
     final equipped = item.type == 'frame'
         ? _user?.frameId == item.id
         : _user?.avatarId == item.id;
 
     return ShopItemCard(
       name: item.name,
-      subtitle: item.rarity != null
-          ? _rarityLabels[item.rarity] ?? item.rarity!
-          : null,
+      subtitle: raritySubtitle(item),
       price: item.price,
       isGold: isGold,
       rarityColor: rarityColor,

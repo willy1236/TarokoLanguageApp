@@ -9,6 +9,7 @@ import '../../services/user_service.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import '../../shared/widgets/millet_coin_icon.dart';
 import '../../shared/widgets/shop_item_card.dart';
+import '../../shared/widgets/shop_shared.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../millet/millet_ledger_screen.dart';
 
@@ -24,25 +25,6 @@ const int _catAll = 0;
 const int _catAvatar = 1;
 const int _catFrame = 2;
 const int _catOwned = 3;
-
-/// 六色稀有度 → 顯示色與中文標籤；頭像框固定 rarity=null，不落在此表內。
-const Map<String, Color> _rarityColors = {
-  'red': AppColors.rose,
-  'orange': AppColors.orangeLight,
-  'yellow': AppColors.amber,
-  'green': AppColors.greenLight,
-  'blue': AppColors.blue,
-  'gold': AppColors.gold,
-};
-
-const Map<String, String> _rarityLabels = {
-  'red': '紅',
-  'orange': '橙',
-  'yellow': '黃',
-  'green': '綠',
-  'blue': '藍',
-  'gold': '金',
-};
 
 class _ShopScreenState extends State<ShopScreen> {
   int _selectedCategory = _catAll;
@@ -162,29 +144,19 @@ class _ShopScreenState extends State<ShopScreen> {
   Future<void> _equipItem(ShopItem item) async {
     if (_busyItemIds.contains(item.id)) return;
     setState(() => _busyItemIds.add(item.id));
-    try {
-      final updated = item.type == 'frame'
-          ? await ShopService.equipFrame(item.id)
-          : await ShopService.equipAvatar(item.id);
-      if (!mounted) return;
-      setState(() => _user = updated);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('已配戴')));
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      debugPrint('ShopScreen._equipItem failed: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('配戴失敗，請稍後再試')));
-    } finally {
-      if (mounted) setState(() => _busyItemIds.remove(item.id));
-    }
+    final updated = await runShopAction(
+      context,
+      action: () => item.type == 'frame'
+          ? ShopService.equipFrame(item.id)
+          : ShopService.equipAvatar(item.id),
+      successMessage: '已配戴',
+      logTag: 'ShopScreen._equipItem',
+    );
+    if (!mounted) return;
+    setState(() {
+      if (updated != null) _user = updated;
+      _busyItemIds.remove(item.id);
+    });
   }
 
   @override
@@ -394,37 +366,10 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   Widget _buildCategories() {
-    return SizedBox(
-      height: 64,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
-        itemCount: _categories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final active = i == _selectedCategory;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = i),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: active ? AppColors.ink : Colors.transparent,
-                border: active ? null : Border.all(color: AppColors.creamDeep),
-              ),
-              child: Text(
-                _categories[i],
-                style: TextStyle(
-                  fontSize: 12,
-                  color: active ? AppColors.creamLight : AppColors.inkSoft,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+    return ShopCategoryChips(
+      labels: _categories,
+      selected: _selectedCategory,
+      onSelected: (i) => setState(() => _selectedCategory = i),
     );
   }
 
@@ -474,7 +419,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
   Widget _buildItemCard(ShopItem item) {
     final isGold = item.rarity == 'gold';
-    final rarityColor = _rarityColors[item.rarity];
+    final rarityColor = rarityColors[item.rarity];
     final owned = item.isOwned;
     final locked = !owned && item.unlockCondition != null
         ? item.unlockCondition
@@ -502,9 +447,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
     return ShopItemCard(
       name: item.name,
-      subtitle: item.rarity != null
-          ? _rarityLabels[item.rarity] ?? item.rarity!
-          : null,
+      subtitle: raritySubtitle(item),
       price: item.price,
       isGold: isGold,
       rarityColor: rarityColor,
