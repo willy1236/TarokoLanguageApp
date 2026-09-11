@@ -69,6 +69,13 @@
             {
               "client_id": "230831538559-l8j9lo5t6s5sajcrd457b537cjn3d3er.apps.googleusercontent.com",
               "client_type": 3
+            },
+            {
+              "client_id": "230831538559-qpbohb53gfr9tuqvktr0sdv326al0dcc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "tw.idv.willy1236.truku"
+              }
             }
           ]
         }
