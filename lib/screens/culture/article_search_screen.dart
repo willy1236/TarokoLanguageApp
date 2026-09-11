@@ -61,9 +61,7 @@ class _ArticleResultTile extends StatelessWidget {
               width: thumbSize,
               height: thumbSize,
               clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(8),
-              ),
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
               child: article.coverImageUrl != null
                   ? Image.network(article.coverImageUrl!, fit: BoxFit.cover)
                   : ArticleCoverPlaceholder(category: article.category),

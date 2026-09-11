@@ -176,6 +176,7 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
 class _VideoListItem extends StatelessWidget {
   final VideoSummary video;
   final bool seniorMode;
+
   /// 從詳情頁返回時呼叫，讓清單重新整理。
   final VoidCallback onReturn;
   const _VideoListItem({

@@ -178,6 +178,7 @@ class _ArticleLikedBookmarkedListState
 class _ArticleListItem extends StatelessWidget {
   final ArticleSummary article;
   final bool seniorMode;
+
   /// 從詳情頁返回時呼叫，讓清單重新整理。
   final VoidCallback onReturn;
   const _ArticleListItem({
@@ -249,9 +250,7 @@ class _ArticleListItem extends StatelessWidget {
                             ? Icons.favorite
                             : Icons.favorite_border,
                         size: seniorMode ? 22 : 14,
-                        color: article.isLiked
-                            ? AppColors.gold
-                            : AppColors.fog,
+                        color: article.isLiked ? AppColors.gold : AppColors.fog,
                       ),
                       const SizedBox(width: 4),
                       Text(

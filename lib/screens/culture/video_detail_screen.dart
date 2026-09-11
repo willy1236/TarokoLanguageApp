@@ -95,7 +95,10 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
       _video = video.toggledBookmark();
     });
     try {
-      await VideoService.bookmarkVideo(widget.videoId, add: !video.isBookmarked);
+      await VideoService.bookmarkVideo(
+        widget.videoId,
+        add: !video.isBookmarked,
+      );
     } catch (_) {
       if (!mounted) return;
       setState(() => _video = video);
@@ -281,7 +284,10 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                           const SizedBox(width: 4),
                           Text(
                             '${video.viewCount}',
-                            style: TextStyle(color: AppColors.fog, fontSize: 12),
+                            style: TextStyle(
+                              color: AppColors.fog,
+                              fontSize: 12,
+                            ),
                           ),
                           const Spacer(),
                           EngagementIconButton(
@@ -348,5 +354,4 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
       ),
     );
   }
-
 }
