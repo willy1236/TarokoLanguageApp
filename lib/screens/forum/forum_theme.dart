@@ -9,7 +9,6 @@
 // 已經寫死顏色的元件（活動小卡、貼文卡片等）不受影響。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
@@ -29,9 +28,8 @@ ThemeData forumTheme(BuildContext context) {
     scaffoldBackgroundColor: AppColors.creamLight,
     canvasColor: AppColors.creamLight,
     hintColor: AppColors.fog,
-    textTheme: GoogleFonts.notoSansTcTextTheme(
-      base.textTheme,
-    ).apply(bodyColor: AppColors.inkSoft, displayColor: AppColors.ink),
+    // 字族沿用全域主題（main.dart 已套 notoSansTc），這裡只換成淺底用的深色字
+    textTheme: base.textTheme.apply(bodyColor: AppColors.inkSoft, displayColor: AppColors.ink),
     inputDecorationTheme: const InputDecorationTheme(
       hintStyle: TextStyle(color: AppColors.fog),
       labelStyle: TextStyle(color: AppColors.fog),
