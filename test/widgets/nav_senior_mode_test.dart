@@ -92,15 +92,23 @@ void main() {
       expect(calls, [(2, 1)]);
     });
 
-    testWidgets('精簡模式只列 4 張卡、不顯示活動', (tester) async {
+    testWidgets('精簡模式 2x2 只列 廣場/活動/視訊/文化影音', (tester) async {
       await usePhoneSize(tester);
       await seniorModeController.setEnabled(true);
       await tester.pumpWidget(home());
-      for (final zh in ['廣場', '文化影音', '視訊', '族語學習']) {
+      for (final zh in ['廣場', '活動', '視訊', '文化影音']) {
         expect(find.text(zh), findsOneWidget);
       }
-      expect(find.text('活動'), findsNothing);
+      expect(find.text('族語學習'), findsNothing);
       expect(find.text('部落故事與傳統知識'), findsNothing); // 副標隱藏
+    });
+
+    testWidgets('精簡模式點「活動」導到 廣場活動(2) → 活動(1)', (tester) async {
+      await usePhoneSize(tester);
+      await seniorModeController.setEnabled(true);
+      await tester.pumpWidget(home());
+      await tester.tap(find.text('活動'));
+      expect(calls, [(2, 1)]);
     });
   });
 }

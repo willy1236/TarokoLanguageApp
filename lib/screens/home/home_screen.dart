@@ -132,23 +132,30 @@ class HomeScreen extends StatelessWidget {
     builder: (context, _) => _buildPage(context, seniorModeController.enabled),
   );
 
-  // 一般模式首頁不可捲動，模式卡吃掉剩餘高度；精簡模式字放大後塞不下，
-  // 改成可捲動、模式卡自然高度的單欄列表。
+  // 一般模式首頁不可捲動，模式卡吃掉剩餘高度；精簡模式字放大後可能塞不下，
+  // 2x2 模式卡仍吃滿剩餘高度，但畫面太矮時整頁可捲動。
   Widget _buildPage(BuildContext context, bool seniorMode) {
     return ColoredBox(
       color: AppColors.creamLight,
       child: SafeArea(
         bottom: false,
         child: seniorMode
-            ? SingleChildScrollView(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    _buildTopStrip(),
-                    _buildHeader(context, seniorMode),
-                    _buildSeniorModeList(),
-                  ],
-                ),
+            ? CustomScrollView(
+                slivers: [
+                  SliverToBoxAdapter(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        _buildTopStrip(),
+                        _buildHeader(context, seniorMode),
+                      ],
+                    ),
+                  ),
+                  SliverFillRemaining(
+                    hasScrollBody: false,
+                    child: _buildSeniorModeGrid(),
+                  ),
+                ],
               )
             : Column(
                 children: [
@@ -161,30 +168,36 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // 精簡模式只列 AppDensity.maxHomeSections 張卡；「活動」省略，因為廣場在
-  // 精簡模式本來就不顯示活動，且活動仍可從導航列「廣場活動」進入。
-  static const _seniorModeKeys = ['plaza', 'culture', 'video', 'learn'];
+  // 精簡模式只列 AppDensity.maxHomeSections 張卡，排成 2x2；「族語學習」省略，
+  // 仍可從導航列「學習影音」進入。
+  static const _seniorModeKeys = ['plaza', 'event', 'video', 'culture'];
 
-  Widget _buildSeniorModeList() {
+  Widget _buildSeniorModeGrid() {
     final modes = [
       for (final key in _seniorModeKeys.take(AppDensity.maxHomeSections))
         _modes.firstWhere((m) => m.key == key),
     ];
+    Widget cell(int i) => Expanded(
+      child: i < modes.length
+          ? ConstrainedBox(
+              constraints: const BoxConstraints(minHeight: 120),
+              child: ModeCard(
+                mode: modes[i],
+                seniorMode: true,
+                onTap: () => _onModeTap(modes[i]),
+              ),
+            )
+          : const SizedBox.shrink(),
+    );
+    Widget row(int start) => Expanded(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [cell(start), const SizedBox(width: 12), cell(start + 1)],
+      ),
+    );
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          for (var i = 0; i < modes.length; i++) ...[
-            if (i > 0) const SizedBox(height: 12),
-            ModeCard(
-              mode: modes[i],
-              seniorMode: true,
-              onTap: () => _onModeTap(modes[i]),
-            ),
-          ],
-        ],
-      ),
+      child: Column(children: [row(0), const SizedBox(height: 12), row(2)]),
     );
   }
 
@@ -255,7 +268,8 @@ class HomeScreen extends StatelessWidget {
                       const SizedBox(height: 2),
                     ],
                     Text(
-                      '${displayName ?? 'Yudaw'}，今天學什麼？',
+                      // 精簡模式字大，刻意在逗號後換行，避免從字中間斷開。
+                      '${displayName ?? 'Yudaw'}，${seniorMode ? '\n' : ''}今天學什麼？',
                       style: GoogleFonts.notoSerifTc(
                         fontSize: seniorMode ? 28 : 24,
                         fontWeight: FontWeight.w600,
@@ -528,62 +542,70 @@ class _TodayProgressCard extends StatelessWidget {
 
                 const SizedBox(height: 14),
 
-                // 每日簽到
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        checkinStreak > 0
-                            ? '每日簽到 +50 · 已連續 $checkinStreak 天'
-                            : '每日簽到 +50 小米幣',
-                        style: GoogleFonts.notoSansTc(
-                          fontSize: seniorMode ? AppTypography.subtitle : 12,
-                          color: AppColors.creamLight.withValues(alpha: 0.85),
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    GestureDetector(
-                      onTap: checkedInToday ? null : onCheckin,
-                      child: Container(
-                        constraints: BoxConstraints(
-                          minHeight: seniorMode ? 48 : 0,
-                        ),
-                        alignment: seniorMode ? Alignment.center : null,
-                        padding: EdgeInsets.symmetric(
-                          horizontal: seniorMode ? 18 : 14,
-                          vertical: 8,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(
-                            seniorMode ? 24 : 16,
-                          ),
-                          border: Border.all(
-                            color: checkedInToday
-                                ? AppColors.gold.withValues(alpha: 0.4)
-                                : AppColors.gold,
-                          ),
-                        ),
-                        child: Text(
-                          checkedInToday ? '已簽到' : '立即簽到',
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: seniorMode ? AppTypography.title : 12,
-                            fontWeight: FontWeight.w600,
-                            color: checkedInToday
-                                ? AppColors.gold.withValues(alpha: 0.4)
-                                : AppColors.gold,
-                            letterSpacing: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                // 每日簽到：精簡模式字大，說明與按鈕改上下排列避免折行。
+                if (seniorMode) ...[
+                  _buildCheckinText(),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: _buildCheckinButton(),
+                  ),
+                ] else
+                  Row(
+                    children: [
+                      Expanded(child: _buildCheckinText()),
+                      const SizedBox(width: 8),
+                      _buildCheckinButton(),
+                    ],
+                  ),
               ],
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildCheckinText() {
+    return Text(
+      checkinStreak > 0 ? '每日簽到 +50 · 已連續 $checkinStreak 天' : '每日簽到 +50 小米幣',
+      style: GoogleFonts.notoSansTc(
+        fontSize: seniorMode ? AppTypography.subtitle : 12,
+        color: AppColors.creamLight.withValues(alpha: 0.85),
+        letterSpacing: 0.5,
+      ),
+    );
+  }
+
+  Widget _buildCheckinButton() {
+    return GestureDetector(
+      onTap: checkedInToday ? null : onCheckin,
+      child: Container(
+        constraints: BoxConstraints(minHeight: seniorMode ? 48 : 0),
+        alignment: seniorMode ? Alignment.center : null,
+        padding: EdgeInsets.symmetric(
+          horizontal: seniorMode ? 18 : 14,
+          vertical: 8,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(seniorMode ? 24 : 16),
+          border: Border.all(
+            color: checkedInToday
+                ? AppColors.gold.withValues(alpha: 0.4)
+                : AppColors.gold,
+          ),
+        ),
+        child: Text(
+          checkedInToday ? '已簽到' : '立即簽到',
+          style: GoogleFonts.notoSerifTc(
+            fontSize: seniorMode ? AppTypography.title : 12,
+            fontWeight: FontWeight.w600,
+            color: checkedInToday
+                ? AppColors.gold.withValues(alpha: 0.4)
+                : AppColors.gold,
+            letterSpacing: 1,
+          ),
+        ),
       ),
     );
   }

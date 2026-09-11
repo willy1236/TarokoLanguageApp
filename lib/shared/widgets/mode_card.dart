@@ -30,8 +30,8 @@ class ModeCard extends StatelessWidget {
   final bool large;
   final VoidCallback? onTap;
 
-  /// 精簡模式：改成自然高度的橫向單列（icon＋中文名＋箭頭），隱藏族語名與副標，
-  /// 不再依賴外層給定高度（一般模式靠 Spacer 撐滿格子，字放大後會溢位）。
+  /// 精簡模式：只留大 icon（左上）＋大字中文名（底部），隱藏族語名與副標；
+  /// 由外層給定格子高度（首頁 2x2）。
   final bool seniorMode;
 
   const ModeCard({
@@ -81,29 +81,24 @@ class ModeCard extends StatelessWidget {
   }
 
   Widget _buildSeniorContent() {
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minHeight: 76),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-        child: Row(
-          children: [
-            ModeIcon(name: mode.icon, color: mode.accent, size: 36),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Text(
-                mode.zh,
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 26,
-                  fontWeight: FontWeight.w600,
-                  color: mode.fg,
-                  letterSpacing: 1.0,
-                  height: 1.2,
-                ),
-              ),
+    return Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ModeIcon(name: mode.icon, color: mode.accent, size: 36),
+          const Spacer(),
+          Text(
+            mode.zh,
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 26,
+              fontWeight: FontWeight.w600,
+              color: mode.fg,
+              letterSpacing: 1.0,
+              height: 1.2,
             ),
-            Icon(Icons.chevron_right, size: 32, color: mode.accent),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
