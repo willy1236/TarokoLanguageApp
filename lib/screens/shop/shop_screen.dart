@@ -56,6 +56,10 @@ class _ShopScreenState extends State<ShopScreen> {
   // （餘額卡），避免顯示跟後端擁有狀態對不上的假資料。
   List<ShopItem>? _serverItems;
 
+  /// 正在送出兌換／配戴請求的商品 id：await 期間 disable 該張卡片的按鈕，
+  /// 避免連點造成重複扣點。
+  final Set<String> _busyItemIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -105,6 +109,8 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   Future<void> _purchaseItem(ShopItem item) async {
+    if (_busyItemIds.contains(item.id)) return;
+    setState(() => _busyItemIds.add(item.id));
     try {
       final updated = await ShopService.purchaseItem(item.id);
       if (!mounted) return;
@@ -112,17 +118,18 @@ class _ShopScreenState extends State<ShopScreen> {
         final owned = item.type == 'frame'
             ? updated.ownedFrameIds.contains(item.id)
             : updated.ownedAvatarIds.contains(item.id);
-        if (owned) {
-          _user = updated;
-          return;
-        }
-        _user = item.type == 'frame'
-            ? updated.copyWith(
-                ownedFrameIds: [...updated.ownedFrameIds, item.id],
-              )
-            : updated.copyWith(
-                ownedAvatarIds: [...updated.ownedAvatarIds, item.id],
-              );
+        _user = owned
+            ? updated
+            : item.type == 'frame'
+                ? updated.copyWith(
+                    ownedFrameIds: [...updated.ownedFrameIds, item.id],
+                  )
+                : updated.copyWith(
+                    ownedAvatarIds: [...updated.ownedAvatarIds, item.id],
+                  );
+        // 卡片的「已擁有／可兌換」與「已擁有」分頁都看 ShopItem.isOwned，
+        // 不同步這裡的話買完仍顯示「兌換」且可以再點一次。
+        _markOwnedLocally(item.id);
       });
       ScaffoldMessenger.of(
         context,
@@ -138,10 +145,23 @@ class _ShopScreenState extends State<ShopScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('兌換失敗，請稍後再試')));
+    } finally {
+      if (mounted) setState(() => _busyItemIds.remove(item.id));
     }
   }
 
+  /// 把目錄中該商品標記為已擁有。必須在 setState 內呼叫。
+  void _markOwnedLocally(String itemId) {
+    final items = _serverItems;
+    if (items == null) return;
+    _serverItems = [
+      for (final i in items) i.id == itemId ? i.copyWith(isOwned: true) : i,
+    ];
+  }
+
   Future<void> _equipItem(ShopItem item) async {
+    if (_busyItemIds.contains(item.id)) return;
+    setState(() => _busyItemIds.add(item.id));
     try {
       final updated = item.type == 'frame'
           ? await ShopService.equipFrame(item.id)
@@ -162,6 +182,8 @@ class _ShopScreenState extends State<ShopScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('配戴失敗，請稍後再試')));
+    } finally {
+      if (mounted) setState(() => _busyItemIds.remove(item.id));
     }
   }
 
@@ -461,6 +483,8 @@ class _ShopScreenState extends State<ShopScreen> {
         ? _user?.frameId == item.id
         : _user?.avatarId == item.id;
 
+    final busy = _busyItemIds.contains(item.id);
+
     String? actionLabel;
     VoidCallback? onAction;
     if (owned && equipped) {
@@ -488,8 +512,8 @@ class _ShopScreenState extends State<ShopScreen> {
       lockedText: locked,
       imageUrl: item.imageUrl,
       icon: item.type == 'frame' ? Icons.circle_outlined : Icons.face_rounded,
-      actionLabel: actionLabel,
-      onAction: onAction,
+      actionLabel: busy ? '處理中…' : actionLabel,
+      onAction: busy ? null : onAction,
     );
   }
 }
