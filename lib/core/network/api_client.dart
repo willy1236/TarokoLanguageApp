@@ -75,6 +75,11 @@ class ApiException implements Exception {
 /// 畫面上常見的「錯誤是不是因為未登入」判斷，統一隱藏 `is ApiException` 轉型。
 bool isAuthError(Object? error) => error is ApiException && error.isUnauthorized;
 
+/// 給使用者看的錯誤文案：後端 [ApiException] 已是中文訊息直接用，
+/// 其他（程式錯誤、型別錯誤）不外露原始內容，改顯示 [fallback]。
+String apiErrorMessage(Object? error, {String fallback = '發生錯誤，請稍後再試'}) =>
+    error is ApiException && error.message.isNotEmpty ? error.message : fallback;
+
 class ApiClient {
   /// 傳輸層。正式執行時是預設的 http client；測試可換成 MockClient。
   /// 換成可注入的原因：service 的端點、query、multipart 組成需要在沒有網路的

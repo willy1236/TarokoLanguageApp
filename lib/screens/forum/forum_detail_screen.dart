@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
@@ -442,27 +443,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   Widget _buildBody(ForumPost? post, bool seniorMode) {
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+      return const TrukuLoadingView();
     }
     final error = _error;
     if (error != null || post == null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              error ?? '載入失敗',
-              style: TextStyle(
-                color: AppColors.inkSoft,
-                fontSize: seniorMode ? AppTypography.title : null,
-              ),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(onPressed: _load, child: const Text('重試')),
-          ],
-        ),
+      return TrukuErrorView(
+        message: error ?? '載入失敗',
+        onRetry: _load,
+        seniorMode: seniorMode,
       );
     }
 

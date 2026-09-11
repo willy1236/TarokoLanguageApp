@@ -1,4 +1,5 @@
 import 'dart:io';
+import '../../shared/widgets/async_state_view.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -38,7 +39,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   int? _uid;
   List<EventReminder> _reminders = [];
   bool _loading = true;
-  String? _error;
+  Object? _error;
   bool _acting = false; // 參加/退出/取消進行中，避免重複點
   bool _likeBusy = false;
   bool _bookmarkBusy = false;
@@ -110,7 +111,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       debugPrint('$st');
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = e;
         _loading = false;
       });
     }
@@ -377,9 +378,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     if (_loading) {
       return const Scaffold(
         backgroundColor: AppColors.creamLight,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
+        body: TrukuLoadingView(),
       );
     }
     if (_error != null || _event == null) {
@@ -390,27 +389,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           foregroundColor: AppColors.ink,
           elevation: 0,
         ),
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: AppColors.fog,
-                size: seniorMode ? 56 : 40,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _error ?? '找不到活動',
-                style: TextStyle(
-                  color: AppColors.inkSoft,
-                  fontSize: seniorMode ? 18 : 14,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(onPressed: _refresh, child: const Text('重試')),
-            ],
-          ),
+        body: TrukuErrorView(
+          error: _error,
+          message: _error == null ? '找不到活動' : null,
+          onRetry: _refresh,
+          seniorMode: seniorMode,
         ),
       );
     }

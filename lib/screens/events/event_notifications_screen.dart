@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
@@ -173,33 +174,14 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
 
   Widget _buildBody(bool seniorMode) {
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+      return const TrukuLoadingView();
     }
     final error = _error;
     if (error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              error,
-              style: TextStyle(
-                color: AppColors.inkSoft,
-                fontSize: seniorMode ? 18 : null,
-              ),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: _load,
-              style: seniorMode
-                  ? OutlinedButton.styleFrom(minimumSize: const Size(140, 52))
-                  : null,
-              child: const Text('重試'),
-            ),
-          ],
-        ),
+      return TrukuErrorView(
+        message: error,
+        onRetry: _load,
+        seniorMode: seniorMode,
       );
     }
     if (_items.isEmpty) {

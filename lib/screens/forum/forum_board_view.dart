@@ -4,9 +4,9 @@
 // 情況下驅動分頁與回滾，同一個元件也能被「我的收藏」與搜尋結果重複使用。
 
 import 'package:flutter/material.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../models/shop_item.dart';
@@ -335,10 +335,11 @@ class ForumBoardViewState extends State<ForumBoardView> {
     if (_error != null) {
       return [
         ?header,
-        _ForumErrorState(
+        TrukuErrorView(
           message: _error!,
           onRetry: _load,
           seniorMode: seniorMode,
+          topPadding: 60,
         ),
       ];
     }
@@ -388,48 +389,4 @@ class ForumBoardViewState extends State<ForumBoardView> {
         ),
     ];
   }
-}
-
-class _ForumErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  final bool seniorMode;
-
-  const _ForumErrorState({
-    required this.message,
-    required this.onRetry,
-    required this.seniorMode,
-  });
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-    child: Column(
-      children: [
-        const Icon(Icons.cloud_off_outlined, size: 40, color: AppColors.fog),
-        const SizedBox(height: 12),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: seniorMode ? AppTypography.subtitle : null,
-            color: AppColors.inkSoft,
-          ),
-        ),
-        const SizedBox(height: 14),
-        OutlinedButton(
-          onPressed: onRetry,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
-            minimumSize: seniorMode ? const Size(140, 52) : null,
-            textStyle: seniorMode
-                ? const TextStyle(fontSize: AppTypography.subtitle)
-                : null,
-          ),
-          child: const Text('重試'),
-        ),
-      ],
-    ),
-  );
 }

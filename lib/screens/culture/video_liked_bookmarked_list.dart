@@ -4,10 +4,10 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
-import '../../core/network/api_client.dart';
 import '../../models/video_models.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
+import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'video_detail_screen.dart';
 
@@ -112,12 +112,14 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
 
   Widget _buildBody(bool seniorMode) {
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.gold),
-      );
+      return const TrukuLoadingView();
     }
     if (_error != null) {
-      return _buildError(_error, seniorMode);
+      return TrukuErrorView(
+        error: _error,
+        onRetry: _load,
+        seniorMode: seniorMode,
+      );
     }
     if (_videos.isEmpty) {
       return _buildEmpty(seniorMode);
@@ -167,46 +169,6 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
       message: message,
       subtitle: '下拉重新整理，看看有沒有新影片。',
       seniorMode: seniorMode,
-    );
-  }
-
-  Widget _buildError(Object? error, bool seniorMode) {
-    final message = error is ApiException ? error.message : '發生錯誤，請稍後再試';
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.error_outline,
-              color: AppColors.fog,
-              size: seniorMode ? 56 : 40,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              style: TextStyle(
-                color: AppColors.cream,
-                fontSize: seniorMode ? AppTypography.title : 14,
-              ),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: _load,
-              style: seniorMode
-                  ? OutlinedButton.styleFrom(
-                      minimumSize: const Size(140, 52),
-                      textStyle: const TextStyle(
-                        fontSize: AppTypography.subtitle,
-                      ),
-                    )
-                  : null,
-              child: const Text('重試'),
-            ),
-          ],
-        ),
-      ),
     );
   }
 }

@@ -5,6 +5,7 @@ import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import 'event_detail_screen.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 /// 我發起的活動總表（GET /api/events/mine）。
 ///
@@ -19,7 +20,7 @@ class MyEventsScreen extends StatefulWidget {
 
 class _MyEventsScreenState extends State<MyEventsScreen> {
   bool _loading = true;
-  String? _error;
+  Object? _error;
   List<EventSummary> _events = const [];
 
   static const _months = [
@@ -58,7 +59,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = e;
         _loading = false;
       });
     }
@@ -108,39 +109,17 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
   }
 
   Widget _buildBody(bool seniorMode) {
-    if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
-    }
+    if (_loading) return const TrukuLoadingView();
     if (_error != null) {
+      // 包在 ListView 裡才能維持下拉重新整理
       return ListView(
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 90),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.cloud_off,
-                  size: seniorMode ? 56 : 40,
-                  color: AppColors.fog,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '載入失敗\n$_error',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: seniorMode ? 18 : 13,
-                    color: AppColors.inkSoft,
-                    height: 1.6,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Center(
-                  child: TextButton(onPressed: _load, child: const Text('重試')),
-                ),
-              ],
-            ),
+          TrukuErrorView(
+            error: _error,
+            onRetry: _load,
+            seniorMode: seniorMode,
+            fallback: '載入活動失敗，請稍後再試',
+            topPadding: 90,
           ),
         ],
       );

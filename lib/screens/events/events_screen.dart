@@ -12,6 +12,7 @@ import 'event_compose_screen.dart';
 import 'event_detail_screen.dart';
 import 'event_notifications_screen.dart';
 import 'event_search_screen.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 /// 活動列表 —— 真資料版（GET /api/events）。
 /// 發起活動返回後自動刷新；下拉可重新整理。需登入（未登入 API 會 401 導回登入）。
@@ -33,7 +34,7 @@ class _EventsScreenState extends State<EventsScreen> {
   String _scope = 'all';
 
   bool _loading = true;
-  String? _error;
+  Object? _error;
   List<EventSummary> _events = [];
   int _unread = 0;
 
@@ -73,7 +74,7 @@ class _EventsScreenState extends State<EventsScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = e;
         _loading = false;
       });
     }
@@ -211,18 +212,21 @@ class _EventsScreenState extends State<EventsScreen> {
   List<Widget> _buildContentSlivers(bool seniorMode) {
     if (_loading) {
       return [
-        const SliverToBoxAdapter(
-          child: Padding(
-            padding: EdgeInsets.only(top: 80),
-            child: Center(
-              child: CircularProgressIndicator(color: AppColors.primary),
-            ),
-          ),
-        ),
+        const SliverToBoxAdapter(child: TrukuLoadingView(topPadding: 80)),
       ];
     }
     if (_error != null) {
-      return [SliverToBoxAdapter(child: _buildError(seniorMode))];
+      return [
+        SliverToBoxAdapter(
+          child: TrukuErrorView(
+            error: _error,
+            onRetry: _load,
+            seniorMode: seniorMode,
+            fallback: '載入活動失敗，請稍後再試',
+            topPadding: 80,
+          ),
+        ),
+      ];
     }
     final events = _filteredEvents;
     if (events.isEmpty) {
@@ -233,53 +237,6 @@ class _EventsScreenState extends State<EventsScreen> {
       if (events.length > 1) SliverToBoxAdapter(child: _buildDivider()),
       SliverToBoxAdapter(child: _buildList(events, seniorMode)),
     ];
-  }
-
-  Widget _buildError(bool seniorMode) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 80, 20, 0),
-      child: Column(
-        children: [
-          Icon(
-            Icons.cloud_off,
-            size: seniorMode ? 56 : 40,
-            color: AppColors.fog,
-          ),
-          const SizedBox(height: 12),
-          Text(
-            '載入活動失敗\n$_error',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: seniorMode ? 18 : 13,
-              color: AppColors.inkSoft,
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 16),
-          GestureDetector(
-            onTap: _load,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: seniorMode ? 32 : 24,
-                vertical: seniorMode ? 16 : 10,
-              ),
-              decoration: BoxDecoration(
-                color: AppColors.primary,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                '重試',
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: seniorMode ? 18 : 13,
-                  color: AppColors.creamLight,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
   }
 
   Widget _buildEmpty(bool seniorMode) {

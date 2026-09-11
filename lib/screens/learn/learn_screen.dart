@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/network/api_client.dart';
 import '../../models/level_info.dart';
 import '../../services/learn_service.dart';
 import '../../services/user_service.dart';
@@ -12,6 +11,7 @@ import 'listening_mode_screen.dart';
 import 'listening_placement_screen.dart';
 import 'quiz_placement_screen.dart';
 import 'vocab_level_screen.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 // ── LearnScreen ───────────────────────────────────────────────────────────────
 
@@ -141,10 +141,10 @@ class _LearnScreenState extends State<LearnScreen> {
         future: _levelsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            return const _LearnLoading();
+            return const TrukuLoadingView();
           }
           if (snapshot.hasError) {
-            return _LearnError(error: snapshot.error, onRetry: _reload);
+            return TrukuErrorView(error: snapshot.error, onRetry: _reload);
           }
           final levels = snapshot.data ?? const [];
           return Column(
@@ -707,70 +707,6 @@ class _PillButton extends StatelessWidget {
                 color: foreground,
                 letterSpacing: 0.6,
               ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class _LearnLoading extends StatelessWidget {
-  const _LearnLoading();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: CircularProgressIndicator(color: AppColors.primary),
-    );
-  }
-}
-
-class _LearnError extends StatelessWidget {
-  final Object? error;
-  final VoidCallback onRetry;
-
-  const _LearnError({required this.error, required this.onRetry});
-
-  bool get _isUnauthorized => isAuthError(error);
-
-  @override
-  Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              _isUnauthorized ? '請先登入' : '載入失敗，請稍後再試',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-              ),
-            ),
-            if (!_isUnauthorized && error != null) ...[
-              const SizedBox(height: 8),
-              Text(
-                error is ApiException
-                    ? (error as ApiException).message
-                    : '$error',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.notoSansTc(
-                  fontSize: 13,
-                  color: AppColors.fog,
-                ),
-              ),
-            ],
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: onRetry,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primary,
-                foregroundColor: AppColors.creamLight,
-              ),
-              child: const Text('重試'),
             ),
           ],
         ),

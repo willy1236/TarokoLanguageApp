@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
-import '../../core/network/api_client.dart';
 import '../../models/article_models.dart';
 import '../../models/video_models.dart';
 import '../../services/article_service.dart';
@@ -15,6 +14,7 @@ import 'article_detail_screen.dart';
 import 'article_search_screen.dart';
 import 'video_detail_screen.dart';
 import 'video_search_screen.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 class CultureScreen extends StatefulWidget {
   /// 由外層（合併分頁的膠囊切換）注入，顯示在 hero 與影音/文章分頁之間。
@@ -490,41 +490,15 @@ class _CultureScreenState extends State<CultureScreen> {
         future: _videosFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 40),
-              child: Center(
-                child: CircularProgressIndicator(color: AppColors.gold),
-              ),
-            );
+            return const TrukuLoadingView(topPadding: 40);
           }
           if (snapshot.hasError) {
-            final message = snapshot.error is ApiException
-                ? (snapshot.error as ApiException).message
-                : '影片載入失敗，請稍後再試';
-            return Padding(
-              padding: const EdgeInsets.symmetric(vertical: 40),
-              child: Column(
-                children: [
-                  Text(
-                    message,
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: AppColors.fog,
-                      fontSize: seniorMode ? AppTypography.subtitle : 13,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  OutlinedButton(
-                    onPressed: _reloadVideos,
-                    child: Text(
-                      '重試',
-                      style: seniorMode
-                          ? const TextStyle(fontSize: AppTypography.subtitle)
-                          : null,
-                    ),
-                  ),
-                ],
-              ),
+            return TrukuErrorView(
+              error: snapshot.error,
+              onRetry: _reloadVideos,
+              seniorMode: seniorMode,
+              fallback: '影片載入失敗，請稍後再試',
+              topPadding: 24,
             );
           }
           final videos = snapshot.data!.videos;
@@ -594,35 +568,12 @@ class _CultureScreenState extends State<CultureScreen> {
             children: [
               _buildArticleChips(seniorMode),
               _buildArticleSectionHeader(seniorMode),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 16,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      snapshot.error is ApiException
-                          ? (snapshot.error as ApiException).message
-                          : '文章載入失敗，請稍後再試',
-                      style: TextStyle(
-                        color: AppColors.fog,
-                        fontSize: seniorMode ? AppTypography.subtitle : 13,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    OutlinedButton(
-                      onPressed: _reloadArticles,
-                      child: Text(
-                        '重試',
-                        style: seniorMode
-                            ? const TextStyle(fontSize: AppTypography.subtitle)
-                            : null,
-                      ),
-                    ),
-                  ],
-                ),
+              TrukuErrorView(
+                error: snapshot.error,
+                onRetry: _reloadArticles,
+                seniorMode: seniorMode,
+                fallback: '文章載入失敗，請稍後再試',
+                topPadding: 16,
               ),
             ],
           );
