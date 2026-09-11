@@ -151,6 +151,9 @@ class _ArticleLikedBookmarkedListState
           return _ArticleListItem(
             article: _articles[index],
             seniorMode: seniorMode,
+            // 在詳情頁取消收藏/按讚後返回，清單要重新整理，否則仍看得到
+            // 已經取消的項目。
+            onReturn: _load,
           );
         },
       ),
@@ -213,7 +216,13 @@ class _ArticleLikedBookmarkedListState
 class _ArticleListItem extends StatelessWidget {
   final ArticleSummary article;
   final bool seniorMode;
-  const _ArticleListItem({required this.article, required this.seniorMode});
+  /// 從詳情頁返回時呼叫，讓清單重新整理。
+  final VoidCallback onReturn;
+  const _ArticleListItem({
+    required this.article,
+    required this.seniorMode,
+    required this.onReturn,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -221,12 +230,15 @@ class _ArticleListItem extends StatelessWidget {
     final thumbHeight = seniorMode ? 80.0 : 60.0;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ArticleDetailScreen(articleId: article.id),
-        ),
-      ),
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ArticleDetailScreen(articleId: article.id),
+          ),
+        );
+        onReturn();
+      },
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(

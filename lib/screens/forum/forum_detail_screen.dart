@@ -380,7 +380,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         builder: (_) => ForumComposeScreen(boards: [post.board], editing: post),
       ),
     );
-    if (updated == true && mounted) _load();
+    if (updated != true || !mounted) return;
+    await _load();
+    // 按讚/收藏/留言都會回報父層，唯獨編輯漏做，導致返回列表仍是舊標題內文。
+    final refreshed = _post;
+    if (refreshed != null) widget.onPostChanged?.call(refreshed);
   }
 
   @override

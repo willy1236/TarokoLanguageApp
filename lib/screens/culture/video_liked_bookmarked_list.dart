@@ -149,6 +149,9 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
           return _VideoListItem(
             video: _videos[index],
             seniorMode: seniorMode,
+            // 在詳情頁取消收藏/按讚後返回，清單要重新整理，否則仍看得到
+            // 已經取消的項目。
+            onReturn: _load,
           );
         },
       ),
@@ -211,7 +214,13 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
 class _VideoListItem extends StatelessWidget {
   final VideoSummary video;
   final bool seniorMode;
-  const _VideoListItem({required this.video, required this.seniorMode});
+  /// 從詳情頁返回時呼叫，讓清單重新整理。
+  final VoidCallback onReturn;
+  const _VideoListItem({
+    required this.video,
+    required this.seniorMode,
+    required this.onReturn,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -219,10 +228,15 @@ class _VideoListItem extends StatelessWidget {
     final thumbHeight = seniorMode ? 80.0 : 60.0;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => VideoDetailScreen(videoId: video.id)),
-      ),
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => VideoDetailScreen(videoId: video.id),
+          ),
+        );
+        onReturn();
+      },
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
