@@ -224,16 +224,19 @@ class _EventsScreenState extends State<EventsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'SMRATUC · 活動',
-                  style: GoogleFonts.crimsonPro(
-                    fontStyle: FontStyle.italic,
-                    fontSize: seniorMode ? 16 : 12,
-                    color: AppColors.fog,
-                    letterSpacing: 3.0,
+                // 精簡模式隱藏羅馬拼音眉標，與首頁、視訊配對一致。
+                if (!seniorMode) ...[
+                  Text(
+                    'SMRATUC · 活動',
+                    style: GoogleFonts.crimsonPro(
+                      fontStyle: FontStyle.italic,
+                      fontSize: 12,
+                      color: AppColors.fog,
+                      letterSpacing: 3.0,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
+                  const SizedBox(height: 4),
+                ],
                 Text(
                   '近期部落聚會',
                   style: GoogleFonts.notoSerifTc(

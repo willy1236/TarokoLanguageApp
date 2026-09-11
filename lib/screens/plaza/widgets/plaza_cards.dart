@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
 import '../../../shared/widgets/truku_widgets.dart';
@@ -58,11 +59,15 @@ class PlazaBoardTab extends StatelessWidget {
   final bool selected;
   final VoidCallback onTap;
 
+  /// 精簡模式：字級放大、上下留白加大，讓 tab 熱區至少 48 高。
+  final bool seniorMode;
+
   const PlazaBoardTab({
     super.key,
     required this.label,
     required this.selected,
     required this.onTap,
+    this.seniorMode = false,
   });
 
   @override
@@ -70,16 +75,17 @@ class PlazaBoardTab extends StatelessWidget {
     final color = selected ? AppColors.primary : AppColors.fog;
     return GestureDetector(
       onTap: onTap,
+      behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
+        padding: EdgeInsets.symmetric(horizontal: seniorMode ? 10 : 6),
         child: Stack(
           children: [
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
+              padding: EdgeInsets.symmetric(vertical: seniorMode ? 14 : 10),
               child: Text(
                 label,
                 style: GoogleFonts.notoSerifTc(
-                  fontSize: 14,
+                  fontSize: seniorMode ? AppTypography.title : 14,
                   fontWeight: FontWeight.w600,
                   color: color,
                   letterSpacing: 1.5,
