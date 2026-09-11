@@ -23,15 +23,18 @@ class UserModel {
   final String? ethnicGroup; // 族群，見 00_核心與認證.md §2.5；未設為 null
   final int? tribeId; // 部落 id，對應 tribes.id；未設為 null
   final String? tribeName; // 部落中文名，由後端 join tribes 帶出
-  final String? videoNickname; // 視訊暱稱，未設為 null；視訊配對前必填
+  final String? videoNickname; // 視訊暱稱，論壇/好友/視訊等公開場合顯示；未設為 null，視訊配對前必填
   final bool? isIndigenous; // 是否原住民；ethnicGroup 一經設定即永久鎖定
   final String? tribalName; // 本人族語名，不受 ethnicGroup 鎖定限制，可隨時修改
   final bool profileCompleted; // 首次登入完善資料是否已完成，見 issue #43
+  final String? selfIntro; // 自我介紹，公開檔案顯示；未填為 null
+  final String? friendCode; // 8 碼公開識別碼，唯讀，供他人加好友用
   final String? quizSuggestedLevel; // 分級測驗建議的單字起始等級；null=尚未分級
   final String? listeningSuggestedLevel; // 分級測驗建議的聽力起始等級；null=尚未分級
   final int studyStreak; // 連續學習天數（測驗/聽力交卷觸發，斷了即時回 0），與 checkinStreak（每日簽到）為不同機制
   final int videoCallCount; // 累計視訊通話次數（配對成功雙方各 +1）
   final int forumPostCount; // 目前有效發文篇數（軟刪除會扣減）
+  final String? role; // user／organizer／admin，後台手動授予；只有 organizer/admin 能發起活動
 
   const UserModel({
     required this.uid,
@@ -53,11 +56,14 @@ class UserModel {
     this.isIndigenous,
     this.tribalName,
     this.profileCompleted = false,
+    this.selfIntro,
+    this.friendCode,
     this.quizSuggestedLevel,
     this.listeningSuggestedLevel,
     this.studyStreak = 0,
     this.videoCallCount = 0,
     this.forumPostCount = 0,
+    this.role,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -85,11 +91,14 @@ class UserModel {
       isIndigenous: json['is_indigenous'] as bool?,
       tribalName: json['tribal_name'] as String?,
       profileCompleted: json['profile_completed'] as bool? ?? false,
+      selfIntro: json['self_intro'] as String?,
+      friendCode: json['friend_code'] as String?,
       quizSuggestedLevel: json['quiz_suggested_level'] as String?,
       listeningSuggestedLevel: json['listening_suggested_level'] as String?,
       studyStreak: json['study_streak'] as int? ?? 0,
       videoCallCount: json['video_call_count'] as int? ?? 0,
       forumPostCount: json['forum_post_count'] as int? ?? 0,
+      role: json['role'] as String?,
     );
   }
 
@@ -113,14 +122,19 @@ class UserModel {
         'is_indigenous': isIndigenous,
         'tribal_name': tribalName,
         'profile_completed': profileCompleted,
+        'self_intro': selfIntro,
+        'friend_code': friendCode,
         'quiz_suggested_level': quizSuggestedLevel,
         'listening_suggested_level': listeningSuggestedLevel,
         'study_streak': studyStreak,
         'video_call_count': videoCallCount,
         'forum_post_count': forumPostCount,
+        'role': role,
       };
 
   int get joinedDays => DateTime.now().difference(createdAt).inDays;
+
+  bool get canCreateEvent => role == 'organizer' || role == 'admin';
 
   UserModel copyWith({
     int? uid,
@@ -142,11 +156,14 @@ class UserModel {
     bool? isIndigenous,
     String? tribalName,
     bool? profileCompleted,
+    String? selfIntro,
+    String? friendCode,
     String? quizSuggestedLevel,
     String? listeningSuggestedLevel,
     int? studyStreak,
     int? videoCallCount,
     int? forumPostCount,
+    String? role,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -168,12 +185,15 @@ class UserModel {
       isIndigenous: isIndigenous ?? this.isIndigenous,
       tribalName: tribalName ?? this.tribalName,
       profileCompleted: profileCompleted ?? this.profileCompleted,
+      selfIntro: selfIntro ?? this.selfIntro,
+      friendCode: friendCode ?? this.friendCode,
       quizSuggestedLevel: quizSuggestedLevel ?? this.quizSuggestedLevel,
       listeningSuggestedLevel:
           listeningSuggestedLevel ?? this.listeningSuggestedLevel,
       studyStreak: studyStreak ?? this.studyStreak,
       videoCallCount: videoCallCount ?? this.videoCallCount,
       forumPostCount: forumPostCount ?? this.forumPostCount,
+      role: role ?? this.role,
     );
   }
 }

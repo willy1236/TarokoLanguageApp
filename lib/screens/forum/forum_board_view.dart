@@ -9,7 +9,9 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
+import '../../models/shop_item.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'widgets/forum_post_card.dart';
 
@@ -40,6 +42,11 @@ class ForumBoardView extends StatefulWidget {
   /// 使用者下拉時預期的是「整頁更新」，只更新貼文會與這個直覺不符。
   final Future<void> Function()? onRefresh;
 
+  /// 貼文列表上方要一起捲動的內容（標題、篩選 tab 等）。放進同一個 ListView
+  /// 而不是外層另一個 Column，這樣才會跟著貼文一起往上捲，而不是浮在畫面上。
+  /// 不論載入中／失敗／空清單都會顯示，避免捲動內容忽有忽無。
+  final Widget? header;
+
   const ForumBoardView({
     super.key,
     required this.loadPage,
@@ -50,6 +57,7 @@ class ForumBoardView extends StatefulWidget {
     this.prependOnRefresh = true,
     this.reloadKey,
     this.onRefresh,
+    this.header,
   });
 
   @override
@@ -65,12 +73,24 @@ class ForumBoardViewState extends State<ForumBoardView> {
   bool _loadingMore = false;
   String? _error;
   int? _nextCursor;
+  Map<String, ShopItem> _itemCatalogById = const {};
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
     _load();
+    _loadItemCatalog();
+  }
+
+  Future<void> _loadItemCatalog() async {
+    try {
+      final catalog = await ShopService.fetchItemCatalogCached();
+      if (!mounted) return;
+      setState(() => _itemCatalogById = catalog);
+    } catch (e) {
+      debugPrint('Failed to fetch item catalog: $e');
+    }
   }
 
   @override
@@ -252,19 +272,43 @@ class ForumBoardViewState extends State<ForumBoardView> {
       onRefresh: refresh,
       // 所有狀態都包在同一個可捲動容器裡：載入中、載入失敗、空清單也要能下拉。
       // 失敗時尤其重要——那正是最需要重試的時候。
-      child: ListView(
-        controller: _scrollController,
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 100),
-        children: _buildBody(seniorModeController.enabled),
-      ),
+      // 空清單時用 LayoutBuilder 撐滿可視高度，讓 TrukuEmptyState 能真正垂直置中，
+      // 而不是像一般清單項目一樣貼在頂端。
+      child: _isEmptyState
+          ? LayoutBuilder(
+              builder: (context, constraints) => SingleChildScrollView(
+                controller: _scrollController,
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.only(bottom: 100),
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: _buildBody(seniorModeController.enabled),
+                  ),
+                ),
+              ),
+            )
+          : ListView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(bottom: 100),
+              children: _buildBody(seniorModeController.enabled),
+            ),
     ),
   );
 
+  bool get _isEmptyState =>
+      !_loading && _error == null && _pinned.isEmpty && _posts.isEmpty;
+
   List<Widget> _buildBody(bool seniorMode) {
+    final header = widget.header;
+
     if (_loading) {
-      return const [
-        Padding(
+      return [
+        ?header,
+        const Padding(
           padding: EdgeInsets.symmetric(vertical: 60),
           child: Center(
             child: CircularProgressIndicator(color: AppColors.primary),
@@ -274,6 +318,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
     }
     if (_error != null) {
       return [
+        ?header,
         _ForumErrorState(
           message: _error!,
           onRetry: _load,
@@ -285,16 +330,19 @@ class ForumBoardViewState extends State<ForumBoardView> {
     final all = [..._pinned, ..._posts];
     if (all.isEmpty) {
       return [
+        ?header,
         TrukuEmptyState(
           icon: Icons.forum_outlined,
           message: widget.emptyMessage,
           subtitle: '下拉重新整理，或成為第一位分享的人。',
           seniorMode: seniorMode,
+          scrollable: false,
         ),
       ];
     }
 
     return [
+      ?header,
       // 上方留白讓第一張卡片與上面的內容分開，不會黏在一起。
       const SizedBox(height: 14),
       for (final post in all)
@@ -305,6 +353,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
             onTap: () => widget.onOpenPost(post),
             onLike: () => _like(post),
             onBookmark: () => _bookmark(post),
+            itemCatalogById: _itemCatalogById,
           ),
         ),
       if (_loadingMore)

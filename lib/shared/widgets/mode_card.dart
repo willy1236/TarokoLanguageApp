@@ -44,7 +44,6 @@ class ModeCard extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       child: Container(
         clipBehavior: Clip.hardEdge,
-        constraints: BoxConstraints(minHeight: large ? 150 : 170),
         decoration: BoxDecoration(
           color: mode.bg,
           borderRadius: BorderRadius.circular(20),
@@ -92,7 +91,7 @@ class ModeCard extends StatelessWidget {
                     ],
                   ),
 
-                  SizedBox(height: large ? 44 : 58),
+                  const Spacer(),
 
                   // 底部：中文名 + 副標
                   Text(

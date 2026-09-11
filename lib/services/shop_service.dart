@@ -28,6 +28,20 @@ class ShopService {
         .toList();
   }
 
+  static Map<String, ShopItem>? _catalogCache;
+
+  /// 全平台共用的「id → ShopItem」目錄快取，供各畫面渲染別人頭像/頭像框時使用
+  /// （is_owned 只對本人有意義，渲染他人頭像不需要，故不分 type 快取全部）。
+  /// 第一次呼叫會打 API 並存快取；之後直接回快取，不重複 fetch。
+  static Future<Map<String, ShopItem>> fetchItemCatalogCached() async {
+    final cached = _catalogCache;
+    if (cached != null) return cached;
+    final items = await fetchShopItems();
+    final map = {for (final i in items) i.id: i};
+    _catalogCache = map;
+    return map;
+  }
+
   /// 呼叫 POST /api/shop/items/{id}/purchase。頭像與頭像框走同一支端點，
   /// 後端依 item_catalog.type 自動判斷，呼叫端不需分開處理。
   static Future<UserModel> purchaseItem(String itemId) async {

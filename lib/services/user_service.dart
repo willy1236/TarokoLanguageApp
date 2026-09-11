@@ -10,14 +10,23 @@ class UserService {
   /// 判斷）免再打一次 /api/me。登出時應呼叫 [clearCache] 清除。
   static int? currentUid;
 
-  static Future<UserModel> fetchMe() async {
+  /// 目前登入者的完整資料快取，由 [fetchMe] 寫入。非即時（不會隨後端變動自動更新），
+  /// 只在 [fetchMe] 被呼叫時刷新；需要保證最新值時傳 forceRefresh: true。
+  static UserModel? cachedUser;
+
+  static Future<UserModel> fetchMe({bool forceRefresh = false}) async {
+    if (!forceRefresh && cachedUser != null) return cachedUser!;
     final data = await ApiClient.get(ApiConfig.me);
     final user = UserModel.fromJson(data);
     currentUid = user.uid;
+    cachedUser = user;
     return user;
   }
 
-  static void clearCache() => currentUid = null;
+  static void clearCache() {
+    currentUid = null;
+    cachedUser = null;
+  }
 
   static Future<UserModel> updateMe({
     String? displayName,
@@ -27,6 +36,7 @@ class UserService {
     String? videoNickname,
     bool? isIndigenous,
     String? tribalName,
+    String? selfIntro,
   }) async {
     final body = <String, dynamic>{
       'display_name': ?displayName,
@@ -35,9 +45,12 @@ class UserService {
       'video_nickname': ?videoNickname,
       'is_indigenous': ?isIndigenous,
       'tribal_name': ?tribalName,
+      'self_intro': ?selfIntro,
     };
     final data = await ApiClient.patch(ApiConfig.me, body);
-    return UserModel.fromJson(data);
+    final user = UserModel.fromJson(data);
+    cachedUser = user;
+    return user;
   }
 
   /// 上傳自訂頭像（multipart，欄位名固定 avatar）。後端會自動裁正方形、轉 WebP
@@ -49,26 +62,34 @@ class UserService {
       file: file,
       contentType: contentType,
     );
-    return UserModel.fromJson(data);
+    final user = UserModel.fromJson(data);
+    cachedUser = user;
+    return user;
   }
 
   /// 首次登入完善資料（issue #43），成功後 profile_completed 轉為 true。
   static Future<UserModel> completeProfile({
     required String displayName,
     required bool isIndigenous,
+    required String videoNickname,
     String? ethnicGroup,
     int? tribeId,
     String? tribalName,
+    String? selfIntro,
   }) async {
     final body = <String, dynamic>{
       'display_name': displayName,
       'is_indigenous': isIndigenous,
+      'video_nickname': videoNickname,
       'ethnic_group': ?ethnicGroup,
       'tribe_id': ?tribeId,
       'tribal_name': ?tribalName,
+      'self_intro': ?selfIntro,
     };
     final data = await ApiClient.post(ApiConfig.completeProfile, body);
-    return UserModel.fromJson(data);
+    final user = UserModel.fromJson(data);
+    cachedUser = user;
+    return user;
   }
 
   static Future<List<EthnicGroup>> fetchEthnicGroups() async {

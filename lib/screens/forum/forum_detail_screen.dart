@@ -8,6 +8,8 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../models/shop_item.dart';
+import '../../services/shop_service.dart';
 import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
@@ -62,11 +64,24 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// 正在回覆的第一層留言；null 代表回覆貼文本身。
   ForumComment? _replyTarget;
 
+  Map<String, ShopItem> _itemCatalogById = const {};
+
   bool get _isMine => _post?.author.uid == UserService.currentUid;
+
+  Future<void> _loadItemCatalog() async {
+    try {
+      final catalog = await ShopService.fetchItemCatalogCached();
+      if (!mounted) return;
+      setState(() => _itemCatalogById = catalog);
+    } catch (e) {
+      debugPrint('Failed to fetch item catalog: $e');
+    }
+  }
 
   @override
   void initState() {
     super.initState();
+    _loadItemCatalog();
     _load();
   }
 
@@ -497,6 +512,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                       targetType: 'comment',
                       targetId: thread.root.id,
                     ),
+                    itemCatalogById: _itemCatalogById,
                   ),
                   for (final reply in thread.replies)
                     ForumCommentTile(
@@ -507,6 +523,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                       // 論壇只有兩層：回覆「回覆」時，parent 仍是第一層那則。
                       onReply: () => setState(() => _replyTarget = thread.root),
                       onDelete: () => _deleteComment(reply),
+                      itemCatalogById: _itemCatalogById,
                       onReport: () => showForumReportSheet(
                         context,
                         targetType: 'comment',

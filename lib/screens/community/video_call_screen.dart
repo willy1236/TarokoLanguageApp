@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
 import '../../models/video_call_model.dart';
+import '../../services/directed_call_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
@@ -17,10 +19,16 @@ class VideoCallScreen extends StatefulWidget {
   final VideoSession session;
   final AgoraCallCredentials? credentials;
 
+  /// 若這通通話是從好友定向撥號接通的，帶入該通話 id：掛斷時改呼叫
+  /// DirectedCallService.endCall（會一併結束底層 session 並判定羈絆 +5），
+  /// 不重複呼叫 VideoCallService.endSession。null 代表隨機配對通話。
+  final int? directedCallId;
+
   const VideoCallScreen({
     super.key,
     required this.session,
     this.credentials,
+    this.directedCallId,
   });
 
   @override
@@ -171,13 +179,24 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     await _cleanupAndLeave(notifyBackend: true);
   }
 
+  /// 通知後端結束通話：定向通話呼叫 DirectedCallService.endCall（不重複呼叫
+  /// VideoCallService.endSession），隨機配對通話呼叫 VideoCallService.endSession。
+  Future<void> _notifyBackendEnded() async {
+    final directedCallId = widget.directedCallId;
+    if (directedCallId != null) {
+      await DirectedCallService.endCall(directedCallId);
+    } else {
+      await VideoCallService.endSession(_session.id);
+    }
+  }
+
   Future<void> _cleanupAndLeave({required bool notifyBackend}) async {
     if (_ended) return;
     _ended = true;
     _countdownTimer?.cancel();
     if (notifyBackend) {
       try {
-        await VideoCallService.endSession(_session.id);
+        await _notifyBackendEnded();
       } catch (e) {
         debugPrint('VideoCallScreen: 結束通話通知後端失敗（忽略）：$e');
       }
@@ -192,7 +211,54 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       }
     }
     if (!mounted) return;
+    final directedCallId = widget.directedCallId;
+    if (directedCallId != null) {
+      await _offerReport(directedCallId);
+    }
+    if (!mounted) return;
     Navigator.popUntil(context, (r) => r.isFirst);
+  }
+
+  Future<void> _offerReport(int callId) async {
+    final shouldReport = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('通話已結束'),
+        content: const Text('若這通通話有不當內容，可以在此檢舉。'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('返回'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('檢舉此通話'),
+          ),
+        ],
+      ),
+    );
+    if (shouldReport != true || !mounted) return;
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (context) => const _CallReportDialog(),
+    );
+    if (reason == null || reason.trim().isEmpty || !mounted) return;
+    try {
+      await DirectedCallService.reportCall(callId, reason.trim());
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('已送出檢舉')));
+      }
+    } on ApiException catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.message)));
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('檢舉失敗，請稍後再試')));
+      }
+    }
   }
 
   @override
@@ -762,4 +828,44 @@ class _DotsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DotsPainter _) => false;
+}
+
+// ─── Call report dialog ─────────────────────────────────────────────────────
+
+class _CallReportDialog extends StatefulWidget {
+  const _CallReportDialog();
+
+  @override
+  State<_CallReportDialog> createState() => _CallReportDialogState();
+}
+
+class _CallReportDialogState extends State<_CallReportDialog> {
+  final _controller = TextEditingController();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => AlertDialog(
+    title: const Text('檢舉此通話'),
+    content: TextField(
+      controller: _controller,
+      maxLines: 3,
+      maxLength: 500,
+      decoration: const InputDecoration(hintText: '請說明檢舉原因'),
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(),
+        child: const Text('取消'),
+      ),
+      TextButton(
+        onPressed: () => Navigator.of(context).pop(_controller.text),
+        child: const Text('送出'),
+      ),
+    ],
+  );
 }

@@ -7,7 +7,6 @@ import '../../shared/widgets/truku_widgets.dart';
 import '../../shared/widgets/mode_card.dart';
 import '../../shared/widgets/millet_coin_icon.dart';
 import '../../shared/widgets/senior_mode_toggle_icon.dart';
-import '../../shared/widgets/user_avatar.dart';
 import '../profile/about_app_screen.dart';
 import '../shop/shop_screen.dart';
 
@@ -65,18 +64,29 @@ const List<ModeData> _modes = [
   ),
 ];
 
-// ModeData.key → MainContainer 的分頁 index（見 lib/main.dart 的 IndexedStack 順序）
+// ModeData.key → MainContainer 的分頁 index（見 lib/main.dart 的 IndexedStack 順序）。
+// learn/culture 共用「學習影音」分頁、plaza/event 共用「廣場活動」分頁，
+// 落在哪個子分頁由 _modeSubTab 決定。
 const Map<String, int> _modeTabIndex = {
   'learn': 1,
-  'culture': 2,
-  'video': 3, // 視訊功能在「交流」分頁（CommunityScreen）內
-  'plaza': 4,
-  'event': 5,
+  'culture': 1,
+  'video': 2, // 視訊功能在「交流」分頁（CommunityScreen）內
+  'plaza': 3,
+  'event': 3,
+};
+
+// learn/culture 的子分頁（LearnCultureScreen: 0=學習,1=影音）、
+// plaza/event 的子分頁（PlazaEventScreen: 0=廣場,1=活動）。
+const Map<String, int> _modeSubTab = {
+  'learn': 0,
+  'culture': 1,
+  'plaza': 0,
+  'event': 1,
 };
 
 class HomeScreen extends StatelessWidget {
   final VoidCallback? onShowProfile;
-  final void Function(int tabIndex)? onNavigateToTab;
+  final void Function(int tabIndex, {int? subTab})? onNavigateToTab;
   final String? displayName;
   final int? millet;
   final String? avatarId;
@@ -106,21 +116,26 @@ class HomeScreen extends StatelessWidget {
 
   void _onModeTap(ModeData mode) {
     final index = _modeTabIndex[mode.key];
-    if (index != null) onNavigateToTab?.call(index);
+    if (index != null) {
+      onNavigateToTab?.call(index, subTab: _modeSubTab[mode.key]);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return ColoredBox(
       color: AppColors.creamLight,
-      child: ListView(
-        padding: EdgeInsets.zero,
+      child: SafeArea(
+        bottom: false,
+        child: Column(
         children: [
           // ① 頂部色條（6px）
           SizedBox(
             height: 6,
+            width: double.infinity,
             child: Stack(
               fit: StackFit.expand,
+              clipBehavior: Clip.none,
               children: [
                 const ColoredBox(color: AppColors.primary),
                 Opacity(
@@ -133,33 +148,30 @@ class HomeScreen extends StatelessWidget {
                     ),
                   ),
                 ),
+                // 上方對稱菱形裝飾，呼應下方今日進度卡右上角的菱形
+                Positioned(
+                  top: -14,
+                  right: 16,
+                  child: Opacity(
+                    opacity: 0.18,
+                    child: TrukuDiamond(
+                      size: 40,
+                      color: AppColors.gold,
+                      strokeWidth: 1.5,
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
 
           // ② 標頭 + ③ 今日進度卡
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 60, 24, 18),
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 18),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                // Logo（點擊開啟「關於語見太魯閣」）
-                Center(
-                  child: GestureDetector(
-                    onTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const AboutAppScreen()),
-                    ),
-                    child: Image.asset(
-                      'assets/icon/logo.png',
-                      width: 120,
-                      height: 120,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 14),
-
-                // 問候列 + Avatar
+                // 問候列 + Logo（取代原本的個人資料頭像）
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
@@ -192,24 +204,16 @@ class HomeScreen extends StatelessWidget {
                     const SeniorModeToggleIcon(),
                     const SizedBox(width: 10),
                     GestureDetector(
-                      onTap: onShowProfile,
-                      child: Container(
+                      onTap: () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const AboutAppScreen(),
+                        ),
+                      ),
+                      child: Image.asset(
+                        'assets/icon/logo.png',
                         width: 48,
                         height: 48,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: AppColors.primary,
-                          border: Border.all(color: AppColors.gold, width: 2),
-                        ),
-                        child: ClipOval(
-                          child: UserAvatar(
-                            avatarId: avatarId,
-                            avatarUrl: avatarUrl,
-                            itemCatalogById: itemCatalogById,
-                            size: 48,
-                            fallbackIconColor: AppColors.creamLight,
-                          ),
-                        ),
                       ),
                     ),
                   ],
@@ -230,56 +234,67 @@ class HomeScreen extends StatelessWidget {
             ),
           ),
 
-          // ④ 模式卡格（第一張全寬，後四張兩欄）
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 0, 24, 100),
-            child: Column(
-              children: [
-                ModeCard(
-                  mode: _modes[3],
-                  large: true,
-                  onTap: () => _onModeTap(_modes[3]),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ModeCard(
-                        mode: _modes[1],
-                        onTap: () => _onModeTap(_modes[1]),
-                      ),
+          // ④ 模式卡格（第一張全寬，後四張兩欄）－ 吃掉剩餘高度，首頁不可捲動
+          // Scaffold(extendBody: false) 已經把導覽列的高度從 body 可用空間中扣除，
+          // 這裡不需要再手動預留底部間距。
+          Expanded(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+              child: Column(
+                children: [
+                  Expanded(
+                    child: ModeCard(
+                      mode: _modes[3],
+                      large: true,
+                      onTap: () => _onModeTap(_modes[3]),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ModeCard(
-                        mode: _modes[2],
-                        onTap: () => _onModeTap(_modes[2]),
-                      ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ModeCard(
+                            mode: _modes[1],
+                            onTap: () => _onModeTap(_modes[1]),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ModeCard(
+                            mode: _modes[2],
+                            onTap: () => _onModeTap(_modes[2]),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: ModeCard(
-                        mode: _modes[0],
-                        onTap: () => _onModeTap(_modes[0]),
-                      ),
+                  ),
+                  const SizedBox(height: 12),
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: ModeCard(
+                            mode: _modes[0],
+                            onTap: () => _onModeTap(_modes[0]),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ModeCard(
+                            mode: _modes[4],
+                            onTap: () => _onModeTap(_modes[4]),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ModeCard(
-                        mode: _modes[4],
-                        onTap: () => _onModeTap(_modes[4]),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@ import '../../shared/widgets/truku_painters.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../services/user_service.dart';
 import 'event_bookmarks_screen.dart';
 import 'event_compose_screen.dart';
 import 'event_detail_screen.dart';
@@ -15,7 +16,10 @@ import 'event_search_screen.dart';
 /// 活動列表 —— 真資料版（GET /api/events）。
 /// 發起活動返回後自動刷新；下拉可重新整理。需登入（未登入 API 會 401 導回登入）。
 class EventsScreen extends StatefulWidget {
-  const EventsScreen({super.key});
+  /// 由外層（合併分頁的膠囊切換）注入，顯示在標題與篩選 chips 之間。
+  final Widget? topToggle;
+
+  const EventsScreen({super.key, this.topToggle});
 
   @override
   State<EventsScreen> createState() => _EventsScreenState();
@@ -33,11 +37,25 @@ class _EventsScreenState extends State<EventsScreen> {
   List<EventSummary> _events = [];
   int _unread = 0;
 
+  // 是否可發起活動（organizer/admin），初始 false 保守擋下，取得身分後才放行。
+  bool _canCreateEvent = false;
+
   @override
   void initState() {
     super.initState();
     _load();
     _loadUnread();
+    _loadRole();
+  }
+
+  Future<void> _loadRole() async {
+    try {
+      final user = await UserService.fetchMe();
+      if (!mounted) return;
+      setState(() => _canCreateEvent = user.canCreateEvent);
+    } catch (_) {
+      // 拿不到身分就維持擋下，不影響列表其餘功能。
+    }
   }
 
   Future<void> _load() async {
@@ -166,14 +184,21 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _buildScaffold(bool seniorMode) {
-    return Scaffold(
-      backgroundColor: AppColors.creamLight,
-      body: RefreshIndicator(
+    return ColoredBox(
+      color: AppColors.creamLight,
+      child: RefreshIndicator(
         onRefresh: _load,
         color: AppColors.primary,
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(child: _buildHeader(seniorMode)),
+            if (widget.topToggle != null)
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                  child: widget.topToggle,
+                ),
+              ),
             SliverToBoxAdapter(child: _buildFilterChips(seniorMode)),
             ..._buildContentSlivers(seniorMode),
             const SliverToBoxAdapter(child: SizedBox(height: 100)),
@@ -314,35 +339,38 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   Widget _composeButton(bool seniorMode) => GestureDetector(
-    onTap: _openCompose,
-    child: Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: seniorMode ? 20 : 16,
-        vertical: seniorMode ? 14 : 10,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.add,
-            color: AppColors.creamLight,
-            size: seniorMode ? 20 : 14,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '發起',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? 18 : 13,
-              fontWeight: FontWeight.w600,
+    onTap: _canCreateEvent ? _openCompose : null,
+    child: Opacity(
+      opacity: _canCreateEvent ? 1.0 : 0.4,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: seniorMode ? 20 : 16,
+          vertical: seniorMode ? 14 : 10,
+        ),
+        decoration: BoxDecoration(
+          color: AppColors.primary,
+          borderRadius: BorderRadius.circular(22),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.add,
               color: AppColors.creamLight,
-              letterSpacing: 1.5,
+              size: seniorMode ? 20 : 14,
             ),
-          ),
-        ],
+            const SizedBox(width: 6),
+            Text(
+              '發起',
+              style: GoogleFonts.notoSerifTc(
+                fontSize: seniorMode ? 18 : 13,
+                fontWeight: FontWeight.w600,
+                color: AppColors.creamLight,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ],
+        ),
       ),
     ),
   );

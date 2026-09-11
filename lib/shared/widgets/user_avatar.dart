@@ -55,3 +55,70 @@ class UserAvatar extends StatelessWidget {
     return fallbackIcon;
   }
 }
+
+// 頭像 + 頭像框疊加渲染，全平台（好友列表/聊天/來電/論壇/活動…）共用一份，
+// 避免各畫面各寫一套 Stack（見 profile_screen.dart 舊版 _buildAvatar()）。
+// 框在外、頭像在中間；無 frameId 時純顯示頭像。
+class FramedUserAvatar extends StatelessWidget {
+  final String? avatarId;
+  final String? avatarUrl;
+  final String? frameId;
+  final Map<String, ShopItem> itemCatalogById;
+  final double size;
+  final Color fallbackIconColor;
+  final Widget? fallback;
+
+  const FramedUserAvatar({
+    super.key,
+    this.avatarId,
+    this.avatarUrl,
+    this.frameId,
+    this.itemCatalogById = const {},
+    required this.size,
+    required this.fallbackIconColor,
+    this.fallback,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final frameImageUrl = frameId != null
+        ? itemCatalogById[frameId]?.imageUrl
+        : null;
+    final avatar = ClipOval(
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: fallback != null && avatarId == null && (avatarUrl == null || avatarUrl!.isEmpty)
+            ? fallback
+            : UserAvatar(
+                avatarId: avatarId,
+                avatarUrl: avatarUrl,
+                itemCatalogById: itemCatalogById,
+                size: size,
+                fallbackIconColor: fallbackIconColor,
+              ),
+      ),
+    );
+
+    if (frameImageUrl == null) return avatar;
+
+    final frameSize = size * 1.2;
+    return SizedBox(
+      width: frameSize,
+      height: frameSize,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Image.network(
+            frameImageUrl,
+            width: frameSize,
+            height: frameSize,
+            fit: BoxFit.contain,
+            errorBuilder: (_, _, _) => const SizedBox.shrink(),
+          ),
+          avatar,
+        ],
+      ),
+    );
+  }
+}

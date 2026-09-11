@@ -18,7 +18,10 @@ import '../forum/forum_theme.dart';
 import '../events/event_detail_screen.dart';
 
 class PlazaScreen extends StatefulWidget {
-  const PlazaScreen({super.key});
+  /// 由外層（合併分頁的膠囊切換）注入，顯示在標題與近期活動之間。
+  final Widget? topToggle;
+
+  const PlazaScreen({super.key, this.topToggle});
 
   @override
   State<PlazaScreen> createState() => _PlazaScreenState();
@@ -173,22 +176,27 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
 
   Widget _buildScaffold(bool seniorMode) => Theme(
     data: forumTheme(context),
-    child: Scaffold(
-      backgroundColor: AppColors.creamLight,
-      // 順序沿用改版前：標題、近期活動橫向小卡、看板 tab，最後才是貼文列表。
-      // 只有貼文列表捲動，上面三段固定。
-      body: Column(
-        children: [
-          _buildHeader(context, seniorMode),
-          // 近期活動固定在看板 tab 上方不隨貼文捲動。代價是它不在下拉手勢的
-          // 範圍內——刷新要從貼文區下拉，或等 App 回到前景。
-          // 精簡模式不顯示活動，避免與族語學習內容混雜。
-          if (!seniorMode) _buildMiniEventCards(),
-          _buildTabBar(),
-          Expanded(child: _buildPostsSection()),
-        ],
-      ),
+    child: ColoredBox(
+      color: AppColors.creamLight,
+      // 標題、近期活動小卡、看板 tab 都併入貼文列表一起捲動，不再浮在畫面上
+      // ——下拉手勢因此也涵蓋得到頁首（見 ForumBoardView.header）。
+      child: _buildPostsSection(seniorMode),
     ),
+  );
+
+  Widget _buildScrollingHeader(bool seniorMode) => Column(
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      _buildHeader(context, seniorMode),
+      if (widget.topToggle != null)
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+          child: widget.topToggle,
+        ),
+      // 精簡模式不顯示活動，避免與族語學習內容混雜。
+      if (!seniorMode) _buildMiniEventCards(),
+      _buildTabBar(),
+    ],
   );
 
   Widget _buildHeader(BuildContext context, bool seniorMode) {
@@ -365,8 +373,9 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     ],
   );
 
-  /// 看板 tab。名稱短時平均分佈填滿整列，多到放不下才變成可捲動——
-  /// 固定間距在只有六個兩字看板時會全部擠在左半邊，右邊留一大片空白。
+  /// 看板 tab，併入 [_buildScrollingHeader] 隨頁首一起捲動，接在近期活動
+  /// 小卡之後、貼文列表之前。名稱短時平均分佈填滿整列，多到放不下才變成
+  /// 可捲動——固定間距在只有六個兩字看板時會全部擠在左半邊，右邊留一大片空白。
   Widget _buildTabBar() => Container(
     decoration: const BoxDecoration(
       border: Border(bottom: BorderSide(color: AppColors.creamDeep)),
@@ -471,7 +480,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _buildPostsSection() {
+  Widget _buildPostsSection(bool seniorMode) {
     final slug = _boardSlug;
     if (_boardsLoading) {
       return const Padding(
@@ -488,6 +497,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       child: ForumBoardView(
         key: _boardViewKey,
         reloadKey: reloadKey,
+        header: _buildScrollingHeader(seniorMode),
         emptyMessage: slug == null ? '還沒有人發文' : '這個分類還沒有貼文',
         loadPage: ({cursor, after}) => slug == null
             ? ForumService.allPosts(cursor: cursor, after: after)

@@ -25,7 +25,9 @@ import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../main.dart';
+import '../models/friend_model.dart';
 import 'auth_service.dart';
+import 'directed_call_service.dart';
 import 'event_service.dart';
 
 /// 背景/App 被系統回收時收到訊息的處理器。必須是頂層函式並標註 vm:entry-point。
@@ -75,6 +77,12 @@ class FcmService {
 
   /// 點擊論壇回覆通知時的導頁 callback。由 UI 層設定（用 navigatorKey 導到貼文詳情）。
   static void Function(int postId)? onForumReplyTapped;
+
+  /// 收到好友定向來電推播時觸發（前景收到、或背景點擊通知開啟時皆會呼叫）。
+  /// 由 UI 層設定，導向 IncomingCallScreen。響鈴逾時（60 秒）由後端控管，
+  /// 這裡不做額外過期判斷；若使用者開啟時來電已結束，畫面內操作會收到
+  /// CALL_NOT_RINGING 並顯示錯誤。
+  static void Function(IncomingCall call)? onFriendCallIncoming;
 
   /// App 被完全關閉、靠點擊通知冷啟動時拿到的訊息。此時 runApp() 尚未執行，
   /// navigatorKey 還沒掛上 Navigator，不能立即導頁，先暫存；等 SplashScreen
@@ -220,7 +228,37 @@ class FcmService {
     return postId;
   }
 
+  /// 解析好友定向來電推播的 call_id，非此類型回傳 null。
+  static int? _parseFriendCallIncoming(Map<String, dynamic> data) {
+    if (data['type'] != 'friend_call_incoming') return null;
+    return int.tryParse(data['call_id']?.toString() ?? '');
+  }
+
+  /// 用 call_id 查目前來電中吻合的那一通，取得暱稱/頭像等展示欄位。
+  /// 找不到（已被取消/接聽/逾時）時回傳 null，呼叫端應忽略。
+  static Future<IncomingCall?> _fetchIncomingCall(int callId) async {
+    try {
+      final calls = await DirectedCallService.getIncomingCalls();
+      for (final call in calls) {
+        if (call.callId == callId) return call;
+      }
+    } catch (e) {
+      debugPrint('FcmService: 查詢來電詳情失敗：$e');
+    }
+    return null;
+  }
+
   static void _onForegroundMessage(RemoteMessage message) {
+    final callId = _parseFriendCallIncoming(message.data);
+    if (callId != null) {
+      unawaited(
+        _fetchIncomingCall(callId).then((call) {
+          if (call != null) onFriendCallIncoming?.call(call);
+        }),
+      );
+      return;
+    }
+
     final videoParsed = _parseVideoPayload(message.data);
     if (videoParsed != null) {
       _onForegroundVideoMessage(videoParsed);
@@ -316,6 +354,16 @@ class FcmService {
   }
 
   static void _handleOpened(RemoteMessage message) {
+    final callId = _parseFriendCallIncoming(message.data);
+    if (callId != null) {
+      unawaited(
+        _fetchIncomingCall(callId).then((call) {
+          if (call != null) onFriendCallIncoming?.call(call);
+        }),
+      );
+      return;
+    }
+
     final videoParsed = _parseVideoPayload(message.data);
     if (videoParsed != null) {
       final (type, sessionId, channel) = videoParsed;

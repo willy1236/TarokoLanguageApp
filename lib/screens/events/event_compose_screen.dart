@@ -401,14 +401,12 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       ),
       child: Row(
         children: [
-          TextButton(
+          IconButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(
-              '取消',
-              style: TextStyle(
-                fontSize: seniorMode ? AppTypography.title : 15,
-                color: AppColors.inkSoft,
-              ),
+            icon: Icon(
+              Icons.arrow_back,
+              color: AppColors.ink,
+              size: seniorMode ? AppTypography.title : 24,
             ),
           ),
           Expanded(

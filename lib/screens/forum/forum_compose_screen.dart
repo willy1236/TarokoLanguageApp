@@ -17,10 +17,13 @@ import '../../core/constants/app_typography.dart';
 import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
+import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
 import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
+import '../../shared/widgets/user_avatar.dart';
 import 'widgets/forum_image_grid.dart' show ForumImageViewer;
 
 /// 依後端硬性限制檢查，回傳第一個錯誤訊息；全部通過回 null。
@@ -76,6 +79,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
   bool _saving = false;
   List<ForumTagStat> _hotTags = [];
   UserModel? _user;
+  Map<String, ShopItem> _itemCatalogById = const {};
 
   bool get _isEditing => widget.editing != null;
 
@@ -93,6 +97,17 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     }
     _loadHotTags();
     _loadUser();
+    _loadItemCatalog();
+  }
+
+  Future<void> _loadItemCatalog() async {
+    try {
+      final catalog = await ShopService.fetchItemCatalogCached();
+      if (!mounted) return;
+      setState(() => _itemCatalogById = catalog);
+    } catch (e) {
+      debugPrint('Failed to fetch item catalog: $e');
+    }
   }
 
   Future<void> _loadUser() async {
@@ -268,6 +283,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
       elevation: 0,
       foregroundColor: AppColors.ink,
       toolbarHeight: seniorMode ? 68 : kToolbarHeight,
+      centerTitle: true,
       title: Text(
         _isEditing ? '編輯貼文' : '發文',
         style: GoogleFonts.notoSerifTc(
@@ -370,39 +386,25 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
   );
 
   Widget _authorRow(bool seniorMode) {
-    final avatarUrl = _user?.avatarUrl;
     final avatarSize = seniorMode ? 56.0 : 40.0;
     return Row(
       children: [
         Container(
-          width: avatarSize,
-          height: avatarSize,
-          decoration: const BoxDecoration(
-            shape: BoxShape.circle,
-            color: AppColors.primary,
-            border: Border.fromBorderSide(
-              BorderSide(color: AppColors.gold, width: 1.5),
-            ),
-          ),
-          alignment: Alignment.center,
-          child: ClipOval(
-            child: avatarUrl == null
-                ? Icon(
-                    Icons.person,
-                    color: AppColors.gold,
-                    size: seniorMode ? 30 : 22,
-                  )
-                : Image.network(
-                    avatarUrl,
-                    width: avatarSize,
-                    height: avatarSize,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, _, _) => Icon(
-                      Icons.person,
-                      color: AppColors.gold,
-                      size: seniorMode ? 30 : 22,
-                    ),
+          decoration: _user?.frameId == null
+              ? const BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.fromBorderSide(
+                    BorderSide(color: AppColors.gold, width: 1.5),
                   ),
+                )
+              : null,
+          child: FramedUserAvatar(
+            avatarId: _user?.avatarId,
+            avatarUrl: _user?.avatarUrl,
+            frameId: _user?.frameId,
+            itemCatalogById: _itemCatalogById,
+            size: avatarSize,
+            fallbackIconColor: AppColors.gold,
           ),
         ),
         const SizedBox(width: 12),
