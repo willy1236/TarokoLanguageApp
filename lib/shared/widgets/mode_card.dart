@@ -30,11 +30,16 @@ class ModeCard extends StatelessWidget {
   final bool large;
   final VoidCallback? onTap;
 
+  /// 精簡模式：改成自然高度的橫向單列（icon＋中文名＋箭頭），隱藏族語名與副標，
+  /// 不再依賴外層給定高度（一般模式靠 Spacer 撐滿格子，字放大後會溢位）。
+  final bool seniorMode;
+
   const ModeCard({
     super.key,
     required this.mode,
     this.large = false,
     this.onTap,
+    this.seniorMode = false,
   });
 
   @override
@@ -68,59 +73,91 @@ class ModeCard extends StatelessWidget {
             ),
 
             // 內容
-            Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 頂部：icon 左，Truku 名右
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      ModeIcon(name: mode.icon, color: mode.accent),
-                      Text(
-                        mode.truku.toUpperCase(),
-                        style: GoogleFonts.crimsonPro(
-                          fontStyle: FontStyle.italic,
-                          fontSize: 11,
-                          color: mode.accent,
-                          letterSpacing: 2.6,
-                        ),
-                      ),
-                    ],
-                  ),
-
-                  const Spacer(),
-
-                  // 底部：中文名 + 副標
-                  Text(
-                    mode.zh,
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: large ? 26 : 22,
-                      fontWeight: FontWeight.w600,
-                      color: mode.fg,
-                      letterSpacing: 1.0,
-                      height: 1.1,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Opacity(
-                    opacity: 0.7,
-                    child: Text(
-                      mode.sub,
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: mode.fg,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
+            if (seniorMode) _buildSeniorContent() else _buildContent(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _buildSeniorContent() {
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 76),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+        child: Row(
+          children: [
+            ModeIcon(name: mode.icon, color: mode.accent, size: 36),
+            const SizedBox(width: 18),
+            Expanded(
+              child: Text(
+                mode.zh,
+                style: GoogleFonts.notoSerifTc(
+                  fontSize: 26,
+                  fontWeight: FontWeight.w600,
+                  color: mode.fg,
+                  letterSpacing: 1.0,
+                  height: 1.2,
+                ),
+              ),
+            ),
+            Icon(Icons.chevron_right, size: 32, color: mode.accent),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildContent() {
+    return Padding(
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // 頂部：icon 左，Truku 名右
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ModeIcon(name: mode.icon, color: mode.accent),
+              Text(
+                mode.truku.toUpperCase(),
+                style: GoogleFonts.crimsonPro(
+                  fontStyle: FontStyle.italic,
+                  fontSize: 11,
+                  color: mode.accent,
+                  letterSpacing: 2.6,
+                ),
+              ),
+            ],
+          ),
+
+          const Spacer(),
+
+          // 底部：中文名 + 副標
+          Text(
+            mode.zh,
+            style: GoogleFonts.notoSerifTc(
+              fontSize: large ? 26 : 22,
+              fontWeight: FontWeight.w600,
+              color: mode.fg,
+              letterSpacing: 1.0,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Opacity(
+            opacity: 0.7,
+            child: Text(
+              mode.sub,
+              style: TextStyle(
+                fontSize: 12,
+                color: mode.fg,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -129,13 +166,19 @@ class ModeCard extends StatelessWidget {
 class ModeIcon extends StatelessWidget {
   final String name;
   final Color color;
+  final double size;
 
-  const ModeIcon({super.key, required this.name, required this.color});
+  const ModeIcon({
+    super.key,
+    required this.name,
+    required this.color,
+    this.size = 28,
+  });
 
   @override
   Widget build(BuildContext context) {
     return CustomPaint(
-      size: const Size(28, 28),
+      size: Size.square(size),
       painter: _ModeIconPainter(name: name, color: color),
     );
   }
