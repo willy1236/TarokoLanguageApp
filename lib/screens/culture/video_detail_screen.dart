@@ -1,10 +1,12 @@
 import 'package:better_player_plus/better_player_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../core/platform/platform_features.dart';
 import '../../models/video_models.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
@@ -35,6 +37,9 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
   Future<void> _load() async {
     try {
       final detail = await VideoService.fetchVideoDetail(widget.videoId);
+      _video = detail;
+      // better_player_plus 只有行動平台實作，其他平台改顯示外開連結。
+      if (!PlatformFeatures.supportsHlsPlayer) return;
       _playerController = BetterPlayerController(
         const BetterPlayerConfiguration(
           aspectRatio: 16 / 9,
@@ -47,7 +52,6 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
           videoFormat: BetterPlayerVideoFormat.hls,
         ),
       );
-      _video = detail;
     } catch (e) {
       _error = e;
     }
@@ -193,6 +197,34 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     );
   }
 
+  /// 不支援內嵌 HLS 播放的平台：提示並提供以瀏覽器開啟串流網址。
+  Widget _buildExternalPlayerFallback(VideoDetail video) {
+    return ColoredBox(
+      color: Colors.black,
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text(
+              '此平台暫不支援內嵌播放',
+              style: TextStyle(color: Colors.white),
+            ),
+            const SizedBox(height: 12),
+            OutlinedButton.icon(
+              style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+              icon: const Icon(Icons.open_in_new),
+              label: const Text('在新視窗開啟影片'),
+              onPressed: () => launchUrl(
+                Uri.parse(video.hlsUrl),
+                mode: LaunchMode.externalApplication,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildContent(VideoDetail video, bool seniorMode) {
     return SingleChildScrollView(
       child: Column(
@@ -202,7 +234,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
             aspectRatio: 16 / 9,
             child: _playerController != null
                 ? BetterPlayer(controller: _playerController!)
-                : const SizedBox.shrink(),
+                : _buildExternalPlayerFallback(video),
           ),
           Padding(
             padding: EdgeInsets.all(seniorMode ? AppSpacing.lg : 20),

@@ -18,12 +18,13 @@
 //   登出前：       await FcmService.unregisterDevice();
 //
 // 注意：iOS 需另外設定 APNs 憑證與 GoogleService-Info.plist，本階段先只支援 Android。
+// Web/桌面版不支援推播（見 PlatformFeatures.supportsPush），三個入口都直接略過。
 
 import 'dart:async';
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import '../core/platform/platform_features.dart';
 import '../main.dart';
 import '../models/friend_model.dart';
 import 'auth_service.dart';
@@ -93,6 +94,7 @@ class FcmService {
   /// App 啟動時呼叫一次：註冊背景 handler、要通知權限、掛前景/點擊監聽。
   /// 不在這裡上傳 token —— 上傳需要 JWT，登入成功後再呼叫 [registerDevice]。
   static Future<void> init() async {
+    if (!PlatformFeatures.supportsPush) return;
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
     await _fm.requestPermission();
@@ -159,6 +161,7 @@ class FcmService {
 
   /// 登入成功後呼叫：取得 FCM token 並上傳後端。
   static Future<void> registerDevice() async {
+    if (!PlatformFeatures.supportsPush) return;
     final token = await _fm.getToken();
     if (token == null) return;
     _lastToken = token;
@@ -167,6 +170,7 @@ class FcmService {
 
   /// 登出前呼叫：從後端移除本裝置 token，並刪掉本機 token。
   static Future<void> unregisterDevice() async {
+    if (!PlatformFeatures.supportsPush) return;
     final token = _lastToken ?? await _fm.getToken();
     if (token != null) {
       try {
@@ -183,7 +187,7 @@ class FcmService {
 
   static Future<void> _uploadIfLoggedIn(String token) async {
     if (!await AuthService.isLoggedIn()) return;
-    final platform = Platform.isIOS ? 'ios' : 'android';
+    final platform = PlatformFeatures.devicePlatform;
     try {
       await EventService.registerDevice(token, platform);
     } catch (_) {

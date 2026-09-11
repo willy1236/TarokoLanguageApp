@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../core/platform/platform_features.dart';
 import '../../main.dart';
 import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
@@ -312,6 +313,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
   /// 否則進等待畫面排隊。後端 FIFO 配對，不區分/不針對特定 rudan。
   Future<void> _startMatching() async {
     if (_isJoining) return;
+    if (!PlatformFeatures.supportsVideoCall) {
+      _showMessage(PlatformFeatures.videoCallUnsupportedMessage);
+      return;
+    }
     setState(() => _isJoining = true);
     try {
       final camera = await Permission.camera.request();

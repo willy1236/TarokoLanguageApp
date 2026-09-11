@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../core/platform/platform_features.dart';
 import '../../models/friend_message_model.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/friend_service.dart';
@@ -198,6 +199,10 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _startVideoCall() {
+    if (!PlatformFeatures.supportsVideoCall) {
+      _showMessage(PlatformFeatures.videoCallUnsupportedMessage);
+      return;
+    }
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => DirectedCallWaitingScreen(

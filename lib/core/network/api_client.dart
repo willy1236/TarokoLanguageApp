@@ -5,7 +5,6 @@
 // 規格書對應：API設計/資料交換表_核心.md（錯誤格式 {error:{code,message}}）
 
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -192,23 +191,25 @@ class ApiClient {
 
   /// multipart/form-data 上傳（例如頭像）。不可帶 Content-Type: application/json，
   /// 交給 http.MultipartRequest 自行設定含 boundary 的 Content-Type。
+  /// 收 bytes 而非 File：Web 沒有本機檔案路徑可讀。
   static Future<Map<String, dynamic>> postMultipartFile(
     String path, {
     required String fieldName,
-    required File file,
+    required List<int> bytes,
+    required String filename,
     String? contentType,
   }) async {
     return _sendMultipart(
       path,
       files: [
-        await http.MultipartFile.fromPath(
+        http.MultipartFile.fromBytes(
           fieldName,
-          file.path,
+          bytes,
+          filename: filename,
           contentType: contentType == null ? null : MediaType.parse(contentType),
         ),
       ],
-      // 只記檔名與大小，不記完整本機路徑（可能含使用者名稱）。
-      logBody: 'field=$fieldName, file=${file.uri.pathSegments.last} (${file.lengthSync()} bytes)',
+      logBody: 'field=$fieldName, file=$filename (${bytes.length} bytes)',
     );
   }
 
@@ -291,8 +292,9 @@ class ApiClient {
     if (kDebugMode) debugPrint(message);
   }
 
-  /// 統一攔截離線（SocketException），轉成一致的 NETWORK_ERROR ApiException，
-  /// 讓所有 service 不必各自 catch SocketException。
+  /// 統一攔截離線（http.ClientException），轉成一致的 NETWORK_ERROR ApiException，
+  /// 讓所有 service 不必各自 catch。行動平台的 SocketException 會被 http 包成
+  /// 同時實作 ClientException 的例外；Web 沒有 dart:io，只會丟 ClientException。
   /// method/url/body 僅用於 debug log，不影響實際請求。
   static Future<http.Response> _send(
     Future<http.Response> Function() doRequest, {
@@ -314,7 +316,7 @@ class ApiClient {
         debugPrint('ApiClient ←  ${resp.statusCode} $method ${_safeUrl(url)}');
       }
       return resp;
-    } on SocketException {
+    } on http.ClientException {
       debugPrint('ApiClient ←  NETWORK_ERROR $method ${_safeUrl(url)}');
       throw ApiException(
         statusCode: 0,

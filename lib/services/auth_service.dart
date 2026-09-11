@@ -5,7 +5,6 @@
 // 規格書對應：API設計/資料交換表_核心.md §2.1 POST /api/auth/login
 
 import 'dart:convert';
-import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -29,6 +28,21 @@ class AuthService {
   /// 走 Google 登入完整流程，成功回 user JSON。
   /// 失敗 throw [AuthException]。
   static Future<Map<String, dynamic>> signInWithGoogle() async {
+    // Web：google_sign_in 7 不支援 authenticate()，改由 Firebase 直接開 Google 彈窗。
+    if (kIsWeb) {
+      final UserCredential userCred;
+      try {
+        userCred = await _auth.signInWithPopup(GoogleAuthProvider());
+      } on FirebaseAuthException catch (e) {
+        if (e.code == 'popup-closed-by-user' ||
+            e.code == 'cancelled-popup-request') {
+          throw AuthException('使用者取消登入');
+        }
+        throw AuthException('Google 登入失敗：${e.message ?? e.code}');
+      }
+      return _loginWithFirebaseUser(userCred.user);
+    }
+
     await _ensureGoogleSignInInitialized();
 
     // 1. Google Sign-In SDK 拿 GoogleSignInAccount + idToken
@@ -48,6 +62,7 @@ class AuthService {
   /// 成功回 user JSON；無可用帳號或失敗回 `null`（不 throw），由呼叫端決定備援。
   /// 供整合測試自動登入使用；正式流程仍走 [signInWithGoogle]。
   static Future<Map<String, dynamic>?> signInSilently() async {
+    if (kIsWeb) return null;
     try {
       await _ensureGoogleSignInInitialized();
       final account = await _googleSignIn.attemptLightweightAuthentication();
@@ -70,14 +85,19 @@ class AuthService {
       idToken: googleAuth.idToken,
     );
     final userCred = await _auth.signInWithCredential(credential);
-    final firebaseToken = await userCred.user?.getIdToken();
+    return _loginWithFirebaseUser(userCred.user);
+  }
+
+  /// 拿 Firebase ID token 打後端換系統 JWT 並存入 storage。
+  static Future<Map<String, dynamic>> _loginWithFirebaseUser(User? user) async {
+    final firebaseToken = await user?.getIdToken();
     if (firebaseToken == null) {
       throw AuthException('取得 Firebase token 失敗');
     }
 
     // 打後端換系統 JWT。這裡不走 ApiClient：登入端點沒有 JWT 可帶，而
     // ApiClient 的 401 會觸發強制登出導頁，對登入失敗是錯誤的反應。
-    // 但離線處理要與 ApiClient 一致，不能讓 SocketException 直接逸出。
+    // 但離線處理要與 ApiClient 一致，不能讓連線例外直接逸出。
     final http.Response resp;
     try {
       resp = await http.post(
@@ -85,7 +105,7 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'firebase_token': firebaseToken}),
       );
-    } on SocketException {
+    } on http.ClientException {
       throw AuthException('無法連線到伺服器，請檢查網路');
     }
 
@@ -102,7 +122,8 @@ class AuthService {
 
   /// 完全登出（Firebase + Google + 清本機 token；不撤銷後端 JWT）
   static Future<void> signOut() async {
-    await _googleSignIn.signOut();
+    // Web 沒走 google_sign_in（未 initialize），只需登出 Firebase。
+    if (!kIsWeb) await _googleSignIn.signOut();
     await _auth.signOut();
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _expiresKey);

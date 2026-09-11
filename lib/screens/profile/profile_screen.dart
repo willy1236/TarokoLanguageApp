@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -187,41 +186,35 @@ class _ProfileScreenState extends State<ProfileScreen> {
       return;
     }
 
-    File file = File(picked.path);
+    // 全程只處理 bytes、不寫暫存檔：Web 沒有本機檔案系統可用。
     var mimeType = 'image/${ext == 'jpg' ? 'jpeg' : ext}';
-    // 裁切產生的暫存目錄：無論成功、失敗或提早 return 都要刪掉，
-    // 否則每換一次頭像就在裝置上多留一份圖。
-    Directory? cropTempDir;
+    var filename = picked.name;
 
     try {
+      var bytes = await picked.readAsBytes();
       // GIF 為動態圖，裁切會破壞動畫，跳過裁切步驟直接上傳原圖。
       if (ext != 'gif') {
-        final originalBytes = await file.readAsBytes();
         if (!mounted) return;
         final croppedBytes = await Navigator.push<Uint8List>(
           context,
           MaterialPageRoute(
-            builder: (_) => AvatarCropScreen(imageBytes: originalBytes),
+            builder: (_) => AvatarCropScreen(imageBytes: bytes),
           ),
         );
         if (croppedBytes == null) return; // 使用者取消裁切，中止整個上傳流程
-
-        final tempDir = await Directory.systemTemp.createTemp('avatar_crop_');
-        cropTempDir = tempDir;
-        final croppedFile = File('${tempDir.path}/avatar.png');
-        await croppedFile.writeAsBytes(croppedBytes);
-        file = croppedFile;
+        bytes = croppedBytes;
         mimeType = 'image/png';
+        filename = 'avatar.png';
       }
 
-      final size = await file.length();
-      if (size > _kMaxAvatarBytes) {
+      if (bytes.length > _kMaxAvatarBytes) {
         _showError('檔案大小不可超過 8MB');
         return;
       }
 
       final updated = await UserService.uploadAvatar(
-        file,
+        bytes,
+        filename: filename,
         contentType: mimeType,
       );
       if (mounted) setState(() => _user = updated);
@@ -237,12 +230,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       debugPrint('Failed to upload avatar: $e');
       debugPrintStack(stackTrace: st);
       _showError('頭像上傳失敗，請稍後再試');
-    } finally {
-      try {
-        await cropTempDir?.delete(recursive: true);
-      } catch (e) {
-        debugPrint('ProfileScreen: 刪除頭像裁切暫存檔失敗（忽略）：$e');
-      }
     }
   }
 
