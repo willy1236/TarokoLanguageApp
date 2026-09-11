@@ -248,3 +248,15 @@
 - `flutter analyze`（全專案）除 8 處與本次無關的既有 `use_null_aware_elements` info 外無新增警告/錯誤。既有論壇模組 widget test（`forum_post_card_test.dart`、`forum_board_view_test.dart`，共 17 個）全數通過。
 - **範圍限制**：Learn 模組測驗系列、`video_call_screen.dart` 仍未涵蓋（任務 8 動效關閉開關也還沒做）。因無裝置可測，本次僅完成靜態檢查與既有測試回歸，未做手動實機驗證（開關切換後 7 個畫面實際顯示效果、`Wrap`/`Column` 防溢位是否符合預期、avatar_crop 新增提示文字與放大按鈕的實際手感）——留待下次操作 App 時一併確認。
 - **與規劃的差異**：無重大差異；avatar_crop_screen.dart 的「zoom/pan 輔助控制」在規劃階段已標記為需先 spike 才能定案，實作時確認套件限制後依規劃的 fallback（僅放大確定/取消＋加入提示文字）執行，與規劃一致。
+
+**[2026-09-11 已完成：導航重組後補齊精簡模式（分支 feat/nav-friends-senior-refresh）]**
+- **背景**：#59 UI 大改把底部導航從 7 格收成 5 格，並重寫首頁、視訊（Community）、兩個膠囊合併外殼，但精簡模式沒有跟上；本次同時再調整導航為 **首頁／學習影音／廣場活動／好友／我的**，「我的」＝個人資料＋視訊配對（`ProfileVideoScreen` 膠囊切換），「好友」直接用 `FriendsListScreen(showBackButton: false)`。上方「§3 導航架構」描述的 7 格與「精簡模式隱藏 Learn tab」已過時：`_seniorHiddenKeys` 目前為空，精簡模式 5 格全顯示。
+- **本次涵蓋**：
+  - `truku_bottom_tab.dart`：標籤改用字級 token（一般 `captionStyle`、精簡 `bodyStyle(seniorMode: true)`，caption 精簡 11 比原本 13 小故上跳一級）。
+  - `pill_segmented_toggle.dart`（共用元件，自我監聽）：精簡模式主標 17→22、隱藏羅馬拼音副標、熱區 ≥56；三個合併外殼（學習影音、廣場活動、我的）自動套用。
+  - `community_screen.dart`：隱藏羅馬拼音眉標與裝飾用假頭像列、標題與「開始配對」按鈕（52→64）放大、好友區精簡模式只列 3 位、好友 tile 頭像 44→52 與聊天按鈕放大。
+  - `home_screen.dart`＋`mode_card.dart`：精簡模式改成**可捲動**、模式卡**自然高度單列**（icon＋中文名＋箭頭，隱藏族語名與副標）；首次實際引用 `AppDensity.maxHomeSections`（4 張卡，省略「活動」——廣場在精簡模式本來就不顯示活動）；進度卡隱藏 TODAY 眉標與週全勤說明、簽到文字與按鈕放大（熱區 ≥48）。
+  - `plaza_cards.dart` 的 `PlazaBoardTab` 放大熱區；廣場／活動頁首在精簡模式隱藏羅馬拼音眉標（原本是放大到 16），跟首頁、視訊配對一致——**精簡模式一律不顯示羅馬拼音裝飾眉標**。
+- **移除 `SeniorModeController.hasCustomLayout` 與 `_customLayoutRoutes`**：從任務 4 起就沒有任何呼叫方，各畫面一直是直接讀 `seniorModeController.enabled`，本段之前提到的 route key 紀錄僅供歷史參考。
+- **`*Style()` 統一的決定**：盤點約 130 處 `seniorMode ? AppTypography.x : <數字>`，一般模式數字與對應 `*Style()` 的一般字級幾乎都不相等（例如 `title : 14`，但 `titleStyle` 一般為 15），硬換會改到一般模式外觀，違反「一般模式像素不變」。故**既有 ternary 保留**，新寫的文字若一般字級剛好等於 token 才用 `*Style()`；要全面統一需先決定是否接受一般模式字級微調，另案處理。
+- **仍未涵蓋**：`video_call_screen.dart`、`video_waiting_screen.dart`、Learn 模組（`learn_screen.dart`、測驗系列）、任務 8 動效關閉。
