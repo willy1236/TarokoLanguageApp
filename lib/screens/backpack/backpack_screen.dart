@@ -244,13 +244,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 0.66,
+          ShopItemGrid(
             children: [
               _buildDefaultAvatarCard(),
               ...items.map((item) => _buildItemCard(item)),
@@ -304,13 +298,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 0.66,
+          ShopItemGrid(
             children: [
               _buildDefaultFrameCard(),
               ...items.map((item) => _buildItemCard(item)),

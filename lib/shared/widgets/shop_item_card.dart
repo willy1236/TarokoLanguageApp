@@ -233,3 +233,33 @@ class ShopItemCard extends StatelessWidget {
     );
   }
 }
+
+/// 商店頁、背包頁共用的道具格線：依可用寬度決定欄數（最少 3 欄），
+/// 讓每格寬度維持在手機尺寸附近。固定 3 欄在 Web 寬螢幕上會把卡片等比拉高、
+/// 但卡片內容尺寸固定，導致下方大片留白。
+class ShopItemGrid extends StatelessWidget {
+  final List<Widget> children;
+
+  const ShopItemGrid({super.key, required this.children});
+
+  static const int _minColumns = 3;
+  static const double _targetCellWidth = 130;
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final fit = (constraints.maxWidth / _targetCellWidth).floor();
+        return GridView.count(
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisCount: fit < _minColumns ? _minColumns : fit,
+          crossAxisSpacing: 8,
+          mainAxisSpacing: 8,
+          childAspectRatio: 0.66,
+          children: children,
+        );
+      },
+    );
+  }
+}

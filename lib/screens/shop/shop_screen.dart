@@ -403,13 +403,7 @@ class _ShopScreenState extends State<ShopScreen> {
             ),
           ),
           const SizedBox(height: 10),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 0.66,
+          ShopItemGrid(
             children: items.map((item) => _buildItemCard(item)).toList(),
           ),
         ],
