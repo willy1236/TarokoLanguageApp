@@ -1,7 +1,6 @@
 // 登出按鈕：先註銷 FCM token、清快取、登出，任一步失敗都不擋導回登入頁。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../services/auth_service.dart';
@@ -65,8 +64,8 @@ class ProfileLogoutButton extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     '登出',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.bodyLarge,
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.body,
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
                       letterSpacing: 2,
@@ -79,8 +78,8 @@ class ProfileLogoutButton extends StatelessWidget {
           const SizedBox(height: 14),
           Text(
             'v1.0.0 · MHUWAY SU',
-            style: GoogleFonts.jetBrainsMono(
-              fontSize: 10,
+            style: AppTypography.mono(
+              fontSize: AppTypography.micro,
               color: AppColors.fog,
               letterSpacing: 2,
             ),

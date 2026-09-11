@@ -1,11 +1,11 @@
 // 活動詳情頁頂部：漸層背景、返回鈕、分類標籤、日期與標題。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
 import '../../../shared/widgets/truku_painters.dart';
+import '../../../core/constants/app_typography.dart';
 
 class EventDetailHero extends StatelessWidget {
   final EventDetail event;
@@ -88,7 +88,7 @@ class EventDetailHero extends StatelessWidget {
                 child: Text(
                   e.category!,
                   style: TextStyle(
-                    fontSize: seniorMode ? 14 : 10,
+                    fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                     color: AppColors.ink,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 2.5,
@@ -119,7 +119,7 @@ class EventDetailHero extends StatelessWidget {
                       child: Text(
                         cancelled ? '已取消' : '已結束',
                         style: TextStyle(
-                          fontSize: seniorMode ? 15 : 11,
+                          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                           color: AppColors.creamLight,
                           letterSpacing: 1.5,
                         ),
@@ -128,9 +128,9 @@ class EventDetailHero extends StatelessWidget {
                   ),
                 Text(
                   '${monthLabel(start)}${start.day}日 · ${weekdayLabel(start)}',
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontStyle: FontStyle.italic,
-                    fontSize: seniorMode ? 17 : 13,
+                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                     color: AppColors.gold,
                     letterSpacing: 2.0,
                   ),
@@ -138,8 +138,8 @@ class EventDetailHero extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   e.title,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 32 : 26,
+                  style: AppTypography.serif(
+                    fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
                     fontWeight: FontWeight.w700,
                     color: AppColors.creamLight,
                     letterSpacing: 0.8,

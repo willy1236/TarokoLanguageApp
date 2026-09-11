@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart'
     show openAppSettings;
 import '../../core/constants/app_colors.dart';
@@ -13,6 +12,7 @@ import 'video_call/agora_video_rtc.dart';
 import 'video_call/call_permissions.dart';
 import 'video_call/video_call_controller.dart';
 import 'video_call/widgets/call_controls.dart';
+import '../../core/constants/app_typography.dart';
 
 /// 通話畫面。狀態機在 [VideoCallController]；這裡只負責畫面、導頁、檢舉
 /// 對話框與 FCM 回呼註冊。
@@ -194,8 +194,8 @@ class _VideoCallScreenState extends State<VideoCallScreen>
           const SizedBox(height: 16),
           Text(
             '正在結束通話…',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 15,
+            style: AppTypography.serif(
+              fontSize: AppTypography.bodyLarge,
               color: AppColors.creamLight,
             ),
           ),
@@ -216,8 +216,8 @@ class _VideoCallScreenState extends State<VideoCallScreen>
           Text(
             _call.joinError!,
             textAlign: TextAlign.center,
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 16,
+            style: AppTypography.serif(
+              fontSize: AppTypography.bodyLarge,
               color: AppColors.creamLight,
             ),
           ),
@@ -249,7 +249,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
         ),
         child: Text(
           label,
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             color: filled ? AppColors.ink : AppColors.gold,
           ),
         ),
@@ -298,8 +298,8 @@ class _VideoCallScreenState extends State<VideoCallScreen>
         Center(
           child: Text(
             _call.joining ? '正在加入視訊房…' : '等待對方加入視訊',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 16,
+            style: AppTypography.serif(
+              fontSize: AppTypography.bodyLarge,
               color: AppColors.creamLight.withValues(alpha: 0.85),
               letterSpacing: 1.5,
             ),
@@ -323,8 +323,8 @@ class _VideoCallScreenState extends State<VideoCallScreen>
           const SizedBox(height: 10),
           Text(
             label,
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 13,
+            style: AppTypography.serif(
+              fontSize: AppTypography.body,
               color: AppColors.creamLight.withValues(alpha: 0.85),
               letterSpacing: 1.5,
             ),
@@ -362,8 +362,8 @@ class _VideoCallScreenState extends State<VideoCallScreen>
                 const SizedBox(width: 8),
                 Text(
                   _timeLabel,
-                  style: GoogleFonts.jetBrainsMono(
-                    fontSize: 13,
+                  style: AppTypography.mono(
+                    fontSize: AppTypography.body,
                     color: AppColors.creamLight,
                     letterSpacing: 2.0,
                   ),
@@ -377,7 +377,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
                 Text(
                   '剩 ${_call.remaining.inMinutes} 分',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppTypography.caption,
                     color: AppColors.creamLight.withValues(alpha: 0.85),
                   ),
                 ),
@@ -406,8 +406,8 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       child: Text(
         widget.session.peerNickname ?? '語伴',
         textAlign: TextAlign.center,
-        style: GoogleFonts.notoSerifTc(
-          fontSize: 24,
+        style: AppTypography.serif(
+          fontSize: AppTypography.display24,
           fontWeight: FontWeight.w600,
           color: AppColors.creamLight,
           letterSpacing: 1.2,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/history_models.dart';
 import '../../services/history_service.dart';
@@ -8,6 +7,7 @@ import '../learn/listening_quiz_screen.dart';
 import 'listening_history_detail_screen.dart';
 import 'quiz_history_detail_screen.dart';
 import '../../shared/widgets/async_state_view.dart';
+import '../../core/constants/app_typography.dart';
 
 const _pageSize = 20;
 
@@ -176,8 +176,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
         iconTheme: const IconThemeData(color: AppColors.ink),
         title: Text(
           '測驗紀錄',
-          style: GoogleFonts.notoSerifTc(
-            fontSize: 18,
+          style: AppTypography.serif(
+            fontSize: AppTypography.subtitle,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),
@@ -224,7 +224,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       return Center(
         child: Text(
           '目前沒有測驗紀錄',
-          style: GoogleFonts.notoSansTc(fontSize: 14, color: AppColors.fog),
+          style: AppTypography.bodyLargeStyle(color: AppColors.fog),
         ),
       );
     }
@@ -285,7 +285,7 @@ class _FilterChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: AppTypography.body,
             fontWeight: FontWeight.w600,
             color: selected ? AppColors.creamLight : AppColors.inkSoft,
           ),
@@ -346,16 +346,12 @@ class _HistoryRow extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     record.level,
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                    ),
+                    style: AppTypography.titleStyle(color: AppColors.ink),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '${record.statusLabel} · ${_timeLabel()}',
-                    style: const TextStyle(fontSize: 11, color: AppColors.fog),
+                    style: const TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
                   ),
                 ],
               ),
@@ -365,8 +361,8 @@ class _HistoryRow extends StatelessWidget {
               children: [
                 Text(
                   _scoreLabel(),
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 16,
+                  style: AppTypography.serif(
+                    fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
                     color: isCompleted ? AppColors.primary : AppColors.fog,
                   ),
@@ -391,7 +387,7 @@ class _HistoryRow extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: AppTypography.micro,
           fontWeight: FontWeight.w600,
           color: color,
         ),

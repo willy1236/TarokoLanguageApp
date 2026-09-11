@@ -1,6 +1,5 @@
 // 文章搜尋：關鍵字／時間區間／部落，三者皆選填、可任意組合。
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
@@ -75,8 +74,8 @@ class _ArticleResultTile extends StatelessWidget {
                     article.title,
                     maxLines: seniorMode ? 1 : 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? AppTypography.title : 13,
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                     ),
@@ -86,7 +85,7 @@ class _ArticleResultTile extends StatelessWidget {
                     Text(
                       '${ArticleCategory.label(article.category)} · ${article.viewCount} 閱讀',
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: AppTypography.caption,
                         color: AppColors.fog,
                       ),
                     ),

@@ -3,7 +3,6 @@
 // 的 _ForumEmptyState，抽出後供影音/文章/活動/貼文/留言等清單共用。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import 'truku_widgets.dart';
@@ -61,8 +60,8 @@ class TrukuEmptyState extends StatelessWidget {
         const SizedBox(height: 16),
         Text(
           message,
-          style: GoogleFonts.notoSerifTc(
-            fontSize: seniorMode ? AppTypography.headline : 18,
+          style: AppTypography.serif(
+            fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
             fontWeight: FontWeight.w700,
             color: AppColors.ink,
           ),
@@ -72,7 +71,7 @@ class TrukuEmptyState extends StatelessWidget {
           subtitle,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: seniorMode ? AppTypography.subtitle : null,
+            fontSize: seniorMode ? AppTypography.body + AppTypography.seniorStep : null,
             color: AppColors.fog,
           ),
         ),

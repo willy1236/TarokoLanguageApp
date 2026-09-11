@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
@@ -38,7 +37,10 @@ const int _kMaxAvatarBytes = 8 * 1024 * 1024;
 const _kAllowedAvatarExtensions = {'jpg', 'jpeg', 'png', 'webp', 'gif'};
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  /// 由外層（合併分頁的膠囊切換）注入，顯示在頁面最上方。
+  final Widget? topToggle;
+
+  const ProfileScreen({super.key, this.topToggle});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -96,27 +98,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildScaffold(bool seniorMode) {
-    return Scaffold(
-      backgroundColor: AppColors.creamLight,
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          ProfileHero(
-            user: _user,
-            itemCatalogById: _itemCatalogById,
-            seniorMode: seniorMode,
-            onAvatarTap: _openAvatarOptions,
-          ),
-          ProfileCoinBanner(user: _user, onTap: _openMilletLedger),
-          ProfileStatsRow(user: _user, seniorMode: seniorMode),
-          _buildQuickLinksGrid(seniorMode: seniorMode),
-          _buildMoreSection(seniorMode: seniorMode),
-          _buildSettingsSection(seniorMode: seniorMode),
-          _buildAppSettingsSection(seniorMode: seniorMode),
-          _buildOtherSection(seniorMode: seniorMode),
-          const ProfileLogoutButton(),
-          const SizedBox(height: 40),
-        ],
+    // 頂部是深色 hero，狀態列圖示改用淺色。
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.creamLight,
+        body: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            ProfileHero(
+              user: _user,
+              itemCatalogById: _itemCatalogById,
+              seniorMode: seniorMode,
+              onAvatarTap: _openAvatarOptions,
+              topToggle: widget.topToggle,
+            ),
+            ProfileCoinBanner(
+              user: _user,
+              seniorMode: seniorMode,
+              onTap: _openMilletLedger,
+            ),
+            ProfileStatsRow(user: _user, seniorMode: seniorMode),
+            _buildQuickLinksGrid(seniorMode: seniorMode),
+            _buildMoreSection(seniorMode: seniorMode),
+            _buildSettingsSection(seniorMode: seniorMode),
+            _buildAppSettingsSection(seniorMode: seniorMode),
+            _buildOtherSection(seniorMode: seniorMode),
+            const ProfileLogoutButton(),
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }
@@ -401,7 +412,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           context,
         ).push(MaterialPageRoute(builder: (_) => const MyLikesScreen())),
       ),
-    ]);
+    ], seniorMode: seniorMode);
   }
 
   // ── 帳號設定 ──────────────────────────────────────────────────────────────
@@ -414,12 +425,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _user?.displayName ?? 'Apyang Imiq',
         editable: true,
         onTap: _editDisplayName,
+        seniorMode: seniorMode,
       ),
       profileSettingRow(
         '公開暱稱',
         _user?.videoNickname ?? '尚未設定',
         editable: true,
         onTap: _editVideoNickname,
+        seniorMode: seniorMode,
       ),
       profileSettingRow(
         '自我介紹',
@@ -428,6 +441,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             : _user!.selfIntro!,
         editable: true,
         onTap: _editSelfIntro,
+        seniorMode: seniorMode,
       ),
       profileSettingRow(
         '好友碼',
@@ -435,6 +449,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         editable: _user?.friendCode != null,
         copyable: true,
         onTap: _copyFriendCode,
+        seniorMode: seniorMode,
       ),
       profileSettingRow(
         '族語名字',
@@ -443,6 +458,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         truku: _user?.tribalName != null && _user!.tribalName!.isNotEmpty,
         editable: true,
         onTap: _editTribalName,
+        seniorMode: seniorMode,
       ),
       profileSwitchRow(
         '是否原住民',
@@ -450,19 +466,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         locked: true,
         lockedHint: '已設定，如需更正請聯繫管理員',
         onChanged: (_) {},
+        seniorMode: seniorMode,
       ),
       profileSettingRow(
         '部落',
         _user?.tribeName ?? '尚未設定',
         editable: !identityLocked,
         onTap: identityLocked ? null : _editTribe,
+        seniorMode: seniorMode,
       ),
       profileSettingRow(
         '電子信箱',
         _user?.email ?? 'apyang@truku.org',
         editable: false,
+        seniorMode: seniorMode,
       ),
-    ]);
+    ], seniorMode: seniorMode);
   }
 
   Widget _buildAppSettingsSection({required bool seniorMode}) {
@@ -473,7 +492,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         seniorMode: seniorMode,
         onChanged: (v) => seniorModeController.setEnabled(v),
       ),
-    ]);
+    ], seniorMode: seniorMode);
   }
 
   Future<void> _editDisplayName() async {
@@ -656,10 +675,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(
                       items[i],
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode
-                            ? AppTypography.headline
-                            : AppTypography.bodyLarge,
+                      style: AppTypography.serif(
+                        fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
@@ -684,6 +701,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         );
       }),
+      seniorMode: seniorMode,
     );
   }
 

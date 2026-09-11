@@ -1,13 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/fcm_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'video_call_screen.dart';
+import '../../core/constants/app_typography.dart';
 
 class VideoWaitingScreen extends StatefulWidget {
   const VideoWaitingScreen({super.key});
@@ -249,8 +249,8 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
         const SizedBox(height: 32),
         Text(
           '正在尋找',
-          style: GoogleFonts.notoSerifTc(
-            fontSize: 24,
+          style: AppTypography.serif(
+            fontSize: AppTypography.display24,
             fontWeight: FontWeight.w600,
             color: AppColors.creamLight,
             letterSpacing: 2.0,
@@ -275,8 +275,8 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
           ),
           child: Text(
             '取消配對',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 14,
+            style: AppTypography.serif(
+              fontSize: AppTypography.body,
               color: AppColors.creamLight,
               letterSpacing: 2.5,
             ),
@@ -293,9 +293,9 @@ class _SmtrungLabel extends StatelessWidget {
   Widget build(BuildContext context) {
     return Text(
       'SMTRUNG · 配對中',
-      style: GoogleFonts.crimsonPro(
+      style: AppTypography.latin(
         fontStyle: FontStyle.italic,
-        fontSize: 10,
+        fontSize: AppTypography.micro,
         color: AppColors.gold,
         letterSpacing: 6.0,
       ),

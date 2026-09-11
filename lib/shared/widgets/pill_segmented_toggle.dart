@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
+import '../../services/senior_mode_controller.dart';
 
 /// 膠囊分段切換的單一選項：中文主標題 + 英文/羅馬拼音副標題。
 class PillSegmentedItem {
@@ -33,7 +34,12 @@ class PillSegmentedToggle extends StatelessWidget {
   }) : assert(items.length == 2);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: seniorModeController,
+    builder: (context, _) => _buildToggle(seniorModeController.enabled),
+  );
+
+  Widget _buildToggle(bool seniorMode) {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -43,13 +49,14 @@ class PillSegmentedToggle extends StatelessWidget {
       child: Row(
         children: [
           for (var i = 0; i < items.length; i++)
-            Expanded(child: _segment(i)),
+            Expanded(child: _segment(i, seniorMode)),
         ],
       ),
     );
   }
 
-  Widget _segment(int i) {
+  // 精簡模式：主標放大、隱藏羅馬拼音副標（資訊密度收斂），熱區至少 56 高。
+  Widget _segment(int i, bool seniorMode) {
     final selected = i == index;
     final item = items[i];
     final textColor = selected ? selectedTextColor : unselectedTextColor;
@@ -59,7 +66,9 @@ class PillSegmentedToggle extends StatelessWidget {
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
         curve: Curves.easeOut,
-        padding: const EdgeInsets.symmetric(vertical: 14),
+        constraints: BoxConstraints(minHeight: seniorMode ? 56 : 0),
+        alignment: Alignment.center,
+        padding: EdgeInsets.symmetric(vertical: seniorMode ? 12 : 14),
         decoration: BoxDecoration(
           color: selected ? selectedColor : Colors.transparent,
           borderRadius: BorderRadius.circular(24),
@@ -69,22 +78,24 @@ class PillSegmentedToggle extends StatelessWidget {
           children: [
             Text(
               item.label,
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 17,
+              style: AppTypography.serif(
+                fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
                 fontWeight: FontWeight.w600,
                 color: textColor,
               ),
             ),
-            const SizedBox(height: 2),
-            Text(
-              item.subtitle,
-              style: GoogleFonts.crimsonPro(
-                fontSize: 11,
-                fontStyle: FontStyle.italic,
-                letterSpacing: 1.5,
-                color: textColor.withValues(alpha: selected ? 0.85 : 0.7),
+            if (!seniorMode) ...[
+              const SizedBox(height: 2),
+              Text(
+                item.subtitle,
+                style: AppTypography.latin(
+                  fontSize: AppTypography.caption,
+                  fontStyle: FontStyle.italic,
+                  letterSpacing: 1.5,
+                  color: textColor.withValues(alpha: selected ? 0.85 : 0.7),
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),

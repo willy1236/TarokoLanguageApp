@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
@@ -12,6 +11,7 @@ import '../../shared/widgets/shop_item_card.dart';
 import '../../shared/widgets/shop_shared.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../millet/millet_ledger_screen.dart';
+import '../../core/constants/app_typography.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -262,9 +262,9 @@ class _ShopScreenState extends State<ShopScreen> {
                     ),
                     Text(
                       'SAPAH SMPUNG · 小米商店',
-                      style: GoogleFonts.crimsonPro(
+                      style: AppTypography.latin(
                         fontStyle: FontStyle.italic,
-                        fontSize: 12,
+                        fontSize: AppTypography.caption,
                         color: AppColors.gold,
                         letterSpacing: 4,
                       ),
@@ -318,9 +318,9 @@ class _ShopScreenState extends State<ShopScreen> {
                           children: [
                             Text(
                               'BURAW · 我的小米',
-                              style: GoogleFonts.crimsonPro(
+                              style: AppTypography.latin(
                                 fontStyle: FontStyle.italic,
-                                fontSize: 11,
+                                fontSize: AppTypography.caption,
                                 color: AppColors.gold,
                                 letterSpacing: 3,
                               ),
@@ -328,8 +328,8 @@ class _ShopScreenState extends State<ShopScreen> {
                             const SizedBox(height: 4),
                             Text(
                               '${user.millet}',
-                              style: GoogleFonts.notoSerifTc(
-                                fontSize: 30,
+                              style: AppTypography.serif(
+                                fontSize: AppTypography.display30,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.creamLight,
                                 letterSpacing: 1,
@@ -385,8 +385,8 @@ class _ShopScreenState extends State<ShopScreen> {
         children: [
           Text(
             title,
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 15,
+            style: AppTypography.serif(
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 1,
@@ -395,21 +395,15 @@ class _ShopScreenState extends State<ShopScreen> {
           const SizedBox(height: 2),
           Text(
             subtitle,
-            style: GoogleFonts.crimsonPro(
+            style: AppTypography.latin(
               fontStyle: FontStyle.italic,
-              fontSize: 10,
+              fontSize: AppTypography.micro,
               color: AppColors.fog,
               letterSpacing: 2,
             ),
           ),
           const SizedBox(height: 10),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 0.66,
+          ShopItemGrid(
             children: items.map((item) => _buildItemCard(item)).toList(),
           ),
         ],

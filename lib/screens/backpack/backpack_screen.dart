@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
@@ -9,6 +8,7 @@ import '../../shared/widgets/shop_item_card.dart';
 import '../../shared/widgets/shop_shared.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../shop/shop_screen.dart';
+import '../../core/constants/app_typography.dart';
 
 /// 統一查看已擁有頭像／頭像框的背包頁，並可在此直接配戴。
 /// 取代原本散落在個人資料頁的頭像/頭像框選擇區塊。
@@ -177,9 +177,9 @@ class _BackpackScreenState extends State<BackpackScreen> {
                 ),
                 Text(
                   'PATAS · 我的背包',
-                  style: GoogleFonts.crimsonPro(
+                  style: AppTypography.latin(
                     fontStyle: FontStyle.italic,
-                    fontSize: 12,
+                    fontSize: AppTypography.caption,
                     color: AppColors.gold,
                     letterSpacing: 4,
                   ),
@@ -226,8 +226,8 @@ class _BackpackScreenState extends State<BackpackScreen> {
         children: [
           Text(
             '頭像 Lukus',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 15,
+            style: AppTypography.serif(
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 1,
@@ -236,21 +236,15 @@ class _BackpackScreenState extends State<BackpackScreen> {
           const SizedBox(height: 2),
           Text(
             'lukus · 共 ${items.length + 1} 款',
-            style: GoogleFonts.crimsonPro(
+            style: AppTypography.latin(
               fontStyle: FontStyle.italic,
-              fontSize: 10,
+              fontSize: AppTypography.micro,
               color: AppColors.fog,
               letterSpacing: 2,
             ),
           ),
           const SizedBox(height: 10),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 0.66,
+          ShopItemGrid(
             children: [
               _buildDefaultAvatarCard(),
               ...items.map((item) => _buildItemCard(item)),
@@ -286,8 +280,8 @@ class _BackpackScreenState extends State<BackpackScreen> {
         children: [
           Text(
             '頭像框',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 15,
+            style: AppTypography.serif(
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 1,
@@ -296,21 +290,15 @@ class _BackpackScreenState extends State<BackpackScreen> {
           const SizedBox(height: 2),
           Text(
             'rangi · 共 ${items.length + 1} 款',
-            style: GoogleFonts.crimsonPro(
+            style: AppTypography.latin(
               fontStyle: FontStyle.italic,
-              fontSize: 10,
+              fontSize: AppTypography.micro,
               color: AppColors.fog,
               letterSpacing: 2,
             ),
           ),
           const SizedBox(height: 10),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 3,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-            childAspectRatio: 0.66,
+          ShopItemGrid(
             children: [
               _buildDefaultFrameCard(),
               ...items.map((item) => _buildItemCard(item)),

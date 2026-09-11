@@ -30,7 +30,7 @@ class ForumComposeEditImages extends StatelessWidget {
         Text(
           '附圖無法在編輯時變更',
           style: TextStyle(
-            fontSize: seniorMode ? AppTypography.body : 12,
+            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
             color: AppColors.fog,
           ),
         ),
@@ -169,7 +169,7 @@ class ForumComposePickedImages extends StatelessWidget {
         Text(
           '${images.length}/${ForumService.imageMaxCount} 張',
           style: TextStyle(
-            fontSize: seniorMode ? AppTypography.body : 11,
+            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
             color: AppColors.fog,
           ),
         ),

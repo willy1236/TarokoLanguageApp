@@ -2,7 +2,6 @@
 // 快速入口卡）與圖示 painter。都是純展示，狀態與動作由 ProfileScreen 傳入。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_typography.dart';
@@ -41,7 +40,7 @@ Widget profileStatCell(bool seniorMode, String value, String label) {
         const SizedBox(height: 2),
         Text(
           label,
-          style: AppTypography.captionStyle(
+          style: AppTypography.bodyLargeStyle(
             seniorMode: seniorMode,
             color: AppColors.fog,
           ),
@@ -87,7 +86,7 @@ Widget profileQuickLinkCard(ProfileQuickLink link, {required bool seniorMode}) {
           Expanded(
             child: Text(
               link.label,
-              style: AppTypography.subtitleStyle(
+              style: AppTypography.titleStyle(
                 seniorMode: seniorMode,
                 color: AppColors.ink,
               ),
@@ -122,10 +121,8 @@ Widget profileNavRow({
               SizedBox(width: seniorMode ? AppSpacing.md : 10),
               Text(
                 label,
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: seniorMode
-                      ? AppTypography.headline
-                      : AppTypography.bodyLarge,
+                style: AppTypography.serif(
+                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
                   letterSpacing: 0.5,
@@ -144,7 +141,7 @@ Widget profileNavRow({
   );
 }
 
-Widget profileSection(String label, List<Widget> children) {
+Widget profileSection(String label, List<Widget> children, {bool seniorMode = false}) {
   return Padding(
     padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
     child: Column(
@@ -152,9 +149,9 @@ Widget profileSection(String label, List<Widget> children) {
       children: [
         Text(
           label,
-          style: GoogleFonts.crimsonPro(
+          style: AppTypography.latin(
             fontStyle: FontStyle.italic,
-            fontSize: 10,
+            fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
             color: AppColors.fog,
             letterSpacing: 3,
           ),
@@ -181,13 +178,14 @@ Widget profileSettingRow(
   bool editable = true,
   bool copyable = false,
   VoidCallback? onTap,
+  bool seniorMode = false,
 }) {
   return Column(
     children: [
       GestureDetector(
         onTap: editable ? onTap : null,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: seniorMode ? AppSpacing.lg : 14),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -196,8 +194,8 @@ Widget profileSettingRow(
                 children: [
                   Text(
                     label,
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.caption,
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                       color: AppColors.fog,
                       letterSpacing: 1,
                     ),
@@ -207,12 +205,12 @@ Widget profileSettingRow(
                     value,
                     style:
                         (truku
-                                ? GoogleFonts.crimsonPro(
+                                ? AppTypography.latin(
                                     fontStyle: FontStyle.italic,
                                   )
-                                : GoogleFonts.notoSerifTc())
+                                : AppTypography.serif())
                             .copyWith(
-                              fontSize: AppTypography.bodyLarge,
+                              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                               fontWeight: FontWeight.w600,
                               color: AppColors.ink,
                               letterSpacing: 0.5,
@@ -221,10 +219,10 @@ Widget profileSettingRow(
                 ],
               ),
               if (copyable)
-                Icon(Icons.copy_rounded, size: 16, color: AppColors.primary)
+                Icon(Icons.copy_rounded, size: seniorMode ? 24 : 16, color: AppColors.primary)
               else if (editable)
                 CustomPaint(
-                  size: const Size(16, 16),
+                  size: Size.square(seniorMode ? 24 : 16),
                   painter: ProfileEditPenPainter(),
                 ),
             ],
@@ -270,10 +268,8 @@ Widget profileSwitchRow(
                 children: [
                   Text(
                     label,
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode
-                          ? AppTypography.headline
-                          : AppTypography.bodyLarge,
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                       letterSpacing: 0.5,
@@ -283,8 +279,8 @@ Widget profileSwitchRow(
                     const SizedBox(height: 2),
                     Text(
                       lockedHint,
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: AppTypography.caption,
+                      style: AppTypography.serif(
+                        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                         color: AppColors.fog,
                       ),
                     ),

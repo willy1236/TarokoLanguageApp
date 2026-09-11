@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
 import '../../main.dart';
 import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
 import '../../services/friend_service.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
@@ -20,7 +21,10 @@ import 'video_call_screen.dart';
 import 'video_waiting_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
-  const CommunityScreen({super.key});
+  /// 由外層（合併分頁的膠囊切換）注入，顯示在頁面最上方。
+  final Widget? topToggle;
+
+  const CommunityScreen({super.key, this.topToggle});
 
   @override
   State<CommunityScreen> createState() => _CommunityScreenState();
@@ -82,7 +86,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: seniorModeController,
+    builder: (context, _) => _buildScaffold(seniorModeController.enabled),
+  );
+
+  Widget _buildScaffold(bool seniorMode) {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       body: SingleChildScrollView(
@@ -90,36 +99,55 @@ class _CommunityScreenState extends State<CommunityScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildHeader(),
-            _buildHeroCard(),
-            _buildNoticeLink(),
-            _buildFriendList(),
+            if (widget.topToggle != null)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  MediaQuery.of(context).padding.top + 12,
+                  20,
+                  0,
+                ),
+                child: widget.topToggle,
+              ),
+            _buildHeader(seniorMode),
+            _buildHeroCard(seniorMode),
+            _buildNoticeLink(seniorMode),
+            _buildFriendList(seniorMode),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildHeader() {
+  // 精簡模式：隱藏羅馬拼音眉標、只留中文大標（放大）。
+  Widget _buildHeader(bool seniorMode) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 16),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        widget.topToggle == null ? 60 : 20,
+        20,
+        16,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            'PGKALA · 互動',
-            style: GoogleFonts.crimsonPro(
-              fontStyle: FontStyle.italic,
-              fontSize: 12,
-              color: AppColors.fog,
-              letterSpacing: 3.0,
+          if (!seniorMode) ...[
+            Text(
+              'PGKALA · 互動',
+              style: AppTypography.latin(
+                fontStyle: FontStyle.italic,
+                fontSize: AppTypography.caption,
+                color: AppColors.fog,
+                letterSpacing: 3.0,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
+            const SizedBox(height: 4),
+          ],
           Text(
             '面對面，學族語',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 26,
+            style: AppTypography.serif(
+              // headline token（22）比一般模式的 26 還小，精簡模式另外放大。
+              fontSize: seniorMode ? AppTypography.display30 : AppTypography.display26,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 1.0,
@@ -130,7 +158,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  Widget _buildHeroCard() {
+  Widget _buildHeroCard(bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: ClipRRect(
@@ -165,20 +193,23 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       ),
                     ),
                   ),
-                  Text(
-                    '1 ON 1 · KMSAPUH',
-                    style: GoogleFonts.crimsonPro(
-                      fontStyle: FontStyle.italic,
-                      fontSize: 11,
-                      color: AppColors.gold,
-                      letterSpacing: 3.0,
+                  // 精簡模式：隱藏眉標與裝飾用的假頭像列，只留標題、說明與按鈕。
+                  if (!seniorMode) ...[
+                    Text(
+                      '1 ON 1 · KMSAPUH',
+                      style: AppTypography.latin(
+                        fontStyle: FontStyle.italic,
+                        fontSize: AppTypography.caption,
+                        color: AppColors.gold,
+                        letterSpacing: 3.0,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 6),
+                    const SizedBox(height: 6),
+                  ],
                   Text(
                     '和耆老一對一\n用族語聊 10 分鐘',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: 20,
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       height: 1.3,
@@ -189,15 +220,19 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   Text(
                     '系統會幫你配對線上的族人',
                     style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.creamLight.withValues(alpha: 0.7),
+                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                      color: AppColors.creamLight.withValues(
+                        alpha: seniorMode ? 0.85 : 0.7,
+                      ),
                       letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: 16),
-                  _buildAvatarRow(),
-                  const SizedBox(height: 16),
-                  _buildStartButton(),
+                  if (!seniorMode) ...[
+                    _buildAvatarRow(),
+                    const SizedBox(height: 16),
+                  ],
+                  _buildStartButton(seniorMode),
                 ],
               ),
             ),
@@ -222,7 +257,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  Widget _buildNoticeLink() {
+  Widget _buildNoticeLink(bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
       child: GestureDetector(
@@ -230,21 +265,29 @@ class _CommunityScreenState extends State<CommunityScreen> {
           context,
           MaterialPageRoute(builder: (_) => const VideoCallNoticeScreen()),
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.shield_outlined, size: 14, color: AppColors.fog),
-            const SizedBox(width: 6),
-            Text(
-              '查看視訊配對須知',
-              style: TextStyle(
-                fontSize: 12,
+        behavior: HitTestBehavior.opaque,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(minHeight: seniorMode ? 48 : 0),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.shield_outlined,
+                size: seniorMode ? 20 : 14,
                 color: AppColors.fog,
-                decoration: TextDecoration.underline,
-                decorationColor: AppColors.fog,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                '查看視訊配對須知',
+                style: TextStyle(
+                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  color: AppColors.fog,
+                  decoration: TextDecoration.underline,
+                  decorationColor: AppColors.fog,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -272,11 +315,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   alignment: Alignment.center,
                   child: Text(
                     initials[i],
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.gold,
-                    ),
+                    style: AppTypography.subtitleStyle(color: AppColors.gold),
                   ),
                 ),
               );
@@ -298,7 +337,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             Text(
               '族人在線中',
               style: TextStyle(
-                fontSize: 11,
+                fontSize: AppTypography.caption,
                 color: AppColors.creamLight.withValues(alpha: 0.85),
                 letterSpacing: 1.2,
               ),
@@ -402,12 +441,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
     }
   }
 
-  Widget _buildStartButton() {
+  Widget _buildStartButton(bool seniorMode) {
     return GestureDetector(
       onTap: _isJoining ? null : _startMatching,
       child: Container(
         width: double.infinity,
-        height: 52,
+        height: seniorMode ? 64 : 52,
         decoration: BoxDecoration(
           color: AppColors.gold.withValues(alpha: _isJoining ? 0.6 : 1.0),
           borderRadius: BorderRadius.circular(30),
@@ -416,14 +455,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             CustomPaint(
-              size: const Size(16, 16),
+              size: Size.square(seniorMode ? 22 : 16),
               painter: _VideoIconPainter(AppColors.ink),
             ),
             const SizedBox(width: 8),
             Text(
               _isJoining ? '配對中…' : '開始配對',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 15,
+              style: AppTypography.serif(
+                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
                 letterSpacing: 2.0,
@@ -435,8 +474,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
     );
   }
 
-  Widget _buildFriendList() {
-    const maxShown = 5;
+  Widget _buildFriendList(bool seniorMode) {
+    // 精簡模式只列前 3 位，其餘到「好友」分頁看。
+    final maxShown = seniorMode ? 3 : 5;
     final friends = _friends;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 6, 20, 0),
@@ -450,8 +490,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
             children: [
               Text(
                 '我的好友',
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 14,
+                style: AppTypography.serif(
+                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
                   letterSpacing: 1.5,
@@ -464,11 +504,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
                 ),
                 child: Text(
                   '查看全部 →',
-                  style: TextStyle(
-                    fontSize: 11,
+                  style: AppTypography.bodyStyle(
+                    seniorMode: seniorMode,
                     color: AppColors.primary,
-                    letterSpacing: 2.5,
-                  ),
+                  ).copyWith(letterSpacing: 2.5),
                 ),
               ),
             ],
@@ -484,7 +523,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
               padding: const EdgeInsets.symmetric(vertical: 12),
               child: Text(
                 '尚無好友，先去加好友吧',
-                style: TextStyle(fontSize: 12, color: AppColors.fog),
+                style: TextStyle(
+                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  color: AppColors.fog,
+                ),
               ),
             )
           else
@@ -499,6 +541,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   child: _FriendTile(
                     friend: friends[i],
                     itemCatalogById: _itemCatalogById,
+                    seniorMode: seniorMode,
                     onTap: () => _chatWithFriend(friends[i]),
                   ),
                 );
@@ -515,11 +558,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
 class _FriendTile extends StatelessWidget {
   final Friendship friend;
   final Map<String, ShopItem> itemCatalogById;
+  final bool seniorMode;
   final VoidCallback onTap;
 
   const _FriendTile({
     required this.friend,
     required this.itemCatalogById,
+    required this.seniorMode,
     required this.onTap,
   });
 
@@ -536,16 +581,15 @@ class _FriendTile extends StatelessWidget {
         ),
         child: Row(
           children: [
-            SizedBox(
-              width: 52,
-              height: 52,
+            SizedBox.square(
+              dimension: seniorMode ? 60 : 52,
               child: Center(
                 child: FramedUserAvatar(
                   avatarId: friend.avatarId,
                   avatarUrl: friend.avatarUrl,
                   frameId: friend.frameId,
                   itemCatalogById: itemCatalogById,
-                  size: 44,
+                  size: seniorMode ? 52 : 44,
                   fallbackIconColor: AppColors.gold,
                 ),
               ),
@@ -558,8 +602,10 @@ class _FriendTile extends StatelessWidget {
                 children: [
                   Text(
                     friend.nickname ?? friend.friendCode ?? '未命名好友',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: 14,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                       letterSpacing: 1.0,
@@ -568,30 +614,35 @@ class _FriendTile extends StatelessWidget {
                   const SizedBox(height: 1),
                   Text(
                     friend.bondLevel.name,
-                    style: TextStyle(
-                      fontSize: 11,
+                    style: AppTypography.bodyStyle(
+                      seniorMode: seniorMode,
                       color: AppColors.fog,
-                      letterSpacing: 1.2,
-                    ),
+                    ).copyWith(letterSpacing: 1.2),
                   ),
                 ],
               ),
             ),
             const SizedBox(width: 8),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: EdgeInsets.symmetric(
+                horizontal: seniorMode ? 16 : 12,
+                vertical: seniorMode ? 12 : 8,
+              ),
               decoration: BoxDecoration(
                 color: Colors.transparent,
-                borderRadius: BorderRadius.circular(18),
+                borderRadius: BorderRadius.circular(seniorMode ? 24 : 18),
                 border: Border.all(color: AppColors.creamDeep),
               ),
               child: Text(
                 '聊天',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: AppColors.primary,
-                  letterSpacing: 2.0,
-                ),
+                style: seniorMode
+                    ? AppTypography.subtitleStyle(
+                        seniorMode: true,
+                        color: AppColors.primary,
+                      ).copyWith(letterSpacing: 2.0)
+                    : AppTypography.bodyStyle(
+                        color: AppColors.primary,
+                      ).copyWith(letterSpacing: 2.0),
               ),
             ),
           ],

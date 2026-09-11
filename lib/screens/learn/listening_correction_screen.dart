@@ -1,10 +1,10 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/listening_models.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../history/history_review_card.dart';
+import '../../core/constants/app_typography.dart';
 
 class ListeningCorrectionScreen extends StatefulWidget {
   final ListeningResult result;
@@ -138,8 +138,8 @@ class _ListeningCorrectionScreenState extends State<ListeningCorrectionScreen> {
           child: Center(
             child: Text(
               label,
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 14,
+              style: AppTypography.serif(
+                fontSize: AppTypography.body,
                 fontWeight: primary ? FontWeight.w600 : FontWeight.w500,
                 color: primary ? AppColors.creamLight : AppColors.inkSoft,
                 letterSpacing: 1.4,

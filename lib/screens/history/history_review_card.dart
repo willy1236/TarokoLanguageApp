@@ -1,12 +1,12 @@
 // 測驗紀錄詳解共用的逐題卡片，供 quiz / listening 詳解畫面共用。
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/audio_url.dart';
 import '../../services/history_service.dart';
 import 'report_question_dialog.dart';
+import '../../core/constants/app_typography.dart';
 
 class ReviewCard extends StatelessWidget {
   final int order;
@@ -106,8 +106,8 @@ class ReviewCard extends StatelessWidget {
             children: [
               Text(
                 '第 $order 題',
-                style: GoogleFonts.jetBrainsMono(
-                  fontSize: 11,
+                style: AppTypography.mono(
+                  fontSize: AppTypography.caption,
                   color: AppColors.fog,
                   letterSpacing: 1.0,
                 ),
@@ -125,7 +125,7 @@ class ReviewCard extends StatelessWidget {
                 child: Text(
                   isCorrect ? '答對' : '答錯',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppTypography.caption,
                     fontWeight: FontWeight.w600,
                     color: isCorrect ? AppColors.moss : AppColors.danger,
                   ),
@@ -140,8 +140,8 @@ class ReviewCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     promptText!,
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: 18,
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.subtitle,
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                     ),
@@ -173,7 +173,7 @@ class ReviewCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       const Text(
                         '原題發音',
-                        style: TextStyle(fontSize: 10, color: AppColors.fog),
+                        style: TextStyle(fontSize: AppTypography.micro, color: AppColors.fog),
                       ),
                     ],
                   ),
@@ -201,8 +201,8 @@ class ReviewCard extends StatelessWidget {
                   children: [
                     Text(
                       detailTitle,
-                      style: GoogleFonts.crimsonPro(
-                        fontSize: 16,
+                      style: AppTypography.latin(
+                        fontSize: AppTypography.bodyLarge,
                         fontStyle: FontStyle.italic,
                         fontWeight: FontWeight.w600,
                         color: AppColors.primary,
@@ -213,7 +213,7 @@ class ReviewCard extends StatelessWidget {
                       Text(
                         detailSubtitle!,
                         style: const TextStyle(
-                          fontSize: 13,
+                          fontSize: AppTypography.body,
                           color: AppColors.inkSoft,
                         ),
                       ),
@@ -223,7 +223,7 @@ class ReviewCard extends StatelessWidget {
                       Text(
                         explanation!,
                         style: const TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTypography.caption,
                           color: AppColors.fog,
                           height: 1.4,
                         ),
@@ -256,7 +256,7 @@ class ReviewCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       const Text(
                         '標準發音',
-                        style: TextStyle(fontSize: 10, color: AppColors.fog),
+                        style: TextStyle(fontSize: AppTypography.micro, color: AppColors.fog),
                       ),
                     ],
                   ),
@@ -276,7 +276,7 @@ class ReviewCard extends StatelessWidget {
               icon: const Icon(Icons.flag_outlined, size: 14, color: AppColors.fog),
               label: const Text(
                 '回報問題',
-                style: TextStyle(fontSize: 12, color: AppColors.fog),
+                style: TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
               ),
             ),
           ),
@@ -292,14 +292,14 @@ class ReviewCard extends StatelessWidget {
           width: 64,
           child: Text(
             label,
-            style: const TextStyle(fontSize: 12, color: AppColors.fog),
+            style: const TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
           ),
         ),
         Expanded(
           child: Text(
             value,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: AppTypography.body,
               fontWeight: FontWeight.w600,
               color: valueColor,
             ),
@@ -333,8 +333,8 @@ class ScoreHeader extends StatelessWidget {
         children: [
           Text(
             title,
-            style: GoogleFonts.crimsonPro(
-              fontSize: 12,
+            style: AppTypography.latin(
+              fontSize: AppTypography.caption,
               fontStyle: FontStyle.italic,
               color: AppColors.gold,
               letterSpacing: 2.0,
@@ -343,8 +343,8 @@ class ScoreHeader extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '$score / $total',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 36,
+            style: AppTypography.serif(
+              fontSize: AppTypography.display36,
               fontWeight: FontWeight.w700,
               color: AppColors.creamLight,
             ),

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
@@ -7,6 +6,7 @@ import '../../services/terms_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
+import '../../core/constants/app_typography.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -173,9 +173,9 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 14),
         Text(
           'Kari Truku · Lnglungan',
-          style: GoogleFonts.crimsonPro(
+          style: AppTypography.latin(
             fontStyle: FontStyle.italic,
-            fontSize: 13,
+            fontSize: AppTypography.body,
             color: AppColors.gold,
             letterSpacing: 2.5,
           ),
@@ -194,9 +194,9 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           'MHUWAY SU · 歡迎回來',
           textAlign: TextAlign.center,
-          style: GoogleFonts.crimsonPro(
+          style: AppTypography.latin(
             fontStyle: FontStyle.italic,
-            fontSize: 11,
+            fontSize: AppTypography.caption,
             color: AppColors.gold,
             letterSpacing: 3.5,
           ),
@@ -205,8 +205,8 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           '登入，繼續說我們的話',
           textAlign: TextAlign.center,
-          style: GoogleFonts.notoSerifTc(
-            fontSize: 20,
+          style: AppTypography.serif(
+            fontSize: AppTypography.title,
             fontWeight: FontWeight.w600,
             color: AppColors.creamLight,
             letterSpacing: 1.2,
@@ -275,7 +275,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: 9,
+                  fontSize: AppTypography.micro,
                   color: AppColors.cream.withValues(alpha: 0.8),
                   letterSpacing: 0.8,
                 ),

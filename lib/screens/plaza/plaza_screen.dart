@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_model.dart';
@@ -17,6 +16,7 @@ import '../forum/forum_theme.dart';
 import '../events/event_detail_screen.dart';
 import '../../shared/widgets/module_header_actions.dart';
 import 'widgets/plaza_cards.dart';
+import '../../core/constants/app_typography.dart';
 
 class PlazaScreen extends StatefulWidget {
   /// 由外層（合併分頁的膠囊切換）注入，顯示在標題與近期活動之間。
@@ -199,7 +199,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         ),
       // 精簡模式不顯示活動，避免與族語學習內容混雜。
       if (!seniorMode) _buildMiniEventCards(),
-      _buildTabBar(),
+      _buildTabBar(seniorMode),
     ],
   );
 
@@ -213,20 +213,23 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'ALANG · 廣場',
-                  style: GoogleFonts.crimsonPro(
-                    fontStyle: FontStyle.italic,
-                    fontSize: seniorMode ? 16 : 12,
-                    color: AppColors.fog,
-                    letterSpacing: 3.0,
+                // 精簡模式隱藏羅馬拼音眉標，與首頁、視訊配對一致。
+                if (!seniorMode) ...[
+                  Text(
+                    'ALANG · 廣場',
+                    style: AppTypography.latin(
+                      fontStyle: FontStyle.italic,
+                      fontSize: AppTypography.caption,
+                      color: AppColors.fog,
+                      letterSpacing: 3.0,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
+                  const SizedBox(height: 4),
+                ],
                 Text(
                   '族人在這裡',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 32 : 26,
+                  style: AppTypography.serif(
+                    fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 1.0,
@@ -317,7 +320,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   /// 看板 tab，併入 [_buildScrollingHeader] 隨頁首一起捲動，接在近期活動
   /// 小卡之後、貼文列表之前。名稱短時平均分佈填滿整列，多到放不下才變成
   /// 可捲動——固定間距在只有六個兩字看板時會全部擠在左半邊，右邊留一大片空白。
-  Widget _buildTabBar() => Container(
+  Widget _buildTabBar(bool seniorMode) => Container(
     decoration: const BoxDecoration(
       border: Border(bottom: BorderSide(color: AppColors.creamDeep)),
     ),
@@ -338,12 +341,14 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
                   PlazaBoardTab(
                     label: '全部',
                     selected: _boardSlug == null,
+                    seniorMode: seniorMode,
                     onTap: () => setState(() => _boardSlug = null),
                   ),
                   for (final board in _boards)
                     PlazaBoardTab(
                       label: board.name,
                       selected: board.slug == _boardSlug,
+                      seniorMode: seniorMode,
                       onTap: () => setState(() => _boardSlug = board.slug),
                     ),
                 ],
@@ -365,9 +370,9 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
           child: Text(
             'SMRATUC · 近期活動',
-            style: GoogleFonts.crimsonPro(
+            style: AppTypography.latin(
               fontStyle: FontStyle.italic,
-              fontSize: 10,
+              fontSize: AppTypography.micro,
               color: AppColors.fog,
               letterSpacing: 3.0,
             ),

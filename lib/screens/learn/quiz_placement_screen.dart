@@ -82,7 +82,7 @@ class _QuizPlacementScreenState extends State<QuizPlacementScreen> {
       audio: _audio,
       unitCaption: 'PLACEMENT · 單字分級測驗',
       unitTitle: '橫跨四個等級，找出最適合你的起點',
-      unitTitleSize: 15,
+      unitTitleSize: 16,
       cardCaption: '選出正確答案',
       onRetry: _flow.load,
       onConfirm: _confirm,

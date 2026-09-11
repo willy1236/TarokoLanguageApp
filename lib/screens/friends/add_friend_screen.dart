@@ -8,6 +8,7 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../services/user_service.dart';
 
 class AddFriendScreen extends StatefulWidget {
   const AddFriendScreen({super.key});
@@ -20,6 +21,35 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   final _controller = TextEditingController();
   bool _submitting = false;
   String? _error;
+  String? _myFriendCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMyFriendCode();
+  }
+
+  Future<void> _loadMyFriendCode() async {
+    try {
+      final user = await UserService.fetchMe();
+      if (!mounted) return;
+      setState(() => _myFriendCode = user.friendCode);
+    } catch (e, st) {
+      // 讀不到自己的好友碼不影響加好友主流程，區塊不顯示即可。
+      debugPrint('Failed to fetch my friend code: $e');
+      debugPrintStack(stackTrace: st);
+    }
+  }
+
+  Future<void> _copyMyFriendCode() async {
+    final code = _myFriendCode;
+    if (code == null) return;
+    await Clipboard.setData(ClipboardData(text: code));
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('已複製好友碼')));
+  }
 
   @override
   void dispose() {
@@ -156,7 +186,47 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                 : const Text('送出邀請', style: TextStyle(color: Colors.white)),
           ),
         ),
+        if (_myFriendCode != null && _myFriendCode!.isNotEmpty) ...[
+          const SizedBox(height: 32),
+          _myFriendCodeCard(_myFriendCode!, seniorMode),
+        ],
       ],
+    ),
+  );
+
+  Widget _myFriendCodeCard(String code, bool seniorMode) => Material(
+    color: AppColors.cream,
+    shape: RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(12),
+      side: const BorderSide(color: AppColors.creamDeep),
+    ),
+    child: InkWell(
+      borderRadius: BorderRadius.circular(12),
+      onTap: _copyMyFriendCode,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        child: Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    '我的好友碼（點擊複製，分享給朋友）',
+                    style: AppTypography.captionStyle(seniorMode: seniorMode, color: AppColors.fog),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    code,
+                    style: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.ink),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.copy, color: AppColors.primary),
+          ],
+        ),
+      ),
     ),
   );
 }

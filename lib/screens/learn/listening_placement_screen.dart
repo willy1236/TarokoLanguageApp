@@ -82,7 +82,7 @@ class _ListeningPlacementScreenState extends State<ListeningPlacementScreen> {
       audio: _audio,
       unitCaption: 'PLACEMENT · 聽力分級測驗',
       unitTitle: '橫跨四個等級，找出最適合你的起點',
-      unitTitleSize: 15,
+      unitTitleSize: 16,
       cardCaption: '聆聽 · 選出正確答案',
       onRetry: _flow.load,
       onConfirm: _confirm,

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
@@ -151,7 +150,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.cream,
-                fontSize: seniorMode ? AppTypography.title : 15,
+                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
               ),
             ),
             const SizedBox(height: 20),
@@ -160,7 +159,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               child: Text(
                 '返回清單',
                 style: seniorMode
-                    ? const TextStyle(fontSize: AppTypography.subtitle)
+                    ? const TextStyle(fontSize: AppTypography.bodyLarge)
                     : null,
               ),
             ),
@@ -192,8 +191,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               children: [
                 Text(
                   article.title,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 26 : 20,
+                  style: AppTypography.serif(
+                    fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
                     fontWeight: FontWeight.w600,
                     color: AppColors.creamLight,
                     height: 1.3,
@@ -220,7 +219,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                                 '${article.viewCount}',
                                 style: TextStyle(
                                   color: AppColors.fog,
-                                  fontSize: AppTypography.subtitle,
+                                  fontSize: AppTypography.bodyLarge,
                                 ),
                               ),
                             ],
@@ -230,7 +229,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                               _formatDate(article.publishedAt!),
                               style: TextStyle(
                                 color: AppColors.fog,
-                                fontSize: AppTypography.subtitle,
+                                fontSize: AppTypography.bodyLarge,
                               ),
                             ),
                           Row(
@@ -275,7 +274,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                             '${article.viewCount}',
                             style: TextStyle(
                               color: AppColors.fog,
-                              fontSize: 12,
+                              fontSize: AppTypography.caption,
                             ),
                           ),
                           if (article.publishedAt != null) ...[
@@ -284,7 +283,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                               _formatDate(article.publishedAt!),
                               style: TextStyle(
                                 color: AppColors.fog,
-                                fontSize: 12,
+                                fontSize: AppTypography.caption,
                               ),
                             ),
                           ],
@@ -319,22 +318,22 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                   styleSheet: MarkdownStyleSheet(
                     p: TextStyle(
                       color: AppColors.mist,
-                      fontSize: seniorMode ? AppTypography.title : 14,
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       height: 1.6,
                     ),
                     h1: TextStyle(
                       color: AppColors.creamLight,
-                      fontSize: seniorMode ? 26 : 20,
+                      fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                     ),
                     h2: TextStyle(
                       color: AppColors.creamLight,
-                      fontSize: seniorMode ? 22 : 18,
+                      fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                     ),
                     h3: TextStyle(
                       color: AppColors.creamLight,
-                      fontSize: seniorMode ? 20 : 16,
+                      fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                     ),
                     strong: TextStyle(
@@ -370,7 +369,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: seniorMode ? AppTypography.body : 10,
+          fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
           color: AppColors.gold,
           letterSpacing: 1.5,
         ),

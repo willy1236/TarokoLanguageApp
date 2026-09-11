@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
@@ -192,18 +191,14 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
               children: [
                 Text(
                   '發送提醒',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 26 : 19,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
-                  ),
+                  style: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.ink),
                 ),
                 Text(
                   widget.eventTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: seniorMode ? AppTypography.subtitle : 12,
+                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                     color: AppColors.fog,
                     letterSpacing: 0.5,
                   ),
@@ -236,7 +231,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
             child: Text(
               '提醒將推播給此活動的所有參加者',
               style: TextStyle(
-                fontSize: seniorMode ? AppTypography.title : 12.5,
+                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                 color: AppColors.inkSoft,
                 height: 1.4,
               ),
@@ -250,8 +245,8 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
   Widget _sectionLabel(String text, bool seniorMode) {
     return Text(
       text,
-      style: GoogleFonts.notoSerifTc(
-        fontSize: seniorMode ? AppTypography.subtitle : 14,
+      style: AppTypography.serif(
+        fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
         fontWeight: FontWeight.w600,
         color: AppColors.ink,
         letterSpacing: 1.0,
@@ -276,7 +271,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
             maxLength: _maxLen,
             onChanged: (_) => setState(() {}),
             style: TextStyle(
-              fontSize: seniorMode ? AppTypography.title : 14,
+              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               color: AppColors.ink,
               height: 1.6,
             ),
@@ -284,7 +279,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
               hintText: '輸入要提醒參加者的內容…',
               hintStyle: TextStyle(
                 color: AppColors.fog,
-                fontSize: seniorMode ? AppTypography.title : 14,
+                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               ),
               border: InputBorder.none,
               counterText: '',
@@ -293,7 +288,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
           Text(
             '${_controller.text.characters.length} / $_maxLen',
             style: TextStyle(
-              fontSize: seniorMode ? AppTypography.body : 11,
+              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
               color: AppColors.fog,
             ),
           ),
@@ -329,7 +324,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
             child: Text(
               t,
               style: TextStyle(
-                fontSize: seniorMode ? AppTypography.subtitle : 11.5,
+                fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                 color: AppColors.inkSoft,
               ),
             ),
@@ -390,7 +385,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
                     child: Text(
                       _formatDateTime(_scheduledAt!),
                       style: TextStyle(
-                        fontSize: seniorMode ? AppTypography.title : 14,
+                        fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                         color: AppColors.ink,
                         letterSpacing: 0.5,
                       ),
@@ -399,7 +394,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
                   Text(
                     '更改',
                     style: TextStyle(
-                      fontSize: seniorMode ? AppTypography.subtitle : 12,
+                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                       color: AppColors.primary,
                     ),
                   ),
@@ -412,7 +407,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
         Text(
           '※ 系統每分鐘檢查一次，實際送達可能有約 1 分鐘誤差。',
           style: TextStyle(
-            fontSize: seniorMode ? AppTypography.body : 11,
+            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
             color: AppColors.fog,
             height: 1.5,
           ),
@@ -442,7 +437,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: seniorMode ? AppTypography.subtitle : 13.5,
+              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               color: selected ? AppColors.creamLight : AppColors.inkSoft,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.0,
@@ -484,8 +479,8 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
                   )
                 : Text(
                     _sendNow ? '立即發送提醒' : '排定發送',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? AppTypography.title : 15,
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       letterSpacing: 2.0,

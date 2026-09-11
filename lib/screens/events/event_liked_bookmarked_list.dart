@@ -198,7 +198,7 @@ class _EventListItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: AppColors.ink,
-                fontSize: seniorMode ? AppTypography.title : 14,
+                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -215,7 +215,7 @@ class _EventListItem extends StatelessWidget {
                   formatDateTime(event.startsAt.toLocal()),
                   style: TextStyle(
                     color: AppColors.inkSoft,
-                    fontSize: seniorMode ? AppTypography.subtitle : 11.5,
+                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                   ),
                 ),
               ],
@@ -237,7 +237,7 @@ class _EventListItem extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: AppColors.inkSoft,
-                        fontSize: seniorMode ? AppTypography.subtitle : 11.5,
+                        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                       ),
                     ),
                   ),
@@ -257,7 +257,7 @@ class _EventListItem extends StatelessWidget {
                   '${event.likeCount}',
                   style: TextStyle(
                     color: AppColors.fog,
-                    fontSize: seniorMode ? AppTypography.subtitle : 12,
+                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                   ),
                 ),
               ],

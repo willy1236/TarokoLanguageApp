@@ -1,8 +1,8 @@
 // 活動詳情頁的輸入對話框：報名聯絡 email、取消活動理由。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_typography.dart';
 
 /// 「取消活動」理由輸入對話框。獨立成 StatefulWidget 讓
 /// [TextEditingController] 隨這個 dialog 元件自身的生命週期建立/釋放，
@@ -47,7 +47,7 @@ class _JoinEmailDialogState extends State<JoinEmailDialog> {
       backgroundColor: AppColors.creamLight,
       title: Text(
         '填寫聯絡 Email',
-        style: GoogleFonts.notoSerifTc(
+        style: AppTypography.serif(
           fontWeight: FontWeight.w700,
           color: AppColors.ink,
         ),
@@ -59,7 +59,7 @@ class _JoinEmailDialogState extends State<JoinEmailDialog> {
           Text(
             '報名需提供聯絡 Email，供主辦聯繫使用，可與帳號 Email 不同。',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: AppTypography.body,
               color: AppColors.inkSoft,
               height: 1.5,
             ),
@@ -69,7 +69,7 @@ class _JoinEmailDialogState extends State<JoinEmailDialog> {
             controller: _controller,
             keyboardType: TextInputType.emailAddress,
             autofocus: true,
-            style: const TextStyle(fontSize: 14, color: AppColors.ink),
+            style: const TextStyle(fontSize: AppTypography.body, color: AppColors.ink),
             decoration: InputDecoration(
               hintText: 'name@example.com',
               hintStyle: TextStyle(color: AppColors.fog),
@@ -112,7 +112,7 @@ class _CancelReasonDialogState extends State<CancelReasonDialog> {
       backgroundColor: AppColors.creamLight,
       title: Text(
         '取消活動',
-        style: GoogleFonts.notoSerifTc(
+        style: AppTypography.serif(
           fontWeight: FontWeight.w700,
           color: AppColors.ink,
         ),
@@ -124,7 +124,7 @@ class _CancelReasonDialogState extends State<CancelReasonDialog> {
           Text(
             '請填寫取消理由，會一併推播通知所有參加者。',
             style: TextStyle(
-              fontSize: 13,
+              fontSize: AppTypography.body,
               color: AppColors.inkSoft,
               height: 1.5,
             ),
@@ -135,7 +135,7 @@ class _CancelReasonDialogState extends State<CancelReasonDialog> {
             maxLines: 3,
             maxLength: 500,
             autofocus: true,
-            style: const TextStyle(fontSize: 14, color: AppColors.ink),
+            style: const TextStyle(fontSize: AppTypography.body, color: AppColors.ink),
             decoration: InputDecoration(
               hintText: '例如：因天候因素順延…',
               hintStyle: TextStyle(color: AppColors.fog),

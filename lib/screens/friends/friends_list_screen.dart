@@ -24,7 +24,10 @@ import 'widgets/bond_level_badge.dart';
 import 'widgets/showcase_chip.dart';
 
 class FriendsListScreen extends StatefulWidget {
-  const FriendsListScreen({super.key});
+  /// 作為底部導航分頁時傳 false：沒有上一頁可回，不顯示返回鍵。
+  final bool showBackButton;
+
+  const FriendsListScreen({super.key, this.showBackButton = true});
 
   @override
   State<FriendsListScreen> createState() => _FriendsListScreenState();
@@ -233,10 +236,13 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
     child: Row(
       children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-        ),
+        if (widget.showBackButton)
+          IconButton(
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.arrow_back, color: AppColors.ink),
+          )
+        else
+          const SizedBox(width: 12),
         Expanded(
           child: Text(
             '好友',

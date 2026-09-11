@@ -5,7 +5,6 @@
 // 對已刪除的留言做任何操作後端一律回 404。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -62,8 +61,8 @@ class ForumCommentTile extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           '此留言已刪除',
-          style: GoogleFonts.notoSerifTc(
-            fontSize: seniorMode ? AppTypography.title : 13,
+          style: AppTypography.serif(
+            fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
             fontStyle: FontStyle.italic,
             color: AppColors.fog,
           ),
@@ -88,8 +87,8 @@ class ForumCommentTile extends StatelessWidget {
               child: Text(
                 comment.author?.displayName ?? '匿名使用者',
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: seniorMode ? AppTypography.subtitle : 13,
+                style: AppTypography.serif(
+                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
                 ),
@@ -99,7 +98,7 @@ class ForumCommentTile extends StatelessWidget {
             Text(
               forumRelativeTime(comment.createdAt),
               style: TextStyle(
-                fontSize: seniorMode ? AppTypography.body : 11,
+                fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                 color: AppColors.fog,
               ),
             ),
@@ -111,7 +110,7 @@ class ForumCommentTile extends StatelessWidget {
           child: Text(
             comment.body,
             style: TextStyle(
-              fontSize: seniorMode ? AppTypography.title : 14,
+              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               color: AppColors.inkSoft,
               height: 1.5,
             ),
@@ -142,7 +141,7 @@ class ForumCommentTile extends StatelessWidget {
                     Text(
                       '${comment.likeCount}',
                       style: TextStyle(
-                        fontSize: seniorMode ? AppTypography.subtitle : 12,
+                        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                         color: AppColors.fog,
                       ),
                     ),
@@ -171,7 +170,7 @@ class ForumCommentTile extends StatelessWidget {
     alignment: Alignment.center,
     child: Text(
       comment.author?.displayName.characters.firstOrNull ?? '?',
-      style: GoogleFonts.notoSerifTc(fontSize: 12, color: AppColors.gold),
+      style: AppTypography.serif(fontSize: AppTypography.caption, color: AppColors.gold),
     ),
   );
 
@@ -195,7 +194,7 @@ class ForumCommentTile extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: seniorMode ? AppTypography.subtitle : 12,
+            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
             color: AppColors.fog,
           ),
         ),

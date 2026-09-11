@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/level_info.dart';
 import '../../services/learn_service.dart';
@@ -12,6 +11,7 @@ import 'quiz_placement_screen.dart';
 import 'vocab_level_screen.dart';
 import 'widgets/learn_cards.dart';
 import '../../shared/widgets/async_state_view.dart';
+import '../../core/constants/app_typography.dart';
 
 // ── LearnScreen ───────────────────────────────────────────────────────────────
 
@@ -97,8 +97,8 @@ class _LearnScreenState extends State<LearnScreen> {
               children: [
                 Text(
                   '選擇分級測驗',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 18,
+                  style: AppTypography.serif(
+                    fontSize: AppTypography.subtitle,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                   ),
@@ -229,8 +229,8 @@ class _LearnScreenState extends State<LearnScreen> {
               children: [
                 Text(
                   'KARI TRUKU · 族語學習',
-                  style: GoogleFonts.crimsonPro(
-                    fontSize: 12,
+                  style: AppTypography.latin(
+                    fontSize: AppTypography.caption,
                     fontStyle: FontStyle.italic,
                     color: AppColors.gold,
                     letterSpacing: 3.0,
@@ -239,8 +239,8 @@ class _LearnScreenState extends State<LearnScreen> {
                 const SizedBox(height: 6),
                 Text(
                   '一句一句，把話說回來',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: 28,
+                  style: AppTypography.serif(
+                    fontSize: AppTypography.display28,
                     fontWeight: FontWeight.w600,
                     color: AppColors.creamLight,
                     letterSpacing: 1.12,
@@ -254,16 +254,16 @@ class _LearnScreenState extends State<LearnScreen> {
                         children: [
                           TextSpan(
                             text: '$totalWords',
-                            style: GoogleFonts.notoSerifTc(
-                              fontSize: 18,
+                            style: AppTypography.serif(
+                              fontSize: AppTypography.subtitle,
                               color: AppColors.gold,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           TextSpan(
                             text: '　可學單字',
-                            style: GoogleFonts.notoSerifTc(
-                              fontSize: 13,
+                            style: AppTypography.serif(
+                              fontSize: AppTypography.body,
                               color: AppColors.creamLight.withValues(
                                 alpha: 0.85,
                               ),
@@ -278,16 +278,16 @@ class _LearnScreenState extends State<LearnScreen> {
                         children: [
                           TextSpan(
                             text: '${levels.length}',
-                            style: GoogleFonts.notoSerifTc(
-                              fontSize: 18,
+                            style: AppTypography.serif(
+                              fontSize: AppTypography.subtitle,
                               color: AppColors.gold,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           TextSpan(
                             text: '　個級別',
-                            style: GoogleFonts.notoSerifTc(
-                              fontSize: 13,
+                            style: AppTypography.serif(
+                              fontSize: AppTypography.body,
                               color: AppColors.creamLight.withValues(
                                 alpha: 0.85,
                               ),

@@ -4,7 +4,6 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/tribe_model.dart';
@@ -12,6 +11,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
+import '../../core/constants/app_typography.dart';
 
 // 目前僅太魯閣族一個族群，勾選「是否原住民」時固定送這個族群，見
 // profile_screen.dart 的 _defaultEthnicGroup 同款規則。
@@ -154,9 +154,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       children: [
                         Text(
                           'MHUWAY SU · 歡迎加入',
-                          style: GoogleFonts.crimsonPro(
+                          style: AppTypography.latin(
                             fontStyle: FontStyle.italic,
-                            fontSize: seniorMode ? 14 : 11,
+                            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                             color: AppColors.gold,
                             letterSpacing: 3.5,
                           ),
@@ -164,8 +164,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         const SizedBox(height: 6),
                         Text(
                           '完善你的個人資料',
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: seniorMode ? 26 : 20,
+                          style: AppTypography.serif(
+                            fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
                             fontWeight: FontWeight.w600,
                             color: AppColors.creamLight,
                             letterSpacing: 1.2,
@@ -175,7 +175,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         Text(
                           '這些資料會用於配對語伴與活動報名資格判斷',
                           style: TextStyle(
-                            fontSize: seniorMode ? 16 : 12,
+                            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                             color: AppColors.cream.withValues(alpha: 0.7),
                           ),
                         ),
@@ -233,8 +233,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                   )
                                 : Text(
                                     '完　成',
-                                    style: GoogleFonts.notoSerifTc(
-                                      fontSize: seniorMode ? 20 : 16,
+                                    style: AppTypography.serif(
+                                      fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 4,
                                       color: AppColors.ink,
@@ -274,7 +274,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           Text(
             labelTriku,
             style: TextStyle(
-              fontSize: seniorMode ? 13 : 10,
+              fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
               color: AppColors.cream.withValues(alpha: 0.65),
               letterSpacing: 2.5,
             ),
@@ -283,7 +283,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           TextField(
             controller: controller,
             style: TextStyle(
-              fontSize: seniorMode ? 19 : 15,
+              fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
               color: AppColors.creamLight,
               letterSpacing: 0.8,
             ),
@@ -294,7 +294,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               hintText: hint,
               hintStyle: TextStyle(
                 color: AppColors.cream.withValues(alpha: 0.35),
-                fontSize: seniorMode ? 19 : 15,
+                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
               ),
             ),
           ),
@@ -320,7 +320,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 child: Text(
                   '是否原住民',
                   style: TextStyle(
-                    fontSize: seniorMode ? 18 : 14,
+                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                     color: AppColors.creamLight,
                   ),
                 ),
@@ -343,7 +343,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             child: Text(
               '設定後無法自行更改，如需更正請聯繫管理員',
               style: TextStyle(
-                fontSize: seniorMode ? 14 : 11,
+                fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                 color: AppColors.cream.withValues(alpha: 0.55),
               ),
             ),
@@ -371,7 +371,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                 child: Text(
                   '精簡模式',
                   style: TextStyle(
-                    fontSize: seniorMode ? 18 : 14,
+                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                     color: AppColors.creamLight,
                   ),
                 ),
@@ -388,7 +388,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             child: Text(
               '放大文字與簡化畫面，適合長輩或視力不便使用者',
               style: TextStyle(
-                fontSize: seniorMode ? 14 : 11,
+                fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                 color: AppColors.cream.withValues(alpha: 0.55),
               ),
             ),
@@ -415,7 +415,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             Text(
               '部落',
               style: TextStyle(
-                fontSize: seniorMode ? 13 : 10,
+                fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                 color: AppColors.cream.withValues(alpha: 0.65),
                 letterSpacing: 2.5,
               ),
@@ -427,7 +427,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                   child: Text(
                     _tribe?.name ?? '請選擇部落',
                     style: TextStyle(
-                      fontSize: seniorMode ? 19 : 15,
+                      fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                       color: _tribe == null
                           ? AppColors.cream.withValues(alpha: 0.35)
                           : AppColors.creamLight,

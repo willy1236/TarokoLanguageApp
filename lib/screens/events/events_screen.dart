@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../models/event_model.dart';
@@ -14,6 +13,7 @@ import 'event_notifications_screen.dart';
 import 'event_search_screen.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/module_header_actions.dart';
+import '../../core/constants/app_typography.dart';
 
 /// 活動列表 —— 真資料版（GET /api/events）。
 /// 發起活動返回後自動刷新；下拉可重新整理。需登入（未登入 API 會 401 導回登入）。
@@ -224,20 +224,23 @@ class _EventsScreenState extends State<EventsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  'SMRATUC · 活動',
-                  style: GoogleFonts.crimsonPro(
-                    fontStyle: FontStyle.italic,
-                    fontSize: seniorMode ? 16 : 12,
-                    color: AppColors.fog,
-                    letterSpacing: 3.0,
+                // 精簡模式隱藏羅馬拼音眉標，與首頁、視訊配對一致。
+                if (!seniorMode) ...[
+                  Text(
+                    'SMRATUC · 活動',
+                    style: AppTypography.latin(
+                      fontStyle: FontStyle.italic,
+                      fontSize: AppTypography.caption,
+                      color: AppColors.fog,
+                      letterSpacing: 3.0,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
+                  const SizedBox(height: 4),
+                ],
                 Text(
                   '近期部落聚會',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 32 : 26,
+                  style: AppTypography.serif(
+                    fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 1.0,
@@ -319,7 +322,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 child: Text(
                   _filters[i],
                   style: TextStyle(
-                    fontSize: seniorMode ? 16 : 12,
+                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                     color: active ? AppColors.creamLight : AppColors.inkSoft,
                     letterSpacing: 1.0,
                   ),
@@ -342,9 +345,9 @@ class _EventsScreenState extends State<EventsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
               '更多活動',
-              style: GoogleFonts.crimsonPro(
+              style: AppTypography.latin(
                 fontStyle: FontStyle.italic,
-                fontSize: 10,
+                fontSize: AppTypography.micro,
                 color: AppColors.fog,
                 letterSpacing: 3.0,
               ),

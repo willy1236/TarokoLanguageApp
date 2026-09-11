@@ -1,11 +1,11 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/history_models.dart';
 import '../../services/history_service.dart';
 import 'history_review_card.dart';
+import '../../core/constants/app_typography.dart';
 
 class QuizHistoryDetailScreen extends StatefulWidget {
   final String sessionId;
@@ -130,11 +130,7 @@ class _QuizHistoryDetailScreenState extends State<QuizHistoryDetailScreen> {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-              ),
+              style: AppTypography.titleStyle(color: AppColors.ink),
             ),
             const SizedBox(height: 16),
             ElevatedButton(

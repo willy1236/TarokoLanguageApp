@@ -288,23 +288,25 @@ class ForumBoardViewState extends State<ForumBoardView> {
       onRefresh: refresh,
       // 所有狀態都包在同一個可捲動容器裡：載入中、載入失敗、空清單也要能下拉。
       // 失敗時尤其重要——那正是最需要重試的時候。
-      // 空清單時用 LayoutBuilder 撐滿可視高度，讓 TrukuEmptyState 能真正垂直置中，
-      // 而不是像一般清單項目一樣貼在頂端。
+      // 空清單時頁首固定在頂端，只有 TrukuEmptyState 在剩餘空間垂直置中——
+      // 整欄一起置中會把頁首往下推，切到空分類時標題跟著跳。
       child: _isEmptyState
-          ? LayoutBuilder(
-              builder: (context, constraints) => SingleChildScrollView(
-                controller: _scrollController,
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.only(bottom: 100),
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: _buildBody(seniorModeController.enabled),
+          ? CustomScrollView(
+              controller: _scrollController,
+              physics: const AlwaysScrollableScrollPhysics(),
+              slivers: [
+                if (widget.header != null)
+                  SliverToBoxAdapter(child: widget.header),
+                SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: Padding(
+                    padding: const EdgeInsets.only(bottom: 100),
+                    child: Center(
+                      child: _buildEmptyState(seniorModeController.enabled),
+                    ),
                   ),
                 ),
-              ),
+              ],
             )
           : ListView(
               controller: _scrollController,
@@ -317,6 +319,14 @@ class ForumBoardViewState extends State<ForumBoardView> {
 
   bool get _isEmptyState =>
       !_loading && _error == null && _pinned.isEmpty && _posts.isEmpty;
+
+  Widget _buildEmptyState(bool seniorMode) => TrukuEmptyState(
+    icon: Icons.forum_outlined,
+    message: widget.emptyMessage,
+    subtitle: '下拉重新整理，或成為第一位分享的人。',
+    seniorMode: seniorMode,
+    scrollable: false,
+  );
 
   List<Widget> _buildBody(bool seniorMode) {
     final header = widget.header;
@@ -345,19 +355,6 @@ class ForumBoardViewState extends State<ForumBoardView> {
     }
 
     final all = [..._pinned, ..._posts];
-    if (all.isEmpty) {
-      return [
-        ?header,
-        TrukuEmptyState(
-          icon: Icons.forum_outlined,
-          message: widget.emptyMessage,
-          subtitle: '下拉重新整理，或成為第一位分享的人。',
-          seniorMode: seniorMode,
-          scrollable: false,
-        ),
-      ];
-    }
-
     return [
       ?header,
       // 上方留白讓第一張卡片與上面的內容分開，不會黏在一起。

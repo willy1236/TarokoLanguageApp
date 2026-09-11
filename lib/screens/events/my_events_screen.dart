@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
@@ -7,6 +6,7 @@ import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import 'event_detail_screen.dart';
 import '../../shared/widgets/async_state_view.dart';
+import '../../core/constants/app_typography.dart';
 
 /// 我發起的活動總表（GET /api/events/mine）。
 ///
@@ -79,8 +79,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         elevation: 0,
         title: Text(
           '我發起的活動',
-          style: GoogleFonts.notoSerifTc(
-            fontSize: seniorMode ? 24 : 18,
+          style: AppTypography.serif(
+            fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
             fontWeight: FontWeight.w700,
             color: AppColors.ink,
           ),
@@ -125,8 +125,8 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                 const SizedBox(height: 12),
                 Text(
                   '你還沒發起過活動',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 22 : 16,
+                  style: AppTypography.serif(
+                    fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                     color: AppColors.inkSoft,
                   ),
                 ),
@@ -174,15 +174,15 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                   Text(
                     monthLabel(d),
                     style: TextStyle(
-                      fontSize: seniorMode ? 13 : 9,
+                      fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                       color: AppColors.primary,
                       letterSpacing: 0.5,
                     ),
                   ),
                   Text(
                     two(d.day),
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? 30 : 22,
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.size(AppTypography.headline, seniorMode: seniorMode),
                       fontWeight: FontWeight.w700,
                       color: AppColors.ink,
                       height: 1.1,
@@ -200,11 +200,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                     e.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? 20 : 15,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                    ),
+                    style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -218,7 +214,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                       Text(
                         '${e.participantCount} 人參加',
                         style: TextStyle(
-                          fontSize: seniorMode ? 16 : 12,
+                          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                           color: AppColors.inkSoft,
                         ),
                       ),
@@ -239,7 +235,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
               child: Text(
                 chip.text,
                 style: TextStyle(
-                  fontSize: seniorMode ? 14 : 11,
+                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                   color: chip.color,
                   letterSpacing: 0.5,
                 ),

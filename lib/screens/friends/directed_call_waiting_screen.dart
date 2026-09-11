@@ -3,7 +3,6 @@
 
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
@@ -13,6 +12,7 @@ import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../community/video_call_screen.dart';
+import '../../core/constants/app_typography.dart';
 
 class DirectedCallWaitingScreen extends StatefulWidget {
   final int calleeUid;
@@ -218,7 +218,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
             _errorMessage!,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               color: AppColors.creamLight.withValues(alpha: 0.9),
             ),
           ),
@@ -289,8 +289,8 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
           widget.calleeNickname?.isNotEmpty == true
               ? '正在呼叫 ${widget.calleeNickname}'
               : '撥號中',
-          style: GoogleFonts.notoSerifTc(
-            fontSize: 22,
+          style: AppTypography.serif(
+            fontSize: AppTypography.headline,
             fontWeight: FontWeight.w600,
             color: AppColors.creamLight,
             letterSpacing: 1.5,
@@ -314,8 +314,8 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
           ),
           child: Text(
             _errorMessage != null ? '返回' : '取消',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 14,
+            style: AppTypography.serif(
+              fontSize: AppTypography.body,
               color: AppColors.creamLight,
               letterSpacing: 2.5,
             ),

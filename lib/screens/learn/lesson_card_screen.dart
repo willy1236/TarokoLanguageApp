@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/quiz_models.dart';
 import '../../services/learn_service.dart';
@@ -8,6 +7,7 @@ import '../history/history_screen.dart';
 import 'quiz_flow/quiz_flow_adapters.dart';
 import 'quiz_flow/quiz_flow_controller.dart';
 import 'quiz_flow/quiz_flow_view.dart';
+import '../../core/constants/app_typography.dart';
 
 /// 單字測驗（指定級別）。作答流程見 [QuizFlowController]；完成後在本頁顯示分數。
 class LessonCardScreen extends StatefulWidget {
@@ -110,8 +110,8 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
           children: [
             Text(
               '$_displayLevel · 測驗完成',
-              style: GoogleFonts.crimsonPro(
-                fontSize: 12,
+              style: AppTypography.latin(
+                fontSize: AppTypography.caption,
                 fontStyle: FontStyle.italic,
                 color: AppColors.fog,
                 letterSpacing: 2.0,
@@ -120,8 +120,8 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
             const SizedBox(height: 12),
             Text(
               '${result.score} / ${result.total}',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 40,
+              style: AppTypography.serif(
+                fontSize: AppTypography.display40,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primary,
               ),
@@ -147,8 +147,8 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
               ),
               child: Text(
                 '查看測驗紀錄 →',
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 13,
+                style: AppTypography.serif(
+                  fontSize: AppTypography.body,
                   fontWeight: FontWeight.w500,
                   color: AppColors.primary,
                   letterSpacing: 1,

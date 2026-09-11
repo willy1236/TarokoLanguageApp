@@ -6,7 +6,6 @@
 // 模組（學習／文化影音／論壇），把「使命」直接錨回使用者已經在用的功能。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
@@ -93,8 +92,8 @@ class AboutAppScreen extends StatelessWidget {
                 const SizedBox(height: 14),
                 Text(
                   '語見・太魯閣',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 28 : 22,
+                  style: AppTypography.serif(
+                    fontSize: AppTypography.size(AppTypography.headline, seniorMode: seniorMode),
                     fontWeight: FontWeight.w700,
                     color: AppColors.creamLight,
                     letterSpacing: 3,
@@ -103,8 +102,8 @@ class AboutAppScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'QITA SDA TRUKU',
-                  style: GoogleFonts.crimsonPro(
-                    fontSize: seniorMode ? 14 : 11,
+                  style: AppTypography.latin(
+                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                     fontStyle: FontStyle.italic,
                     color: AppColors.gold,
                     letterSpacing: 4,
@@ -158,9 +157,7 @@ class AboutAppScreen extends StatelessWidget {
             '社群交流，降低族語學習門檻，讓語言與文化不只被保存，更能持續'
             '被使用與傳承。',
             style: TextStyle(
-              fontSize: seniorMode
-                  ? AppTypography.title
-                  : AppTypography.bodyLarge,
+              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               color: AppColors.inkSoft,
               height: 1.9,
               letterSpacing: 0.3,
@@ -187,8 +184,8 @@ class AboutAppScreen extends StatelessWidget {
       const SizedBox(width: 8),
       Text(
         text,
-        style: GoogleFonts.notoSerifTc(
-          fontSize: seniorMode ? AppTypography.headline : AppTypography.title,
+        style: AppTypography.serif(
+          fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
           fontWeight: FontWeight.w700,
           color: AppColors.ink,
           letterSpacing: 1.0,
@@ -213,8 +210,8 @@ class AboutAppScreen extends StatelessWidget {
             children: [
               Text(
                 '品牌故事',
-                style: GoogleFonts.crimsonPro(
-                  fontSize: seniorMode ? 15 : 12,
+                style: AppTypography.latin(
+                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                   fontStyle: FontStyle.italic,
                   color: AppColors.gold,
                   letterSpacing: 2,
@@ -231,8 +228,8 @@ class AboutAppScreen extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             '「織語者」',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? 24 : 19,
+            style: AppTypography.serif(
+              fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
               fontWeight: FontWeight.w700,
               color: AppColors.creamLight,
               letterSpacing: 2,
@@ -244,9 +241,7 @@ class AboutAppScreen extends StatelessWidget {
             '以太魯閣族為起點，透過數位專屬平台，讓這些族語不僅被保存，'
             '更能透過互動與交流，在每個世代間繼續傳承。',
             style: TextStyle(
-              fontSize: seniorMode
-                  ? AppTypography.title
-                  : AppTypography.bodyLarge,
+              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               color: AppColors.mist,
               height: 1.9,
               letterSpacing: 0.3,
@@ -301,9 +296,7 @@ class AboutAppScreen extends StatelessWidget {
                         Text(
                           strands[i].label,
                           style: TextStyle(
-                            fontSize: seniorMode
-                                ? AppTypography.subtitle
-                                : AppTypography.body,
+                            fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                             fontWeight: FontWeight.w600,
                             color: AppColors.creamLight,
                           ),
@@ -375,10 +368,8 @@ class AboutAppScreen extends StatelessWidget {
                     children: [
                       Text(
                         pillars[i].title,
-                        style: GoogleFonts.notoSerifTc(
-                          fontSize: seniorMode
-                              ? AppTypography.title
-                              : AppTypography.bodyLarge,
+                        style: AppTypography.serif(
+                          fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                           fontWeight: FontWeight.w600,
                           color: AppColors.ink,
                         ),
@@ -387,9 +378,7 @@ class AboutAppScreen extends StatelessWidget {
                       Text(
                         pillars[i].desc,
                         style: TextStyle(
-                          fontSize: seniorMode
-                              ? AppTypography.subtitle
-                              : AppTypography.body,
+                          fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                           color: AppColors.inkSoft,
                           height: 1.5,
                         ),

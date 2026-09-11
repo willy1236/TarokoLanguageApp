@@ -2,7 +2,6 @@
 // 兩個搜尋頁只差在呼叫的 API、提示文案與結果卡片，其餘（分頁、請求世代、
 // 錯誤與空狀態）集中在這裡，避免同一個 race condition 修兩次。
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
@@ -140,7 +139,7 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
         onSubmit: _search,
         palette: SearchBarPalette.dark,
         seniorMode: seniorMode,
-        titleFontSize: AppTypography.title,
+        titleFontSize: AppTypography.bodyLarge + AppTypography.seniorStep,
       ),
       body: Column(
         children: [
@@ -151,7 +150,6 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
             onTribeSelected: _onTribeSelected,
             palette: SearchBarPalette.dark,
             seniorMode: seniorMode,
-            chipFontSize: AppTypography.subtitle,
           ),
           if (_error != null)
             Padding(
@@ -160,7 +158,7 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
                 _error!,
                 style: TextStyle(
                   color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.title : null,
+                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                 ),
               ),
             ),
@@ -169,9 +167,9 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
               padding: const EdgeInsets.all(40),
               child: Text(
                 '輸入關鍵字或選擇篩選條件開始搜尋',
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.title : null,
+                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                 ),
               ),
             ),
@@ -193,7 +191,7 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
           widget.emptyText,
           style: TextStyle(
             color: AppColors.fog,
-            fontSize: seniorMode ? AppTypography.title : null,
+            fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
           ),
         ),
       );

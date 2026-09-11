@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/video_models.dart';
@@ -151,9 +150,9 @@ class _CultureScreenState extends State<CultureScreen> {
                       children: [
                         Text(
                           'LNGLUNGAN',
-                          style: GoogleFonts.crimsonPro(
+                          style: AppTypography.latin(
                             fontStyle: FontStyle.italic,
-                            fontSize: 13,
+                            fontSize: AppTypography.body,
                             color: AppColors.gold,
                             letterSpacing: 4.0,
                           ),
@@ -194,8 +193,8 @@ class _CultureScreenState extends State<CultureScreen> {
                   children: [
                     Text(
                       featured != null ? '本週精選 · 熱門' : '本週精選',
-                      style: GoogleFonts.jetBrainsMono(
-                        fontSize: seniorMode ? AppTypography.body : 11,
+                      style: AppTypography.mono(
+                        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                         color: AppColors.gold,
                         letterSpacing: 4.0,
                       ),
@@ -203,8 +202,8 @@ class _CultureScreenState extends State<CultureScreen> {
                     const SizedBox(height: 8),
                     Text(
                       featured?.title ?? '太魯閣族影音',
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode ? 32 : 26,
+                      style: AppTypography.serif(
+                        fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
                         fontWeight: FontWeight.w600,
                         color: AppColors.creamLight,
                         letterSpacing: 1.0,
@@ -217,7 +216,7 @@ class _CultureScreenState extends State<CultureScreen> {
                           ? '${VideoCategory.label(featured.category)}　|　本週 ${featured.weeklyViewCount} 次觀看'
                           : '精選內容載入中…',
                       style: TextStyle(
-                        fontSize: seniorMode ? AppTypography.subtitle : 12,
+                        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                         color: AppColors.creamLight.withValues(alpha: 0.7),
                         letterSpacing: 1.2,
                       ),
@@ -304,8 +303,8 @@ class _CultureScreenState extends State<CultureScreen> {
                         Text(
                           tabs[i].$1,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: seniorMode ? AppTypography.headline : 16,
+                          style: AppTypography.serif(
+                            fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                             fontWeight: FontWeight.w600,
                             color: active ? AppColors.gold : AppColors.fog,
                             letterSpacing: 2.0,
@@ -315,9 +314,9 @@ class _CultureScreenState extends State<CultureScreen> {
                         Text(
                           tabs[i].$2,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.crimsonPro(
+                          style: AppTypography.latin(
                             fontStyle: FontStyle.italic,
-                            fontSize: seniorMode ? AppTypography.body : 10,
+                            fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                             color: active
                                 ? AppColors.cream.withValues(alpha: 0.7)
                                 : AppColors.fog.withValues(alpha: 0.5),
@@ -381,7 +380,7 @@ class _CultureScreenState extends State<CultureScreen> {
                 child: Text(
                   _chips[i],
                   style: TextStyle(
-                    fontSize: seniorMode ? AppTypography.subtitle : 13,
+                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                     color: active ? AppColors.creamLight : AppColors.cream,
                     letterSpacing: 2.0,
                   ),
@@ -408,8 +407,8 @@ class _CultureScreenState extends State<CultureScreen> {
             children: [
               Text(
                 _sort == 'popular' ? '熱門影片' : '最新影片',
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: seniorMode ? AppTypography.title : 15,
+                style: AppTypography.serif(
+                  fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.cream,
                   letterSpacing: 1.5,
@@ -418,9 +417,9 @@ class _CultureScreenState extends State<CultureScreen> {
               const SizedBox(height: 2),
               Text(
                 'patas hngak',
-                style: GoogleFonts.crimsonPro(
+                style: AppTypography.latin(
                   fontStyle: FontStyle.italic,
-                  fontSize: seniorMode ? AppTypography.body : 10,
+                  fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                   color: AppColors.fog,
                   letterSpacing: 3.6,
                 ),
@@ -450,7 +449,7 @@ class _CultureScreenState extends State<CultureScreen> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: seniorMode ? AppTypography.subtitle : 12,
+          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
           fontWeight: active ? FontWeight.w700 : FontWeight.w400,
           color: active ? AppColors.gold : AppColors.fog,
           letterSpacing: 1.5,
@@ -486,7 +485,7 @@ class _CultureScreenState extends State<CultureScreen> {
                   '目前沒有影片',
                   style: TextStyle(
                     color: AppColors.fog,
-                    fontSize: seniorMode ? AppTypography.subtitle : 13,
+                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   ),
                 ),
               ),
