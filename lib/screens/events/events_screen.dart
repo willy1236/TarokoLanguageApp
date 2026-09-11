@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../models/event_model.dart';
@@ -229,7 +228,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 if (!seniorMode) ...[
                   Text(
                     'SMRATUC · 活動',
-                    style: GoogleFonts.crimsonPro(
+                    style: AppTypography.latin(
                       fontStyle: FontStyle.italic,
                       fontSize: AppTypography.caption,
                       color: AppColors.fog,
@@ -240,8 +239,8 @@ class _EventsScreenState extends State<EventsScreen> {
                 ],
                 Text(
                   '近期部落聚會',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 32 : 26,
+                  style: AppTypography.serif(
+                    fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 1.0,
@@ -346,7 +345,7 @@ class _EventsScreenState extends State<EventsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 10),
             child: Text(
               '更多活動',
-              style: GoogleFonts.crimsonPro(
+              style: AppTypography.latin(
                 fontStyle: FontStyle.italic,
                 fontSize: AppTypography.micro,
                 color: AppColors.fog,

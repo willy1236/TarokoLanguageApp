@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/quiz_models.dart';
 import '../../services/learn_service.dart';
@@ -111,7 +110,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
           children: [
             Text(
               '$_displayLevel · 測驗完成',
-              style: GoogleFonts.crimsonPro(
+              style: AppTypography.latin(
                 fontSize: AppTypography.caption,
                 fontStyle: FontStyle.italic,
                 color: AppColors.fog,
@@ -121,8 +120,8 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
             const SizedBox(height: 12),
             Text(
               '${result.score} / ${result.total}',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: 40,
+              style: AppTypography.serif(
+                fontSize: AppTypography.display40,
                 fontWeight: FontWeight.w700,
                 color: AppColors.primary,
               ),
@@ -148,7 +147,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
               ),
               child: Text(
                 '查看測驗紀錄 →',
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   fontSize: AppTypography.body,
                   fontWeight: FontWeight.w500,
                   color: AppColors.primary,

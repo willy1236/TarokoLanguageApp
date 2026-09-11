@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
@@ -174,7 +173,7 @@ class _LoginScreenState extends State<LoginScreen> {
         const SizedBox(height: 14),
         Text(
           'Kari Truku · Lnglungan',
-          style: GoogleFonts.crimsonPro(
+          style: AppTypography.latin(
             fontStyle: FontStyle.italic,
             fontSize: AppTypography.body,
             color: AppColors.gold,
@@ -195,7 +194,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           'MHUWAY SU · 歡迎回來',
           textAlign: TextAlign.center,
-          style: GoogleFonts.crimsonPro(
+          style: AppTypography.latin(
             fontStyle: FontStyle.italic,
             fontSize: AppTypography.caption,
             color: AppColors.gold,
@@ -206,7 +205,7 @@ class _LoginScreenState extends State<LoginScreen> {
         Text(
           '登入，繼續說我們的話',
           textAlign: TextAlign.center,
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             fontSize: AppTypography.title,
             fontWeight: FontWeight.w600,
             color: AppColors.creamLight,

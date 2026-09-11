@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
@@ -80,7 +79,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         elevation: 0,
         title: Text(
           '我發起的活動',
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
             fontWeight: FontWeight.w700,
             color: AppColors.ink,
@@ -126,7 +125,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                 const SizedBox(height: 12),
                 Text(
                   '你還沒發起過活動',
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                     color: AppColors.inkSoft,
                   ),
@@ -182,7 +181,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                   ),
                   Text(
                     two(d.day),
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.headline, seniorMode: seniorMode),
                       fontWeight: FontWeight.w700,
                       color: AppColors.ink,
@@ -201,11 +200,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                     e.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                    ),
+                    style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
                   ),
                   const SizedBox(height: 4),
                   Row(

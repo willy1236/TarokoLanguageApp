@@ -5,7 +5,6 @@
 // 避免同一筆貼文在列表與詳情頁各自持有互相打架的本地狀態。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -68,7 +67,7 @@ class ForumPostCard extends StatelessWidget {
             // 內容摘要（下面 body）字級放大後 2 行常常整張卡片高度爆版。
             maxLines: seniorMode ? 1 : 2,
             overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
@@ -119,7 +118,7 @@ class ForumPostCard extends StatelessWidget {
     alignment: Alignment.center,
     child: Text(
       post.author.displayName.characters.firstOrNull ?? '?',
-      style: GoogleFonts.notoSerifTc(
+      style: AppTypography.serif(
         fontSize: size * 0.37,
         fontWeight: FontWeight.w600,
         color: AppColors.gold,
@@ -181,7 +180,7 @@ class ForumPostCard extends StatelessWidget {
               children: [
                 Text(
                   post.author.displayName,
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
@@ -210,7 +209,7 @@ class ForumPostCard extends StatelessWidget {
           ),
           child: Text(
             '置頂',
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
               color: AppColors.goldDeep,
               letterSpacing: 1.2,
@@ -228,7 +227,7 @@ class ForumPostCard extends StatelessWidget {
     ),
     child: Text(
       '#${tag.name}',
-      style: GoogleFonts.crimsonPro(
+      style: AppTypography.latin(
         fontStyle: FontStyle.italic,
         fontSize: AppTypography.caption,
         color: AppColors.primary,

@@ -1,7 +1,6 @@
 // 好友定向來電響鈴畫面。接聽 → 進真實 Agora 通話；拒接 → 回上一頁。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
@@ -129,8 +128,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                         call.callerNickname?.isNotEmpty == true
                             ? call.callerNickname!
                             : '未命名旅人',
-                        style: GoogleFonts.notoSerifTc(
-                          fontSize: 24,
+                        style: AppTypography.serif(
+                          fontSize: AppTypography.display24,
                           fontWeight: FontWeight.w600,
                           color: AppColors.creamLight,
                           letterSpacing: 1.2,
@@ -189,8 +188,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
             child: Center(
               child: Text(
                 call.callerNickname?.characters.firstOrNull ?? '?',
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 40,
+                style: AppTypography.serif(
+                  fontSize: AppTypography.display40,
                   color: AppColors.gold,
                 ),
               ),
@@ -207,7 +206,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
         onPressed: () => Navigator.of(context).pop(),
         child: Text(
           '返回',
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             fontSize: AppTypography.body,
             color: AppColors.creamLight,
             letterSpacing: 2.5,

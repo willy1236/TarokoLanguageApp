@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
@@ -186,7 +185,7 @@ class _SplashScreenState extends State<SplashScreen> {
                 const SizedBox(height: 18),
                 Text(
                   'Kari Truku · Lnglungan',
-                  style: GoogleFonts.crimsonPro(
+                  style: AppTypography.latin(
                     fontStyle: FontStyle.italic,
                     fontSize: AppTypography.bodyLarge,
                     color: AppColors.gold,
@@ -213,7 +212,7 @@ class _SplashScreenState extends State<SplashScreen> {
             child: Text(
               '說我們的話 · 走我們的山',
               textAlign: TextAlign.center,
-              style: GoogleFonts.notoSansTc(
+              style: AppTypography.sans(
                 fontSize: AppTypography.body,
                 color: AppColors.cream.withValues(alpha: 0.7),
                 letterSpacing: 3.9,

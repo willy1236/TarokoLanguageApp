@@ -1,7 +1,6 @@
 // 通知中心。只有「有人回覆你的貼文／留言」兩種類型（後端 forum_notifications.type）。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../shared/widgets/async_state_view.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -149,11 +148,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       foregroundColor: AppColors.ink,
       title: Text(
         '通知',
-        style: GoogleFonts.notoSerifTc(
-          fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
-          fontWeight: FontWeight.w600,
-          color: AppColors.ink,
-        ),
+        style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
       ),
       actions: [
         TextButton(
@@ -187,7 +182,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       return Center(
         child: Text(
           '還沒有新的回覆',
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             color: AppColors.fog,
             fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
           ),
@@ -228,7 +223,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
           onTap: () => _open(item),
           title: Text(
             '${item.actor.displayName} $action',
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,

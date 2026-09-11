@@ -3,7 +3,6 @@
 // 規格參考：Truku_backend docs/superpowers/specs/2026-08-17-quiz-listening-placement-design.md
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/placement_models.dart';
 import '../../shared/widgets/truku_widgets.dart';
@@ -29,7 +28,7 @@ class PlacementResultScreen extends StatelessWidget {
           children: [
             Text(
               title,
-              style: GoogleFonts.crimsonPro(
+              style: AppTypography.latin(
                 fontSize: AppTypography.caption,
                 fontStyle: FontStyle.italic,
                 color: AppColors.fog,
@@ -41,7 +40,7 @@ class PlacementResultScreen extends StatelessWidget {
             Text(
               '完成！',
               textAlign: TextAlign.center,
-              style: GoogleFonts.notoSerifTc(
+              style: AppTypography.serif(
                 fontSize: AppTypography.headline,
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
@@ -60,7 +59,7 @@ class PlacementResultScreen extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   '逐題詳解',
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
@@ -88,7 +87,7 @@ class PlacementResultScreen extends StatelessWidget {
                   child: Center(
                     child: Text(
                       '返回',
-                      style: GoogleFonts.notoSerifTc(
+                      style: AppTypography.serif(
                         fontSize: AppTypography.bodyLarge,
                         fontWeight: FontWeight.w600,
                         color: AppColors.creamLight,
@@ -117,8 +116,8 @@ class PlacementResultScreen extends StatelessWidget {
         children: [
           Text(
             '${result.score} / ${result.total}',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 36,
+            style: AppTypography.serif(
+              fontSize: AppTypography.display36,
               fontWeight: FontWeight.w700,
               color: AppColors.gold,
             ),
@@ -126,7 +125,7 @@ class PlacementResultScreen extends StatelessWidget {
           const SizedBox(height: 12),
           Text(
             '建議起始等級',
-            style: GoogleFonts.notoSansTc(
+            style: AppTypography.sans(
               fontSize: AppTypography.caption,
               color: AppColors.creamLight.withValues(alpha: 0.7),
               letterSpacing: 2,
@@ -135,7 +134,7 @@ class PlacementResultScreen extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             result.resultLevel,
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.headline,
               fontWeight: FontWeight.w600,
               color: AppColors.creamLight,
@@ -148,10 +147,7 @@ class PlacementResultScreen extends StatelessWidget {
             child: Text(
               '這只是建議，你隨時可以手動選擇其他等級開始測驗。',
               textAlign: TextAlign.center,
-              style: GoogleFonts.notoSansTc(
-                fontSize: AppTypography.caption,
-                color: AppColors.creamLight.withValues(alpha: 0.6),
-              ),
+              style: AppTypography.bodyStyle(color: AppColors.creamLight.withValues(alpha: 0.6)),
             ),
           ),
         ],
@@ -197,7 +193,7 @@ class _ResultItemCard extends StatelessWidget {
               Expanded(
                 child: Text(
                   prompt,
-                  style: GoogleFonts.crimsonPro(
+                  style: AppTypography.latin(
                     fontSize: AppTypography.bodyLarge,
                     fontStyle: FontStyle.italic,
                     fontWeight: FontWeight.w600,
@@ -211,14 +207,11 @@ class _ResultItemCard extends StatelessWidget {
           if (!item.isCorrect)
             Text(
               '你的答案：$yourText',
-              style: GoogleFonts.notoSansTc(fontSize: AppTypography.caption, color: AppColors.fog),
+              style: AppTypography.bodyStyle(color: AppColors.fog),
             ),
           Text(
             '正確答案：$correctText',
-            style: GoogleFonts.notoSansTc(
-              fontSize: AppTypography.caption,
-              color: AppColors.inkSoft,
-            ),
+            style: AppTypography.bodyStyle(color: AppColors.inkSoft),
           ),
         ],
       ),

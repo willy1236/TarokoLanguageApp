@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_model.dart';
@@ -218,7 +217,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
                 if (!seniorMode) ...[
                   Text(
                     'ALANG · 廣場',
-                    style: GoogleFonts.crimsonPro(
+                    style: AppTypography.latin(
                       fontStyle: FontStyle.italic,
                       fontSize: AppTypography.caption,
                       color: AppColors.fog,
@@ -229,8 +228,8 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
                 ],
                 Text(
                   '族人在這裡',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 32 : 26,
+                  style: AppTypography.serif(
+                    fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 1.0,
@@ -371,7 +370,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
           padding: const EdgeInsets.fromLTRB(20, 8, 20, 8),
           child: Text(
             'SMRATUC · 近期活動',
-            style: GoogleFonts.crimsonPro(
+            style: AppTypography.latin(
               fontStyle: FontStyle.italic,
               fontSize: AppTypography.micro,
               color: AppColors.fog,

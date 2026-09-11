@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../services/senior_mode_controller.dart';
@@ -79,7 +78,7 @@ class PillSegmentedToggle extends StatelessWidget {
           children: [
             Text(
               item.label,
-              style: GoogleFonts.notoSerifTc(
+              style: AppTypography.serif(
                 fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
                 fontWeight: FontWeight.w600,
                 color: textColor,
@@ -89,7 +88,7 @@ class PillSegmentedToggle extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 item.subtitle,
-                style: GoogleFonts.crimsonPro(
+                style: AppTypography.latin(
                   fontSize: AppTypography.caption,
                   fontStyle: FontStyle.italic,
                   letterSpacing: 1.5,

@@ -1,7 +1,6 @@
 // 文化頁的影片卡、文章卡與 hero 播放鈕。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/article_models.dart';
@@ -42,7 +41,7 @@ class CulturePlayButton extends StatelessWidget {
             const SizedBox(width: 10),
             Text(
               label,
-              style: GoogleFonts.notoSerifTc(
+              style: AppTypography.serif(
                 fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
@@ -141,7 +140,7 @@ class CultureVideoCard extends StatelessWidget {
                       ),
                       child: Text(
                         _formatDuration(video.durationSec),
-                        style: GoogleFonts.jetBrainsMono(
+                        style: AppTypography.mono(
                           fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                           color: AppColors.creamLight,
                         ),
@@ -179,7 +178,7 @@ class CultureVideoCard extends StatelessWidget {
                     video.title,
                     maxLines: seniorMode ? 2 : 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
@@ -295,7 +294,7 @@ class CultureArticleCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     item.title,
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,

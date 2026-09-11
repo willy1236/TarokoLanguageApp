@@ -1,7 +1,6 @@
 // 活動詳情頁的輸入對話框：報名聯絡 email、取消活動理由。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 
@@ -48,7 +47,7 @@ class _JoinEmailDialogState extends State<JoinEmailDialog> {
       backgroundColor: AppColors.creamLight,
       title: Text(
         '填寫聯絡 Email',
-        style: GoogleFonts.notoSerifTc(
+        style: AppTypography.serif(
           fontWeight: FontWeight.w700,
           color: AppColors.ink,
         ),
@@ -113,7 +112,7 @@ class _CancelReasonDialogState extends State<CancelReasonDialog> {
       backgroundColor: AppColors.creamLight,
       title: Text(
         '取消活動',
-        style: GoogleFonts.notoSerifTc(
+        style: AppTypography.serif(
           fontWeight: FontWeight.w700,
           color: AppColors.ink,
         ),

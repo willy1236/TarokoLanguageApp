@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_density.dart';
 import '../../core/constants/app_typography.dart';
@@ -258,7 +257,7 @@ class HomeScreen extends StatelessWidget {
                     if (!seniorMode) ...[
                       Text(
                         'Embiyax su hug · 你好',
-                        style: GoogleFonts.crimsonPro(
+                        style: AppTypography.latin(
                           fontStyle: FontStyle.italic,
                           fontSize: AppTypography.body,
                           color: AppColors.fog,
@@ -270,8 +269,8 @@ class HomeScreen extends StatelessWidget {
                     Text(
                       // 精簡模式字大，刻意在逗號後換行，避免從字中間斷開。
                       '${displayName ?? 'Yudaw'}，${seniorMode ? '\n' : ''}今天學什麼？',
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode ? 28 : 24,
+                      style: AppTypography.serif(
+                        fontSize: seniorMode ? AppTypography.display28 : AppTypography.display24,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 1.0,
@@ -435,7 +434,7 @@ class _TodayProgressCard extends StatelessWidget {
                     else
                       Text(
                         'TODAY · SAYANG',
-                        style: GoogleFonts.crimsonPro(
+                        style: AppTypography.latin(
                           fontStyle: FontStyle.italic,
                           fontSize: AppTypography.caption,
                           color: AppColors.gold,
@@ -465,7 +464,7 @@ class _TodayProgressCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text(
                               '${millet ?? 0}',
-                              style: GoogleFonts.notoSerifTc(
+                              style: AppTypography.serif(
                                 fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.gold,
@@ -484,7 +483,7 @@ class _TodayProgressCard extends StatelessWidget {
                 // 「本週簽到 N/7 天」
                 RichText(
                   text: TextSpan(
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.headline, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
@@ -531,7 +530,7 @@ class _TodayProgressCard extends StatelessWidget {
                       weeklyBonusEarned
                           ? '本週已集滿 7 天 · 已獲得 +50 小米幣'
                           : '再簽到 ${7 - weeklyCheckinCount} 天，本週集滿再得 +50 小米幣',
-                      style: GoogleFonts.notoSansTc(
+                      style: AppTypography.sans(
                         fontSize: AppTypography.caption,
                         color: AppColors.creamLight,
                         letterSpacing: 0.5,
@@ -569,7 +568,7 @@ class _TodayProgressCard extends StatelessWidget {
   Widget _buildCheckinText() {
     return Text(
       checkinStreak > 0 ? '每日簽到 +50 · 已連續 $checkinStreak 天' : '每日簽到 +50 小米幣',
-      style: GoogleFonts.notoSansTc(
+      style: AppTypography.sans(
         fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
         color: AppColors.creamLight.withValues(alpha: 0.85),
         letterSpacing: 0.5,
@@ -597,7 +596,7 @@ class _TodayProgressCard extends StatelessWidget {
         ),
         child: Text(
           checkedInToday ? '已簽到' : '立即簽到',
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
             fontWeight: FontWeight.w600,
             color: checkedInToday

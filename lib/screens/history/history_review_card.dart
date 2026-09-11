@@ -1,7 +1,6 @@
 // 測驗紀錄詳解共用的逐題卡片，供 quiz / listening 詳解畫面共用。
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/audio_url.dart';
@@ -107,7 +106,7 @@ class ReviewCard extends StatelessWidget {
             children: [
               Text(
                 '第 $order 題',
-                style: GoogleFonts.jetBrainsMono(
+                style: AppTypography.mono(
                   fontSize: AppTypography.caption,
                   color: AppColors.fog,
                   letterSpacing: 1.0,
@@ -141,7 +140,7 @@ class ReviewCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     promptText!,
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.subtitle,
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
@@ -202,7 +201,7 @@ class ReviewCard extends StatelessWidget {
                   children: [
                     Text(
                       detailTitle,
-                      style: GoogleFonts.crimsonPro(
+                      style: AppTypography.latin(
                         fontSize: AppTypography.bodyLarge,
                         fontStyle: FontStyle.italic,
                         fontWeight: FontWeight.w600,
@@ -334,7 +333,7 @@ class ScoreHeader extends StatelessWidget {
         children: [
           Text(
             title,
-            style: GoogleFonts.crimsonPro(
+            style: AppTypography.latin(
               fontSize: AppTypography.caption,
               fontStyle: FontStyle.italic,
               color: AppColors.gold,
@@ -344,8 +343,8 @@ class ScoreHeader extends StatelessWidget {
           const SizedBox(height: 8),
           Text(
             '$score / $total',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 36,
+            style: AppTypography.serif(
+              fontSize: AppTypography.display36,
               fontWeight: FontWeight.w700,
               color: AppColors.creamLight,
             ),

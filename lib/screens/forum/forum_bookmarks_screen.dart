@@ -4,7 +4,6 @@
 // 屬開發期間的預期狀態。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import 'forum_theme.dart';
@@ -39,11 +38,7 @@ class _ForumBookmarksScreenState extends State<ForumBookmarksScreen> {
       foregroundColor: AppColors.ink,
       title: Text(
         '我的收藏',
-        style: GoogleFonts.notoSerifTc(
-          fontSize: AppTypography.bodyLarge,
-          fontWeight: FontWeight.w600,
-          color: AppColors.ink,
-        ),
+        style: AppTypography.titleStyle(color: AppColors.ink),
       ),
     ),
     body: ForumBoardView(

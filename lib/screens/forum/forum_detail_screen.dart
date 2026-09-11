@@ -4,7 +4,6 @@
 // 後端會擋第三層，前端不送出必然失敗的請求。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../shared/widgets/async_state_view.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -407,11 +406,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         foregroundColor: AppColors.ink,
         title: Text(
           '貼文',
-          style: GoogleFonts.notoSerifTc(
-            fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
-            fontWeight: FontWeight.w600,
-            color: AppColors.ink,
-          ),
+          style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
         ),
         actions: [
           if (post != null)
@@ -479,7 +474,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 const Divider(color: AppColors.creamDeep, height: 28),
                 Text(
                   '留言 ${post.commentCount}',
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,

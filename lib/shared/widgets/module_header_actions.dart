@@ -2,7 +2,6 @@
 // 搜尋／收藏／通知三顆圖示（通知有未讀時帶紅點）。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 
@@ -48,7 +47,7 @@ class ModuleComposeButton extends StatelessWidget {
               const SizedBox(width: 6),
               Text(
                 label,
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.creamLight,

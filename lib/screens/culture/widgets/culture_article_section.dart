@@ -2,7 +2,6 @@
 // 請求，切換影音／文章分頁時不影響影音那邊的狀態。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/article_models.dart';
@@ -194,7 +193,7 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
             children: [
               Text(
                 title,
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.cream,
@@ -204,7 +203,7 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
               const SizedBox(height: 2),
               Text(
                 'patas kari',
-                style: GoogleFonts.crimsonPro(
+                style: AppTypography.latin(
                   fontStyle: FontStyle.italic,
                   fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                   color: AppColors.fog,
@@ -326,7 +325,7 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
                         right: 16,
                         child: Text(
                           article.title,
-                          style: GoogleFonts.notoSerifTc(
+                          style: AppTypography.serif(
                             fontSize: AppTypography.title,
                             fontWeight: FontWeight.w600,
                             color: AppColors.creamLight,
@@ -375,8 +374,8 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
                       Expanded(
                         child: Text(
                           article.title,
-                          style: GoogleFonts.notoSerifTc(
-                            fontSize: 24,
+                          style: AppTypography.serif(
+                            fontSize: AppTypography.display24,
                             fontWeight: FontWeight.w600,
                             color: AppColors.creamLight,
                             letterSpacing: 1.0,

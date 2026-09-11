@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
@@ -263,7 +262,7 @@ class _ShopScreenState extends State<ShopScreen> {
                     ),
                     Text(
                       'SAPAH SMPUNG · 小米商店',
-                      style: GoogleFonts.crimsonPro(
+                      style: AppTypography.latin(
                         fontStyle: FontStyle.italic,
                         fontSize: AppTypography.caption,
                         color: AppColors.gold,
@@ -319,7 +318,7 @@ class _ShopScreenState extends State<ShopScreen> {
                           children: [
                             Text(
                               'BURAW · 我的小米',
-                              style: GoogleFonts.crimsonPro(
+                              style: AppTypography.latin(
                                 fontStyle: FontStyle.italic,
                                 fontSize: AppTypography.caption,
                                 color: AppColors.gold,
@@ -329,8 +328,8 @@ class _ShopScreenState extends State<ShopScreen> {
                             const SizedBox(height: 4),
                             Text(
                               '${user.millet}',
-                              style: GoogleFonts.notoSerifTc(
-                                fontSize: 30,
+                              style: AppTypography.serif(
+                                fontSize: AppTypography.display30,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.creamLight,
                                 letterSpacing: 1,
@@ -386,7 +385,7 @@ class _ShopScreenState extends State<ShopScreen> {
         children: [
           Text(
             title,
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
@@ -396,7 +395,7 @@ class _ShopScreenState extends State<ShopScreen> {
           const SizedBox(height: 2),
           Text(
             subtitle,
-            style: GoogleFonts.crimsonPro(
+            style: AppTypography.latin(
               fontStyle: FontStyle.italic,
               fontSize: AppTypography.micro,
               color: AppColors.fog,

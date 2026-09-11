@@ -4,7 +4,6 @@
 // 所以介面不宣稱「最相關」，只說「搜尋結果」。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import 'forum_theme.dart';
@@ -127,7 +126,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
               padding: const EdgeInsets.all(40),
               child: Text(
                 '輸入關鍵字開始搜尋',
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   color: AppColors.fog,
                   fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                 ),

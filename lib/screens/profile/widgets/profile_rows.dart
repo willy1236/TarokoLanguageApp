@@ -2,7 +2,6 @@
 // 快速入口卡）與圖示 painter。都是純展示，狀態與動作由 ProfileScreen 傳入。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_typography.dart';
@@ -122,7 +121,7 @@ Widget profileNavRow({
               SizedBox(width: seniorMode ? AppSpacing.md : 10),
               Text(
                 label,
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
@@ -150,7 +149,7 @@ Widget profileSection(String label, List<Widget> children, {bool seniorMode = fa
       children: [
         Text(
           label,
-          style: GoogleFonts.crimsonPro(
+          style: AppTypography.latin(
             fontStyle: FontStyle.italic,
             fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
             color: AppColors.fog,
@@ -195,7 +194,7 @@ Widget profileSettingRow(
                 children: [
                   Text(
                     label,
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                       color: AppColors.fog,
                       letterSpacing: 1,
@@ -206,10 +205,10 @@ Widget profileSettingRow(
                     value,
                     style:
                         (truku
-                                ? GoogleFonts.crimsonPro(
+                                ? AppTypography.latin(
                                     fontStyle: FontStyle.italic,
                                   )
-                                : GoogleFonts.notoSerifTc())
+                                : AppTypography.serif())
                             .copyWith(
                               fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                               fontWeight: FontWeight.w600,
@@ -269,7 +268,7 @@ Widget profileSwitchRow(
                 children: [
                   Text(
                     label,
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
@@ -280,7 +279,7 @@ Widget profileSwitchRow(
                     const SizedBox(height: 2),
                     Text(
                       lockedHint,
-                      style: GoogleFonts.notoSerifTc(
+                      style: AppTypography.serif(
                         fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                         color: AppColors.fog,
                       ),

@@ -11,7 +11,6 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/terms_models.dart';
@@ -105,11 +104,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
           automaticallyImplyLeading: readOnly,
           title: Text(
             '服務條款與隱私權政策',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: AppTypography.bodyLarge,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-            ),
+            style: AppTypography.titleStyle(color: AppColors.ink),
           ),
         ),
         body: SafeArea(child: _buildBody(readOnly)),
@@ -166,7 +161,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
             labelColor: AppColors.ink,
             unselectedLabelColor: AppColors.fog,
             indicatorColor: AppColors.gold,
-            labelStyle: GoogleFonts.notoSerifTc(
+            labelStyle: AppTypography.serif(
               fontSize: AppTypography.body,
               fontWeight: FontWeight.w600,
             ),
@@ -209,7 +204,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         if (showTitle) ...[
           Text(
             doc.title,
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.subtitle,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
@@ -230,23 +225,15 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
               height: 1.6,
               color: AppColors.ink.withValues(alpha: 0.85),
             ),
-            h1: GoogleFonts.notoSerifTc(
+            h1: AppTypography.serif(
               fontSize: AppTypography.subtitle,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
             ),
             h1Padding: const EdgeInsets.only(top: 16, bottom: 4),
-            h2: GoogleFonts.notoSerifTc(
-              fontSize: AppTypography.bodyLarge,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-            ),
+            h2: AppTypography.titleStyle(color: AppColors.ink),
             h2Padding: const EdgeInsets.only(top: 16, bottom: 4),
-            h3: GoogleFonts.notoSerifTc(
-              fontSize: AppTypography.bodyLarge,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-            ),
+            h3: AppTypography.titleStyle(color: AppColors.ink),
             strong: TextStyle(
               fontWeight: FontWeight.w700,
               color: AppColors.ink,
@@ -291,10 +278,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
                   )
                 : Text(
                     '我已閱讀並同意',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.bodyLarge,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: AppTypography.titleStyle(),
                   ),
           ),
         ),

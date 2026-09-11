@@ -2,7 +2,6 @@
 // （規格 §10），因此成功訊息一律是「已收到檢舉」。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -91,7 +90,7 @@ class _ReportSheetState extends State<_ReportSheet> {
         children: [
           Text(
             '檢舉',
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
               fontWeight: FontWeight.w700,
               color: AppColors.ink,

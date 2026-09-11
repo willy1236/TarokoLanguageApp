@@ -1,7 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
@@ -676,7 +675,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   children: [
                     Text(
                       items[i],
-                      style: GoogleFonts.notoSerifTc(
+                      style: AppTypography.serif(
                         fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,

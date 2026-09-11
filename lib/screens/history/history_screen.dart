@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/history_models.dart';
 import '../../services/history_service.dart';
@@ -177,7 +176,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         iconTheme: const IconThemeData(color: AppColors.ink),
         title: Text(
           '測驗紀錄',
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             fontSize: AppTypography.subtitle,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
@@ -225,7 +224,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       return Center(
         child: Text(
           '目前沒有測驗紀錄',
-          style: GoogleFonts.notoSansTc(fontSize: AppTypography.body, color: AppColors.fog),
+          style: AppTypography.bodyLargeStyle(color: AppColors.fog),
         ),
       );
     }
@@ -347,11 +346,7 @@ class _HistoryRow extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     record.level,
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.bodyLarge,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                    ),
+                    style: AppTypography.titleStyle(color: AppColors.ink),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -366,7 +361,7 @@ class _HistoryRow extends StatelessWidget {
               children: [
                 Text(
                   _scoreLabel(),
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
                     color: isCompleted ? AppColors.primary : AppColors.fog,

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/tribe_model.dart';
 import '../../services/user_service.dart';
@@ -88,7 +87,7 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
                 padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
                 child: Text(
                   '選擇部落',
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
@@ -160,7 +159,7 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
           return ListTile(
             title: Text(
               '不設定部落',
-              style: GoogleFonts.notoSerifTc(
+              style: AppTypography.serif(
                 fontSize: AppTypography.body,
                 color: AppColors.fog,
                 letterSpacing: 0.5,
@@ -183,7 +182,7 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
         return ListTile(
           title: Text(
             tribe.name,
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.body,
               color: AppColors.ink,
               letterSpacing: 0.5,

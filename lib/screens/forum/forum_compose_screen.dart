@@ -8,7 +8,6 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_image_compress/flutter_image_compress.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -295,11 +294,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
       centerTitle: true,
       title: Text(
         _isEditing ? '編輯貼文' : '發文',
-        style: GoogleFonts.notoSerifTc(
-          fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
-          fontWeight: FontWeight.w600,
-          color: AppColors.ink,
-        ),
+        style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
       ),
       actions: [
         Padding(
@@ -319,7 +314,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
               ),
               child: Text(
                 _saving ? '送出中…' : '送出',
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.creamLight,
@@ -349,7 +344,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
             controller: _titleController,
             maxLength: ForumService.titleMax,
             onChanged: (_) => setState(() {}),
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
@@ -423,7 +418,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
             children: [
               Text(
                 _user?.displayName ?? '',
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
@@ -493,7 +488,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
             fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
             color: selected ? AppColors.primary : AppColors.fog,
@@ -538,7 +533,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     children: [
       Text(
         'HANGAN · 標籤',
-        style: GoogleFonts.crimsonPro(
+        style: AppTypography.latin(
           fontStyle: FontStyle.italic,
           fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
           color: AppColors.fog,
@@ -594,7 +589,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
         const SizedBox(height: 8),
         Text(
           'HOT · 熱門標籤',
-          style: GoogleFonts.crimsonPro(
+          style: AppTypography.latin(
             fontStyle: FontStyle.italic,
             fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
             color: AppColors.fog,
@@ -673,7 +668,7 @@ class _TagPill extends StatelessWidget {
         children: [
           Text(
             '#$label',
-            style: GoogleFonts.crimsonPro(
+            style: AppTypography.latin(
               fontStyle: FontStyle.italic,
               fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
               color: filled ? AppColors.creamLight : AppColors.inkSoft,

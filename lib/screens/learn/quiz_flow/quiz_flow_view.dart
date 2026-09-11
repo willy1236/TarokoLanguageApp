@@ -4,7 +4,6 @@
 
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/audio_url.dart';
 import '../../../shared/widgets/async_state_view.dart';
@@ -232,7 +231,7 @@ class _ProgressBar extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             '${index + 1} / $total',
-            style: GoogleFonts.jetBrainsMono(
+            style: AppTypography.mono(
               fontSize: AppTypography.caption,
               color: AppColors.fog,
               letterSpacing: 1.2,
@@ -265,7 +264,7 @@ class QuizUnitLabel extends StatelessWidget {
         children: [
           Text(
             caption,
-            style: GoogleFonts.crimsonPro(
+            style: AppTypography.latin(
               fontSize: AppTypography.caption,
               fontStyle: FontStyle.italic,
               color: AppColors.fog,
@@ -275,7 +274,7 @@ class QuizUnitLabel extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             title,
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: titleSize,
               fontWeight: FontWeight.w500,
               color: AppColors.inkSoft,
@@ -343,7 +342,7 @@ class _QuestionCard extends StatelessWidget {
               children: [
                 Text(
                   caption,
-                  style: GoogleFonts.notoSansTc(
+                  style: AppTypography.sans(
                     fontSize: AppTypography.caption,
                     color: AppColors.gold,
                     letterSpacing: 2.2,
@@ -362,8 +361,8 @@ class _QuestionCard extends StatelessWidget {
                       children: [
                         Text(
                           prompt,
-                          style: GoogleFonts.crimsonPro(
-                            fontSize: 44,
+                          style: AppTypography.latin(
+                            fontSize: AppTypography.display44,
                             fontStyle: FontStyle.italic,
                             fontWeight: FontWeight.w500,
                             color: AppColors.creamLight,
@@ -417,7 +416,7 @@ class _PlayButton extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             '播放發音',
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
@@ -455,7 +454,7 @@ class _SlowButton extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               '慢速',
-              style: GoogleFonts.notoSerifTc(
+              style: AppTypography.serif(
                 fontSize: AppTypography.body,
                 fontWeight: FontWeight.w600,
                 color: AppColors.gold,
@@ -502,7 +501,7 @@ class QuizBottomButton extends StatelessWidget {
           child: Center(
             child: Text(
               label,
-              style: GoogleFonts.notoSerifTc(
+              style: AppTypography.serif(
                 fontSize: AppTypography.body,
                 fontWeight: primary ? FontWeight.w600 : FontWeight.w500,
                 color: primary
@@ -548,7 +547,7 @@ class _OptionTile extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: GoogleFonts.crimsonPro(
+          style: AppTypography.latin(
             fontSize: AppTypography.subtitle,
             fontStyle: FontStyle.italic,
             fontWeight: FontWeight.w500,

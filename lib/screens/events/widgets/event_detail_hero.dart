@@ -1,7 +1,6 @@
 // 活動詳情頁頂部：漸層背景、返回鈕、分類標籤、日期與標題。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
@@ -129,7 +128,7 @@ class EventDetailHero extends StatelessWidget {
                   ),
                 Text(
                   '${monthLabel(start)}${start.day}日 · ${weekdayLabel(start)}',
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontStyle: FontStyle.italic,
                     fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                     color: AppColors.gold,
@@ -139,8 +138,8 @@ class EventDetailHero extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   e.title,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 32 : 26,
+                  style: AppTypography.serif(
+                    fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
                     fontWeight: FontWeight.w700,
                     color: AppColors.creamLight,
                     letterSpacing: 0.8,

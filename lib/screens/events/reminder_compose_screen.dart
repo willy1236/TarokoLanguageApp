@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
@@ -192,11 +191,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
               children: [
                 Text(
                   '發送提醒',
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.ink,
-                  ),
+                  style: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.ink),
                 ),
                 Text(
                   widget.eventTitle,
@@ -250,7 +245,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
   Widget _sectionLabel(String text, bool seniorMode) {
     return Text(
       text,
-      style: GoogleFonts.notoSerifTc(
+      style: AppTypography.serif(
         fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
         fontWeight: FontWeight.w600,
         color: AppColors.ink,
@@ -484,7 +479,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
                   )
                 : Text(
                     _sendNow ? '立即發送提醒' : '排定發送',
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,

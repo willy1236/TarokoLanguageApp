@@ -5,7 +5,6 @@
 // 對已刪除的留言做任何操作後端一律回 404。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -62,7 +61,7 @@ class ForumCommentTile extends StatelessWidget {
         const SizedBox(width: 8),
         Text(
           '此留言已刪除',
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
             fontStyle: FontStyle.italic,
             color: AppColors.fog,
@@ -88,7 +87,7 @@ class ForumCommentTile extends StatelessWidget {
               child: Text(
                 comment.author?.displayName ?? '匿名使用者',
                 overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
@@ -171,7 +170,7 @@ class ForumCommentTile extends StatelessWidget {
     alignment: Alignment.center,
     child: Text(
       comment.author?.displayName.characters.firstOrNull ?? '?',
-      style: GoogleFonts.notoSerifTc(fontSize: AppTypography.caption, color: AppColors.gold),
+      style: AppTypography.serif(fontSize: AppTypography.caption, color: AppColors.gold),
     ),
   );
 

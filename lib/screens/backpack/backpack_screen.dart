@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
@@ -178,7 +177,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
                 ),
                 Text(
                   'PATAS · 我的背包',
-                  style: GoogleFonts.crimsonPro(
+                  style: AppTypography.latin(
                     fontStyle: FontStyle.italic,
                     fontSize: AppTypography.caption,
                     color: AppColors.gold,
@@ -227,7 +226,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
         children: [
           Text(
             '頭像 Lukus',
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
@@ -237,7 +236,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
           const SizedBox(height: 2),
           Text(
             'lukus · 共 ${items.length + 1} 款',
-            style: GoogleFonts.crimsonPro(
+            style: AppTypography.latin(
               fontStyle: FontStyle.italic,
               fontSize: AppTypography.micro,
               color: AppColors.fog,
@@ -287,7 +286,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
         children: [
           Text(
             '頭像框',
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
@@ -297,7 +296,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
           const SizedBox(height: 2),
           Text(
             'rangi · 共 ${items.length + 1} 款',
-            style: GoogleFonts.crimsonPro(
+            style: AppTypography.latin(
               fontStyle: FontStyle.italic,
               fontSize: AppTypography.micro,
               color: AppColors.fog,

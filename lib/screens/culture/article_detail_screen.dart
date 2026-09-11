@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
@@ -192,7 +191,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               children: [
                 Text(
                   article.title,
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
                     fontWeight: FontWeight.w600,
                     color: AppColors.creamLight,

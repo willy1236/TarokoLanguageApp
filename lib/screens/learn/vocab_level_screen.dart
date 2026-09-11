@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/history_models.dart';
@@ -97,10 +96,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
                 if (levels.isEmpty)
                   Text(
                     '目前沒有可學習的級別',
-                    style: GoogleFonts.notoSansTc(
-                      fontSize: AppTypography.body,
-                      color: AppColors.fog,
-                    ),
+                    style: AppTypography.bodyLargeStyle(color: AppColors.fog),
                   )
                 else
                   for (int i = 0; i < levels.length; i++) ...[
@@ -148,7 +144,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
         if (records.isEmpty) {
           return Text(
             '尚無練習紀錄',
-            style: GoogleFonts.notoSansTc(fontSize: AppTypography.body, color: AppColors.fog),
+            style: AppTypography.bodyLargeStyle(color: AppColors.fog),
           );
         }
         return Column(
@@ -189,7 +185,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
         const SizedBox(width: 12),
         Text(
           '單字測驗',
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             fontSize: AppTypography.title,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
@@ -206,7 +202,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
         const SizedBox(width: 8),
         Text(
           label,
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
@@ -224,11 +220,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
         padding: const EdgeInsets.all(24),
         child: Text(
           isUnauthorized ? '請先登入' : '載入失敗，請稍後再試',
-          style: GoogleFonts.notoSerifTc(
-            fontSize: AppTypography.bodyLarge,
-            fontWeight: FontWeight.w600,
-            color: AppColors.ink,
-          ),
+          style: AppTypography.titleStyle(color: AppColors.ink),
         ),
       ),
     );
@@ -303,7 +295,7 @@ class _LevelRow extends StatelessWidget {
       children: [
         Text(
           level.level,
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             fontSize: AppTypography.subtitle,
             fontWeight: FontWeight.w600,
             color: textColor,
@@ -398,11 +390,7 @@ class _RecentPracticeRow extends StatelessWidget {
                   const SizedBox(height: 6),
                   Text(
                     record.level,
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.bodyLarge,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                    ),
+                    style: AppTypography.titleStyle(color: AppColors.ink),
                   ),
                   const SizedBox(height: 4),
                   Text(
@@ -417,7 +405,7 @@ class _RecentPracticeRow extends StatelessWidget {
               children: [
                 Text(
                   _scoreLabel(),
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
                     color: isCompleted ? AppColors.primary : AppColors.fog,
@@ -468,11 +456,7 @@ class _PlacementResultBanner extends StatelessWidget {
       ),
       child: Text(
         '你的推薦起始等級：$level',
-        style: GoogleFonts.notoSerifTc(
-          fontSize: AppTypography.bodyLarge,
-          fontWeight: FontWeight.w600,
-          color: AppColors.creamLight,
-        ),
+        style: AppTypography.titleStyle(color: AppColors.creamLight),
       ),
     );
   }
@@ -502,19 +486,12 @@ class _PlacementBanner extends StatelessWidget {
                 children: [
                   Text(
                     '還沒做過分級測驗',
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.bodyLarge,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.creamLight,
-                    ),
+                    style: AppTypography.titleStyle(color: AppColors.creamLight),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '先做一次測驗，幫你找出適合的起始等級',
-                    style: GoogleFonts.notoSansTc(
-                      fontSize: AppTypography.caption,
-                      color: AppColors.creamLight.withValues(alpha: 0.8),
-                    ),
+                    style: AppTypography.bodyStyle(color: AppColors.creamLight.withValues(alpha: 0.8)),
                   ),
                 ],
               ),

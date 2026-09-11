@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/video_models.dart';
@@ -151,7 +150,7 @@ class _CultureScreenState extends State<CultureScreen> {
                       children: [
                         Text(
                           'LNGLUNGAN',
-                          style: GoogleFonts.crimsonPro(
+                          style: AppTypography.latin(
                             fontStyle: FontStyle.italic,
                             fontSize: AppTypography.body,
                             color: AppColors.gold,
@@ -194,7 +193,7 @@ class _CultureScreenState extends State<CultureScreen> {
                   children: [
                     Text(
                       featured != null ? '本週精選 · 熱門' : '本週精選',
-                      style: GoogleFonts.jetBrainsMono(
+                      style: AppTypography.mono(
                         fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                         color: AppColors.gold,
                         letterSpacing: 4.0,
@@ -203,8 +202,8 @@ class _CultureScreenState extends State<CultureScreen> {
                     const SizedBox(height: 8),
                     Text(
                       featured?.title ?? '太魯閣族影音',
-                      style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode ? 32 : 26,
+                      style: AppTypography.serif(
+                        fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
                         fontWeight: FontWeight.w600,
                         color: AppColors.creamLight,
                         letterSpacing: 1.0,
@@ -304,7 +303,7 @@ class _CultureScreenState extends State<CultureScreen> {
                         Text(
                           tabs[i].$1,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.notoSerifTc(
+                          style: AppTypography.serif(
                             fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                             fontWeight: FontWeight.w600,
                             color: active ? AppColors.gold : AppColors.fog,
@@ -315,7 +314,7 @@ class _CultureScreenState extends State<CultureScreen> {
                         Text(
                           tabs[i].$2,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.crimsonPro(
+                          style: AppTypography.latin(
                             fontStyle: FontStyle.italic,
                             fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                             color: active
@@ -408,7 +407,7 @@ class _CultureScreenState extends State<CultureScreen> {
             children: [
               Text(
                 _sort == 'popular' ? '熱門影片' : '最新影片',
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.cream,
@@ -418,7 +417,7 @@ class _CultureScreenState extends State<CultureScreen> {
               const SizedBox(height: 2),
               Text(
                 'patas hngak',
-                style: GoogleFonts.crimsonPro(
+                style: AppTypography.latin(
                   fontStyle: FontStyle.italic,
                   fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                   color: AppColors.fog,

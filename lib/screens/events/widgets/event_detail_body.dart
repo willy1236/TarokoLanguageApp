@@ -1,7 +1,6 @@
 // 活動詳情頁內文：發起人、讚／收藏、時間地點、名額、介紹、提醒紀錄、聯絡資訊。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
@@ -73,7 +72,7 @@ class EventDetailBody extends StatelessWidget {
                   ),
                   Text(
                     hostName,
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
@@ -150,11 +149,7 @@ class EventDetailBody extends StatelessWidget {
           if (e.description != null && e.description!.isNotEmpty) ...[
             Text(
               '活動介紹',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-              ),
+              style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
             ),
             const SizedBox(height: 8),
             Text(
@@ -179,11 +174,7 @@ class EventDetailBody extends StatelessWidget {
           if (reminders.isNotEmpty) ...[
             Text(
               '提醒紀錄',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-              ),
+              style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
             ),
             const SizedBox(height: 8),
             if (_pendingReminders().isNotEmpty) ...[
@@ -210,11 +201,7 @@ class EventDetailBody extends StatelessWidget {
               (e.contactPhone != null && e.contactPhone!.isNotEmpty)) ...[
             Text(
               '聯絡資訊',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-              ),
+              style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
             ),
             const SizedBox(height: 8),
             if (e.contactEmail != null && e.contactEmail!.isNotEmpty)

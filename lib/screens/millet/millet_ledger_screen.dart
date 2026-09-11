@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/utils/date_format.dart';
 import '../../models/millet_transaction.dart';
@@ -111,7 +110,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
         iconTheme: const IconThemeData(color: AppColors.ink),
         title: Text(
           '小米明細',
-          style: GoogleFonts.notoSerifTc(
+          style: AppTypography.serif(
             fontSize: AppTypography.subtitle,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
@@ -131,7 +130,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
       return Center(
         child: Text(
           '目前沒有小米幣明細',
-          style: GoogleFonts.notoSansTc(fontSize: AppTypography.body, color: AppColors.fog),
+          style: AppTypography.bodyLargeStyle(color: AppColors.fog),
         ),
       );
     }
@@ -219,7 +218,7 @@ class _MilletRow extends StatelessWidget {
               children: [
                 Text(
                   _reasonLabels[transaction.reason] ?? transaction.reason,
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.body,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
@@ -240,7 +239,7 @@ class _MilletRow extends StatelessWidget {
             children: [
               Text(
                 '${isCredit ? '+' : ''}${transaction.delta}',
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w700,
                   color: deltaColor,

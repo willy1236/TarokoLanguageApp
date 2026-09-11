@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import 'truku_painters.dart';
 import '../../core/constants/app_typography.dart';
@@ -91,8 +90,8 @@ class ModeCard extends StatelessWidget {
           const Spacer(),
           Text(
             mode.zh,
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 26,
+            style: AppTypography.serif(
+              fontSize: AppTypography.display26,
               fontWeight: FontWeight.w600,
               color: mode.fg,
               letterSpacing: 1.0,
@@ -118,7 +117,7 @@ class ModeCard extends StatelessWidget {
               ModeIcon(name: mode.icon, color: mode.accent),
               Text(
                 mode.truku.toUpperCase(),
-                style: GoogleFonts.crimsonPro(
+                style: AppTypography.latin(
                   fontStyle: FontStyle.italic,
                   fontSize: AppTypography.caption,
                   color: mode.accent,
@@ -133,8 +132,8 @@ class ModeCard extends StatelessWidget {
           // 底部：中文名 + 副標
           Text(
             mode.zh,
-            style: GoogleFonts.notoSerifTc(
-              fontSize: large ? 26 : AppTypography.headline,
+            style: AppTypography.serif(
+              fontSize: large ? AppTypography.display26 : AppTypography.headline,
               fontWeight: FontWeight.w600,
               color: mode.fg,
               letterSpacing: 1.0,

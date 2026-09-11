@@ -1,7 +1,6 @@
 // 學習首頁的卡片元件：單字／聽力測驗入口、分級測驗摘要與入口、分級測驗選項。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/truku_painters.dart';
 import '../../../shared/widgets/truku_widgets.dart';
@@ -45,19 +44,12 @@ class LearnPlacementOptionTile extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.bodyLarge,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                    ),
+                    style: AppTypography.titleStyle(color: AppColors.ink),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     done ? '已完成' : subtitle,
-                    style: GoogleFonts.notoSansTc(
-                      fontSize: AppTypography.caption,
-                      color: AppColors.fog,
-                    ),
+                    style: AppTypography.bodyStyle(color: AppColors.fog),
                   ),
                 ],
               ),
@@ -119,7 +111,7 @@ class LearnVocabQuizCard extends StatelessWidget {
                   children: [
                     Text(
                       'SLHAYAN · 單字測驗',
-                      style: GoogleFonts.crimsonPro(
+                      style: AppTypography.latin(
                         fontSize: AppTypography.caption,
                         fontStyle: FontStyle.italic,
                         color: AppColors.gold,
@@ -129,7 +121,7 @@ class LearnVocabQuizCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       '單字測驗',
-                      style: GoogleFonts.notoSerifTc(
+                      style: AppTypography.serif(
                         fontSize: AppTypography.headline,
                         fontWeight: FontWeight.w600,
                         color: AppColors.creamLight,
@@ -138,7 +130,7 @@ class LearnVocabQuizCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       '選級別，測驗詞彙\n單字卡跟讀．答題挑戰',
-                      style: GoogleFonts.notoSansTc(
+                      style: AppTypography.sans(
                         fontSize: AppTypography.body,
                         height: 1.5,
                         color: AppColors.mist,
@@ -204,7 +196,7 @@ class LearnListeningQuizCard extends StatelessWidget {
                   children: [
                     Text(
                       'ENDAAN · 聽力測驗',
-                      style: GoogleFonts.crimsonPro(
+                      style: AppTypography.latin(
                         fontSize: AppTypography.caption,
                         fontStyle: FontStyle.italic,
                         color: AppColors.gold,
@@ -214,7 +206,7 @@ class LearnListeningQuizCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       '聽力測驗',
-                      style: GoogleFonts.notoSerifTc(
+                      style: AppTypography.serif(
                         fontSize: AppTypography.headline,
                         fontWeight: FontWeight.w600,
                         color: AppColors.creamLight,
@@ -223,7 +215,7 @@ class LearnListeningQuizCard extends StatelessWidget {
                     const SizedBox(height: 10),
                     Text(
                       '聽發音，選出正確答案\n練耳朵．練反應',
-                      style: GoogleFonts.notoSansTc(
+                      style: AppTypography.sans(
                         fontSize: AppTypography.body,
                         height: 1.5,
                         color: AppColors.mist,
@@ -280,7 +272,7 @@ class LearnPlacementSummaryCard extends StatelessWidget {
                 children: [
                   Text(
                     '你的推薦起始等級',
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.body,
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
@@ -289,10 +281,7 @@ class LearnPlacementSummaryCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '單字 ${quizLevel ?? "尚未測驗"}．聽力 ${listeningLevel ?? "尚未測驗"}',
-                    style: GoogleFonts.notoSansTc(
-                      fontSize: AppTypography.caption,
-                      color: AppColors.fog,
-                    ),
+                    style: AppTypography.bodyStyle(color: AppColors.fog),
                   ),
                 ],
               ),
@@ -338,7 +327,7 @@ class LearnPlacementQuizCard extends StatelessWidget {
               children: [
                 Text(
                   'SMRMUN · 分級測驗',
-                  style: GoogleFonts.crimsonPro(
+                  style: AppTypography.latin(
                     fontSize: AppTypography.caption,
                     fontStyle: FontStyle.italic,
                     color: AppColors.primary,
@@ -348,7 +337,7 @@ class LearnPlacementQuizCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   '分級測驗',
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.headline,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
@@ -357,7 +346,7 @@ class LearnPlacementQuizCard extends StatelessWidget {
                 const SizedBox(height: 10),
                 Text(
                   '先做一次測驗，找到最適合你的起始等級',
-                  style: GoogleFonts.notoSansTc(
+                  style: AppTypography.sans(
                     fontSize: AppTypography.body,
                     height: 1.5,
                     color: AppColors.fog,
@@ -412,7 +401,7 @@ class _PillButton extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               label,
-              style: GoogleFonts.notoSerifTc(
+              style: AppTypography.serif(
                 fontSize: AppTypography.body,
                 fontWeight: FontWeight.w600,
                 color: foreground,
@@ -475,7 +464,7 @@ class LearnQuizEntryCard extends StatelessWidget {
                 children: [
                   Text(
                     title,
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: titleColor,

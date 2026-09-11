@@ -1,6 +1,5 @@
 import 'package:better_player_plus/better_player_plus.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
@@ -249,7 +248,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
               children: [
                 Text(
                   video.title,
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
                     fontWeight: FontWeight.w600,
                     color: AppColors.creamLight,

@@ -6,7 +6,6 @@
 // 模組（學習／文化影音／論壇），把「使命」直接錨回使用者已經在用的功能。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
@@ -93,7 +92,7 @@ class AboutAppScreen extends StatelessWidget {
                 const SizedBox(height: 14),
                 Text(
                   '語見・太魯閣',
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.size(AppTypography.headline, seniorMode: seniorMode),
                     fontWeight: FontWeight.w700,
                     color: AppColors.creamLight,
@@ -103,7 +102,7 @@ class AboutAppScreen extends StatelessWidget {
                 const SizedBox(height: 6),
                 Text(
                   'QITA SDA TRUKU',
-                  style: GoogleFonts.crimsonPro(
+                  style: AppTypography.latin(
                     fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                     fontStyle: FontStyle.italic,
                     color: AppColors.gold,
@@ -185,7 +184,7 @@ class AboutAppScreen extends StatelessWidget {
       const SizedBox(width: 8),
       Text(
         text,
-        style: GoogleFonts.notoSerifTc(
+        style: AppTypography.serif(
           fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
           fontWeight: FontWeight.w700,
           color: AppColors.ink,
@@ -211,7 +210,7 @@ class AboutAppScreen extends StatelessWidget {
             children: [
               Text(
                 '品牌故事',
-                style: GoogleFonts.crimsonPro(
+                style: AppTypography.latin(
                   fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                   fontStyle: FontStyle.italic,
                   color: AppColors.gold,
@@ -229,7 +228,7 @@ class AboutAppScreen extends StatelessWidget {
           const SizedBox(height: 18),
           Text(
             '「織語者」',
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
               fontWeight: FontWeight.w700,
               color: AppColors.creamLight,
@@ -369,7 +368,7 @@ class AboutAppScreen extends StatelessWidget {
                     children: [
                       Text(
                         pillars[i].title,
-                        style: GoogleFonts.notoSerifTc(
+                        style: AppTypography.serif(
                           fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                           fontWeight: FontWeight.w600,
                           color: AppColors.ink,

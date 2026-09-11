@@ -1,6 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/history_models.dart';
@@ -135,11 +134,7 @@ class _ListeningHistoryDetailScreenState
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.notoSerifTc(
-                fontSize: AppTypography.bodyLarge,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-              ),
+              style: AppTypography.titleStyle(color: AppColors.ink),
             ),
             const SizedBox(height: 16),
             ElevatedButton(

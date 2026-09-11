@@ -1,7 +1,6 @@
 // 廣場頁的小元件：活動訊息卡、看板 Tab、近期活動小卡。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/date_format.dart';
@@ -38,7 +37,7 @@ class PlazaEventMessageCard extends StatelessWidget {
         Expanded(
           child: Text(
             message,
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.body,
               color: AppColors.fog,
               letterSpacing: 0.8,
@@ -84,7 +83,7 @@ class PlazaBoardTab extends StatelessWidget {
               padding: EdgeInsets.symmetric(vertical: seniorMode ? 14 : 10),
               child: Text(
                 label,
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: color,
@@ -170,7 +169,7 @@ class PlazaMiniEventCard extends StatelessWidget {
                           ),
                           Text(
                             day,
-                            style: GoogleFonts.notoSerifTc(
+                            style: AppTypography.serif(
                               fontSize: AppTypography.subtitle,
                               fontWeight: FontWeight.w700,
                               color: AppColors.creamLight,
@@ -189,7 +188,7 @@ class PlazaMiniEventCard extends StatelessWidget {
                             event.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.notoSerifTc(
+                            style: AppTypography.serif(
                               fontSize: AppTypography.body,
                               fontWeight: FontWeight.w600,
                               color: AppColors.creamLight,

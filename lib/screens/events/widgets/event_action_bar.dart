@@ -1,7 +1,6 @@
 // 活動詳情頁底部行動列：依身分（發起人／已報名／其他）與活動狀態切換按鈕。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/event_model.dart';
 import '../reminder_compose_screen.dart';
@@ -104,7 +103,7 @@ class EventActionBar extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               '發送提醒',
-              style: GoogleFonts.notoSerifTc(
+              style: AppTypography.serif(
                 fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                 fontWeight: FontWeight.w600,
                 color: AppColors.creamLight,
@@ -128,7 +127,7 @@ class EventActionBar extends StatelessWidget {
           heightFactor: 1.0,
           child: Text(
             '取消活動',
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               fontWeight: FontWeight.w600,
               color: AppColors.dangerDark,
@@ -217,7 +216,7 @@ class EventActionBar extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             '已報名',
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
               fontWeight: FontWeight.w600,
               color: AppColors.mossDeep,
@@ -296,7 +295,7 @@ class EventActionBar extends StatelessWidget {
                 )
               : Text(
                   label,
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                     fontWeight: FontWeight.w600,
                     color: AppColors.creamLight,

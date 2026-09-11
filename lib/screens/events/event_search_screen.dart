@@ -1,7 +1,6 @@
 // 活動搜尋：關鍵字／時間區間／部落，三者皆選填、可任意組合。
 // range 篩「未來 N 內即將舉辦」，跟 videos/articles 篩「最近發布」語意相反。
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
@@ -153,7 +152,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
               padding: const EdgeInsets.all(40),
               child: Text(
                 '輸入關鍵字或選擇篩選條件開始搜尋',
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   color: AppColors.fog,
                   fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                 ),
@@ -250,7 +249,7 @@ class _EventResultTile extends StatelessWidget {
                     ),
                     Text(
                       '${d.day}',
-                      style: GoogleFonts.notoSerifTc(
+                      style: AppTypography.serif(
                         fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
                         fontWeight: FontWeight.w700,
                         color: AppColors.creamLight,
@@ -268,7 +267,7 @@ class _EventResultTile extends StatelessWidget {
                 children: [
                   Text(
                     event.title,
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,

@@ -24,11 +24,99 @@ abstract class AppTypography {
   static const double title = 20; // 標題
   static const double headline = 22; // 大標題
 
+  // ── 展示字級（特例視覺：emoji、分數、頭像字母等大字，不套 seniorStep）──
+  static const double display24 = 24;
+  static const double display26 = 26;
+  static const double display28 = 28;
+  static const double display30 = 30;
+  static const double display32 = 32;
+  static const double display36 = 36;
+  static const double display40 = 40;
+  static const double display44 = 44;
+
   /// 精簡模式相對一般模式放大的字級
   static const double seniorStep = 2;
 
   /// 依模式換算字級：精簡模式 = [base] + [seniorStep]
   static double size(double base, {bool seniorMode = false}) => seniorMode ? base + seniorStep : base;
+
+  // ── 字族 builder ─────────────────────────────────────────
+  // 沒有對應 *Style() 角色的組合用這組，參數與 GoogleFonts 同名；字級請傳代幣。
+  /// notoSerifTc：標題、強調文字
+  static TextStyle serif({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? letterSpacing,
+    double? height,
+    FontStyle? fontStyle,
+    List<Shadow>? shadows,
+  }) => GoogleFonts.notoSerifTc(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    letterSpacing: letterSpacing,
+    height: height,
+    fontStyle: fontStyle,
+    shadows: shadows,
+  );
+
+  /// notoSansTc：內文
+  static TextStyle sans({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? letterSpacing,
+    double? height,
+    FontStyle? fontStyle,
+    List<Shadow>? shadows,
+  }) => GoogleFonts.notoSansTc(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    letterSpacing: letterSpacing,
+    height: height,
+    fontStyle: fontStyle,
+    shadows: shadows,
+  );
+
+  /// crimsonPro：族語拼音／拉丁展示字
+  static TextStyle latin({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? letterSpacing,
+    double? height,
+    FontStyle? fontStyle,
+    List<Shadow>? shadows,
+  }) => GoogleFonts.crimsonPro(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    letterSpacing: letterSpacing,
+    height: height,
+    fontStyle: fontStyle,
+    shadows: shadows,
+  );
+
+  /// jetBrainsMono：數字、代碼等等寬字
+  static TextStyle mono({
+    double? fontSize,
+    FontWeight? fontWeight,
+    Color? color,
+    double? letterSpacing,
+    double? height,
+    FontStyle? fontStyle,
+    List<Shadow>? shadows,
+  }) => GoogleFonts.jetBrainsMono(
+    fontSize: fontSize,
+    fontWeight: fontWeight,
+    color: color,
+    letterSpacing: letterSpacing,
+    height: height,
+    fontStyle: fontStyle,
+    shadows: shadows,
+  );
 
   // ── 全域樣式（字族＋字重＋雙字級）──────────────────────────
   // 方法名稱代表字族／字重的「角色」，不代表字級排名；各角色的一般模式字級沿用

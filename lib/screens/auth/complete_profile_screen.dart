@@ -4,7 +4,6 @@
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/tribe_model.dart';
@@ -155,7 +154,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                       children: [
                         Text(
                           'MHUWAY SU · 歡迎加入',
-                          style: GoogleFonts.crimsonPro(
+                          style: AppTypography.latin(
                             fontStyle: FontStyle.italic,
                             fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                             color: AppColors.gold,
@@ -165,7 +164,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         const SizedBox(height: 6),
                         Text(
                           '完善你的個人資料',
-                          style: GoogleFonts.notoSerifTc(
+                          style: AppTypography.serif(
                             fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
                             fontWeight: FontWeight.w600,
                             color: AppColors.creamLight,
@@ -234,7 +233,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                   )
                                 : Text(
                                     '完　成',
-                                    style: GoogleFonts.notoSerifTc(
+                                    style: AppTypography.serif(
                                       fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 4,

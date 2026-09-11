@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/event_draft.dart';
@@ -404,7 +403,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             child: Text(
               _isEditing ? '編輯活動' : '新發布',
               textAlign: TextAlign.center,
-              style: GoogleFonts.notoSerifTc(
+              style: AppTypography.serif(
                 fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
                 fontWeight: FontWeight.w700,
                 color: AppColors.ink,
@@ -744,7 +743,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         children: [
           Text(
             text,
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
@@ -884,7 +883,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             ),
             child: Text(
               '# $c',
-              style: GoogleFonts.notoSerifTc(
+              style: AppTypography.serif(
                 fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                 color: selected ? AppColors.creamLight : AppColors.inkSoft,
                 fontWeight: FontWeight.w600,

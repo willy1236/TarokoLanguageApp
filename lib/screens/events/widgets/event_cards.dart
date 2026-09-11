@@ -1,7 +1,6 @@
 // 活動列表的精選大卡與一般列表列。
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
@@ -155,7 +154,7 @@ class EventFeaturedCard extends StatelessWidget {
                             ),
                             Text(
                               _day(d),
-                              style: GoogleFonts.notoSerifTc(
+                              style: AppTypography.serif(
                                 fontSize: AppTypography.subtitle,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.creamLight,
@@ -176,7 +175,7 @@ class EventFeaturedCard extends StatelessWidget {
                   children: [
                     Text(
                       e.title,
-                      style: GoogleFonts.notoSerifTc(
+                      style: AppTypography.serif(
                         fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
                         fontWeight: FontWeight.w600,
                         color: AppColors.creamLight,
@@ -312,11 +311,7 @@ class EventFeaturedCard extends StatelessWidget {
         ),
         child: Text(
           text,
-          style: GoogleFonts.notoSerifTc(
-            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
-            fontWeight: FontWeight.w600,
-            color: AppColors.ink,
-          ),
+          style: AppTypography.subtitleStyle(seniorMode: seniorMode, color: AppColors.ink),
         ),
       ),
     );
@@ -395,7 +390,7 @@ class EventList extends StatelessWidget {
                     ),
                     Text(
                       _day(d),
-                      style: GoogleFonts.notoSerifTc(
+                      style: AppTypography.serif(
                         fontSize: AppTypography.size(AppTypography.headline, seniorMode: seniorMode),
                         fontWeight: FontWeight.w700,
                         color: AppColors.creamLight,
@@ -442,7 +437,7 @@ class EventList extends StatelessWidget {
                     const SizedBox(height: 3),
                   Text(
                     e.title,
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,

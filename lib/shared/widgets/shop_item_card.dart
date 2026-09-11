@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import 'millet_coin_icon.dart';
 import '../../core/constants/app_typography.dart';
@@ -89,7 +88,7 @@ class ShopItemCard extends StatelessWidget {
                 Text(
                   name,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.notoSerifTc(
+                  style: AppTypography.serif(
                     fontSize: AppTypography.caption,
                     fontWeight: FontWeight.w600,
                     color: isGold ? AppColors.creamLight : AppColors.ink,

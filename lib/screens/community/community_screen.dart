@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:permission_handler/permission_handler.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
@@ -135,7 +134,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           if (!seniorMode) ...[
             Text(
               'PGKALA · 互動',
-              style: GoogleFonts.crimsonPro(
+              style: AppTypography.latin(
                 fontStyle: FontStyle.italic,
                 fontSize: AppTypography.caption,
                 color: AppColors.fog,
@@ -146,9 +145,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ],
           Text(
             '面對面，學族語',
-            style: GoogleFonts.notoSerifTc(
+            style: AppTypography.serif(
               // headline token（22）比一般模式的 26 還小，精簡模式另外放大。
-              fontSize: seniorMode ? 30 : 26,
+              fontSize: seniorMode ? AppTypography.display30 : AppTypography.display26,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 1.0,
@@ -198,7 +197,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   if (!seniorMode) ...[
                     Text(
                       '1 ON 1 · KMSAPUH',
-                      style: GoogleFonts.crimsonPro(
+                      style: AppTypography.latin(
                         fontStyle: FontStyle.italic,
                         fontSize: AppTypography.caption,
                         color: AppColors.gold,
@@ -209,7 +208,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   ],
                   Text(
                     '和耆老一對一\n用族語聊 10 分鐘',
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
@@ -316,11 +315,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   alignment: Alignment.center,
                   child: Text(
                     initials[i],
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.caption,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.gold,
-                    ),
+                    style: AppTypography.subtitleStyle(color: AppColors.gold),
                   ),
                 ),
               );
@@ -466,7 +461,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             const SizedBox(width: 8),
             Text(
               _isJoining ? '配對中…' : '開始配對',
-              style: GoogleFonts.notoSerifTc(
+              style: AppTypography.serif(
                 fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
@@ -495,7 +490,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             children: [
               Text(
                 '我的好友',
-                style: GoogleFonts.notoSerifTc(
+                style: AppTypography.serif(
                   fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
@@ -609,7 +604,7 @@ class _FriendTile extends StatelessWidget {
                     friend.nickname ?? friend.friendCode ?? '未命名好友',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.notoSerifTc(
+                    style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
