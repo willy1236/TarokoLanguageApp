@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../models/event_draft.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -61,18 +62,33 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     super.initState();
     final e = widget.editing;
     if (e == null) return;
-    _title.text = e.title;
-    _desc.text = e.description ?? '';
-    _location.text = e.location ?? '';
-    _address.text = e.address ?? '';
-    _email.text = e.contactEmail ?? '';
-    _phone.text = e.contactPhone ?? '';
-    _maxParticipants.text = e.maxParticipants?.toString() ?? '';
-    _reminderNote.text = e.reminderNote ?? '';
-    _startsAt = e.startsAt;
-    _registrationDeadline = e.registrationDeadline;
-    _category = e.category;
+    final d = EventDraft.fromDetail(e);
+    _title.text = d.title;
+    _desc.text = d.description;
+    _location.text = d.location;
+    _address.text = d.address;
+    _email.text = d.contactEmail;
+    _phone.text = d.contactPhone;
+    _maxParticipants.text = d.maxParticipantsText;
+    _reminderNote.text = d.reminderNote;
+    _startsAt = d.startsAt;
+    _registrationDeadline = d.registrationDeadline;
+    _category = d.category;
   }
+
+  EventDraft get _draft => EventDraft(
+    title: _title.text,
+    description: _desc.text,
+    location: _location.text,
+    address: _address.text,
+    startsAt: _startsAt,
+    registrationDeadline: _registrationDeadline,
+    contactEmail: _email.text,
+    contactPhone: _phone.text,
+    maxParticipantsText: _maxParticipants.text,
+    category: _category,
+    reminderNote: _reminderNote.text,
+  );
 
   @override
   void dispose() {
@@ -172,73 +188,23 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     if (_submitting) return;
     setState(() => _error = null);
 
-    final title = _title.text.trim();
-    final desc = _desc.text.trim();
-    final location = _location.text.trim();
-    final address = _address.text.trim();
     final editing = widget.editing;
-
-    if (title.isEmpty || desc.isEmpty || location.isEmpty || address.isEmpty) {
-      setState(() => _error = '請填寫所有必填欄位');
+    final draft = _draft;
+    final invalid = draft.validate(
+      creating: editing == null,
+      now: DateTime.now(),
+    );
+    if (invalid != null) {
+      setState(() => _error = invalid);
       return;
-    }
-
-    // 名額選填：留空 = 不限；有填須為正整數
-    int? maxPeople;
-    final maxText = _maxParticipants.text.trim();
-    if (maxText.isNotEmpty) {
-      maxPeople = int.tryParse(maxText);
-      if (maxPeople == null || maxPeople < 1) {
-        setState(() => _error = '名額上限需為正整數，或留空表示不限');
-        return;
-      }
-    }
-
-    // 時間相關欄位在編輯模式是唯讀的（後端不支援修改），不需重驗。
-    if (editing == null) {
-      if (_startsAt == null) {
-        setState(() => _error = '請選擇活動開始時間');
-        return;
-      }
-      if (!_startsAt!.isAfter(DateTime.now())) {
-        setState(() => _error = '活動時間需為未來');
-        return;
-      }
-      if (_registrationDeadline != null &&
-          _registrationDeadline!.isAfter(_startsAt!)) {
-        setState(() => _error = '報名截止時間不能晚於活動開始時間');
-        return;
-      }
     }
 
     setState(() => _submitting = true);
     try {
       if (editing == null) {
-        await EventService.createEvent(
-          title: title,
-          description: desc,
-          location: location,
-          address: address,
-          startsAt: _startsAt!,
-          registrationDeadline: _registrationDeadline,
-          contactEmail: _email.text,
-          contactPhone: _phone.text,
-          maxParticipants: maxPeople,
-          category: _category,
-        );
+        await EventService.createEvent(draft);
       } else {
-        // 只送後端 PATCH 真正接受的欄位。空字串 = 清空（分類與提醒事項可清空，
-        // 地點/地址上面已擋住空值）。
-        await EventService.updateEvent(
-          editing.id,
-          description: desc,
-          location: location,
-          address: address,
-          contactEmail: _email.text.trim(),
-          contactPhone: _phone.text.trim(),
-          reminderNote: _reminderNote.text.trim(),
-          category: _category ?? '',
-        );
+        await EventService.updateEvent(editing.id, draft, editing);
       }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
