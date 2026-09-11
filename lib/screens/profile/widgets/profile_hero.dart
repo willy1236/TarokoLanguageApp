@@ -19,6 +19,9 @@ class ProfileHero extends StatelessWidget {
   /// 上方已有其他元件（如合併分頁的膠囊切換）時傳 false，頂部不再預留狀態列空間。
   final bool reserveStatusBar;
 
+  /// 合併分頁的膠囊切換：放在深色底內的最上方，讓深底一路延伸到狀態列。
+  final Widget? topToggle;
+
   const ProfileHero({
     super.key,
     required this.user,
@@ -26,12 +29,19 @@ class ProfileHero extends StatelessWidget {
     required this.seniorMode,
     required this.onAvatarTap,
     this.reserveStatusBar = true,
+    this.topToggle,
   });
 
   @override
-  Widget build(BuildContext context) => _buildHero(seniorMode: seniorMode);
+  Widget build(BuildContext context) =>
+      _buildHero(context, seniorMode: seniorMode);
 
-  Widget _buildHero({required bool seniorMode}) {
+  double _contentTopPadding() {
+    if (topToggle != null) return 16;
+    return reserveStatusBar ? 76 : 28;
+  }
+
+  Widget _buildHero(BuildContext context, {required bool seniorMode}) {
     final tribeLine = user?.isIndigenous == true
         ? (user?.tribeName ?? '尚未設定')
         : null;
@@ -51,45 +61,65 @@ class ProfileHero extends StatelessWidget {
               ),
             ),
           ),
-          Padding(
-            padding: EdgeInsets.fromLTRB(20, reserveStatusBar ? 76 : 28, 20, 28),
-            child: Row(
+          Column(
+            children: [
+              if (topToggle != null)
+                Padding(
+                  padding: EdgeInsets.fromLTRB(
+                    20,
+                    MediaQuery.of(context).padding.top + 12,
+                    20,
+                    0,
+                  ),
+                  child: topToggle,
+                ),
+              _buildProfileRow(seniorMode: seniorMode, tribeLine: tribeLine),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProfileRow({
+    required bool seniorMode,
+    required String? tribeLine,
+  }) {
+    return Padding(
+      padding: EdgeInsets.fromLTRB(20, _contentTopPadding(), 20, 28),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildAvatar(),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildAvatar(),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        user?.displayName ?? 'Apyang Imiq',
-                        style: AppTypography.headlineStyle(
-                          seniorMode: seniorMode,
-                          color: AppColors.creamLight,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      if (tribeLine != null)
-                        Text(
-                          tribeLine,
-                          style: AppTypography.titleStyle(
-                            seniorMode: seniorMode,
-                            color: AppColors.creamLight.withValues(alpha: 0.75),
-                          ),
-                        ),
-                      const SizedBox(height: 10),
-                      Wrap(
-                        spacing: 8,
-                        runSpacing: 8,
-                        children: [
-                          if (user?.studyStreak != null &&
-                              user!.studyStreak > 0)
-                            profileInfoBadge('連續 ${user!.studyStreak} 天'),
-                        ],
-                      ),
-                    ],
+                Text(
+                  user?.displayName ?? 'Apyang Imiq',
+                  style: AppTypography.headlineStyle(
+                    seniorMode: seniorMode,
+                    color: AppColors.creamLight,
                   ),
+                ),
+                const SizedBox(height: 4),
+                if (tribeLine != null)
+                  Text(
+                    tribeLine,
+                    style: AppTypography.titleStyle(
+                      seniorMode: seniorMode,
+                      color: AppColors.creamLight.withValues(alpha: 0.75),
+                    ),
+                  ),
+                const SizedBox(height: 10),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    if (user?.studyStreak != null && user!.studyStreak > 0)
+                      profileInfoBadge('連續 ${user!.studyStreak} 天'),
+                  ],
                 ),
               ],
             ),

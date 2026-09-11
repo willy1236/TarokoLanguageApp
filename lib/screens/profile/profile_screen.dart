@@ -99,38 +99,36 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildScaffold(bool seniorMode) {
-    return Scaffold(
-      backgroundColor: AppColors.creamLight,
-      body: ListView(
-        padding: EdgeInsets.zero,
-        children: [
-          if (widget.topToggle != null)
-            Padding(
-              padding: EdgeInsets.fromLTRB(
-                20,
-                MediaQuery.of(context).padding.top + 12,
-                20,
-                12,
-              ),
-              child: widget.topToggle,
+    // 頂部是深色 hero，狀態列圖示改用淺色。
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: AppColors.creamLight,
+        body: ListView(
+          padding: EdgeInsets.zero,
+          children: [
+            ProfileHero(
+              user: _user,
+              itemCatalogById: _itemCatalogById,
+              seniorMode: seniorMode,
+              onAvatarTap: _openAvatarOptions,
+              topToggle: widget.topToggle,
             ),
-          ProfileHero(
-            user: _user,
-            itemCatalogById: _itemCatalogById,
-            seniorMode: seniorMode,
-            onAvatarTap: _openAvatarOptions,
-            reserveStatusBar: widget.topToggle == null,
-          ),
-          ProfileCoinBanner(user: _user, onTap: _openMilletLedger),
-          ProfileStatsRow(user: _user, seniorMode: seniorMode),
-          _buildQuickLinksGrid(seniorMode: seniorMode),
-          _buildMoreSection(seniorMode: seniorMode),
-          _buildSettingsSection(seniorMode: seniorMode),
-          _buildAppSettingsSection(seniorMode: seniorMode),
-          _buildOtherSection(seniorMode: seniorMode),
-          const ProfileLogoutButton(),
-          const SizedBox(height: 40),
-        ],
+            ProfileCoinBanner(
+              user: _user,
+              seniorMode: seniorMode,
+              onTap: _openMilletLedger,
+            ),
+            ProfileStatsRow(user: _user, seniorMode: seniorMode),
+            _buildQuickLinksGrid(seniorMode: seniorMode),
+            _buildMoreSection(seniorMode: seniorMode),
+            _buildSettingsSection(seniorMode: seniorMode),
+            _buildAppSettingsSection(seniorMode: seniorMode),
+            _buildOtherSection(seniorMode: seniorMode),
+            const ProfileLogoutButton(),
+            const SizedBox(height: 40),
+          ],
+        ),
       ),
     );
   }
