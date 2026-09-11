@@ -6,7 +6,7 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -212,6 +212,28 @@ class ApiClient {
     );
   }
 
+  /// [postMultipartFile] 的 Web 版：Web 沒有本機檔案路徑可讀，改收 bytes。
+  static Future<Map<String, dynamic>> postMultipartBytes(
+    String path, {
+    required String fieldName,
+    required List<int> bytes,
+    required String filename,
+    String? contentType,
+  }) async {
+    return _sendMultipart(
+      path,
+      files: [
+        http.MultipartFile.fromBytes(
+          fieldName,
+          bytes,
+          filename: filename,
+          contentType: contentType == null ? null : MediaType.parse(contentType),
+        ),
+      ],
+      logBody: 'field=$fieldName, file=$filename (${bytes.length} bytes)',
+    );
+  }
+
   /// multipart POST 的共用骨架：組 request、帶 Authorization、走 [_send] 與
   /// [_handle]。[logBody] 是給 log 用的摘要，不要放檔案內容或完整路徑。
   static Future<Map<String, dynamic>> _sendMultipart(
@@ -292,7 +314,9 @@ class ApiClient {
   }
 
   /// 統一攔截離線（SocketException），轉成一致的 NETWORK_ERROR ApiException，
-  /// 讓所有 service 不必各自 catch SocketException。
+  /// 讓所有 service 不必各自 catch SocketException。Web 沒有 socket，離線時
+  /// 丟的是 http.ClientException，只在 Web 攔截；手機上的 ClientException
+  /// （如 HttpException 包裝而來）維持原樣往外丟，行為與 master 一致。
   /// method/url/body 僅用於 debug log，不影響實際請求。
   static Future<http.Response> _send(
     Future<http.Response> Function() doRequest, {
@@ -315,6 +339,14 @@ class ApiClient {
       }
       return resp;
     } on SocketException {
+      debugPrint('ApiClient ←  NETWORK_ERROR $method ${_safeUrl(url)}');
+      throw ApiException(
+        statusCode: 0,
+        code: 'NETWORK_ERROR',
+        message: '無法連線到伺服器，請檢查網路',
+      );
+    } on http.ClientException {
+      if (!kIsWeb) rethrow;
       debugPrint('ApiClient ←  NETWORK_ERROR $method ${_safeUrl(url)}');
       throw ApiException(
         statusCode: 0,

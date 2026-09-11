@@ -48,6 +48,18 @@ void main() {
     );
   });
 
+  // Web 上 ClientException 會轉成 NETWORK_ERROR，需 `--platform chrome` 才測得到。
+  test('手機上 ClientException 維持原樣往外丟', () async {
+    ApiClient.httpClient = MockClient(
+      (_) async => throw http.ClientException('Connection closed'),
+    );
+
+    expect(
+      () => ApiClient.delete('/api/thing'),
+      throwsA(isA<http.ClientException>()),
+    );
+  });
+
   test('postMultipart 帶上文字欄位與檔案的 MIME', () async {
     late http.BaseRequest seen;
     late String bodyText;
@@ -76,5 +88,29 @@ void main() {
     expect(bodyText, contains('name="title"'));
     expect(bodyText, contains('filename="a.jpg"'));
     expect(bodyText, contains('image/jpeg'));
+  });
+
+  test('postMultipartBytes 帶上欄位名、檔名與 MIME', () async {
+    late http.BaseRequest seen;
+    late String bodyText;
+    ApiClient.httpClient = MockClient((req) async {
+      seen = req;
+      bodyText = req.body;
+      return http.Response(jsonEncode({'ok': true}), 200);
+    });
+
+    await ApiClient.postMultipartBytes(
+      '/api/me/avatar',
+      fieldName: 'avatar',
+      bytes: [1, 2, 3],
+      filename: 'a.png',
+      contentType: 'image/png',
+    );
+
+    expect(seen.method, 'POST');
+    expect(seen.headers['content-type'], contains('multipart/form-data'));
+    expect(bodyText, contains('name="avatar"'));
+    expect(bodyText, contains('filename="a.png"'));
+    expect(bodyText, contains('image/png'));
   });
 }

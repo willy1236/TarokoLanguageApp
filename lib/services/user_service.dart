@@ -77,6 +77,24 @@ class UserService {
     return user;
   }
 
+  /// [uploadAvatar] 的 Web 版：Web 沒有本機檔案可讀，改傳 bytes。
+  static Future<UserModel> uploadAvatarBytes(
+    List<int> bytes, {
+    required String filename,
+    String? contentType,
+  }) async {
+    final data = await ApiClient.postMultipartBytes(
+      ApiConfig.meAvatar,
+      fieldName: 'avatar',
+      bytes: bytes,
+      filename: filename,
+      contentType: contentType,
+    );
+    final user = UserModel.fromJson(data);
+    cachedUser = user;
+    return user;
+  }
+
   /// 首次登入完善資料（issue #43），成功後 profile_completed 轉為 true。
   static Future<UserModel> completeProfile({
     required String displayName,
