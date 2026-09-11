@@ -3,6 +3,8 @@
 // 完成後導向 PlacementResultScreen 顯示建議等級。
 // 規格參考：Truku_backend docs/superpowers/specs/2026-08-17-quiz-listening-placement-design.md
 
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -34,6 +36,8 @@ class _QuizPlacementScreenState extends State<QuizPlacementScreen> {
   int _currentIndex = 0;
   int? _selectedOptionId;
   final List<PlacementAnswer> _answers = [];
+  /// 送出中：擋住「完成測驗」連點造成重複 submit。
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -51,6 +55,7 @@ class _QuizPlacementScreenState extends State<QuizPlacementScreen> {
     setState(() => _phase = _Phase.loading);
     try {
       final session = await PlacementService.startQuizPlacement();
+      if (!mounted) return;
       final firstUnanswered =
           session.questions.indexWhere((q) => q.selectedOptionId == null);
       final startIndex = firstUnanswered == -1
@@ -105,14 +110,35 @@ class _QuizPlacementScreenState extends State<QuizPlacementScreen> {
     setState(() => _selectedOptionId = optionId);
     final session = _session;
     if (session == null) return;
-    PlacementService.answerQuizPlacement(
-      sessionId: session.sessionId,
-      questionId: _currentQuestion.questionId,
-      selectedOptionId: optionId,
-    ).catchError((_) {});
+    unawaited(
+      _saveAnswer(session.sessionId, _currentQuestion.questionId, optionId),
+    );
+  }
+
+  /// 即時落地，中途退出下次仍能續接。失敗不擋 UI，但必須讓使用者知道——
+  /// 靜默吞掉會讓這題續接時被判定未作答而遺漏。
+  Future<void> _saveAnswer(
+    String sessionId,
+    String questionId,
+    int optionId,
+  ) async {
+    try {
+      await PlacementService.answerQuizPlacement(
+        sessionId: sessionId,
+        questionId: questionId,
+        selectedOptionId: optionId,
+      );
+    } catch (e) {
+      debugPrint('QuizPlacementScreen: 儲存答案失敗：$e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('儲存答案失敗，請稍後再試')),
+      );
+    }
   }
 
   Future<void> _confirmAndNext() async {
+    if (_submitting) return;
     final selected = _selectedOptionId;
     if (selected == null) return;
     _answers.add(PlacementAnswer(
@@ -128,6 +154,7 @@ class _QuizPlacementScreenState extends State<QuizPlacementScreen> {
       return;
     }
 
+    _submitting = true;
     setState(() => _phase = _Phase.loading);
     try {
       final result = await PlacementService.submitQuizPlacement(
@@ -145,10 +172,13 @@ class _QuizPlacementScreenState extends State<QuizPlacementScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e;
         _phase = _Phase.error;
       });
+    } finally {
+      _submitting = false;
     }
   }
 

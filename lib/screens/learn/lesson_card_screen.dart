@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -30,6 +32,8 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
   int _currentIndex = 0;
   int? _selectedOptionId;
   final List<QuizAnswer> _answers = [];
+  /// 送出中：擋住「完成測驗」連點造成 submitQuiz 重複呼叫。
+  bool _submitting = false;
   QuizResult? _result;
   // 續接舊 session 時，實際測驗的 level 可能跟 widget.level（使用者這次點的）不同
   String? _effectiveLevel;
@@ -50,6 +54,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
     setState(() => _phase = _Phase.loading);
     try {
       final session = await LearnService.startQuiz(widget.level);
+      if (!mounted) return;
       if (session.questions.isEmpty) {
         setState(() {
           _error = ApiException(
@@ -167,15 +172,33 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
     setState(() => _selectedOptionId = optionId);
     final session = _session;
     if (session == null) return;
-    // 即時落地，中途退出下次仍能續接；失敗不擋 UI，本地選取狀態已更新。
-    LearnService.answerQuestion(
-      sessionId: session.sessionId,
-      questionId: _currentQuestion.questionId,
-      selectedOptionId: optionId,
-    ).catchError((_) {});
+    unawaited(_saveAnswer(session.sessionId, _currentQuestion.questionId, optionId));
+  }
+
+  /// 即時落地，中途退出下次仍能續接。失敗不擋 UI（本地選取狀態已更新），但
+  /// 必須讓使用者知道——靜默吞掉會讓這題續接時被判定未作答而遺漏。
+  Future<void> _saveAnswer(
+    String sessionId,
+    String questionId,
+    int optionId,
+  ) async {
+    try {
+      await LearnService.answerQuestion(
+        sessionId: sessionId,
+        questionId: questionId,
+        selectedOptionId: optionId,
+      );
+    } catch (e) {
+      debugPrint('LessonCardScreen: 儲存答案失敗：$e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('儲存答案失敗，請稍後再試')),
+      );
+    }
   }
 
   Future<void> _confirmAndNext() async {
+    if (_submitting) return;
     final selected = _selectedOptionId;
     if (selected == null) return;
     _answers.add(
@@ -193,21 +216,26 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
       return;
     }
 
+    _submitting = true;
     setState(() => _phase = _Phase.loading);
     try {
       final result = await LearnService.submitQuiz(
         _session!.sessionId,
         _answers,
       );
+      if (!mounted) return;
       setState(() {
         _result = result;
         _phase = _Phase.result;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e;
         _phase = _Phase.error;
       });
+    } finally {
+      _submitting = false;
     }
   }
 

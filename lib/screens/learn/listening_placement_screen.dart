@@ -37,6 +37,8 @@ class _ListeningPlacementScreenState extends State<ListeningPlacementScreen> {
   int _currentIndex = 0;
   int? _selectedOptionId;
   final Map<String, int> _answeredOptions = {};
+  /// 送出中：擋住「完成測驗」連點造成重複 submit。
+  bool _submitting = false;
 
   @override
   void initState() {
@@ -54,6 +56,7 @@ class _ListeningPlacementScreenState extends State<ListeningPlacementScreen> {
     setState(() => _phase = _Phase.loading);
     try {
       final session = await PlacementService.startListeningPlacement();
+      if (!mounted) return;
 
       _answeredOptions.clear();
       for (final q in session.questions) {
@@ -124,6 +127,7 @@ class _ListeningPlacementScreenState extends State<ListeningPlacementScreen> {
   }
 
   Future<void> _confirmAndNext() async {
+    if (_submitting) return;
     if (_selectedOptionId == null) return;
 
     if (_currentIndex < _session!.questions.length - 1) {
@@ -146,6 +150,7 @@ class _ListeningPlacementScreenState extends State<ListeningPlacementScreen> {
       return;
     }
 
+    _submitting = true;
     setState(() => _phase = _Phase.loading);
     try {
       final answers = _session!.questions
@@ -169,10 +174,13 @@ class _ListeningPlacementScreenState extends State<ListeningPlacementScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e;
         _phase = _Phase.error;
       });
+    } finally {
+      _submitting = false;
     }
   }
 

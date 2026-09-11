@@ -57,6 +57,8 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
   int _currentIndex = 0;
   int? _selectedOptionId;
   final Map<String, int> _answeredOptions = {};
+  /// 送出中：擋住「完成測驗」連點造成重複 submit。
+  bool _submitting = false;
   // 續接舊 session 時，實際測驗的 level 可能跟 widget.level（使用者這次點的）不同
   String? _effectiveLevel;
 
@@ -79,6 +81,7 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
         widget.mode,
         widget.level,
       );
+      if (!mounted) return;
       if (session.questions.isEmpty) {
         setState(() {
           _error = ApiException(
@@ -128,6 +131,7 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
         _phase = _ListenPhase.quiz;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e;
         _phase = _ListenPhase.error;
@@ -196,6 +200,7 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
   }
 
   Future<void> _confirmAndNext() async {
+    if (_submitting) return;
     if (_selectedOptionId == null) return;
 
     if (_currentIndex < _session!.questions.length - 1) {
@@ -219,6 +224,7 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       return;
     }
 
+    _submitting = true;
     setState(() => _phase = _ListenPhase.loading);
     try {
       final answers = _session!.questions
@@ -242,10 +248,13 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
         ),
       );
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e;
         _phase = _ListenPhase.error;
       });
+    } finally {
+      _submitting = false;
     }
   }
 
