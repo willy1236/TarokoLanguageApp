@@ -37,9 +37,11 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
   Future<void> _load() async {
     try {
       final detail = await VideoService.fetchVideoDetail(widget.videoId);
-      _video = detail;
       // better_player_plus 只有行動平台實作，其他平台改顯示外開連結。
-      if (!PlatformFeatures.supportsHlsPlayer) return;
+      if (!PlatformFeatures.supportsHlsPlayer) {
+        _video = detail;
+        return;
+      }
       _playerController = BetterPlayerController(
         const BetterPlayerConfiguration(
           aspectRatio: 16 / 9,
@@ -52,6 +54,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
           videoFormat: BetterPlayerVideoFormat.hls,
         ),
       );
+      _video = detail;
     } catch (e) {
       _error = e;
     }

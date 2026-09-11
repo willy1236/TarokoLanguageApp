@@ -5,6 +5,7 @@
 // 規格書對應：API設計/資料交換表_核心.md §2.1 POST /api/auth/login
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -97,7 +98,8 @@ class AuthService {
 
     // 打後端換系統 JWT。這裡不走 ApiClient：登入端點沒有 JWT 可帶，而
     // ApiClient 的 401 會觸發強制登出導頁，對登入失敗是錯誤的反應。
-    // 但離線處理要與 ApiClient 一致，不能讓連線例外直接逸出。
+    // 但離線處理要與 ApiClient 一致，不能讓 SocketException 直接逸出
+    // （Web 沒有 socket，離線時丟的是 http.ClientException，一併攔截）。
     final http.Response resp;
     try {
       resp = await http.post(
@@ -105,6 +107,8 @@ class AuthService {
         headers: {'Content-Type': 'application/json'},
         body: jsonEncode({'firebase_token': firebaseToken}),
       );
+    } on SocketException {
+      throw AuthException('無法連線到伺服器，請檢查網路');
     } on http.ClientException {
       throw AuthException('無法連線到伺服器，請檢查網路');
     }
