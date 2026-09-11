@@ -99,7 +99,8 @@ class AuthService {
     // 打後端換系統 JWT。這裡不走 ApiClient：登入端點沒有 JWT 可帶，而
     // ApiClient 的 401 會觸發強制登出導頁，對登入失敗是錯誤的反應。
     // 但離線處理要與 ApiClient 一致，不能讓 SocketException 直接逸出
-    // （Web 沒有 socket，離線時丟的是 http.ClientException，一併攔截）。
+    // （Web 沒有 socket，離線時丟的是 http.ClientException，只在 Web 攔截；
+    // 手機上的 ClientException 維持原樣往外丟）。
     final http.Response resp;
     try {
       resp = await http.post(
@@ -110,6 +111,7 @@ class AuthService {
     } on SocketException {
       throw AuthException('無法連線到伺服器，請檢查網路');
     } on http.ClientException {
+      if (!kIsWeb) rethrow;
       throw AuthException('無法連線到伺服器，請檢查網路');
     }
 

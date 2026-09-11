@@ -6,7 +6,7 @@
 
 import 'dart:convert';
 import 'dart:io';
-import 'package:flutter/foundation.dart' show kDebugMode;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -315,7 +315,8 @@ class ApiClient {
 
   /// 統一攔截離線（SocketException），轉成一致的 NETWORK_ERROR ApiException，
   /// 讓所有 service 不必各自 catch SocketException。Web 沒有 socket，離線時
-  /// 丟的是 http.ClientException，一併攔截。
+  /// 丟的是 http.ClientException，只在 Web 攔截；手機上的 ClientException
+  /// （如 HttpException 包裝而來）維持原樣往外丟，行為與 master 一致。
   /// method/url/body 僅用於 debug log，不影響實際請求。
   static Future<http.Response> _send(
     Future<http.Response> Function() doRequest, {
@@ -345,6 +346,7 @@ class ApiClient {
         message: '無法連線到伺服器，請檢查網路',
       );
     } on http.ClientException {
+      if (!kIsWeb) rethrow;
       debugPrint('ApiClient ←  NETWORK_ERROR $method ${_safeUrl(url)}');
       throw ApiException(
         statusCode: 0,

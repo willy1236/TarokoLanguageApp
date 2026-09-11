@@ -48,16 +48,15 @@ void main() {
     );
   });
 
-  test('Web 離線（ClientException）也轉成 NETWORK_ERROR', () async {
+  // Web 上 ClientException 會轉成 NETWORK_ERROR，需 `--platform chrome` 才測得到。
+  test('手機上 ClientException 維持原樣往外丟', () async {
     ApiClient.httpClient = MockClient(
-      (_) async => throw http.ClientException('offline'),
+      (_) async => throw http.ClientException('Connection closed'),
     );
 
     expect(
       () => ApiClient.delete('/api/thing'),
-      throwsA(
-        isA<ApiException>().having((e) => e.code, 'code', 'NETWORK_ERROR'),
-      ),
+      throwsA(isA<http.ClientException>()),
     );
   });
 
