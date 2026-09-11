@@ -28,6 +28,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   Object? _error;
   final List<HistoryRecord> _records = [];
 
+  /// 請求世代：切換篩選會重新載入第一頁，過期回應（含飛行中的分頁）忽略。
+  int _reqGen = 0;
+
   @override
   void initState() {
     super.initState();
@@ -51,8 +54,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _loadFirstPage() async {
+    final gen = ++_reqGen;
     setState(() {
       _initialLoading = true;
+      // 飛行中的分頁請求已過期，不能再 append 進新篩選的清單。
+      _loadingMore = false;
       _error = null;
     });
     try {
@@ -61,6 +67,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         page: 1,
         pageSize: _pageSize,
       );
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _records
           ..clear()
@@ -70,6 +77,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _initialLoading = false;
       });
     } catch (e) {
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _error = e;
         _initialLoading = false;
@@ -78,6 +86,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _loadNextPage() async {
+    final gen = _reqGen;
     setState(() => _loadingMore = true);
     try {
       final result = await HistoryService.fetchHistory(
@@ -85,6 +94,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         page: _page + 1,
         pageSize: _pageSize,
       );
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _records.addAll(result.records);
         _total = result.total;
@@ -93,6 +103,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       });
     } catch (e) {
       debugPrint('HistoryScreen._loadNextPage failed: $e');
+      if (!mounted || gen != _reqGen) return;
       setState(() => _loadingMore = false);
     }
   }

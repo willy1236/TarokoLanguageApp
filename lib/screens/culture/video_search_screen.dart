@@ -33,6 +33,10 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
   List<VideoSummary> _videos = [];
   bool _searched = false;
 
+  /// 請求世代：每次新查詢遞增，回應套用前比對。快速切換部落/時間篩選時，
+  /// 較晚送出但先回應的舊查詢不能覆蓋新結果。
+  int _reqGen = 0;
+
   bool get _hasMore => _videos.length < _total;
 
   @override
@@ -42,7 +46,9 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
   }
 
   Future<void> _search() async {
+    final gen = ++_reqGen;
     setState(() {
+      _loadingMore = false; // 飛行中的分頁請求已過期，不能再 append 進新清單
       _q = _controller.text.trim();
       _searched = true;
       _loading = true;
@@ -56,14 +62,14 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
         tribeId: _tribe?.id,
         page: 1,
       );
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _videos = res.videos;
         _total = res.total;
         _loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _error = e is ApiException ? e.message : '搜尋失敗，請稍後再試';
         _loading = false;
@@ -73,6 +79,7 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
 
   Future<void> _loadMore() async {
     if (_loadingMore || !_hasMore) return;
+    final gen = _reqGen;
     setState(() => _loadingMore = true);
     try {
       final res = await VideoService.searchVideos(
@@ -81,14 +88,14 @@ class _VideoSearchScreenState extends State<VideoSearchScreen> {
         tribeId: _tribe?.id,
         page: _page + 1,
       );
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _videos = [..._videos, ...res.videos];
         _page += 1;
         _loadingMore = false;
       });
     } catch (_) {
-      if (mounted) setState(() => _loadingMore = false);
+      if (mounted && gen == _reqGen) setState(() => _loadingMore = false);
     }
   }
 

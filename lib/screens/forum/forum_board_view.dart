@@ -75,6 +75,10 @@ class ForumBoardViewState extends State<ForumBoardView> {
   int? _nextCursor;
   Map<String, ShopItem> _itemCatalogById = const {};
 
+  /// 請求世代：_load（切換看板/篩選、下拉刷新）每次遞增，_load/_loadMore
+  /// 的回應套用前比對，過期回應整段忽略。
+  int _reqGen = 0;
+
   @override
   void initState() {
     super.initState();
@@ -114,13 +118,17 @@ class ForumBoardViewState extends State<ForumBoardView> {
   }
 
   Future<void> _load() async {
+    final gen = ++_reqGen;
     setState(() {
       _loading = true;
+      // 飛行中的分頁請求已過期：不清掉旗標的話它回來會把舊游標的貼文
+      // append 進剛清空的新清單，造成清單混雜、游標錯亂。
+      _loadingMore = false;
       _error = null;
     });
     try {
       final page = await widget.loadPage();
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _pinned
           ..clear()
@@ -132,9 +140,17 @@ class ForumBoardViewState extends State<ForumBoardView> {
         _loading = false;
       });
     } on ApiException catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _error = e.message;
+        _loading = false;
+      });
+    } catch (e) {
+      // 非 ApiException（解析錯誤等）原本會逸出，讓 _loading 永遠停在 true。
+      debugPrint('ForumBoardView._load failed: $e');
+      if (!mounted || gen != _reqGen) return;
+      setState(() {
+        _error = '載入失敗，請稍後再試';
         _loading = false;
       });
     }
@@ -142,17 +158,18 @@ class ForumBoardViewState extends State<ForumBoardView> {
 
   Future<void> _loadMore() async {
     if (_loadingMore || _nextCursor == null) return;
+    final gen = _reqGen;
     setState(() => _loadingMore = true);
     try {
       final page = await widget.loadPage(cursor: _nextCursor);
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _posts.addAll(page.posts);
         _nextCursor = page.nextCursor;
         _loadingMore = false;
       });
     } on ApiException catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() => _loadingMore = false);
       _toast(e.message);
     }
