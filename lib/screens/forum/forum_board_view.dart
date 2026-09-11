@@ -14,6 +14,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'widgets/forum_post_card.dart';
+import 'widgets/forum_toast.dart';
 
 typedef ForumPageLoader =
     Future<ForumPostPage> Function({int? cursor, int? after});
@@ -206,9 +207,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
 
   void _toast(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    showForumToast(context, message);
   }
 
   /// 就地替換一筆貼文（置頂區與一般區都找）。

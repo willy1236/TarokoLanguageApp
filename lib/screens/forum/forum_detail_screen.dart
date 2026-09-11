@@ -19,6 +19,7 @@ import '../../services/user_service.dart';
 import 'forum_compose_screen.dart';
 import 'widgets/forum_comment_tile.dart';
 import 'widgets/forum_image_grid.dart';
+import 'widgets/forum_toast.dart';
 import 'widgets/forum_post_card.dart' show forumRelativeTime;
 import 'widgets/forum_report_sheet.dart';
 
@@ -157,9 +158,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   void _toast(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    showForumToast(context, message);
   }
 
   /// 貼文已不存在：回到列表並回報已刪除，讓呼叫端把它移除。

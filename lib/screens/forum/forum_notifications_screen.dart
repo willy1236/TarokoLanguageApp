@@ -12,6 +12,7 @@ import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
 import 'forum_detail_screen.dart';
+import 'widgets/forum_toast.dart';
 import 'widgets/forum_post_card.dart' show forumRelativeTime;
 
 class ForumNotificationsScreen extends StatefulWidget {
@@ -112,9 +113,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       });
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text(e.message)));
+      showForumToast(context, e.message);
     }
   }
 

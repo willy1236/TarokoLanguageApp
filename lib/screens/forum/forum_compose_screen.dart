@@ -25,6 +25,7 @@ import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/user_avatar.dart';
 import 'widgets/forum_image_grid.dart' show ForumImageViewer;
+import 'widgets/forum_toast.dart';
 
 /// 依後端硬性限制檢查，回傳第一個錯誤訊息；全部通過回 null。
 String? forumComposeError({
@@ -140,9 +141,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
 
   void _toast(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    showForumToast(context, message);
   }
 
   Future<void> _pickImages() async {
