@@ -4,11 +4,11 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
-import '../../core/network/api_client.dart';
 import '../../models/article_models.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/article_cover_placeholder.dart';
+import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'article_detail_screen.dart';
 
@@ -114,12 +114,14 @@ class _ArticleLikedBookmarkedListState
 
   Widget _buildBody(bool seniorMode) {
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.gold),
-      );
+      return const TrukuLoadingView();
     }
     if (_error != null) {
-      return _buildError(_error, seniorMode);
+      return TrukuErrorView(
+        error: _error,
+        onRetry: _load,
+        seniorMode: seniorMode,
+      );
     }
     if (_articles.isEmpty) {
       return _buildEmpty(seniorMode);
@@ -151,6 +153,9 @@ class _ArticleLikedBookmarkedListState
           return _ArticleListItem(
             article: _articles[index],
             seniorMode: seniorMode,
+            // 在詳情頁取消收藏/按讚後返回，清單要重新整理，否則仍看得到
+            // 已經取消的項目。
+            onReturn: _load,
           );
         },
       ),
@@ -168,52 +173,19 @@ class _ArticleLikedBookmarkedListState
       seniorMode: seniorMode,
     );
   }
-
-  Widget _buildError(Object? error, bool seniorMode) {
-    final message = error is ApiException ? error.message : '發生錯誤，請稍後再試';
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.error_outline,
-              color: AppColors.fog,
-              size: seniorMode ? 56 : 40,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              message,
-              style: TextStyle(
-                color: AppColors.cream,
-                fontSize: seniorMode ? AppTypography.title : 14,
-              ),
-            ),
-            const SizedBox(height: 16),
-            OutlinedButton(
-              onPressed: _load,
-              style: seniorMode
-                  ? OutlinedButton.styleFrom(
-                      minimumSize: const Size(140, 52),
-                      textStyle: const TextStyle(
-                        fontSize: AppTypography.subtitle,
-                      ),
-                    )
-                  : null,
-              child: const Text('重試'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _ArticleListItem extends StatelessWidget {
   final ArticleSummary article;
   final bool seniorMode;
-  const _ArticleListItem({required this.article, required this.seniorMode});
+
+  /// 從詳情頁返回時呼叫，讓清單重新整理。
+  final VoidCallback onReturn;
+  const _ArticleListItem({
+    required this.article,
+    required this.seniorMode,
+    required this.onReturn,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -221,12 +193,15 @@ class _ArticleListItem extends StatelessWidget {
     final thumbHeight = seniorMode ? 80.0 : 60.0;
     return InkWell(
       borderRadius: BorderRadius.circular(12),
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => ArticleDetailScreen(articleId: article.id),
-        ),
-      ),
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ArticleDetailScreen(articleId: article.id),
+          ),
+        );
+        onReturn();
+      },
       child: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
@@ -275,9 +250,7 @@ class _ArticleListItem extends StatelessWidget {
                             ? Icons.favorite
                             : Icons.favorite_border,
                         size: seniorMode ? 22 : 14,
-                        color: article.isLiked
-                            ? AppColors.gold
-                            : AppColors.fog,
+                        color: article.isLiked ? AppColors.gold : AppColors.fog,
                       ),
                       const SizedBox(width: 4),
                       Text(

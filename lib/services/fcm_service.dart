@@ -350,7 +350,19 @@ class FcmService {
     }
 
     // video_session_ended
-    onVideoSessionEnded?.call(sessionId);
+    if (onVideoSessionEnded != null) {
+      onVideoSessionEnded!(sessionId);
+      return;
+    }
+    // 對稱於 video_matched：沒有訂閱者代表使用者不在通話畫面，
+    // 少了這則 fallback，對方掛斷時使用者完全不會被告知通話已結束。
+    unawaited(_localNotifications.show(
+      sessionId ?? DateTime.now().millisecondsSinceEpoch,
+      '視訊練習已結束',
+      '這次的通話已經結束了',
+      const NotificationDetails(android: _reminderAndroidDetails),
+      payload: 'video_ended:$sessionId',
+    ));
   }
 
   static void _handleOpened(RemoteMessage message) {

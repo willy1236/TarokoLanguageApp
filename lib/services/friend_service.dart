@@ -24,8 +24,8 @@ class FriendService {
   /// 回傳後端實際狀態：'pending'（已送出）或 'accepted'（對方先前已邀請我，互相邀請即成立）。
   static Future<String> sendRequest({String? friendCode, int? uid}) async {
     final data = await ApiClient.post(ApiConfig.friendRequests, {
-      if (friendCode != null) 'friend_code': friendCode,
-      if (uid != null) 'uid': uid,
+      'friend_code': ?friendCode,
+      'uid': ?uid,
     });
     return data['status'] as String? ?? 'pending';
   }

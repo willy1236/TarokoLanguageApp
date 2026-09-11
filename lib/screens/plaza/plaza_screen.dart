@@ -7,7 +7,6 @@ import '../../models/forum_models.dart';
 import '../../services/event_service.dart';
 import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
-import '../../shared/widgets/truku_widgets.dart';
 import '../forum/forum_board_view.dart';
 import '../forum/forum_bookmarks_screen.dart';
 import '../forum/forum_compose_screen.dart';
@@ -16,6 +15,8 @@ import '../forum/forum_notifications_screen.dart';
 import '../forum/forum_search_screen.dart';
 import '../forum/forum_theme.dart';
 import '../events/event_detail_screen.dart';
+import '../../shared/widgets/module_header_actions.dart';
+import 'widgets/plaza_cards.dart';
 
 class PlazaScreen extends StatefulWidget {
   /// 由外層（合併分頁的膠囊切換）注入，顯示在標題與近期活動之間。
@@ -44,6 +45,9 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   static const _allBoardsKey = '__all__';
 
   bool _boardsLoading = true;
+
+  /// 發文畫面開啟中：擋住連點疊出第二個 ForumComposeScreen。
+  bool _composing = false;
   int _unread = 0;
   final _boardViewKey = GlobalKey<ForumBoardViewState>();
 
@@ -246,23 +250,26 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     );
   }
 
-  Widget _composeButton(bool seniorMode) => GestureDetector(
-    onTap: () async {
-      if (_boardsLoading) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('看板載入中，請稍候')));
-        return;
-      }
-      if (_boards.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('看板載入失敗，請稍後再試'),
-            action: SnackBarAction(label: '重試', onPressed: _loadBoards),
-          ),
-        );
-        return;
-      }
+  Future<void> _compose() async {
+    // 連點會疊出兩個發文畫面：async onTap 沒有 in-flight 防護。
+    if (_composing) return;
+    if (_boardsLoading) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('看板載入中，請稍候')));
+      return;
+    }
+    if (_boards.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('看板載入失敗，請稍後再試'),
+          action: SnackBarAction(label: '重試', onPressed: _loadBoards),
+        ),
+      );
+      return;
+    }
+    _composing = true;
+    try {
       final created = await Navigator.push<bool>(
         context,
         MaterialPageRoute(builder: (_) => ForumComposeScreen(boards: _boards)),
@@ -270,107 +277,41 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       if (created == true) {
         _boardViewKey.currentState?.refresh();
       }
-    },
-    child: Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: seniorMode ? 20 : 16,
-        vertical: seniorMode ? 14 : 10,
-      ),
-      decoration: BoxDecoration(
-        color: AppColors.primary,
-        borderRadius: BorderRadius.circular(22),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.add,
-            color: AppColors.creamLight,
-            size: seniorMode ? 20 : 14,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '發布',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? 18 : 13,
-              fontWeight: FontWeight.w600,
-              color: AppColors.creamLight,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ],
+    } finally {
+      _composing = false;
+    }
+  }
+
+  Widget _composeButton(bool seniorMode) =>
+      ModuleComposeButton(label: '發布', onTap: _compose, seniorMode: seniorMode);
+
+  Widget _actionIcons(bool seniorMode) => ModuleActionIcons(
+    onSearch: () => Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ForumSearchScreen(
+          boards: _boards,
+          onBookmarkChanged: _syncBookmark,
+        ),
       ),
     ),
-  );
-
-  Widget _actionIcons(bool seniorMode) => Row(
-    mainAxisSize: MainAxisSize.min,
-    children: [
-      IconButton(
-        tooltip: '搜尋',
-        visualDensity: VisualDensity.compact,
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => ForumSearchScreen(
-              boards: _boards,
-              onBookmarkChanged: _syncBookmark,
-            ),
-          ),
-        ),
-        icon: Icon(Icons.search, color: AppColors.ink, size: seniorMode ? 24 : 20),
+    bookmarksTooltip: '我的收藏',
+    onBookmarks: () => Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ForumBookmarksScreen(onBookmarkChanged: _syncBookmark),
       ),
-      IconButton(
-        tooltip: '我的收藏',
-        visualDensity: VisualDensity.compact,
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                ForumBookmarksScreen(onBookmarkChanged: _syncBookmark),
-          ),
-        ),
-        icon: Icon(
-          Icons.bookmark_border,
-          color: AppColors.ink,
-          size: seniorMode ? 24 : 20,
-        ),
-      ),
-      IconButton(
-        tooltip: '通知',
-        visualDensity: VisualDensity.compact,
-        onPressed: () async {
-          await Navigator.push(
-            context,
-            MaterialPageRoute(builder: (_) => const ForumNotificationsScreen()),
-          );
-          if (mounted) _loadUnread();
-        },
-        icon: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Icon(
-              Icons.notifications_none,
-              color: AppColors.ink,
-              size: seniorMode ? 24 : 20,
-            ),
-            if (_unread > 0)
-              Positioned(
-                right: -2,
-                top: -2,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primary,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ),
-    ],
+    ),
+    notificationsTooltip: '通知',
+    onNotifications: () async {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const ForumNotificationsScreen()),
+      );
+      if (mounted) _loadUnread();
+    },
+    hasUnread: _unread > 0,
+    seniorMode: seniorMode,
   );
 
   /// 看板 tab，併入 [_buildScrollingHeader] 隨頁首一起捲動，接在近期活動
@@ -394,13 +335,13 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   // slug 為 null 代表「全部」，排在最前面且是預設。
-                  _BoardTab(
+                  PlazaBoardTab(
                     label: '全部',
                     selected: _boardSlug == null,
                     onTap: () => setState(() => _boardSlug = null),
                   ),
                   for (final board in _boards)
-                    _BoardTab(
+                    PlazaBoardTab(
                       label: board.name,
                       selected: board.slug == _boardSlug,
                       onTap: () => setState(() => _boardSlug = board.slug),
@@ -447,7 +388,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         else if (_eventsError != null)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-            child: _EventMessageCard(
+            child: PlazaEventMessageCard(
               icon: Icons.cloud_off_outlined,
               message: _eventsError!,
               actionLabel: '重試',
@@ -457,7 +398,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         else if (_events.isEmpty)
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
-            child: const _EventMessageCard(
+            child: const PlazaEventMessageCard(
               icon: Icons.event_available_outlined,
               message: '近期暫無活動，敬請期待',
             ),
@@ -470,7 +411,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
               padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
               itemCount: _events.length,
               separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => _MiniEventCard(
+              itemBuilder: (_, i) => PlazaMiniEventCard(
                 event: _events[i],
                 onTap: () => _openEventDetail(_events[i]),
               ),
@@ -506,259 +447,6 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         toggleBookmark: ForumService.bookmarkPost,
         onOpenPost: _openPost,
         onRefresh: _refreshHeader,
-      ),
-    );
-  }
-}
-
-class _EventMessageCard extends StatelessWidget {
-  final IconData icon;
-  final String message;
-  final String? actionLabel;
-  final VoidCallback? onAction;
-
-  const _EventMessageCard({
-    required this.icon,
-    required this.message,
-    this.actionLabel,
-    this.onAction,
-  });
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: double.infinity,
-    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-    decoration: BoxDecoration(
-      color: AppColors.cream,
-      borderRadius: BorderRadius.circular(14),
-      border: Border.all(color: AppColors.creamDeep),
-    ),
-    child: Row(
-      children: [
-        Icon(icon, size: 18, color: AppColors.fog),
-        const SizedBox(width: 10),
-        Expanded(
-          child: Text(
-            message,
-            style: GoogleFonts.notoSerifTc(
-              fontSize: 13,
-              color: AppColors.fog,
-              letterSpacing: 0.8,
-            ),
-          ),
-        ),
-        if (actionLabel != null && onAction != null)
-          TextButton(onPressed: onAction, child: Text(actionLabel!)),
-      ],
-    ),
-  );
-}
-
-// ── 看板 Tab 元件 ──────────────────────────────────────────────
-
-class _BoardTab extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _BoardTab({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColors.fog;
-    return GestureDetector(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 6),
-        child: Stack(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 10),
-              child: Text(
-                label,
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ),
-            if (selected)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(height: 2, color: AppColors.primary),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── 近期活動小卡 ─────────────────────────────────────────────
-
-class _MiniEventCard extends StatelessWidget {
-  final EventSummary event;
-  final VoidCallback onTap;
-
-  const _MiniEventCard({required this.event, required this.onTap});
-
-  static const _months = [
-    '1月',
-    '2月',
-    '3月',
-    '4月',
-    '5月',
-    '6月',
-    '7月',
-    '8月',
-    '9月',
-    '10月',
-    '11月',
-    '12月',
-  ];
-
-  @override
-  Widget build(BuildContext context) {
-    final d = event.startsAt.toLocal();
-    final month = _months[d.month - 1];
-    final day = d.day.toString().padLeft(2, '0');
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        width: 200,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.ink,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -16,
-              top: -16,
-              child: Opacity(
-                opacity: 0.13,
-                child: TrukuDiamond(size: 80, color: AppColors.gold),
-              ),
-            ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: event.isJoined
-                            ? AppColors.primary
-                            : AppColors.moss,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            month,
-                            style: const TextStyle(
-                              fontSize: 8,
-                              color: AppColors.gold,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                          Text(
-                            day,
-                            style: GoogleFonts.notoSerifTc(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.creamLight,
-                              height: 1,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            event.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.notoSerifTc(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.creamLight,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            event.location ?? '線上',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: AppColors.creamLight.withValues(
-                                alpha: 0.65,
-                              ),
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '● ${event.participantCount} 人報名',
-                      style: const TextStyle(
-                        fontSize: 10,
-                        color: AppColors.gold,
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: AppColors.gold.withValues(alpha: 0.5),
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Text(
-                        event.isJoined ? '已報名' : '我要參加',
-                        style: const TextStyle(
-                          fontSize: 11,
-                          color: AppColors.gold,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ],
-        ),
       ),
     );
   }

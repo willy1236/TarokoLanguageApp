@@ -4,9 +4,9 @@
 // 情況下驅動分頁與回滾，同一個元件也能被「我的收藏」與搜尋結果重複使用。
 
 import 'package:flutter/material.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../models/shop_item.dart';
@@ -14,6 +14,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'widgets/forum_post_card.dart';
+import 'widgets/forum_toast.dart';
 
 typedef ForumPageLoader =
     Future<ForumPostPage> Function({int? cursor, int? after});
@@ -75,6 +76,10 @@ class ForumBoardViewState extends State<ForumBoardView> {
   int? _nextCursor;
   Map<String, ShopItem> _itemCatalogById = const {};
 
+  /// 請求世代：_load（切換看板/篩選、下拉刷新）每次遞增，_load/_loadMore
+  /// 的回應套用前比對，過期回應整段忽略。
+  int _reqGen = 0;
+
   @override
   void initState() {
     super.initState();
@@ -114,13 +119,17 @@ class ForumBoardViewState extends State<ForumBoardView> {
   }
 
   Future<void> _load() async {
+    final gen = ++_reqGen;
     setState(() {
       _loading = true;
+      // 飛行中的分頁請求已過期：不清掉旗標的話它回來會把舊游標的貼文
+      // append 進剛清空的新清單，造成清單混雜、游標錯亂。
+      _loadingMore = false;
       _error = null;
     });
     try {
       final page = await widget.loadPage();
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _pinned
           ..clear()
@@ -132,9 +141,17 @@ class ForumBoardViewState extends State<ForumBoardView> {
         _loading = false;
       });
     } on ApiException catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _error = e.message;
+        _loading = false;
+      });
+    } catch (e) {
+      // 非 ApiException（解析錯誤等）原本會逸出，讓 _loading 永遠停在 true。
+      debugPrint('ForumBoardView._load failed: $e');
+      if (!mounted || gen != _reqGen) return;
+      setState(() {
+        _error = '載入失敗，請稍後再試';
         _loading = false;
       });
     }
@@ -142,17 +159,18 @@ class ForumBoardViewState extends State<ForumBoardView> {
 
   Future<void> _loadMore() async {
     if (_loadingMore || _nextCursor == null) return;
+    final gen = _reqGen;
     setState(() => _loadingMore = true);
     try {
       final page = await widget.loadPage(cursor: _nextCursor);
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _posts.addAll(page.posts);
         _nextCursor = page.nextCursor;
         _loadingMore = false;
       });
     } on ApiException catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() => _loadingMore = false);
       _toast(e.message);
     }
@@ -161,7 +179,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
   /// 下拉刷新：貼文與呼叫端的額外工作並行，兩者都完成才收起轉圈動畫。
   Future<void> refresh() async {
     final extra = widget.onRefresh?.call();
-    await Future.wait([_refreshPosts(), if (extra != null) extra]);
+    await Future.wait([_refreshPosts(), ?extra]);
   }
 
   /// 用 after 只取斷層後的新貼文，接在最前面。
@@ -189,9 +207,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
 
   void _toast(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    showForumToast(context, message);
   }
 
   /// 就地替換一筆貼文（置頂區與一般區都找）。
@@ -319,10 +335,11 @@ class ForumBoardViewState extends State<ForumBoardView> {
     if (_error != null) {
       return [
         ?header,
-        _ForumErrorState(
+        TrukuErrorView(
           message: _error!,
           onRetry: _load,
           seniorMode: seniorMode,
+          topPadding: 60,
         ),
       ];
     }
@@ -372,48 +389,4 @@ class ForumBoardViewState extends State<ForumBoardView> {
         ),
     ];
   }
-}
-
-class _ForumErrorState extends StatelessWidget {
-  final String message;
-  final VoidCallback onRetry;
-  final bool seniorMode;
-
-  const _ForumErrorState({
-    required this.message,
-    required this.onRetry,
-    required this.seniorMode,
-  });
-
-  @override
-  Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
-    child: Column(
-      children: [
-        const Icon(Icons.cloud_off_outlined, size: 40, color: AppColors.fog),
-        const SizedBox(height: 12),
-        Text(
-          message,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: seniorMode ? AppTypography.subtitle : null,
-            color: AppColors.inkSoft,
-          ),
-        ),
-        const SizedBox(height: 14),
-        OutlinedButton(
-          onPressed: onRetry,
-          style: OutlinedButton.styleFrom(
-            foregroundColor: AppColors.primary,
-            side: const BorderSide(color: AppColors.primary),
-            minimumSize: seniorMode ? const Size(140, 52) : null,
-            textStyle: seniorMode
-                ? const TextStyle(fontSize: AppTypography.subtitle)
-                : null,
-          ),
-          child: const Text('重試'),
-        ),
-      ],
-    ),
-  );
 }

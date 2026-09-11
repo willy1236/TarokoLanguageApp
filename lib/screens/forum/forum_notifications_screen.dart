@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 import '../../core/constants/app_colors.dart';
 import 'forum_theme.dart';
@@ -12,6 +13,7 @@ import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
 import 'forum_detail_screen.dart';
+import 'widgets/forum_toast.dart';
 import 'widgets/forum_post_card.dart' show forumRelativeTime;
 
 class ForumNotificationsScreen extends StatefulWidget {
@@ -112,9 +114,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       });
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text(e.message)));
+      showForumToast(context, e.message);
     }
   }
 
@@ -173,38 +173,14 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
 
   Widget _buildBody(bool seniorMode) {
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+      return const TrukuLoadingView();
     }
     final error = _error;
     if (error != null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              error,
-              style: TextStyle(
-                color: AppColors.inkSoft,
-                fontSize: seniorMode ? AppTypography.title : null,
-              ),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(
-              onPressed: _load,
-              style: seniorMode
-                  ? OutlinedButton.styleFrom(
-                      minimumSize: const Size(140, 52),
-                      textStyle: const TextStyle(
-                        fontSize: AppTypography.subtitle,
-                      ),
-                    )
-                  : null,
-              child: const Text('重試'),
-            ),
-          ],
-        ),
+      return TrukuErrorView(
+        message: error,
+        onRetry: _load,
+        seniorMode: seniorMode,
       );
     }
     if (_items.isEmpty) {

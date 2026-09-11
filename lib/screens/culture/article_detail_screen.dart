@@ -273,13 +273,19 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           const SizedBox(width: 4),
                           Text(
                             '${article.viewCount}',
-                            style: TextStyle(color: AppColors.fog, fontSize: 12),
+                            style: TextStyle(
+                              color: AppColors.fog,
+                              fontSize: 12,
+                            ),
                           ),
                           if (article.publishedAt != null) ...[
                             const SizedBox(width: 8),
                             Text(
                               _formatDate(article.publishedAt!),
-                              style: TextStyle(color: AppColors.fog, fontSize: 12),
+                              style: TextStyle(
+                                color: AppColors.fog,
+                                fontSize: 12,
+                              ),
                             ),
                           ],
                           const Spacer(),
@@ -375,5 +381,4 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   String _formatDate(DateTime date) {
     return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
   }
-
 }

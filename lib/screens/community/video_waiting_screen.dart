@@ -23,6 +23,9 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
   bool _isPolling = false;
   bool _matched = false;
 
+  /// 取消處理中：擋住重複點擊與返回鍵重入。
+  bool _cancelling = false;
+
   @override
   void initState() {
     super.initState();
@@ -76,14 +79,55 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
     }
   }
 
-  /// 取消配對：離開佇列。不必等後端確認即可讓使用者感覺立即返回。
-  void _cancel(BuildContext context) {
-    unawaited(VideoCallService.leaveQueue());
-    Navigator.pop(context);
+  /// 取消配對：必須確認後端已離開佇列才返回。fire-and-forget 會留下幽靈
+  /// 排隊者——使用者已離開畫面，卻仍可能被配到一通沒人接的通話。
+  /// 返回鍵、手勢與取消按鈕三條路徑統一走這裡。
+  Future<void> _cancel() async {
+    if (_cancelling || _matched) return;
+    setState(() => _cancelling = true);
+    try {
+      await VideoCallService.leaveQueue().timeout(const Duration(seconds: 5));
+      if (!mounted) return;
+      Navigator.pop(context);
+    } catch (e) {
+      debugPrint('VideoWaitingScreen: 離開佇列失敗：$e');
+      if (!mounted) return;
+      setState(() => _cancelling = false);
+      final leaveAnyway = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('無法取消配對'),
+          content: const Text('目前無法連上伺服器。仍要離開嗎？若離開，稍後可能仍會收到配對通知。'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text('留在此頁'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: const Text('仍要離開'),
+            ),
+          ],
+        ),
+      );
+      if (leaveAnyway == true && mounted) Navigator.pop(context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // 配對成功後不再攔截返回（導頁交給 _poll 的 pushReplacement）。
+    return PopScope(
+      canPop: _matched,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        unawaited(_cancel());
+      },
+      child: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
     return Scaffold(
       backgroundColor: AppColors.ink,
       body: Stack(
@@ -220,7 +264,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
     return Padding(
       padding: const EdgeInsets.only(bottom: 50),
       child: GestureDetector(
-        onTap: () => _cancel(context),
+        onTap: _cancelling ? null : _cancel,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
           decoration: BoxDecoration(

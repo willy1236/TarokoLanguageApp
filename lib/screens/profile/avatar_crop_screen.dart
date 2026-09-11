@@ -94,9 +94,7 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
                     setState(() => _isCropping = false);
                     ScaffoldMessenger.of(context)
                       ..clearSnackBars()
-                      ..showSnackBar(
-                        const SnackBar(content: Text('裁切失敗，請重試')),
-                      );
+                      ..showSnackBar(const SnackBar(content: Text('裁切失敗，請重試')));
                 }
               },
             ),

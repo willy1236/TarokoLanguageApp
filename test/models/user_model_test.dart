@@ -88,7 +88,8 @@ void main() {
 
       final json = user.toJson();
 
-      expect(json, {
+      // 只檢查這組欄位，之後 toJson 新增欄位不必回頭改這裡
+      final expected = {
         'uid': 1,
         'display_name': 'Bob',
         'avatar_url': 'url',
@@ -99,7 +100,9 @@ void main() {
         'millet': 30,
         'email': 'bob@example.com',
         'created_at': user.createdAt.toIso8601String(),
-      });
+        'checked_in_today': false,
+      };
+      expected.forEach((key, value) => expect(json[key], value, reason: key));
 
       final roundTripped = UserModel.fromJson(json);
       expect(roundTripped.uid, user.uid);

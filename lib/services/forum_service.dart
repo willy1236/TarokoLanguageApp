@@ -144,8 +144,8 @@ class ForumService {
   }) async {
     assert(title != null || body != null, 'title 與 body 至少要給一個');
     final data = await ApiClient.patch(ApiConfig.forumPost(id), {
-      if (title != null) 'title': title,
-      if (body != null) 'body': body,
+      'title': ?title,
+      'body': ?body,
     });
     return ForumPost.fromJson(data['post'] as Map<String, dynamic>);
   }
@@ -171,7 +171,7 @@ class ForumService {
   }) async {
     final data = await ApiClient.post(ApiConfig.forumPostComments(postId), {
       'body': body,
-      if (parentCommentId != null) 'parent_comment_id': parentCommentId,
+      'parent_comment_id': ?parentCommentId,
     });
     return ForumComment.fromJson(data['comment'] as Map<String, dynamic>);
   }
@@ -209,7 +209,7 @@ class ForumService {
   static Future<ForumLikedPostPage> likedPosts({String? cursor}) async {
     final data = await ApiClient.get(
       ApiConfig.forumPostLikes,
-      query: {if (cursor != null) 'cursor': cursor},
+      query: {'cursor': ?cursor},
     );
     return ForumLikedPostPage.fromJson(data);
   }
@@ -219,7 +219,7 @@ class ForumService {
   static Future<ForumLikedCommentPage> likedComments({String? cursor}) async {
     final data = await ApiClient.get(
       ApiConfig.forumCommentLikes,
-      query: {if (cursor != null) 'cursor': cursor},
+      query: {'cursor': ?cursor},
     );
     return ForumLikedCommentPage.fromJson(data);
   }
@@ -252,7 +252,7 @@ class ForumService {
       query: {
         'q': trimmed,
         if (board != null && board.isNotEmpty) 'board': board,
-        if (range != null) 'range': range,
+        'range': ?range,
         if (tribeId != null) 'tribe_id': '$tribeId',
         if (cursor != null) 'cursor': '$cursor',
       },
@@ -286,7 +286,7 @@ class ForumService {
   /// 不帶 [ids] 代表全部標記已讀。
   static Future<void> markRead({List<int>? ids}) => ApiClient.post(
     ApiConfig.forumNotificationsRead,
-    {if (ids != null) 'ids': ids},
+    {'ids': ?ids},
   );
 
   // ── 書籤 ──────────────────────────────────────────────────

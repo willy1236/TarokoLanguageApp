@@ -5,6 +5,7 @@
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
@@ -17,9 +18,10 @@ import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import 'forum_compose_screen.dart';
+import 'widgets/forum_comment_input_bar.dart';
 import 'widgets/forum_comment_tile.dart';
-import 'widgets/forum_image_grid.dart';
-import 'widgets/forum_post_card.dart' show forumRelativeTime;
+import 'widgets/forum_post_body.dart';
+import 'widgets/forum_toast.dart';
 import 'widgets/forum_report_sheet.dart';
 
 /// 詳情頁關閉時回報的結果：貼文是否被刪除。
@@ -157,9 +159,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   void _toast(String message) {
     if (!mounted) return;
-    ScaffoldMessenger.of(context)
-      ..clearSnackBars()
-      ..showSnackBar(SnackBar(content: Text(message)));
+    showForumToast(context, message);
   }
 
   /// 貼文已不存在：回到列表並回報已刪除，讓呼叫端把它移除。
@@ -380,7 +380,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         builder: (_) => ForumComposeScreen(boards: [post.board], editing: post),
       ),
     );
-    if (updated == true && mounted) _load();
+    if (updated != true || !mounted) return;
+    await _load();
+    // 按讚/收藏/留言都會回報父層，唯獨編輯漏做，導致返回列表仍是舊標題內文。
+    final refreshed = _post;
+    if (refreshed != null) widget.onPostChanged?.call(refreshed);
   }
 
   @override
@@ -439,27 +443,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   Widget _buildBody(ForumPost? post, bool seniorMode) {
     if (_loading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
+      return const TrukuLoadingView();
     }
     final error = _error;
     if (error != null || post == null) {
-      return Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              error ?? '載入失敗',
-              style: TextStyle(
-                color: AppColors.inkSoft,
-                fontSize: seniorMode ? AppTypography.title : null,
-              ),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton(onPressed: _load, child: const Text('重試')),
-          ],
-        ),
+      return TrukuErrorView(
+        message: error ?? '載入失敗',
+        onRetry: _load,
+        seniorMode: seniorMode,
       );
     }
 
@@ -478,7 +469,13 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               controller: _scrollController,
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
               children: [
-                _postBody(post, seniorMode),
+                ForumPostBody(
+                  post: post,
+                  seniorMode: seniorMode,
+                  onImageExpired: _onImageExpired,
+                  onLike: _likePost,
+                  onBookmark: _bookmarkPost,
+                ),
                 const Divider(color: AppColors.creamDeep, height: 28),
                 Text(
                   '留言 ${post.commentCount}',
@@ -535,170 +532,15 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             ),
           ),
         ),
-        _inputBar(seniorMode),
-      ],
-    );
-  }
-
-  Widget _postBody(ForumPost post, bool seniorMode) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        post.title,
-        style: GoogleFonts.notoSerifTc(
-          fontSize: seniorMode ? 26 : 20,
-          fontWeight: FontWeight.w700,
-          color: AppColors.ink,
-          height: 1.4,
-        ),
-      ),
-      const SizedBox(height: 6),
-      Text(
-        '${post.author.displayName} · ${post.board.name} · '
-        '${forumRelativeTime(post.createdAt)}',
-        style: TextStyle(
-          fontSize: seniorMode ? AppTypography.subtitle : 12,
-          color: AppColors.fog,
-        ),
-      ),
-      const SizedBox(height: 14),
-      Text(
-        post.body,
-        style: TextStyle(
-          fontSize: seniorMode ? AppTypography.title : 15,
-          color: AppColors.inkSoft,
-          height: 1.7,
-        ),
-      ),
-      if (post.images.isNotEmpty) ...[
-        const SizedBox(height: 14),
-        ForumImageGrid(urls: post.images, onImageExpired: _onImageExpired),
-      ],
-      if (post.tags.isNotEmpty) ...[
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 6,
-          children: [
-            for (final tag in post.tags)
-              Text(
-                '#${tag.name}',
-                style: GoogleFonts.crimsonPro(
-                  fontStyle: FontStyle.italic,
-                  fontSize: seniorMode ? AppTypography.body : 12,
-                  color: AppColors.primary,
-                ),
-              ),
-          ],
+        ForumCommentInputBar(
+          controller: _inputController,
+          replyTarget: _replyTarget,
+          sending: _sending,
+          seniorMode: seniorMode,
+          onSend: _send,
+          onCancelReply: () => setState(() => _replyTarget = null),
         ),
       ],
-      const SizedBox(height: 12),
-      Row(
-        children: [
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: _likePost,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  post.isLiked ? Icons.favorite : Icons.favorite_border,
-                  size: seniorMode ? 30 : 18,
-                  color: post.isLiked ? AppColors.primary : AppColors.fog,
-                ),
-                const SizedBox(width: 6),
-                Text(
-                  '${post.likeCount}',
-                  style: TextStyle(
-                    fontSize: seniorMode ? AppTypography.subtitle : 13,
-                    color: AppColors.fog,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: 18),
-          GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTap: _bookmarkPost,
-            child: Icon(
-              post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-              size: seniorMode ? 30 : 18,
-              color: post.isBookmarked ? AppColors.primary : AppColors.fog,
-            ),
-          ),
-        ],
-      ),
-    ],
-  );
-
-  Widget _inputBar(bool seniorMode) {
-    final target = _replyTarget;
-    return Container(
-      decoration: const BoxDecoration(
-        color: AppColors.cream,
-        border: Border(top: BorderSide(color: AppColors.creamDeep)),
-      ),
-      padding: EdgeInsets.fromLTRB(
-        16,
-        8,
-        16,
-        8 + MediaQuery.of(context).padding.bottom,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (target != null)
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    '回覆 @${target.author?.displayName ?? '匿名使用者'}',
-                    style: TextStyle(
-                      fontSize: seniorMode ? AppTypography.body : 12,
-                      color: AppColors.fog,
-                    ),
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () => setState(() => _replyTarget = null),
-                  child: Icon(
-                    Icons.close,
-                    size: seniorMode ? 24 : 16,
-                    color: AppColors.fog,
-                  ),
-                ),
-              ],
-            ),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _inputController,
-                  maxLength: ForumService.commentMax,
-                  minLines: 1,
-                  maxLines: 4,
-                  onChanged: (_) => setState(() {}),
-                  style: TextStyle(
-                    fontSize: seniorMode ? AppTypography.title : null,
-                  ),
-                  decoration: const InputDecoration(
-                    hintText: '說點什麼…',
-                    counterText: '',
-                    border: InputBorder.none,
-                  ),
-                ),
-              ),
-              IconButton(
-                onPressed: _sending || _inputController.text.trim().isEmpty
-                    ? null
-                    : _send,
-                iconSize: seniorMode ? 30 : 20,
-                icon: const Icon(Icons.send, color: AppColors.primary),
-              ),
-            ],
-          ),
-        ],
-      ),
     );
   }
 }

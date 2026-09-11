@@ -114,56 +114,41 @@ class ArticleDetail extends ArticleSummary {
     );
   }
 
+  /// 底下三個樂觀更新方法統一走這裡：手動重寫全部欄位的話，日後新增欄位
+  /// 很容易漏改其中一兩處，導致更新後該欄位被悄悄重置。
+  ArticleDetail copyWith({
+    int? likeCount,
+    bool? isLiked,
+    bool? isBookmarked,
+  }) {
+    return ArticleDetail(
+      id: id,
+      title: title,
+      summary: summary,
+      coverImageUrl: coverImageUrl,
+      category: category,
+      viewCount: viewCount,
+      weeklyViewCount: weeklyViewCount,
+      likeCount: likeCount ?? this.likeCount,
+      isLiked: isLiked ?? this.isLiked,
+      isBookmarked: isBookmarked ?? this.isBookmarked,
+      publishedAt: publishedAt,
+      contentMd: contentMd,
+      createdAt: createdAt,
+    );
+  }
+
   /// 樂觀更新用：切換按讚狀態並同步計數，等後端真實回應後再校正。
-  ArticleDetail toggledLike() => ArticleDetail(
-    id: id,
-    title: title,
-    summary: summary,
-    coverImageUrl: coverImageUrl,
-    category: category,
-    viewCount: viewCount,
-    weeklyViewCount: weeklyViewCount,
+  ArticleDetail toggledLike() => copyWith(
     likeCount: isLiked ? likeCount - 1 : likeCount + 1,
     isLiked: !isLiked,
-    isBookmarked: isBookmarked,
-    publishedAt: publishedAt,
-    contentMd: contentMd,
-    createdAt: createdAt,
   );
 
-  ArticleDetail toggledBookmark() => ArticleDetail(
-    id: id,
-    title: title,
-    summary: summary,
-    coverImageUrl: coverImageUrl,
-    category: category,
-    viewCount: viewCount,
-    weeklyViewCount: weeklyViewCount,
-    likeCount: likeCount,
-    isLiked: isLiked,
-    isBookmarked: !isBookmarked,
-    publishedAt: publishedAt,
-    contentMd: contentMd,
-    createdAt: createdAt,
-  );
+  ArticleDetail toggledBookmark() => copyWith(isBookmarked: !isBookmarked);
 
   /// API 回傳真實計數後校正，避免樂觀更新的本地累加值飄移。
   ArticleDetail withLikeResult({required bool liked, required int likeCount}) =>
-      ArticleDetail(
-        id: id,
-        title: title,
-        summary: summary,
-        coverImageUrl: coverImageUrl,
-        category: category,
-        viewCount: viewCount,
-        weeklyViewCount: weeklyViewCount,
-        likeCount: likeCount,
-        isLiked: liked,
-        isBookmarked: isBookmarked,
-        publishedAt: publishedAt,
-        contentMd: contentMd,
-        createdAt: createdAt,
-      );
+      copyWith(isLiked: liked, likeCount: likeCount);
 }
 
 class ArticleListResponse {

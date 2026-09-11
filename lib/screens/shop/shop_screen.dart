@@ -9,6 +9,7 @@ import '../../services/user_service.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import '../../shared/widgets/millet_coin_icon.dart';
 import '../../shared/widgets/shop_item_card.dart';
+import '../../shared/widgets/shop_shared.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../millet/millet_ledger_screen.dart';
 
@@ -25,25 +26,6 @@ const int _catAvatar = 1;
 const int _catFrame = 2;
 const int _catOwned = 3;
 
-/// 六色稀有度 → 顯示色與中文標籤；頭像框固定 rarity=null，不落在此表內。
-const Map<String, Color> _rarityColors = {
-  'red': AppColors.rose,
-  'orange': AppColors.orangeLight,
-  'yellow': AppColors.amber,
-  'green': AppColors.greenLight,
-  'blue': AppColors.blue,
-  'gold': AppColors.gold,
-};
-
-const Map<String, String> _rarityLabels = {
-  'red': '紅',
-  'orange': '橙',
-  'yellow': '黃',
-  'green': '綠',
-  'blue': '藍',
-  'gold': '金',
-};
-
 class _ShopScreenState extends State<ShopScreen> {
   int _selectedCategory = _catAll;
   final List<String> _categories = ['全部', '頭像 Lukus', '頭像框', '已擁有'];
@@ -55,6 +37,10 @@ class _ShopScreenState extends State<ShopScreen> {
   // null 代表尚未取得或取得失敗，此時不顯示商品區塊，只顯示商店其餘的基本介面
   // （餘額卡），避免顯示跟後端擁有狀態對不上的假資料。
   List<ShopItem>? _serverItems;
+
+  /// 正在送出兌換／配戴請求的商品 id：await 期間 disable 該張卡片的按鈕，
+  /// 避免連點造成重複扣點。
+  final Set<String> _busyItemIds = {};
 
   @override
   void initState() {
@@ -105,6 +91,8 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   Future<void> _purchaseItem(ShopItem item) async {
+    if (_busyItemIds.contains(item.id)) return;
+    setState(() => _busyItemIds.add(item.id));
     try {
       final updated = await ShopService.purchaseItem(item.id);
       if (!mounted) return;
@@ -112,17 +100,18 @@ class _ShopScreenState extends State<ShopScreen> {
         final owned = item.type == 'frame'
             ? updated.ownedFrameIds.contains(item.id)
             : updated.ownedAvatarIds.contains(item.id);
-        if (owned) {
-          _user = updated;
-          return;
-        }
-        _user = item.type == 'frame'
-            ? updated.copyWith(
-                ownedFrameIds: [...updated.ownedFrameIds, item.id],
-              )
-            : updated.copyWith(
-                ownedAvatarIds: [...updated.ownedAvatarIds, item.id],
-              );
+        _user = owned
+            ? updated
+            : item.type == 'frame'
+                ? updated.copyWith(
+                    ownedFrameIds: [...updated.ownedFrameIds, item.id],
+                  )
+                : updated.copyWith(
+                    ownedAvatarIds: [...updated.ownedAvatarIds, item.id],
+                  );
+        // 卡片的「已擁有／可兌換」與「已擁有」分頁都看 ShopItem.isOwned，
+        // 不同步這裡的話買完仍顯示「兌換」且可以再點一次。
+        _markOwnedLocally(item.id);
       });
       ScaffoldMessenger.of(
         context,
@@ -138,31 +127,36 @@ class _ShopScreenState extends State<ShopScreen> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text('兌換失敗，請稍後再試')));
+    } finally {
+      if (mounted) setState(() => _busyItemIds.remove(item.id));
     }
   }
 
+  /// 把目錄中該商品標記為已擁有。必須在 setState 內呼叫。
+  void _markOwnedLocally(String itemId) {
+    final items = _serverItems;
+    if (items == null) return;
+    _serverItems = [
+      for (final i in items) i.id == itemId ? i.copyWith(isOwned: true) : i,
+    ];
+  }
+
   Future<void> _equipItem(ShopItem item) async {
-    try {
-      final updated = item.type == 'frame'
-          ? await ShopService.equipFrame(item.id)
-          : await ShopService.equipAvatar(item.id);
-      if (!mounted) return;
-      setState(() => _user = updated);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('已配戴')));
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      debugPrint('ShopScreen._equipItem failed: $e');
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('配戴失敗，請稍後再試')));
-    }
+    if (_busyItemIds.contains(item.id)) return;
+    setState(() => _busyItemIds.add(item.id));
+    final updated = await runShopAction(
+      context,
+      action: () => item.type == 'frame'
+          ? ShopService.equipFrame(item.id)
+          : ShopService.equipAvatar(item.id),
+      successMessage: '已配戴',
+      logTag: 'ShopScreen._equipItem',
+    );
+    if (!mounted) return;
+    setState(() {
+      if (updated != null) _user = updated;
+      _busyItemIds.remove(item.id);
+    });
   }
 
   @override
@@ -372,37 +366,10 @@ class _ShopScreenState extends State<ShopScreen> {
   }
 
   Widget _buildCategories() {
-    return SizedBox(
-      height: 64,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
-        itemCount: _categories.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final active = i == _selectedCategory;
-          return GestureDetector(
-            onTap: () => setState(() => _selectedCategory = i),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: active ? AppColors.ink : Colors.transparent,
-                border: active ? null : Border.all(color: AppColors.creamDeep),
-              ),
-              child: Text(
-                _categories[i],
-                style: TextStyle(
-                  fontSize: 12,
-                  color: active ? AppColors.creamLight : AppColors.inkSoft,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
+    return ShopCategoryChips(
+      labels: _categories,
+      selected: _selectedCategory,
+      onSelected: (i) => setState(() => _selectedCategory = i),
     );
   }
 
@@ -452,7 +419,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
   Widget _buildItemCard(ShopItem item) {
     final isGold = item.rarity == 'gold';
-    final rarityColor = _rarityColors[item.rarity];
+    final rarityColor = rarityColors[item.rarity];
     final owned = item.isOwned;
     final locked = !owned && item.unlockCondition != null
         ? item.unlockCondition
@@ -460,6 +427,8 @@ class _ShopScreenState extends State<ShopScreen> {
     final equipped = item.type == 'frame'
         ? _user?.frameId == item.id
         : _user?.avatarId == item.id;
+
+    final busy = _busyItemIds.contains(item.id);
 
     String? actionLabel;
     VoidCallback? onAction;
@@ -478,9 +447,7 @@ class _ShopScreenState extends State<ShopScreen> {
 
     return ShopItemCard(
       name: item.name,
-      subtitle: item.rarity != null
-          ? _rarityLabels[item.rarity] ?? item.rarity!
-          : null,
+      subtitle: raritySubtitle(item),
       price: item.price,
       isGold: isGold,
       rarityColor: rarityColor,
@@ -488,8 +455,8 @@ class _ShopScreenState extends State<ShopScreen> {
       lockedText: locked,
       imageUrl: item.imageUrl,
       icon: item.type == 'frame' ? Icons.circle_outlined : Icons.face_rounded,
-      actionLabel: actionLabel,
-      onAction: onAction,
+      actionLabel: busy ? '處理中…' : actionLabel,
+      onAction: busy ? null : onAction,
     );
   }
 }

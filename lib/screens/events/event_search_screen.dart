@@ -33,6 +33,10 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
   List<EventSummary> _events = [];
   bool _searched = false;
 
+  /// 請求世代：每次新查詢遞增，回應套用前比對。快速切換篩選時，較晚送出但
+  /// 先回應的舊查詢不能覆蓋新結果。
+  int _reqGen = 0;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -40,10 +44,12 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
   }
 
   Future<void> _search() async {
+    final gen = ++_reqGen;
     setState(() {
       _q = _controller.text.trim();
       _searched = true;
       _loading = true;
+      _loadingMore = false; // 飛行中的分頁請求已過期，不能再 append 進新清單
       _error = null;
       _page = 1;
     });
@@ -54,14 +60,14 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
         tribeId: _tribe?.id,
         page: 1,
       );
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _events = results;
         _mayHaveMore = results.isNotEmpty;
         _loading = false;
       });
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _error = e.toString();
         _loading = false;
@@ -71,6 +77,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
 
   Future<void> _loadMore() async {
     if (_loadingMore || !_mayHaveMore) return;
+    final gen = _reqGen;
     setState(() => _loadingMore = true);
     try {
       final results = await EventService.searchEvents(
@@ -79,7 +86,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
         tribeId: _tribe?.id,
         page: _page + 1,
       );
-      if (!mounted) return;
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _events = [..._events, ...results];
         _page += 1;
@@ -87,7 +94,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
         _loadingMore = false;
       });
     } catch (_) {
-      if (mounted) setState(() => _loadingMore = false);
+      if (mounted && gen == _reqGen) setState(() => _loadingMore = false);
     }
   }
 

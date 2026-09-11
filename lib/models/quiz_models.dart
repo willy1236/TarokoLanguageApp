@@ -1,9 +1,7 @@
 // 對應 /api/quiz/start、/api/quiz/submit
 // 規格參考：資料流通與資料庫總覽.md §4.2 出題演算法、Flow 2
 //
-// 注意：options 陣列實際欄位名稱待真機（合法 JWT）驗證後確認，目前依文件描述
-// （4 個 word id shuffle 而成）假設每個 option 同時帶 truku/zh，由 direction
-// 決定顯示哪一個欄位。
+// option 的 text 已由後端依題目 direction 選好要顯示的語言，前端直接顯示即可。
 
 class QuizOption {
   final int id;
@@ -17,8 +15,6 @@ class QuizOption {
       text: json['text'] as String? ?? '',
     );
   }
-
-  String displayText(String direction) => text;
 }
 
 class QuizQuestion {

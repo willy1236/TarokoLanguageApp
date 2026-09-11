@@ -37,4 +37,18 @@ class ShopItem {
       isOwned: json['is_owned'] as bool? ?? false,
     );
   }
+
+  /// 目前只有 isOwned 需要在兌換成功後就地更新（不必為此重抓整份目錄）。
+  ShopItem copyWith({bool? isOwned}) {
+    return ShopItem(
+      id: id,
+      type: type,
+      name: name,
+      price: price,
+      rarity: rarity,
+      unlockCondition: unlockCondition,
+      imageUrl: imageUrl,
+      isOwned: isOwned ?? this.isOwned,
+    );
+  }
 }

@@ -138,7 +138,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
 
   String _describeError(Object e) {
     if (e is ApiException) {
-      if (e.isVideoNicknameRequired) return '請先在個人資料設定視訊暱稱';
+      if (e.isVideoNicknameRequired) return '請先在個人資料設定公開暱稱';
       if (e.isNotFriends) return '你們已不是好友';
       if (e.isBlocked) return '因封鎖關係，無法撥號';
       if (e.isMuted) return '你目前被禁言，暫時無法發起通話';

@@ -27,6 +27,7 @@
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
+import '../models/event_draft.dart';
 import '../models/event_model.dart';
 
 class EventService {
@@ -90,45 +91,8 @@ class EventService {
   ///
   /// 注意：後端限定 organizer / admin 角色才能發起，一般 user 會收到 403
   /// FORBIDDEN「需要活動主辦權限」。
-  static Future<int> createEvent({
-    required String title,
-    required String description,
-    required String location,
-    required String address,
-    required DateTime startsAt,
-    DateTime? registrationDeadline,
-    String? contactEmail,
-    String? contactPhone,
-    String? reminderNote,
-    int? maxParticipants,
-    String? category,
-  }) async {
-    final body = <String, dynamic>{
-      'title': title,
-      'description': description,
-      'location': location,
-      'address': address,
-      'starts_at': startsAt.toUtc().toIso8601String(),
-    };
-    if (registrationDeadline != null) {
-      body['registration_deadline'] = registrationDeadline
-          .toUtc()
-          .toIso8601String();
-    }
-    if (contactEmail != null && contactEmail.trim().isNotEmpty) {
-      body['contact_email'] = contactEmail.trim();
-    }
-    if (contactPhone != null && contactPhone.trim().isNotEmpty) {
-      body['contact_phone'] = contactPhone.trim();
-    }
-    if (reminderNote != null && reminderNote.trim().isNotEmpty) {
-      body['reminder_note'] = reminderNote.trim();
-    }
-    if (maxParticipants != null) body['max_participants'] = maxParticipants;
-    if (category != null && category.trim().isNotEmpty) {
-      body['category'] = category.trim();
-    }
-    final data = await ApiClient.post(ApiConfig.events, body);
+  static Future<int> createEvent(EventDraft draft) async {
+    final data = await ApiClient.post(ApiConfig.events, draft.toCreateBody());
     return asEventInt(data['id'])!;
   }
 
@@ -160,51 +124,19 @@ class EventService {
     await ApiClient.post(ApiConfig.eventCancel(eventId), {'reason': reason});
   }
 
-  /// 編輯活動（僅發起人）。只送有變動的欄位；clearXxx 系列用於明確清空該欄位
-  /// （PATCH 語意下，欄位缺席 = 不變更，欄位為 null = 清空，兩者不同）。
+  /// 編輯活動（僅發起人）。
+  ///
+  /// 只送 [EventDraft.editableFields] 中與 [original] 不同的欄位，清空送空字串
+  /// （後端把 null 與空白字串都視為清空）。title / starts_at /
+  /// registration_deadline / max_participants 後端會**靜默丟棄**，所以根本不送。
+  /// **location/address 不可為空**（後端回 400），[EventDraft.validate] 已擋住。
   static Future<void> updateEvent(
-    int eventId, {
-    String? title,
-    String? description,
-    String? location,
-    String? address,
-    DateTime? startsAt,
-    DateTime? registrationDeadline,
-    bool clearRegistrationDeadline = false,
-    String? contactEmail,
-    bool clearContactEmail = false,
-    String? contactPhone,
-    bool clearContactPhone = false,
-    String? reminderNote,
-    int? maxParticipants,
-    String? category,
-  }) async {
-    final body = <String, dynamic>{};
-    if (title != null) body['title'] = title;
-    if (description != null) body['description'] = description;
-    if (location != null) body['location'] = location;
-    if (address != null) body['address'] = address;
-    if (startsAt != null) body['starts_at'] = startsAt.toUtc().toIso8601String();
-    if (clearRegistrationDeadline) {
-      body['registration_deadline'] = null;
-    } else if (registrationDeadline != null) {
-      body['registration_deadline'] = registrationDeadline
-          .toUtc()
-          .toIso8601String();
-    }
-    if (clearContactEmail) {
-      body['contact_email'] = null;
-    } else if (contactEmail != null && contactEmail.trim().isNotEmpty) {
-      body['contact_email'] = contactEmail.trim();
-    }
-    if (clearContactPhone) {
-      body['contact_phone'] = null;
-    } else if (contactPhone != null && contactPhone.trim().isNotEmpty) {
-      body['contact_phone'] = contactPhone.trim();
-    }
-    if (reminderNote != null) body['reminder_note'] = reminderNote.trim();
-    if (maxParticipants != null) body['max_participants'] = maxParticipants;
-    if (category != null) body['category'] = category.trim();
+    int eventId,
+    EventDraft draft,
+    EventDetail original,
+  ) async {
+    final body = draft.toPatchBody(original);
+    if (body.isEmpty) return; // 後端對空 body 回 400，沒有變更就不必送出
     await ApiClient.patch(ApiConfig.eventDetail(eventId), body);
   }
 

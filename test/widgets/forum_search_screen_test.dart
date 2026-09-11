@@ -22,7 +22,7 @@ void main() {
 
   tearDown(() => ApiClient.httpClient = http.Client());
 
-  testWidgets('關鍵字未達 2 字時不送出請求', (tester) async {
+  testWidgets('關鍵字去除空白後為空時不送出請求', (tester) async {
     var calls = 0;
     ApiClient.httpClient = MockClient((_) async {
       calls++;
@@ -30,12 +30,12 @@ void main() {
     });
 
     await tester.pumpWidget(const MaterialApp(home: ForumSearchScreen()));
-    await tester.enterText(find.byType(TextField), '族');
+    await tester.enterText(find.byType(TextField), '   ');
     await tester.testTextInput.receiveAction(TextInputAction.search);
     await tester.pumpAndSettle();
 
     expect(calls, 0);
-    expect(find.text('請輸入 2-80 字的關鍵字'), findsOneWidget);
+    expect(find.text('請輸入 1-80 字的關鍵字'), findsOneWidget);
   });
 
   testWidgets('送出搜尋後顯示結果', (tester) async {

@@ -375,8 +375,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
     final goToProfile = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('請先設定視訊暱稱'),
-        content: const Text('視訊配對前需要先在個人資料設定一個視訊暱稱，讓對方在通話時看到。'),
+        title: const Text('請先設定公開暱稱'),
+        content: const Text('視訊配對前需要先在個人資料設定一個公開暱稱，讓對方在通話時看到。'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
@@ -486,7 +486,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ...List.generate(
               friends.length > maxShown ? maxShown : friends.length,
               (i) {
-                final shown = friends.length > maxShown ? maxShown : friends.length;
+                final shown = friends.length > maxShown
+                    ? maxShown
+                    : friends.length;
                 return Padding(
                   padding: EdgeInsets.only(bottom: i < shown - 1 ? 10 : 0),
                   child: _FriendTile(

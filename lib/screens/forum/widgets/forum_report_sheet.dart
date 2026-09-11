@@ -7,6 +7,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../forum_theme.dart';
+import 'forum_toast.dart';
 import '../../../core/network/api_client.dart';
 import '../../../services/forum_service.dart';
 import '../../../services/senior_mode_controller.dart';
@@ -58,15 +59,11 @@ class _ReportSheetState extends State<_ReportSheet> {
       );
       if (!mounted) return;
       Navigator.pop(context);
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(const SnackBar(content: Text('已收到檢舉')));
+      showForumToast(context, '已收到檢舉');
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _sending = false);
-      ScaffoldMessenger.of(context)
-        ..clearSnackBars()
-        ..showSnackBar(SnackBar(content: Text(e.message)));
+      showForumToast(context, e.message);
     }
   }
 

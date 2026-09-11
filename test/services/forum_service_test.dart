@@ -193,10 +193,10 @@ void main() {
     expect(seen.single.method, 'PATCH');
   });
 
-  test('search 少於 2 字直接丟錯，不發請求', () async {
+  test('search 去除空白後為空直接丟錯，不發請求', () async {
     respondWith({'posts': [], 'next_cursor': null});
 
-    expect(() => ForumService.search('族'), throwsA(isA<ArgumentError>()));
+    expect(() => ForumService.search('   '), throwsA(isA<ArgumentError>()));
     expect(seen, isEmpty);
   });
 

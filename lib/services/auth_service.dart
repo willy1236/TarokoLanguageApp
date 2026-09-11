@@ -5,6 +5,7 @@
 // 規格書對應：API設計/資料交換表_核心.md §2.1 POST /api/auth/login
 
 import 'dart:convert';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -74,12 +75,19 @@ class AuthService {
       throw AuthException('取得 Firebase token 失敗');
     }
 
-    // 打後端換系統 JWT
-    final resp = await http.post(
-      Uri.parse(ApiConfig.baseUrl + ApiConfig.authLogin),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'firebase_token': firebaseToken}),
-    );
+    // 打後端換系統 JWT。這裡不走 ApiClient：登入端點沒有 JWT 可帶，而
+    // ApiClient 的 401 會觸發強制登出導頁，對登入失敗是錯誤的反應。
+    // 但離線處理要與 ApiClient 一致，不能讓 SocketException 直接逸出。
+    final http.Response resp;
+    try {
+      resp = await http.post(
+        Uri.parse(ApiConfig.baseUrl + ApiConfig.authLogin),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode({'firebase_token': firebaseToken}),
+      );
+    } on SocketException {
+      throw AuthException('無法連線到伺服器，請檢查網路');
+    }
 
     if (resp.statusCode != 200) {
       final err = _parseError(resp.body);
@@ -104,10 +112,16 @@ class AuthService {
   static Future<void> logoutAllDevices() async {
     final token = await _storage.read(key: _tokenKey);
     if (token == null) return;
-    await http.post(
-      Uri.parse(ApiConfig.baseUrl + ApiConfig.logoutAll),
-      headers: {'Authorization': 'Bearer $token'},
-    );
+    // 通知後端撤銷失敗（離線、token 已失效）不該擋住本機登出——否則使用者
+    // 卡在已登入狀態且沒有退路。
+    try {
+      await http.post(
+        Uri.parse(ApiConfig.baseUrl + ApiConfig.logoutAll),
+        headers: {'Authorization': 'Bearer $token'},
+      );
+    } catch (e) {
+      debugPrint('AuthService.logoutAllDevices: 通知後端失敗（仍繼續登出）：$e');
+    }
     await signOut();
   }
 
@@ -132,7 +146,10 @@ class AuthService {
       final j = jsonDecode(body);
       return j['error']?['message'] ?? '登入失敗';
     } catch (e) {
-      debugPrint('AuthService._parseError 解析失敗 ($e): $body');
+      // 回應內容可能含 token/個資，release build 不印。
+      if (kDebugMode) {
+        debugPrint('AuthService._parseError 解析失敗 ($e): $body');
+      }
       return '登入失敗';
     }
   }

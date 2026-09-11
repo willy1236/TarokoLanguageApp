@@ -1,21 +1,21 @@
 import 'dart:io';
+import '../../shared/widgets/async_state_view.dart';
 
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
-import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
-import '../../shared/widgets/engagement_icon_button.dart';
-import '../../shared/widgets/truku_painters.dart';
 import 'event_compose_screen.dart';
-import 'reminder_compose_screen.dart';
+import 'widgets/event_action_bar.dart';
+import 'widgets/event_detail_body.dart';
+import 'widgets/event_detail_dialogs.dart';
+import 'widgets/event_detail_hero.dart';
 
 /// 活動詳情頁 — 進頁後以 [eventId] 打 GET /api/events/:id 取真資料。
 ///
@@ -38,27 +38,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   int? _uid;
   List<EventReminder> _reminders = [];
   bool _loading = true;
-  String? _error;
+  Object? _error;
   bool _acting = false; // 參加/退出/取消進行中，避免重複點
   bool _likeBusy = false;
   bool _bookmarkBusy = false;
-
-  static const _months = [
-    '1月',
-    '2月',
-    '3月',
-    '4月',
-    '5月',
-    '6月',
-    '7月',
-    '8月',
-    '9月',
-    '10月',
-    '11月',
-    '12月',
-  ];
-  static const _weekdays = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
-
   @override
   void initState() {
     super.initState();
@@ -110,7 +93,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       debugPrint('$st');
       if (!mounted) return;
       setState(() {
-        _error = e.toString();
+        _error = e;
         _loading = false;
       });
     }
@@ -180,7 +163,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     if (!mounted) return null;
     return showDialog<String>(
       context: context,
-      builder: (ctx) => _JoinEmailDialog(initialEmail: prefill),
+      builder: (ctx) => JoinEmailDialog(initialEmail: prefill),
     );
   }
 
@@ -200,32 +183,43 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
+  /// 成功後提示 [success] 並重新整理活動資料。
   Future<void> _runAction(
     Future<void> Function() action, {
     required String success,
+  }) {
+    return _guarded(() async {
+      await action();
+      if (!mounted) return;
+      _snack(success);
+      await _silentRefresh();
+    });
+  }
+
+  /// 所有會打後端的動作共用：[_acting] 防連點，後端錯誤顯示其訊息，
+  /// 其他錯誤以「[failurePrefix]：原因」提示。
+  Future<void> _guarded(
+    Future<void> Function() action, {
+    String failurePrefix = '操作失敗',
   }) async {
     if (_acting) return;
     setState(() => _acting = true);
     try {
       await action();
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(success)));
-      await _silentRefresh();
     } on ApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      _snack(e.message);
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('操作失敗：$e')));
+      _snack('$failurePrefix：$e');
     } finally {
       if (mounted) setState(() => _acting = false);
     }
+  }
+
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   // ── 按讚 / 收藏（任何活動狀態皆可） ────────────────────────────
@@ -281,7 +275,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   Future<String?> _askCancelReason() {
     return showDialog<String>(
       context: context,
-      builder: (ctx) => const _CancelReasonDialog(),
+      builder: (ctx) => const CancelReasonDialog(),
     );
   }
 
@@ -291,44 +285,39 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     if (event == null) return;
     final updated = await Navigator.push<bool>(
       context,
-      MaterialPageRoute(
-        builder: (_) => EventComposeScreen(editing: event),
-      ),
+      MaterialPageRoute(builder: (_) => EventComposeScreen(editing: event)),
     );
     if (updated == true && mounted) await _silentRefresh();
   }
 
   /// 匯出報名名單 CSV（僅發起人）：拿到後端組好的 CSV 文字，寫成暫存檔再跳系統
-  /// 分享選單（存檔/寄信/傳送皆可），錯誤處理沿用 [_runAction] 同款文案呈現。
+  /// 分享選單（存檔/寄信/傳送皆可），錯誤處理走 [_guarded]。
   Future<void> _exportRoster() async {
     final event = _event;
-    if (event == null || _acting) return;
-    setState(() => _acting = true);
-    try {
+    if (event == null) return;
+    await _guarded(failurePrefix: '匯出失敗', () async {
       final csv = await EventService.exportRoster(widget.eventId);
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/event_${event.id}_roster.csv');
-      await file.writeAsString(csv, flush: true);
-      if (!mounted) return;
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path, mimeType: 'text/csv')],
-          subject: '${event.title} 報名名單',
-        ),
-      );
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('匯出失敗：$e')));
-    } finally {
-      if (mounted) setState(() => _acting = false);
-    }
+      try {
+        await file.writeAsString(csv, flush: true);
+        if (!mounted) return;
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(file.path, mimeType: 'text/csv')],
+            subject: '${event.title} 報名名單',
+          ),
+        );
+      } finally {
+        // 名單含參加者姓名與 email，分享完就刪掉，不留在暫存目錄等 OS 回收。
+        // share 已回傳代表系統分享流程結束（接收端已取走內容）。
+        try {
+          await file.delete();
+        } catch (e) {
+          debugPrint('EventDetailScreen: 刪除名單暫存檔失敗（忽略）：$e');
+        }
+      }
+    });
   }
 
   Future<void> _deleteEvent() async {
@@ -349,32 +338,20 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         ],
       ),
     );
-    if (confirmed != true || _acting) return;
-    setState(() => _acting = true);
-    try {
+    if (confirmed != true) return;
+    await _guarded(failurePrefix: '刪除失敗', () async {
       await EventService.deleteEvent(widget.eventId);
       if (!mounted) return;
       Navigator.pop(context, true); // 通知活動列表刷新
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() => _acting = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _acting = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('刪除失敗：$e')));
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: seniorModeController,
-      builder: (context, _) => _buildScaffold(context, seniorModeController.enabled),
+      builder: (context, _) =>
+          _buildScaffold(context, seniorModeController.enabled),
     );
   }
 
@@ -382,9 +359,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     if (_loading) {
       return const Scaffold(
         backgroundColor: AppColors.creamLight,
-        body: Center(
-          child: CircularProgressIndicator(color: AppColors.primary),
-        ),
+        body: TrukuLoadingView(),
       );
     }
     if (_error != null || _event == null) {
@@ -395,27 +370,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           foregroundColor: AppColors.ink,
           elevation: 0,
         ),
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.error_outline,
-                color: AppColors.fog,
-                size: seniorMode ? 56 : 40,
-              ),
-              const SizedBox(height: 12),
-              Text(
-                _error ?? '找不到活動',
-                style: TextStyle(
-                  color: AppColors.inkSoft,
-                  fontSize: seniorMode ? 18 : 14,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(onPressed: _refresh, child: const Text('重試')),
-            ],
-          ),
+        body: TrukuErrorView(
+          error: _error,
+          message: _error == null ? '找不到活動' : null,
+          onRetry: _refresh,
+          seniorMode: seniorMode,
         ),
       );
     }
@@ -428,1020 +387,35 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         color: AppColors.primary,
         child: CustomScrollView(
           slivers: [
-            SliverToBoxAdapter(child: _buildHero(context, e, seniorMode)),
-            SliverToBoxAdapter(child: _buildBody(e, seniorMode)),
+            SliverToBoxAdapter(
+              child: EventDetailHero(event: e, seniorMode: seniorMode),
+            ),
+            SliverToBoxAdapter(
+              child: EventDetailBody(
+                event: e,
+                uid: _uid,
+                reminders: _reminders,
+                seniorMode: seniorMode,
+                onToggleLike: _toggleLike,
+                onToggleBookmark: _toggleBookmark,
+              ),
+            ),
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
         ),
       ),
-      bottomNavigationBar: _buildActionBar(context, e, seniorMode),
-    );
-  }
-
-  // ── 頂部視覺 + 返回鈕 + 日期 ──────────────────────────────────
-  Widget _buildHero(BuildContext context, EventDetail e, bool seniorMode) {
-    final start = e.startsAt.toLocal();
-    final cancelled = e.displayStatus == 'cancelled';
-    final ended = e.displayStatus == 'ended';
-    final gradient = cancelled || ended
-        ? const [AppColors.fog, AppColors.inkSoft]
-        : const [AppColors.primary, AppColors.primaryDeep];
-    return SizedBox(
-      height: 210,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: gradient,
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-          ),
-          Opacity(
-            opacity: 0.22,
-            child: CustomPaint(
-              painter: TrukuWeavePainter(opacity: 1, scale: 0.8),
-            ),
-          ),
-          // 返回鈕
-          Positioned(
-            top: 52,
-            left: 16,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: seniorMode ? 50 : 38,
-                height: seniorMode ? 50 : 38,
-                decoration: BoxDecoration(
-                  color: AppColors.ink.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.creamLight.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: Icon(
-                  Icons.arrow_back,
-                  color: AppColors.creamLight,
-                  size: seniorMode ? 26 : 18,
-                ),
-              ),
-            ),
-          ),
-          // 標籤（分類，可能沒有）
-          if (e.category != null && e.category!.isNotEmpty)
-            Positioned(
-              top: 58,
-              right: 16,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 5,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.gold,
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  e.category!,
-                  style: TextStyle(
-                    fontSize: seniorMode ? 14 : 10,
-                    color: AppColors.ink,
-                    fontWeight: FontWeight.w600,
-                    letterSpacing: 2.5,
-                  ),
-                ),
-              ),
-            ),
-          // 日期 + 標題
-          Positioned(
-            left: 20,
-            right: 20,
-            bottom: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (cancelled || ended)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 8),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.ink.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        cancelled ? '已取消' : '已結束',
-                        style: TextStyle(
-                          fontSize: seniorMode ? 15 : 11,
-                          color: AppColors.creamLight,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
-                    ),
-                  ),
-                Text(
-                  '${_months[start.month - 1]}${start.day}日 · ${_weekdays[start.weekday - 1]}',
-                  style: GoogleFonts.notoSerifTc(
-                    fontStyle: FontStyle.italic,
-                    fontSize: seniorMode ? 17 : 13,
-                    color: AppColors.gold,
-                    letterSpacing: 2.0,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  e.title,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 32 : 26,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.creamLight,
-                    letterSpacing: 0.8,
-                    height: 1.2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+      bottomNavigationBar: EventActionBar(
+        event: e,
+        uid: _uid,
+        acting: _acting,
+        seniorMode: seniorMode,
+        onJoin: _join,
+        onLeave: _leave,
+        onCancel: _cancelEvent,
+        onEdit: _editEvent,
+        onExport: _exportRoster,
+        onDelete: _deleteEvent,
       ),
-    );
-  }
-
-  // ── 內容 ─────────────────────────────────────────────────────
-  Widget _buildBody(EventDetail e, bool seniorMode) {
-    final start = e.startsAt.toLocal();
-    final timeText = formatDateTime(start);
-    final hostName =
-        e.participants
-            .where((p) => p.uid == e.hostUid)
-            .map((p) => p.displayName)
-            .firstWhere((n) => n != null && n.isNotEmpty, orElse: () => null) ??
-        '發起人';
-    final isHost = e.isHostedBy(_uid);
-
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 發起人
-          Row(
-            children: [
-              CircleAvatar(
-                radius: seniorMode ? 20 : 15,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                child: Icon(
-                  Icons.person,
-                  size: seniorMode ? 22 : 16,
-                  color: AppColors.primary,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '發起人',
-                    style: TextStyle(
-                      fontSize: seniorMode ? 14 : 10,
-                      color: AppColors.fog,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                  Text(
-                    hostName,
-                    style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? 19 : 14,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                ],
-              ),
-              if (isHost) ...[
-                const SizedBox(width: 10),
-                Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 8,
-                    vertical: 3,
-                  ),
-                  decoration: BoxDecoration(
-                    color: AppColors.gold.withValues(alpha: 0.18),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: Text(
-                    '你發起的',
-                    style: TextStyle(
-                      fontSize: seniorMode ? 13 : 10,
-                      color: AppColors.goldDeep,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-                ),
-              ],
-              const Spacer(),
-              EngagementIconButton(
-                icon: e.isLiked ? Icons.favorite : Icons.favorite_border,
-                color: e.isLiked ? AppColors.primary : AppColors.fog,
-                count: e.likeCount,
-                onTap: _toggleLike,
-                seniorMode: seniorMode,
-              ),
-              const SizedBox(width: 6),
-              EngagementIconButton(
-                icon: e.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                color: e.isBookmarked ? AppColors.primary : AppColors.fog,
-                onTap: _toggleBookmark,
-                seniorMode: seniorMode,
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
-
-          _infoRow(Icons.access_time, '時間', timeText, seniorMode),
-          const SizedBox(height: 12),
-          if (e.location != null && e.location!.isNotEmpty) ...[
-            _infoRow(
-              Icons.location_on_outlined,
-              '地點',
-              e.location!,
-              seniorMode,
-            ),
-            const SizedBox(height: 12),
-          ],
-          if (e.address != null && e.address!.isNotEmpty) ...[
-            _infoRow(Icons.map_outlined, '地址', e.address!, seniorMode),
-            const SizedBox(height: 12),
-          ],
-          if (e.registrationDeadline != null) ...[
-            _infoRow(
-              Icons.how_to_reg_outlined,
-              '報名截止',
-              formatDateTime(e.registrationDeadline!.toLocal()),
-              seniorMode,
-            ),
-            const SizedBox(height: 12),
-          ],
-          const SizedBox(height: 8),
-
-          // 名額
-          _buildCapacity(e, seniorMode),
-          const SizedBox(height: 22),
-
-          // 介紹
-          if (e.description != null && e.description!.isNotEmpty) ...[
-            Text(
-              '活動介紹',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: seniorMode ? 20 : 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              e.description!,
-              style: TextStyle(
-                fontSize: seniorMode ? 18 : 13.5,
-                color: AppColors.inkSoft,
-                height: 1.7,
-                letterSpacing: 0.4,
-              ),
-            ),
-            const SizedBox(height: 22),
-          ],
-
-          // 提醒事項
-          if (e.reminderNote != null && e.reminderNote!.isNotEmpty) ...[
-            _buildNoteBox('提醒事項', e.reminderNote!, seniorMode),
-            const SizedBox(height: 16),
-          ],
-
-          // 提醒紀錄：排定發送（尚未送出）／已發送（含失敗、取消等已處理完的）
-          if (_reminders.isNotEmpty) ...[
-            Text(
-              '提醒紀錄',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: seniorMode ? 20 : 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (_pendingReminders().isNotEmpty) ...[
-              _buildReminderGroupLabel('排定發送', seniorMode),
-              const SizedBox(height: 6),
-              for (final r in _pendingReminders()) ...[
-                _buildReminderCard(r, seniorMode),
-                const SizedBox(height: 10),
-              ],
-            ],
-            if (_sentReminders().isNotEmpty) ...[
-              _buildReminderGroupLabel('已發送', seniorMode),
-              const SizedBox(height: 6),
-              for (final r in _sentReminders()) ...[
-                _buildReminderCard(r, seniorMode),
-                const SizedBox(height: 10),
-              ],
-            ],
-            const SizedBox(height: 2),
-          ],
-
-          // 聯絡資訊
-          if ((e.contactEmail != null && e.contactEmail!.isNotEmpty) ||
-              (e.contactPhone != null && e.contactPhone!.isNotEmpty)) ...[
-            Text(
-              '聯絡資訊',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: seniorMode ? 20 : 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-              ),
-            ),
-            const SizedBox(height: 8),
-            if (e.contactEmail != null && e.contactEmail!.isNotEmpty)
-              _infoRow(
-                Icons.email_outlined,
-                'Email',
-                e.contactEmail!,
-                seniorMode,
-              ),
-            if (e.contactPhone != null && e.contactPhone!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              _infoRow(
-                Icons.phone_outlined,
-                '電話',
-                e.contactPhone!,
-                seniorMode,
-              ),
-            ],
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _infoRow(IconData icon, String label, String value, bool seniorMode) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Icon(icon, size: seniorMode ? 22 : 16, color: AppColors.primary),
-        const SizedBox(width: 12),
-        Text(
-          '$label ',
-          style: TextStyle(
-            fontSize: seniorMode ? 16 : 12,
-            color: AppColors.fog,
-            letterSpacing: 1.0,
-          ),
-        ),
-        const SizedBox(width: 4),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              fontSize: seniorMode ? 18 : 13.5,
-              color: AppColors.ink,
-              letterSpacing: 0.4,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNoteBox(String title, String body, bool seniorMode) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.gold.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(
-                Icons.push_pin_outlined,
-                size: seniorMode ? 18 : 14,
-                color: AppColors.goldDeep,
-              ),
-              const SizedBox(width: 6),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: seniorMode ? 16 : 12,
-                  color: AppColors.goldDeep,
-                  letterSpacing: 1.0,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            body,
-            style: TextStyle(
-              fontSize: seniorMode ? 17 : 13,
-              color: AppColors.inkSoft,
-              height: 1.6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 排定發送（尚未送出）：依排定時間由近到遠排序。
-  List<EventReminder> _pendingReminders() {
-    final list = _reminders.where((r) => r.status == 'pending').toList();
-    list.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
-    return list;
-  }
-
-  /// 已發送（含失敗、取消等已處理完的）：新的（id 較大）排在前面；
-  /// 後端固定回傳 scheduled_at 遞增排序，這裡反過來。
-  List<EventReminder> _sentReminders() {
-    final list = _reminders.where((r) => r.status != 'pending').toList();
-    list.sort((a, b) => b.id.compareTo(a.id));
-    return list;
-  }
-
-  Widget _buildReminderGroupLabel(String text, bool seniorMode) {
-    return Text(
-      text,
-      style: TextStyle(
-        fontSize: seniorMode ? 15 : 11.5,
-        color: AppColors.fog,
-        letterSpacing: 1.5,
-      ),
-    );
-  }
-
-  Widget _buildReminderCard(EventReminder r, bool seniorMode) {
-    final (label, color) = switch (r.status) {
-      'sent' => (
-        '已發送 · ${formatDateTime((r.sentAt ?? r.scheduledAt).toLocal())}',
-        AppColors.mossDeep,
-      ),
-      'failed' => ('發送失敗', AppColors.dangerDark),
-      'cancelled' => ('已取消', AppColors.fog),
-      _ => (
-        '排定於 ${formatDateTime(r.scheduledAt.toLocal())}',
-        AppColors.primary,
-      ),
-    };
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.cream,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.creamDeep),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            r.message,
-            style: TextStyle(
-              fontSize: seniorMode ? 17 : 13.5,
-              color: AppColors.ink,
-              height: 1.6,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: seniorMode ? 14 : 11,
-              color: color,
-              letterSpacing: 0.6,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCapacity(EventDetail e, bool seniorMode) {
-    final count = e.participantCount;
-    final max = e.maxParticipants;
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: AppColors.cream,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: AppColors.creamDeep),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                '報名人數',
-                style: TextStyle(
-                  fontSize: seniorMode ? 16 : 12,
-                  color: AppColors.inkSoft,
-                  letterSpacing: 1.0,
-                ),
-              ),
-              Text(
-                max == null
-                    ? '$count 人 · 不限名額'
-                    : '$count / $max 人 · 剩 ${max - count} 個名額',
-                style: TextStyle(
-                  fontSize: seniorMode ? 16 : 12,
-                  color: AppColors.primary,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          if (max != null) ...[
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(3),
-              child: LinearProgressIndicator(
-                value: max == 0 ? 0 : (count / max).clamp(0.0, 1.0),
-                backgroundColor: AppColors.creamDeep,
-                valueColor: const AlwaysStoppedAnimation(AppColors.primary),
-                minHeight: 6,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // ── 底部行動列 ───────────────────────────────────────────────
-  Widget _buildActionBar(BuildContext context, EventDetail e, bool seniorMode) {
-    final isHost = e.isHostedBy(_uid);
-    final isJoined = e.isJoinedBy(_uid);
-    final status = e.displayStatus;
-
-    Widget content;
-    if (status == 'cancelled') {
-      content = _disabledButton('活動已取消', seniorMode);
-    } else if (status == 'ended') {
-      content = _disabledButton('活動已結束', seniorMode);
-    } else if (isHost) {
-      content = _hostActions(context, e, seniorMode);
-    } else if (isJoined) {
-      content = _joinedActions(seniorMode);
-    } else if (e.registrationOpen && !e.isFull) {
-      content = _primaryButton('我要參加', _acting ? null : _join, seniorMode);
-    } else if (e.isFull) {
-      content = _disabledButton('名額已滿', seniorMode);
-    } else {
-      content = _disabledButton('報名已截止', seniorMode);
-    }
-
-    return SafeArea(
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-        decoration: BoxDecoration(
-          color: AppColors.creamLight,
-          border: Border(top: BorderSide(color: AppColors.creamDeep)),
-        ),
-        child: content,
-      ),
-    );
-  }
-
-  // 發起人：發送提醒 + 取消活動
-  Widget _hostActions(BuildContext context, EventDetail e, bool seniorMode) {
-    final sendReminderButton = GestureDetector(
-      onTap: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) =>
-                ReminderComposeScreen(eventId: e.id, eventTitle: e.title),
-          ),
-        );
-      },
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        decoration: BoxDecoration(
-          color: AppColors.primary,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.notifications_active_outlined,
-              color: AppColors.creamLight,
-              size: seniorMode ? 24 : 18,
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '發送提醒',
-              style: GoogleFonts.notoSerifTc(
-                fontSize: seniorMode ? 19 : 15,
-                fontWeight: FontWeight.w600,
-                color: AppColors.creamLight,
-                letterSpacing: 1.5,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-    final cancelButton = GestureDetector(
-      onTap: _acting ? null : _cancelEvent,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        decoration: BoxDecoration(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.danger.withValues(alpha: 0.5)),
-        ),
-        child: Center(
-          heightFactor: 1.0,
-          child: Text(
-            '取消活動',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? 18 : 14,
-              fontWeight: FontWeight.w600,
-              color: AppColors.dangerDark,
-              letterSpacing: 1.0,
-            ),
-          ),
-        ),
-      ),
-    );
-    final notStarted = e.startsAt.isAfter(DateTime.now());
-    final manageRow = Row(
-      children: [
-        TextButton.icon(
-          onPressed: _acting ? null : _editEvent,
-          icon: Icon(Icons.edit_outlined, size: seniorMode ? 22 : 16),
-          label: Text(
-            '編輯活動',
-            style: TextStyle(fontSize: seniorMode ? 16 : 13),
-          ),
-        ),
-        TextButton.icon(
-          onPressed: _acting ? null : _exportRoster,
-          icon: Icon(Icons.file_download_outlined, size: seniorMode ? 22 : 16),
-          label: Text(
-            '匯出名單',
-            style: TextStyle(fontSize: seniorMode ? 16 : 13),
-          ),
-        ),
-        if (notStarted)
-          TextButton.icon(
-            onPressed: _acting ? null : _deleteEvent,
-            icon: Icon(
-              Icons.delete_outline,
-              size: seniorMode ? 22 : 16,
-              color: AppColors.dangerDark,
-            ),
-            label: Text(
-              '刪除活動',
-              style: TextStyle(
-                fontSize: seniorMode ? 16 : 13,
-                color: AppColors.dangerDark,
-              ),
-            ),
-          ),
-      ],
-    );
-    if (seniorMode) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          manageRow,
-          const SizedBox(height: 4),
-          SizedBox(width: double.infinity, child: sendReminderButton),
-          const SizedBox(height: 10),
-          SizedBox(width: double.infinity, child: cancelButton),
-        ],
-      );
-    }
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        manageRow,
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Expanded(flex: 2, child: sendReminderButton),
-            const SizedBox(width: 10),
-            Expanded(flex: 1, child: cancelButton),
-          ],
-        ),
-      ],
-    );
-  }
-
-  // 參加者：已報名（可退出）
-  Widget _joinedActions(bool seniorMode) {
-    final joinedBadge = Container(
-      padding: const EdgeInsets.symmetric(vertical: 15),
-      decoration: BoxDecoration(
-        color: AppColors.moss.withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: AppColors.moss.withValues(alpha: 0.4)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.check_circle_outline,
-            color: AppColors.mossDeep,
-            size: seniorMode ? 24 : 18,
-          ),
-          const SizedBox(width: 8),
-          Text(
-            '已報名',
-            style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? 19 : 15,
-              fontWeight: FontWeight.w600,
-              color: AppColors.mossDeep,
-              letterSpacing: 1.5,
-            ),
-          ),
-        ],
-      ),
-    );
-    final leaveButton = GestureDetector(
-      onTap: _acting ? null : _leave,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: seniorMode ? 24 : 18,
-          vertical: 15,
-        ),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.fog),
-        ),
-        child: Center(
-          heightFactor: 1.0,
-          child: Text(
-            '退出',
-            style: TextStyle(
-              fontSize: seniorMode ? 18 : 14,
-              color: AppColors.inkSoft,
-              letterSpacing: 1.0,
-            ),
-          ),
-        ),
-      ),
-    );
-    if (seniorMode) {
-      return Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(width: double.infinity, child: joinedBadge),
-          const SizedBox(height: 10),
-          SizedBox(width: double.infinity, child: leaveButton),
-        ],
-      );
-    }
-    return Row(
-      children: [
-        Expanded(child: joinedBadge),
-        const SizedBox(width: 10),
-        leaveButton,
-      ],
-    );
-  }
-
-  Widget _primaryButton(String label, VoidCallback? onTap, bool seniorMode) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 15),
-        decoration: BoxDecoration(
-          color: onTap == null
-              ? AppColors.primary.withValues(alpha: 0.5)
-              : AppColors.primary,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        // heightFactor: 1.0 讓 Center 收縮到子元件高度；預設在 Scaffold
-        // bottomNavigationBar 的有界高度下會撐滿整個高度，把 body 擠成 0。
-        child: Center(
-          heightFactor: 1.0,
-          child: _acting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.creamLight,
-                  ),
-                )
-              : Text(
-                  label,
-                  style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 19 : 15,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.creamLight,
-                    letterSpacing: 2.0,
-                  ),
-                ),
-        ),
-      ),
-    );
-  }
-
-  Widget _disabledButton(String label, bool seniorMode) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 15),
-      decoration: BoxDecoration(
-        color: AppColors.fog.withValues(alpha: 0.25),
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: Center(
-        heightFactor: 1.0,
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: seniorMode ? 19 : 15,
-            fontWeight: FontWeight.w600,
-            color: AppColors.inkSoft,
-            letterSpacing: 2.0,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// 「取消活動」理由輸入對話框。獨立成 StatefulWidget 讓
-/// [TextEditingController] 隨這個 dialog 元件自身的生命週期建立/釋放，
-/// 避免在 `showDialog` 的 Future resolve 當下就手動 dispose——
-/// 此時 dialog 的關閉動畫可能還沒跑完，仍持有該 controller 的 TextField
-/// 尚未真正 unmount，手動提早 dispose 會丟出
-/// "A TextEditingController was used after being disposed." 例外。
-/// 報名前要求聯絡 email（後端必填，供主辦聯繫）。[initialEmail] 為帳號 email 預填值。
-class _JoinEmailDialog extends StatefulWidget {
-  final String? initialEmail;
-
-  const _JoinEmailDialog({this.initialEmail});
-
-  @override
-  State<_JoinEmailDialog> createState() => _JoinEmailDialogState();
-}
-
-class _JoinEmailDialogState extends State<_JoinEmailDialog> {
-  late final _controller = TextEditingController(text: widget.initialEmail);
-  String? _error;
-
-  static final _emailPattern = RegExp(r'^[^@\s]+@[^@\s]+$');
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final email = _controller.text.trim();
-    if (email.isEmpty || !_emailPattern.hasMatch(email) || email.length > 254) {
-      setState(() => _error = '請輸入有效的 Email');
-      return;
-    }
-    Navigator.pop(context, email);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppColors.creamLight,
-      title: Text(
-        '填寫聯絡 Email',
-        style: GoogleFonts.notoSerifTc(
-          fontWeight: FontWeight.w700,
-          color: AppColors.ink,
-        ),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '報名需提供聯絡 Email，供主辦聯繫使用，可與帳號 Email 不同。',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.inkSoft,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _controller,
-            keyboardType: TextInputType.emailAddress,
-            autofocus: true,
-            style: const TextStyle(fontSize: 14, color: AppColors.ink),
-            decoration: InputDecoration(
-              hintText: 'name@example.com',
-              hintStyle: TextStyle(color: AppColors.fog),
-              errorText: _error,
-              border: const OutlineInputBorder(),
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('取消', style: TextStyle(color: AppColors.inkSoft)),
-        ),
-        TextButton(
-          onPressed: _submit,
-          child: const Text('確認報名'),
-        ),
-      ],
-    );
-  }
-}
-
-class _CancelReasonDialog extends StatefulWidget {
-  const _CancelReasonDialog();
-
-  @override
-  State<_CancelReasonDialog> createState() => _CancelReasonDialogState();
-}
-
-class _CancelReasonDialogState extends State<_CancelReasonDialog> {
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AlertDialog(
-      backgroundColor: AppColors.creamLight,
-      title: Text(
-        '取消活動',
-        style: GoogleFonts.notoSerifTc(
-          fontWeight: FontWeight.w700,
-          color: AppColors.ink,
-        ),
-      ),
-      content: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '請填寫取消理由，會一併推播通知所有參加者。',
-            style: TextStyle(
-              fontSize: 13,
-              color: AppColors.inkSoft,
-              height: 1.5,
-            ),
-          ),
-          const SizedBox(height: 12),
-          TextField(
-            controller: _controller,
-            maxLines: 3,
-            maxLength: 500,
-            autofocus: true,
-            style: const TextStyle(fontSize: 14, color: AppColors.ink),
-            decoration: InputDecoration(
-              hintText: '例如：因天候因素順延…',
-              hintStyle: TextStyle(color: AppColors.fog),
-              border: const OutlineInputBorder(),
-            ),
-          ),
-        ],
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('返回', style: TextStyle(color: AppColors.inkSoft)),
-        ),
-        TextButton(
-          onPressed: () {
-            final r = _controller.text.trim();
-            if (r.isEmpty) return;
-            Navigator.pop(context, r);
-          },
-          child: const Text(
-            '確認取消活動',
-            style: TextStyle(color: AppColors.dangerDark),
-          ),
-        ),
-      ],
     );
   }
 }

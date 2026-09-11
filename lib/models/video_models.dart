@@ -117,59 +117,42 @@ class VideoDetail extends VideoSummary {
     );
   }
 
+  /// 底下三個樂觀更新方法統一走這裡：手動重寫全部欄位的話，日後新增欄位
+  /// 很容易漏改其中一兩處，導致更新後該欄位被悄悄重置。
+  VideoDetail copyWith({
+    int? likeCount,
+    bool? isLiked,
+    bool? isBookmarked,
+  }) {
+    return VideoDetail(
+      id: id,
+      title: title,
+      description: description,
+      category: category,
+      durationSec: durationSec,
+      thumbnailUrl: thumbnailUrl,
+      viewCount: viewCount,
+      weeklyViewCount: weeklyViewCount,
+      likeCount: likeCount ?? this.likeCount,
+      isLiked: isLiked ?? this.isLiked,
+      isBookmarked: isBookmarked ?? this.isBookmarked,
+      publishedAt: publishedAt,
+      hlsUrl: hlsUrl,
+      originalSizeMb: originalSizeMb,
+    );
+  }
+
   /// 樂觀更新用：切換按讚狀態並同步計數，等後端真實回應後再校正。
-  VideoDetail toggledLike() => VideoDetail(
-    id: id,
-    title: title,
-    description: description,
-    category: category,
-    durationSec: durationSec,
-    thumbnailUrl: thumbnailUrl,
-    viewCount: viewCount,
-    weeklyViewCount: weeklyViewCount,
+  VideoDetail toggledLike() => copyWith(
     likeCount: isLiked ? likeCount - 1 : likeCount + 1,
     isLiked: !isLiked,
-    isBookmarked: isBookmarked,
-    publishedAt: publishedAt,
-    hlsUrl: hlsUrl,
-    originalSizeMb: originalSizeMb,
   );
 
-  VideoDetail toggledBookmark() => VideoDetail(
-    id: id,
-    title: title,
-    description: description,
-    category: category,
-    durationSec: durationSec,
-    thumbnailUrl: thumbnailUrl,
-    viewCount: viewCount,
-    weeklyViewCount: weeklyViewCount,
-    likeCount: likeCount,
-    isLiked: isLiked,
-    isBookmarked: !isBookmarked,
-    publishedAt: publishedAt,
-    hlsUrl: hlsUrl,
-    originalSizeMb: originalSizeMb,
-  );
+  VideoDetail toggledBookmark() => copyWith(isBookmarked: !isBookmarked);
 
   /// API 回傳真實計數後校正，避免樂觀更新的本地累加值飄移。
   VideoDetail withLikeResult({required bool liked, required int likeCount}) =>
-      VideoDetail(
-        id: id,
-        title: title,
-        description: description,
-        category: category,
-        durationSec: durationSec,
-        thumbnailUrl: thumbnailUrl,
-        viewCount: viewCount,
-        weeklyViewCount: weeklyViewCount,
-        likeCount: likeCount,
-        isLiked: liked,
-        isBookmarked: isBookmarked,
-        publishedAt: publishedAt,
-        hlsUrl: hlsUrl,
-        originalSizeMb: originalSizeMb,
-      );
+      copyWith(isLiked: liked, likeCount: likeCount);
 }
 
 class VideoListResponse {

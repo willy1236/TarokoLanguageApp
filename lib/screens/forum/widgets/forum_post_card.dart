@@ -260,7 +260,9 @@ class ForumPostCard extends StatelessWidget {
       IconButton(
         key: const ValueKey('forum-post-bookmark'),
         onPressed: onBookmark,
-        visualDensity: seniorMode ? VisualDensity.standard : VisualDensity.compact,
+        visualDensity: seniorMode
+            ? VisualDensity.standard
+            : VisualDensity.compact,
         icon: Icon(
           post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
           size: seniorMode ? 34 : 18,
@@ -269,5 +271,4 @@ class ForumPostCard extends StatelessWidget {
       ),
     ],
   );
-
 }

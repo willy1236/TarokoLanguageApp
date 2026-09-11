@@ -69,8 +69,11 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
   void initState() {
     super.initState();
     _levelsFuture = LearnService.fetchLevels();
-    _recentListeningFuture =
-        HistoryService.fetchHistory(type: 'listening', page: 1, pageSize: 5);
+    _recentListeningFuture = HistoryService.fetchHistory(
+      type: 'listening',
+      page: 1,
+      pageSize: 5,
+    );
     _loadSuggestedLevel();
   }
 
@@ -172,7 +175,8 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                         _LevelChip(
                           level: level,
                           selected: _selectedLevel == level.level,
-                          isRecommended: _suggestedLevelLoaded &&
+                          isRecommended:
+                              _suggestedLevelLoaded &&
                               _listeningSuggestedLevel != null &&
                               level.level == _listeningSuggestedLevel,
                           onTap: () =>
@@ -540,7 +544,11 @@ class _RecentPracticeRow extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: color),
+        style: TextStyle(
+          fontSize: 10,
+          fontWeight: FontWeight.w600,
+          color: color,
+        ),
       ),
     );
   }

@@ -6,6 +6,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -73,6 +74,11 @@ class ApiException implements Exception {
 
 /// 畫面上常見的「錯誤是不是因為未登入」判斷，統一隱藏 `is ApiException` 轉型。
 bool isAuthError(Object? error) => error is ApiException && error.isUnauthorized;
+
+/// 給使用者看的錯誤文案：後端 [ApiException] 已是中文訊息直接用，
+/// 其他（程式錯誤、型別錯誤）不外露原始內容，改顯示 [fallback]。
+String apiErrorMessage(Object? error, {String fallback = '發生錯誤，請稍後再試'}) =>
+    error is ApiException && error.message.isNotEmpty ? error.message : fallback;
 
 class ApiClient {
   /// 傳輸層。正式執行時是預設的 http client；測試可換成 MockClient。
@@ -152,28 +158,20 @@ class ApiClient {
     required Map<String, String> fields,
     required List<MultipartFileData> files,
   }) async {
-    final token = await AuthService.currentToken();
-    final uri = Uri.parse(ApiConfig.baseUrl + path);
-    final request = http.MultipartRequest('POST', uri);
-    if (token != null) request.headers['Authorization'] = 'Bearer $token';
-    request.fields.addAll(fields);
-    for (final file in files) {
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          file.field,
-          file.bytes,
-          filename: file.filename,
-          contentType: MediaType.parse(file.mimeType),
-        ),
-      );
-    }
-    final resp = await _send(
-      () async => http.Response.fromStream(await httpClient.send(request)),
-      method: 'POST(multipart)',
-      url: uri,
-      body: 'fields=$fields, files=${files.map((f) => f.filename).toList()}',
+    return _sendMultipart(
+      path,
+      fields: fields,
+      files: [
+        for (final file in files)
+          http.MultipartFile.fromBytes(
+            file.field,
+            file.bytes,
+            filename: file.filename,
+            contentType: MediaType.parse(file.mimeType),
+          ),
+      ],
+      logBody: 'fields=$fields, files=${files.map((f) => f.filename).toList()}',
     );
-    return _handle(resp);
   }
 
   static Future<Map<String, dynamic>> delete(
@@ -200,25 +198,39 @@ class ApiClient {
     required File file,
     String? contentType,
   }) async {
+    return _sendMultipart(
+      path,
+      files: [
+        await http.MultipartFile.fromPath(
+          fieldName,
+          file.path,
+          contentType: contentType == null ? null : MediaType.parse(contentType),
+        ),
+      ],
+      // 只記檔名與大小，不記完整本機路徑（可能含使用者名稱）。
+      logBody: 'field=$fieldName, file=${file.uri.pathSegments.last} (${file.lengthSync()} bytes)',
+    );
+  }
+
+  /// multipart POST 的共用骨架：組 request、帶 Authorization、走 [_send] 與
+  /// [_handle]。[logBody] 是給 log 用的摘要，不要放檔案內容或完整路徑。
+  static Future<Map<String, dynamic>> _sendMultipart(
+    String path, {
+    Map<String, String> fields = const {},
+    required List<http.MultipartFile> files,
+    required String logBody,
+  }) async {
     final token = await AuthService.currentToken();
     final uri = Uri.parse(ApiConfig.baseUrl + path);
     final request = http.MultipartRequest('POST', uri);
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-    request.files.add(await http.MultipartFile.fromPath(
-      fieldName,
-      file.path,
-      contentType: contentType == null ? null : MediaType.parse(contentType),
-    ));
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+    request.fields.addAll(fields);
+    request.files.addAll(files);
     final resp = await _send(
-      () async {
-        final streamed = await request.send();
-        return http.Response.fromStream(streamed);
-      },
+      () async => http.Response.fromStream(await httpClient.send(request)),
       method: 'POST(multipart)',
       url: uri,
-      body: 'field=$fieldName, file=${file.path}',
+      body: logBody,
     );
     return _handle(resp);
   }
@@ -227,6 +239,57 @@ class ApiClient {
     'Content-Type': 'application/json',
     if (token != null) 'Authorization': 'Bearer $token',
   };
+
+  /// debug log 會外流的敏感欄位：個資（email、族群身分、部落名、公開暱稱、
+  /// 聯絡方式）與各類憑證。這些即使在 debug build 也不該出現在 log 原文。
+  static const List<String> _sensitiveKeys = [
+    'email',
+    'contact_email',
+    'contact_phone',
+    'phone',
+    'password',
+    'token',
+    'id_token',
+    'access_token',
+    'refresh_token',
+    'rtc_token',
+    'fcm_token',
+    'app_id',
+    'video_nickname',
+    'ethnic_group',
+    'is_indigenous',
+    'tribal_name',
+    'display_name',
+  ];
+
+  /// 把 JSON 字串中敏感欄位的值換成 ***。只在 debug log 路徑上使用，
+  /// 不影響實際送出的 body。
+  static String _redact(String body) {
+    var out = body;
+    for (final key in _sensitiveKeys) {
+      out = out
+          // 字串值："email":"a@b.c"
+          .replaceAll(RegExp('"$key"\\s*:\\s*"[^"]*"'), '"$key":"***"')
+          // 非字串值（數字/bool/null）："is_indigenous":true
+          .replaceAll(
+            RegExp('"$key"\\s*:\\s*(?!")[^,}\\]]+'),
+            '"$key":***',
+          );
+    }
+    return out;
+  }
+
+  /// 只留 scheme+host+path，去掉可能含搜尋關鍵字或 id 的 query。
+  static String _safeUrl(Object? url) {
+    if (url is Uri) return '${url.origin}${url.path}';
+    return url?.toString().split('?').first ?? '';
+  }
+
+  /// debugPrint 在 release build 仍會寫進系統 log（adb logcat 可讀），
+  /// 所以 body 這類含個資的內容必須自己用 kDebugMode 擋掉。
+  static void _logVerbose(String message) {
+    if (kDebugMode) debugPrint(message);
+  }
 
   /// 統一攔截離線（SocketException），轉成一致的 NETWORK_ERROR ApiException，
   /// 讓所有 service 不必各自 catch SocketException。
@@ -237,15 +300,22 @@ class ApiClient {
     Object? url,
     String? body,
   }) async {
-    debugPrint('ApiClient →  $method $url${body != null ? '\n  body: $body' : ''}');
+    _logVerbose(
+      'ApiClient →  $method $url${body != null ? '\n  body: ${_redact(body)}' : ''}',
+    );
     try {
       final resp = await doRequest();
-      debugPrint(
-        'ApiClient ←  ${resp.statusCode} $method $url\n  body: ${resp.body}',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          'ApiClient ←  ${resp.statusCode} $method $url\n  body: ${_redact(resp.body)}',
+        );
+      } else {
+        // release 只保留狀態碼與路徑，足以定位問題且不外洩內容。
+        debugPrint('ApiClient ←  ${resp.statusCode} $method ${_safeUrl(url)}');
+      }
       return resp;
     } on SocketException {
-      debugPrint('ApiClient ←  NETWORK_ERROR $method $url');
+      debugPrint('ApiClient ←  NETWORK_ERROR $method ${_safeUrl(url)}');
       throw ApiException(
         statusCode: 0,
         code: 'NETWORK_ERROR',
@@ -328,8 +398,8 @@ class ApiClient {
       final j = jsonDecode(resp.body);
       final error = j['error'] as Map<String, dynamic>?;
       if (error == null) {
-        debugPrint(
-          'ApiClient: ${resp.statusCode} ${resp.request?.url} 回應無 error 欄位: ${resp.body}',
+        _logVerbose(
+          'ApiClient: ${resp.statusCode} ${_safeUrl(resp.request?.url)} 回應無 error 欄位: ${_redact(resp.body)}',
         );
       }
       return ApiException(
@@ -338,8 +408,8 @@ class ApiClient {
         message: error?['message'] as String? ?? '發生未知錯誤',
       );
     } catch (e) {
-      debugPrint(
-        'ApiClient: ${resp.statusCode} ${resp.request?.url} 錯誤回應解析失敗 ($e): ${resp.body}',
+      _logVerbose(
+        'ApiClient: ${resp.statusCode} ${_safeUrl(resp.request?.url)} 錯誤回應解析失敗 ($e): ${_redact(resp.body)}',
       );
       return ApiException(
         statusCode: resp.statusCode,

@@ -1,13 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/network/api_client.dart';
 import '../../models/history_models.dart';
 import '../../services/history_service.dart';
 import '../learn/lesson_card_screen.dart';
 import '../learn/listening_quiz_screen.dart';
 import 'listening_history_detail_screen.dart';
 import 'quiz_history_detail_screen.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 const _pageSize = 20;
 
@@ -27,6 +27,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   bool _initialLoading = true;
   Object? _error;
   final List<HistoryRecord> _records = [];
+
+  /// 請求世代：切換篩選會重新載入第一頁，過期回應（含飛行中的分頁）忽略。
+  int _reqGen = 0;
 
   @override
   void initState() {
@@ -51,8 +54,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _loadFirstPage() async {
+    final gen = ++_reqGen;
     setState(() {
       _initialLoading = true;
+      // 飛行中的分頁請求已過期，不能再 append 進新篩選的清單。
+      _loadingMore = false;
       _error = null;
     });
     try {
@@ -61,6 +67,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         page: 1,
         pageSize: _pageSize,
       );
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _records
           ..clear()
@@ -70,6 +77,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         _initialLoading = false;
       });
     } catch (e) {
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _error = e;
         _initialLoading = false;
@@ -78,6 +86,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Future<void> _loadNextPage() async {
+    final gen = _reqGen;
     setState(() => _loadingMore = true);
     try {
       final result = await HistoryService.fetchHistory(
@@ -85,6 +94,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         page: _page + 1,
         pageSize: _pageSize,
       );
+      if (!mounted || gen != _reqGen) return;
       setState(() {
         _records.addAll(result.records);
         _total = result.total;
@@ -93,6 +103,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       });
     } catch (e) {
       debugPrint('HistoryScreen._loadNextPage failed: $e');
+      if (!mounted || gen != _reqGen) return;
       setState(() => _loadingMore = false);
     }
   }
@@ -205,39 +216,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   Widget _buildBody() {
-    if (_initialLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
-    }
+    if (_initialLoading) return const TrukuLoadingView();
     if (_error != null) {
-      final isUnauthorized = isAuthError(_error);
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                isUnauthorized ? '請先登入' : '載入失敗，請稍後再試',
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 15,
-                  color: AppColors.ink,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadFirstPage,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.creamLight,
-                ),
-                child: const Text('重試'),
-              ),
-            ],
-          ),
-        ),
-      );
+      return TrukuErrorView(error: _error, onRetry: _loadFirstPage);
     }
     if (_records.isEmpty) {
       return Center(

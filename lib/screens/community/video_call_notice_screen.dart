@@ -44,7 +44,10 @@ class VideoCallNoticeScreen extends StatelessWidget {
         elevation: 0,
         title: Text(
           '視訊配對須知',
-          style: AppTypography.subtitleStyle(seniorMode: true, color: AppColors.ink),
+          style: AppTypography.subtitleStyle(
+            seniorMode: true,
+            color: AppColors.ink,
+          ),
         ),
       ),
       body: SafeArea(
@@ -58,7 +61,10 @@ class VideoCallNoticeScreen extends StatelessWidget {
                   children: [
                     Text(
                       '開始配對前，請先閱讀以下規範',
-                      style: AppTypography.titleStyle(seniorMode: true, color: AppColors.ink),
+                      style: AppTypography.titleStyle(
+                        seniorMode: true,
+                        color: AppColors.ink,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     for (final rule in _rules) ...[
@@ -68,7 +74,10 @@ class VideoCallNoticeScreen extends StatelessWidget {
                     const SizedBox(height: 12),
                     Text(
                       '隱私政策',
-                      style: AppTypography.titleStyle(seniorMode: true, color: AppColors.ink),
+                      style: AppTypography.titleStyle(
+                        seniorMode: true,
+                        color: AppColors.ink,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     for (final rule in _privacyRules) ...[
@@ -92,7 +101,10 @@ class VideoCallNoticeScreen extends StatelessWidget {
       children: [
         Text(
           '• ',
-          style: AppTypography.bodyLargeStyle(seniorMode: true, color: AppColors.ink),
+          style: AppTypography.bodyLargeStyle(
+            seniorMode: true,
+            color: AppColors.ink,
+          ),
         ),
         Expanded(
           child: Text(
@@ -130,8 +142,11 @@ class VideoCallNoticeScreen extends StatelessWidget {
               elevation: 0,
             ),
             child: Text(
-              '我已了解並同意',
-              style: AppTypography.subtitleStyle(seniorMode: true, color: AppColors.ink),
+              '我已瞭解並同意',
+              style: AppTypography.subtitleStyle(
+                seniorMode: true,
+                color: AppColors.ink,
+              ),
             ),
           ),
         ),

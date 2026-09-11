@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/network/api_client.dart';
 import '../../core/utils/date_format.dart';
 import '../../models/millet_transaction.dart';
 import '../../services/millet_service.dart';
 import '../../shared/widgets/millet_coin_icon.dart';
+import '../../shared/widgets/async_state_view.dart';
 
 const _pageSize = 20;
 
@@ -122,39 +122,9 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
   }
 
   Widget _buildBody() {
-    if (_initialLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.primary),
-      );
-    }
+    if (_initialLoading) return const TrukuLoadingView();
     if (_error != null) {
-      final isUnauthorized = isAuthError(_error);
-      return Center(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                isUnauthorized ? '請先登入' : '載入失敗，請稍後再試',
-                style: GoogleFonts.notoSerifTc(
-                  fontSize: 15,
-                  color: AppColors.ink,
-                ),
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: _loadFirstPage,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.creamLight,
-                ),
-                child: const Text('重試'),
-              ),
-            ],
-          ),
-        ),
-      );
+      return TrukuErrorView(error: _error, onRetry: _loadFirstPage);
     }
     if (_transactions.isEmpty) {
       return Center(
