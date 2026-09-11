@@ -200,32 +200,43 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
+  /// 成功後提示 [success] 並重新整理活動資料。
   Future<void> _runAction(
     Future<void> Function() action, {
     required String success,
+  }) {
+    return _guarded(() async {
+      await action();
+      if (!mounted) return;
+      _snack(success);
+      await _silentRefresh();
+    });
+  }
+
+  /// 所有會打後端的動作共用：[_acting] 防連點，後端錯誤顯示其訊息，
+  /// 其他錯誤以「[failurePrefix]：原因」提示。
+  Future<void> _guarded(
+    Future<void> Function() action, {
+    String failurePrefix = '操作失敗',
   }) async {
     if (_acting) return;
     setState(() => _acting = true);
     try {
       await action();
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(success)));
-      await _silentRefresh();
     } on ApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      _snack(e.message);
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('操作失敗：$e')));
+      _snack('$failurePrefix：$e');
     } finally {
       if (mounted) setState(() => _acting = false);
     }
+  }
+
+  void _snack(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
   }
 
   // ── 按讚 / 收藏（任何活動狀態皆可） ────────────────────────────
@@ -299,45 +310,33 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   /// 匯出報名名單 CSV（僅發起人）：拿到後端組好的 CSV 文字，寫成暫存檔再跳系統
-  /// 分享選單（存檔/寄信/傳送皆可），錯誤處理沿用 [_runAction] 同款文案呈現。
+  /// 分享選單（存檔/寄信/傳送皆可），錯誤處理走 [_guarded]。
   Future<void> _exportRoster() async {
     final event = _event;
-    if (event == null || _acting) return;
-    setState(() => _acting = true);
-    File? tempFile;
-    try {
+    if (event == null) return;
+    await _guarded(failurePrefix: '匯出失敗', () async {
       final csv = await EventService.exportRoster(widget.eventId);
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/event_${event.id}_roster.csv');
-      tempFile = file;
-      await file.writeAsString(csv, flush: true);
-      if (!mounted) return;
-      await SharePlus.instance.share(
-        ShareParams(
-          files: [XFile(file.path, mimeType: 'text/csv')],
-          subject: '${event.title} 報名名單',
-        ),
-      );
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('匯出失敗：$e')));
-    } finally {
-      // 名單含參加者姓名與 email，分享完就刪掉，不留在暫存目錄等 OS 回收。
-      // share 已回傳代表系統分享流程結束（接收端已取走內容）。
       try {
-        await tempFile?.delete();
-      } catch (e) {
-        debugPrint('EventDetailScreen: 刪除名單暫存檔失敗（忽略）：$e');
+        await file.writeAsString(csv, flush: true);
+        if (!mounted) return;
+        await SharePlus.instance.share(
+          ShareParams(
+            files: [XFile(file.path, mimeType: 'text/csv')],
+            subject: '${event.title} 報名名單',
+          ),
+        );
+      } finally {
+        // 名單含參加者姓名與 email，分享完就刪掉，不留在暫存目錄等 OS 回收。
+        // share 已回傳代表系統分享流程結束（接收端已取走內容）。
+        try {
+          await file.delete();
+        } catch (e) {
+          debugPrint('EventDetailScreen: 刪除名單暫存檔失敗（忽略）：$e');
+        }
       }
-      if (mounted) setState(() => _acting = false);
-    }
+    });
   }
 
   Future<void> _deleteEvent() async {
@@ -358,25 +357,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         ],
       ),
     );
-    if (confirmed != true || _acting) return;
-    setState(() => _acting = true);
-    try {
+    if (confirmed != true) return;
+    await _guarded(failurePrefix: '刪除失敗', () async {
       await EventService.deleteEvent(widget.eventId);
       if (!mounted) return;
       Navigator.pop(context, true); // 通知活動列表刷新
-    } on ApiException catch (e) {
-      if (!mounted) return;
-      setState(() => _acting = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
-    } catch (e) {
-      if (!mounted) return;
-      setState(() => _acting = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('刪除失敗：$e')));
-    }
+    });
   }
 
   @override
