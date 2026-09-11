@@ -6,6 +6,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
@@ -218,7 +219,8 @@ class ApiClient {
       },
       method: 'POST(multipart)',
       url: uri,
-      body: 'field=$fieldName, file=${file.path}',
+      // 只記檔名與大小，不記完整本機路徑（可能含使用者名稱）。
+      body: 'field=$fieldName, file=${file.uri.pathSegments.last} (${file.lengthSync()} bytes)',
     );
     return _handle(resp);
   }
@@ -227,6 +229,57 @@ class ApiClient {
     'Content-Type': 'application/json',
     if (token != null) 'Authorization': 'Bearer $token',
   };
+
+  /// debug log 會外流的敏感欄位：個資（email、族群身分、部落名、公開暱稱、
+  /// 聯絡方式）與各類憑證。這些即使在 debug build 也不該出現在 log 原文。
+  static const List<String> _sensitiveKeys = [
+    'email',
+    'contact_email',
+    'contact_phone',
+    'phone',
+    'password',
+    'token',
+    'id_token',
+    'access_token',
+    'refresh_token',
+    'rtc_token',
+    'fcm_token',
+    'app_id',
+    'video_nickname',
+    'ethnic_group',
+    'is_indigenous',
+    'tribal_name',
+    'display_name',
+  ];
+
+  /// 把 JSON 字串中敏感欄位的值換成 ***。只在 debug log 路徑上使用，
+  /// 不影響實際送出的 body。
+  static String _redact(String body) {
+    var out = body;
+    for (final key in _sensitiveKeys) {
+      out = out
+          // 字串值："email":"a@b.c"
+          .replaceAll(RegExp('"$key"\\s*:\\s*"[^"]*"'), '"$key":"***"')
+          // 非字串值（數字/bool/null）："is_indigenous":true
+          .replaceAll(
+            RegExp('"$key"\\s*:\\s*(?!")[^,}\\]]+'),
+            '"$key":***',
+          );
+    }
+    return out;
+  }
+
+  /// 只留 scheme+host+path，去掉可能含搜尋關鍵字或 id 的 query。
+  static String _safeUrl(Object? url) {
+    if (url is Uri) return '${url.origin}${url.path}';
+    return url?.toString().split('?').first ?? '';
+  }
+
+  /// debugPrint 在 release build 仍會寫進系統 log（adb logcat 可讀），
+  /// 所以 body 這類含個資的內容必須自己用 kDebugMode 擋掉。
+  static void _logVerbose(String message) {
+    if (kDebugMode) debugPrint(message);
+  }
 
   /// 統一攔截離線（SocketException），轉成一致的 NETWORK_ERROR ApiException，
   /// 讓所有 service 不必各自 catch SocketException。
@@ -237,15 +290,22 @@ class ApiClient {
     Object? url,
     String? body,
   }) async {
-    debugPrint('ApiClient →  $method $url${body != null ? '\n  body: $body' : ''}');
+    _logVerbose(
+      'ApiClient →  $method $url${body != null ? '\n  body: ${_redact(body)}' : ''}',
+    );
     try {
       final resp = await doRequest();
-      debugPrint(
-        'ApiClient ←  ${resp.statusCode} $method $url\n  body: ${resp.body}',
-      );
+      if (kDebugMode) {
+        debugPrint(
+          'ApiClient ←  ${resp.statusCode} $method $url\n  body: ${_redact(resp.body)}',
+        );
+      } else {
+        // release 只保留狀態碼與路徑，足以定位問題且不外洩內容。
+        debugPrint('ApiClient ←  ${resp.statusCode} $method ${_safeUrl(url)}');
+      }
       return resp;
     } on SocketException {
-      debugPrint('ApiClient ←  NETWORK_ERROR $method $url');
+      debugPrint('ApiClient ←  NETWORK_ERROR $method ${_safeUrl(url)}');
       throw ApiException(
         statusCode: 0,
         code: 'NETWORK_ERROR',
@@ -328,8 +388,8 @@ class ApiClient {
       final j = jsonDecode(resp.body);
       final error = j['error'] as Map<String, dynamic>?;
       if (error == null) {
-        debugPrint(
-          'ApiClient: ${resp.statusCode} ${resp.request?.url} 回應無 error 欄位: ${resp.body}',
+        _logVerbose(
+          'ApiClient: ${resp.statusCode} ${_safeUrl(resp.request?.url)} 回應無 error 欄位: ${_redact(resp.body)}',
         );
       }
       return ApiException(
@@ -338,8 +398,8 @@ class ApiClient {
         message: error?['message'] as String? ?? '發生未知錯誤',
       );
     } catch (e) {
-      debugPrint(
-        'ApiClient: ${resp.statusCode} ${resp.request?.url} 錯誤回應解析失敗 ($e): ${resp.body}',
+      _logVerbose(
+        'ApiClient: ${resp.statusCode} ${_safeUrl(resp.request?.url)} 錯誤回應解析失敗 ($e): ${_redact(resp.body)}',
       );
       return ApiException(
         statusCode: resp.statusCode,
