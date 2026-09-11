@@ -179,7 +179,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
   /// 下拉刷新：貼文與呼叫端的額外工作並行，兩者都完成才收起轉圈動畫。
   Future<void> refresh() async {
     final extra = widget.onRefresh?.call();
-    await Future.wait([_refreshPosts(), if (extra != null) extra]);
+    await Future.wait([_refreshPosts(), ?extra]);
   }
 
   /// 用 after 只取斷層後的新貼文，接在最前面。
