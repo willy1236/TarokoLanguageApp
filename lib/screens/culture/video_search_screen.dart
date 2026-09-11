@@ -79,7 +79,7 @@ class _VideoResultTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? AppTypography.title : 13,
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                     ),
@@ -89,7 +89,7 @@ class _VideoResultTile extends StatelessWidget {
                     Text(
                       '${VideoCategory.label(video.category)} · ${video.viewCount} 次觀看',
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: AppTypography.caption,
                         color: AppColors.fog,
                       ),
                     ),

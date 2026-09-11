@@ -184,7 +184,7 @@ class _CommentListItem extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: AppColors.primary,
-                  fontSize: seniorMode ? AppTypography.body : 11,
+                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -195,7 +195,7 @@ class _CommentListItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: AppColors.ink,
-                fontSize: seniorMode ? AppTypography.title : 13.5,
+                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                 height: 1.5,
               ),
             ),
@@ -212,7 +212,7 @@ class _CommentListItem extends StatelessWidget {
                   '${item.comment.likeCount}',
                   style: TextStyle(
                     color: AppColors.fog,
-                    fontSize: seniorMode ? AppTypography.subtitle : 12,
+                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                   ),
                 ),
               ],

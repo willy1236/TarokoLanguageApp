@@ -8,6 +8,7 @@ import '../learn/listening_quiz_screen.dart';
 import 'listening_history_detail_screen.dart';
 import 'quiz_history_detail_screen.dart';
 import '../../shared/widgets/async_state_view.dart';
+import '../../core/constants/app_typography.dart';
 
 const _pageSize = 20;
 
@@ -177,7 +178,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         title: Text(
           '測驗紀錄',
           style: GoogleFonts.notoSerifTc(
-            fontSize: 18,
+            fontSize: AppTypography.subtitle,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),
@@ -224,7 +225,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       return Center(
         child: Text(
           '目前沒有測驗紀錄',
-          style: GoogleFonts.notoSansTc(fontSize: 14, color: AppColors.fog),
+          style: GoogleFonts.notoSansTc(fontSize: AppTypography.body, color: AppColors.fog),
         ),
       );
     }
@@ -285,7 +286,7 @@ class _FilterChip extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: 13,
+            fontSize: AppTypography.body,
             fontWeight: FontWeight.w600,
             color: selected ? AppColors.creamLight : AppColors.inkSoft,
           ),
@@ -347,7 +348,7 @@ class _HistoryRow extends StatelessWidget {
                   Text(
                     record.level,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 15,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                     ),
@@ -355,7 +356,7 @@ class _HistoryRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '${record.statusLabel} · ${_timeLabel()}',
-                    style: const TextStyle(fontSize: 11, color: AppColors.fog),
+                    style: const TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
                   ),
                 ],
               ),
@@ -366,7 +367,7 @@ class _HistoryRow extends StatelessWidget {
                 Text(
                   _scoreLabel(),
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 16,
+                    fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
                     color: isCompleted ? AppColors.primary : AppColors.fog,
                   ),
@@ -391,7 +392,7 @@ class _HistoryRow extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: AppTypography.micro,
           fontWeight: FontWeight.w600,
           color: color,
         ),

@@ -137,7 +137,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               'PGKALA · 互動',
               style: GoogleFonts.crimsonPro(
                 fontStyle: FontStyle.italic,
-                fontSize: 12,
+                fontSize: AppTypography.caption,
                 color: AppColors.fog,
                 letterSpacing: 3.0,
               ),
@@ -200,7 +200,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       '1 ON 1 · KMSAPUH',
                       style: GoogleFonts.crimsonPro(
                         fontStyle: FontStyle.italic,
-                        fontSize: 11,
+                        fontSize: AppTypography.caption,
                         color: AppColors.gold,
                         letterSpacing: 3.0,
                       ),
@@ -210,7 +210,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   Text(
                     '和耆老一對一\n用族語聊 10 分鐘',
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? 26 : 20,
+                      fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       height: 1.3,
@@ -221,7 +221,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   Text(
                     '系統會幫你配對線上的族人',
                     style: TextStyle(
-                      fontSize: seniorMode ? AppTypography.subtitle : 12,
+                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                       color: AppColors.creamLight.withValues(
                         alpha: seniorMode ? 0.85 : 0.7,
                       ),
@@ -281,7 +281,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               Text(
                 '查看視訊配對須知',
                 style: TextStyle(
-                  fontSize: seniorMode ? AppTypography.subtitle : 12,
+                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                   color: AppColors.fog,
                   decoration: TextDecoration.underline,
                   decorationColor: AppColors.fog,
@@ -317,7 +317,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   child: Text(
                     initials[i],
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 12,
+                      fontSize: AppTypography.caption,
                       fontWeight: FontWeight.w600,
                       color: AppColors.gold,
                     ),
@@ -342,7 +342,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             Text(
               '族人在線中',
               style: TextStyle(
-                fontSize: 11,
+                fontSize: AppTypography.caption,
                 color: AppColors.creamLight.withValues(alpha: 0.85),
                 letterSpacing: 1.2,
               ),
@@ -467,7 +467,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             Text(
               _isJoining ? '配對中…' : '開始配對',
               style: GoogleFonts.notoSerifTc(
-                fontSize: seniorMode ? AppTypography.headline : 15,
+                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
                 letterSpacing: 2.0,
@@ -496,7 +496,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               Text(
                 '我的好友',
                 style: GoogleFonts.notoSerifTc(
-                  fontSize: seniorMode ? AppTypography.title : 14,
+                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
                   letterSpacing: 1.5,
@@ -529,7 +529,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               child: Text(
                 '尚無好友，先去加好友吧',
                 style: TextStyle(
-                  fontSize: seniorMode ? AppTypography.subtitle : 12,
+                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                   color: AppColors.fog,
                 ),
               ),
@@ -610,7 +610,7 @@ class _FriendTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? AppTypography.title : 14,
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                       letterSpacing: 1.0,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import 'truku_painters.dart';
+import '../../core/constants/app_typography.dart';
 
 class ModeData {
   final String key;
@@ -119,7 +120,7 @@ class ModeCard extends StatelessWidget {
                 mode.truku.toUpperCase(),
                 style: GoogleFonts.crimsonPro(
                   fontStyle: FontStyle.italic,
-                  fontSize: 11,
+                  fontSize: AppTypography.caption,
                   color: mode.accent,
                   letterSpacing: 2.6,
                 ),
@@ -133,7 +134,7 @@ class ModeCard extends StatelessWidget {
           Text(
             mode.zh,
             style: GoogleFonts.notoSerifTc(
-              fontSize: large ? 26 : 22,
+              fontSize: large ? 26 : AppTypography.headline,
               fontWeight: FontWeight.w600,
               color: mode.fg,
               letterSpacing: 1.0,
@@ -146,7 +147,7 @@ class ModeCard extends StatelessWidget {
             child: Text(
               mode.sub,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: AppTypography.caption,
                 color: mode.fg,
                 letterSpacing: 0.5,
               ),

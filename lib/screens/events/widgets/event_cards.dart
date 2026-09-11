@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
 import '../../../shared/widgets/truku_painters.dart';
+import '../../../core/constants/app_typography.dart';
 
 // 依分類配色（呼應發起活動表單的分類清單），純視覺區隔用。
 Color _categoryColor(String? category) {
@@ -118,7 +119,7 @@ class EventFeaturedCard extends StatelessWidget {
                           child: Text(
                             label,
                             style: const TextStyle(
-                              fontSize: 10,
+                              fontSize: AppTypography.micro,
                               color: AppColors.ink,
                               fontWeight: FontWeight.w600,
                               letterSpacing: 2.0,
@@ -147,7 +148,7 @@ class EventFeaturedCard extends StatelessWidget {
                             Text(
                               _mon(d),
                               style: const TextStyle(
-                                fontSize: 9,
+                                fontSize: AppTypography.micro,
                                 color: AppColors.gold,
                                 letterSpacing: 0.5,
                               ),
@@ -155,7 +156,7 @@ class EventFeaturedCard extends StatelessWidget {
                             Text(
                               _day(d),
                               style: GoogleFonts.notoSerifTc(
-                                fontSize: 18,
+                                fontSize: AppTypography.subtitle,
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.creamLight,
                                 height: 1,
@@ -176,7 +177,7 @@ class EventFeaturedCard extends StatelessWidget {
                     Text(
                       e.title,
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode ? 26 : 19,
+                        fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
                         fontWeight: FontWeight.w600,
                         color: AppColors.creamLight,
                         letterSpacing: 0.6,
@@ -198,7 +199,7 @@ class EventFeaturedCard extends StatelessWidget {
                           child: Text(
                             '${_wd(d)} ${_time(d)}',
                             style: TextStyle(
-                              fontSize: seniorMode ? 16 : 11,
+                              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                               color: AppColors.creamLight.withValues(
                                 alpha: 0.85,
                               ),
@@ -213,7 +214,7 @@ class EventFeaturedCard extends StatelessWidget {
                         Text(
                           e.location ?? '線上',
                           style: TextStyle(
-                            fontSize: seniorMode ? 16 : 11,
+                            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                             color: AppColors.creamLight.withValues(alpha: 0.85),
                           ),
                         ),
@@ -260,7 +261,7 @@ class EventFeaturedCard extends StatelessWidget {
                 Text(
                   capacityText,
                   style: TextStyle(
-                    fontSize: seniorMode ? 16 : 11,
+                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                     color: AppColors.creamLight.withValues(alpha: 0.7),
                   ),
                 ),
@@ -272,7 +273,7 @@ class EventFeaturedCard extends StatelessWidget {
             child: Text(
               capacityText,
               style: TextStyle(
-                fontSize: seniorMode ? 16 : 11,
+                fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                 color: AppColors.creamLight.withValues(alpha: 0.7),
               ),
             ),
@@ -312,7 +313,7 @@ class EventFeaturedCard extends StatelessWidget {
         child: Text(
           text,
           style: GoogleFonts.notoSerifTc(
-            fontSize: seniorMode ? 17 : 12,
+            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),
@@ -387,7 +388,7 @@ class EventList extends StatelessWidget {
                     Text(
                       _mon(d),
                       style: TextStyle(
-                        fontSize: seniorMode ? 14 : 9,
+                        fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                         color: AppColors.gold,
                         letterSpacing: 0.5,
                       ),
@@ -395,7 +396,7 @@ class EventList extends StatelessWidget {
                     Text(
                       _day(d),
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode ? 32 : 22,
+                        fontSize: AppTypography.size(AppTypography.headline, seniorMode: seniorMode),
                         fontWeight: FontWeight.w700,
                         color: AppColors.creamLight,
                         height: 1,
@@ -404,7 +405,7 @@ class EventList extends StatelessWidget {
                     Text(
                       _wd(d),
                       style: TextStyle(
-                        fontSize: seniorMode ? 14 : 9,
+                        fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                         color: AppColors.creamLight.withValues(alpha: 0.7),
                         letterSpacing: 1.5,
                       ),
@@ -431,7 +432,7 @@ class EventList extends StatelessWidget {
                       child: Text(
                         e.category!,
                         style: TextStyle(
-                          fontSize: 9,
+                          fontSize: AppTypography.micro,
                           color: color,
                           letterSpacing: 1.5,
                         ),
@@ -442,7 +443,7 @@ class EventList extends StatelessWidget {
                   Text(
                     e.title,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? 20 : 14,
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                       letterSpacing: 0.6,
@@ -452,7 +453,7 @@ class EventList extends StatelessWidget {
                   Text(
                     '${_time(d)} · ${e.location ?? '線上'}',
                     style: TextStyle(
-                      fontSize: seniorMode ? 16 : 11,
+                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                       color: AppColors.fog,
                       letterSpacing: 0.8,
                     ),
@@ -469,7 +470,7 @@ class EventList extends StatelessWidget {
                       Text(
                         capacityText,
                         style: TextStyle(
-                          fontSize: seniorMode ? 16 : 11,
+                          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                           color: AppColors.inkSoft,
                         ),
                       ),
@@ -486,7 +487,7 @@ class EventList extends StatelessWidget {
                         child: Text(
                           '查看',
                           style: TextStyle(
-                            fontSize: seniorMode ? 16 : 11,
+                            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                             fontWeight: FontWeight.w600,
                             color: AppColors.primary,
                           ),

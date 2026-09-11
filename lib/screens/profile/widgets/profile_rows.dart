@@ -123,9 +123,7 @@ Widget profileNavRow({
               Text(
                 label,
                 style: GoogleFonts.notoSerifTc(
-                  fontSize: seniorMode
-                      ? AppTypography.headline
-                      : AppTypography.bodyLarge,
+                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
                   letterSpacing: 0.5,
@@ -144,7 +142,7 @@ Widget profileNavRow({
   );
 }
 
-Widget profileSection(String label, List<Widget> children) {
+Widget profileSection(String label, List<Widget> children, {bool seniorMode = false}) {
   return Padding(
     padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
     child: Column(
@@ -154,7 +152,7 @@ Widget profileSection(String label, List<Widget> children) {
           label,
           style: GoogleFonts.crimsonPro(
             fontStyle: FontStyle.italic,
-            fontSize: 10,
+            fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
             color: AppColors.fog,
             letterSpacing: 3,
           ),
@@ -181,13 +179,14 @@ Widget profileSettingRow(
   bool editable = true,
   bool copyable = false,
   VoidCallback? onTap,
+  bool seniorMode = false,
 }) {
   return Column(
     children: [
       GestureDetector(
         onTap: editable ? onTap : null,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          padding: EdgeInsets.symmetric(horizontal: 16, vertical: seniorMode ? AppSpacing.lg : 14),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -197,7 +196,7 @@ Widget profileSettingRow(
                   Text(
                     label,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.caption,
+                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                       color: AppColors.fog,
                       letterSpacing: 1,
                     ),
@@ -212,7 +211,7 @@ Widget profileSettingRow(
                                   )
                                 : GoogleFonts.notoSerifTc())
                             .copyWith(
-                              fontSize: AppTypography.bodyLarge,
+                              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                               fontWeight: FontWeight.w600,
                               color: AppColors.ink,
                               letterSpacing: 0.5,
@@ -221,10 +220,10 @@ Widget profileSettingRow(
                 ],
               ),
               if (copyable)
-                Icon(Icons.copy_rounded, size: 16, color: AppColors.primary)
+                Icon(Icons.copy_rounded, size: seniorMode ? 24 : 16, color: AppColors.primary)
               else if (editable)
                 CustomPaint(
-                  size: const Size(16, 16),
+                  size: Size.square(seniorMode ? 24 : 16),
                   painter: ProfileEditPenPainter(),
                 ),
             ],
@@ -271,9 +270,7 @@ Widget profileSwitchRow(
                   Text(
                     label,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode
-                          ? AppTypography.headline
-                          : AppTypography.bodyLarge,
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                       letterSpacing: 0.5,
@@ -284,7 +281,7 @@ Widget profileSwitchRow(
                     Text(
                       lockedHint,
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: AppTypography.caption,
+                        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                         color: AppColors.fog,
                       ),
                     ),

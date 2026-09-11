@@ -181,7 +181,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.cream,
-                fontSize: seniorMode ? AppTypography.title : 15,
+                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
               ),
             ),
             const SizedBox(height: 20),
@@ -190,7 +190,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
               child: Text(
                 '返回清單',
                 style: seniorMode
-                    ? const TextStyle(fontSize: AppTypography.subtitle)
+                    ? const TextStyle(fontSize: AppTypography.bodyLarge)
                     : null,
               ),
             ),
@@ -250,7 +250,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                 Text(
                   video.title,
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 26 : 20,
+                    fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
                     fontWeight: FontWeight.w600,
                     color: AppColors.creamLight,
                     height: 1.3,
@@ -277,7 +277,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                                 '${video.viewCount}',
                                 style: TextStyle(
                                   color: AppColors.fog,
-                                  fontSize: AppTypography.subtitle,
+                                  fontSize: AppTypography.bodyLarge,
                                 ),
                               ),
                             ],
@@ -324,7 +324,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                             '${video.viewCount}',
                             style: TextStyle(
                               color: AppColors.fog,
-                              fontSize: 12,
+                              fontSize: AppTypography.caption,
                             ),
                           ),
                           const Spacer(),
@@ -359,7 +359,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                     video.description!,
                     style: TextStyle(
                       color: AppColors.mist,
-                      fontSize: seniorMode ? AppTypography.title : 14,
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       height: 1.6,
                     ),
                   ),
@@ -385,7 +385,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: seniorMode ? AppTypography.body : 10,
+          fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
           color: AppColors.gold,
           letterSpacing: 1.5,
         ),

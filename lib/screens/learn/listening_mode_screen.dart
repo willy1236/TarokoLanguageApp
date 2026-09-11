@@ -11,6 +11,7 @@ import '../../shared/widgets/truku_widgets.dart';
 import '../history/listening_history_detail_screen.dart';
 import 'listening_placement_screen.dart';
 import 'listening_quiz_screen.dart';
+import '../../core/constants/app_typography.dart';
 
 Color _levelColor(String level) {
   if (level.contains('高')) {
@@ -162,7 +163,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                   Text(
                     '目前沒有可用的級別',
                     style: GoogleFonts.notoSansTc(
-                      fontSize: 14,
+                      fontSize: AppTypography.body,
                       color: AppColors.fog,
                     ),
                   )
@@ -221,7 +222,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
         if (records.isEmpty) {
           return Text(
             '尚無練習紀錄',
-            style: GoogleFonts.notoSansTc(fontSize: 14, color: AppColors.fog),
+            style: GoogleFonts.notoSansTc(fontSize: AppTypography.body, color: AppColors.fog),
           );
         }
         return Column(
@@ -264,7 +265,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
         Text(
           '聽力測驗',
           style: GoogleFonts.notoSerifTc(
-            fontSize: 20,
+            fontSize: AppTypography.title,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),
@@ -281,7 +282,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
         Text(
           label,
           style: GoogleFonts.notoSerifTc(
-            fontSize: 16,
+            fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
             letterSpacing: 1.2,
@@ -306,7 +307,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
           child: Text(
             '開始測驗',
             style: GoogleFonts.notoSerifTc(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: enabled ? AppColors.creamLight : AppColors.fog,
               letterSpacing: 1.5,
@@ -325,7 +326,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
         child: Text(
           isUnauthorized ? '請先登入' : '載入失敗，請稍後再試',
           style: GoogleFonts.notoSerifTc(
-            fontSize: 16,
+            fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),
@@ -369,7 +370,7 @@ class _ModeCard extends StatelessWidget {
             Text(
               option.title,
               style: GoogleFonts.notoSerifTc(
-                fontSize: 15,
+                fontSize: AppTypography.bodyLarge,
                 fontWeight: FontWeight.w600,
                 color: selected ? AppColors.primary : AppColors.ink,
               ),
@@ -377,7 +378,7 @@ class _ModeCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               option.subtitle,
-              style: GoogleFonts.notoSansTc(fontSize: 12, color: AppColors.fog),
+              style: GoogleFonts.notoSansTc(fontSize: AppTypography.caption, color: AppColors.fog),
             ),
           ],
         ),
@@ -429,7 +430,7 @@ class _LevelChip extends StatelessWidget {
             Text(
               level.level,
               style: GoogleFonts.notoSerifTc(
-                fontSize: 13,
+                fontSize: AppTypography.body,
                 fontWeight: FontWeight.w600,
                 color: selected ? AppColors.creamLight : AppColors.inkSoft,
               ),
@@ -501,7 +502,7 @@ class _RecentPracticeRow extends StatelessWidget {
                   Text(
                     record.level,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 15,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                     ),
@@ -509,7 +510,7 @@ class _RecentPracticeRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     _timeLabel(),
-                    style: const TextStyle(fontSize: 11, color: AppColors.fog),
+                    style: const TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
                   ),
                 ],
               ),
@@ -520,7 +521,7 @@ class _RecentPracticeRow extends StatelessWidget {
                 Text(
                   _scoreLabel(),
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 16,
+                    fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
                     color: isCompleted ? AppColors.primary : AppColors.fog,
                   ),
@@ -545,7 +546,7 @@ class _RecentPracticeRow extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: AppTypography.micro,
           fontWeight: FontWeight.w600,
           color: color,
         ),
@@ -571,7 +572,7 @@ class _PlacementResultBanner extends StatelessWidget {
       child: Text(
         '你的推薦起始等級：$level',
         style: GoogleFonts.notoSerifTc(
-          fontSize: 15,
+          fontSize: AppTypography.bodyLarge,
           fontWeight: FontWeight.w600,
           color: AppColors.creamLight,
         ),
@@ -605,7 +606,7 @@ class _PlacementBanner extends StatelessWidget {
                   Text(
                     '還沒做過分級測驗',
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 15,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                     ),
@@ -614,7 +615,7 @@ class _PlacementBanner extends StatelessWidget {
                   Text(
                     '先做一次測驗，幫你找出適合的起始等級',
                     style: GoogleFonts.notoSansTc(
-                      fontSize: 12,
+                      fontSize: AppTypography.caption,
                       color: AppColors.creamLight.withValues(alpha: 0.8),
                     ),
                   ),

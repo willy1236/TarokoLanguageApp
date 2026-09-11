@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/tribe_model.dart';
 import '../../services/user_service.dart';
+import '../../core/constants/app_typography.dart';
 
 // 部落 picker 用「不設定部落」選項的 sentinel id，真實 tribes.id 皆為正整數，不會衝突。
 const int kClearTribeId = -1;
@@ -88,7 +89,7 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
                 child: Text(
                   '選擇部落',
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 16,
+                    fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 1,
@@ -160,7 +161,7 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
             title: Text(
               '不設定部落',
               style: GoogleFonts.notoSerifTc(
-                fontSize: 14,
+                fontSize: AppTypography.body,
                 color: AppColors.fog,
                 letterSpacing: 0.5,
               ),
@@ -183,14 +184,14 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
           title: Text(
             tribe.name,
             style: GoogleFonts.notoSerifTc(
-              fontSize: 14,
+              fontSize: AppTypography.body,
               color: AppColors.ink,
               letterSpacing: 0.5,
             ),
           ),
           subtitle: Text(
             '${tribe.county}${tribe.township} · ${tribe.nameTruku}',
-            style: TextStyle(fontSize: 11, color: AppColors.fog),
+            style: TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
           ),
           onTap: () => Navigator.pop(context, tribe),
         );

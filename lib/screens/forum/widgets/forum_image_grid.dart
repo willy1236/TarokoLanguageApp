@@ -10,6 +10,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_typography.dart';
 
 class ForumImageGrid extends StatelessWidget {
   final List<String> urls;
@@ -173,7 +174,7 @@ class _ForumImageViewerState extends State<ForumImageViewer> {
       title: widget.images.length > 1
           ? Text(
               '${_index + 1} / ${widget.images.length}',
-              style: const TextStyle(color: AppColors.creamLight, fontSize: 14),
+              style: const TextStyle(color: AppColors.creamLight, fontSize: AppTypography.body),
             )
           : null,
       centerTitle: true,

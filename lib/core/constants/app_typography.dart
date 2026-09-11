@@ -3,76 +3,78 @@ import 'package:google_fonts/google_fonts.dart';
 
 /// 全域字體樣式 tokens — 太魯閣設計系統唯一字級/字族/字重來源
 ///
+/// 字級規則：
+/// - 字級常數（`micro`/`caption`/.../`headline`）一律是**一般模式**字級，
+///   全部為偶數、級距 2，一般模式最小 10。
+/// - 精簡模式 = 一般模式 + [seniorStep]（2），因此精簡模式最小 12。
+///   用 [size] 取得依模式換算後的字級，不要再手寫 `seniorMode ? 16 : 13`。
+///
 /// 兩種用法：
-/// 1. Raw 字級常數（`caption`/`body`/.../`headline`）：既有畫面在
-///    `seniorMode ? AppTypography.x : <原始字級數字>` 這種手動放大寫法中使用，
-///    只替換 fontSize；main.dart 的全域 textTheme 也是以此為 fontSize 基準。
-///    這組維持原樣，供既有程式碼相容使用。
-/// 2. `*Style()` 方法（新增）：跟 [AppColors] 同等地位的全域可直接套用樣式，
-///    內建字族＋字重＋（一般／精簡模式）雙字級，取代逐處手寫
+/// 1. `AppTypography.size(AppTypography.body, seniorMode: seniorMode)`：只需要 fontSize 時。
+/// 2. `*Style()` 方法：跟 [AppColors] 同等地位的全域可直接套用樣式，
+///    內建字族＋字重＋雙字級，取代逐處手寫
 ///    `GoogleFonts.notoSerifTc(fontSize: ..., fontWeight: ...)` 的重複組合。
 abstract class AppTypography {
-  // ── 字級（由小到大）──────────────────────────────────────────
-  static const double caption = 11; // 輔助說明文字
-  static const double body = 13; // 內文次要
-  static const double bodyLarge = 14; // 內文主要（畫面中最常見的基準字級）
-  static const double subtitle = 16; // 次標題
-  static const double title = 18; // 標題
+  // ── 一般模式字級（由小到大，偶數、級距 2）──────────────────────
+  static const double micro = 10; // 徽章、日期方塊等極小標籤
+  static const double caption = 12; // 輔助說明文字
+  static const double body = 14; // 內文次要
+  static const double bodyLarge = 16; // 內文主要
+  static const double subtitle = 18; // 次標題
+  static const double title = 20; // 標題
   static const double headline = 22; // 大標題
 
-  // ── 一般模式（非精簡）基準字級 ──────────────────────────────
-  static const double _baseCaption = 10;
-  static const double _baseBody = 11;
-  static const double _baseBodyLarge = 13;
-  static const double _baseSubtitle = 12;
-  static const double _baseTitle = 15;
-  static const double _baseHeadline = 20;
-  static const double _baseRomanized = 10;
-  static const double _seniorRomanized = 12;
+  /// 精簡模式相對一般模式放大的字級
+  static const double seniorStep = 2;
+
+  /// 依模式換算字級：精簡模式 = [base] + [seniorStep]
+  static double size(double base, {bool seniorMode = false}) => seniorMode ? base + seniorStep : base;
 
   // ── 全域樣式（字族＋字重＋雙字級）──────────────────────────
-  // notoSerifTc + w700：大標題／強調數字
+  // 方法名稱代表字族／字重的「角色」，不代表字級排名；各角色的一般模式字級沿用
+  // 原設計（標在各方法註解），精簡模式同樣 +[seniorStep]。
+  // notoSerifTc + w700：大標題／強調數字（20）
   static TextStyle headlineStyle({bool seniorMode = false, Color? color}) => GoogleFonts.notoSerifTc(
-    fontSize: seniorMode ? headline : _baseHeadline,
+    fontSize: size(title, seniorMode: seniorMode),
     fontWeight: FontWeight.w700,
     color: color,
   );
 
-  // notoSerifTc + w600（大字）：畫面主標題
+  // notoSerifTc + w600（大字）：畫面主標題（16）
   static TextStyle titleStyle({bool seniorMode = false, Color? color}) => GoogleFonts.notoSerifTc(
-    fontSize: seniorMode ? title : _baseTitle,
+    fontSize: size(bodyLarge, seniorMode: seniorMode),
     fontWeight: FontWeight.w600,
     color: color,
   );
 
-  // notoSerifTc + w600（小字）：次標題／tab 標籤，最常見的樣式群
+  // notoSerifTc + w600（小字）：次標題／tab 標籤，最常見的樣式群（12）
   static TextStyle subtitleStyle({bool seniorMode = false, Color? color}) => GoogleFonts.notoSerifTc(
-    fontSize: seniorMode ? subtitle : _baseSubtitle,
+    fontSize: size(caption, seniorMode: seniorMode),
     fontWeight: FontWeight.w600,
     color: color,
   );
 
-  // notoSansTc, regular：內文主要
+  // notoSansTc, regular：內文主要（14）
   static TextStyle bodyLargeStyle({bool seniorMode = false, Color? color}) => GoogleFonts.notoSansTc(
-    fontSize: seniorMode ? bodyLarge : _baseBodyLarge,
+    fontSize: size(body, seniorMode: seniorMode),
     color: color,
   );
 
-  // notoSansTc, regular：內文次要
+  // notoSansTc, regular：內文次要（12）
   static TextStyle bodyStyle({bool seniorMode = false, Color? color}) => GoogleFonts.notoSansTc(
-    fontSize: seniorMode ? body : _baseBody,
+    fontSize: size(caption, seniorMode: seniorMode),
     color: color,
   );
 
-  // notoSansTc, regular（更小字）：輔助說明文字
+  // notoSansTc, regular（更小字）：輔助說明文字（10）
   static TextStyle captionStyle({bool seniorMode = false, Color? color}) => GoogleFonts.notoSansTc(
-    fontSize: seniorMode ? caption : _baseCaption,
+    fontSize: size(micro, seniorMode: seniorMode),
     color: color,
   );
 
-  // crimsonPro + italic：族語拉丁拼音專用
+  // crimsonPro + italic：族語拉丁拼音專用（10）
   static TextStyle romanized({bool seniorMode = false, Color? color}) => GoogleFonts.crimsonPro(
-    fontSize: seniorMode ? _seniorRomanized : _baseRomanized,
+    fontSize: size(micro, seniorMode: seniorMode),
     fontStyle: FontStyle.italic,
     color: color,
   );

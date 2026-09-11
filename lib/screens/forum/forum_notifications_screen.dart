@@ -150,7 +150,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       title: Text(
         '通知',
         style: GoogleFonts.notoSerifTc(
-          fontSize: seniorMode ? 22 : 16,
+          fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
           fontWeight: FontWeight.w600,
           color: AppColors.ink,
         ),
@@ -162,7 +162,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
             '全部已讀',
             style: TextStyle(
               color: AppColors.primary,
-              fontSize: seniorMode ? AppTypography.subtitle : null,
+              fontSize: seniorMode ? AppTypography.body + AppTypography.seniorStep : null,
             ),
           ),
         ),
@@ -189,7 +189,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
           '還沒有新的回覆',
           style: GoogleFonts.notoSerifTc(
             color: AppColors.fog,
-            fontSize: seniorMode ? AppTypography.title : null,
+            fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
           ),
         ),
       );
@@ -229,7 +229,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
           title: Text(
             '${item.actor.displayName} $action',
             style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? AppTypography.headline : 14,
+              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
             ),
@@ -240,7 +240,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: seniorMode ? AppTypography.subtitle : 12,
+              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
               color: AppColors.fog,
             ),
           ),

@@ -6,6 +6,7 @@ import '../../models/millet_transaction.dart';
 import '../../services/millet_service.dart';
 import '../../shared/widgets/millet_coin_icon.dart';
 import '../../shared/widgets/async_state_view.dart';
+import '../../core/constants/app_typography.dart';
 
 const _pageSize = 20;
 
@@ -111,7 +112,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
         title: Text(
           '小米明細',
           style: GoogleFonts.notoSerifTc(
-            fontSize: 18,
+            fontSize: AppTypography.subtitle,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),
@@ -130,7 +131,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
       return Center(
         child: Text(
           '目前沒有小米幣明細',
-          style: GoogleFonts.notoSansTc(fontSize: 14, color: AppColors.fog),
+          style: GoogleFonts.notoSansTc(fontSize: AppTypography.body, color: AppColors.fog),
         ),
       );
     }
@@ -219,7 +220,7 @@ class _MilletRow extends StatelessWidget {
                 Text(
                   _reasonLabels[transaction.reason] ?? transaction.reason,
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 14,
+                    fontSize: AppTypography.body,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                   ),
@@ -229,7 +230,7 @@ class _MilletRow extends StatelessWidget {
                   subtitle != null
                       ? '$subtitle · ${_timeLabel()}'
                       : _timeLabel(),
-                  style: const TextStyle(fontSize: 11, color: AppColors.fog),
+                  style: const TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
                 ),
               ],
             ),
@@ -240,7 +241,7 @@ class _MilletRow extends StatelessWidget {
               Text(
                 '${isCredit ? '+' : ''}${transaction.delta}',
                 style: GoogleFonts.notoSerifTc(
-                  fontSize: 16,
+                  fontSize: AppTypography.bodyLarge,
                   fontWeight: FontWeight.w700,
                   color: deltaColor,
                 ),
@@ -248,7 +249,7 @@ class _MilletRow extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 '餘額 ${transaction.balanceAfter}',
-                style: const TextStyle(fontSize: 10, color: AppColors.fog),
+                style: const TextStyle(fontSize: AppTypography.micro, color: AppColors.fog),
               ),
             ],
           ),

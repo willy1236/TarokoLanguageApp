@@ -17,6 +17,7 @@ import '../forum/forum_theme.dart';
 import '../events/event_detail_screen.dart';
 import '../../shared/widgets/module_header_actions.dart';
 import 'widgets/plaza_cards.dart';
+import '../../core/constants/app_typography.dart';
 
 class PlazaScreen extends StatefulWidget {
   /// 由外層（合併分頁的膠囊切換）注入，顯示在標題與近期活動之間。
@@ -219,7 +220,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
                     'ALANG · 廣場',
                     style: GoogleFonts.crimsonPro(
                       fontStyle: FontStyle.italic,
-                      fontSize: 12,
+                      fontSize: AppTypography.caption,
                       color: AppColors.fog,
                       letterSpacing: 3.0,
                     ),
@@ -372,7 +373,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
             'SMRATUC · 近期活動',
             style: GoogleFonts.crimsonPro(
               fontStyle: FontStyle.italic,
-              fontSize: 10,
+              fontSize: AppTypography.micro,
               color: AppColors.fog,
               letterSpacing: 3.0,
             ),

@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
+import '../../core/constants/app_typography.dart';
 
 /// 商店與背包共用的稀有度、分類 chip 與配戴動作。兩頁原本各自複製一份，
 /// 改稀有度或錯誤文案時容易只改到其中一邊。
@@ -99,7 +100,7 @@ class ShopCategoryChips extends StatelessWidget {
               child: Text(
                 labels[i],
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppTypography.caption,
                   color: active ? AppColors.creamLight : AppColors.inkSoft,
                   fontWeight: active ? FontWeight.w600 : FontWeight.w400,
                   letterSpacing: 1,

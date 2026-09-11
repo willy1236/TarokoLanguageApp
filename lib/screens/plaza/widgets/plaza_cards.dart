@@ -39,7 +39,7 @@ class PlazaEventMessageCard extends StatelessWidget {
           child: Text(
             message,
             style: GoogleFonts.notoSerifTc(
-              fontSize: 13,
+              fontSize: AppTypography.body,
               color: AppColors.fog,
               letterSpacing: 0.8,
             ),
@@ -85,7 +85,7 @@ class PlazaBoardTab extends StatelessWidget {
               child: Text(
                 label,
                 style: GoogleFonts.notoSerifTc(
-                  fontSize: seniorMode ? AppTypography.title : 14,
+                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: color,
                   letterSpacing: 1.5,
@@ -163,7 +163,7 @@ class PlazaMiniEventCard extends StatelessWidget {
                           Text(
                             month,
                             style: const TextStyle(
-                              fontSize: 8,
+                              fontSize: AppTypography.micro,
                               color: AppColors.gold,
                               letterSpacing: 0.3,
                             ),
@@ -171,7 +171,7 @@ class PlazaMiniEventCard extends StatelessWidget {
                           Text(
                             day,
                             style: GoogleFonts.notoSerifTc(
-                              fontSize: 18,
+                              fontSize: AppTypography.subtitle,
                               fontWeight: FontWeight.w700,
                               color: AppColors.creamLight,
                               height: 1,
@@ -190,7 +190,7 @@ class PlazaMiniEventCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: GoogleFonts.notoSerifTc(
-                              fontSize: 14,
+                              fontSize: AppTypography.body,
                               fontWeight: FontWeight.w600,
                               color: AppColors.creamLight,
                               letterSpacing: 0.6,
@@ -202,7 +202,7 @@ class PlazaMiniEventCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 10,
+                              fontSize: AppTypography.micro,
                               color: AppColors.creamLight.withValues(
                                 alpha: 0.65,
                               ),
@@ -221,7 +221,7 @@ class PlazaMiniEventCard extends StatelessWidget {
                     Text(
                       '● ${event.participantCount} 人報名',
                       style: const TextStyle(
-                        fontSize: 10,
+                        fontSize: AppTypography.micro,
                         color: AppColors.gold,
                         letterSpacing: 1.5,
                       ),
@@ -240,7 +240,7 @@ class PlazaMiniEventCard extends StatelessWidget {
                       child: Text(
                         event.isJoined ? '已報名' : '我要參加',
                         style: const TextStyle(
-                          fontSize: 11,
+                          fontSize: AppTypography.caption,
                           color: AppColors.gold,
                           letterSpacing: 1.5,
                         ),

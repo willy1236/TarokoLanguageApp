@@ -66,7 +66,7 @@ class ProfileLogoutButton extends StatelessWidget {
                   Text(
                     '登出',
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: AppTypography.bodyLarge,
+                      fontSize: AppTypography.body,
                       fontWeight: FontWeight.w600,
                       color: AppColors.primary,
                       letterSpacing: 2,
@@ -80,7 +80,7 @@ class ProfileLogoutButton extends StatelessWidget {
           Text(
             'v1.0.0 · MHUWAY SU',
             style: GoogleFonts.jetBrainsMono(
-              fontSize: 10,
+              fontSize: AppTypography.micro,
               color: AppColors.fog,
               letterSpacing: 2,
             ),

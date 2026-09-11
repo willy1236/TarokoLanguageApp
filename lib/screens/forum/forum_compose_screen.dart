@@ -296,7 +296,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
       title: Text(
         _isEditing ? '編輯貼文' : '發文',
         style: GoogleFonts.notoSerifTc(
-          fontSize: seniorMode ? AppTypography.title : 16,
+          fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
           fontWeight: FontWeight.w600,
           color: AppColors.ink,
         ),
@@ -320,7 +320,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
               child: Text(
                 _saving ? '送出中…' : '送出',
                 style: GoogleFonts.notoSerifTc(
-                  fontSize: seniorMode ? AppTypography.subtitle : 13,
+                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.creamLight,
                   letterSpacing: 1.2,
@@ -350,7 +350,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
             maxLength: ForumService.titleMax,
             onChanged: (_) => setState(() {}),
             style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? 24 : 18,
+              fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
             ),
@@ -378,7 +378,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
             style: TextStyle(
               color: AppColors.ink,
               height: 1.6,
-              fontSize: seniorMode ? AppTypography.title : null,
+              fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
             ),
             decoration: const InputDecoration(
               hintText: '想說的話…',
@@ -424,7 +424,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
               Text(
                 _user?.displayName ?? '',
                 style: GoogleFonts.notoSerifTc(
-                  fontSize: seniorMode ? AppTypography.subtitle : 14,
+                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
                   letterSpacing: 0.6,
@@ -442,7 +442,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
                   Text(
                     '公開 · 所有族人都看得到',
                     style: TextStyle(
-                      fontSize: seniorMode ? AppTypography.body : 11,
+                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                       color: AppColors.fog,
                       letterSpacing: 0.8,
                     ),
@@ -494,7 +494,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
           style: GoogleFonts.notoSerifTc(
-            fontSize: seniorMode ? AppTypography.subtitle : 13,
+            fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
             fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
             color: selected ? AppColors.primary : AppColors.fog,
           ),
@@ -523,7 +523,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           Text(
             '標籤無法在編輯時變更',
             style: TextStyle(
-              fontSize: seniorMode ? AppTypography.body : 12,
+              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
               color: AppColors.fog,
             ),
           ),
@@ -540,7 +540,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
         'HANGAN · 標籤',
         style: GoogleFonts.crimsonPro(
           fontStyle: FontStyle.italic,
-          fontSize: seniorMode ? AppTypography.body : 10,
+          fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
           color: AppColors.fog,
           letterSpacing: 3.0,
         ),
@@ -554,12 +554,12 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
               maxLength: ForumService.tagNameMax,
               onSubmitted: (_) => _addTag(),
               style: TextStyle(
-                fontSize: seniorMode ? AppTypography.title : null,
+                fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
               ),
               decoration: InputDecoration(
                 hintText: '加入標籤',
                 hintStyle: seniorMode
-                    ? const TextStyle(fontSize: AppTypography.title)
+                    ? const TextStyle(fontSize: AppTypography.bodyLarge + AppTypography.seniorStep)
                     : null,
                 counterText: '',
                 isDense: true,
@@ -571,7 +571,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
             style: seniorMode
                 ? TextButton.styleFrom(
                     minimumSize: const Size(64, 44),
-                    textStyle: const TextStyle(fontSize: AppTypography.title),
+                    textStyle: const TextStyle(fontSize: AppTypography.bodyLarge + AppTypography.seniorStep),
                   )
                 : null,
             child: const Text('加入'),
@@ -596,7 +596,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           'HOT · 熱門標籤',
           style: GoogleFonts.crimsonPro(
             fontStyle: FontStyle.italic,
-            fontSize: seniorMode ? AppTypography.body : 10,
+            fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
             color: AppColors.fog,
             letterSpacing: 3.0,
           ),
@@ -675,7 +675,7 @@ class _TagPill extends StatelessWidget {
             '#$label',
             style: GoogleFonts.crimsonPro(
               fontStyle: FontStyle.italic,
-              fontSize: seniorMode ? AppTypography.subtitle : 12,
+              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
               color: filled ? AppColors.creamLight : AppColors.inkSoft,
               letterSpacing: 1.2,
             ),

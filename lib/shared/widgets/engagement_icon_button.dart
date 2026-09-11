@@ -4,7 +4,6 @@
 //
 // 精簡模式下加大觸控熱區，避免長者手指誤觸鄰近按鈕（沿用論壇原本的作法）。
 import 'package:flutter/material.dart';
-
 import '../../core/constants/app_typography.dart';
 
 class EngagementIconButton extends StatelessWidget {
@@ -40,7 +39,7 @@ class EngagementIconButton extends StatelessWidget {
             Text(
               '$count',
               style: TextStyle(
-                fontSize: seniorMode ? AppTypography.subtitle : 12,
+                fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                 color: color,
               ),
             ),

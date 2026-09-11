@@ -260,7 +260,7 @@ class HomeScreen extends StatelessWidget {
                         'Embiyax su hug · 你好',
                         style: GoogleFonts.crimsonPro(
                           fontStyle: FontStyle.italic,
-                          fontSize: 13,
+                          fontSize: AppTypography.body,
                           color: AppColors.fog,
                           letterSpacing: 2.0,
                         ),
@@ -437,7 +437,7 @@ class _TodayProgressCard extends StatelessWidget {
                         'TODAY · SAYANG',
                         style: GoogleFonts.crimsonPro(
                           fontStyle: FontStyle.italic,
-                          fontSize: 11,
+                          fontSize: AppTypography.caption,
                           color: AppColors.gold,
                           letterSpacing: 3.2,
                         ),
@@ -466,7 +466,7 @@ class _TodayProgressCard extends StatelessWidget {
                             Text(
                               '${millet ?? 0}',
                               style: GoogleFonts.notoSerifTc(
-                                fontSize: seniorMode ? AppTypography.title : 13,
+                                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.gold,
                                 letterSpacing: 0.5,
@@ -485,7 +485,7 @@ class _TodayProgressCard extends StatelessWidget {
                 RichText(
                   text: TextSpan(
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? 26 : 22,
+                      fontSize: AppTypography.size(AppTypography.headline, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       height: 1.3,
@@ -532,7 +532,7 @@ class _TodayProgressCard extends StatelessWidget {
                           ? '本週已集滿 7 天 · 已獲得 +50 小米幣'
                           : '再簽到 ${7 - weeklyCheckinCount} 天，本週集滿再得 +50 小米幣',
                       style: GoogleFonts.notoSansTc(
-                        fontSize: 12,
+                        fontSize: AppTypography.caption,
                         color: AppColors.creamLight,
                         letterSpacing: 0.5,
                       ),
@@ -570,7 +570,7 @@ class _TodayProgressCard extends StatelessWidget {
     return Text(
       checkinStreak > 0 ? '每日簽到 +50 · 已連續 $checkinStreak 天' : '每日簽到 +50 小米幣',
       style: GoogleFonts.notoSansTc(
-        fontSize: seniorMode ? AppTypography.subtitle : 12,
+        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
         color: AppColors.creamLight.withValues(alpha: 0.85),
         letterSpacing: 0.5,
       ),
@@ -598,7 +598,7 @@ class _TodayProgressCard extends StatelessWidget {
         child: Text(
           checkedInToday ? '已簽到' : '立即簽到',
           style: GoogleFonts.notoSerifTc(
-            fontSize: seniorMode ? AppTypography.title : 12,
+            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
             fontWeight: FontWeight.w600,
             color: checkedInToday
                 ? AppColors.gold.withValues(alpha: 0.4)

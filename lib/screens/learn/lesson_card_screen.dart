@@ -8,6 +8,7 @@ import '../history/history_screen.dart';
 import 'quiz_flow/quiz_flow_adapters.dart';
 import 'quiz_flow/quiz_flow_controller.dart';
 import 'quiz_flow/quiz_flow_view.dart';
+import '../../core/constants/app_typography.dart';
 
 /// 單字測驗（指定級別）。作答流程見 [QuizFlowController]；完成後在本頁顯示分數。
 class LessonCardScreen extends StatefulWidget {
@@ -111,7 +112,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
             Text(
               '$_displayLevel · 測驗完成',
               style: GoogleFonts.crimsonPro(
-                fontSize: 12,
+                fontSize: AppTypography.caption,
                 fontStyle: FontStyle.italic,
                 color: AppColors.fog,
                 letterSpacing: 2.0,
@@ -148,7 +149,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
               child: Text(
                 '查看測驗紀錄 →',
                 style: GoogleFonts.notoSerifTc(
-                  fontSize: 13,
+                  fontSize: AppTypography.body,
                   fontWeight: FontWeight.w500,
                   color: AppColors.primary,
                   letterSpacing: 1,

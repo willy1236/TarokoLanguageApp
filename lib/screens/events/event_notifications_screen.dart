@@ -10,6 +10,7 @@ import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import 'event_detail_screen.dart';
+import '../../core/constants/app_typography.dart';
 
 String _relativeTime(DateTime time) {
   final diff = DateTime.now().difference(time);
@@ -151,7 +152,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
       title: Text(
         '活動通知',
         style: GoogleFonts.notoSerifTc(
-          fontSize: seniorMode ? 22 : 16,
+          fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
           fontWeight: FontWeight.w600,
           color: AppColors.ink,
         ),
@@ -163,7 +164,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
             '全部已讀',
             style: TextStyle(
               color: AppColors.primary,
-              fontSize: seniorMode ? 16 : null,
+              fontSize: seniorMode ? AppTypography.body + AppTypography.seniorStep : null,
             ),
           ),
         ),
@@ -190,7 +191,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
           '還沒有收到活動通知',
           style: GoogleFonts.notoSerifTc(
             color: AppColors.fog,
-            fontSize: seniorMode ? 18 : null,
+            fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
           ),
         ),
       );
@@ -225,7 +226,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? 20 : 14,
+              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
             ),
@@ -235,7 +236,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: seniorMode ? 16 : 12,
+              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
               color: AppColors.fog,
             ),
           ),

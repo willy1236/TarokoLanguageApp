@@ -69,7 +69,7 @@ class ForumPostCard extends StatelessWidget {
             maxLines: seniorMode ? 1 : 2,
             overflow: TextOverflow.ellipsis,
             style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? AppTypography.headline : 15,
+              fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 0.6,
@@ -81,7 +81,7 @@ class ForumPostCard extends StatelessWidget {
             maxLines: seniorMode ? 2 : 3,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: seniorMode ? AppTypography.title : 14,
+              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               color: AppColors.inkSoft,
               height: 1.55,
               letterSpacing: 0.5,
@@ -182,7 +182,7 @@ class ForumPostCard extends StatelessWidget {
                 Text(
                   post.author.displayName,
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? AppTypography.subtitle : 14,
+                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 0.6,
@@ -191,7 +191,7 @@ class ForumPostCard extends StatelessWidget {
                 Text(
                   '${post.board.name} · ${forumRelativeTime(post.createdAt)}',
                   style: TextStyle(
-                    fontSize: seniorMode ? AppTypography.body : 11,
+                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                     color: AppColors.fog,
                     letterSpacing: 0.8,
                   ),
@@ -211,7 +211,7 @@ class ForumPostCard extends StatelessWidget {
           child: Text(
             '置頂',
             style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? AppTypography.body : 11,
+              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
               color: AppColors.goldDeep,
               letterSpacing: 1.2,
             ),
@@ -230,7 +230,7 @@ class ForumPostCard extends StatelessWidget {
       '#${tag.name}',
       style: GoogleFonts.crimsonPro(
         fontStyle: FontStyle.italic,
-        fontSize: 11,
+        fontSize: AppTypography.caption,
         color: AppColors.primary,
         letterSpacing: 1.2,
       ),

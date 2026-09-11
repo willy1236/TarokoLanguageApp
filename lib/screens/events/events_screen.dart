@@ -14,6 +14,7 @@ import 'event_notifications_screen.dart';
 import 'event_search_screen.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/module_header_actions.dart';
+import '../../core/constants/app_typography.dart';
 
 /// 活動列表 —— 真資料版（GET /api/events）。
 /// 發起活動返回後自動刷新；下拉可重新整理。需登入（未登入 API 會 401 導回登入）。
@@ -230,7 +231,7 @@ class _EventsScreenState extends State<EventsScreen> {
                     'SMRATUC · 活動',
                     style: GoogleFonts.crimsonPro(
                       fontStyle: FontStyle.italic,
-                      fontSize: 12,
+                      fontSize: AppTypography.caption,
                       color: AppColors.fog,
                       letterSpacing: 3.0,
                     ),
@@ -322,7 +323,7 @@ class _EventsScreenState extends State<EventsScreen> {
                 child: Text(
                   _filters[i],
                   style: TextStyle(
-                    fontSize: seniorMode ? 16 : 12,
+                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                     color: active ? AppColors.creamLight : AppColors.inkSoft,
                     letterSpacing: 1.0,
                   ),
@@ -347,7 +348,7 @@ class _EventsScreenState extends State<EventsScreen> {
               '更多活動',
               style: GoogleFonts.crimsonPro(
                 fontStyle: FontStyle.italic,
-                fontSize: 10,
+                fontSize: AppTypography.micro,
                 color: AppColors.fog,
                 letterSpacing: 3.0,
               ),

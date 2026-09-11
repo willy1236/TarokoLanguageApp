@@ -408,7 +408,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         title: Text(
           '貼文',
           style: GoogleFonts.notoSerifTc(
-            fontSize: seniorMode ? AppTypography.title : 16,
+            fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),
@@ -480,7 +480,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 Text(
                   '留言 ${post.commentCount}',
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? AppTypography.subtitle : 14,
+                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                   ),
@@ -492,7 +492,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                       '還沒有人留言，來說第一句吧。',
                       style: TextStyle(
                         color: AppColors.fog,
-                        fontSize: seniorMode ? AppTypography.title : null,
+                        fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                       ),
                     ),
                   ),

@@ -12,6 +12,7 @@ import '../../shared/widgets/shop_item_card.dart';
 import '../../shared/widgets/shop_shared.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../millet/millet_ledger_screen.dart';
+import '../../core/constants/app_typography.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -264,7 +265,7 @@ class _ShopScreenState extends State<ShopScreen> {
                       'SAPAH SMPUNG · 小米商店',
                       style: GoogleFonts.crimsonPro(
                         fontStyle: FontStyle.italic,
-                        fontSize: 12,
+                        fontSize: AppTypography.caption,
                         color: AppColors.gold,
                         letterSpacing: 4,
                       ),
@@ -320,7 +321,7 @@ class _ShopScreenState extends State<ShopScreen> {
                               'BURAW · 我的小米',
                               style: GoogleFonts.crimsonPro(
                                 fontStyle: FontStyle.italic,
-                                fontSize: 11,
+                                fontSize: AppTypography.caption,
                                 color: AppColors.gold,
                                 letterSpacing: 3,
                               ),
@@ -386,7 +387,7 @@ class _ShopScreenState extends State<ShopScreen> {
           Text(
             title,
             style: GoogleFonts.notoSerifTc(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 1,
@@ -397,7 +398,7 @@ class _ShopScreenState extends State<ShopScreen> {
             subtitle,
             style: GoogleFonts.crimsonPro(
               fontStyle: FontStyle.italic,
-              fontSize: 10,
+              fontSize: AppTypography.micro,
               color: AppColors.fog,
               letterSpacing: 2,
             ),

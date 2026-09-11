@@ -91,7 +91,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
         onSubmit: _submit,
         palette: SearchBarPalette.light,
         seniorMode: seniorMode,
-        titleFontSize: AppTypography.title,
+        titleFontSize: AppTypography.bodyLarge + AppTypography.seniorStep,
       ),
       body: Column(
         children: [
@@ -102,7 +102,6 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
             onTribeSelected: _onTribeSelected,
             palette: SearchBarPalette.light,
             seniorMode: seniorMode,
-            chipFontSize: AppTypography.subtitle,
             leading: widget.boards.isEmpty
                 ? const []
                 : [
@@ -119,7 +118,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
                 _hint!,
                 style: TextStyle(
                   color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.title : null,
+                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                 ),
               ),
             ),
@@ -130,7 +129,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
                 '輸入關鍵字開始搜尋',
                 style: GoogleFonts.notoSerifTc(
                   color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.title : null,
+                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                 ),
               ),
             ),
@@ -197,7 +196,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
         backgroundColor: AppColors.cream,
         selectedColor: AppColors.primary.withValues(alpha: 0.16),
         labelStyle: TextStyle(
-          fontSize: seniorMode ? AppTypography.subtitle : 13,
+          fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
           color: selected ? AppColors.primary : AppColors.inkSoft,
           fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
         ),

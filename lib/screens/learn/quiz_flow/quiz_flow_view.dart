@@ -11,6 +11,7 @@ import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/truku_painters.dart';
 import '../../../shared/widgets/truku_widgets.dart';
 import 'quiz_flow_controller.dart';
+import '../../../core/constants/app_typography.dart';
 
 /// 題目發音播放。失敗時呼叫 [onError]（畫面顯示 SnackBar）。
 class QuizAudio {
@@ -232,7 +233,7 @@ class _ProgressBar extends StatelessWidget {
           Text(
             '${index + 1} / $total',
             style: GoogleFonts.jetBrainsMono(
-              fontSize: 12,
+              fontSize: AppTypography.caption,
               color: AppColors.fog,
               letterSpacing: 1.2,
             ),
@@ -265,7 +266,7 @@ class QuizUnitLabel extends StatelessWidget {
           Text(
             caption,
             style: GoogleFonts.crimsonPro(
-              fontSize: 12,
+              fontSize: AppTypography.caption,
               fontStyle: FontStyle.italic,
               color: AppColors.fog,
               letterSpacing: 2.4,
@@ -343,7 +344,7 @@ class _QuestionCard extends StatelessWidget {
                 Text(
                   caption,
                   style: GoogleFonts.notoSansTc(
-                    fontSize: 11,
+                    fontSize: AppTypography.caption,
                     color: AppColors.gold,
                     letterSpacing: 2.2,
                     fontWeight: FontWeight.w500,
@@ -417,7 +418,7 @@ class _PlayButton extends StatelessWidget {
           Text(
             '播放發音',
             style: GoogleFonts.notoSerifTc(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 1.5,
@@ -455,7 +456,7 @@ class _SlowButton extends StatelessWidget {
             Text(
               '慢速',
               style: GoogleFonts.notoSerifTc(
-                fontSize: 13,
+                fontSize: AppTypography.body,
                 fontWeight: FontWeight.w600,
                 color: AppColors.gold,
                 letterSpacing: 1.2,
@@ -502,7 +503,7 @@ class QuizBottomButton extends StatelessWidget {
             child: Text(
               label,
               style: GoogleFonts.notoSerifTc(
-                fontSize: 14,
+                fontSize: AppTypography.body,
                 fontWeight: primary ? FontWeight.w600 : FontWeight.w500,
                 color: primary
                     ? (disabled ? AppColors.fog : AppColors.creamLight)
@@ -548,7 +549,7 @@ class _OptionTile extends StatelessWidget {
         child: Text(
           label,
           style: GoogleFonts.crimsonPro(
-            fontSize: 17,
+            fontSize: AppTypography.subtitle,
             fontStyle: FontStyle.italic,
             fontWeight: FontWeight.w500,
             color: selected ? AppColors.primary : AppColors.inkSoft,

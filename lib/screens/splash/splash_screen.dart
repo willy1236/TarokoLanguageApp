@@ -8,6 +8,7 @@ import '../../services/terms_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
+import '../../core/constants/app_typography.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -187,7 +188,7 @@ class _SplashScreenState extends State<SplashScreen> {
                   'Kari Truku · Lnglungan',
                   style: GoogleFonts.crimsonPro(
                     fontStyle: FontStyle.italic,
-                    fontSize: 16,
+                    fontSize: AppTypography.bodyLarge,
                     color: AppColors.gold,
                     letterSpacing: 3.2,
                     fontWeight: FontWeight.w400,
@@ -213,7 +214,7 @@ class _SplashScreenState extends State<SplashScreen> {
               '說我們的話 · 走我們的山',
               textAlign: TextAlign.center,
               style: GoogleFonts.notoSansTc(
-                fontSize: 13,
+                fontSize: AppTypography.body,
                 color: AppColors.cream.withValues(alpha: 0.7),
                 letterSpacing: 3.9,
               ),

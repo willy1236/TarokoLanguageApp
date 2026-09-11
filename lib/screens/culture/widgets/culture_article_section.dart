@@ -103,7 +103,7 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
                   '目前沒有文章',
                   style: TextStyle(
                     color: AppColors.fog,
-                    fontSize: seniorMode ? AppTypography.subtitle : 13,
+                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   ),
                 ),
               ),
@@ -160,7 +160,7 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
                 child: Text(
                   _articleChipLabels[i],
                   style: TextStyle(
-                    fontSize: seniorMode ? AppTypography.subtitle : 13,
+                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                     color: active ? AppColors.creamLight : AppColors.cream,
                     letterSpacing: 2.0,
                   ),
@@ -195,7 +195,7 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
               Text(
                 title,
                 style: GoogleFonts.notoSerifTc(
-                  fontSize: seniorMode ? AppTypography.title : 15,
+                  fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.cream,
                   letterSpacing: 1.5,
@@ -206,7 +206,7 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
                 'patas kari',
                 style: GoogleFonts.crimsonPro(
                   fontStyle: FontStyle.italic,
-                  fontSize: seniorMode ? AppTypography.body : 10,
+                  fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                   color: AppColors.fog,
                   letterSpacing: 3.6,
                 ),
@@ -239,7 +239,7 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: seniorMode ? AppTypography.subtitle : 12,
+          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
           fontWeight: active ? FontWeight.w700 : FontWeight.w400,
           color: active ? AppColors.gold : AppColors.fog,
           letterSpacing: 1.5,
@@ -295,7 +295,7 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
                         child: Text(
                           ArticleCategory.label(article.category),
                           style: TextStyle(
-                            fontSize: seniorMode ? AppTypography.body : 10,
+                            fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                             color: AppColors.ink,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 2.8,
@@ -327,7 +327,7 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
                         child: Text(
                           article.title,
                           style: GoogleFonts.notoSerifTc(
-                            fontSize: 19,
+                            fontSize: AppTypography.title,
                             fontWeight: FontWeight.w600,
                             color: AppColors.creamLight,
                             letterSpacing: 1.0,
@@ -354,7 +354,7 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
-                            fontSize: 12,
+                            fontSize: AppTypography.caption,
                             color: AppColors.fog,
                             letterSpacing: 1.0,
                             height: 1.4,

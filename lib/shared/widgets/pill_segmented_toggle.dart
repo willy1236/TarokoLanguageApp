@@ -80,7 +80,7 @@ class PillSegmentedToggle extends StatelessWidget {
             Text(
               item.label,
               style: GoogleFonts.notoSerifTc(
-                fontSize: seniorMode ? AppTypography.headline : 17,
+                fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
                 fontWeight: FontWeight.w600,
                 color: textColor,
               ),
@@ -90,7 +90,7 @@ class PillSegmentedToggle extends StatelessWidget {
               Text(
                 item.subtitle,
                 style: GoogleFonts.crimsonPro(
-                  fontSize: 11,
+                  fontSize: AppTypography.caption,
                   fontStyle: FontStyle.italic,
                   letterSpacing: 1.5,
                   color: textColor.withValues(alpha: selected ? 0.85 : 0.7),

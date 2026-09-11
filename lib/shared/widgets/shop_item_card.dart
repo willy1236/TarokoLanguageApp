@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
 import 'millet_coin_icon.dart';
+import '../../core/constants/app_typography.dart';
 
 /// 共用道具卡片：頭像與頭像框在商店頁、背包頁都用這個 widget 呈現
 /// owned / locked / 未擁有可兌換 三種視覺狀態，避免重複的圓形圖示 + 名稱 + 價格排版程式碼。
@@ -89,7 +90,7 @@ class ShopItemCard extends StatelessWidget {
                   name,
                   textAlign: TextAlign.center,
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 11,
+                    fontSize: AppTypography.caption,
                     fontWeight: FontWeight.w600,
                     color: isGold ? AppColors.creamLight : AppColors.ink,
                     letterSpacing: 0.5,
@@ -100,7 +101,7 @@ class ShopItemCard extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: TextStyle(
-                      fontSize: 9,
+                      fontSize: AppTypography.micro,
                       color: isGold ? AppColors.gold : accentColor,
                       letterSpacing: 1,
                     ),
@@ -116,7 +117,7 @@ class ShopItemCard extends StatelessWidget {
                       Text(
                         '$price',
                         style: TextStyle(
-                          fontSize: 12,
+                          fontSize: AppTypography.caption,
                           fontWeight: FontWeight.w700,
                           color: isGold ? AppColors.gold : AppColors.primary,
                         ),
@@ -130,7 +131,7 @@ class ShopItemCard extends StatelessWidget {
                     lockedText!,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: 9,
+                      fontSize: AppTypography.micro,
                       color: AppColors.fog,
                       letterSpacing: 0.5,
                     ),
@@ -153,7 +154,7 @@ class ShopItemCard extends StatelessWidget {
                         actionLabel!,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: 10,
+                          fontSize: AppTypography.micro,
                           fontWeight: FontWeight.w700,
                           color: onAction != null
                               ? AppColors.ink
@@ -181,7 +182,7 @@ class ShopItemCard extends StatelessWidget {
                   child: Text(
                     '已擁有',
                     style: TextStyle(
-                      fontSize: 8,
+                      fontSize: AppTypography.micro,
                       fontWeight: FontWeight.w700,
                       color: AppColors.ink,
                       letterSpacing: 1,

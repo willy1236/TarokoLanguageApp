@@ -83,7 +83,7 @@ class TrukuErrorView extends StatelessWidget {
               side: const BorderSide(color: AppColors.primary),
               minimumSize: seniorMode ? const Size(140, 52) : null,
               textStyle: seniorMode
-                  ? const TextStyle(fontSize: AppTypography.subtitle)
+                  ? const TextStyle(fontSize: AppTypography.body + AppTypography.seniorStep)
                   : null,
             ),
             child: const Text('重試'),

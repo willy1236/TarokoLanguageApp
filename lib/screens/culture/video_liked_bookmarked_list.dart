@@ -246,7 +246,7 @@ class _VideoListItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: AppColors.creamLight,
-                      fontSize: seniorMode ? AppTypography.title : 14,
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -264,7 +264,7 @@ class _VideoListItem extends StatelessWidget {
                         '${video.likeCount}',
                         style: TextStyle(
                           color: AppColors.fog,
-                          fontSize: seniorMode ? AppTypography.subtitle : 12,
+                          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -278,7 +278,7 @@ class _VideoListItem extends StatelessWidget {
                         '${video.viewCount}',
                         style: TextStyle(
                           color: AppColors.fog,
-                          fontSize: seniorMode ? AppTypography.subtitle : 12,
+                          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                         ),
                       ),
                     ],

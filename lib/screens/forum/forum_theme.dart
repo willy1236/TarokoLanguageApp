@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 
 ThemeData forumTheme(BuildContext context) {
   final base = Theme.of(context);
@@ -34,16 +35,16 @@ ThemeData forumTheme(BuildContext context) {
     inputDecorationTheme: const InputDecorationTheme(
       hintStyle: TextStyle(color: AppColors.fog),
       labelStyle: TextStyle(color: AppColors.fog),
-      counterStyle: TextStyle(color: AppColors.fog, fontSize: 11),
+      counterStyle: TextStyle(color: AppColors.fog, fontSize: AppTypography.caption),
       helperStyle: TextStyle(color: AppColors.fog),
     ),
     dialogTheme: const DialogThemeData(
       backgroundColor: AppColors.creamLight,
-      contentTextStyle: TextStyle(color: AppColors.inkSoft, fontSize: 15),
+      contentTextStyle: TextStyle(color: AppColors.inkSoft, fontSize: AppTypography.bodyLarge),
     ),
     popupMenuTheme: const PopupMenuThemeData(
       color: AppColors.creamLight,
-      textStyle: TextStyle(color: AppColors.inkSoft, fontSize: 14),
+      textStyle: TextStyle(color: AppColors.inkSoft, fontSize: AppTypography.body),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(foregroundColor: AppColors.primary),

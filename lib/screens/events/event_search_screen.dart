@@ -125,7 +125,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
         onSubmit: _search,
         palette: SearchBarPalette.light,
         seniorMode: seniorMode,
-        titleFontSize: AppTypography.title,
+        titleFontSize: AppTypography.bodyLarge + AppTypography.seniorStep,
       ),
       body: Column(
         children: [
@@ -136,7 +136,6 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
             onTribeSelected: _onTribeSelected,
             palette: SearchBarPalette.light,
             seniorMode: seniorMode,
-            chipFontSize: AppTypography.subtitle,
           ),
           if (_error != null)
             Padding(
@@ -145,7 +144,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
                 _error!,
                 style: TextStyle(
                   color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.title : null,
+                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                 ),
               ),
             ),
@@ -156,7 +155,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
                 '輸入關鍵字或選擇篩選條件開始搜尋',
                 style: GoogleFonts.notoSerifTc(
                   color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.title : null,
+                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                 ),
               ),
             ),
@@ -178,7 +177,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
           '找不到符合的活動',
           style: TextStyle(
             color: AppColors.fog,
-            fontSize: seniorMode ? AppTypography.title : null,
+            fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
           ),
         ),
       );
@@ -245,14 +244,14 @@ class _EventResultTile extends StatelessWidget {
                     Text(
                       '${d.month}月',
                       style: TextStyle(
-                        fontSize: seniorMode ? 13 : 9,
+                        fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                         color: AppColors.gold,
                       ),
                     ),
                     Text(
                       '${d.day}',
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode ? 26 : 18,
+                        fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
                         fontWeight: FontWeight.w700,
                         color: AppColors.creamLight,
                         height: 1,
@@ -270,7 +269,7 @@ class _EventResultTile extends StatelessWidget {
                   Text(
                     event.title,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? AppTypography.title : 14,
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                     ),
@@ -279,7 +278,7 @@ class _EventResultTile extends StatelessWidget {
                   Text(
                     '${event.location ?? '線上'} · ${event.participantCount} 人報名',
                     style: TextStyle(
-                      fontSize: seniorMode ? AppTypography.subtitle : 11,
+                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                       color: AppColors.fog,
                     ),
                   ),

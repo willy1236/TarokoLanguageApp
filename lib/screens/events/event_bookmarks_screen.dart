@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../../core/constants/app_colors.dart';
 import 'event_liked_bookmarked_list.dart';
+import '../../core/constants/app_typography.dart';
 
 class EventBookmarksScreen extends StatelessWidget {
   const EventBookmarksScreen({super.key});
@@ -20,7 +21,7 @@ class EventBookmarksScreen extends StatelessWidget {
         title: Text(
           '我收藏的活動',
           style: GoogleFonts.notoSerifTc(
-            fontSize: 16,
+            fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),

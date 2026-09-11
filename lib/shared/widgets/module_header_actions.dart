@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 
 class ModuleComposeButton extends StatelessWidget {
   final String label;
@@ -48,7 +49,7 @@ class ModuleComposeButton extends StatelessWidget {
               Text(
                 label,
                 style: GoogleFonts.notoSerifTc(
-                  fontSize: seniorMode ? 18 : 13,
+                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
                   color: AppColors.creamLight,
                   letterSpacing: 1.5,

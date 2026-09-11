@@ -11,6 +11,7 @@ import 'forum_theme.dart';
 import '../../services/forum_service.dart';
 import 'forum_board_view.dart';
 import 'forum_detail_screen.dart';
+import '../../core/constants/app_typography.dart';
 
 class ForumBookmarksScreen extends StatefulWidget {
   /// 在這裡取消（或重新加入）收藏時回報，讓推開這一頁的列表同步書籤圖示，
@@ -39,7 +40,7 @@ class _ForumBookmarksScreenState extends State<ForumBookmarksScreen> {
       title: Text(
         '我的收藏',
         style: GoogleFonts.notoSerifTc(
-          fontSize: 16,
+          fontSize: AppTypography.bodyLarge,
           fontWeight: FontWeight.w600,
           color: AppColors.ink,
         ),

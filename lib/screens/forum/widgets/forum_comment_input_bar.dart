@@ -50,7 +50,7 @@ class ForumCommentInputBar extends StatelessWidget {
                   child: Text(
                     '回覆 @${target.author?.displayName ?? '匿名使用者'}',
                     style: TextStyle(
-                      fontSize: seniorMode ? AppTypography.body : 12,
+                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                       color: AppColors.fog,
                     ),
                   ),
@@ -74,7 +74,7 @@ class ForumCommentInputBar extends StatelessWidget {
                   minLines: 1,
                   maxLines: 4,
                   style: TextStyle(
-                    fontSize: seniorMode ? AppTypography.title : null,
+                    fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                   ),
                   decoration: const InputDecoration(
                     hintText: '說點什麼…',

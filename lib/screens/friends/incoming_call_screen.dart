@@ -12,6 +12,7 @@ import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../community/video_call_screen.dart';
+import '../../core/constants/app_typography.dart';
 
 class IncomingCallScreen extends StatefulWidget {
   final IncomingCall call;
@@ -139,7 +140,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                       Text(
                         _errorMessage ?? '來電中…',
                         style: TextStyle(
-                          fontSize: 14,
+                          fontSize: AppTypography.body,
                           color: AppColors.creamLight.withValues(alpha: 0.7),
                         ),
                       ),
@@ -207,7 +208,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
         child: Text(
           '返回',
           style: GoogleFonts.notoSerifTc(
-            fontSize: 14,
+            fontSize: AppTypography.body,
             color: AppColors.creamLight,
             letterSpacing: 2.5,
           ),
@@ -262,7 +263,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
           Text(
             label,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: AppTypography.caption,
               color: AppColors.creamLight.withValues(alpha: 0.85),
               letterSpacing: 2.0,
             ),

@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/event_model.dart';
 import '../reminder_compose_screen.dart';
+import '../../../core/constants/app_typography.dart';
 
 class EventActionBar extends StatelessWidget {
   final EventDetail event;
@@ -104,7 +105,7 @@ class EventActionBar extends StatelessWidget {
             Text(
               '發送提醒',
               style: GoogleFonts.notoSerifTc(
-                fontSize: seniorMode ? 19 : 15,
+                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                 fontWeight: FontWeight.w600,
                 color: AppColors.creamLight,
                 letterSpacing: 1.5,
@@ -128,7 +129,7 @@ class EventActionBar extends StatelessWidget {
           child: Text(
             '取消活動',
             style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? 18 : 14,
+              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               fontWeight: FontWeight.w600,
               color: AppColors.dangerDark,
               letterSpacing: 1.0,
@@ -143,12 +144,12 @@ class EventActionBar extends StatelessWidget {
         TextButton.icon(
           onPressed: acting ? null : onEdit,
           icon: Icon(Icons.edit_outlined, size: seniorMode ? 22 : 16),
-          label: Text('編輯活動', style: TextStyle(fontSize: seniorMode ? 16 : 13)),
+          label: Text('編輯活動', style: TextStyle(fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode))),
         ),
         TextButton.icon(
           onPressed: acting ? null : onExport,
           icon: Icon(Icons.file_download_outlined, size: seniorMode ? 22 : 16),
-          label: Text('匯出名單', style: TextStyle(fontSize: seniorMode ? 16 : 13)),
+          label: Text('匯出名單', style: TextStyle(fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode))),
         ),
         if (notStarted)
           TextButton.icon(
@@ -161,7 +162,7 @@ class EventActionBar extends StatelessWidget {
             label: Text(
               '刪除活動',
               style: TextStyle(
-                fontSize: seniorMode ? 16 : 13,
+                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                 color: AppColors.dangerDark,
               ),
             ),
@@ -217,7 +218,7 @@ class EventActionBar extends StatelessWidget {
           Text(
             '已報名',
             style: GoogleFonts.notoSerifTc(
-              fontSize: seniorMode ? 19 : 15,
+              fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
               fontWeight: FontWeight.w600,
               color: AppColors.mossDeep,
               letterSpacing: 1.5,
@@ -242,7 +243,7 @@ class EventActionBar extends StatelessWidget {
           child: Text(
             '退出',
             style: TextStyle(
-              fontSize: seniorMode ? 18 : 14,
+              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
               color: AppColors.inkSoft,
               letterSpacing: 1.0,
             ),
@@ -296,7 +297,7 @@ class EventActionBar extends StatelessWidget {
               : Text(
                   label,
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: seniorMode ? 19 : 15,
+                    fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                     fontWeight: FontWeight.w600,
                     color: AppColors.creamLight,
                     letterSpacing: 2.0,
@@ -319,7 +320,7 @@ class EventActionBar extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: seniorMode ? 19 : 15,
+            fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
             fontWeight: FontWeight.w600,
             color: AppColors.inkSoft,
             letterSpacing: 2.0,

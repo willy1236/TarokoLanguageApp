@@ -9,6 +9,7 @@ import '../../core/constants/app_colors.dart';
 import '../search_range.dart';
 import 'tribe_picker_sheet.dart';
 import '../../models/tribe_model.dart';
+import '../../core/constants/app_typography.dart';
 
 /// 搜尋列配色。影音/文章走深色（midnight/gold），活動/論壇走淺色（cream/primary）。
 class SearchBarPalette {
@@ -125,7 +126,6 @@ class ModuleSearchFilterRow extends StatelessWidget {
   final ValueChanged<Tribe?> onTribeSelected;
   final SearchBarPalette palette;
   final bool seniorMode;
-  final double chipFontSize;
 
   /// 論壇看板篩選等模組特有的 chip，顯示在時間區間 chip 之前。
   final List<Widget> leading;
@@ -138,7 +138,6 @@ class ModuleSearchFilterRow extends StatelessWidget {
     required this.onTribeSelected,
     required this.palette,
     required this.seniorMode,
-    required this.chipFontSize,
     this.leading = const [],
   });
 
@@ -181,7 +180,7 @@ class ModuleSearchFilterRow extends StatelessWidget {
         backgroundColor: palette.chipBackground,
         selectedColor: palette.chipSelectedBackground,
         labelStyle: TextStyle(
-          fontSize: seniorMode ? chipFontSize : 12,
+          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
           color: selected ? palette.accent : palette.soft,
         ),
         side: BorderSide(
@@ -205,7 +204,7 @@ class ModuleSearchFilterRow extends StatelessWidget {
         label: Text(tribe?.name ?? '部落'),
         backgroundColor: palette.chipBackground,
         labelStyle: TextStyle(
-          fontSize: seniorMode ? chipFontSize : 12,
+          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
           color: selected ? palette.accent : palette.soft,
         ),
         side: BorderSide(

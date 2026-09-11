@@ -43,7 +43,7 @@ class CulturePlayButton extends StatelessWidget {
             Text(
               label,
               style: GoogleFonts.notoSerifTc(
-                fontSize: seniorMode ? AppTypography.subtitle : 14,
+                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
                 letterSpacing: 2.4,
@@ -120,7 +120,7 @@ class CultureVideoCard extends StatelessWidget {
                       child: Text(
                         VideoCategory.label(video.category),
                         style: TextStyle(
-                          fontSize: seniorMode ? AppTypography.body : 10,
+                          fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                           color: AppColors.gold,
                           letterSpacing: 2.4,
                         ),
@@ -142,7 +142,7 @@ class CultureVideoCard extends StatelessWidget {
                       child: Text(
                         _formatDuration(video.durationSec),
                         style: GoogleFonts.jetBrainsMono(
-                          fontSize: seniorMode ? AppTypography.body : 10,
+                          fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                           color: AppColors.creamLight,
                         ),
                       ),
@@ -180,7 +180,7 @@ class CultureVideoCard extends StatelessWidget {
                     maxLines: seniorMode ? 2 : 1,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? AppTypography.title : 14,
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       letterSpacing: 1.0,
@@ -190,7 +190,7 @@ class CultureVideoCard extends StatelessWidget {
                   Text(
                     '${video.viewCount} 次觀看',
                     style: TextStyle(
-                      fontSize: seniorMode ? AppTypography.body : 11,
+                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
                       color: AppColors.fog,
                       letterSpacing: 1.2,
                     ),
@@ -286,7 +286,7 @@ class CultureArticleCard extends StatelessWidget {
                     child: Text(
                       ArticleCategory.label(item.category),
                       style: TextStyle(
-                        fontSize: seniorMode ? AppTypography.body : 9,
+                        fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
                         color: AppColors.gold,
                         letterSpacing: 2.8,
                       ),
@@ -296,7 +296,7 @@ class CultureArticleCard extends StatelessWidget {
                   Text(
                     item.title,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? AppTypography.subtitle : 13,
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       letterSpacing: 0.5,
@@ -311,7 +311,7 @@ class CultureArticleCard extends StatelessWidget {
                     Text(
                       '${item.viewCount} 閱讀 · 本週 ${item.weeklyViewCount}',
                       style: TextStyle(
-                        fontSize: 10,
+                        fontSize: AppTypography.micro,
                         color: AppColors.fog,
                         letterSpacing: 1.2,
                       ),

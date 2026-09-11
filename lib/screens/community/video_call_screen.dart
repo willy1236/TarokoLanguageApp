@@ -13,6 +13,7 @@ import 'video_call/agora_video_rtc.dart';
 import 'video_call/call_permissions.dart';
 import 'video_call/video_call_controller.dart';
 import 'video_call/widgets/call_controls.dart';
+import '../../core/constants/app_typography.dart';
 
 /// 通話畫面。狀態機在 [VideoCallController]；這裡只負責畫面、導頁、檢舉
 /// 對話框與 FCM 回呼註冊。
@@ -195,7 +196,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
           Text(
             '正在結束通話…',
             style: GoogleFonts.notoSerifTc(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               color: AppColors.creamLight,
             ),
           ),
@@ -217,7 +218,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
             _call.joinError!,
             textAlign: TextAlign.center,
             style: GoogleFonts.notoSerifTc(
-              fontSize: 16,
+              fontSize: AppTypography.bodyLarge,
               color: AppColors.creamLight,
             ),
           ),
@@ -299,7 +300,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
           child: Text(
             _call.joining ? '正在加入視訊房…' : '等待對方加入視訊',
             style: GoogleFonts.notoSerifTc(
-              fontSize: 16,
+              fontSize: AppTypography.bodyLarge,
               color: AppColors.creamLight.withValues(alpha: 0.85),
               letterSpacing: 1.5,
             ),
@@ -324,7 +325,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
           Text(
             label,
             style: GoogleFonts.notoSerifTc(
-              fontSize: 13,
+              fontSize: AppTypography.body,
               color: AppColors.creamLight.withValues(alpha: 0.85),
               letterSpacing: 1.5,
             ),
@@ -363,7 +364,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
                 Text(
                   _timeLabel,
                   style: GoogleFonts.jetBrainsMono(
-                    fontSize: 13,
+                    fontSize: AppTypography.body,
                     color: AppColors.creamLight,
                     letterSpacing: 2.0,
                   ),
@@ -377,7 +378,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
                 Text(
                   '剩 ${_call.remaining.inMinutes} 分',
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppTypography.caption,
                     color: AppColors.creamLight.withValues(alpha: 0.85),
                   ),
                 ),

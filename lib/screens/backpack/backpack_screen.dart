@@ -9,6 +9,7 @@ import '../../shared/widgets/shop_item_card.dart';
 import '../../shared/widgets/shop_shared.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../shop/shop_screen.dart';
+import '../../core/constants/app_typography.dart';
 
 /// 統一查看已擁有頭像／頭像框的背包頁，並可在此直接配戴。
 /// 取代原本散落在個人資料頁的頭像/頭像框選擇區塊。
@@ -179,7 +180,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
                   'PATAS · 我的背包',
                   style: GoogleFonts.crimsonPro(
                     fontStyle: FontStyle.italic,
-                    fontSize: 12,
+                    fontSize: AppTypography.caption,
                     color: AppColors.gold,
                     letterSpacing: 4,
                   ),
@@ -227,7 +228,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
           Text(
             '頭像 Lukus',
             style: GoogleFonts.notoSerifTc(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 1,
@@ -238,7 +239,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
             'lukus · 共 ${items.length + 1} 款',
             style: GoogleFonts.crimsonPro(
               fontStyle: FontStyle.italic,
-              fontSize: 10,
+              fontSize: AppTypography.micro,
               color: AppColors.fog,
               letterSpacing: 2,
             ),
@@ -287,7 +288,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
           Text(
             '頭像框',
             style: GoogleFonts.notoSerifTc(
-              fontSize: 15,
+              fontSize: AppTypography.bodyLarge,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 1,
@@ -298,7 +299,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
             'rangi · 共 ${items.length + 1} 款',
             style: GoogleFonts.crimsonPro(
               fontStyle: FontStyle.italic,
-              fontSize: 10,
+              fontSize: AppTypography.micro,
               color: AppColors.fog,
               letterSpacing: 2,
             ),

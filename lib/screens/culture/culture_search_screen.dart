@@ -140,7 +140,7 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
         onSubmit: _search,
         palette: SearchBarPalette.dark,
         seniorMode: seniorMode,
-        titleFontSize: AppTypography.title,
+        titleFontSize: AppTypography.bodyLarge + AppTypography.seniorStep,
       ),
       body: Column(
         children: [
@@ -151,7 +151,6 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
             onTribeSelected: _onTribeSelected,
             palette: SearchBarPalette.dark,
             seniorMode: seniorMode,
-            chipFontSize: AppTypography.subtitle,
           ),
           if (_error != null)
             Padding(
@@ -160,7 +159,7 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
                 _error!,
                 style: TextStyle(
                   color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.title : null,
+                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                 ),
               ),
             ),
@@ -171,7 +170,7 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
                 '輸入關鍵字或選擇篩選條件開始搜尋',
                 style: GoogleFonts.notoSerifTc(
                   color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.title : null,
+                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                 ),
               ),
             ),
@@ -193,7 +192,7 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
           widget.emptyText,
           style: TextStyle(
             color: AppColors.fog,
-            fontSize: seniorMode ? AppTypography.title : null,
+            fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
           ),
         ),
       );

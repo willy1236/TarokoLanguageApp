@@ -11,6 +11,7 @@ import '../../shared/widgets/truku_widgets.dart';
 import '../history/quiz_history_detail_screen.dart';
 import 'lesson_card_screen.dart';
 import 'quiz_placement_screen.dart';
+import '../../core/constants/app_typography.dart';
 
 class VocabLevelScreen extends StatefulWidget {
   const VocabLevelScreen({super.key});
@@ -97,7 +98,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
                   Text(
                     '目前沒有可學習的級別',
                     style: GoogleFonts.notoSansTc(
-                      fontSize: 14,
+                      fontSize: AppTypography.body,
                       color: AppColors.fog,
                     ),
                   )
@@ -147,7 +148,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
         if (records.isEmpty) {
           return Text(
             '尚無練習紀錄',
-            style: GoogleFonts.notoSansTc(fontSize: 14, color: AppColors.fog),
+            style: GoogleFonts.notoSansTc(fontSize: AppTypography.body, color: AppColors.fog),
           );
         }
         return Column(
@@ -189,7 +190,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
         Text(
           '單字測驗',
           style: GoogleFonts.notoSerifTc(
-            fontSize: 20,
+            fontSize: AppTypography.title,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),
@@ -206,7 +207,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
         Text(
           label,
           style: GoogleFonts.notoSerifTc(
-            fontSize: 16,
+            fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
             letterSpacing: 1.2,
@@ -224,7 +225,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
         child: Text(
           isUnauthorized ? '請先登入' : '載入失敗，請稍後再試',
           style: GoogleFonts.notoSerifTc(
-            fontSize: 16,
+            fontSize: AppTypography.bodyLarge,
             fontWeight: FontWeight.w600,
             color: AppColors.ink,
           ),
@@ -303,7 +304,7 @@ class _LevelRow extends StatelessWidget {
         Text(
           level.level,
           style: GoogleFonts.notoSerifTc(
-            fontSize: 17,
+            fontSize: AppTypography.subtitle,
             fontWeight: FontWeight.w600,
             color: textColor,
             letterSpacing: 0.85,
@@ -313,7 +314,7 @@ class _LevelRow extends StatelessWidget {
         Text(
           '${level.wordCount} 個單字',
           style: TextStyle(
-            fontSize: 11,
+            fontSize: AppTypography.caption,
             color: isRecommended
                 ? AppColors.creamLight.withValues(alpha: 0.7)
                 : AppColors.fog,
@@ -398,7 +399,7 @@ class _RecentPracticeRow extends StatelessWidget {
                   Text(
                     record.level,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 15,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                     ),
@@ -406,7 +407,7 @@ class _RecentPracticeRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     _timeLabel(),
-                    style: const TextStyle(fontSize: 11, color: AppColors.fog),
+                    style: const TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
                   ),
                 ],
               ),
@@ -417,7 +418,7 @@ class _RecentPracticeRow extends StatelessWidget {
                 Text(
                   _scoreLabel(),
                   style: GoogleFonts.notoSerifTc(
-                    fontSize: 16,
+                    fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
                     color: isCompleted ? AppColors.primary : AppColors.fog,
                   ),
@@ -442,7 +443,7 @@ class _RecentPracticeRow extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: 10,
+          fontSize: AppTypography.micro,
           fontWeight: FontWeight.w600,
           color: color,
         ),
@@ -468,7 +469,7 @@ class _PlacementResultBanner extends StatelessWidget {
       child: Text(
         '你的推薦起始等級：$level',
         style: GoogleFonts.notoSerifTc(
-          fontSize: 15,
+          fontSize: AppTypography.bodyLarge,
           fontWeight: FontWeight.w600,
           color: AppColors.creamLight,
         ),
@@ -502,7 +503,7 @@ class _PlacementBanner extends StatelessWidget {
                   Text(
                     '還沒做過分級測驗',
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: 15,
+                      fontSize: AppTypography.bodyLarge,
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                     ),
@@ -511,7 +512,7 @@ class _PlacementBanner extends StatelessWidget {
                   Text(
                     '先做一次測驗，幫你找出適合的起始等級',
                     style: GoogleFonts.notoSansTc(
-                      fontSize: 12,
+                      fontSize: AppTypography.caption,
                       color: AppColors.creamLight.withValues(alpha: 0.8),
                     ),
                   ),

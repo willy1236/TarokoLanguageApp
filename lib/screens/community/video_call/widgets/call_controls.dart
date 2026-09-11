@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
+import '../../../../core/constants/app_typography.dart';
 
 // ─── Control button ────────────────────────────────────────────────────────────
 
@@ -53,7 +54,7 @@ class CallControlButton extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: AppTypography.micro,
               color: AppColors.creamLight.withValues(alpha: 0.85),
               letterSpacing: 2.0,
             ),

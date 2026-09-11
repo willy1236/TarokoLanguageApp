@@ -76,7 +76,7 @@ class _ArticleResultTile extends StatelessWidget {
                     maxLines: seniorMode ? 1 : 2,
                     overflow: TextOverflow.ellipsis,
                     style: GoogleFonts.notoSerifTc(
-                      fontSize: seniorMode ? AppTypography.title : 13,
+                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                     ),
@@ -86,7 +86,7 @@ class _ArticleResultTile extends StatelessWidget {
                     Text(
                       '${ArticleCategory.label(article.category)} · ${article.viewCount} 閱讀',
                       style: const TextStyle(
-                        fontSize: 11,
+                        fontSize: AppTypography.caption,
                         color: AppColors.fog,
                       ),
                     ),

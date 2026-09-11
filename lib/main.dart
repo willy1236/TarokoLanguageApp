@@ -166,7 +166,7 @@ class KariTrukuApp extends StatelessWidget {
         return MediaQuery(
           data: mediaQuery.copyWith(
             textScaler: mediaQuery.textScaler.clamp(
-              minScaleFactor: seniorMode ? 1.0 : 0.85,
+              minScaleFactor: 1.0,
               maxScaleFactor: seniorMode ? 1.5 : 1.15,
             ),
           ),

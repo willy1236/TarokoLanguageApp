@@ -6,6 +6,7 @@ import '../../core/network/api_client.dart';
 import '../../models/history_models.dart';
 import '../../services/history_service.dart';
 import 'history_review_card.dart';
+import '../../core/constants/app_typography.dart';
 
 class ListeningHistoryDetailScreen extends StatefulWidget {
   final String sessionId;
@@ -135,7 +136,7 @@ class _ListeningHistoryDetailScreenState
               message,
               textAlign: TextAlign.center,
               style: GoogleFonts.notoSerifTc(
-                fontSize: 15,
+                fontSize: AppTypography.bodyLarge,
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
               ),

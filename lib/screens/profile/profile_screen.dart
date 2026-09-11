@@ -413,7 +413,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           context,
         ).push(MaterialPageRoute(builder: (_) => const MyLikesScreen())),
       ),
-    ]);
+    ], seniorMode: seniorMode);
   }
 
   // ── 帳號設定 ──────────────────────────────────────────────────────────────
@@ -426,12 +426,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _user?.displayName ?? 'Apyang Imiq',
         editable: true,
         onTap: _editDisplayName,
+        seniorMode: seniorMode,
       ),
       profileSettingRow(
         '公開暱稱',
         _user?.videoNickname ?? '尚未設定',
         editable: true,
         onTap: _editVideoNickname,
+        seniorMode: seniorMode,
       ),
       profileSettingRow(
         '自我介紹',
@@ -440,6 +442,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             : _user!.selfIntro!,
         editable: true,
         onTap: _editSelfIntro,
+        seniorMode: seniorMode,
       ),
       profileSettingRow(
         '好友碼',
@@ -447,6 +450,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         editable: _user?.friendCode != null,
         copyable: true,
         onTap: _copyFriendCode,
+        seniorMode: seniorMode,
       ),
       profileSettingRow(
         '族語名字',
@@ -455,6 +459,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         truku: _user?.tribalName != null && _user!.tribalName!.isNotEmpty,
         editable: true,
         onTap: _editTribalName,
+        seniorMode: seniorMode,
       ),
       profileSwitchRow(
         '是否原住民',
@@ -462,19 +467,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
         locked: true,
         lockedHint: '已設定，如需更正請聯繫管理員',
         onChanged: (_) {},
+        seniorMode: seniorMode,
       ),
       profileSettingRow(
         '部落',
         _user?.tribeName ?? '尚未設定',
         editable: !identityLocked,
         onTap: identityLocked ? null : _editTribe,
+        seniorMode: seniorMode,
       ),
       profileSettingRow(
         '電子信箱',
         _user?.email ?? 'apyang@truku.org',
         editable: false,
+        seniorMode: seniorMode,
       ),
-    ]);
+    ], seniorMode: seniorMode);
   }
 
   Widget _buildAppSettingsSection({required bool seniorMode}) {
@@ -485,7 +493,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         seniorMode: seniorMode,
         onChanged: (v) => seniorModeController.setEnabled(v),
       ),
-    ]);
+    ], seniorMode: seniorMode);
   }
 
   Future<void> _editDisplayName() async {
@@ -669,9 +677,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       items[i],
                       style: GoogleFonts.notoSerifTc(
-                        fontSize: seniorMode
-                            ? AppTypography.headline
-                            : AppTypography.bodyLarge,
+                        fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
@@ -696,6 +702,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           ],
         );
       }),
+      seniorMode: seniorMode,
     );
   }
 

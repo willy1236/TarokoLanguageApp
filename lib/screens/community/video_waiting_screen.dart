@@ -8,6 +8,7 @@ import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'video_call_screen.dart';
+import '../../core/constants/app_typography.dart';
 
 class VideoWaitingScreen extends StatefulWidget {
   const VideoWaitingScreen({super.key});
@@ -276,7 +277,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
           child: Text(
             '取消配對',
             style: GoogleFonts.notoSerifTc(
-              fontSize: 14,
+              fontSize: AppTypography.body,
               color: AppColors.creamLight,
               letterSpacing: 2.5,
             ),
@@ -295,7 +296,7 @@ class _SmtrungLabel extends StatelessWidget {
       'SMTRUNG · 配對中',
       style: GoogleFonts.crimsonPro(
         fontStyle: FontStyle.italic,
-        fontSize: 10,
+        fontSize: AppTypography.micro,
         color: AppColors.gold,
         letterSpacing: 6.0,
       ),
