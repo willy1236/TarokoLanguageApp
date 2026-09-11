@@ -1,6 +1,7 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
 
 class TrukuBottomTab extends StatelessWidget {
   final int currentIndex;
@@ -26,7 +27,10 @@ class TrukuBottomTab extends StatelessWidget {
         if (!seniorMode || !_seniorHiddenKeys.contains(_keys[i])) i,
     ];
     final iconSize = seniorMode ? 30.0 : 22.0;
-    final fontSize = seniorMode ? 13.0 : 10.0;
+    // 精簡模式 caption token（11）比原本的 13 還小，改用 body token 維持放大幅度。
+    final labelStyle = seniorMode
+        ? AppTypography.bodyStyle(seniorMode: true)
+        : AppTypography.captionStyle();
     final horizontalPadding = seniorMode ? 8.0 : 4.0;
     return ClipRect(
       child: BackdropFilter(
@@ -75,8 +79,7 @@ class TrukuBottomTab extends StatelessWidget {
                               const SizedBox(height: 3),
                               Text(
                                 _labels[i],
-                                style: TextStyle(
-                                  fontSize: fontSize,
+                                style: labelStyle.copyWith(
                                   letterSpacing: 1.0,
                                   fontWeight: isActive
                                       ? FontWeight.w600
