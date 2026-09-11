@@ -408,12 +408,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onTap: identityLocked ? null : _editTribe,
       ),
       profileSettingRow(
-        '視訊暱稱',
-        _user?.videoNickname ?? '尚未設定',
-        editable: true,
-        onTap: _editVideoNickname,
-      ),
-      profileSettingRow(
         '電子信箱',
         _user?.email ?? 'apyang@truku.org',
         editable: false,
@@ -483,8 +477,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final newName = await showDialog<String>(
       context: context,
       builder: (ctx) => ProfileRenameDialog(
-        title: '修改視訊暱稱',
-        label: '視訊暱稱',
+        title: '修改公開暱稱',
+        label: '公開暱稱',
         initialValue: _user?.videoNickname ?? '',
       ),
     );
