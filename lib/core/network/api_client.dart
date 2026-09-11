@@ -153,28 +153,20 @@ class ApiClient {
     required Map<String, String> fields,
     required List<MultipartFileData> files,
   }) async {
-    final token = await AuthService.currentToken();
-    final uri = Uri.parse(ApiConfig.baseUrl + path);
-    final request = http.MultipartRequest('POST', uri);
-    if (token != null) request.headers['Authorization'] = 'Bearer $token';
-    request.fields.addAll(fields);
-    for (final file in files) {
-      request.files.add(
-        http.MultipartFile.fromBytes(
-          file.field,
-          file.bytes,
-          filename: file.filename,
-          contentType: MediaType.parse(file.mimeType),
-        ),
-      );
-    }
-    final resp = await _send(
-      () async => http.Response.fromStream(await httpClient.send(request)),
-      method: 'POST(multipart)',
-      url: uri,
-      body: 'fields=$fields, files=${files.map((f) => f.filename).toList()}',
+    return _sendMultipart(
+      path,
+      fields: fields,
+      files: [
+        for (final file in files)
+          http.MultipartFile.fromBytes(
+            file.field,
+            file.bytes,
+            filename: file.filename,
+            contentType: MediaType.parse(file.mimeType),
+          ),
+      ],
+      logBody: 'fields=$fields, files=${files.map((f) => f.filename).toList()}',
     );
-    return _handle(resp);
   }
 
   static Future<Map<String, dynamic>> delete(
@@ -201,26 +193,39 @@ class ApiClient {
     required File file,
     String? contentType,
   }) async {
+    return _sendMultipart(
+      path,
+      files: [
+        await http.MultipartFile.fromPath(
+          fieldName,
+          file.path,
+          contentType: contentType == null ? null : MediaType.parse(contentType),
+        ),
+      ],
+      // 只記檔名與大小，不記完整本機路徑（可能含使用者名稱）。
+      logBody: 'field=$fieldName, file=${file.uri.pathSegments.last} (${file.lengthSync()} bytes)',
+    );
+  }
+
+  /// multipart POST 的共用骨架：組 request、帶 Authorization、走 [_send] 與
+  /// [_handle]。[logBody] 是給 log 用的摘要，不要放檔案內容或完整路徑。
+  static Future<Map<String, dynamic>> _sendMultipart(
+    String path, {
+    Map<String, String> fields = const {},
+    required List<http.MultipartFile> files,
+    required String logBody,
+  }) async {
     final token = await AuthService.currentToken();
     final uri = Uri.parse(ApiConfig.baseUrl + path);
     final request = http.MultipartRequest('POST', uri);
-    if (token != null) {
-      request.headers['Authorization'] = 'Bearer $token';
-    }
-    request.files.add(await http.MultipartFile.fromPath(
-      fieldName,
-      file.path,
-      contentType: contentType == null ? null : MediaType.parse(contentType),
-    ));
+    if (token != null) request.headers['Authorization'] = 'Bearer $token';
+    request.fields.addAll(fields);
+    request.files.addAll(files);
     final resp = await _send(
-      () async {
-        final streamed = await request.send();
-        return http.Response.fromStream(streamed);
-      },
+      () async => http.Response.fromStream(await httpClient.send(request)),
       method: 'POST(multipart)',
       url: uri,
-      // 只記檔名與大小，不記完整本機路徑（可能含使用者名稱）。
-      body: 'field=$fieldName, file=${file.uri.pathSegments.last} (${file.lengthSync()} bytes)',
+      body: logBody,
     );
     return _handle(resp);
   }
