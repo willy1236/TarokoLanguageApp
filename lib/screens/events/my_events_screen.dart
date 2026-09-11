@@ -189,6 +189,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
           context,
           MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: e.id)),
         );
+        if (!mounted) return;
         _load(); // 從詳情頁回來（可能剛取消）刷新
       },
       child: Container(

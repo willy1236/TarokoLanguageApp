@@ -75,6 +75,8 @@ class _VideoCallScreenState extends State<VideoCallScreen>
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed || _ended) return;
+    // 到期判斷有兩條路徑：這裡（回前景時計時器可能被系統暫停過）與
+    // _tickCountdown。改到期規則時兩處要同步。
     if (_session.isExpired) _endCall(auto: true);
   }
 
@@ -214,6 +216,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     );
   }
 
+  /// 到期規則另見 didChangeAppLifecycleState，兩處要同步。
   void _tickCountdown() {
     final remaining = _session.expiresAt.difference(DateTime.now().toUtc());
     if (!mounted) return;
@@ -565,7 +568,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CustomPaint(size: const Size(28, 28), painter: _CamOffPainter()),
+          CustomPaint(size: const Size(28, 28), painter: const _CamPainter(slashed: true)),
           const SizedBox(height: 10),
           Text(
             label,
@@ -824,7 +827,7 @@ class _ControlButton extends StatelessWidget {
       case _ControlIcon.mic:
         return CustomPaint(size: const Size(22, 22), painter: _MicPainter());
       case _ControlIcon.cam:
-        return CustomPaint(size: const Size(24, 24), painter: _CamPainter());
+        return CustomPaint(size: const Size(24, 24), painter: const _CamPainter());
       case _ControlIcon.end:
         return CustomPaint(size: const Size(26, 26), painter: _EndPainter());
     }
@@ -862,50 +865,34 @@ class _MicPainter extends CustomPainter {
   bool shouldRepaint(_MicPainter _) => false;
 }
 
+/// 攝影機圖示；[slashed] 為 true 時畫成關閉狀態（淡化 + 紅色斜線）。
 class _CamPainter extends CustomPainter {
+  const _CamPainter({this.slashed = false});
+
+  final bool slashed;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final cream = AppColors.creamLight;
+    final cream = slashed
+        ? AppColors.creamLight.withValues(alpha: 0.85)
+        : AppColors.creamLight;
+    final fill = Paint()
+      ..color = cream
+      ..style = PaintingStyle.fill;
     final w = size.width;
     final h = size.height;
     final body = RRect.fromRectAndRadius(
       Rect.fromLTWH(w * 3 / 24, h * 6 / 24, w * 13 / 24, h * 12 / 24),
       Radius.circular(w * 2 / 24),
     );
-    canvas.drawRRect(
-        body,
-        Paint()
-          ..color = cream
-          ..style = PaintingStyle.fill);
+    canvas.drawRRect(body, fill);
     final tri = Path()
       ..moveTo(w * 16 / 24, h * 10 / 24)
       ..lineTo(w * 21 / 24, h * 7 / 24)
       ..lineTo(w * 21 / 24, h * 17 / 24)
       ..close();
-    canvas.drawPath(tri, Paint()..color = cream..style = PaintingStyle.fill);
-  }
-
-  @override
-  bool shouldRepaint(_CamPainter _) => false;
-}
-
-class _CamOffPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final cream = AppColors.creamLight.withValues(alpha: 0.85);
-    final w = size.width;
-    final h = size.height;
-    final body = RRect.fromRectAndRadius(
-      Rect.fromLTWH(w * 3 / 24, h * 6 / 24, w * 13 / 24, h * 12 / 24),
-      Radius.circular(w * 2 / 24),
-    );
-    canvas.drawRRect(body, Paint()..color = cream..style = PaintingStyle.fill);
-    final tri = Path()
-      ..moveTo(w * 16 / 24, h * 10 / 24)
-      ..lineTo(w * 21 / 24, h * 7 / 24)
-      ..lineTo(w * 21 / 24, h * 17 / 24)
-      ..close();
-    canvas.drawPath(tri, Paint()..color = cream..style = PaintingStyle.fill);
+    canvas.drawPath(tri, fill);
+    if (!slashed) return;
     final slash = Paint()
       ..color = AppColors.danger
       ..strokeWidth = 2.4
@@ -915,7 +902,7 @@ class _CamOffPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(_CamOffPainter _) => false;
+  bool shouldRepaint(_CamPainter old) => old.slashed != slashed;
 }
 
 class _EndPainter extends CustomPainter {

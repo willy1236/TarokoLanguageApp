@@ -8,11 +8,13 @@ class LevelInfo {
   const LevelInfo({required this.level, required this.wordCount});
 
   factory LevelInfo.fromJson(Map<String, dynamic> json) {
-    return LevelInfo(
-      level: (json['code'] ?? json['label'] ?? json['level']) as String,
-      wordCount:
-          (json['available_words'] ?? json['word_count'] ?? json['count'])
-              as int,
-    );
+    final level = (json['code'] ?? json['label'] ?? json['level']) as String?;
+    if (level == null) {
+      throw FormatException('LevelInfo: missing code/label/level', json);
+    }
+    final count =
+        (json['available_words'] ?? json['word_count'] ?? json['count'])
+            as num?;
+    return LevelInfo(level: level, wordCount: count?.toInt() ?? 0);
   }
 }

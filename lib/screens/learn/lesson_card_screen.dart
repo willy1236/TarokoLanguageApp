@@ -629,7 +629,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
       children: [
         for (final option in question.options) ...[
           _OptionTile(
-            label: option.displayText(question.direction),
+            label: option.text,
             selected: option.id == _selectedOptionId,
             onTap: () => _selectOption(option.id),
           ),

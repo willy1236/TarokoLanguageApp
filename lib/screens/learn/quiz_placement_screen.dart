@@ -516,7 +516,7 @@ class _QuizPlacementScreenState extends State<QuizPlacementScreen> {
       children: [
         for (final option in question.options) ...[
           _OptionTile(
-            label: option.displayText(question.direction),
+            label: option.text,
             selected: option.id == _selectedOptionId,
             onTap: () => _selectOption(option.id),
           ),
