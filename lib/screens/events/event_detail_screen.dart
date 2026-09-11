@@ -304,10 +304,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     final event = _event;
     if (event == null || _acting) return;
     setState(() => _acting = true);
+    File? tempFile;
     try {
       final csv = await EventService.exportRoster(widget.eventId);
       final dir = await getTemporaryDirectory();
       final file = File('${dir.path}/event_${event.id}_roster.csv');
+      tempFile = file;
       await file.writeAsString(csv, flush: true);
       if (!mounted) return;
       await SharePlus.instance.share(
@@ -327,6 +329,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('匯出失敗：$e')));
     } finally {
+      // 名單含參加者姓名與 email，分享完就刪掉，不留在暫存目錄等 OS 回收。
+      // share 已回傳代表系統分享流程結束（接收端已取走內容）。
+      try {
+        await tempFile?.delete();
+      } catch (e) {
+        debugPrint('EventDetailScreen: 刪除名單暫存檔失敗（忽略）：$e');
+      }
       if (mounted) setState(() => _acting = false);
     }
   }

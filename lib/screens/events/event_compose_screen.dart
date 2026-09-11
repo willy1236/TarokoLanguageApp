@@ -10,8 +10,13 @@ import '../../services/senior_mode_controller.dart';
 ///
 /// [editing] 為 null 時是發起新活動，送出呼叫 EventService.createEvent
 /// （POST /api/events）；帶入既有 EventDetail 時是編輯模式，預填欄位，
-/// 送出呼叫 EventService.updateEvent（PATCH /api/events/:id），且聯絡
-/// email/電話清空時會明確送出清空指令，而非略過該欄位。
+/// 送出呼叫 EventService.updateEvent（PATCH /api/events/:id）。
+///
+/// **編輯模式只能改後端 PATCH 接受的欄位**：活動說明、地點、詳細地址、
+/// 聯絡 Email/電話、提醒事項、標籤。活動名稱、開始時間、報名截止、名額
+/// 在後端是不可改欄位（送了會被靜默丟棄），所以表單直接設為唯讀並顯示
+/// 說明，不讓使用者改了半天卻沒存到。要開放它們得先改後端。
+/// 清空語意：後端把空字串視為清空，不需要額外的 clearXxx 旗標。
 ///
 /// 後端五個必填：標題 / 活動介紹 / 地點名稱 / 詳細地址 / 開始時間（需未來、1 年內）。
 /// 聯絡 email、電話為選填。
@@ -35,6 +40,9 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   final _email = TextEditingController();
   final _phone = TextEditingController();
   final _maxParticipants = TextEditingController();
+  /// 提醒事項：後端 PATCH 支援的欄位之一，只在編輯模式顯示（建立活動的
+  /// POST 沒有這個欄位）。
+  final _reminderNote = TextEditingController();
   final _locationFocus = FocusNode();
 
   DateTime? _startsAt;
@@ -60,6 +68,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     _email.text = e.contactEmail ?? '';
     _phone.text = e.contactPhone ?? '';
     _maxParticipants.text = e.maxParticipants?.toString() ?? '';
+    _reminderNote.text = e.reminderNote ?? '';
     _startsAt = e.startsAt;
     _registrationDeadline = e.registrationDeadline;
     _category = e.category;
@@ -74,6 +83,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     _email.dispose();
     _phone.dispose();
     _maxParticipants.dispose();
+    _reminderNote.dispose();
     _locationFocus.dispose();
     super.dispose();
   }
@@ -166,22 +176,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     final desc = _desc.text.trim();
     final location = _location.text.trim();
     final address = _address.text.trim();
+    final editing = widget.editing;
 
     if (title.isEmpty || desc.isEmpty || location.isEmpty || address.isEmpty) {
       setState(() => _error = '請填寫所有必填欄位');
-      return;
-    }
-    if (_startsAt == null) {
-      setState(() => _error = '請選擇活動開始時間');
-      return;
-    }
-    if (!_startsAt!.isAfter(DateTime.now())) {
-      setState(() => _error = '活動時間需為未來');
-      return;
-    }
-    if (_registrationDeadline != null &&
-        _registrationDeadline!.isAfter(_startsAt!)) {
-      setState(() => _error = '報名截止時間不能晚於活動開始時間');
       return;
     }
 
@@ -196,9 +194,25 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       }
     }
 
+    // 時間相關欄位在編輯模式是唯讀的（後端不支援修改），不需重驗。
+    if (editing == null) {
+      if (_startsAt == null) {
+        setState(() => _error = '請選擇活動開始時間');
+        return;
+      }
+      if (!_startsAt!.isAfter(DateTime.now())) {
+        setState(() => _error = '活動時間需為未來');
+        return;
+      }
+      if (_registrationDeadline != null &&
+          _registrationDeadline!.isAfter(_startsAt!)) {
+        setState(() => _error = '報名截止時間不能晚於活動開始時間');
+        return;
+      }
+    }
+
     setState(() => _submitting = true);
     try {
-      final editing = widget.editing;
       if (editing == null) {
         await EventService.createEvent(
           title: title,
@@ -213,25 +227,17 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           category: _category,
         );
       } else {
-        final emailText = _email.text.trim();
-        final phoneText = _phone.text.trim();
+        // 只送後端 PATCH 真正接受的欄位。空字串 = 清空（分類與提醒事項可清空，
+        // 地點/地址上面已擋住空值）。
         await EventService.updateEvent(
           editing.id,
-          title: title,
           description: desc,
           location: location,
           address: address,
-          startsAt: _startsAt,
-          registrationDeadline: _registrationDeadline,
-          clearRegistrationDeadline:
-              _registrationDeadline == null &&
-              editing.registrationDeadline != null,
-          contactEmail: emailText,
-          clearContactEmail: emailText.isEmpty && editing.contactEmail != null,
-          contactPhone: phoneText,
-          clearContactPhone: phoneText.isEmpty && editing.contactPhone != null,
-          maxParticipants: maxPeople,
-          category: _category,
+          contactEmail: _email.text.trim(),
+          contactPhone: _phone.text.trim(),
+          reminderNote: _reminderNote.text.trim(),
+          category: _category ?? '',
         );
       }
       if (!mounted) return;
@@ -269,12 +275,18 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                 children: [
                   _buildCoverPlaceholder(seniorMode),
+                  if (_isEditing) ...[
+                    const SizedBox(height: 18),
+                    _buildReadOnlyNotice(seniorMode),
+                  ],
                   const SizedBox(height: 18),
                   _label('活動名稱', required: true, seniorMode: seniorMode),
                   _textField(
                     _title,
                     hint: '例如：青年族語營',
                     maxLength: 100,
+                    // 後端 PATCH 不支援修改標題，送了會被靜默丟棄。
+                    readOnly: _isEditing,
                     seniorMode: seniorMode,
                   ),
                   const SizedBox(height: 18),
@@ -291,7 +303,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                               ? null
                               : _formatTimeOnly(_startsAt!),
                           placeholder: '選擇日期',
-                          onTap: _pickDateTime,
+                          onTap: _isEditing ? null : _pickDateTime,
                           seniorMode: seniorMode,
                         ),
                         const SizedBox(height: 12),
@@ -314,7 +326,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                                   ? null
                                   : _formatTimeOnly(_startsAt!),
                               placeholder: '選擇日期',
-                              onTap: _pickDateTime,
+                              onTap: _isEditing ? null : _pickDateTime,
                               seniorMode: seniorMode,
                             ),
                           ),
@@ -335,7 +347,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                   _label('報名截止時間', required: false, seniorMode: seniorMode),
                   _buildDateField(
                     value: _registrationDeadline,
-                    onTap: _pickRegistrationDeadline,
+                    onTap: _isEditing ? null : _pickRegistrationDeadline,
                     placeholder: '選擇日期與時間（選填）',
                     seniorMode: seniorMode,
                   ),
@@ -380,6 +392,18 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     keyboardType: TextInputType.phone,
                     seniorMode: seniorMode,
                   ),
+                  // 提醒事項只有 PATCH 支援（建立活動的 POST 沒有這個欄位）。
+                  if (_isEditing) ...[
+                    const SizedBox(height: 18),
+                    _label('提醒事項', required: false, seniorMode: seniorMode),
+                    _textField(
+                      _reminderNote,
+                      hint: '給參加者的提醒，例如需自備雨具（選填，留空即清除）',
+                      maxLines: 3,
+                      maxLength: 500,
+                      seniorMode: seniorMode,
+                    ),
+                  ],
                   if (_error != null) ...[
                     const SizedBox(height: 16),
                     _buildErrorBox(_error!, seniorMode),
@@ -457,6 +481,43 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     );
   }
 
+  /// 編輯模式的唯讀提示。後端 PATCH /events/:id 只接受說明、地點、地址、
+  /// 聯絡方式、提醒事項、標籤；其餘欄位送了會被靜默丟棄，所以直接鎖住並
+  /// 說明原因，而不是讓使用者改了半天卻沒存到。
+  Widget _buildReadOnlyNotice(bool seniorMode) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.creamDeep),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.info_outline,
+            size: seniorMode ? 24 : 18,
+            color: AppColors.inkSoft,
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '活動名稱、時間、報名截止與名額發布後就不能再改（灰底欄位）。'
+              '需要調整這些內容，請取消這場活動後重新發起。',
+              style: TextStyle(
+                fontSize: seniorMode ? AppTypography.body : 12.5,
+                color: AppColors.inkSoft,
+                height: 1.5,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildCoverPlaceholder(bool seniorMode) {
     return GestureDetector(
       onTap: () {
@@ -505,7 +566,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     required String? value,
     required String? subValue,
     required String placeholder,
-    required VoidCallback onTap,
+    required VoidCallback? onTap, // null = 唯讀（編輯模式的不可改欄位）
     required bool seniorMode,
   }) {
     return GestureDetector(
@@ -636,6 +697,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               controller: _maxParticipants,
               keyboardType: TextInputType.number,
               maxLength: 6,
+              // 後端 PATCH 不支援修改名額，發布後鎖住。
+              readOnly: _isEditing,
               onChanged: (_) => setState(() {}),
               style: TextStyle(
                 fontSize: seniorMode ? AppTypography.title : 15,
@@ -653,19 +716,21 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               ),
             ),
           ),
-          _stepperButton(
-            icon: Icons.remove,
-            onTap: () => _adjustMaxParticipants(-1),
-            filled: false,
-            seniorMode: seniorMode,
-          ),
-          const SizedBox(width: 8),
-          _stepperButton(
-            icon: Icons.add,
-            onTap: () => _adjustMaxParticipants(1),
-            filled: true,
-            seniorMode: seniorMode,
-          ),
+          if (!_isEditing) ...[
+            _stepperButton(
+              icon: Icons.remove,
+              onTap: () => _adjustMaxParticipants(-1),
+              filled: false,
+              seniorMode: seniorMode,
+            ),
+            const SizedBox(width: 8),
+            _stepperButton(
+              icon: Icons.add,
+              onTap: () => _adjustMaxParticipants(1),
+              filled: true,
+              seniorMode: seniorMode,
+            ),
+          ],
         ],
       ),
     );
@@ -745,11 +810,12 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     int? maxLength,
     TextInputType? keyboardType,
     FocusNode? focusNode,
+    bool readOnly = false,
     required bool seniorMode,
   }) {
     return Container(
       decoration: BoxDecoration(
-        color: AppColors.cream,
+        color: readOnly ? AppColors.creamDeep : AppColors.cream,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: AppColors.creamDeep),
       ),
@@ -757,6 +823,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       child: TextField(
         controller: c,
         focusNode: focusNode,
+        readOnly: readOnly,
         onChanged: (_) => setState(() {}),
         maxLines: maxLines,
         maxLength: maxLength,
@@ -782,7 +849,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
 
   Widget _buildDateField({
     required DateTime? value,
-    required VoidCallback onTap,
+    required VoidCallback? onTap, // null = 唯讀（編輯模式的不可改欄位）
     String placeholder = '選擇日期與時間',
     required bool seniorMode,
   }) {

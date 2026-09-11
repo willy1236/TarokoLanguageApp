@@ -160,51 +160,38 @@ class EventService {
     await ApiClient.post(ApiConfig.eventCancel(eventId), {'reason': reason});
   }
 
-  /// 編輯活動（僅發起人）。只送有變動的欄位；clearXxx 系列用於明確清空該欄位
-  /// （PATCH 語意下，欄位缺席 = 不變更，欄位為 null = 清空，兩者不同）。
+  /// 編輯活動（僅發起人）。
+  ///
+  /// **後端 PATCH /events/:id 只接受這六個欄位**：description、location、
+  /// address、contact_email、contact_phone、reminder_note、category。
+  /// title / starts_at / registration_deadline / max_participants 送了也會被
+  /// **靜默丟棄**（後端連 400 都不回），所以這裡不提供這些參數——多送只會讓
+  /// 使用者以為改成功了。要開放它們得先改後端。
+  ///
+  /// 清空語意：後端把 null 與空白字串都視為清空，所以傳空字串即可清空，
+  /// 不需要額外的 clearXxx 旗標。description/reminder_note/category 可清空；
+  /// **location/address 不可為空**（後端回 400），呼叫端要先擋住。
+  ///
+  /// 參數為 null 代表「不變更」（欄位不送出）。
   static Future<void> updateEvent(
     int eventId, {
-    String? title,
     String? description,
     String? location,
     String? address,
-    DateTime? startsAt,
-    DateTime? registrationDeadline,
-    bool clearRegistrationDeadline = false,
     String? contactEmail,
-    bool clearContactEmail = false,
     String? contactPhone,
-    bool clearContactPhone = false,
     String? reminderNote,
-    int? maxParticipants,
     String? category,
   }) async {
     final body = <String, dynamic>{};
-    if (title != null) body['title'] = title;
-    if (description != null) body['description'] = description;
-    if (location != null) body['location'] = location;
-    if (address != null) body['address'] = address;
-    if (startsAt != null) body['starts_at'] = startsAt.toUtc().toIso8601String();
-    if (clearRegistrationDeadline) {
-      body['registration_deadline'] = null;
-    } else if (registrationDeadline != null) {
-      body['registration_deadline'] = registrationDeadline
-          .toUtc()
-          .toIso8601String();
-    }
-    if (clearContactEmail) {
-      body['contact_email'] = null;
-    } else if (contactEmail != null && contactEmail.trim().isNotEmpty) {
-      body['contact_email'] = contactEmail.trim();
-    }
-    if (clearContactPhone) {
-      body['contact_phone'] = null;
-    } else if (contactPhone != null && contactPhone.trim().isNotEmpty) {
-      body['contact_phone'] = contactPhone.trim();
-    }
+    if (description != null) body['description'] = description.trim();
+    if (location != null) body['location'] = location.trim();
+    if (address != null) body['address'] = address.trim();
+    if (contactEmail != null) body['contact_email'] = contactEmail.trim();
+    if (contactPhone != null) body['contact_phone'] = contactPhone.trim();
     if (reminderNote != null) body['reminder_note'] = reminderNote.trim();
-    if (maxParticipants != null) body['max_participants'] = maxParticipants;
     if (category != null) body['category'] = category.trim();
+    if (body.isEmpty) return; // 後端對空 body 回 400，沒有變更就不必送出
     await ApiClient.patch(ApiConfig.eventDetail(eventId), body);
   }
 
