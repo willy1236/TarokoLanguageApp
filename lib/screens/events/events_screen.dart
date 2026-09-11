@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/date_format.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../models/event_model.dart';
@@ -126,24 +127,9 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   // ── 日期/時間格式（後端時間為 UTC，顯示轉本地）────────────────
-  static const _months = [
-    '1月',
-    '2月',
-    '3月',
-    '4月',
-    '5月',
-    '6月',
-    '7月',
-    '8月',
-    '9月',
-    '10月',
-    '11月',
-    '12月',
-  ];
-  static const _weekdays = ['週一', '週二', '週三', '週四', '週五', '週六', '週日'];
-  String _mon(DateTime d) => _months[d.month - 1];
+  String _mon(DateTime d) => monthLabel(d);
   String _day(DateTime d) => d.day.toString().padLeft(2, '0');
-  String _wd(DateTime d) => _weekdays[d.weekday - 1];
+  String _wd(DateTime d) => weekdayLabel(d);
   String _time(DateTime d) =>
       '${d.hour.toString().padLeft(2, '0')}:${d.minute.toString().padLeft(2, '0')}';
 
@@ -625,9 +611,7 @@ class _EventsScreenState extends State<EventsScreen> {
                           e.location ?? '線上',
                           style: TextStyle(
                             fontSize: seniorMode ? 16 : 11,
-                            color: AppColors.creamLight.withValues(
-                              alpha: 0.85,
-                            ),
+                            color: AppColors.creamLight.withValues(alpha: 0.85),
                           ),
                         ),
                       ],

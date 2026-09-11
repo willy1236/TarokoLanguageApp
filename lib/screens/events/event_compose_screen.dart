@@ -41,6 +41,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   final _email = TextEditingController();
   final _phone = TextEditingController();
   final _maxParticipants = TextEditingController();
+
   /// 提醒事項：後端 PATCH 支援的欄位之一，只在編輯模式顯示（建立活動的
   /// POST 沒有這個欄位）。
   final _reminderNote = TextEditingController();
@@ -487,9 +488,9 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   Widget _buildCoverPlaceholder(bool seniorMode) {
     return GestureDetector(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('活動封面上傳功能尚未開放')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('活動封面上傳功能尚未開放')));
       },
       child: Container(
         width: double.infinity,
@@ -550,7 +551,11 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           children: [
             Row(
               children: [
-                Icon(icon, size: seniorMode ? 20 : 14, color: AppColors.primary),
+                Icon(
+                  icon,
+                  size: seniorMode ? 20 : 14,
+                  color: AppColors.primary,
+                ),
                 const SizedBox(width: 6),
                 Text(
                   label,
@@ -728,7 +733,11 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     );
   }
 
-  Widget _label(String text, {required bool required, required bool seniorMode}) {
+  Widget _label(
+    String text, {
+    required bool required,
+    required bool seniorMode,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
       child: Row(
@@ -831,7 +840,11 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         ),
         child: Row(
           children: [
-            Icon(Icons.event, size: seniorMode ? 24 : 16, color: AppColors.primary),
+            Icon(
+              Icons.event,
+              size: seniorMode ? 24 : 16,
+              color: AppColors.primary,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(

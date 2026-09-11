@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -22,21 +23,6 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
   bool _loading = true;
   Object? _error;
   List<EventSummary> _events = const [];
-
-  static const _months = [
-    '1月',
-    '2月',
-    '3月',
-    '4月',
-    '5月',
-    '6月',
-    '7月',
-    '8月',
-    '9月',
-    '10月',
-    '11月',
-    '12月',
-  ];
 
   @override
   void initState() {
@@ -186,7 +172,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
               child: Column(
                 children: [
                   Text(
-                    _months[d.month - 1],
+                    monthLabel(d),
                     style: TextStyle(
                       fontSize: seniorMode ? 13 : 9,
                       color: AppColors.primary,

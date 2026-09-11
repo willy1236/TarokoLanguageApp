@@ -150,10 +150,7 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
               ),
             );
           }
-          return _EventListItem(
-            event: _events[index],
-            seniorMode: seniorMode,
-          );
+          return _EventListItem(event: _events[index], seniorMode: seniorMode);
         },
       ),
     );

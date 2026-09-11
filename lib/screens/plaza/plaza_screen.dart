@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/utils/date_format.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_model.dart';
 import '../../models/forum_models.dart';
@@ -619,25 +620,10 @@ class _MiniEventCard extends StatelessWidget {
 
   const _MiniEventCard({required this.event, required this.onTap});
 
-  static const _months = [
-    '1月',
-    '2月',
-    '3月',
-    '4月',
-    '5月',
-    '6月',
-    '7月',
-    '8月',
-    '9月',
-    '10月',
-    '11月',
-    '12月',
-  ];
-
   @override
   Widget build(BuildContext context) {
     final d = event.startsAt.toLocal();
-    final month = _months[d.month - 1];
+    final month = monthLabel(d);
     final day = d.day.toString().padLeft(2, '0');
     return GestureDetector(
       onTap: onTap,
