@@ -1,11 +1,11 @@
 {
-    "name": "flutter_application_1",
-    "short_name": "flutter_application_1",
+    "name": "語見・太魯閣",
+    "short_name": "語見・太魯閣",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#FAF5EA",
+    "theme_color": "#7A1F1A",
+    "description": "太魯閣族語學習與族人社群",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [
