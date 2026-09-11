@@ -142,7 +142,7 @@ class VideoCallNoticeScreen extends StatelessWidget {
               elevation: 0,
             ),
             child: Text(
-              '我已了解並同意',
+              '我已瞭解並同意',
               style: AppTypography.subtitleStyle(
                 seniorMode: true,
                 color: AppColors.ink,
