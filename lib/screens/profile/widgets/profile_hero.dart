@@ -16,12 +16,16 @@ class ProfileHero extends StatelessWidget {
   final bool seniorMode;
   final VoidCallback onAvatarTap;
 
+  /// 上方已有其他元件（如合併分頁的膠囊切換）時傳 false，頂部不再預留狀態列空間。
+  final bool reserveStatusBar;
+
   const ProfileHero({
     super.key,
     required this.user,
     required this.itemCatalogById,
     required this.seniorMode,
     required this.onAvatarTap,
+    this.reserveStatusBar = true,
   });
 
   @override
@@ -48,7 +52,7 @@ class ProfileHero extends StatelessWidget {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(20, 76, 20, 28),
+            padding: EdgeInsets.fromLTRB(20, reserveStatusBar ? 76 : 28, 20, 28),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

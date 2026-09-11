@@ -8,7 +8,7 @@ import 'firebase_options.dart';
 import 'screens/auth/complete_profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/backpack/backpack_screen.dart';
-import 'screens/community/community_screen.dart';
+import 'screens/friends/friends_list_screen.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/learn/learn_culture_screen.dart';
 import 'screens/events/event_detail_screen.dart';
@@ -16,7 +16,7 @@ import 'screens/community/video_call_screen.dart';
 import 'screens/forum/forum_detail_screen.dart';
 import 'screens/friends/incoming_call_screen.dart';
 import 'screens/plaza/plaza_event_screen.dart';
-import 'screens/profile/profile_screen.dart';
+import 'screens/profile/profile_video_screen.dart';
 import 'screens/shop/shop_screen.dart';
 import 'screens/splash/splash_screen.dart';
 import 'screens/terms/terms_consent_screen.dart';
@@ -197,11 +197,15 @@ class MainContainer extends StatefulWidget {
 }
 
 class _MainContainerState extends State<MainContainer> {
-  static const int _profileIndex = 4;
+  // 分頁 index 需與 IndexedStack、TrukuBottomTab._keys、home_screen 的 _modeTabIndex 一致。
+  static const int _learnCultureIndex = 1;
+  static const int _plazaEventIndex = 2;
+  static const int _profileVideoIndex = 4;
 
   int _currentIndex = 0;
   int _learnCultureSubTab = 0;
   int _plazaEventSubTab = 0;
+  int _profileVideoSubTab = 0;
   String? _displayName;
   int? _millet;
   String? _avatarId;
@@ -310,8 +314,9 @@ class _MainContainerState extends State<MainContainer> {
   void _navigate(int index, {int? subTab}) => setState(() {
     _currentIndex = index;
     if (subTab != null) {
-      if (index == 1) _learnCultureSubTab = subTab;
-      if (index == 3) _plazaEventSubTab = subTab;
+      if (index == _learnCultureIndex) _learnCultureSubTab = subTab;
+      if (index == _plazaEventIndex) _plazaEventSubTab = subTab;
+      if (index == _profileVideoIndex) _profileVideoSubTab = subTab;
     }
   });
 
@@ -374,19 +379,22 @@ class _MainContainerState extends State<MainContainer> {
                   weeklyCheckinCount: _weeklyCheckinCount,
                   weeklyBonusEarned: _weeklyBonusEarned,
                   onCheckin: _checkin,
-                  onShowProfile: () => _navigate(_profileIndex),
+                  onShowProfile: () => _navigate(_profileVideoIndex, subTab: 0),
                   onNavigateToTab: _navigate,
                 ),
                 LearnCultureScreen(
                   key: ValueKey('learn_culture_$_learnCultureSubTab'),
                   initialTabIndex: _learnCultureSubTab,
                 ),
-                const CommunityScreen(),
                 PlazaEventScreen(
                   key: ValueKey('plaza_event_$_plazaEventSubTab'),
                   initialTabIndex: _plazaEventSubTab,
                 ),
-                const ProfileScreen(),
+                const FriendsListScreen(showBackButton: false),
+                ProfileVideoScreen(
+                  key: ValueKey('profile_video_$_profileVideoSubTab'),
+                  initialTabIndex: _profileVideoSubTab,
+                ),
               ],
             ),
             bottomNavigationBar: TrukuBottomTab(

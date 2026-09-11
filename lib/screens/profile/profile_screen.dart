@@ -38,7 +38,10 @@ const int _kMaxAvatarBytes = 8 * 1024 * 1024;
 const _kAllowedAvatarExtensions = {'jpg', 'jpeg', 'png', 'webp', 'gif'};
 
 class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key});
+  /// 由外層（合併分頁的膠囊切換）注入，顯示在頁面最上方。
+  final Widget? topToggle;
+
+  const ProfileScreen({super.key, this.topToggle});
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -101,11 +104,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: ListView(
         padding: EdgeInsets.zero,
         children: [
+          if (widget.topToggle != null)
+            Padding(
+              padding: EdgeInsets.fromLTRB(
+                20,
+                MediaQuery.of(context).padding.top + 12,
+                20,
+                12,
+              ),
+              child: widget.topToggle,
+            ),
           ProfileHero(
             user: _user,
             itemCatalogById: _itemCatalogById,
             seniorMode: seniorMode,
             onAvatarTap: _openAvatarOptions,
+            reserveStatusBar: widget.topToggle == null,
           ),
           ProfileCoinBanner(user: _user, onTap: _openMilletLedger),
           ProfileStatsRow(user: _user, seniorMode: seniorMode),

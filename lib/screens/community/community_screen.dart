@@ -20,7 +20,10 @@ import 'video_call_screen.dart';
 import 'video_waiting_screen.dart';
 
 class CommunityScreen extends StatefulWidget {
-  const CommunityScreen({super.key});
+  /// 由外層（合併分頁的膠囊切換）注入，顯示在頁面最上方。
+  final Widget? topToggle;
+
+  const CommunityScreen({super.key, this.topToggle});
 
   @override
   State<CommunityScreen> createState() => _CommunityScreenState();
@@ -90,6 +93,16 @@ class _CommunityScreenState extends State<CommunityScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            if (widget.topToggle != null)
+              Padding(
+                padding: EdgeInsets.fromLTRB(
+                  20,
+                  MediaQuery.of(context).padding.top + 12,
+                  20,
+                  0,
+                ),
+                child: widget.topToggle,
+              ),
             _buildHeader(),
             _buildHeroCard(),
             _buildNoticeLink(),
@@ -102,7 +115,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Widget _buildHeader() {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 16),
+      padding: EdgeInsets.fromLTRB(
+        20,
+        widget.topToggle == null ? 60 : 20,
+        20,
+        16,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

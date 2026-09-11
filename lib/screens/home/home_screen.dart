@@ -65,23 +65,25 @@ const List<ModeData> _modes = [
 ];
 
 // ModeData.key → MainContainer 的分頁 index（見 lib/main.dart 的 IndexedStack 順序）。
-// learn/culture 共用「學習影音」分頁、plaza/event 共用「廣場活動」分頁，
-// 落在哪個子分頁由 _modeSubTab 決定。
+// learn/culture 共用「學習影音」分頁、plaza/event 共用「廣場活動」分頁、
+// 視訊配對在「我的」分頁內，落在哪個子分頁由 _modeSubTab 決定。
 const Map<String, int> _modeTabIndex = {
   'learn': 1,
   'culture': 1,
-  'video': 2, // 視訊功能在「交流」分頁（CommunityScreen）內
-  'plaza': 3,
-  'event': 3,
+  'plaza': 2,
+  'event': 2,
+  'video': 4,
 };
 
 // learn/culture 的子分頁（LearnCultureScreen: 0=學習,1=影音）、
-// plaza/event 的子分頁（PlazaEventScreen: 0=廣場,1=活動）。
+// plaza/event 的子分頁（PlazaEventScreen: 0=廣場,1=活動）、
+// video 的子分頁（ProfileVideoScreen: 0=個人資料,1=視訊配對）。
 const Map<String, int> _modeSubTab = {
   'learn': 0,
   'culture': 1,
   'plaza': 0,
   'event': 1,
+  'video': 1,
 };
 
 class HomeScreen extends StatelessWidget {

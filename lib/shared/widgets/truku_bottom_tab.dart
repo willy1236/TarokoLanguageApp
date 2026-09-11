@@ -14,8 +14,8 @@ class TrukuBottomTab extends StatelessWidget {
     this.seniorMode = false,
   });
 
-  static const _keys = ['home', 'learn_culture', 'comm', 'plaza_event', 'profile'];
-  static const _labels = ['首頁', '學習影音', '視訊', '廣場活動', '個人資料'];
+  static const _keys = ['home', 'learn_culture', 'plaza_event', 'friends', 'me'];
+  static const _labels = ['首頁', '學習影音', '廣場活動', '好友', '我的'];
   static const _seniorHiddenKeys = <String>{};
 
   @override
@@ -161,19 +161,6 @@ class _TabIconPainter extends CustomPainter {
           fill,
         );
 
-      case 'comm':
-        // 對話氣泡: M4 5h16v12H10l-6 5z
-        canvas.drawPath(
-          Path()
-            ..moveTo(4, 5)
-            ..lineTo(20, 5)
-            ..lineTo(20, 17)
-            ..lineTo(10, 17)
-            ..lineTo(4, 22)
-            ..close(),
-          stroke,
-        );
-
       case 'plaza_event':
         // 人群（廣場）+ 日曆（活動）合併圖示
         canvas.drawCircle(const Offset(8, 7), 3, stroke);
@@ -193,15 +180,56 @@ class _TabIconPainter extends CustomPainter {
         );
         canvas.drawLine(const Offset(13, 9.5), const Offset(22, 9.5), stroke);
 
-      case 'profile':
-        // 頭像：圓形頭 + 肩膀弧線
-        canvas.drawCircle(const Offset(12, 8), 4, stroke);
+      case 'friends':
+        // 兩個人：前方完整頭像，後方露出半身
+        canvas.drawCircle(const Offset(9, 8), 3.5, stroke);
         canvas.drawPath(
           Path()
-            ..moveTo(4, 21)
-            ..cubicTo(5, 16, 8.5, 14, 12, 14)
-            ..cubicTo(15.5, 14, 19, 16, 20, 21),
+            ..moveTo(2, 20)
+            ..cubicTo(2.8, 15.5, 5.8, 13.5, 9, 13.5)
+            ..cubicTo(12.2, 13.5, 15.2, 15.5, 16, 20),
           stroke,
+        );
+        canvas.drawPath(
+          Path()
+            ..moveTo(15.5, 4.8)
+            ..arcToPoint(
+              const Offset(15.5, 11.2),
+              radius: const Radius.circular(3.2),
+            ),
+          stroke,
+        );
+        canvas.drawPath(
+          Path()
+            ..moveTo(17.5, 13.8)
+            ..cubicTo(20, 14.6, 21.6, 16.8, 22, 20),
+          stroke,
+        );
+
+      case 'me':
+        // 個人（頭像）＋視訊（右下角小攝影機），代表個人資料與視訊配對合併分頁
+        canvas.drawCircle(const Offset(10, 7.5), 4, stroke);
+        canvas.drawPath(
+          Path()
+            ..moveTo(2.5, 20.5)
+            ..cubicTo(3.3, 16, 6.5, 13.5, 10, 13.5)
+            ..cubicTo(11.2, 13.5, 12.3, 13.8, 13.3, 14.3),
+          stroke,
+        );
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(
+            const Rect.fromLTWH(14, 15, 6, 5.5),
+            const Radius.circular(1),
+          ),
+          fill,
+        );
+        canvas.drawPath(
+          Path()
+            ..moveTo(20.5, 17.8)
+            ..lineTo(23, 16)
+            ..lineTo(23, 19.5)
+            ..close(),
+          fill,
         );
     }
 
