@@ -89,4 +89,28 @@ void main() {
     expect(bodyText, contains('filename="a.jpg"'));
     expect(bodyText, contains('image/jpeg'));
   });
+
+  test('postMultipartBytes 帶上欄位名、檔名與 MIME', () async {
+    late http.BaseRequest seen;
+    late String bodyText;
+    ApiClient.httpClient = MockClient((req) async {
+      seen = req;
+      bodyText = req.body;
+      return http.Response(jsonEncode({'ok': true}), 200);
+    });
+
+    await ApiClient.postMultipartBytes(
+      '/api/me/avatar',
+      fieldName: 'avatar',
+      bytes: [1, 2, 3],
+      filename: 'a.png',
+      contentType: 'image/png',
+    );
+
+    expect(seen.method, 'POST');
+    expect(seen.headers['content-type'], contains('multipart/form-data'));
+    expect(bodyText, contains('name="avatar"'));
+    expect(bodyText, contains('filename="a.png"'));
+    expect(bodyText, contains('image/png'));
+  });
 }
