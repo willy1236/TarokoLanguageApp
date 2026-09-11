@@ -46,8 +46,19 @@ class _VideoCallScreenState extends State<VideoCallScreen>
   bool _camOff = false;
   bool _remoteCamOff = false;
   String? _joinError;
+  /// 權限被永久拒絕時才為 true：錯誤畫面要多給一顆「開啟設定」按鈕，
+  /// 否則使用者按重試永遠卡在同一句話。
+  bool _permissionPermanentlyDenied = false;
   Timer? _countdownTimer;
+  /// 加入頻道逾時看門狗：joinChannel 不保證會回呼，沒有它使用者會永遠
+  /// 停在「正在加入視訊房…」。
+  Timer? _joinWatchdog;
+  /// 掛斷處理中（等待後端/釋放資源），用來擋住重複操作並顯示遮罩。
+  bool _leaving = false;
   Duration _remaining = Duration.zero;
+
+  static const Duration _joinTimeout = Duration(seconds: 15);
+  static const Duration _backendNotifyTimeout = Duration(seconds: 5);
 
   @override
   void initState() {
@@ -68,33 +79,95 @@ class _VideoCallScreenState extends State<VideoCallScreen>
   }
 
   Future<void> _setup() async {
-    final camera = await Permission.camera.status;
-    final mic = await Permission.microphone.status;
-    if (!camera.isGranted || !mic.isGranted) {
-      final results = await [Permission.camera, Permission.microphone].request();
-      if (!(results[Permission.camera]?.isGranted ?? false) ||
-          !(results[Permission.microphone]?.isGranted ?? false)) {
-        if (!mounted) return;
-        setState(() => _joinError = '需要相機與麥克風權限才能通話');
-        return;
-      }
-    }
+    if (!await _ensurePermissions()) return;
 
     AgoraCallCredentials? credentials = widget.credentials;
     try {
       credentials ??= await _fetchCredentials();
     } catch (e) {
-      if (!mounted) return;
-      setState(() => _joinError = '無法取得視訊憑證，請稍後再試');
+      _failJoin('無法取得視訊憑證，請稍後再試');
       return;
     }
-    if (!mounted || credentials == null) return;
+    if (_ended || !mounted || credentials == null) return;
 
-    final engine = createAgoraRtcEngine();
-    _engine = engine;
-    await engine.initialize(RtcEngineContext(appId: credentials.appId));
-    engine.registerEventHandler(RtcEngineEventHandler(
+    // Agora 初始化到 joinChannel 全程包 try/catch：任一步失敗（無效 token、
+    // 網路中斷、SDK 初始化失敗）都要有錯誤畫面與逃生路徑，不能卡在 loading。
+    try {
+      final engine = createAgoraRtcEngine();
+      _engine = engine;
+      await engine.initialize(RtcEngineContext(appId: credentials.appId));
+      if (_ended || !mounted) return;
+      engine.registerEventHandler(_buildEventHandler(engine));
+
+      await engine.enableVideo();
+      if (_ended || !mounted) return;
+      await engine.setVideoEncoderConfiguration(const VideoEncoderConfiguration(
+        dimensions: VideoDimensions(width: 1280, height: 720),
+      ));
+      if (_ended || !mounted) return;
+      await engine.startPreview();
+      if (_ended || !mounted) return;
+      // joinChannel 不保證回呼，開看門狗兜底。
+      _joinWatchdog = Timer(_joinTimeout, () {
+        if (_joining) _failJoin('加入視訊房逾時，請檢查網路後再試一次');
+      });
+      await engine.joinChannel(
+        token: credentials.token,
+        channelId: _session.channel,
+        uid: credentials.uid,
+        options: const ChannelMediaOptions(
+          clientRoleType: ClientRoleType.clientRoleBroadcaster,
+          channelProfile: ChannelProfileType.channelProfileCommunication,
+        ),
+      );
+    } catch (e) {
+      debugPrint('VideoCallScreen: Agora 初始化失敗：$e');
+      _failJoin('視訊初始化失敗，請稍後再試');
+    }
+  }
+
+  /// 權限檢查。永久拒絕時要引導使用者去系統設定，否則重試按鈕永遠無效。
+  Future<bool> _ensurePermissions() async {
+    final camera = await Permission.camera.status;
+    final mic = await Permission.microphone.status;
+    if (camera.isGranted && mic.isGranted) return true;
+
+    final results = await [Permission.camera, Permission.microphone].request();
+    final cam = results[Permission.camera] ?? camera;
+    final micResult = results[Permission.microphone] ?? mic;
+    if (cam.isGranted && micResult.isGranted) return true;
+
+    final permanent =
+        cam.isPermanentlyDenied || micResult.isPermanentlyDenied;
+    if (!mounted) return false;
+    setState(() {
+      _permissionPermanentlyDenied = permanent;
+      _joinError = permanent
+          ? '相機或麥克風權限已被永久拒絕，請到系統設定開啟後再回來'
+          : '需要相機與麥克風權限才能通話';
+    });
+    return false;
+  }
+
+  void _failJoin(String message) {
+    _joinWatchdog?.cancel();
+    if (_ended || !mounted) return;
+    setState(() {
+      _joining = false;
+      _joinError = message;
+    });
+  }
+
+  RtcEngineEventHandler _buildEventHandler(RtcEngine engine) {
+    return RtcEngineEventHandler(
+      onError: (err, msg) {
+        debugPrint('VideoCallScreen: Agora onError $err $msg');
+        // 加入頻道階段的錯誤要轉成使用者看得到的訊息；已接通後的暫時性
+        // 錯誤交給 SDK 自行重連，不打斷通話。
+        if (_joining) _failJoin('視訊連線失敗（$err），請稍後再試');
+      },
       onJoinChannelSuccess: (connection, elapsed) {
+        _joinWatchdog?.cancel();
         if (mounted) setState(() => _joining = false);
       },
       onUserJoined: (connection, remoteUid, elapsed) {
@@ -108,30 +181,27 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       onUserMuteVideo: (connection, remoteUid, muted) {
         if (mounted) setState(() => _remoteCamOff = muted);
       },
-      onTokenPrivilegeWillExpire: (connection, token) async {
-        if (_session.isExpired) return;
-        try {
-          final refreshed = await VideoCallService.refreshToken(_session.id);
-          await engine.renewToken(refreshed.token);
-        } catch (e) {
-          debugPrint('VideoCallScreen: token 續期失敗：$e');
-        }
-      },
-    ));
+      onTokenPrivilegeWillExpire: (connection, token) =>
+          _renewToken(engine),
+    );
+  }
 
-    await engine.enableVideo();
-    await engine.setVideoEncoderConfiguration(const VideoEncoderConfiguration(
-      dimensions: VideoDimensions(width: 1280, height: 720),
-    ));
-    await engine.startPreview();
-    await engine.joinChannel(
-      token: credentials.token,
-      channelId: _session.channel,
-      uid: credentials.uid,
-      options: const ChannelMediaOptions(
-        clientRoleType: ClientRoleType.clientRoleBroadcaster,
-        channelProfile: ChannelProfileType.channelProfileCommunication,
-      ),
+  /// token 續期：失敗會被 Agora 踢出頻道而使用者毫無所覺（畫面停在等待對方
+  /// 加入），所以重試一次，仍失敗就明確告知即將斷線。
+  Future<void> _renewToken(RtcEngine engine) async {
+    if (_ended || _session.isExpired) return;
+    for (var attempt = 0; attempt < 2; attempt++) {
+      try {
+        final refreshed = await VideoCallService.refreshToken(_session.id);
+        await engine.renewToken(refreshed.token);
+        return;
+      } catch (e) {
+        debugPrint('VideoCallScreen: token 續期失敗（第 ${attempt + 1} 次）：$e');
+      }
+    }
+    if (_ended || !mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('連線憑證更新失敗，通話可能即將中斷')),
     );
   }
 
@@ -161,15 +231,29 @@ class _VideoCallScreenState extends State<VideoCallScreen>
   }
 
   Future<void> _toggleMute() async {
+    final engine = _engine;
+    if (engine == null || _ended) return;
     final next = !_muted;
-    await _engine?.muteLocalAudioStream(next);
+    try {
+      await engine.muteLocalAudioStream(next);
+    } catch (e) {
+      debugPrint('VideoCallScreen: 切換麥克風失敗：$e');
+      return;
+    }
     if (!mounted) return;
     setState(() => _muted = next);
   }
 
   Future<void> _toggleCamera() async {
+    final engine = _engine;
+    if (engine == null || _ended) return;
     final next = !_camOff;
-    await _engine?.muteLocalVideoStream(next);
+    try {
+      await engine.muteLocalVideoStream(next);
+    } catch (e) {
+      debugPrint('VideoCallScreen: 切換鏡頭失敗：$e');
+      return;
+    }
     if (!mounted) return;
     setState(() => _camOff = next);
   }
@@ -194,20 +278,18 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     if (_ended) return;
     _ended = true;
     _countdownTimer?.cancel();
+    _joinWatchdog?.cancel();
+    if (mounted) setState(() => _leaving = true);
+
+    // 先停本機影音再通知後端：後端若卡住（或根本沒回應），鏡頭與麥克風
+    // 不能還在送流。順序顛倒等於使用者按了結束卻仍在被拍。
+    await _releaseEngine();
+
     if (notifyBackend) {
       try {
-        await _notifyBackendEnded();
+        await _notifyBackendEnded().timeout(_backendNotifyTimeout);
       } catch (e) {
         debugPrint('VideoCallScreen: 結束通話通知後端失敗（忽略）：$e');
-      }
-    }
-    final engine = _engine;
-    if (engine != null) {
-      try {
-        await engine.leaveChannel();
-        await engine.release();
-      } catch (e) {
-        debugPrint('VideoCallScreen: 釋放 Agora engine 失敗（忽略）：$e');
       }
     }
     if (!mounted) return;
@@ -217,6 +299,24 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     }
     if (!mounted) return;
     Navigator.popUntil(context, (r) => r.isFirst);
+  }
+
+  /// 釋放 Agora engine 並把 `_engine` 設回 null——留著已 release 的物件會讓
+  /// build()、控制列按鈕與 dispose() 對它重複操作而丟出未攔截例外。
+  Future<void> _releaseEngine() async {
+    final engine = _engine;
+    if (engine == null) return;
+    if (mounted) {
+      setState(() => _engine = null);
+    } else {
+      _engine = null;
+    }
+    try {
+      await engine.leaveChannel();
+      await engine.release();
+    } catch (e) {
+      debugPrint('VideoCallScreen: 釋放 Agora engine 失敗（忽略）：$e');
+    }
   }
 
   Future<void> _offerReport(int callId) async {
@@ -264,12 +364,24 @@ class _VideoCallScreenState extends State<VideoCallScreen>
   @override
   void dispose() {
     _countdownTimer?.cancel();
+    _joinWatchdog?.cancel();
     FcmService.onVideoSessionEnded = null;
     WidgetsBinding.instance.removeObserver(this);
     // dispose() 不適合塞 await 網路呼叫；正常結束流程一律走 _cleanupAndLeave，
     // 這裡只兜底釋放引擎，避免使用者用手勢/返回鍵繞過 PopScope 時資源洩漏。
-    _engine?.leaveChannel();
-    _engine?.release();
+    // _cleanupAndLeave 已把 _engine 設 null，不會重複 release。
+    final engine = _engine;
+    _engine = null;
+    if (engine != null) {
+      unawaited(() async {
+        try {
+          await engine.leaveChannel();
+          await engine.release();
+        } catch (e) {
+          debugPrint('VideoCallScreen: dispose 釋放 engine 失敗（忽略）：$e');
+        }
+      }());
+    }
     super.dispose();
   }
 
@@ -289,7 +401,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     return PopScope(
       canPop: false,
       onPopInvokedWithResult: (didPop, result) {
-        if (didPop) return;
+        if (didPop || _leaving) return;
         _endCall(auto: false);
       },
       child: Scaffold(
@@ -304,8 +416,32 @@ class _VideoCallScreenState extends State<VideoCallScreen>
             _buildTopicChip(),
             _buildControlBar(context),
             if (_joinError != null) _buildErrorOverlay(),
+            if (_leaving) _buildLeavingOverlay(),
           ],
         ),
+      ),
+    );
+  }
+
+  /// 掛斷處理中的遮罩：影音已停但還在通知後端/等檢舉對話框，
+  /// 沒有它使用者會覺得「按了結束沒反應」而重複點擊。
+  Widget _buildLeavingOverlay() {
+    return Container(
+      color: AppColors.ink.withValues(alpha: 0.72),
+      alignment: Alignment.center,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const CircularProgressIndicator(color: AppColors.gold),
+          const SizedBox(height: 16),
+          Text(
+            '正在結束通話…',
+            style: GoogleFonts.notoSerifTc(
+              fontSize: 15,
+              color: AppColors.creamLight,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -327,15 +463,43 @@ class _VideoCallScreenState extends State<VideoCallScreen>
             ),
           ),
           const SizedBox(height: 20),
+          if (_permissionPermanentlyDenied) ...[
+            GestureDetector(
+              onTap: openAppSettings,
+              child: Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                decoration: BoxDecoration(
+                  color: AppColors.gold,
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                child: Text('開啟系統設定',
+                    style: GoogleFonts.notoSerifTc(color: AppColors.ink)),
+              ),
+            ),
+            const SizedBox(height: 12),
+          ],
           GestureDetector(
             onTap: () => Navigator.pop(context),
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               decoration: BoxDecoration(
-                color: AppColors.gold,
+                color: _permissionPermanentlyDenied
+                    ? Colors.transparent
+                    : AppColors.gold,
                 borderRadius: BorderRadius.circular(24),
+                border: _permissionPermanentlyDenied
+                    ? Border.all(color: AppColors.gold)
+                    : null,
               ),
-              child: Text('返回', style: GoogleFonts.notoSerifTc(color: AppColors.ink)),
+              child: Text(
+                '返回',
+                style: GoogleFonts.notoSerifTc(
+                  color: _permissionPermanentlyDenied
+                      ? AppColors.gold
+                      : AppColors.ink,
+                ),
+              ),
             ),
           ),
         ],
