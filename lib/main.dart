@@ -203,7 +203,9 @@ class _MainContainerState extends State<MainContainer> {
   static const int _profileVideoIndex = 4;
 
   int _currentIndex = 0;
-  int _learnCultureSubTab = 0;
+  // 精簡模式首頁省略「族語學習」卡，學習影音分頁預設改開文化影音（1）。
+  late bool _seniorMode = seniorModeController.enabled;
+  late int _learnCultureSubTab = _defaultLearnCultureSubTab(_seniorMode);
   int _plazaEventSubTab = 0;
   int _profileVideoSubTab = 0;
   String? _displayName;
@@ -222,6 +224,25 @@ class _MainContainerState extends State<MainContainer> {
     _fetchUserSummary();
     _loadItemCatalog();
     _loadCheckinStatus();
+    seniorModeController.addListener(_onSeniorModeChanged);
+  }
+
+  @override
+  void dispose() {
+    seniorModeController.removeListener(_onSeniorModeChanged);
+    super.dispose();
+  }
+
+  static int _defaultLearnCultureSubTab(bool seniorMode) => seniorMode ? 1 : 0;
+
+  // 只在精簡模式真的切換時重設子分頁，避免無關 notify 蓋掉使用者手動切的分頁。
+  void _onSeniorModeChanged() {
+    final enabled = seniorModeController.enabled;
+    if (enabled == _seniorMode) return;
+    setState(() {
+      _seniorMode = enabled;
+      _learnCultureSubTab = _defaultLearnCultureSubTab(enabled);
+    });
   }
 
   Future<void> _fetchUserSummary() async {
