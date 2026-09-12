@@ -1,16 +1,33 @@
-name: Deploy Web
+name: Web CI/CD
 
 on:
   push:
     branches: [master]
+    paths: &app-paths
+      - lib/**
+      - test/**
+      - web/**
+      - assets/**
+      - pubspec.yaml
+      - pubspec.lock
+      - analysis_options.yaml
+      - firebase.json
+      - .github/workflows/deploy-web.yml
+  pull_request:
+    branches: [master]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths: *app-paths
   workflow_dispatch:
 
+# 同一個 PR 推新 commit 時取消舊的 run；master 不取消
 concurrency:
-  group: deploy-web
-  cancel-in-progress: false
+  group: web-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  build-and-deploy:
+  ci:
+    # Draft PR 不跑，按下 Ready for review 後才開始
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +42,29 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - run: flutter build web --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+          retention-days: 7
+
+  deploy-web:
+    name: Deploy Web (Firebase Hosting)
+    needs: ci
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-web
+      cancel-in-progress: false
+    steps:
+      # firebase.json 需要從 repo 取得
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: build/web
 
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
