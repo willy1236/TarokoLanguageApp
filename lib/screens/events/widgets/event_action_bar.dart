@@ -140,11 +140,13 @@ class EventActionBar extends StatelessWidget {
     final notStarted = e.startsAt.isAfter(DateTime.now());
     final manageRow = Row(
       children: [
-        TextButton.icon(
-          onPressed: acting ? null : onEdit,
-          icon: Icon(Icons.edit_outlined, size: seniorMode ? 22 : 16),
-          label: Text('編輯活動', style: TextStyle(fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode))),
-        ),
+        // 後端只允許編輯未開始的活動，開始後 PATCH 回 409 EVENT_ENDED。
+        if (notStarted)
+          TextButton.icon(
+            onPressed: acting ? null : onEdit,
+            icon: Icon(Icons.edit_outlined, size: seniorMode ? 22 : 16),
+            label: Text('編輯活動', style: TextStyle(fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode))),
+          ),
         TextButton.icon(
           onPressed: acting ? null : onExport,
           icon: Icon(Icons.file_download_outlined, size: seniorMode ? 22 : 16),

@@ -6,8 +6,9 @@ import 'event_model.dart';
 /// 文字欄位保留使用者輸入的原樣，trim 在驗證與組 body 時才做；
 /// [maxParticipantsText] 也保留原字串，才能區分「留空＝不限」與「亂填」。
 ///
-/// 後端契約（PATCH /api/events/:id）：只接受 [editableFields] 這七個欄位，
-/// 空字串或 null 視為清空；title／starts_at／報名截止／名額不可改。
+/// 後端契約（PATCH /api/events/:id）：只接受 [editableFields]；省略＝不動，
+/// 文字欄位送空字串或 null 皆為清空（title/location/address 不可清空），
+/// 名額送 null＝不限名額。starts_at／報名截止不可改。
 class EventDraft {
   final String title;
   final String description;
@@ -51,6 +52,7 @@ class EventDraft {
 
   /// 後端 PATCH 接受的欄位（JSON key）。
   static const editableFields = {
+    'title',
     'description',
     'location',
     'address',
@@ -58,6 +60,7 @@ class EventDraft {
     'contact_phone',
     'reminder_note',
     'category',
+    'max_participants',
   };
 
   /// 名額：留空 = 不限（null）；格式錯誤時也回 null，先呼叫 [validate] 擋掉。
@@ -115,7 +118,8 @@ class EventDraft {
     return body;
   }
 
-  /// PATCH body：只含可編輯且與 [original] 不同的欄位；清空送空字串。
+  /// PATCH body：只含可編輯且與 [original] 不同的欄位；文字清空送空字串，
+  /// 名額留空送 null（不限名額）。需先通過 [validate]。
   /// 回傳空 map 表示沒有變更（後端對空 body 回 400，呼叫端應略過）。
   Map<String, dynamic> toPatchBody(EventDetail original) {
     final before = _editableValues(EventDraft.fromDetail(original));
@@ -126,7 +130,8 @@ class EventDraft {
     };
   }
 
-  static Map<String, String> _editableValues(EventDraft d) => {
+  static Map<String, Object?> _editableValues(EventDraft d) => {
+    'title': d.title.trim(),
     'description': d.description.trim(),
     'location': d.location.trim(),
     'address': d.address.trim(),
@@ -134,5 +139,6 @@ class EventDraft {
     'contact_phone': d.contactPhone.trim(),
     'reminder_note': d.reminderNote.trim(),
     'category': d.category?.trim() ?? '',
+    'max_participants': d.maxParticipants,
   };
 }

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/network/api_client.dart';
 import '../../models/event_draft.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
@@ -12,11 +13,11 @@ import '../../services/senior_mode_controller.dart';
 /// （POST /api/events）；帶入既有 EventDetail 時是編輯模式，預填欄位，
 /// 送出呼叫 EventService.updateEvent（PATCH /api/events/:id）。
 ///
-/// **編輯模式只能改後端 PATCH 接受的欄位**：活動說明、地點、詳細地址、
-/// 聯絡 Email/電話、提醒事項、標籤。活動名稱、開始時間、報名截止、名額
-/// 在後端是不可改欄位（送了會被靜默丟棄），所以表單直接設為唯讀並顯示
-/// 說明，不讓使用者改了半天卻沒存到。要開放它們得先改後端。
-/// 清空語意：後端把空字串視為清空，不需要額外的 clearXxx 旗標。
+/// **編輯模式只能改後端 PATCH 接受的欄位**：活動名稱、說明、地點、詳細地址、
+/// 聯絡 Email/電話、提醒事項、標籤、名額。開始時間與報名截止在後端不可改
+/// （牽涉提醒重新排程），所以表單設為唯讀並顯示說明。
+/// 清空語意：文字欄位送空字串即清空；名額留空送 null（不限名額）。
+/// 後端只允許編輯未取消、未開始的活動，否則回 409 EVENT_CLOSED / EVENT_ENDED。
 ///
 /// 後端五個必填：標題 / 活動介紹 / 地點名稱 / 詳細地址 / 開始時間（需未來、1 年內）。
 /// 聯絡 email、電話為選填。
@@ -213,6 +214,19 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       Navigator.pop(context, true); // 通知列表/詳情頁刷新
     } catch (e) {
       if (!mounted) return;
+      final code = e is ApiException ? e.code : null;
+      if (code == 'EVENT_CLOSED' || code == 'EVENT_ENDED') {
+        // 活動在編輯期間被取消或已開始：留在表單也存不了，退回詳情頁刷新狀態。
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              code == 'EVENT_CLOSED' ? '活動已取消，無法修改' : '活動已開始，無法修改',
+            ),
+          ),
+        );
+        Navigator.pop(context, true);
+        return;
+      }
       setState(() {
         _submitting = false;
         _error = e.toString(); // 後端訊息，例如「需要活動主辦權限（organizer / admin）」
@@ -251,8 +265,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     _title,
                     hint: '例如：青年族語營',
                     maxLength: 100,
-                    // 後端 PATCH 不支援修改標題，送了會被靜默丟棄。
-                    readOnly: _isEditing,
                     seniorMode: seniorMode,
                   ),
                   const SizedBox(height: 18),
@@ -470,8 +482,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           const SizedBox(width: 10),
           Expanded(
             child: Text(
-              '活動名稱、時間、報名截止與名額發布後就不能再改（灰底欄位）。'
-              '需要調整這些內容，請取消這場活動後重新發起。',
+              '活動時間與報名截止發布後就不能再改（灰底欄位）。'
+              '需要調整時間，請取消這場活動後重新發起。',
               style: TextStyle(
                 fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                 color: AppColors.inkSoft,
@@ -667,8 +679,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               controller: _maxParticipants,
               keyboardType: TextInputType.number,
               maxLength: 6,
-              // 後端 PATCH 不支援修改名額，發布後鎖住。
-              readOnly: _isEditing,
               onChanged: (_) => setState(() {}),
               style: TextStyle(
                 fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
@@ -686,21 +696,19 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               ),
             ),
           ),
-          if (!_isEditing) ...[
-            _stepperButton(
-              icon: Icons.remove,
-              onTap: () => _adjustMaxParticipants(-1),
-              filled: false,
-              seniorMode: seniorMode,
-            ),
-            const SizedBox(width: 8),
-            _stepperButton(
-              icon: Icons.add,
-              onTap: () => _adjustMaxParticipants(1),
-              filled: true,
-              seniorMode: seniorMode,
-            ),
-          ],
+          _stepperButton(
+            icon: Icons.remove,
+            onTap: () => _adjustMaxParticipants(-1),
+            filled: false,
+            seniorMode: seniorMode,
+          ),
+          const SizedBox(width: 8),
+          _stepperButton(
+            icon: Icons.add,
+            onTap: () => _adjustMaxParticipants(1),
+            filled: true,
+            seniorMode: seniorMode,
+          ),
         ],
       ),
     );
