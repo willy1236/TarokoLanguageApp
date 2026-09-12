@@ -1,5 +1,8 @@
 // 好友定向來電響鈴畫面。接聽 → 進真實 Agora 通話；拒接 → 回上一頁。
+// 響鈴期間輪詢來電狀態（前景推播 friend_call_cancelled 會提早觸發），撥出方
+// 取消或逾時未接時自動關閉畫面。
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -7,6 +10,7 @@ import '../../core/network/api_client.dart';
 import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
 import '../../services/directed_call_service.dart';
+import '../../services/fcm_service.dart';
 import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/user_avatar.dart';
@@ -26,11 +30,54 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   bool _busy = false;
   String? _errorMessage;
   Map<String, ShopItem> _itemCatalogById = const {};
+  Timer? _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _loadItemCatalog();
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => _poll());
+    FcmService.onFriendCallCancelled = _onCallCancelledPush;
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    if (FcmService.onFriendCallCancelled == _onCallCancelledPush) {
+      FcmService.onFriendCallCancelled = null;
+    }
+    super.dispose();
+  }
+
+  void _onCallCancelledPush(int callId) {
+    if (callId == widget.call.callId) _poll();
+  }
+
+  /// 查來電狀態；已不在響鈴中（撥出方取消、逾時等）就提示並自動關閉畫面。
+  /// 使用者正在接聽/拒接時不介入，交給該流程自己處理結果。
+  Future<void> _poll() async {
+    if (_busy || _pollTimer == null) return;
+    try {
+      final status = await DirectedCallService.getCall(widget.call.callId);
+      if (!mounted || _busy || _pollTimer == null) return;
+      final message = switch (status.status) {
+        'ringing' => null,
+        'cancelled' => '對方已取消通話',
+        'missed' => '未接來電',
+        _ => '此來電已結束',
+      };
+      if (message == null) return;
+      _pollTimer?.cancel();
+      _pollTimer = null;
+      setState(() => _errorMessage = message);
+      Future.delayed(const Duration(milliseconds: 1500), () {
+        if (mounted && ModalRoute.of(context)?.isCurrent == true) {
+          Navigator.of(context).pop();
+        }
+      });
+    } catch (_) {
+      // 輪詢期間的暫時性錯誤忽略，下次輪詢再試。
+    }
   }
 
   Future<void> _loadItemCatalog() async {
@@ -44,6 +91,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   }
 
   Future<void> _accept() async {
+    _pollTimer?.cancel();
+    _pollTimer = null;
     setState(() => _busy = true);
     try {
       final (session, credentials) = await DirectedCallService.acceptCall(
@@ -69,6 +118,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   }
 
   Future<void> _decline() async {
+    _pollTimer?.cancel();
+    _pollTimer = null;
     setState(() => _busy = true);
     try {
       await DirectedCallService.declineCall(widget.call.callId);
