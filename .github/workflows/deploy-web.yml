@@ -3,12 +3,31 @@ name: Web CI/CD
 on:
   push:
     branches: [master]
+    paths: &app-paths
+      - lib/**
+      - test/**
+      - web/**
+      - assets/**
+      - pubspec.yaml
+      - pubspec.lock
+      - analysis_options.yaml
+      - firebase.json
+      - .github/workflows/deploy-web.yml
   pull_request:
     branches: [master]
+    types: [opened, synchronize, reopened, ready_for_review]
+    paths: *app-paths
   workflow_dispatch:
+
+# 同一個 PR 推新 commit 時取消舊的 run；master 不取消
+concurrency:
+  group: web-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   ci:
+    # Draft PR 不跑，按下 Ready for review 後才開始
+    if: github.event_name != 'pull_request' || !github.event.pull_request.draft
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
