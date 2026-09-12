@@ -75,6 +75,7 @@ dependencies:
   # 視訊通話（定向通話 + 1 對 1 配對，issue #10）：Agora RTC 用戶端 SDK + 相機/麥克風權限管理
   agora_rtc_engine: ^6.5.2
   permission_handler: ^11.3.1
+  vibration: ^3.2.1 # 好友來電響鈴時依鈴聲節奏震動（HapticFeedback 只有短促觸覺回饋）
 
 dev_dependencies:
   flutter_test:
@@ -107,6 +108,7 @@ flutter:
   assets:
     - assets/icon/logo.png
     - assets/icon/millet_coin.png
+    - assets/sounds/ringtone.wav
 
   # To add assets to your application, add an assets section, like this:
   # assets:
