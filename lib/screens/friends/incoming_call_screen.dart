@@ -42,9 +42,14 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   void initState() {
     super.initState();
     _loadItemCatalog();
-    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => _poll());
+    _startPolling();
     FcmService.onFriendCallCancelled = _onCallCancelledPush;
     _startRinging();
+  }
+
+  void _startPolling() {
+    _pollTimer?.cancel();
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => _poll());
   }
 
   @override
@@ -177,6 +182,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      // 暫時性失敗時通話可能還在響鈴，恢復輪詢，對方之後取消仍能自動關閉。
+      if (!(e is ApiException && e.isCallNotRinging)) _startPolling();
       setState(() {
         _busy = false;
         _errorMessage = _describeError(e);
