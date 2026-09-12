@@ -1,16 +1,14 @@
-name: Deploy Web
+name: Web CI/CD
 
 on:
   push:
     branches: [master]
+  pull_request:
+    branches: [master]
   workflow_dispatch:
 
-concurrency:
-  group: deploy-web
-  cancel-in-progress: false
-
 jobs:
-  build-and-deploy:
+  ci:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +23,29 @@ jobs:
       - run: flutter analyze
       - run: flutter test
       - run: flutter build web --release
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: web-build
+          path: build/web
+          retention-days: 7
+
+  deploy-web:
+    name: Deploy Web (Firebase Hosting)
+    needs: ci
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: deploy-web
+      cancel-in-progress: false
+    steps:
+      # firebase.json 需要從 repo 取得
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: web-build
+          path: build/web
 
       - uses: FirebaseExtended/action-hosting-deploy@v0
         with:
