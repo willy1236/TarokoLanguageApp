@@ -126,21 +126,50 @@ void main() {
       });
     });
 
-    test('不可編輯欄位不會出現在 patch', () {
-      final e = detail();
+    EventDraft editedFrom(
+      EventDetail e, {
+      String? title,
+      String? max,
+      DateTime? startsAt,
+      DateTime? deadline,
+    }) {
       final d = EventDraft.fromDetail(e);
-      final edited = EventDraft(
-        title: '改標題',
+      return EventDraft(
+        title: title ?? d.title,
         description: d.description,
         location: d.location,
         address: d.address,
-        startsAt: now,
+        startsAt: startsAt ?? d.startsAt,
+        registrationDeadline: deadline ?? d.registrationDeadline,
         contactEmail: d.contactEmail,
-        maxParticipantsText: '99',
+        contactPhone: d.contactPhone,
+        maxParticipantsText: max ?? d.maxParticipantsText,
         category: d.category,
         reminderNote: d.reminderNote,
       );
-      expect(edited.toPatchBody(e), isEmpty);
+    }
+
+    test('標題與名額可編輯，名額送 int', () {
+      final e = detail();
+      expect(editedFrom(e, title: ' 改標題 ', max: '99').toPatchBody(e), {
+        'title': '改標題',
+        'max_participants': 99,
+      });
+    });
+
+    test('名額清空送 null（不限名額），不是空字串', () {
+      final e = detail();
+      final body = editedFrom(e, max: ' ').toPatchBody(e);
+      expect(body, {'max_participants': null});
+      expect(body.containsKey('max_participants'), isTrue);
+    });
+
+    test('時間欄位不可編輯，不會出現在 patch', () {
+      final e = detail();
+      expect(
+        editedFrom(e, startsAt: now, deadline: now).toPatchBody(e),
+        isEmpty,
+      );
     });
   });
 }
