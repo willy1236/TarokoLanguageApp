@@ -13,6 +13,7 @@ import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/shop_item.dart';
 import '../models/user_model.dart';
+import 'user_service.dart';
 
 class ShopService {
   /// 呼叫 GET /api/shop/items，取得後端算好的頭像／頭像框合併目錄
@@ -46,7 +47,9 @@ class ShopService {
   /// 後端依 item_catalog.type 自動判斷，呼叫端不需分開處理。
   static Future<UserModel> purchaseItem(String itemId) async {
     final json = await ApiClient.post(ApiConfig.itemPurchaseEndpoint(itemId));
-    return UserModel.fromJson(json);
+    final user = UserModel.fromJson(json);
+    UserService.cacheUser(user);
+    return user;
   }
 
   /// 呼叫 PATCH /api/me 帶 avatar_id，切換配戴中的內建頭像。
@@ -93,7 +96,10 @@ class ShopService {
 
   static Future<UserModel> _patchMe(Map<String, dynamic> body) async {
     final json = await ApiClient.patch(ApiConfig.me, body);
-    return UserModel.fromJson(json);
+    final user = UserModel.fromJson(json);
+    // 即使稍後判定「未套用」，回傳值仍是後端的真實狀態，照樣寫回快取。
+    UserService.cacheUser(user);
+    return user;
   }
 
   /// 後端回 200 但未真正持久化（回傳值與請求不符）時拋出的防呆錯誤。
