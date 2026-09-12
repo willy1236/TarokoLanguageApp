@@ -22,6 +22,7 @@ import 'screens/splash/splash_screen.dart';
 import 'screens/terms/terms_consent_screen.dart';
 import 'core/network/api_client.dart';
 import 'models/shop_item.dart';
+import 'models/user_model.dart';
 import 'services/checkin_service.dart';
 import 'services/fcm_service.dart';
 import 'services/senior_mode_controller.dart';
@@ -225,11 +226,13 @@ class _MainContainerState extends State<MainContainer> {
     _loadItemCatalog();
     _loadCheckinStatus();
     seniorModeController.addListener(_onSeniorModeChanged);
+    UserService.userNotifier.addListener(_onUserChanged);
   }
 
   @override
   void dispose() {
     seniorModeController.removeListener(_onSeniorModeChanged);
+    UserService.userNotifier.removeListener(_onUserChanged);
     super.dispose();
   }
 
@@ -245,17 +248,39 @@ class _MainContainerState extends State<MainContainer> {
     });
   }
 
+  // 個人頁改名、換頭像、商店購買等都會寫回 UserService 快取，這裡同步刷新首頁頂部。
+  void _onUserChanged() {
+    final user = UserService.userNotifier.value;
+    if (user == null || !mounted) return;
+    _applyUserSummary(user);
+  }
+
+  void _applyUserSummary(UserModel user) {
+    setState(() {
+      _displayName = user.displayName;
+      _millet = user.millet;
+      _avatarId = user.avatarId;
+      _avatarUrl = user.avatarUrl;
+    });
+  }
+
+  // 簽到只回傳部分欄位，合併回快取讓其他畫面讀到的小米數一致。
+  void _syncCheckinToCache(CheckinStatus status) {
+    final cached = UserService.cachedUser;
+    if (cached == null) return;
+    UserService.cacheUser(
+      cached.copyWith(
+        millet: status.millet,
+        checkedInToday: status.checkedInToday,
+        checkinStreak: status.checkinStreak,
+      ),
+    );
+  }
+
   Future<void> _fetchUserSummary() async {
     try {
       final user = await UserService.fetchMe();
-      if (mounted) {
-        setState(() {
-          _displayName = user.displayName;
-          _millet = user.millet;
-          _avatarId = user.avatarId;
-          _avatarUrl = user.avatarUrl;
-        });
-      }
+      if (mounted) _applyUserSummary(user);
     } catch (e, st) {
       debugPrint('Failed to fetch user summary: $e');
       debugPrintStack(stackTrace: st);
@@ -279,6 +304,7 @@ class _MainContainerState extends State<MainContainer> {
     try {
       final status = await CheckinService.fetchStatus();
       if (!mounted) return;
+      _syncCheckinToCache(status);
       setState(() {
         _checkedInToday = status.checkedInToday;
         _checkinStreak = status.checkinStreak;
@@ -296,6 +322,7 @@ class _MainContainerState extends State<MainContainer> {
     try {
       final status = await CheckinService.checkin();
       if (!mounted) return;
+      _syncCheckinToCache(status);
       setState(() {
         _checkedInToday = status.checkedInToday;
         _checkinStreak = status.checkinStreak;
