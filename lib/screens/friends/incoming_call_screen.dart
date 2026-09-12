@@ -1,11 +1,12 @@
 // 好友定向來電響鈴畫面。接聽 → 進真實 Agora 通話；拒接 → 回上一頁。
 // 響鈴期間輪詢來電狀態（前景推播 friend_call_cancelled 會提早觸發），撥出方
-// 取消或逾時未接時自動關閉畫面。響鈴期間循環播放鈴聲並震動。
+// 取消或逾時未接時自動關閉畫面。響鈴期間依系統鈴聲模式循環播放鈴聲／震動。
 
 import 'dart:async';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:vibration/vibration.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -57,14 +58,46 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     super.dispose();
   }
 
+  /// 系統鈴聲模式：`normal`／`vibrate`／`silent`。只有 Android 查得到；iOS 的
+  /// 靜音開關無法查詢（鈴聲靠 ambient category 自動遵守），Web 與查詢失敗都視為 normal。
+  static const _ringerModeChannel = MethodChannel('truku/ringer_mode');
+
+  Future<String> _ringerMode() async {
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return 'normal';
+    try {
+      return await _ringerModeChannel.invokeMethod<String>('getRingerMode') ??
+          'normal';
+    } catch (e) {
+      debugPrint('Failed to get ringer mode: $e');
+      return 'normal';
+    }
+  }
+
   Future<void> _startRinging() async {
     _ringing = true;
+    final mode = await _ringerMode();
+    // 查詢期間使用者可能已接聽/拒接/離開。
+    if (!_ringing || mode == 'silent') return;
     if (!kIsWeb) {
       // 與 ringtone.wav 同步：震 0.7s、停 0.15s、震 0.7s、停 0.85s，整輪 2.4s 循環。
       Vibration.vibrate(pattern: [0, 700, 150, 700, 850], repeat: 0)
           .catchError((e) => debugPrint('Failed to vibrate: $e'));
     }
+    if (mode == 'vibrate') return;
     try {
+      if (!kIsWeb) {
+        // 走鈴聲音量而非媒體音量；iOS ambient 會遵守靜音開關。
+        await _ringPlayer.setAudioContext(
+          AudioContext(
+            android: const AudioContextAndroid(
+              usageType: AndroidUsageType.notificationRingtone,
+              contentType: AndroidContentType.sonification,
+              audioFocus: AndroidAudioFocus.gainTransient,
+            ),
+            iOS: AudioContextIOS(category: AVAudioSessionCategory.ambient),
+          ),
+        );
+      }
       await _ringPlayer.setReleaseMode(ReleaseMode.loop);
       // 使用者可能在設定期間就已接聽/拒接/離開，此時不要再開始播。
       if (!_ringing) return;
