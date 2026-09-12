@@ -1,9 +1,12 @@
 // 好友定向來電響鈴畫面。接聽 → 進真實 Agora 通話；拒接 → 回上一頁。
 // 響鈴期間輪詢來電狀態（前景推播 friend_call_cancelled 會提早觸發），撥出方
-// 取消或逾時未接時自動關閉畫面。
+// 取消或逾時未接時自動關閉畫面。響鈴期間循環播放鈴聲並震動。
 
 import 'dart:async';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:vibration/vibration.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
@@ -31,6 +34,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   String? _errorMessage;
   Map<String, ShopItem> _itemCatalogById = const {};
   Timer? _pollTimer;
+  final _ringPlayer = AudioPlayer();
+  bool _ringing = false;
 
   @override
   void initState() {
@@ -38,6 +43,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     _loadItemCatalog();
     _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => _poll());
     FcmService.onFriendCallCancelled = _onCallCancelledPush;
+    _startRinging();
   }
 
   @override
@@ -46,7 +52,33 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     if (FcmService.onFriendCallCancelled == _onCallCancelledPush) {
       FcmService.onFriendCallCancelled = null;
     }
+    _stopRinging();
+    _ringPlayer.dispose();
     super.dispose();
+  }
+
+  Future<void> _startRinging() async {
+    _ringing = true;
+    if (!kIsWeb) {
+      // 與 ringtone.wav 同步：震 0.7s、停 0.15s、震 0.7s、停 0.85s，整輪 2.4s 循環。
+      Vibration.vibrate(pattern: [0, 700, 150, 700, 850], repeat: 0)
+          .catchError((e) => debugPrint('Failed to vibrate: $e'));
+    }
+    try {
+      await _ringPlayer.setReleaseMode(ReleaseMode.loop);
+      // 使用者可能在設定期間就已接聽/拒接/離開，此時不要再開始播。
+      if (!_ringing) return;
+      await _ringPlayer.play(AssetSource('sounds/ringtone.wav'));
+    } catch (e) {
+      // Web 未經使用者互動可能擋自動播放；鈴聲失敗不影響接聽流程。
+      debugPrint('Failed to play ringtone: $e');
+    }
+  }
+
+  void _stopRinging() {
+    _ringing = false;
+    if (!kIsWeb) Vibration.cancel().catchError((_) {});
+    _ringPlayer.stop().catchError((_) {});
   }
 
   void _onCallCancelledPush(int callId) {
@@ -69,6 +101,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
       if (message == null) return;
       _pollTimer?.cancel();
       _pollTimer = null;
+      _stopRinging();
       setState(() => _errorMessage = message);
       Future.delayed(const Duration(milliseconds: 1500), () {
         if (mounted && ModalRoute.of(context)?.isCurrent == true) {
@@ -93,6 +126,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   Future<void> _accept() async {
     _pollTimer?.cancel();
     _pollTimer = null;
+    _stopRinging();
     setState(() => _busy = true);
     try {
       final (session, credentials) = await DirectedCallService.acceptCall(
@@ -120,6 +154,7 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   Future<void> _decline() async {
     _pollTimer?.cancel();
     _pollTimer = null;
+    _stopRinging();
     setState(() => _busy = true);
     try {
       await DirectedCallService.declineCall(widget.call.callId);
