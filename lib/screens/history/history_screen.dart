@@ -6,7 +6,9 @@ import '../learn/lesson_card_screen.dart';
 import '../learn/listening_quiz_screen.dart';
 import 'listening_history_detail_screen.dart';
 import 'quiz_history_detail_screen.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/async_state_view.dart';
+import '../../shared/widgets/truku_empty_state.dart';
 import '../../core/constants/app_typography.dart';
 
 const _pageSize = 20;
@@ -221,11 +223,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
       return TrukuErrorView(error: _error, onRetry: _loadFirstPage);
     }
     if (_records.isEmpty) {
-      return Center(
-        child: Text(
-          '目前沒有測驗紀錄',
-          style: AppTypography.bodyLargeStyle(color: AppColors.fog),
-        ),
+      return TrukuEmptyState(
+        icon: Icons.history,
+        message: '目前沒有測驗紀錄',
+        subtitle: '完成測驗或練習後，紀錄會出現在這裡。',
+        seniorMode: seniorModeController.enabled,
       );
     }
     return RefreshIndicator(

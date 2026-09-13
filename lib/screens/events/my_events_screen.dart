@@ -6,6 +6,7 @@ import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import 'event_detail_screen.dart';
 import '../../shared/widgets/async_state_view.dart';
+import '../../shared/widgets/truku_empty_state.dart';
 import '../../core/constants/app_typography.dart';
 
 /// 我發起的活動總表（GET /api/events/mine）。
@@ -111,27 +112,17 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
       );
     }
     if (_events.isEmpty) {
+      // 包在 ListView 裡才能維持下拉重新整理
       return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.only(top: 60, bottom: 24),
         children: [
-          Padding(
-            padding: const EdgeInsets.only(top: 100),
-            child: Column(
-              children: [
-                Icon(
-                  Icons.event_available_outlined,
-                  size: seniorMode ? 60 : 44,
-                  color: AppColors.fog,
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  '你還沒發起過活動',
-                  style: AppTypography.serif(
-                    fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
-                    color: AppColors.inkSoft,
-                  ),
-                ),
-              ],
-            ),
+          TrukuEmptyState(
+            icon: Icons.event_outlined,
+            message: '你還沒發起過活動',
+            subtitle: '下拉重新整理，或到活動頁發起第一場活動。',
+            seniorMode: seniorMode,
+            scrollable: false,
           ),
         ],
       );
