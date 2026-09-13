@@ -35,12 +35,12 @@ Widget profileStatCell(bool seniorMode, String value, String label) {
           style: AppTypography.titleStyle(
             seniorMode: seniorMode,
             color: AppColors.primary,
-          ),
+          ).copyWith(fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode)),
         ),
         const SizedBox(height: 2),
         Text(
           label,
-          style: AppTypography.bodyLargeStyle(
+          style: AppTypography.bodyStyle(
             seniorMode: seniorMode,
             color: AppColors.fog,
           ),
@@ -89,7 +89,7 @@ Widget profileQuickLinkCard(ProfileQuickLink link, {required bool seniorMode}) {
               style: AppTypography.titleStyle(
                 seniorMode: seniorMode,
                 color: AppColors.ink,
-              ),
+              ).copyWith(fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode)),
             ),
           ),
         ],

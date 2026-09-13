@@ -53,11 +53,11 @@ class ProfileCoinBanner extends StatelessWidget {
                     style: AppTypography.headlineStyle(
                       seniorMode: seniorMode,
                       color: AppColors.primary,
-                    ),
+                    ).copyWith(fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode)),
                   ),
                   Text(
                     '小米 · 每日登入／完成單元可得',
-                    style: AppTypography.bodyLargeStyle(
+                    style: AppTypography.bodyStyle(
                       seniorMode: seniorMode,
                       color: AppColors.fog,
                     ),
