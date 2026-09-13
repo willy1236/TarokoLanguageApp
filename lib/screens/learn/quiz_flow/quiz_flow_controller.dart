@@ -168,6 +168,8 @@ class QuizFlowController<R> extends ChangeNotifier {
     final questionId = current.id;
     _set(() => _answers[questionId] = optionId);
     _saveAnswer(session.sessionId, questionId, optionId).catchError((Object e) {
+      // 交卷已完成後才到的單題請求會回 409 SESSION_ALREADY_COMPLETED，答案已隨交卷落地，忽略即可。
+      if (e is ApiException && e.isSessionAlreadyCompleted) return;
       if (!_disposed) onSaveFailed?.call(e);
     });
   }
