@@ -468,7 +468,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         seniorMode: seniorMode,
       ),
       profileSwitchRow(
-        '是否原住民',
+        '是否為原住民',
         _user?.isIndigenous ?? false,
         locked: true,
         lockedHint: '已設定，如需更正請聯繫管理員',

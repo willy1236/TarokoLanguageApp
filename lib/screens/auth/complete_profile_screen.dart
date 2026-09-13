@@ -318,7 +318,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             children: [
               Expanded(
                 child: Text(
-                  '是否原住民',
+                  '是否為原住民',
                   style: TextStyle(
                     fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                     color: AppColors.creamLight,
