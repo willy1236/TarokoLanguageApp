@@ -65,6 +65,7 @@ class ApiException implements Exception {
   bool get isCalleeBusy => code == 'CALLEE_BUSY';
   bool get isAlreadyInCall => code == 'ALREADY_IN_CALL';
   bool get isCallNotRinging => code == 'CALL_NOT_RINGING';
+  bool get isCallExpired => code == 'CALL_EXPIRED';
   bool get isNeedFriend => code == 'NEED_FRIEND';
   bool get isProfanity => code == 'PROFANITY';
 

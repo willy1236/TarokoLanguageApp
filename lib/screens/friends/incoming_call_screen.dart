@@ -61,6 +61,16 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
       );
     } catch (e) {
       if (!mounted) return;
+      // 已在通話中／響鈴逾時（後端標為 missed）：這通來電已無法接通，直接關畫面提示。
+      if (e is ApiException && (e.isAlreadyInCall || e.isCallExpired)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(e.isCallExpired ? '來電已逾時，未能接通' : '你或對方正在通話中，無法接聽'),
+          ),
+        );
+        Navigator.of(context).pop();
+        return;
+      }
       setState(() {
         _busy = false;
         _errorMessage = _describeError(e);
