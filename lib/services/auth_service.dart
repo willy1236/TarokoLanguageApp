@@ -154,6 +154,21 @@ class AuthService {
 
   static Future<String?> currentToken() => _storage.read(key: _tokenKey);
 
+  /// 系統 JWT 自然過期時，用仍登入中的 Firebase user 重新換一張（後端沒有
+  /// refresh 端點，登入端點就是換 token 的唯一途徑）。成功回 true；沒有
+  /// Firebase user 或換 token 失敗回 false，不 throw，由呼叫端決定備援。
+  static Future<bool> refreshSession() async {
+    final user = _auth.currentUser;
+    if (user == null) return false;
+    try {
+      await _loginWithFirebaseUser(user);
+      return true;
+    } catch (e) {
+      debugPrint('AuthService.refreshSession failed: $e');
+      return false;
+    }
+  }
+
   static Future<bool> isLoggedIn() async {
     final token = await _storage.read(key: _tokenKey);
     if (token == null) return false;

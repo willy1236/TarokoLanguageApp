@@ -1,6 +1,8 @@
 // 一對一聊天即時通道：wss://.../ws?token=<JWT>（見 Truku_backend backend/realtime.ts）。
 // 只接收，不送出——送訊息/已讀一律走 FriendService 的 REST 端點，WS 純粹是推播。
-// 指數退避重連；close code 4001（JWT 失效）導回登入，4003（未同意條款）導去同意頁。
+// 指數退避重連；close code 4001 "token expired"（連線中 JWT 自然過期）先重換 JWT 再重連，
+// 其他 4001（unauthorized / token revoked）不重連、交給 REST 401 導回登入；
+// 4003（未同意條款）導去同意頁；1011（握手時後端出錯）等其餘斷線照退避重連。
 
 import 'dart:async';
 import 'dart:convert';
@@ -56,8 +58,8 @@ class ChatController extends ChangeNotifier {
       _channel = channel;
       _sub = channel.stream.listen(
         _onData,
-        onDone: () => _onClosed(channel.closeCode),
-        onError: (e) => _onClosed(null),
+        onDone: () => _onClosed(channel.closeCode, channel.closeReason),
+        onError: (e) => _onClosed(null, null),
         cancelOnError: true,
       );
     } catch (e) {
@@ -104,10 +106,14 @@ class ChatController extends ChangeNotifier {
     }
   }
 
-  void _onClosed(int? closeCode) {
+  void _onClosed(int? closeCode, String? closeReason) {
     _sub?.cancel();
     _channel = null;
     if (_disposed) return;
+    if (closeCode == 4001 && closeReason == 'token expired') {
+      _refreshAndReconnect();
+      return;
+    }
     if (closeCode == 4001) {
       // JWT 失效：交給下一次 REST 呼叫的 401 統一走 ApiClient._forceLogout，這裡不重連。
       return;
@@ -117,6 +123,15 @@ class ChatController extends ChangeNotifier {
       return;
     }
     _scheduleReconnect();
+  }
+
+  /// 舊 token 已過期，拿它重試只會一直被踢；先換新 JWT，換不到就不重連
+  /// （交給下一次 REST 呼叫的 401 統一走 ApiClient._forceLogout）。
+  Future<void> _refreshAndReconnect() async {
+    final ok = await AuthService.refreshSession();
+    if (!ok || _disposed) return;
+    _reconnectAttempts = 0;
+    await connect();
   }
 
   void _scheduleReconnect() {
