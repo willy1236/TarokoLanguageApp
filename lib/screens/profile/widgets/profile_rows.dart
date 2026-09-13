@@ -6,21 +6,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_typography.dart';
 
-Widget profileInfoBadge(String text) {
-  return Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-    decoration: BoxDecoration(
-      color: AppColors.gold.withValues(alpha: 0.18),
-      borderRadius: BorderRadius.circular(999),
-      border: Border.all(color: AppColors.gold.withValues(alpha: 0.4)),
-    ),
-    child: Text(
-      text,
-      style: AppTypography.bodyLargeStyle(color: AppColors.goldDeep),
-    ),
-  );
-}
-
 Widget profileStatDivider() => const SizedBox(
   height: 32,
   child: VerticalDivider(color: AppColors.creamDeep, width: 1),

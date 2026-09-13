@@ -30,6 +30,8 @@ import 'my_bookmarks_screen.dart';
 import 'my_likes_screen.dart';
 import '../terms/terms_consent_screen.dart';
 import '../friends/friends_list_screen.dart';
+import '../learn/listening_placement_screen.dart';
+import '../learn/quiz_placement_screen.dart';
 
 // 頭像檔案限制（後端規則：≤8MB，僅接受 JPEG/PNG/WebP/GIF），前端先擋掉明顯無效
 // 的檔案以減少無效上傳，實際裁切壓縮一律由後端處理。
@@ -111,6 +113,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
               itemCatalogById: _itemCatalogById,
               seniorMode: seniorMode,
               onAvatarTap: _openAvatarOptions,
+              onTribalNameTap: _editTribalName,
+              onVocabPlacementTap: () =>
+                  _openPlacement(const QuizPlacementScreen()),
+              onListeningPlacementTap: () =>
+                  _openPlacement(const ListeningPlacementScreen()),
               topToggle: widget.topToggle,
             ),
             ProfileCoinBanner(
@@ -324,6 +331,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUser();
   }
 
+  // 分級測驗做完會更新 suggested level，回來重抓使用者讓 hero 標章同步。
+  Future<void> _openPlacement(Widget screen) async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => screen));
+    if (!mounted) return;
+    _loadUser();
+  }
+
   Future<void> _openMilletLedger() async {
     await Navigator.of(
       context,
@@ -451,15 +467,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onTap: _copyFriendCode,
         seniorMode: seniorMode,
       ),
-      profileSettingRow(
-        '族語名字',
-        _user?.tribalName ?? '尚未設定',
-        // 尚未設定時顯示中文提示字，不套用族語專用的斜體字型，避免字型跟中文不搭。
-        truku: _user?.tribalName != null && _user!.tribalName!.isNotEmpty,
-        editable: true,
-        onTap: _editTribalName,
-        seniorMode: seniorMode,
-      ),
       profileSwitchRow(
         '是否原住民',
         _user?.isIndigenous ?? false,
@@ -468,6 +475,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onChanged: (_) {},
         seniorMode: seniorMode,
       ),
+      // 族語名只開放原住民填寫（與完善資料頁一致），非原住民不顯示這列。
+      if (_user?.isIndigenous == true)
+        profileSettingRow(
+          '族語名字',
+          _user?.tribalName ?? '尚未設定',
+          // 尚未設定時顯示中文提示字，不套用族語專用的斜體字型，避免字型跟中文不搭。
+          truku: _user?.tribalName != null && _user!.tribalName!.isNotEmpty,
+          editable: true,
+          onTap: _editTribalName,
+          seniorMode: seniorMode,
+        ),
       profileSettingRow(
         '部落',
         _user?.tribeName ?? '尚未設定',
