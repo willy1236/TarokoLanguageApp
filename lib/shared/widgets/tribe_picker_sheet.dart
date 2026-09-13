@@ -99,8 +99,17 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: TextField(
                   controller: _searchController,
+                  cursorColor: AppColors.ink,
+                  style: AppTypography.serif(
+                    fontSize: AppTypography.body,
+                    color: AppColors.ink,
+                  ),
                   decoration: InputDecoration(
                     hintText: '搜尋部落、縣市或鄉鎮',
+                    hintStyle: AppTypography.serif(
+                      fontSize: AppTypography.body,
+                      color: AppColors.fog,
+                    ),
                     isDense: true,
                     filled: true,
                     fillColor: AppColors.creamLight,
