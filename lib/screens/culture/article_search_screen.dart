@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/article_models.dart';
 import '../../services/article_service.dart';
+import '../../services/search_assist_service.dart';
 import '../../shared/widgets/article_cover_placeholder.dart';
 import 'article_detail_screen.dart';
 import 'culture_search_screen.dart';
@@ -15,6 +16,7 @@ class ArticleSearchScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CultureSearchScreen<ArticleSummary>(
+      module: SearchModule.articles,
       hint: '搜尋文章',
       emptyText: '找不到符合的文章',
       fetch: ({q, range, tribeId, required page}) async {

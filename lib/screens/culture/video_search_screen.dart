@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/video_models.dart';
+import '../../services/search_assist_service.dart';
 import '../../services/video_service.dart';
 import 'culture_search_screen.dart';
 import 'video_detail_screen.dart';
@@ -14,6 +15,7 @@ class VideoSearchScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return CultureSearchScreen<VideoSummary>(
+      module: SearchModule.videos,
       hint: '搜尋影片',
       emptyText: '找不到符合的影片',
       fetch: ({q, range, tribeId, required page}) async {
