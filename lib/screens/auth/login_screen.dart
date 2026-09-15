@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/session_service.dart';
@@ -35,7 +36,9 @@ class _LoginScreenState extends State<LoginScreen> {
         );
         return;
       }
-      if (!result.isActive) {
+      // 鎖定帳號照常進 App，只是切到唯讀模式（寫入端點會回 403 ACCOUNT_LOCKED）。
+      accountLockController.setLocked(result.isLocked);
+      if (!result.isActive && !result.isLocked) {
         await SessionService.signOut(unregisterDevice: false);
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(

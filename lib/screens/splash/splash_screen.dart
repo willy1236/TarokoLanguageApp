@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../services/account_lock_controller.dart';
+import '../../services/account_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/terms_service.dart';
@@ -35,6 +37,13 @@ class _SplashScreenState extends State<SplashScreen> {
         Navigator.pushReplacementNamed(context, '/login');
         return;
       }
+      // /me 沒有帳號狀態欄位，鎖定（唯讀）要另查 status；與 /me 並行，
+      // 查不到（離線）就維持非唯讀，寫入時由 403 ACCOUNT_LOCKED 補救。
+      final lockCheck = AccountService.fetchStatus()
+          .then((s) => accountLockController.setLocked(s.isLocked))
+          .catchError((Object e) {
+            debugPrint('SplashScreen: 帳號狀態查詢失敗，略過唯讀檢查：$e');
+          });
       // 離線等原因查不到 profile_completed 時，不擋既有使用者進首頁。
       var profileCompleted = true;
       try {
@@ -55,6 +64,7 @@ class _SplashScreenState extends State<SplashScreen> {
       } catch (e) {
         debugPrint('SplashScreen: fetchStatus 失敗，略過同意條款檢查：$e');
       }
+      await lockCheck;
       if (!mounted) return;
       Navigator.pushReplacementNamed(
         context,

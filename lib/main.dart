@@ -24,6 +24,7 @@ import 'screens/terms/terms_consent_screen.dart';
 import 'core/network/api_client.dart';
 import 'models/shop_item.dart';
 import 'models/user_model.dart';
+import 'services/account_lock_controller.dart';
 import 'services/checkin_service.dart';
 import 'services/app_badge.dart';
 import 'services/fcm_service.dart';
@@ -174,7 +175,7 @@ class KariTrukuApp extends StatelessWidget {
               maxScaleFactor: seniorMode ? 1.5 : 1.15,
             ),
           ),
-          child: child!,
+          child: _ReadOnlyBannerFrame(child: child!),
         );
       },
       initialRoute: '/splash',
@@ -189,6 +190,61 @@ class KariTrukuApp extends StatelessWidget {
         '/home': (_) => const MainContainer(),
         '/shop': (_) => const ShopScreen(),
         '/backpack': (_) => const BackpackScreen(),
+      },
+    );
+  }
+}
+
+/// 帳號唯讀時在所有路由頂端加一條橫幅（放在 MaterialApp.builder，推進來的
+/// 詳情頁也看得到）。橫幅吃掉狀態列高度，下方畫面改成不再留頂部 padding。
+class _ReadOnlyBannerFrame extends StatelessWidget {
+  final Widget child;
+
+  const _ReadOnlyBannerFrame({required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: accountLockController,
+      child: child,
+      builder: (context, child) {
+        if (!accountLockController.locked) return child!;
+        final topPadding = MediaQuery.paddingOf(context).top;
+        return Column(
+          children: [
+            Material(
+              color: AppColors.ink,
+              child: Padding(
+                padding: EdgeInsets.fromLTRB(16, topPadding + 6, 16, 6),
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.lock_outline,
+                      size: 16,
+                      color: AppColors.gold,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '帳號目前為唯讀狀態',
+                        style: AppTypography.captionStyle(
+                          color: AppColors.creamLight,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: MediaQuery.removePadding(
+                context: context,
+                removeTop: true,
+                child: child!,
+              ),
+            ),
+          ],
+        );
       },
     );
   }

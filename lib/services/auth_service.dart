@@ -211,6 +211,9 @@ class LoginResult {
   bool get isActive => accountState == 'active';
   bool get isPendingDeletion => accountState == 'pending_deletion';
 
+  /// 鎖定（唯讀）帳號：照常進 App，但回應沒有 `user`，個資要另打 /me。
+  bool get isLocked => accountState == 'locked';
+
   factory LoginResult.fromJson(Map<String, dynamic> json) => LoginResult(
     accountState: json['account_state'] as String? ?? 'active',
     purgeAt: DateTime.tryParse(json['purge_at'] as String? ?? '')?.toLocal(),

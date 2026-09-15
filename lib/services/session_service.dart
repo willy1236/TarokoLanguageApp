@@ -3,6 +3,7 @@
 
 import 'package:flutter/foundation.dart';
 
+import 'account_lock_controller.dart';
 import 'auth_service.dart';
 import 'fcm_service.dart';
 import 'notification_summary_service.dart';
@@ -24,6 +25,7 @@ class SessionService {
     }
     UserService.clearCache();
     NotificationSummaryService.clear();
+    accountLockController.setLocked(false);
     try {
       await AuthService.signOut();
     } catch (e) {
