@@ -9,6 +9,7 @@ import '../../core/network/api_client.dart';
 import '../../models/friend_message_model.dart';
 import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/friend_service.dart';
 import '../../services/notification_summary_service.dart';
@@ -150,7 +151,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
   Future<void> _toggleShowcase(Friendship f) async {
     final friends = _friends;
-    if (friends == null) return;
+    if (friends == null || blockIfReadOnly()) return;
     final idx = friends.indexOf(f);
     if (idx == -1) return;
     if (f.showcase.mutual) {

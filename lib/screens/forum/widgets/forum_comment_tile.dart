@@ -19,9 +19,10 @@ class ForumCommentTile extends StatelessWidget {
   final bool isReply;
   final bool isMine;
   final VoidCallback onLike;
-  final VoidCallback onReply;
+  /// null 時不顯示（唯讀帳號不能留言、檢舉）。
+  final VoidCallback? onReply;
   final VoidCallback onDelete;
-  final VoidCallback onReport;
+  final VoidCallback? onReport;
   final Map<String, ShopItem> itemCatalogById;
 
   const ForumCommentTile({
@@ -30,9 +31,9 @@ class ForumCommentTile extends StatelessWidget {
     required this.isReply,
     required this.isMine,
     required this.onLike,
-    required this.onReply,
+    this.onReply,
     required this.onDelete,
-    required this.onReport,
+    this.onReport,
     this.itemCatalogById = const {},
   });
 
@@ -148,10 +149,10 @@ class ForumCommentTile extends StatelessWidget {
                   ],
                 ),
               ),
-              _action('回覆', onReply, seniorMode),
+              if (onReply case final onReply?) _action('回覆', onReply, seniorMode),
               if (isMine)
                 _action('刪除', onDelete, seniorMode)
-              else
+              else if (onReport case final onReport?)
                 _action('檢舉', onReport, seniorMode),
             ],
           ),

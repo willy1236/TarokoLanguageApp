@@ -4,6 +4,7 @@ import 'package:permission_handler/permission_handler.dart'
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/video_call_model.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/directed_call_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/video_call_service.dart';
@@ -98,7 +99,10 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     if (!mounted) return;
     final directedCallId = widget.directedCallId;
     // 沒接通就結束（例如權限被拒）不需要問檢舉。
-    if (directedCallId != null && _call.joinError == null) {
+    // 唯讀帳號不能檢舉（後端擋），就不問了。
+    if (directedCallId != null &&
+        _call.joinError == null &&
+        !accountLockController.locked) {
       await _offerReport(directedCallId);
     }
     if (!mounted) return;

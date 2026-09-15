@@ -5,6 +5,7 @@ import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/article_models.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/engagement_icon_button.dart';
@@ -42,6 +43,8 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   Future<void> _toggleLike() async {
     final article = _article;
     if (article == null || _likeBusy) return;
+    // 唯讀帳號只擋「按讚」，取消讚後端放行。
+    if (!article.isLiked && blockIfReadOnly()) return;
     setState(() {
       _likeBusy = true;
       _article = article.toggledLike();

@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_model.dart';
 import '../../models/forum_models.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/event_service.dart';
 import '../../services/forum_service.dart';
 import '../../services/notification_summary_service.dart';
@@ -248,7 +249,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
 
   Future<void> _compose() async {
     // 連點會疊出兩個發文畫面：async onTap 沒有 in-flight 防護。
-    if (_composing) return;
+    if (_composing || blockIfReadOnly()) return;
     if (_boardsLoading) {
       ScaffoldMessenger.of(
         context,

@@ -17,6 +17,7 @@ class AccountStatus {
   const AccountStatus({required this.status, this.purgeAt});
 
   bool get isPendingDeletion => status == 'pending_deletion';
+  bool get isLocked => status == 'locked';
 
   factory AccountStatus.fromJson(Map<String, dynamic> json) => AccountStatus(
     status: json['status'] as String? ?? 'active',
@@ -36,6 +37,7 @@ class AccountService {
   }
 
   /// 刪除緩衝期內重新啟用帳號（後端會一併補同意最新版條款）。
+  /// 刪除前是鎖定帳號的，會還原成 `locked` 而非 `active`。
   static Future<AccountStatus> reactivate() async {
     final data = await ApiClient.post(ApiConfig.accountReactivate, {
       'confirm': true,

@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
@@ -58,6 +59,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
   }
 
   Future<void> _submit() async {
+    if (blockIfReadOnly()) return;
     final code = _controller.text.trim().toUpperCase();
     if (code.isEmpty) {
       setState(() => _error = '請輸入好友碼');

@@ -6,7 +6,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
-import 'package:flutter_application_1/main.dart' show navigatorKey;
+import 'package:flutter_application_1/main.dart'
+    show navigatorKey, scaffoldMessengerKey;
+import 'package:flutter_application_1/services/account_lock_controller.dart';
+
+const _utf8Json = {'content-type': 'application/json; charset=utf-8'};
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -204,6 +208,90 @@ void main() {
 
     expect(find.text('pending'), findsOneWidget);
     expect(find.text('home'), findsNothing);
+  });
+
+  group('403 ACCOUNT_LOCKED', () {
+    tearDown(() => accountLockController.setLocked(false));
+
+    testWidgets('切到唯讀模式並顯示統一提示', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigatorKey,
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          home: const Scaffold(body: Text('home')),
+        ),
+      );
+      ApiClient.httpClient = MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'error': {'code': 'ACCOUNT_LOCKED', 'message': '後端訊息'},
+          }),
+          403,
+          headers: _utf8Json,
+        ),
+      );
+
+      await tester.runAsync(() async {
+        await expectLater(
+          ApiClient.post('/api/forum/posts/1/like'),
+          throwsA(isA<ApiException>().having(
+            (e) => e.isAccountLocked,
+            'isAccountLocked',
+            isTrue,
+          )),
+        );
+      });
+      await tester.pump();
+      await tester.pump();
+
+      expect(accountLockController.locked, isTrue);
+      expect(find.text(readOnlyMessage), findsOneWidget);
+      expect(find.text('home'), findsOneWidget);
+    });
+
+    test('其他 403 不影響唯讀狀態', () async {
+      ApiClient.httpClient = MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'error': {'code': 'FORBIDDEN', 'message': 'x'},
+          }),
+          403,
+        ),
+      );
+
+      await expectLater(ApiClient.get('/api/ping'), throwsA(isA<ApiException>()));
+      expect(accountLockController.locked, isFalse);
+    });
+  });
+
+  test('MUTED 帶 mute_until 時解析到期時間並接在訊息後', () async {
+    ApiClient.httpClient = MockClient(
+      (_) async => http.Response(
+        jsonEncode({
+          'error': {
+            'code': 'MUTED',
+            'message': '你目前被禁言，暫時無法發表內容',
+            'mute_until': '2026-10-01T04:30:00.000Z',
+          },
+        }),
+        403,
+        headers: _utf8Json,
+      ),
+    );
+    final until = DateTime.utc(2026, 10, 1, 4, 30).toLocal();
+
+    await expectLater(
+      ApiClient.post('/api/forum/posts'),
+      throwsA(
+        isA<ApiException>()
+            .having((e) => e.muteUntil, 'muteUntil', until)
+            .having(
+              (e) => e.message,
+              'message',
+              '你目前被禁言，暫時無法發表內容（至 ${formatMuteUntil(until)}）',
+            ),
+      ),
+    );
   });
 
   testWidgets('/api/account/* 的 403 PENDING 不重複導頁', (tester) async {

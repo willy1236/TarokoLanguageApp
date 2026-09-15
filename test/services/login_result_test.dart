@@ -30,6 +30,26 @@ void main() {
     expect(r.purgeAt, DateTime.utc(2026, 10, 30).toLocal());
   });
 
+  test('鎖定帳號回應：account_state locked、purge_at null，沒有 user', () {
+    final r = LoginResult.fromJson({
+      'session_token': 't',
+      'expires_at': '2026-10-01T00:00:00Z',
+      'account_state': 'locked',
+      'purge_at': null,
+      'uid': 7,
+    });
+    expect(r.isLocked, isTrue);
+    expect(r.isActive, isFalse);
+    expect(r.isPendingDeletion, isFalse);
+    expect(r.user, isNull);
+    expect(r.purgeAt, isNull);
+  });
+
+  test('reactivate 回 status locked 時 isLocked', () {
+    expect(AccountStatus.fromJson({'status': 'locked'}).isLocked, isTrue);
+    expect(AccountStatus.fromJson({'status': 'active'}).isLocked, isFalse);
+  });
+
   test('daysUntilPurge 無條件進位、過期為 0', () {
     final now = DateTime(2026, 9, 15, 12);
     expect(daysUntilPurge(DateTime(2026, 9, 16, 12), now: now), 1);

@@ -6,6 +6,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/friend_model.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_empty_state.dart';
@@ -50,6 +51,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
   }
 
   Future<void> _accept(FriendRequest r) async {
+    if (blockIfReadOnly()) return;
     setState(() => _busyUids.add(r.uid));
     try {
       await FriendService.acceptRequest(r.uid);

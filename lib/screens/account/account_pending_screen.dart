@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/account_service.dart';
 import '../../services/session_service.dart';
 import '../../services/user_service.dart';
@@ -43,7 +44,8 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
       final status = await AccountService.fetchStatus();
       if (!mounted) return;
       if (!status.isPendingDeletion) {
-        // 另一台裝置已重新啟用：直接回主畫面。
+        // 另一台裝置已重新啟用：直接回主畫面（鎖定帳號還原後為唯讀）。
+        accountLockController.setLocked(status.isLocked);
         Navigator.of(context).pushNamedAndRemoveUntil('/home', (_) => false);
         return;
       }
@@ -58,7 +60,9 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
     if (_submitting) return;
     setState(() => _submitting = true);
     try {
-      await AccountService.reactivate();
+      // 刪除前被鎖的帳號會還原成 locked，不能假設一定是 active。
+      final status = await AccountService.reactivate();
+      accountLockController.setLocked(status.isLocked);
       UserService.clearCache();
       final user = await UserService.fetchMe(forceRefresh: true);
       if (!mounted) return;
@@ -68,7 +72,13 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
       );
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(const SnackBar(content: Text('帳號已重新啟用，歡迎回來')));
+      ).showSnackBar(
+        SnackBar(
+          content: Text(
+            status.isLocked ? '帳號已重新啟用，目前為唯讀狀態' : '帳號已重新啟用，歡迎回來',
+          ),
+        ),
+      );
     } on ApiException catch (e) {
       if (!mounted || e.isAccountPurged) return;
       _showError(e.message);
