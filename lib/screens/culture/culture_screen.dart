@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../models/article_models.dart';
 import '../../models/video_models.dart';
+import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
 import '../../shared/widgets/truku_painters.dart';
+import 'article_detail_screen.dart';
 import 'article_search_screen.dart';
 import 'video_detail_screen.dart';
 import 'video_search_screen.dart';
@@ -26,17 +29,25 @@ class CultureScreen extends StatefulWidget {
 class _CultureScreenState extends State<CultureScreen> {
   int _tabIndex = 0; // 0=影音, 1=文章
   int _chipIndex = 0;
-  String _sort = 'latest'; // latest | popular
+  String _sort = 'latest'; // latest | popular | weekly_popular
   late Future<VideoListResponse> _videosFuture;
   late Future<VideoSummary?> _featuredFuture;
+  late Future<ArticleSummary?> _featuredArticleFuture;
 
   static final _chips = ['全部', ...VideoCategory.all.map(VideoCategory.label)];
+
+  static const _videoSortOptions = [
+    ('latest', '最新影片', '最新'),
+    ('popular', '熱門影片', '熱門'),
+    ('weekly_popular', '本週熱門影片', '本週熱門'),
+  ];
 
   @override
   void initState() {
     super.initState();
     _videosFuture = _fetchVideos();
     _featuredFuture = _fetchFeatured();
+    _featuredArticleFuture = _fetchFeaturedArticle();
   }
 
   // 後端無獨立「精選」欄位/endpoint，改用本週熱門第一名頂替本週精選。
@@ -46,6 +57,15 @@ class _CultureScreenState extends State<CultureScreen> {
       pageSize: 1,
     );
     return res.videos.isEmpty ? null : res.videos.first;
+  }
+
+  // 文章分頁的本週精選，同樣取本週熱門第一名。
+  Future<ArticleSummary?> _fetchFeaturedArticle() async {
+    final res = await ArticleService.fetchArticles(
+      sort: 'weekly_popular',
+      pageSize: 1,
+    );
+    return res.articles.isEmpty ? null : res.articles.first;
   }
 
   String? get _selectedCategory =>
@@ -103,146 +123,192 @@ class _CultureScreenState extends State<CultureScreen> {
 
   // ── Hero ──────────────────────────────────────────────────────────────────
 
+  // 本週精選依目前分頁切換：影音分頁顯示本週熱門影片，文章分頁顯示本週熱門文章。
   Widget _buildHero(bool seniorMode) {
+    if (_tabIndex == 1) {
+      return FutureBuilder<ArticleSummary?>(
+        future: _featuredArticleFuture,
+        builder: (context, snapshot) {
+          final article = snapshot.data;
+          return _buildHeroContent(
+            seniorMode: seniorMode,
+            hasData: article != null,
+            imageUrl: article?.coverImageUrl,
+            title: article?.title ?? '太魯閣族文章',
+            subtitle: article == null
+                ? null
+                : '${ArticleCategory.label(article.category)}　|　本週 ${article.weeklyViewCount} 次閱讀',
+            buttonLabel: '立即閱讀',
+            onTap: article == null
+                ? null
+                : () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) =>
+                          ArticleDetailScreen(articleId: article.id),
+                    ),
+                  ),
+          );
+        },
+      );
+    }
     return FutureBuilder<VideoSummary?>(
       future: _featuredFuture,
       builder: (context, snapshot) {
-        final featured = snapshot.data;
-        return SizedBox(
-          height: 360,
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // 縮圖背景（有精選影片時）／漸層底色 + 裝飾占位圖案
-              if (featured?.thumbnailUrl != null)
-                Image.network(
-                  featured!.thumbnailUrl!,
-                  fit: BoxFit.cover,
-                  errorBuilder: (_, _, _) => _heroFallbackDecoration(),
-                )
-              else
-                _heroFallbackDecoration(),
-              // 漸層遮罩
-              Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    stops: [0.0, 0.5, 1.0],
-                    colors: [
-                      Colors.transparent,
-                      Colors.transparent,
-                      AppColors.midnight,
-                    ],
+        final video = snapshot.data;
+        return _buildHeroContent(
+          seniorMode: seniorMode,
+          hasData: video != null,
+          imageUrl: video?.thumbnailUrl,
+          title: video?.title ?? '太魯閣族影音',
+          subtitle: video == null
+              ? null
+              : '${VideoCategory.label(video.category)}　|　本週 ${video.weeklyViewCount} 次觀看',
+          buttonLabel: '立即觀看',
+          onTap: video == null
+              ? null
+              : () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => VideoDetailScreen(videoId: video.id),
                   ),
                 ),
+        );
+      },
+    );
+  }
+
+  Widget _buildHeroContent({
+    required bool seniorMode,
+    required bool hasData,
+    required String? imageUrl,
+    required String title,
+    required String? subtitle,
+    required String buttonLabel,
+    required VoidCallback? onTap,
+  }) {
+    return SizedBox(
+      height: 320,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // 封面背景（有精選內容時）／漸層底色 + 裝飾占位圖案
+          if (imageUrl != null)
+            Image.network(
+              imageUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (_, _, _) => _heroFallbackDecoration(),
+            )
+          else
+            _heroFallbackDecoration(),
+          // 漸層遮罩
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: [0.0, 0.5, 1.0],
+                colors: [
+                  Colors.transparent,
+                  Colors.transparent,
+                  AppColors.midnight,
+                ],
               ),
-              // 頂部 nav
-              Positioned(
-                top: 60,
-                left: 20,
-                right: 20,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'LNGLUNGAN',
-                          style: AppTypography.latin(
-                            fontStyle: FontStyle.italic,
-                            fontSize: AppTypography.body,
-                            color: AppColors.gold,
-                            letterSpacing: 4.0,
-                          ),
-                        ),
-                        GestureDetector(
-                          onTap: () => Navigator.of(context).push(
-                            MaterialPageRoute(
-                              builder: (_) => _tabIndex == 0
-                                  ? const VideoSearchScreen()
-                                  : const ArticleSearchScreen(),
-                            ),
-                          ),
-                          child: Container(
-                            width: 36,
-                            height: 36,
-                            decoration: BoxDecoration(
-                              shape: BoxShape.circle,
-                              color: Colors.black.withValues(alpha: 0.4),
-                              border: Border.all(
-                                color: AppColors.gold.withValues(alpha: 0.25),
-                              ),
-                            ),
-                            child: const Center(child: CultureSearchIcon()),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              // Hero info
-              Positioned(
-                bottom: 24,
-                left: 20,
-                right: 20,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            ),
+          ),
+          // 頂部 nav
+          Positioned(
+            top: 60,
+            left: 20,
+            right: 20,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      featured != null ? '本週精選 · 熱門' : '本週精選',
-                      style: AppTypography.mono(
-                        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                      'LNGLUNGAN',
+                      style: AppTypography.latin(
+                        fontStyle: FontStyle.italic,
+                        fontSize: AppTypography.body,
                         color: AppColors.gold,
                         letterSpacing: 4.0,
                       ),
                     ),
-                    const SizedBox(height: 8),
-                    Text(
-                      featured?.title ?? '太魯閣族影音',
-                      style: AppTypography.serif(
-                        fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.creamLight,
-                        letterSpacing: 1.0,
-                        height: 1.2,
+                    GestureDetector(
+                      onTap: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => _tabIndex == 0
+                              ? const VideoSearchScreen()
+                              : const ArticleSearchScreen(),
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      featured != null
-                          ? '${VideoCategory.label(featured.category)}　|　本週 ${featured.weeklyViewCount} 次觀看'
-                          : '精選內容載入中…',
-                      style: TextStyle(
-                        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
-                        color: AppColors.creamLight.withValues(alpha: 0.7),
-                        letterSpacing: 1.2,
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black.withValues(alpha: 0.4),
+                          border: Border.all(
+                            color: AppColors.gold.withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: const Center(child: CultureSearchIcon()),
                       ),
-                    ),
-                    const SizedBox(height: 14),
-                    CulturePlayButton(
-                      label: '立即觀看',
-                      seniorMode: seniorMode,
-                      onTap: featured == null
-                          ? null
-                          : () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute(
-                                  builder: (_) =>
-                                      VideoDetailScreen(videoId: featured.id),
-                                ),
-                              );
-                            },
                     ),
                   ],
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        );
-      },
+          // Hero info
+          Positioned(
+            bottom: 24,
+            left: 20,
+            right: 20,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  hasData ? '本週精選 · 熱門' : '本週精選',
+                  style: AppTypography.mono(
+                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    color: AppColors.gold,
+                    letterSpacing: 4.0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  title,
+                  style: AppTypography.serif(
+                    fontSize: seniorMode
+                        ? AppTypography.display32
+                        : AppTypography.display26,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.creamLight,
+                    letterSpacing: 1.0,
+                    height: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  subtitle ?? '精選內容載入中…',
+                  style: TextStyle(
+                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    color: AppColors.creamLight.withValues(alpha: 0.7),
+                    letterSpacing: 1.2,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                CulturePlayButton(
+                  label: buttonLabel,
+                  seniorMode: seniorMode,
+                  onTap: onTap,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -396,6 +462,7 @@ class _CultureScreenState extends State<CultureScreen> {
   // ── Video Section ────────────────────────────────────────────────────────
 
   Widget _buildVideoSectionHeader(bool seniorMode) {
+    final title = _videoSortOptions.firstWhere((opt) => opt.$1 == _sort).$2;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
       child: Row(
@@ -406,7 +473,7 @@ class _CultureScreenState extends State<CultureScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                _sort == 'popular' ? '熱門影片' : '最新影片',
+                title,
                 style: AppTypography.serif(
                   fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
                   fontWeight: FontWeight.w600,
@@ -428,9 +495,10 @@ class _CultureScreenState extends State<CultureScreen> {
           ),
           Row(
             children: [
-              _sortLabel('latest', '最新', seniorMode),
-              const SizedBox(width: 10),
-              _sortLabel('popular', '熱門', seniorMode),
+              for (final opt in _videoSortOptions) ...[
+                _sortLabel(opt.$1, opt.$3, seniorMode),
+                if (opt != _videoSortOptions.last) const SizedBox(width: 10),
+              ],
             ],
           ),
         ],
