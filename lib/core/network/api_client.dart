@@ -13,6 +13,7 @@ import 'package:http_parser/http_parser.dart';
 import '../constants/api.dart';
 import '../../main.dart';
 import '../../services/auth_service.dart';
+import '../../services/session_service.dart';
 
 /// multipart 的單一檔案。bytes 由呼叫端準備好（論壇附圖在 App 端壓縮後上傳，
 /// 後端不做伺服器端壓縮），mimeType 必填——後端 multer 以它過濾檔案類型。
@@ -35,15 +36,27 @@ class ApiException implements Exception {
   final String code;
   final String message;
 
+  /// 429 時後端建議的等待秒數（body `retry_after` 或 `Retry-After` header），
+  /// 其餘錯誤為 null。畫面可據此顯示「N 秒後可再試」倒數。
+  final int? retryAfter;
+
   ApiException({
     required this.statusCode,
     required this.code,
     required this.message,
+    this.retryAfter,
   });
 
   bool get isUnauthorized => statusCode == 401;
   bool get isRateLimited => statusCode == 429;
   bool get isConsentRequired => code == 'CONSENT_REQUIRED';
+
+  // 帳號刪除（見 Truku_backend 說明文件/前端交接/帳號刪除串接指南.md §5）
+  bool get isAccountPendingDeletion =>
+      statusCode == 403 && code == 'ACCOUNT_PENDING_DELETION';
+  bool get isAccountPurged => statusCode == 410;
+  bool get isAccountLocked => code == 'ACCOUNT_LOCKED';
+  bool get isUserUnavailable => code == 'USER_UNAVAILABLE';
   bool get isSessionNotFound => code == 'SESSION_NOT_FOUND';
   bool get isSessionNotCompleted => code == 'SESSION_NOT_COMPLETED';
   bool get isSessionAlreadyCompleted => code == 'SESSION_ALREADY_COMPLETED';
@@ -114,11 +127,7 @@ class ApiClient {
       method: 'GET',
       url: uri,
     );
-    if (resp.statusCode < 200 || resp.statusCode >= 300) {
-      final error = _parseError(resp);
-      if (error.isUnauthorized) _forceLogout();
-      throw error;
-    }
+    if (resp.statusCode < 200 || resp.statusCode >= 300) _throwError(resp);
     return resp.body;
   }
 
@@ -367,29 +376,42 @@ class ApiClient {
       json[key] as List<dynamic>? ?? (json['data'] as List<dynamic>? ?? []);
 
   static Map<String, dynamic> _handle(http.Response resp) {
-    if (resp.statusCode < 200 || resp.statusCode >= 300) {
-      final error = _parseError(resp);
-      if (error.isUnauthorized) {
-        _forceLogout();
-      } else if (error.isConsentRequired &&
-          resp.request?.url.path != '/api/terms' &&
-          resp.request?.url.path != '/api/terms/consent') {
-        _forceConsent();
-      }
-      throw error;
-    }
+    if (resp.statusCode < 200 || resp.statusCode >= 300) _throwError(resp);
     if (resp.body.isEmpty) return <String, dynamic>{};
     return jsonDecode(resp.body) as Map<String, dynamic>;
   }
 
+  /// 解析錯誤回應、依狀態碼觸發全域導頁，再丟出 [ApiException] 給呼叫端。
+  /// 帳號狀態閘（410／403 ACCOUNT_PENDING_DELETION）要先於 401 與同意條款判斷：
+  /// 刪除中帳號連同意條款都不需要，應直接導去重新啟用。
+  static Never _throwError(http.Response resp) {
+    final error = _parseError(resp);
+    final path = resp.request?.url.path ?? '';
+    if (error.isAccountPurged) {
+      _forceLogout(message: '帳號已永久刪除');
+    } else if (error.isAccountPendingDeletion &&
+        !path.startsWith('/api/account')) {
+      _forceReactivate();
+    } else if (error.isUnauthorized) {
+      _forceLogout();
+    } else if (error.isConsentRequired &&
+        path != '/api/terms' &&
+        path != '/api/terms/consent') {
+      _forceConsent();
+    }
+    throw error;
+  }
+
   static bool _loggingOut = false;
 
-  /// JWT 失效（401）時清 token 並導回登入畫面。
+  /// JWT 失效（401）或帳號已永久刪除（410）時清 token 並導回登入畫面。
+  /// 一併清使用者快取，避免下一位登入者看到前一個帳號的資料。
   /// 用 _loggingOut 防止同時多個請求 401 時重複觸發。
-  static void _forceLogout() {
+  static void _forceLogout({String message = '登入已過期，請重新登入'}) {
     if (_loggingOut) return;
     _loggingOut = true;
-    AuthService.signOut().whenComplete(() {
+    // token 已失效，註銷 FCM 會再次失敗，直接略過。
+    SessionService.signOut(unregisterDevice: false).whenComplete(() {
       _loggingOut = false;
       final nav = navigatorKey.currentState;
       if (nav != null) {
@@ -397,8 +419,22 @@ class ApiClient {
       }
       scaffoldMessengerKey.currentState
         ?..clearSnackBars()
-        ..showSnackBar(const SnackBar(content: Text('登入已過期，請重新登入')));
+        ..showSnackBar(SnackBar(content: Text(message)));
     });
+  }
+
+  static bool _showingReactivate = false;
+
+  /// ACCOUNT_PENDING_DELETION（403）時導去「帳號刪除中」畫面，清掉整個 stack，
+  /// 因為其他畫面的 API 都會被擋。用 _showingReactivate 防止重複觸發。
+  static void _forceReactivate() {
+    if (_showingReactivate) return;
+    final nav = navigatorKey.currentState;
+    if (nav == null) return;
+    _showingReactivate = true;
+    nav
+        .pushNamedAndRemoveUntil('/account-pending', (route) => false)
+        .whenComplete(() => _showingReactivate = false);
   }
 
   static bool _showingConsent = false;
@@ -419,13 +455,17 @@ class ApiClient {
   }
 
   static ApiException _parseError(http.Response resp) {
-    // 全域速率限制（每 IP 每分鐘 200 次、上傳類 15 次）：訊息統一換成固定文案，
+    // 全域速率限制：訊息統一換成固定文案，並帶上後端建議的等待秒數。
     // 不做自動重試——429 當下立刻重打只會讓限流更嚴重，交給使用者自己重試。
     if (resp.statusCode == 429) {
+      final seconds = _parseRetryAfter(resp);
       return ApiException(
         statusCode: 429,
         code: 'RATE_LIMITED',
-        message: '操作太頻繁，請稍後再試',
+        message: seconds != null
+            ? '操作太頻繁，請 $seconds 秒後再試'
+            : '操作太頻繁，請稍後再試',
+        retryAfter: seconds,
       );
     }
     try {
@@ -451,5 +491,18 @@ class ApiClient {
         message: resp.statusCode == 401 ? '請先登入' : '發生未知錯誤',
       );
     }
+  }
+
+  /// 429 的等待秒數：優先讀 body 的 `retry_after`，沒有再讀 `Retry-After` header。
+  static int? _parseRetryAfter(http.Response resp) {
+    try {
+      final j = jsonDecode(resp.body);
+      final v = j is Map ? j['retry_after'] : null;
+      if (v is num && v > 0) return v.ceil();
+    } catch (_) {
+      // body 非 JSON，改看 header。
+    }
+    final header = int.tryParse(resp.headers['retry-after'] ?? '');
+    return header != null && header > 0 ? header : null;
   }
 }
