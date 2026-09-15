@@ -10,6 +10,7 @@ import '../../models/video_models.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
 import '../../shared/widgets/engagement_icon_button.dart';
+import '../../shared/widgets/hls_web_player/hls_web_player.dart';
 
 class VideoDetailScreen extends StatefulWidget {
   final int videoId;
@@ -24,6 +25,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
   VideoDetail? _video;
   Object? _error;
   BetterPlayerController? _playerController;
+  bool _webPlayerFailed = false;
   bool _likeBusy = false;
   bool _bookmarkBusy = false;
 
@@ -230,6 +232,21 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     );
   }
 
+  /// 手機走 better_player_plus；Web 走 `<video>` + hls.js，播放失敗再退回外開連結；
+  /// 其餘平台（桌面）直接顯示外開連結。
+  Widget _buildPlayer(VideoDetail video, bool seniorMode) {
+    if (_playerController != null) {
+      return BetterPlayer(controller: _playerController!);
+    }
+    if (PlatformFeatures.supportsWebHlsPlayer && !_webPlayerFailed) {
+      return HlsWebPlayer(
+        url: video.hlsUrl,
+        onError: () => setState(() => _webPlayerFailed = true),
+      );
+    }
+    return _buildExternalPlayerFallback(video, seniorMode);
+  }
+
   Widget _buildContent(VideoDetail video, bool seniorMode) {
     return SingleChildScrollView(
       child: Column(
@@ -237,9 +254,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
         children: [
           AspectRatio(
             aspectRatio: 16 / 9,
-            child: _playerController != null
-                ? BetterPlayer(controller: _playerController!)
-                : _buildExternalPlayerFallback(video, seniorMode),
+            child: _buildPlayer(video, seniorMode),
           ),
           Padding(
             padding: EdgeInsets.all(seniorMode ? AppSpacing.lg : 20),

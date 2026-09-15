@@ -23,6 +23,9 @@ class PlatformFeatures {
   /// better_player_plus HLS 播放器。
   static bool get supportsHlsPlayer => isMobile;
 
+  /// Web 版以 `<video>` + hls.js（web/vendor/hls.min.js）內嵌播放 HLS。
+  static bool get supportsWebHlsPlayer => kIsWeb;
+
   /// 有本機檔案系統可寫暫存檔（Web 沒有，改傳 bytes）。
   static bool get hasFileSystem => !kIsWeb;
 

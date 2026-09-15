@@ -85,6 +85,11 @@ class FcmService {
   /// CALL_NOT_RINGING 並顯示錯誤。
   static void Function(IncomingCall call)? onFriendCallIncoming;
 
+  /// 前景收到 friend_call_cancelled（撥出方在接通前取消）時觸發。由
+  /// IncomingCallScreen 在 initState/dispose 掛上/清空——收到後應重新查詢
+  /// 來電狀態，不要直接用 payload 判斷。
+  static void Function(int callId)? onFriendCallCancelled;
+
   /// App 被完全關閉、靠點擊通知冷啟動時拿到的訊息。此時 runApp() 尚未執行，
   /// navigatorKey 還沒掛上 Navigator，不能立即導頁，先暫存；等 SplashScreen
   /// 完成起始路由跳轉後再呼叫 [consumePendingInitialMessage] 處理，
@@ -260,6 +265,12 @@ class FcmService {
           if (call != null) onFriendCallIncoming?.call(call);
         }),
       );
+      return;
+    }
+
+    if (message.data['type'] == 'friend_call_cancelled') {
+      final cancelledId = int.tryParse(message.data['call_id']?.toString() ?? '');
+      if (cancelledId != null) onFriendCallCancelled?.call(cancelledId);
       return;
     }
 
