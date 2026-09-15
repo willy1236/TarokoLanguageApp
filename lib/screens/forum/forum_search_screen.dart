@@ -12,7 +12,9 @@ import '../../models/forum_models.dart';
 import '../../models/tribe_model.dart';
 import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../services/search_assist_service.dart';
 import '../../shared/widgets/module_search_bar.dart';
+import '../../shared/widgets/search_suggestions.dart';
 import 'forum_board_view.dart';
 import 'forum_detail_screen.dart';
 
@@ -122,15 +124,15 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
               ),
             ),
           if (query == null && _hint == null)
-            Padding(
-              padding: const EdgeInsets.all(40),
-              child: Text(
-                '輸入關鍵字開始搜尋',
-                style: AppTypography.serif(
-                  color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
-                ),
-              ),
+            SearchSuggestions(
+              module: SearchModule.forum,
+              palette: SearchBarPalette.light,
+              seniorMode: seniorMode,
+              placeholder: '輸入關鍵字開始搜尋',
+              onSelected: (q) {
+                _controller.text = q;
+                _submit();
+              },
             ),
           if (query != null)
             Expanded(

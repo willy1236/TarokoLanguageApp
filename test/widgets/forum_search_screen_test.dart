@@ -22,9 +22,22 @@ void main() {
 
   tearDown(() => ApiClient.httpClient = http.Client());
 
+  // 搜尋頁一開就會打搜尋歷史／熱門關鍵字，測試時回空清單。
+  http.Response? suggestions(http.Request req) {
+    if (req.url.path == '/api/search/history') {
+      return http.Response(jsonEncode({'history': []}), 200);
+    }
+    if (req.url.path == '/api/search/popular') {
+      return http.Response(jsonEncode({'popular': []}), 200);
+    }
+    return null;
+  }
+
   testWidgets('關鍵字去除空白後為空時不送出請求', (tester) async {
     var calls = 0;
-    ApiClient.httpClient = MockClient((_) async {
+    ApiClient.httpClient = MockClient((req) async {
+      final s = suggestions(req);
+      if (s != null) return s;
       calls++;
       return http.Response(jsonEncode({'posts': [], 'next_cursor': null}), 200);
     });
@@ -38,8 +51,43 @@ void main() {
     expect(find.text('請輸入 1-80 字的關鍵字'), findsOneWidget);
   });
 
+  testWidgets('點最近搜尋關鍵字直接搜尋', (tester) async {
+    String? searchedQ;
+    ApiClient.httpClient = MockClient((req) async {
+      if (req.url.path == '/api/search/history') {
+        expect(req.url.queryParameters['module'], 'forum');
+        return http.Response(
+          jsonEncode({
+            'history': [
+              {'q': 'lokah', 'module': 'forum', 'created_at': '2026-09-15T00:00:00Z'},
+            ],
+          }),
+          200,
+        );
+      }
+      if (req.url.path == '/api/search/popular') {
+        return http.Response(jsonEncode({'popular': []}), 200);
+      }
+      if (req.url.path == '/api/forum/search') {
+        searchedQ = req.url.queryParameters['q'];
+      }
+      return http.Response(jsonEncode({'posts': [], 'next_cursor': null}), 200);
+    });
+
+    await tester.pumpWidget(const MaterialApp(home: ForumSearchScreen()));
+    await tester.pumpAndSettle();
+    expect(find.text('最近搜尋'), findsOneWidget);
+
+    await tester.tap(find.text('lokah'));
+    await tester.pumpAndSettle();
+
+    expect(searchedQ, 'lokah');
+  });
+
   testWidgets('送出搜尋後顯示結果', (tester) async {
     ApiClient.httpClient = MockClient((req) async {
+      final s = suggestions(req);
+      if (s != null) return s;
       expect(req.url.queryParameters['q'], '族語');
       return http.Response(
         jsonEncode({

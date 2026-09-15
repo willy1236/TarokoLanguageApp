@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_typography.dart';
 import 'firebase_options.dart';
+import 'screens/account/account_pending_screen.dart';
 import 'screens/auth/complete_profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/backpack/backpack_screen.dart';
@@ -24,7 +25,9 @@ import 'core/network/api_client.dart';
 import 'models/shop_item.dart';
 import 'models/user_model.dart';
 import 'services/checkin_service.dart';
+import 'services/app_badge.dart';
 import 'services/fcm_service.dart';
+import 'services/notification_summary_service.dart';
 import 'services/senior_mode_controller.dart';
 import 'services/shop_service.dart';
 import 'services/user_service.dart';
@@ -180,6 +183,9 @@ class KariTrukuApp extends StatelessWidget {
         '/login': (_) => const LoginScreen(),
         '/complete-profile': (_) => const CompleteProfileScreen(),
         '/terms-consent': (_) => const TermsConsentScreen(),
+        '/account-pending': (context) => AccountPendingScreen(
+          purgeAt: ModalRoute.of(context)?.settings.arguments as DateTime?,
+        ),
         '/home': (_) => const MainContainer(),
         '/shop': (_) => const ShopScreen(),
         '/backpack': (_) => const BackpackScreen(),
@@ -197,10 +203,12 @@ class MainContainer extends StatefulWidget {
   State<MainContainer> createState() => _MainContainerState();
 }
 
-class _MainContainerState extends State<MainContainer> {
+class _MainContainerState extends State<MainContainer>
+    with WidgetsBindingObserver {
   // 分頁 index 需與 IndexedStack、TrukuBottomTab._keys、home_screen 的 _modeTabIndex 一致。
   static const int _learnCultureIndex = 1;
   static const int _plazaEventIndex = 2;
+  static const int _friendsIndex = 3;
   static const int _profileVideoIndex = 4;
 
   int _currentIndex = 0;
@@ -225,15 +233,33 @@ class _MainContainerState extends State<MainContainer> {
     _fetchUserSummary();
     _loadItemCatalog();
     _loadCheckinStatus();
+    NotificationSummaryService.refresh();
+    AppBadge.clear();
+    WidgetsBinding.instance.addObserver(this);
     seniorModeController.addListener(_onSeniorModeChanged);
     UserService.userNotifier.addListener(_onUserChanged);
+    NotificationSummaryService.notifier.addListener(_onSummaryChanged);
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     seniorModeController.removeListener(_onSeniorModeChanged);
     UserService.userNotifier.removeListener(_onUserChanged);
+    NotificationSummaryService.notifier.removeListener(_onSummaryChanged);
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed) return;
+    NotificationSummaryService.refresh();
+    // 推播會把未讀總數設成 App 圖示紅點（iOS aps.badge），回前景時要自己歸零。
+    AppBadge.clear();
+  }
+
+  void _onSummaryChanged() {
+    if (mounted) setState(() {});
   }
 
   static int _defaultLearnCultureSubTab(bool seniorMode) => seniorMode ? 1 : 0;
@@ -449,6 +475,10 @@ class _MainContainerState extends State<MainContainer> {
               currentIndex: _currentIndex,
               onTap: _navigate,
               seniorMode: seniorMode,
+              badges: {
+                _plazaEventIndex: NotificationSummaryService.notifier.value.plaza,
+                _friendsIndex: NotificationSummaryService.notifier.value.friends,
+              },
             ),
           ),
         );

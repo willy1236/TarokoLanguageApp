@@ -16,7 +16,9 @@ class UserModel {
   final List<String> ownedAvatarIds;
   final List<String> ownedFrameIds;
   final int millet; // 小米幣餘額
-  final String email;
+  final String email; // 通知信箱；Apple 帳號預設無 email，後端回 null 時為空字串
+  final bool emailVerified; // 通知信箱是否已驗證（Google 登入信箱視為已驗證）
+  final bool emailIsCustom; // 使用者自訂過通知信箱（不再隨 Google 登入信箱同步）
   final DateTime createdAt;
   final bool checkedInToday; // 今天（台灣時間）是否已簽到，見 每日簽到.md
   final int checkinStreak; // 目前連續簽到天數，由後端即時計算
@@ -46,6 +48,8 @@ class UserModel {
     this.ownedFrameIds = const [],
     this.millet = 0,
     required this.email,
+    this.emailVerified = false,
+    this.emailIsCustom = false,
     required this.createdAt,
     this.checkedInToday = false,
     this.checkinStreak = 0,
@@ -80,7 +84,9 @@ class UserModel {
           .map((e) => e.toString())
           .toList(),
       millet: json['millet'] as int? ?? 0,
-      email: json['email'] as String,
+      email: json['email'] as String? ?? '',
+      emailVerified: json['email_verified'] as bool? ?? false,
+      emailIsCustom: json['email_is_custom'] as bool? ?? false,
       createdAt: DateTime.parse(json['created_at'] as String),
       checkedInToday: json['checked_in_today'] as bool? ?? false,
       checkinStreak: json['checkin_streak'] as int? ?? 0,
@@ -112,6 +118,8 @@ class UserModel {
         'owned_frame_ids': ownedFrameIds,
         'millet': millet,
         'email': email,
+        'email_verified': emailVerified,
+        'email_is_custom': emailIsCustom,
         'created_at': createdAt.toIso8601String(),
         'checked_in_today': checkedInToday,
         'checkin_streak': checkinStreak,
@@ -146,6 +154,8 @@ class UserModel {
     List<String>? ownedFrameIds,
     int? millet,
     String? email,
+    bool? emailVerified,
+    bool? emailIsCustom,
     DateTime? createdAt,
     bool? checkedInToday,
     int? checkinStreak,
@@ -175,6 +185,8 @@ class UserModel {
       ownedFrameIds: ownedFrameIds ?? this.ownedFrameIds,
       millet: millet ?? this.millet,
       email: email ?? this.email,
+      emailVerified: emailVerified ?? this.emailVerified,
+      emailIsCustom: emailIsCustom ?? this.emailIsCustom,
       createdAt: createdAt ?? this.createdAt,
       checkedInToday: checkedInToday ?? this.checkedInToday,
       checkinStreak: checkinStreak ?? this.checkinStreak,

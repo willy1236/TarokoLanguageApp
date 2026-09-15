@@ -6,6 +6,7 @@ import '../core/network/api_client.dart';
 import '../models/friend_message_model.dart';
 import '../models/friend_model.dart';
 import '../models/public_profile_model.dart';
+import 'notification_summary_service.dart';
 
 class ChatMessagePage {
   final List<FriendMessage> messages;
@@ -39,10 +40,12 @@ class FriendService {
 
   static Future<void> acceptRequest(int uid) async {
     await ApiClient.post(ApiConfig.friendRequestAccept(uid));
+    NotificationSummaryService.refresh();
   }
 
   static Future<void> declineRequest(int uid) async {
     await ApiClient.post(ApiConfig.friendRequestDecline(uid));
+    NotificationSummaryService.refresh();
   }
 
   static Future<List<Friendship>> getFriends() async {
@@ -109,7 +112,9 @@ class FriendService {
 
   static Future<int> markRead(int uid) async {
     final data = await ApiClient.post(ApiConfig.friendMessagesRead(uid));
-    return (data['marked'] as num?)?.toInt() ?? 0;
+    final marked = (data['marked'] as num?)?.toInt() ?? 0;
+    if (marked > 0) NotificationSummaryService.refresh();
+    return marked;
   }
 
   static Future<void> reportMessage(int id, String reason) async {

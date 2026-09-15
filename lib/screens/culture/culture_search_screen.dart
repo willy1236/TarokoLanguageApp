@@ -8,7 +8,9 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/tribe_model.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../services/search_assist_service.dart';
 import '../../shared/widgets/module_search_bar.dart';
+import '../../shared/widgets/search_suggestions.dart';
 
 /// 一頁搜尋結果：本頁項目與符合條件的總筆數。
 typedef CultureSearchPage<T> = ({List<T> items, int total});
@@ -24,12 +26,15 @@ typedef CultureSearchFetch<T> =
 class CultureSearchScreen<T> extends StatefulWidget {
   const CultureSearchScreen({
     super.key,
+    required this.module,
     required this.hint,
     required this.emptyText,
     required this.fetch,
     required this.itemBuilder,
   });
 
+  /// 搜尋歷史／熱門關鍵字要取哪個模組的。
+  final SearchModule module;
   final String hint;
   final String emptyText;
   final CultureSearchFetch<T> fetch;
@@ -163,15 +168,15 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
               ),
             ),
           if (!_searched && _error == null)
-            Padding(
-              padding: const EdgeInsets.all(40),
-              child: Text(
-                '輸入關鍵字或選擇篩選條件開始搜尋',
-                style: AppTypography.serif(
-                  color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
-                ),
-              ),
+            SearchSuggestions(
+              module: widget.module,
+              palette: SearchBarPalette.dark,
+              seniorMode: seniorMode,
+              placeholder: '輸入關鍵字或選擇篩選條件開始搜尋',
+              onSelected: (q) {
+                _controller.text = q;
+                _search();
+              },
             ),
           if (_searched) Expanded(child: _resultList(seniorMode)),
         ],

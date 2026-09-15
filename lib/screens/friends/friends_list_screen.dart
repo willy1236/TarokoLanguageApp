@@ -11,6 +11,7 @@ import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/friend_service.dart';
+import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
@@ -57,7 +58,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   void _onChatEvent() {
     final event = chatController.lastEvent;
     if (event == null) return;
-    if (event.type == ChatSocketEventType.message) _loadConversations();
+    if (event.type == ChatSocketEventType.message) {
+      _loadConversations();
+      NotificationSummaryService.refresh();
+    }
   }
 
   Future<void> _loadConversations() async {
@@ -249,10 +253,18 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
           ),
         ),
-        IconButton(
-          onPressed: _openRequests,
-          icon: const Icon(Icons.mail_outline, color: AppColors.primary),
-          tooltip: '好友邀請',
+        ValueListenableBuilder<NotificationSummary>(
+          valueListenable: NotificationSummaryService.notifier,
+          builder: (context, summary, _) => IconButton(
+            onPressed: _openRequests,
+            icon: Badge(
+              isLabelVisible: summary.friendRequests > 0,
+              label: Text(badgeLabel(summary.friendRequests)),
+              backgroundColor: AppColors.primary,
+              child: const Icon(Icons.mail_outline, color: AppColors.primary),
+            ),
+            tooltip: '好友邀請',
+          ),
         ),
         IconButton(
           onPressed: _openBlockedUsers,
@@ -294,6 +306,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   }
 
   Widget _friendCard(Friendship f, bool seniorMode) {
+    if (f.unavailable) return _unavailableFriendCard(f, seniorMode);
     final conversation = _conversationsByUid[f.uid];
     return GestureDetector(
       onTap: () => _openFriendProfile(f),
@@ -358,6 +371,44 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               tooltip: '傳訊息',
             ),
             const Icon(Icons.chevron_right, color: AppColors.fog, size: 18),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 帳號刪除中／已刪除的好友：灰階顯示、不能開檔案／傳訊／切換羈絆展示，
+  /// 保留在列表避免使用者誤會被刪好友（後端決策 #17）。
+  Widget _unavailableFriendCard(Friendship f, bool seniorMode) {
+    return Opacity(
+      opacity: 0.55,
+      child: Container(
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(
+          color: AppColors.cream,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppColors.creamDeep),
+        ),
+        child: Row(
+          children: [
+            _avatar(f, seniorMode),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    f.nickname?.isNotEmpty == true ? f.nickname! : '暫時無法使用',
+                    style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.fog),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '對方帳號目前無法使用',
+                    style: AppTypography.bodyStyle(seniorMode: seniorMode, color: AppColors.fog),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

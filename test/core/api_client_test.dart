@@ -1,10 +1,12 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
+import 'package:flutter_application_1/main.dart' show navigatorKey;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -112,5 +114,125 @@ void main() {
     expect(bodyText, contains('name="avatar"'));
     expect(bodyText, contains('filename="a.png"'));
     expect(bodyText, contains('image/png'));
+  });
+
+  group('429 retry_after', () {
+    test('優先讀 body 的 retry_after', () async {
+      ApiClient.httpClient = MockClient(
+        (_) async => http.Response(
+          jsonEncode({
+            'error': {'code': 'RATE_LIMITED', 'message': 'x'},
+            'retry_after': 42,
+          }),
+          429,
+          headers: {'retry-after': '7'},
+        ),
+      );
+
+      expect(
+        () => ApiClient.post('/api/me/email', {'email': 'a@b.c'}),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.retryAfter, 'retryAfter', 42)
+              .having((e) => e.message, 'message', contains('42 秒')),
+        ),
+      );
+    });
+
+    test('body 沒有時改讀 Retry-After header', () async {
+      ApiClient.httpClient = MockClient(
+        (_) async => http.Response('Too Many', 429, headers: {'retry-after': '7'}),
+      );
+
+      expect(
+        () => ApiClient.get('/api/ping'),
+        throwsA(isA<ApiException>().having((e) => e.retryAfter, 'retryAfter', 7)),
+      );
+    });
+
+    test('都沒有時 retryAfter 為 null、沿用固定文案', () async {
+      ApiClient.httpClient = MockClient((_) async => http.Response('', 429));
+
+      expect(
+        () => ApiClient.get('/api/ping'),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.retryAfter, 'retryAfter', isNull)
+              .having((e) => e.message, 'message', '操作太頻繁，請稍後再試'),
+        ),
+      );
+    });
+  });
+
+  test('410 ACCOUNT_PURGED 解析為 isAccountPurged', () {
+    final e = ApiException(statusCode: 410, code: 'ACCOUNT_PURGED', message: '');
+    expect(e.isAccountPurged, isTrue);
+    expect(e.isUnauthorized, isFalse);
+  });
+
+  testWidgets('403 ACCOUNT_PENDING_DELETION 導去 /account-pending', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigatorKey,
+        routes: {
+          '/': (_) => const Text('home'),
+          '/account-pending': (_) => const Text('pending'),
+          '/terms-consent': (_) => const Text('consent'),
+        },
+      ),
+    );
+    ApiClient.httpClient = MockClient(
+      (_) async => http.Response(
+        jsonEncode({
+          'error': {'code': 'ACCOUNT_PENDING_DELETION', 'message': 'x'},
+        }),
+        403,
+      ),
+    );
+
+    await tester.runAsync(() async {
+      await expectLater(
+        ApiClient.get('/api/me'),
+        throwsA(isA<ApiException>().having(
+          (e) => e.isAccountPendingDeletion,
+          'isAccountPendingDeletion',
+          isTrue,
+        )),
+      );
+    });
+    await tester.pumpAndSettle();
+
+    expect(find.text('pending'), findsOneWidget);
+    expect(find.text('home'), findsNothing);
+  });
+
+  testWidgets('/api/account/* 的 403 PENDING 不重複導頁', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigatorKey,
+        routes: {
+          '/': (_) => const Text('home'),
+          '/account-pending': (_) => const Text('pending'),
+        },
+      ),
+    );
+    ApiClient.httpClient = MockClient(
+      (_) async => http.Response(
+        jsonEncode({
+          'error': {'code': 'ACCOUNT_PENDING_DELETION', 'message': 'x'},
+        }),
+        403,
+      ),
+    );
+
+    await tester.runAsync(() async {
+      await expectLater(
+        ApiClient.get('/api/account/export'),
+        throwsA(isA<ApiException>()),
+      );
+    });
+    await tester.pumpAndSettle();
+
+    expect(find.text('home'), findsOneWidget);
   });
 }

@@ -164,6 +164,7 @@ Widget profileSettingRow(
   bool copyable = false,
   VoidCallback? onTap,
   bool seniorMode = false,
+  Widget? badge,
 }) {
   return Column(
     children: [
@@ -186,20 +187,25 @@ Widget profileSettingRow(
                     ),
                   ),
                   const SizedBox(height: 2),
-                  Text(
-                    value,
-                    style:
-                        (truku
-                                ? AppTypography.latin(
-                                    fontStyle: FontStyle.italic,
-                                  )
-                                : AppTypography.serif())
-                            .copyWith(
-                              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.ink,
-                              letterSpacing: 0.5,
-                            ),
+                  Row(
+                    children: [
+                      Text(
+                        value,
+                        style:
+                            (truku
+                                    ? AppTypography.latin(
+                                        fontStyle: FontStyle.italic,
+                                      )
+                                    : AppTypography.serif())
+                                .copyWith(
+                                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.ink,
+                                  letterSpacing: 0.5,
+                                ),
+                      ),
+                      if (badge != null) ...[const SizedBox(width: 8), badge],
+                    ],
                   ),
                 ],
               ),

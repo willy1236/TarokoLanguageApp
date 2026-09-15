@@ -36,6 +36,18 @@ class UserService {
     return user;
   }
 
+  /// 設定／變更通知信箱並寄出 6 碼驗證碼。後端為防列舉一律回 200，
+  /// 所以成功不代表信箱存在。限流每 IP 每分鐘 5 次，不可自動重試。
+  static Future<void> requestEmailVerification(String email) =>
+      ApiClient.post(ApiConfig.meEmail, {'email': email.trim()});
+
+  /// 輸入 6 碼完成驗證，成功後刷新快取讓 email_verified 立即反映到各畫面。
+  /// 失敗碼：CODE_INVALID／CODE_EXPIRED（10 分鐘）／CODE_ATTEMPTS_EXCEEDED（5 次）。
+  static Future<UserModel> verifyEmail(String code) async {
+    await ApiClient.post(ApiConfig.meEmailVerify, {'code': code.trim()});
+    return fetchMe(forceRefresh: true);
+  }
+
   static void clearCache() {
     _sessionGen++;
     _setCached(null);

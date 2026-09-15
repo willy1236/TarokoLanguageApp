@@ -1,14 +1,10 @@
-import 'dart:convert';
-import 'dart:io';
 import '../../shared/widgets/async_state_view.dart';
 
 import 'package:flutter/material.dart';
-import 'package:path_provider/path_provider.dart';
-import 'package:share_plus/share_plus.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
-import '../../core/platform/platform_features.dart';
 import '../../models/event_model.dart';
+import '../../shared/share_text_file.dart';
 import '../../services/event_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -299,44 +295,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     if (event == null) return;
     await _guarded(failurePrefix: '匯出失敗', () async {
       final csv = await EventService.exportRoster(widget.eventId);
-      final subject = '${event.title} 報名名單';
-      if (!PlatformFeatures.hasFileSystem) {
-        // Web 無暫存目錄：直接用記憶體內容分享（瀏覽器不支援 Web Share 時會下載）。
-        if (!mounted) return;
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [
-              XFile.fromData(
-                utf8.encode(csv),
-                name: 'event_${event.id}_roster.csv',
-                mimeType: 'text/csv',
-              ),
-            ],
-            subject: subject,
-          ),
-        );
-        return;
-      }
-      final dir = await getTemporaryDirectory();
-      final file = File('${dir.path}/event_${event.id}_roster.csv');
-      try {
-        await file.writeAsString(csv, flush: true);
-        if (!mounted) return;
-        await SharePlus.instance.share(
-          ShareParams(
-            files: [XFile(file.path, mimeType: 'text/csv')],
-            subject: subject,
-          ),
-        );
-      } finally {
-        // 名單含參加者姓名與 email，分享完就刪掉，不留在暫存目錄等 OS 回收。
-        // share 已回傳代表系統分享流程結束（接收端已取走內容）。
-        try {
-          await file.delete();
-        } catch (e) {
-          debugPrint('EventDetailScreen: 刪除名單暫存檔失敗（忽略）：$e');
-        }
-      }
+      if (!mounted) return;
+      // 名單含參加者姓名與 email，shareTextFile 分享完即刪暫存檔。
+      await shareTextFile(
+        content: csv,
+        filename: 'event_${event.id}_roster.csv',
+        mimeType: 'text/csv',
+        subject: '${event.title} 報名名單',
+      );
     });
   }
 

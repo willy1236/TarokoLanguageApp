@@ -152,7 +152,13 @@ class ForumPostCard extends StatelessWidget {
 
   void _openAuthorProfile(BuildContext context) {
     final friendCode = post.author.friendCode;
-    if (friendCode == null || friendCode.isEmpty) return;
+    if (friendCode == null || friendCode.isEmpty) {
+      // 作者帳號刪除中／已刪除時後端不給好友碼（顯示為「已刪除用戶」），沒有公開檔案可看。
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(const SnackBar(content: Text('無法查看此使用者的個人檔案')));
+      return;
+    }
     Navigator.push(
       context,
       MaterialPageRoute(

@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
+import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import 'event_bookmarks_screen.dart';
@@ -37,7 +38,7 @@ class _EventsScreenState extends State<EventsScreen> {
   bool _loading = true;
   Object? _error;
   List<EventSummary> _events = [];
-  int _unread = 0;
+  int get _unread => NotificationSummaryService.notifier.value.events;
 
   // 是否可發起活動（organizer/admin），初始 false 保守擋下，取得身分後才放行。
   bool _canCreateEvent = false;
@@ -45,9 +46,19 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   void initState() {
     super.initState();
+    NotificationSummaryService.notifier.addListener(_onSummaryChanged);
     _load();
-    _loadUnread();
     _loadRole();
+  }
+
+  @override
+  void dispose() {
+    NotificationSummaryService.notifier.removeListener(_onSummaryChanged);
+    super.dispose();
+  }
+
+  void _onSummaryChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _loadRole() async {
@@ -78,16 +89,6 @@ class _EventsScreenState extends State<EventsScreen> {
         _error = e;
         _loading = false;
       });
-    }
-  }
-
-  Future<void> _loadUnread() async {
-    try {
-      final page = await EventService.notifications();
-      if (!mounted) return;
-      setState(() => _unread = page.unreadCount);
-    } catch (_) {
-      // 紅點拿不到就不顯示，不干擾主要內容。
     }
   }
 
@@ -287,7 +288,7 @@ class _EventsScreenState extends State<EventsScreen> {
         context,
         MaterialPageRoute(builder: (_) => const EventNotificationsScreen()),
       );
-      if (mounted) _loadUnread();
+      NotificationSummaryService.refresh();
     },
     hasUnread: _unread > 0,
     seniorMode: seniorMode,

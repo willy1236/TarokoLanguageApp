@@ -5,6 +5,7 @@ import '../../models/event_model.dart';
 import '../../models/forum_models.dart';
 import '../../services/event_service.dart';
 import '../../services/forum_service.dart';
+import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../forum/forum_board_view.dart';
 import '../forum/forum_bookmarks_screen.dart';
@@ -48,35 +49,40 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
 
   /// 發文畫面開啟中：擋住連點疊出第二個 ForumComposeScreen。
   bool _composing = false;
-  int _unread = 0;
+  int get _unread => NotificationSummaryService.notifier.value.forum;
   final _boardViewKey = GlobalKey<ForumBoardViewState>();
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    NotificationSummaryService.notifier.addListener(_onSummaryChanged);
     _loadEvents();
     _loadBoards();
-    _loadUnread();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    NotificationSummaryService.notifier.removeListener(_onSummaryChanged);
     super.dispose();
+  }
+
+  void _onSummaryChanged() {
+    if (mounted) setState(() {});
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
-    // 只重載頁首那兩塊。貼文列表不動，否則使用者切出去再回來會失去捲動位置。
+    // 只重載頁首活動。貼文列表不動，否則使用者切出去再回來會失去捲動位置。
+    // 未讀紅點由 MainContainer 在回前景時統一刷新。
     _loadEvents();
-    _loadUnread();
   }
 
   /// 下拉刷新時與貼文一起更新的頁首內容。
   Future<void> _refreshHeader() async {
-    await Future.wait([_loadEvents(), _loadUnread()]);
+    await Future.wait([_loadEvents(), NotificationSummaryService.refresh()]);
   }
 
   Future<void> _loadEvents() async {
@@ -125,19 +131,6 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       debugPrint('[PlazaScreen] _loadBoards error: $e');
       if (!mounted) return;
       setState(() => _boardsLoading = false);
-    }
-  }
-
-  Future<void> _loadUnread() async {
-    try {
-      final page = await ForumService.notifications();
-      if (!mounted) return;
-      setState(() => _unread = page.unreadCount);
-    } on ApiException catch (e) {
-      // 紅點拿不到就不顯示，不干擾主要內容。
-      debugPrint('[PlazaScreen] _loadUnread ApiException: ${e.message}');
-    } catch (e) {
-      debugPrint('[PlazaScreen] _loadUnread error: $e');
     }
   }
 
@@ -311,7 +304,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         context,
         MaterialPageRoute(builder: (_) => const ForumNotificationsScreen()),
       );
-      if (mounted) _loadUnread();
+      NotificationSummaryService.refresh();
     },
     hasUnread: _unread > 0,
     seniorMode: seniorMode,
