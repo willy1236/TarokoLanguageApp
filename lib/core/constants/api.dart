@@ -10,6 +10,21 @@ class ApiConfig {
   static const String completeProfile = '/api/me/complete-profile';
   static const String logoutAll = '/api/auth/logout-all';
 
+  // 通知信箱驗證（見 Truku_backend 說明文件/前端交接/帳號刪除串接指南.md §7）
+  static const String meEmail = '/api/me/email';
+  static const String meEmailVerify = '/api/me/email/verify';
+
+  // 帳號刪除／復原／匯出（見 Truku_backend backend/routes/account.ts）
+  static const String account = '/api/account';
+  static const String accountReactivate = '/api/account/reactivate';
+  static const String accountStatus = '/api/account/status';
+  static const String accountExport = '/api/account/export';
+
+  // 未讀徽章與搜尋輔助（見 Truku_backend 說明文件/前端交接/總覽.md §4.3）
+  static const String notificationsSummary = '/api/notifications/summary';
+  static const String searchHistory = '/api/search/history';
+  static const String searchPopular = '/api/search/popular';
+
   static const String levels = '/api/levels';
   static const String quizStart = '/api/quiz/start';
   static const String quizAnswer = '/api/quiz/answer';

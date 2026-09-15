@@ -26,9 +26,9 @@ class AuthService {
     return _googleSignInInit ??= _googleSignIn.initialize();
   }
 
-  /// 走 Google 登入完整流程，成功回 user JSON。
-  /// 失敗 throw [AuthException]。
-  static Future<Map<String, dynamic>> signInWithGoogle() async {
+  /// 走 Google 登入完整流程，成功回 [LoginResult]（刪除中帳號也算登入成功，
+  /// 由呼叫端依 [LoginResult.isPendingDeletion] 分流）。失敗 throw [AuthException]。
+  static Future<LoginResult> signInWithGoogle() async {
     // Web：google_sign_in 7 不支援 authenticate()，改由 Firebase 直接開 Google 彈窗。
     if (kIsWeb) {
       final UserCredential userCred;
@@ -60,9 +60,9 @@ class AuthService {
   }
 
   /// 靜默登入：重用裝置上先前已授權過本 app 的 Google 帳號，不叫出任何 UI。
-  /// 成功回 user JSON；無可用帳號或失敗回 `null`（不 throw），由呼叫端決定備援。
+  /// 成功回 [LoginResult]；無可用帳號或失敗回 `null`（不 throw），由呼叫端決定備援。
   /// 供整合測試自動登入使用；正式流程仍走 [signInWithGoogle]。
-  static Future<Map<String, dynamic>?> signInSilently() async {
+  static Future<LoginResult?> signInSilently() async {
     if (kIsWeb) return null;
     try {
       await _ensureGoogleSignInInitialized();
@@ -76,7 +76,7 @@ class AuthService {
   }
 
   /// 用 [GoogleSignInAccount] 換 Firebase user，再打後端換系統 JWT 並存入 storage。
-  static Future<Map<String, dynamic>> _exchangeAndStore(
+  static Future<LoginResult> _exchangeAndStore(
     GoogleSignInAccount googleUser,
   ) async {
     final googleAuth = googleUser.authentication;
@@ -90,7 +90,7 @@ class AuthService {
   }
 
   /// 拿 Firebase ID token 打後端換系統 JWT 並存入 storage。
-  static Future<Map<String, dynamic>> _loginWithFirebaseUser(User? user) async {
+  static Future<LoginResult> _loginWithFirebaseUser(User? user) async {
     final firebaseToken = await user?.getIdToken();
     if (firebaseToken == null) {
       throw AuthException('取得 Firebase token 失敗');
@@ -121,9 +121,10 @@ class AuthService {
     }
 
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
+    // 刪除中帳號也會拿到 token：重新啟用端點要用它呼叫（見帳號刪除串接指南 §4）。
     await _storage.write(key: _tokenKey, value: data['session_token']);
     await _storage.write(key: _expiresKey, value: data['expires_at']);
-    return data['user'] as Map<String, dynamic>;
+    return LoginResult.fromJson(data);
   }
 
   /// 完全登出（Firebase + Google + 清本機 token；不撤銷後端 JWT）
@@ -195,6 +196,26 @@ class AuthService {
       return '登入失敗';
     }
   }
+}
+
+/// `POST /api/auth/login` 的回應。active 帳號帶 `user`；非 active 帳號
+/// （刪除中／鎖定）改帶 `account_state`、`purge_at`，沒有 `user`。
+class LoginResult {
+  /// `active`／`pending_deletion`／`locked`。active 帳號的回應沒有此欄位。
+  final String accountState;
+  final DateTime? purgeAt;
+  final Map<String, dynamic>? user;
+
+  const LoginResult({required this.accountState, this.purgeAt, this.user});
+
+  bool get isActive => accountState == 'active';
+  bool get isPendingDeletion => accountState == 'pending_deletion';
+
+  factory LoginResult.fromJson(Map<String, dynamic> json) => LoginResult(
+    accountState: json['account_state'] as String? ?? 'active',
+    purgeAt: DateTime.tryParse(json['purge_at'] as String? ?? '')?.toLocal(),
+    user: json['user'] as Map<String, dynamic>?,
+  );
 }
 
 class AuthException implements Exception {

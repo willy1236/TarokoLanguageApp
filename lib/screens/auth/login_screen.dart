@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
+import '../../services/session_service.dart';
 import '../../services/terms_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
@@ -22,7 +23,26 @@ class _LoginScreenState extends State<LoginScreen> {
     if (_loggingIn) return;
     setState(() => _loggingIn = true);
     try {
-      await AuthService.signInWithGoogle();
+      final result = await AuthService.signInWithGoogle();
+      if (!mounted) return;
+      // 非 active 帳號的 token 打一般 API 都會被狀態閘擋下，不能照常進 App。
+      if (result.isPendingDeletion) {
+        Navigator.pushNamedAndRemoveUntil(
+          context,
+          '/account-pending',
+          (_) => false,
+          arguments: result.purgeAt,
+        );
+        return;
+      }
+      if (!result.isActive) {
+        await SessionService.signOut(unregisterDevice: false);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('此帳號目前無法使用，如有疑問請聯絡我們')),
+        );
+        return;
+      }
       // 登入成功才上傳 FCM token（需 JWT）。失敗不阻斷進首頁，故獨立 try/catch。
       try {
         await FcmService.registerDevice();

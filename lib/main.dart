@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_typography.dart';
 import 'firebase_options.dart';
+import 'screens/account/account_pending_screen.dart';
 import 'screens/auth/complete_profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/backpack/backpack_screen.dart';
@@ -180,6 +181,9 @@ class KariTrukuApp extends StatelessWidget {
         '/login': (_) => const LoginScreen(),
         '/complete-profile': (_) => const CompleteProfileScreen(),
         '/terms-consent': (_) => const TermsConsentScreen(),
+        '/account-pending': (context) => AccountPendingScreen(
+          purgeAt: ModalRoute.of(context)?.settings.arguments as DateTime?,
+        ),
         '/home': (_) => const MainContainer(),
         '/shop': (_) => const ShopScreen(),
         '/backpack': (_) => const BackpackScreen(),

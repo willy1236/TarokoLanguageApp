@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
 import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/terms_service.dart';
@@ -39,6 +40,10 @@ class _SplashScreenState extends State<SplashScreen> {
       try {
         final user = await UserService.fetchMe();
         profileCompleted = user.profileCompleted;
+      } on ApiException catch (e) {
+        // 刪除中／已刪除帳號：ApiClient 已導去重新啟用畫面或登入頁，這裡不可再導頁蓋掉。
+        if (e.isAccountPendingDeletion || e.isAccountPurged) return;
+        debugPrint('SplashScreen: fetchMe 失敗，略過完善資料檢查：$e');
       } catch (e) {
         debugPrint('SplashScreen: fetchMe 失敗，略過完善資料檢查：$e');
       }
