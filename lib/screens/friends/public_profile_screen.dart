@@ -220,6 +220,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     if (e.isAlreadyFriends) return '你們已經是好友';
     if (e.isRequestAlreadySent) return '已送出邀請，等待對方回覆';
     if (e.isBlocked) return '因封鎖關係，無法執行此操作';
+    if (e.isUserUnavailable) return '該使用者暫時無法使用';
     if (e.isNotFriends) return '你們還不是好友';
     if (e.code == 'NOT_BLOCKED') return '你沒有封鎖此使用者';
     return e.message;

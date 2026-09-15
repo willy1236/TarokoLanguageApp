@@ -84,6 +84,8 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             ? '已送出邀請，等待對方回覆'
             : e.isBlocked
             ? '因封鎖關係，無法送出邀請'
+            : e.isUserUnavailable
+            ? '該使用者暫時無法使用'
             : e.statusCode == 404
             ? '找不到此好友碼對應的使用者'
             : e.message;

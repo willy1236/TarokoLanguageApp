@@ -184,6 +184,10 @@ class _ChatScreenState extends State<ChatScreen> {
       _showMessage('因封鎖關係，無法傳送訊息');
       return;
     }
+    if (e.isUserUnavailable) {
+      _showMessage('該使用者暫時無法使用');
+      return;
+    }
     if (e.isProfanity) {
       _showMessage('訊息含不當字詞，請修改後再送出');
       return;

@@ -94,6 +94,10 @@ class Friendship extends FriendUser {
   final DateTime? acceptedAt;
   final Showcase showcase;
 
+  /// 對方帳號刪除中／已刪除：後端改回 nickname「暫時無法使用」、隱藏公開資訊，
+  /// 對其傳訊或通話會回 409 USER_UNAVAILABLE。好友關係保留，不從列表消失。
+  final bool unavailable;
+
   const Friendship({
     required super.uid,
     super.nickname,
@@ -106,6 +110,7 @@ class Friendship extends FriendUser {
     required this.bondLevel,
     this.acceptedAt,
     this.showcase = Showcase.none,
+    this.unavailable = false,
   });
 
   factory Friendship.fromJson(Map<String, dynamic> j) => Friendship(
@@ -126,6 +131,7 @@ class Friendship extends FriendUser {
     showcase: j['showcase'] is Map<String, dynamic>
         ? Showcase.fromJson(j['showcase'] as Map<String, dynamic>)
         : Showcase.none,
+    unavailable: j['unavailable'] as bool? ?? false,
   );
 
   Friendship copyWith({
@@ -151,6 +157,7 @@ class Friendship extends FriendUser {
     bondLevel: bondLevel ?? this.bondLevel,
     acceptedAt: acceptedAt ?? this.acceptedAt,
     showcase: showcase ?? this.showcase,
+    unavailable: unavailable,
   );
 }
 

@@ -141,6 +141,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
       if (e.isVideoNicknameRequired) return '請先在個人資料設定公開暱稱';
       if (e.isNotFriends) return '你們已不是好友';
       if (e.isBlocked) return '因封鎖關係，無法撥號';
+      if (e.isUserUnavailable) return '該使用者暫時無法使用';
       if (e.isMuted) return '你目前被禁言，暫時無法發起通話';
       if (e.isCalleeBusy) return '對方忙線中';
       if (e.isAlreadyInCall) return '你正在通話中';
