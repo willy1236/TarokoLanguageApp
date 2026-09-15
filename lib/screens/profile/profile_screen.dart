@@ -19,6 +19,7 @@ import '../../shared/share_text_file.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
 import '../account/account_delete_screen.dart';
 import 'about_app_screen.dart';
+import 'notification_email_screen.dart';
 import 'widgets/profile_hero.dart';
 import 'widgets/profile_logout_button.dart';
 import 'widgets/profile_rename_dialog.dart';
@@ -497,9 +498,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
         seniorMode: seniorMode,
       ),
       profileSettingRow(
-        '電子信箱',
-        _user?.email ?? 'apyang@truku.org',
-        editable: false,
+        '通知信箱',
+        (_user?.email.isNotEmpty ?? false) ? _user!.email : '尚未設定',
+        editable: _user != null && _user!.uid != 0,
+        onTap: _editNotificationEmail,
+        badge: (_user?.email.isNotEmpty ?? false)
+            ? EmailVerifiedBadge(verified: _user!.emailVerified)
+            : null,
         seniorMode: seniorMode,
       ),
     ], seniorMode: seniorMode);
@@ -605,6 +610,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
       debugPrintStack(stackTrace: st);
       _showError('更新失敗，請稍後再試');
     }
+  }
+
+  Future<void> _editNotificationEmail() async {
+    final user = _user;
+    if (user == null) return;
+    final updated = await Navigator.of(context).push<UserModel>(
+      MaterialPageRoute(builder: (_) => NotificationEmailScreen(user: user)),
+    );
+    if (updated != null && mounted) setState(() => _user = updated);
   }
 
   Future<void> _copyFriendCode() async {

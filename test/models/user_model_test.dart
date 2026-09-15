@@ -69,6 +69,31 @@ void main() {
       expect(user.ownedAvatarIds, <String>[]);
       expect(user.millet, 0);
     });
+
+    test('Apple 帳號 email 為 null 時不崩潰，驗證欄位預設 false', () {
+      final user = UserModel.fromJson({
+        'uid': 1,
+        'email': null,
+        'created_at': '2026-01-01T00:00:00.000Z',
+      });
+
+      expect(user.email, '');
+      expect(user.emailVerified, isFalse);
+      expect(user.emailIsCustom, isFalse);
+    });
+
+    test('解析 email_verified／email_is_custom', () {
+      final user = UserModel.fromJson({
+        'uid': 1,
+        'email': 'a@b.c',
+        'email_verified': true,
+        'email_is_custom': true,
+        'created_at': '2026-01-01T00:00:00.000Z',
+      });
+
+      expect(user.emailVerified, isTrue);
+      expect(user.emailIsCustom, isTrue);
+    });
   });
 
   group('UserModel.toJson', () {
