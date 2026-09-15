@@ -13,6 +13,7 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/public_profile_model.dart';
 import '../../models/shop_item.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
@@ -187,6 +188,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   Future<void> _handleAction(_ProfileAction action) async {
     final profile = _profile;
     if (profile == null) return;
+    // 唯讀帳號只擋加好友；刪除好友、封鎖等清理動作後端放行。
+    if (action == _ProfileAction.addFriend && blockIfReadOnly()) return;
     try {
       switch (action) {
         case _ProfileAction.addFriend:

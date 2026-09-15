@@ -12,6 +12,9 @@ class ForumCommentInputBar extends StatelessWidget {
   /// 正在回覆的第一層留言；null 代表回覆貼文本身。
   final ForumComment? replyTarget;
   final bool sending;
+
+  /// 唯讀帳號：輸入框停用並提示，不能留言。
+  final bool readOnly;
   final bool seniorMode;
   final VoidCallback onSend;
   final VoidCallback onCancelReply;
@@ -21,6 +24,7 @@ class ForumCommentInputBar extends StatelessWidget {
     required this.controller,
     required this.replyTarget,
     required this.sending,
+    this.readOnly = false,
     required this.seniorMode,
     required this.onSend,
     required this.onCancelReply,
@@ -70,14 +74,15 @@ class ForumCommentInputBar extends StatelessWidget {
               Expanded(
                 child: TextField(
                   controller: controller,
+                  enabled: !readOnly,
                   maxLength: ForumService.commentMax,
                   minLines: 1,
                   maxLines: 4,
                   style: TextStyle(
                     fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
                   ),
-                  decoration: const InputDecoration(
-                    hintText: '說點什麼…',
+                  decoration: InputDecoration(
+                    hintText: readOnly ? '帳號唯讀中，無法留言' : '說點什麼…',
                     counterText: '',
                     border: InputBorder.none,
                   ),
@@ -87,7 +92,7 @@ class ForumCommentInputBar extends StatelessWidget {
               ListenableBuilder(
                 listenable: controller,
                 builder: (context, _) => IconButton(
-                  onPressed: sending || controller.text.trim().isEmpty
+                  onPressed: sending || readOnly || controller.text.trim().isEmpty
                       ? null
                       : onSend,
                   iconSize: seniorMode ? 30 : 20,

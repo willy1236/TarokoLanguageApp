@@ -9,6 +9,7 @@ import '../../shared/widgets/async_state_view.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/shop_item.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/shop_service.dart';
 import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
@@ -171,6 +172,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   Future<void> _likePost() async {
     final post = _post;
     if (post == null) return;
+    // 唯讀帳號只擋「按讚」，取消讚後端放行。
+    if (!post.isLiked && blockIfReadOnly()) return;
     setState(() => _post = post.toggledLike());
     try {
       final result = await ForumService.likePost(post.id, like: !post.isLiked);
@@ -226,6 +229,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   }
 
   Future<void> _likeComment(ForumComment comment) async {
+    if (!comment.isLiked && blockIfReadOnly()) return;
     void replace(ForumComment next) {
       final i = _comments.indexWhere((c) => c.id == next.id);
       if (i >= 0) _comments[i] = next;
@@ -390,7 +394,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   Widget build(BuildContext context) => Theme(
     data: forumTheme(context),
     child: ListenableBuilder(
-      listenable: seniorModeController,
+      listenable: Listenable.merge([seniorModeController, accountLockController]),
       builder: (context, _) =>
           _buildScaffold(context, seniorModeController.enabled),
     ),
@@ -398,6 +402,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   Widget _buildScaffold(BuildContext context, bool seniorMode) {
     final post = _post;
+    // 唯讀帳號：編輯（PATCH）與檢舉會被後端擋，選單直接不給；刪除仍保留。
+    final locked = accountLockController.locked;
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       appBar: AppBar(
@@ -409,7 +415,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
         ),
         actions: [
-          if (post != null)
+          if (post != null && (_isMine || !locked))
             PopupMenuButton<String>(
               iconSize: seniorMode ? 30 : 24,
               onSelected: (value) {
@@ -424,9 +430,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 }
               },
               itemBuilder: (_) => _isMine
-                  ? const [
-                      PopupMenuItem(value: 'edit', child: Text('編輯')),
-                      PopupMenuItem(value: 'delete', child: Text('刪除')),
+                  ? [
+                      if (!locked)
+                        const PopupMenuItem(value: 'edit', child: Text('編輯')),
+                      const PopupMenuItem(value: 'delete', child: Text('刪除')),
                     ]
                   : const [PopupMenuItem(value: 'report', child: Text('檢舉'))],
             ),
@@ -450,6 +457,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
 
     final threads = groupComments(_comments, _replies);
+    final locked = accountLockController.locked;
     return Column(
       children: [
         Expanded(
@@ -497,9 +505,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     isReply: false,
                     isMine: thread.root.author?.uid == UserService.currentUid,
                     onLike: () => _likeComment(thread.root),
-                    onReply: () => setState(() => _replyTarget = thread.root),
+                    onReply: locked
+                        ? null
+                        : () => setState(() => _replyTarget = thread.root),
                     onDelete: () => _deleteComment(thread.root),
-                    onReport: () => showForumReportSheet(
+                    onReport: locked ? null : () => showForumReportSheet(
                       context,
                       targetType: 'comment',
                       targetId: thread.root.id,
@@ -513,10 +523,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                       isMine: reply.author?.uid == UserService.currentUid,
                       onLike: () => _likeComment(reply),
                       // 論壇只有兩層：回覆「回覆」時，parent 仍是第一層那則。
-                      onReply: () => setState(() => _replyTarget = thread.root),
+                      onReply: locked
+                          ? null
+                          : () => setState(() => _replyTarget = thread.root),
                       onDelete: () => _deleteComment(reply),
                       itemCatalogById: _itemCatalogById,
-                      onReport: () => showForumReportSheet(
+                      onReport: locked ? null : () => showForumReportSheet(
                         context,
                         targetType: 'comment',
                         targetId: reply.id,
@@ -531,6 +543,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           controller: _inputController,
           replyTarget: _replyTarget,
           sending: _sending,
+          readOnly: locked,
           seniorMode: seniorMode,
           onSend: _send,
           onCancelReply: () => setState(() => _replyTarget = null),

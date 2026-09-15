@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_model.dart';
 import '../../shared/share_text_file.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/event_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -142,6 +143,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   // ── 行動：參加 / 退出 / 取消 ─────────────────────────────────
   Future<void> _join() async {
+    if (blockIfReadOnly()) return;
     final email = await _askJoinEmail();
     if (email == null) return;
     await _runAction(
@@ -226,6 +228,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   Future<void> _toggleLike() async {
     final event = _event;
     if (event == null || _likeBusy) return;
+    // 唯讀帳號只擋「按讚」，取消讚後端放行。
+    if (!event.isLiked && blockIfReadOnly()) return;
     setState(() {
       _likeBusy = true;
       _event = event.toggledLike();
@@ -280,7 +284,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   // ── 編輯 / 刪除（僅發起人） ────────────────────────────────────
   Future<void> _editEvent() async {
     final event = _event;
-    if (event == null) return;
+    if (event == null || blockIfReadOnly()) return;
     final updated = await Navigator.push<bool>(
       context,
       MaterialPageRoute(builder: (_) => EventComposeScreen(editing: event)),

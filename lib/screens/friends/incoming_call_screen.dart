@@ -13,6 +13,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/directed_call_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/shop_service.dart';
@@ -350,15 +351,30 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
         ),
       );
     }
+    final decline = _actionButton(
+      label: '拒接',
+      color: const Color(0xFFD8392C),
+      icon: Icons.call_end,
+      onTap: _busy ? null : _decline,
+    );
+    // 唯讀帳號接聽會被後端擋（403 ACCOUNT_LOCKED），只留拒接。
+    if (accountLockController.locked) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '帳號唯讀中，無法接聽',
+            style: AppTypography.bodyStyle(color: AppColors.creamLight),
+          ),
+          const SizedBox(height: 20),
+          decline,
+        ],
+      );
+    }
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
       children: [
-        _actionButton(
-          label: '拒接',
-          color: const Color(0xFFD8392C),
-          icon: Icons.call_end,
-          onTap: _busy ? null : _decline,
-        ),
+        decline,
         _actionButton(
           label: '接聽',
           color: AppColors.moss,

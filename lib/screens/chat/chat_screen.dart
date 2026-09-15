@@ -9,6 +9,7 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
 import '../../models/friend_message_model.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -173,7 +174,8 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
     if (e.isMuted) {
-      _showMessage('你已被禁言，暫時無法傳送訊息');
+      // 後端訊息已由 ApiClient 接上禁言到期時間（14／30 天不等）。
+      _showMessage(e.message);
       return;
     }
     if (e.isRateLimited) {
@@ -203,6 +205,7 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _startVideoCall() {
+    if (blockIfReadOnly()) return;
     if (!PlatformFeatures.supportsVideoCall) {
       _showMessage(PlatformFeatures.videoCallUnsupportedMessage);
       return;
@@ -219,7 +222,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
-    listenable: seniorModeController,
+    listenable: Listenable.merge([seniorModeController, accountLockController]),
     builder: (context, _) => _buildScaffold(seniorModeController.enabled),
   );
 
@@ -252,7 +255,10 @@ class _ChatScreenState extends State<ChatScreen> {
         ),
         IconButton(
           onPressed: _startVideoCall,
-          icon: const Icon(Icons.videocam_outlined, color: AppColors.primary),
+          icon: Icon(
+            Icons.videocam_outlined,
+            color: accountLockController.locked ? AppColors.fog : AppColors.primary,
+          ),
           tooltip: '視訊通話',
         ),
       ],
@@ -295,7 +301,7 @@ class _ChatScreenState extends State<ChatScreen> {
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
-        onLongPress: mine ? null : () => _reportMessage(m),
+        onLongPress: mine || accountLockController.locked ? null : () => _reportMessage(m),
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
@@ -359,13 +365,14 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: TextField(
               controller: _inputController,
+              enabled: !_locked,
               minLines: 1,
               maxLines: 4,
               maxLength: 2000,
               buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
               style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.ink),
               decoration: InputDecoration(
-                hintText: '傳送訊息…',
+                hintText: _locked ? '帳號唯讀中，無法傳送訊息' : '傳送訊息…',
                 hintStyle: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.fog),
                 filled: true,
                 fillColor: AppColors.cream,
@@ -380,13 +387,16 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(width: 8),
           IconButton(
-            onPressed: _sending ? null : _send,
+            onPressed: _sending || _locked ? null : _send,
             icon: const Icon(Icons.send, color: AppColors.primary),
           ),
         ],
       ),
     ),
   );
+
+  /// 唯讀帳號不能傳訊息（後端 403 ACCOUNT_LOCKED），輸入列停用。
+  bool get _locked => accountLockController.locked;
 }
 
 class _ReportDialog extends StatefulWidget {

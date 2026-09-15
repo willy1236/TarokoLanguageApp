@@ -7,6 +7,7 @@ import '../../core/platform/platform_features.dart';
 import '../../main.dart';
 import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
@@ -351,7 +352,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
   /// 開始配對：先要相機/麥克風權限，再呼叫後端佇列 API。配到直接進通話畫面，
   /// 否則進等待畫面排隊。後端 FIFO 配對，不區分/不針對特定 rudan。
   Future<void> _startMatching() async {
-    if (_isJoining) return;
+    if (_isJoining || blockIfReadOnly()) return;
     if (!PlatformFeatures.supportsVideoCall) {
       _showMessage(PlatformFeatures.videoCallUnsupportedMessage);
       return;

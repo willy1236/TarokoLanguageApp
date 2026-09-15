@@ -7,6 +7,7 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
 import '../../models/video_models.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
 import '../../shared/widgets/engagement_icon_button.dart';
@@ -71,6 +72,8 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
   Future<void> _toggleLike() async {
     final video = _video;
     if (video == null || _likeBusy) return;
+    // 唯讀帳號只擋「按讚」，取消讚後端放行。
+    if (!video.isLiked && blockIfReadOnly()) return;
     setState(() {
       _likeBusy = true;
       _video = video.toggledLike();

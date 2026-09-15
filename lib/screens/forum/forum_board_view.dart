@@ -10,6 +10,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../models/shop_item.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
@@ -219,6 +220,8 @@ class ForumBoardViewState extends State<ForumBoardView> {
   }
 
   Future<void> _like(ForumPost post) async {
+    // 唯讀帳號只擋「按讚」，取消讚後端放行。
+    if (!post.isLiked && blockIfReadOnly()) return;
     final original = post;
     setState(() => _replace(post.toggledLike()));
     try {

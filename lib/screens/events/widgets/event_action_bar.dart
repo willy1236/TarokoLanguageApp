@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../models/event_model.dart';
+import '../../../services/account_lock_controller.dart';
 import '../reminder_compose_screen.dart';
 import '../../../core/constants/app_typography.dart';
 
@@ -78,6 +79,7 @@ class EventActionBar extends StatelessWidget {
   Widget _hostActions(BuildContext context, EventDetail e, bool seniorMode) {
     final sendReminderButton = GestureDetector(
       onTap: () async {
+        if (blockIfReadOnly()) return;
         await Navigator.push(
           context,
           MaterialPageRoute(

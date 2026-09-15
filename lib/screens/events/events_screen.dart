@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../models/event_model.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/event_service.dart';
 import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -112,6 +113,7 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   void _openCompose() {
+    if (blockIfReadOnly()) return;
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const EventComposeScreen()),
