@@ -52,7 +52,7 @@ class _AccountDeleteScreenState extends State<AccountDeleteScreen> {
       );
     } on ApiException catch (e) {
       if (!mounted) return;
-      _showError(e.isAccountLocked ? '帳號已被鎖定，暫無法刪除' : e.message);
+      _showError(e.message);
     } catch (_) {
       if (!mounted) return;
       _showError('刪除失敗，請稍後再試');

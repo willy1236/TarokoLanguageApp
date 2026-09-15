@@ -12,6 +12,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../constants/api.dart';
 import '../../main.dart';
+import '../../services/account_lock_controller.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
 
@@ -40,11 +41,15 @@ class ApiException implements Exception {
   /// 其餘錯誤為 null。畫面可據此顯示「N 秒後可再試」倒數。
   final int? retryAfter;
 
+  /// MUTED 時後端帶的禁言到期時間（`error.mute_until`），其餘錯誤為 null。
+  final DateTime? muteUntil;
+
   ApiException({
     required this.statusCode,
     required this.code,
     required this.message,
     this.retryAfter,
+    this.muteUntil,
   });
 
   bool get isUnauthorized => statusCode == 401;
@@ -55,7 +60,7 @@ class ApiException implements Exception {
   bool get isAccountPendingDeletion =>
       statusCode == 403 && code == 'ACCOUNT_PENDING_DELETION';
   bool get isAccountPurged => statusCode == 410;
-  bool get isAccountLocked => code == 'ACCOUNT_LOCKED';
+  bool get isAccountLocked => statusCode == 403 && code == 'ACCOUNT_LOCKED';
   bool get isUserUnavailable => code == 'USER_UNAVAILABLE';
   bool get isSessionNotFound => code == 'SESSION_NOT_FOUND';
   bool get isSessionNotCompleted => code == 'SESSION_NOT_COMPLETED';
@@ -94,6 +99,12 @@ bool isAuthError(Object? error) => error is ApiException && error.isUnauthorized
 /// 其他（程式錯誤、型別錯誤）不外露原始內容，改顯示 [fallback]。
 String apiErrorMessage(Object? error, {String fallback = '發生錯誤，請稍後再試'}) =>
     error is ApiException && error.message.isNotEmpty ? error.message : fallback;
+
+/// 禁言到期時間的顯示格式：yyyy/MM/dd HH:mm（本地時間）。
+String formatMuteUntil(DateTime d) {
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${d.year}/${two(d.month)}/${two(d.day)} ${two(d.hour)}:${two(d.minute)}';
+}
 
 class ApiClient {
   /// 傳輸層。正式執行時是預設的 http client；測試可換成 MockClient。
@@ -392,6 +403,8 @@ class ApiClient {
     } else if (error.isAccountPendingDeletion &&
         !path.startsWith('/api/account')) {
       _forceReactivate();
+    } else if (error.isAccountLocked) {
+      _enterReadOnly();
     } else if (error.isUnauthorized) {
       _forceLogout();
     } else if (error.isConsentRequired &&
@@ -437,6 +450,13 @@ class ApiClient {
         .whenComplete(() => _showingReactivate = false);
   }
 
+  /// ACCOUNT_LOCKED（403）時切到唯讀模式並顯示統一提示。提示排在下一個 frame：
+  /// 呼叫端 catch 後通常會自己跳 snackbar，延後再 clear+show 才不會連跳兩則。
+  static void _enterReadOnly() {
+    accountLockController.setLocked(true);
+    WidgetsBinding.instance.addPostFrameCallback((_) => showReadOnlyToast());
+  }
+
   static bool _showingConsent = false;
 
   /// CONSENT_REQUIRED（403）時導去強制同意畫面。
@@ -476,10 +496,18 @@ class ApiClient {
           'ApiClient: ${resp.statusCode} ${_safeUrl(resp.request?.url)} 回應無 error 欄位: ${_redact(resp.body)}',
         );
       }
+      final code = error?['code'] as String? ?? 'UNKNOWN';
+      var message = error?['message'] as String? ?? '發生未知錯誤';
+      // 禁言期間依 strike 次數為 14／30 天，把到期時間接在後端訊息後面。
+      final muteUntil = code == 'MUTED'
+          ? DateTime.tryParse(error?['mute_until'] as String? ?? '')?.toLocal()
+          : null;
+      if (muteUntil != null) message = '$message（至 ${formatMuteUntil(muteUntil)}）';
       return ApiException(
         statusCode: resp.statusCode,
-        code: error?['code'] as String? ?? 'UNKNOWN',
-        message: error?['message'] as String? ?? '發生未知錯誤',
+        code: code,
+        message: message,
+        muteUntil: muteUntil,
       );
     } catch (e) {
       _logVerbose(
