@@ -126,10 +126,10 @@ class EventService {
 
   /// 編輯活動（僅發起人）。
   ///
-  /// 只送 [EventDraft.editableFields] 中與 [original] 不同的欄位，清空送空字串
-  /// （後端把 null 與空白字串都視為清空）。title / starts_at /
-  /// registration_deadline / max_participants 後端會**靜默丟棄**，所以根本不送。
-  /// **location/address 不可為空**（後端回 400），[EventDraft.validate] 已擋住。
+  /// 只送 [EventDraft.editableFields] 中與 [original] 不同的欄位；文字清空送
+  /// 空字串，名額留空送 null（不限名額）。starts_at / registration_deadline 不可改。
+  /// **title/location/address 不可為空**（後端回 400），[EventDraft.validate] 已擋住。
+  /// 活動已取消或已開始時後端回 409 EVENT_CLOSED / EVENT_ENDED。
   static Future<void> updateEvent(
     int eventId,
     EventDraft draft,

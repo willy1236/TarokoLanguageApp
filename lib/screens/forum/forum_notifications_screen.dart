@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../shared/widgets/async_state_view.dart';
+import '../../shared/widgets/truku_empty_state.dart';
 
 import '../../core/constants/app_colors.dart';
 import 'forum_theme.dart';
@@ -179,14 +180,11 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       );
     }
     if (_items.isEmpty) {
-      return Center(
-        child: Text(
-          '還沒有新的回覆',
-          style: AppTypography.serif(
-            color: AppColors.fog,
-            fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
-          ),
-        ),
+      return TrukuEmptyState(
+        icon: Icons.notifications_none,
+        message: '還沒有新的回覆',
+        subtitle: '有人回覆你的貼文或留言時，會出現在這裡。',
+        seniorMode: seniorMode,
       );
     }
     return ListView.separated(

@@ -14,10 +14,11 @@ class BondLevel {
 }
 
 /// 雙方皆同意展示的一位羈絆好友（bond_showcase 陣列中的一筆，最多 4 筆）。
+/// 後端刻意不回 friend_code，不能從這裡跳到對方公開頁；清單會依檢視者的
+/// 封鎖關係過濾，不可當成跨使用者共用的快取。
 class BondShowcaseItem {
   final int uid;
   final String? nickname;
-  final String? friendCode;
   final String? avatarUrl;
   final String? avatarId;
   final String? frameId;
@@ -26,7 +27,6 @@ class BondShowcaseItem {
   const BondShowcaseItem({
     required this.uid,
     this.nickname,
-    this.friendCode,
     this.avatarUrl,
     this.avatarId,
     this.frameId,
@@ -36,7 +36,6 @@ class BondShowcaseItem {
   factory BondShowcaseItem.fromJson(Map<String, dynamic> j) => BondShowcaseItem(
     uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
-    friendCode: j['friend_code'] as String?,
     avatarUrl: j['avatar_url'] as String?,
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,

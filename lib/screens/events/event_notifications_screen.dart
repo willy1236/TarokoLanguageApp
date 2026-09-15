@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../shared/widgets/async_state_view.dart';
+import '../../shared/widgets/truku_empty_state.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
@@ -181,14 +182,11 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
       );
     }
     if (_items.isEmpty) {
-      return Center(
-        child: Text(
-          '還沒有收到活動通知',
-          style: AppTypography.serif(
-            color: AppColors.fog,
-            fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
-          ),
-        ),
+      return TrukuEmptyState(
+        icon: Icons.notifications_none,
+        message: '還沒有收到活動通知',
+        subtitle: '你參加的活動發起人發出提醒時，會出現在這裡。',
+        seniorMode: seniorMode,
       );
     }
     return ListView.separated(

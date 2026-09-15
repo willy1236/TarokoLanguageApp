@@ -82,6 +82,20 @@ void main() {
     expect(h.flow.selectedOptionId, 2);
   });
 
+  test('交卷後晚到的單題 409 SESSION_ALREADY_COMPLETED 被忽略', () async {
+    final h = _Harness(QuizFlowSession(sessionId: 's', questions: [q('q1')]));
+    h.saveError = ApiException(
+      statusCode: 409,
+      code: 'SESSION_ALREADY_COMPLETED',
+      message: '此測驗已完成',
+    );
+    await h.flow.load();
+    h.flow.select(1);
+    await pumpEventQueue();
+    expect(h.saved, [('q1', 1)]);
+    expect(h.saveFailures, isEmpty);
+  });
+
   test('最後一題有漏答時跳回缺口，補完才送出', () async {
     final h = _Harness(
       QuizFlowSession(

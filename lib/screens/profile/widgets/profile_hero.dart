@@ -15,6 +15,9 @@ class ProfileHero extends StatelessWidget {
   final Map<String, ShopItem> itemCatalogById;
   final bool seniorMode;
   final VoidCallback onAvatarTap;
+  final VoidCallback onTribalNameTap;
+  final VoidCallback onVocabPlacementTap;
+  final VoidCallback onListeningPlacementTap;
 
   /// 上方已有其他元件（如合併分頁的膠囊切換）時傳 false，頂部不再預留狀態列空間。
   final bool reserveStatusBar;
@@ -28,6 +31,9 @@ class ProfileHero extends StatelessWidget {
     required this.itemCatalogById,
     required this.seniorMode,
     required this.onAvatarTap,
+    required this.onTribalNameTap,
+    required this.onVocabPlacementTap,
+    required this.onListeningPlacementTap,
     this.reserveStatusBar = true,
     this.topToggle,
   });
@@ -103,6 +109,8 @@ class ProfileHero extends StatelessWidget {
                     color: AppColors.creamLight,
                   ),
                 ),
+                const SizedBox(height: 2),
+                _buildTribalName(seniorMode: seniorMode),
                 const SizedBox(height: 4),
                 if (tribeLine != null)
                   Text(
@@ -112,21 +120,92 @@ class ProfileHero extends StatelessWidget {
                       color: AppColors.creamLight.withValues(alpha: 0.75),
                     ),
                   ),
-                const SizedBox(height: 10),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    if (user?.studyStreak != null && user!.studyStreak > 0)
-                      profileInfoBadge('連續 ${user!.studyStreak} 天'),
-                  ],
-                ),
+                // 尚未載入時不畫標章，避免先閃「去測驗」再變成等級；精簡模式不顯示。
+                if (user != null && !seniorMode) ...[
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _levelBadge(
+                        '單字',
+                        user!.quizSuggestedLevel,
+                        onVocabPlacementTap,
+                        seniorMode: seniorMode,
+                      ),
+                      _levelBadge(
+                        '聽力',
+                        user!.listeningSuggestedLevel,
+                        onListeningPlacementTap,
+                        seniorMode: seniorMode,
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),
         ],
       ),
     );
+  }
+
+  /// 族語名只開放原住民（與完善資料頁一致）：有填顯示族語斜體，
+  /// 未填顯示淡色引導字，點了開編輯；非原住民整行不顯示。
+  Widget _buildTribalName({required bool seniorMode}) {
+    if (user?.isIndigenous != true) return const SizedBox.shrink();
+    final name = user!.tribalName;
+    final hasName = name != null && name.isNotEmpty;
+    return GestureDetector(
+      onTap: onTribalNameTap,
+      behavior: HitTestBehavior.opaque,
+      child: Text(
+        hasName ? name : '+ 新增族語名',
+        style: hasName
+            ? AppTypography.latin(fontStyle: FontStyle.italic).copyWith(
+                fontSize: AppTypography.size(
+                  AppTypography.subtitle,
+                  seniorMode: seniorMode,
+                ),
+                color: AppColors.gold,
+              )
+            : AppTypography.bodyStyle(
+                seniorMode: seniorMode,
+                color: AppColors.creamLight.withValues(alpha: 0.5),
+              ),
+      ),
+    );
+  }
+
+  /// 已分級顯示「單字 · 等級」；未分級顯示「單字 · 去測驗」並可點進分級測驗。
+  Widget _levelBadge(
+    String label,
+    String? level,
+    VoidCallback onTap, {
+    required bool seniorMode,
+  }) {
+    final tested = level != null;
+    final badge = Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: tested
+            ? AppColors.gold.withValues(alpha: 0.18)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(
+          color: AppColors.gold.withValues(alpha: tested ? 0.4 : 0.6),
+        ),
+      ),
+      child: Text(
+        '$label · ${level ?? '去測驗'}',
+        style: AppTypography.captionStyle(
+          seniorMode: seniorMode,
+          color: tested ? AppColors.gold : AppColors.creamLight,
+        ),
+      ),
+    );
+    if (tested) return badge;
+    return GestureDetector(onTap: onTap, child: badge);
   }
 
   Widget _buildAvatar() {

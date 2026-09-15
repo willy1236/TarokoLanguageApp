@@ -469,25 +469,6 @@ class EventList extends StatelessWidget {
                           color: AppColors.inkSoft,
                         ),
                       ),
-                      const Spacer(),
-                      Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: seniorMode ? 18 : 14,
-                          vertical: seniorMode ? 10 : 6,
-                        ),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(14),
-                          border: Border.all(color: AppColors.primary),
-                        ),
-                        child: Text(
-                          '查看',
-                          style: TextStyle(
-                            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
-                            fontWeight: FontWeight.w600,
-                            color: AppColors.primary,
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ],

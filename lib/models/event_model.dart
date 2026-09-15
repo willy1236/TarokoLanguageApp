@@ -274,7 +274,7 @@ class EventReminder {
   final int? eventId;
   final String message;
   final DateTime scheduledAt;
-  final String status; // pending | sent | failed | cancelled
+  final String status; // pending | processing | sent | failed | cancelled（processing＝派送中，不可取消）
   final DateTime? sentAt;
 
   const EventReminder({
@@ -287,6 +287,7 @@ class EventReminder {
   });
 
   bool get isPending => status == 'pending';
+  bool get isProcessing => status == 'processing';
 
   factory EventReminder.fromJson(Map<String, dynamic> json) {
     return EventReminder(

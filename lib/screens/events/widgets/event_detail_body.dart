@@ -294,9 +294,11 @@ class EventDetailBody extends StatelessWidget {
     );
   }
 
-  /// 排定發送（尚未送出）：依排定時間由近到遠排序。
+  /// 排定發送（尚未送達，含派送中）：依排定時間由近到遠排序。
   List<EventReminder> _pendingReminders() {
-    final list = reminders.where((r) => r.status == 'pending').toList();
+    final list = reminders
+        .where((r) => r.isPending || r.isProcessing)
+        .toList();
     list.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
     return list;
   }
@@ -304,7 +306,9 @@ class EventDetailBody extends StatelessWidget {
   /// 已發送（含失敗、取消等已處理完的）：新的（id 較大）排在前面；
   /// 後端固定回傳 scheduled_at 遞增排序，這裡反過來。
   List<EventReminder> _sentReminders() {
-    final list = reminders.where((r) => r.status != 'pending').toList();
+    final list = reminders
+        .where((r) => !r.isPending && !r.isProcessing)
+        .toList();
     list.sort((a, b) => b.id.compareTo(a.id));
     return list;
   }
@@ -326,6 +330,7 @@ class EventDetailBody extends StatelessWidget {
         '已發送 · ${formatDateTime((r.sentAt ?? r.scheduledAt).toLocal())}',
         AppColors.mossDeep,
       ),
+      'processing' => ('派送中', AppColors.goldDeep),
       'failed' => ('發送失敗', AppColors.dangerDark),
       'cancelled' => ('已取消', AppColors.fog),
       _ => (

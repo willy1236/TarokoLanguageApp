@@ -4,7 +4,9 @@ import '../../core/utils/date_format.dart';
 import '../../models/millet_transaction.dart';
 import '../../services/millet_service.dart';
 import '../../shared/widgets/millet_coin_icon.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/async_state_view.dart';
+import '../../shared/widgets/truku_empty_state.dart';
 import '../../core/constants/app_typography.dart';
 
 const _pageSize = 20;
@@ -127,11 +129,11 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
       return TrukuErrorView(error: _error, onRetry: _loadFirstPage);
     }
     if (_transactions.isEmpty) {
-      return Center(
-        child: Text(
-          '目前沒有小米幣明細',
-          style: AppTypography.bodyLargeStyle(color: AppColors.fog),
-        ),
+      return TrukuEmptyState(
+        icon: Icons.receipt_long_outlined,
+        message: '目前沒有小米幣明細',
+        subtitle: '每日簽到、兌換商品的收支會記錄在這裡。',
+        seniorMode: seniorModeController.enabled,
       );
     }
     return RefreshIndicator(

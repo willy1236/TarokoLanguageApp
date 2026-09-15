@@ -195,8 +195,6 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                         ),
                         const SizedBox(height: 16),
                         _buildSwitchRow(seniorMode),
-                        const SizedBox(height: 16),
-                        _buildSeniorModeRow(),
                         if (_isIndigenous) ...[
                           const SizedBox(height: 16),
                           _buildTribeRow(seniorMode),
@@ -208,6 +206,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             seniorMode: seniorMode,
                           ),
                         ],
+                        const SizedBox(height: 16),
+                        _buildSeniorModeRow(),
                         const SizedBox(height: 28),
                         SizedBox(
                           width: double.infinity,
@@ -318,7 +318,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             children: [
               Expanded(
                 child: Text(
-                  '是否原住民',
+                  '是否為原住民',
                   style: TextStyle(
                     fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
                     color: AppColors.creamLight,
