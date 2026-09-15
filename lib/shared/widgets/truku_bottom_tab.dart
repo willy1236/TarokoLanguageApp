@@ -2,17 +2,22 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../services/notification_summary_service.dart' show badgeLabel;
 
 class TrukuBottomTab extends StatelessWidget {
   final int currentIndex;
   final ValueChanged<int> onTap;
   final bool seniorMode;
 
+  /// 分頁 index → 未讀數；大於 0 時在圖示右上角畫數字徽章。
+  final Map<int, int> badges;
+
   const TrukuBottomTab({
     super.key,
     required this.currentIndex,
     required this.onTap,
     this.seniorMode = false,
+    this.badges = const {},
   });
 
   static const _keys = ['home', 'learn_culture', 'plaza_event', 'friends', 'me'];
@@ -72,9 +77,23 @@ class TrukuBottomTab extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              CustomPaint(
-                                size: Size(iconSize, iconSize),
-                                painter: _TabIconPainter(_keys[i], color),
+                              Stack(
+                                clipBehavior: Clip.none,
+                                children: [
+                                  CustomPaint(
+                                    size: Size(iconSize, iconSize),
+                                    painter: _TabIconPainter(_keys[i], color),
+                                  ),
+                                  if ((badges[i] ?? 0) > 0)
+                                    Positioned(
+                                      top: -4,
+                                      right: seniorMode ? -12 : -10,
+                                      child: _TabBadge(
+                                        count: badges[i]!,
+                                        seniorMode: seniorMode,
+                                      ),
+                                    ),
+                                ],
                               ),
                               const SizedBox(height: 3),
                               Text(
@@ -97,6 +116,34 @@ class TrukuBottomTab extends StatelessWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _TabBadge extends StatelessWidget {
+  final int count;
+  final bool seniorMode;
+
+  const _TabBadge({required this.count, required this.seniorMode});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: BoxConstraints(minWidth: seniorMode ? 20 : 16),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: AppColors.creamLight, width: 1.5),
+      ),
+      child: Text(
+        badgeLabel(count),
+        textAlign: TextAlign.center,
+        style: AppTypography.captionStyle(
+          seniorMode: seniorMode,
+          color: AppColors.creamLight,
+        ).copyWith(fontWeight: FontWeight.w700, height: 1.2),
       ),
     );
   }

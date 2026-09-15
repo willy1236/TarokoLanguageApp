@@ -11,6 +11,7 @@ import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/friend_service.dart';
+import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
@@ -57,7 +58,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   void _onChatEvent() {
     final event = chatController.lastEvent;
     if (event == null) return;
-    if (event.type == ChatSocketEventType.message) _loadConversations();
+    if (event.type == ChatSocketEventType.message) {
+      _loadConversations();
+      NotificationSummaryService.refresh();
+    }
   }
 
   Future<void> _loadConversations() async {
@@ -249,10 +253,18 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
           ),
         ),
-        IconButton(
-          onPressed: _openRequests,
-          icon: const Icon(Icons.mail_outline, color: AppColors.primary),
-          tooltip: '好友邀請',
+        ValueListenableBuilder<NotificationSummary>(
+          valueListenable: NotificationSummaryService.notifier,
+          builder: (context, summary, _) => IconButton(
+            onPressed: _openRequests,
+            icon: Badge(
+              isLabelVisible: summary.friendRequests > 0,
+              label: Text(badgeLabel(summary.friendRequests)),
+              backgroundColor: AppColors.primary,
+              child: const Icon(Icons.mail_outline, color: AppColors.primary),
+            ),
+            tooltip: '好友邀請',
+          ),
         ),
         IconButton(
           onPressed: _openBlockedUsers,

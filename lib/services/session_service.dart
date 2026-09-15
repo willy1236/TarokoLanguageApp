@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 
 import 'auth_service.dart';
 import 'fcm_service.dart';
+import 'notification_summary_service.dart';
 import 'user_service.dart';
 
 class SessionService {
@@ -22,6 +23,7 @@ class SessionService {
       }
     }
     UserService.clearCache();
+    NotificationSummaryService.clear();
     try {
       await AuthService.signOut();
     } catch (e) {
