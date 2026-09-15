@@ -210,6 +210,26 @@ void main() {
       'GET',
       '${ApiConfig.forumSearch}?q=a&range=1m',
     ));
+
+    // 2026-09 後端更新（見 Truku_backend 說明文件/前端交接/2026-09_更新與待接清單.md）。
+    // 刪除帳號、匯出資料、寄驗證信屬於有副作用或受每分鐘 5 次限流的端點，不在此自動打。
+    test('GET /api/terms (確認 tos v5 / privacy v10 已發布)', () => _inspect(
+      'GET',
+      ApiConfig.terms,
+    ));
+    test('GET /api/account/status', () => _inspect('GET', ApiConfig.accountStatus));
+    test('GET /api/notifications/summary', () => _inspect(
+      'GET',
+      ApiConfig.notificationsSummary,
+    ));
+    test('GET /api/search/history?module=forum', () => _inspect(
+      'GET',
+      '${ApiConfig.searchHistory}?module=forum',
+    ));
+    test('GET /api/search/popular?module=forum', () => _inspect(
+      'GET',
+      '${ApiConfig.searchPopular}?module=forum',
+    ));
   });
 }
 
