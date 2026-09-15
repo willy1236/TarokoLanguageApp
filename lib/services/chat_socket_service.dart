@@ -1,6 +1,7 @@
 // 一對一聊天即時通道：wss://.../ws?token=<JWT>（見 Truku_backend backend/realtime.ts）。
 // 只接收，不送出——送訊息/已讀一律走 FriendService 的 REST 端點，WS 純粹是推播。
-// 指數退避重連；close code 4001 "token expired"（連線中 JWT 自然過期）先重換 JWT 再重連，
+// 指數退避重連；close code 4001 "token expired"（連線中 JWT 自然過期）先重換 JWT 再重連
+// （連上前只換一次，換完仍被踢就退回退避），
 // 其他 4001（unauthorized / token revoked）不重連、交給 REST 401 導回登入；
 // 4003（未同意條款）導去同意頁；1011（握手時後端出錯）等其餘斷線照退避重連。
 
@@ -40,6 +41,7 @@ class ChatController extends ChangeNotifier {
   StreamSubscription? _sub;
   Timer? _reconnectTimer;
   int _reconnectAttempts = 0;
+  bool _refreshedForExpiry = false;
   bool _disposed = false;
 
   ChatSocketEvent? lastEvent;
@@ -86,6 +88,7 @@ class ChatController extends ChangeNotifier {
     switch (json['type']) {
       case 'connected':
         _reconnectAttempts = 0;
+        _refreshedForExpiry = false;
         lastEvent = ChatSocketEvent.connected();
         notifyListeners();
         break;
@@ -111,7 +114,13 @@ class ChatController extends ChangeNotifier {
     _channel = null;
     if (_disposed) return;
     if (closeCode == 4001 && closeReason == 'token expired') {
-      _refreshAndReconnect();
+      if (_refreshedForExpiry) {
+        // 換過 token 還沒連上又被踢（例如時鐘偏移）：不再打登入端點，退回一般退避。
+        _scheduleReconnect();
+      } else {
+        _refreshedForExpiry = true;
+        _refreshAndReconnect();
+      }
       return;
     }
     if (closeCode == 4001) {
@@ -127,10 +136,10 @@ class ChatController extends ChangeNotifier {
 
   /// 舊 token 已過期，拿它重試只會一直被踢；先換新 JWT，換不到就不重連
   /// （交給下一次 REST 呼叫的 401 統一走 ApiClient._forceLogout）。
+  /// 每次成功連上前只換一次，避免後端持續踢人時猛打登入端點。
   Future<void> _refreshAndReconnect() async {
     final ok = await AuthService.refreshSession();
     if (!ok || _disposed) return;
-    _reconnectAttempts = 0;
     await connect();
   }
 
