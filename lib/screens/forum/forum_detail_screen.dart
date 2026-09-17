@@ -94,11 +94,13 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     super.dispose();
   }
 
-  Future<void> _load() async {
+  /// [resetImageRetry] 為 false 時保留 [_imageAutoRefreshed]。圖片過期觸發的
+  /// 重載必須這樣呼叫——否則它會把擋住自己的旗標清掉，變成無限重打。
+  Future<void> _load({bool resetImageRetry = true}) async {
     setState(() {
       _loading = true;
       _error = null;
-      _imageAutoRefreshed = false;
+      if (resetImageRetry) _imageAutoRefreshed = false;
     });
     try {
       final post = await ForumService.post(widget.postId);
@@ -154,6 +156,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   void _onImageExpired() {
     if (_imageAutoRefreshed || _loading) return;
     _imageAutoRefreshed = true;
+    _load(resetImageRetry: false);
+  }
+
+  /// 使用者手動點破圖重試：明確的使用者意圖，重新開放一次自動重試額度。
+  void _onImageRetryTap() {
+    if (_loading) return;
     _load();
   }
 
@@ -476,6 +484,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                   post: post,
                   seniorMode: seniorMode,
                   onImageExpired: _onImageExpired,
+                  onImageRetryTap: _onImageRetryTap,
                   onLike: _likePost,
                   onBookmark: _bookmarkPost,
                 ),

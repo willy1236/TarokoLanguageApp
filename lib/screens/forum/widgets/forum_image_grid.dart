@@ -18,15 +18,21 @@ class ForumImageGrid extends StatelessWidget {
   /// 給定時取代「開啟全螢幕檢視」的預設行為。
   final VoidCallback? onTap;
 
-  /// 圖片載入失敗時觸發（多半是簽章網址已過期，15 分鐘效期）。
+  /// 圖片載入失敗時**自動**觸發（多半是簽章網址已過期，15 分鐘效期）。
   /// 呼叫端可用它重新打貼文 API 拿新網址，而不是要求使用者手動下拉整頁。
+  /// 每張圖對同一個網址只會回報一次，重新整理的次數上限由呼叫端決定。
   final VoidCallback? onImageExpired;
+
+  /// 使用者**手動**點擊破圖佔位時觸發。和 [onImageExpired] 分開是因為呼叫端
+  /// 會限制自動重試的次數，但手動重試是明確的使用者意圖，不該被那個上限擋掉。
+  final VoidCallback? onRetryTap;
 
   const ForumImageGrid({
     super.key,
     required this.urls,
     this.onTap,
     this.onImageExpired,
+    this.onRetryTap,
   });
 
   void _open(BuildContext context, int index) {
@@ -58,6 +64,7 @@ class ForumImageGrid extends StatelessWidget {
             url: urls.first,
             onTap: () => _open(context, 0),
             onExpired: onImageExpired,
+            onRetryTap: onRetryTap,
           ),
         ),
       );
@@ -76,6 +83,7 @@ class ForumImageGrid extends StatelessWidget {
               url: urls[i],
               onTap: () => _open(context, i),
               onExpired: onImageExpired,
+              onRetryTap: onRetryTap,
             ),
           ),
       ],
@@ -83,30 +91,58 @@ class ForumImageGrid extends StatelessWidget {
   }
 }
 
-class _Thumb extends StatelessWidget {
+// 破圖時回報一次「網址可能過期」給呼叫端。是 StatefulWidget 才能記住「這個
+// 網址已經回報過了」——寫在 errorWidget 裡的話每次 rebuild 都會再排一次
+// callback，呼叫端就算有次數上限也擋不住連環重打（實際造成過 429）。
+class _Thumb extends StatefulWidget {
   final String url;
   final VoidCallback onTap;
   final VoidCallback? onExpired;
+  final VoidCallback? onRetryTap;
 
-  const _Thumb({required this.url, required this.onTap, this.onExpired});
+  const _Thumb({
+    required this.url,
+    required this.onTap,
+    this.onExpired,
+    this.onRetryTap,
+  });
+
+  @override
+  State<_Thumb> createState() => _ThumbState();
+}
+
+class _ThumbState extends State<_Thumb> {
+  bool _reported = false;
+
+  @override
+  void didUpdateWidget(_Thumb old) {
+    super.didUpdateWidget(old);
+    // 換了新網址（呼叫端重新簽章成功）才重新開放回報。
+    if (old.url != widget.url) _reported = false;
+  }
+
+  void _reportExpiredOnce() {
+    if (_reported) return;
+    final expired = widget.onExpired;
+    if (expired == null) return;
+    _reported = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) expired();
+    });
+  }
 
   @override
   Widget build(BuildContext context) => GestureDetector(
-    onTap: onTap,
+    onTap: widget.onTap,
     child: CachedNetworkImage(
-      imageUrl: url,
+      imageUrl: widget.url,
       fit: BoxFit.cover,
       placeholder: (_, _) => Container(color: AppColors.creamDeep),
       errorWidget: (_, _, _) {
-        // 過期網址載入失敗時自動觸發一次重新整理，不必使用者手動點——呼叫端
-        // （ForumDetailScreen）用旗標保證同一次瀏覽只自動重打一次貼文 API，
-        // 就算九宮格裡好幾張圖同時過期也不會連環重打造成後端壓力。
-        final expired = onExpired;
-        if (expired != null) {
-          WidgetsBinding.instance.addPostFrameCallback((_) => expired());
-        }
+        _reportExpiredOnce();
+        final retry = widget.onRetryTap;
         return GestureDetector(
-          onTap: onExpired,
+          onTap: retry,
           child: Container(
             color: AppColors.creamDeep,
             alignment: Alignment.center,
@@ -118,7 +154,7 @@ class _Thumb extends StatelessWidget {
                   color: AppColors.fog,
                   size: 20,
                 ),
-                if (onExpired != null) ...[
+                if (retry != null) ...[
                   const SizedBox(height: 4),
                   const Icon(Icons.refresh, color: AppColors.fog, size: 16),
                 ],
