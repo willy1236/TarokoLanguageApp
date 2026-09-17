@@ -1,9 +1,8 @@
 // 貼文附圖。後端最多 4 張，1 張時滿版、2-4 張時九宮格。
 //
 // 點擊行為依情境不同：
-//   * 貼文列表：整張卡片（含附圖）都是進詳情頁的入口，所以由呼叫端傳 onTap
-//     覆蓋，不在列表就打開全螢幕檢視——列表上放大圖片會讓「點卡片進貼文」
-//     這件事變得不一致。
+//   * 貼文列表：卡片本文進詳情頁，附圖則走 onImageTap——呼叫端先推詳情頁、
+//     再疊上全螢幕檢視，所以放大後返回會落在內文頁而不是直接回列表。
 //   * 貼文詳情：不傳 onTap，點圖進全螢幕檢視，可雙指縮放與左右滑動。
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -18,6 +17,10 @@ class ForumImageGrid extends StatelessWidget {
   /// 給定時取代「開啟全螢幕檢視」的預設行為。
   final VoidCallback? onTap;
 
+  /// 優先於 [onTap]：帶著被點的圖片索引交給呼叫端自行處理（貼文列表用它
+  /// 先推詳情頁再疊上全螢幕檢視，讓返回落在內文而不是列表）。
+  final ValueChanged<int>? onImageTap;
+
   /// 圖片載入失敗時**自動**觸發（多半是簽章網址已過期，15 分鐘效期）。
   /// 呼叫端可用它重新打貼文 API 拿新網址，而不是要求使用者手動下拉整頁。
   /// 每張圖對同一個網址只會回報一次，重新整理的次數上限由呼叫端決定。
@@ -31,11 +34,17 @@ class ForumImageGrid extends StatelessWidget {
     super.key,
     required this.urls,
     this.onTap,
+    this.onImageTap,
     this.onImageExpired,
     this.onRetryTap,
   });
 
   void _open(BuildContext context, int index) {
+    final perImage = onImageTap;
+    if (perImage != null) {
+      perImage(index);
+      return;
+    }
     final override = onTap;
     if (override != null) {
       override();

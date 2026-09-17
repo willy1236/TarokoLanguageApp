@@ -1,8 +1,9 @@
 // 活動、廣場等模組頁首右側共用的「＋發起／發布」膠囊鈕與
-// 搜尋／收藏／通知三顆圖示（通知有未讀時帶紅點）。
+// 搜尋／通知兩顆圖示（通知有未讀時帶紅點）。
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 
 class ModuleComposeButton extends StatelessWidget {
@@ -42,7 +43,7 @@ class ModuleComposeButton extends StatelessWidget {
               Icon(
                 Icons.add,
                 color: AppColors.creamLight,
-                size: seniorMode ? 20 : 14,
+                size: AppIconSize.inline(seniorMode),
               ),
               const SizedBox(width: 6),
               Text(
@@ -62,10 +63,11 @@ class ModuleComposeButton extends StatelessWidget {
   }
 }
 
+/// 頁首次要入口：搜尋 + 通知。
+/// 原本還有一顆「我的收藏」，但三顆擠在標題同一列會壓縮標題寬度，
+/// 收藏改由各模組自己的入口進入，這裡只留最常用的兩顆並放大熱區。
 class ModuleActionIcons extends StatelessWidget {
   final VoidCallback onSearch;
-  final String bookmarksTooltip;
-  final VoidCallback onBookmarks;
   final String notificationsTooltip;
   final VoidCallback onNotifications;
   final bool hasUnread;
@@ -74,8 +76,6 @@ class ModuleActionIcons extends StatelessWidget {
   const ModuleActionIcons({
     super.key,
     required this.onSearch,
-    required this.bookmarksTooltip,
-    required this.onBookmarks,
     required this.notificationsTooltip,
     required this.onNotifications,
     required this.hasUnread,
@@ -84,25 +84,25 @@ class ModuleActionIcons extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final size = seniorMode ? 24.0 : 20.0;
+    final size = AppIconSize.action(seniorMode);
+    const constraints = BoxConstraints.tightFor(
+      width: AppIconSize.tapTarget,
+      height: AppIconSize.tapTarget,
+    );
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         IconButton(
           tooltip: '搜尋',
-          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: constraints,
           onPressed: onSearch,
           icon: Icon(Icons.search, color: AppColors.ink, size: size),
         ),
         IconButton(
-          tooltip: bookmarksTooltip,
-          visualDensity: VisualDensity.compact,
-          onPressed: onBookmarks,
-          icon: Icon(Icons.bookmark_border, color: AppColors.ink, size: size),
-        ),
-        IconButton(
           tooltip: notificationsTooltip,
-          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: constraints,
           onPressed: onNotifications,
           icon: Stack(
             clipBehavior: Clip.none,

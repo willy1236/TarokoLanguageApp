@@ -159,12 +159,13 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
                   widget.onBookmarkChanged?.call(postId, result);
                   return result;
                 },
-                onOpenPost: (post) async {
+                onOpenPost: (post, {imageIndex}) async {
                   final result = await Navigator.push<ForumDetailResult>(
                     context,
                     MaterialPageRoute(
                       builder: (_) => ForumDetailScreen(
                         postId: post.id,
+                        initialImageIndex: imageIndex,
                         onPostChanged: (p) {
                           _boardViewKey.currentState?.replacePost(p);
                           widget.onBookmarkChanged?.call(p.id, p.isBookmarked);

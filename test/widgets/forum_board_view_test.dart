@@ -36,7 +36,7 @@ void main() {
               const ForumPostPage(pinned: [], posts: [], nextCursor: null),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );
@@ -56,7 +56,7 @@ void main() {
           ),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );
@@ -91,7 +91,7 @@ void main() {
           },
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );
@@ -124,7 +124,7 @@ void main() {
           // 後端回的計數刻意與樂觀值不同，驗證前端有採用後端的值。
           toggleLike: (_, {required like}) => completer.future,
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );
@@ -153,7 +153,7 @@ void main() {
           ),
           toggleLike: (_, {required like}) => completer.future,
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );
@@ -193,7 +193,7 @@ void main() {
           },
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );
@@ -232,7 +232,7 @@ void main() {
               makeLoadPage(cursor: cursor, after: after),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );
@@ -248,7 +248,7 @@ void main() {
               makeLoadPage(cursor: cursor, after: after),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );
@@ -276,7 +276,7 @@ void main() {
               makeLoadPage(cursor: cursor, after: after),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );
@@ -291,7 +291,7 @@ void main() {
               makeLoadPage(cursor: cursor, after: after),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );
@@ -313,7 +313,7 @@ void main() {
           ),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );
@@ -341,7 +341,7 @@ void main() {
           ),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );
@@ -382,7 +382,7 @@ void main() {
           ),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
           onRefresh: () {
             refreshCalls++;
             return extra.future;
@@ -422,7 +422,7 @@ void main() {
           },
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_) {},
+          onOpenPost: (_, {imageIndex}) {},
         ),
       ),
     );

@@ -7,7 +7,6 @@ import '../../services/event_service.dart';
 import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
-import 'event_bookmarks_screen.dart';
 import 'event_compose_screen.dart';
 import 'widgets/event_cards.dart';
 import 'event_detail_screen.dart';
@@ -221,7 +220,7 @@ class _EventsScreenState extends State<EventsScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 14),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
             child: Column(
@@ -242,6 +241,8 @@ class _EventsScreenState extends State<EventsScreen> {
                 ],
                 Text(
                   '近期部落聚會',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: AppTypography.serif(
                     fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
                     fontWeight: FontWeight.w600,
@@ -252,14 +253,13 @@ class _EventsScreenState extends State<EventsScreen> {
               ],
             ),
           ),
-          // 發起是主要動作放上排，三個次要入口收在它下面：
-          // 全部擠在同一列時，標題可用的寬度會被壓到換行。
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          // 移除「我的收藏」後寬度足夠，次要圖示與發起鈕收回標題同一橫線。
+          Row(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              _composeButton(seniorMode),
-              const SizedBox(height: 2),
               _actionIcons(seniorMode),
+              const SizedBox(width: 4),
+              _composeButton(seniorMode),
             ],
           ),
         ],
@@ -278,11 +278,6 @@ class _EventsScreenState extends State<EventsScreen> {
     onSearch: () => Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const EventSearchScreen()),
-    ),
-    bookmarksTooltip: '我收藏的活動',
-    onBookmarks: () => Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const EventBookmarksScreen()),
     ),
     notificationsTooltip: '活動通知',
     onNotifications: () async {
