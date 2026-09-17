@@ -131,8 +131,9 @@ class HomeScreen extends StatelessWidget {
     builder: (context, _) => _buildPage(context, seniorModeController.enabled),
   );
 
-  // 一般模式首頁不可捲動，模式卡吃掉剩餘高度；精簡模式字放大後可能塞不下，
-  // 2x2 模式卡仍吃滿剩餘高度，但畫面太矮時整頁可捲動。
+  // 一般模式首頁在空間足夠時不可捲動，模式卡吃掉剩餘高度；空間不足時模式卡區
+  // 自己改成可捲（見 _buildModeGrid）。精簡模式字放大後可能塞不下，2x2 模式卡
+  // 仍吃滿剩餘高度，但畫面太矮時整頁可捲動。
   Widget _buildPage(BuildContext context, bool seniorMode) {
     return ColoredBox(
       color: AppColors.creamLight,
@@ -312,65 +313,66 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ④ 模式卡格（第一張全寬，後四張兩欄）－ 吃掉剩餘高度，首頁不可捲動
+  // ④ 模式卡格（第一張全寬，後四張兩欄）
+  //
+  // 空間夠時三列平分剩餘高度、整頁不可捲，維持原本的滿版鋪排；空間不夠時
+  // （web 矮視窗、手機橫向、分割畫面、放大字級）改成每列固定最小高度並讓整區
+  // 可捲——硬撐的話卡片內容會被 ModeCard 的 Clip.hardEdge 切掉。
+  //
+  // 這裡刻意用可用高度判斷而非 kIsWeb：矮視窗不是 web 獨有的情況。
+  //
   // Scaffold(extendBody: false) 已經把導覽列的高度從 body 可用空間中扣除，
   // 這裡不需要再手動預留底部間距。
+  static const _modeRowMinHeight = 112.0;
+  static const _modeRowGap = 12.0;
+
   Widget _buildModeGrid() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-      child: Column(
-        children: [
-          Expanded(
-            child: ModeCard(
-              mode: _modes[3],
-              large: true,
-              onTap: () => _onModeTap(_modes[3]),
-            ),
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // 放大字級時卡片需要的最小高度也跟著長，否則降級後照樣被裁。
+        final scale = MediaQuery.textScalerOf(context).scale(1.0);
+        final rowMin = _modeRowMinHeight * scale;
+        final needed = rowMin * 3 + _modeRowGap * 2 + 12;
+        final scrollable = constraints.maxHeight < needed;
+        final rows = [
+          _modeRowLarge(),
+          _modeRowPair(_modes[1], _modes[2]),
+          _modeRowPair(_modes[0], _modes[4]),
+        ];
+        final children = <Widget>[
+          for (var i = 0; i < rows.length; i++) ...[
+            if (i > 0) const SizedBox(height: _modeRowGap),
+            scrollable
+                ? SizedBox(height: rowMin, child: rows[i])
+                : Expanded(child: rows[i]),
+          ],
+        ];
+        final grid = Padding(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+          child: Column(
+            mainAxisSize: scrollable ? MainAxisSize.min : MainAxisSize.max,
+            children: children,
           ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: ModeCard(
-                    mode: _modes[1],
-                    onTap: () => _onModeTap(_modes[1]),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ModeCard(
-                    mode: _modes[2],
-                    onTap: () => _onModeTap(_modes[2]),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 12),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: ModeCard(
-                    mode: _modes[0],
-                    onTap: () => _onModeTap(_modes[0]),
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: ModeCard(
-                    mode: _modes[4],
-                    onTap: () => _onModeTap(_modes[4]),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+        );
+        return scrollable ? SingleChildScrollView(child: grid) : grid;
+      },
     );
   }
+
+  Widget _modeRowLarge() => ModeCard(
+    mode: _modes[3],
+    large: true,
+    onTap: () => _onModeTap(_modes[3]),
+  );
+
+  Widget _modeRowPair(ModeData left, ModeData right) => Row(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Expanded(child: ModeCard(mode: left, onTap: () => _onModeTap(left))),
+      const SizedBox(width: _modeRowGap),
+      Expanded(child: ModeCard(mode: right, onTap: () => _onModeTap(right))),
+    ],
+  );
 }
 
 // ─── 今日進度卡 ──────────────────────────────────────────────────────────────

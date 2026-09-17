@@ -80,6 +80,15 @@ class ModeCard extends StatelessWidget {
     );
   }
 
+  // 外層是 Clip.hardEdge：高度不足時溢出的內容會被圓角矩形直接切掉，連 overflow
+  // 黃條都看不到（實際在 web 矮視窗上把中文標題切成一半）。所以這裡用
+  // LayoutBuilder 依實際可用高度逐級降級，而不是硬撐版面：
+  //   充裕 → 完整版面；偏緊 → 縮小內距；很緊 → 再捨棄副標；極緊 → 只留標題。
+  // 每一級都保證內容量得出來的高度 <= 可用高度，所以永遠不會被裁掉。
+  // 精簡模式的 2x2 是放在 SliverFillRemaining(hasScrollBody: false) 裡的，外層會
+  // 量它的 intrinsic 高度——LayoutBuilder 不支援 intrinsic 量測，所以這裡不能用
+  // 一般模式那套依可用高度降級的做法。改用「整頁可捲」保證裝得下（見
+  // home_screen 的 _buildPage），這裡只保留標題的縮放保護。
   Widget _buildSeniorContent() {
     return Padding(
       padding: const EdgeInsets.all(18),
@@ -88,85 +97,123 @@ class ModeCard extends StatelessWidget {
         children: [
           ModeIcon(name: mode.icon, color: mode.accent, size: 36),
           const Spacer(),
-          Text(
-            mode.zh,
-            style: AppTypography.serif(
-              fontSize: AppTypography.display26,
-              fontWeight: FontWeight.w600,
-              color: mode.fg,
-              letterSpacing: 1.0,
-              height: 1.2,
-            ),
-          ),
+          _title(fontSize: AppTypography.display26, height: 1.2),
         ],
       ),
     );
   }
 
+  /// 內容量到的高度超過可用高度時把 18 的內距逐步收到 8，讓文字先保住。
+  double _padFor(double available, double contentHeight) {
+    if (!available.isFinite) return 18;
+    final slack = available - contentHeight;
+    if (slack >= 36) return 18;
+    if (slack >= 16) return 8 + (slack - 16) / 20 * 10;
+    return 8;
+  }
+
+  /// 中文名一律單行不換行；FittedBox 在高度被 Flexible 夾住後才會等比縮小，
+  /// 縮到底仍不夠才退 ellipsis。
+  Widget _title({required double fontSize, required double height}) {
+    return Flexible(
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Text(
+          mode.zh,
+          maxLines: 1,
+          softWrap: false,
+          overflow: TextOverflow.ellipsis,
+          style: AppTypography.serif(
+            fontSize: fontSize,
+            fontWeight: FontWeight.w600,
+            color: mode.fg,
+            letterSpacing: 1.0,
+            height: height,
+          ),
+        ),
+      ),
+    );
+  }
+
   Widget _buildContent() {
-    return Padding(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // 頂部：icon 左，Truku 名右
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final scale = MediaQuery.textScalerOf(context);
+        final titleSize = large
+            ? AppTypography.display26
+            : AppTypography.headline;
+        final titleHeight = scale.scale(titleSize) * 1.1;
+        final subHeight = scale.scale(AppTypography.caption) * 1.2;
+        const iconHeight = 28.0;
+        final full = iconHeight + 8 + titleHeight + 4 + subHeight;
+        final pad = _padFor(constraints.maxHeight, full + 36);
+        // 連最小內距都塞不下完整內容時，副標是最先該讓位的——它是輔助說明，
+        // 中文標題與 icon 才是這張卡的識別。
+        final showSub = !constraints.maxHeight.isFinite ||
+            constraints.maxHeight >= full + pad * 2;
+        return Padding(
+          padding: EdgeInsets.all(pad),
+          child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              ModeIcon(name: mode.icon, color: mode.accent),
-              const SizedBox(width: 8),
-              // 半寬卡在 414px 機型只剩約 113px 給族語名，KARI TRUKU／LNGLUNGAN
-              // 加上 2.6 的字距會撐破 Row。FittedBox 讓窄卡自動縮排版而非截字，
-              // 縮到底仍不夠才退 ellipsis。
-              Flexible(
-                child: FittedBox(
-                  fit: BoxFit.scaleDown,
-                  alignment: Alignment.centerRight,
-                  child: Text(
-                    mode.truku.toUpperCase(),
-                    maxLines: 1,
-                    softWrap: false,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.latin(
-                      fontStyle: FontStyle.italic,
-                      fontSize: AppTypography.caption,
-                      color: mode.accent,
-                      letterSpacing: 2.6,
+              // 頂部：icon 左，Truku 名右
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ModeIcon(name: mode.icon, color: mode.accent),
+                  const SizedBox(width: 8),
+                  // 半寬卡在 414px 機型只剩約 113px 給族語名，KARI TRUKU／LNGLUNGAN
+                  // 加上 2.6 的字距會撐破 Row。FittedBox 讓窄卡自動縮排版而非截字，
+                  // 縮到底仍不夠才退 ellipsis。
+                  Flexible(
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerRight,
+                      child: Text(
+                        mode.truku.toUpperCase(),
+                        maxLines: 1,
+                        softWrap: false,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.latin(
+                          fontStyle: FontStyle.italic,
+                          fontSize: AppTypography.caption,
+                          color: mode.accent,
+                          letterSpacing: 2.6,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              const Spacer(),
+
+              // 底部：中文名 +（空間夠時）副標
+              _title(fontSize: titleSize, height: 1.1),
+              if (showSub) ...[
+                const SizedBox(height: 4),
+                Flexible(
+                  child: Opacity(
+                    opacity: 0.7,
+                    child: Text(
+                      mode.sub,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: TextStyle(
+                        fontSize: AppTypography.caption,
+                        color: mode.fg,
+                        letterSpacing: 0.5,
+                      ),
                     ),
                   ),
                 ),
-              ),
+              ],
             ],
           ),
-
-          const Spacer(),
-
-          // 底部：中文名 + 副標
-          Text(
-            mode.zh,
-            style: AppTypography.serif(
-              fontSize: large ? AppTypography.display26 : AppTypography.headline,
-              fontWeight: FontWeight.w600,
-              color: mode.fg,
-              letterSpacing: 1.0,
-              height: 1.1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Opacity(
-            opacity: 0.7,
-            child: Text(
-              mode.sub,
-              style: TextStyle(
-                fontSize: AppTypography.caption,
-                color: mode.fg,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 }
