@@ -1,0 +1,274 @@
+{
+  "items": [
+    {
+      "id": "avatar_blue_01",
+      "type": "avatar",
+      "name": "頭像（藍）1",
+      "price": 50,
+      "rarity": "blue",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_blue_01.png",
+      "is_owned": true
+    },
+    {
+      "id": "avatar_blue_02",
+      "type": "avatar",
+      "name": "頭像（藍）2",
+      "price": 50,
+      "rarity": "blue",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_blue_02.png",
+      "is_owned": true
+    },
+    {
+      "id": "avatar_gold_01",
+      "type": "avatar",
+      "name": "頭像（金）1",
+      "price": 200,
+      "rarity": "gold",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_gold_01.png",
+      "is_owned": true
+    },
+    {
+      "id": "avatar_gold_02",
+      "type": "avatar",
+      "name": "頭像（金）2",
+      "price": 200,
+      "rarity": "gold",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_gold_02.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_gold_03",
+      "type": "avatar",
+      "name": "頭像（金）3",
+      "price": 200,
+      "rarity": "gold",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_gold_03.png",
+      "is_owned": true
+    },
+    {
+      "id": "avatar_gold_04",
+      "type": "avatar",
+      "name": "頭像（金）4",
+      "price": 200,
+      "rarity": "gold",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_gold_04.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_gold_05",
+      "type": "avatar",
+      "name": "頭像（金）5",
+      "price": 200,
+      "rarity": "gold",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_gold_05.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_gold_06",
+      "type": "avatar",
+      "name": "頭像（金）6",
+      "price": 200,
+      "rarity": "gold",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_gold_06.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_gold_07",
+      "type": "avatar",
+      "name": "頭像（金）7",
+      "price": 200,
+      "rarity": "gold",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_gold_07.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_gold_08",
+      "type": "avatar",
+      "name": "頭像（金）8",
+      "price": 200,
+      "rarity": "gold",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_gold_08.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_gold_09",
+      "type": "avatar",
+      "name": "頭像（金）9",
+      "price": 200,
+      "rarity": "gold",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_gold_09.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_green_01",
+      "type": "avatar",
+      "name": "頭像（綠）1",
+      "price": 50,
+      "rarity": "green",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_green_01.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_green_02",
+      "type": "avatar",
+      "name": "頭像（綠）2",
+      "price": 50,
+      "rarity": "green",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_green_02.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_orange_01",
+      "type": "avatar",
+      "name": "頭像（橘）1",
+      "price": 50,
+      "rarity": "orange",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_orange_01.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_orange_02",
+      "type": "avatar",
+      "name": "頭像（橘）2",
+      "price": 50,
+      "rarity": "orange",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_orange_02.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_red_01",
+      "type": "avatar",
+      "name": "頭像（紅）1",
+      "price": 50,
+      "rarity": "red",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_red_01.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_red_02",
+      "type": "avatar",
+      "name": "頭像（紅）2",
+      "price": 50,
+      "rarity": "red",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_red_02.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_yellow_01",
+      "type": "avatar",
+      "name": "頭像（黃）1",
+      "price": 50,
+      "rarity": "yellow",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_yellow_01.png",
+      "is_owned": false
+    },
+    {
+      "id": "avatar_yellow_02",
+      "type": "avatar",
+      "name": "頭像（黃）2",
+      "price": 50,
+      "rarity": "yellow",
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/avatars/avatar_yellow_02.png",
+      "is_owned": false
+    },
+    {
+      "id": "frame_01",
+      "type": "frame",
+      "name": "頭像框 1",
+      "price": 100,
+      "rarity": null,
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/frames/frame_01.png",
+      "is_owned": true
+    },
+    {
+      "id": "frame_02",
+      "type": "frame",
+      "name": "頭像框 2",
+      "price": 100,
+      "rarity": null,
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/frames/frame_02.png",
+      "is_owned": false
+    },
+    {
+      "id": "frame_03",
+      "type": "frame",
+      "name": "頭像框 3",
+      "price": 100,
+      "rarity": null,
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/frames/frame_03.png",
+      "is_owned": false
+    },
+    {
+      "id": "frame_04",
+      "type": "frame",
+      "name": "頭像框 4",
+      "price": 100,
+      "rarity": null,
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/frames/frame_04.png",
+      "is_owned": false
+    },
+    {
+      "id": "frame_05",
+      "type": "frame",
+      "name": "頭像框 5",
+      "price": 100,
+      "rarity": null,
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/frames/frame_05.png",
+      "is_owned": true
+    },
+    {
+      "id": "frame_06",
+      "type": "frame",
+      "name": "頭像框 6",
+      "price": 100,
+      "rarity": null,
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/frames/frame_06.png",
+      "is_owned": false
+    },
+    {
+      "id": "frame_07",
+      "type": "frame",
+      "name": "頭像框 7",
+      "price": 100,
+      "rarity": null,
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/frames/frame_07.png",
+      "is_owned": false
+    },
+    {
+      "id": "frame_08",
+      "type": "frame",
+      "name": "頭像框 8",
+      "price": 100,
+      "rarity": null,
+      "unlock_condition": null,
+      "image_url": "https://storage.googleapis.com/truku-media/avatar-shop/frames/frame_08.png",
+      "is_owned": false
+    }
+  ]
+}

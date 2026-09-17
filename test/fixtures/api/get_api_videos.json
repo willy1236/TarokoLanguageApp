@@ -1,0 +1,22 @@
+{
+  "total": 1,
+  "page": 1,
+  "page_size": 20,
+  "sort": "latest",
+  "videos": [
+    {
+      "id": 1,
+      "title": "測試標題",
+      "description": "測試描述",
+      "category": "education",
+      "duration_sec": 198,
+      "thumbnail_url": "https://storage.googleapis.com/truku-media-video/videos/1/thumb.jpg",
+      "view_count": 30,
+      "weekly_view_count": 4,
+      "like_count": 2,
+      "is_liked": true,
+      "is_bookmarked": true,
+      "published_at": "2026-07-14T12:14:04.939Z"
+    }
+  ]
+}

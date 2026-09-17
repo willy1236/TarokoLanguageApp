@@ -1,0 +1,113 @@
+{
+  "posts": [
+    {
+      "id": 11,
+      "board": {
+        "id": 4,
+        "slug": "events",
+        "name": "活動"
+      },
+      "title": "測試標題",
+      "body": "測試內文",
+      "like_count": 0,
+      "comment_count": 0,
+      "is_pinned": false,
+      "is_liked": false,
+      "is_bookmarked": false,
+      "images": [],
+      "tags": [],
+      "created_at": "2026-09-04T05:28:38.406Z",
+      "updated_at": "2026-09-04T05:28:38.406Z",
+      "author": {
+        "uid": 22,
+        "display_name": "測試使用者",
+        "avatar_url": "https://example.com/avatar.png",
+        "avatar_id": null,
+        "frame_id": null,
+        "friend_code": "TESTCODE"
+      }
+    },
+    {
+      "id": 10,
+      "board": {
+        "id": 3,
+        "slug": "learning",
+        "name": "學習"
+      },
+      "title": "測試標題",
+      "body": "測試內文",
+      "like_count": 0,
+      "comment_count": 0,
+      "is_pinned": false,
+      "is_liked": false,
+      "is_bookmarked": false,
+      "images": [],
+      "tags": [],
+      "created_at": "2026-09-04T05:28:38.406Z",
+      "updated_at": "2026-09-04T05:28:38.406Z",
+      "author": {
+        "uid": 22,
+        "display_name": "測試使用者",
+        "avatar_url": "https://example.com/avatar.png",
+        "avatar_id": null,
+        "frame_id": null,
+        "friend_code": "TESTCODE"
+      }
+    },
+    {
+      "id": 9,
+      "board": {
+        "id": 2,
+        "slug": "culture",
+        "name": "文化"
+      },
+      "title": "測試標題",
+      "body": "測試內文",
+      "like_count": 0,
+      "comment_count": 0,
+      "is_pinned": false,
+      "is_liked": false,
+      "is_bookmarked": false,
+      "images": [],
+      "tags": [],
+      "created_at": "2026-09-04T05:28:38.406Z",
+      "updated_at": "2026-09-04T05:28:38.406Z",
+      "author": {
+        "uid": 22,
+        "display_name": "測試使用者",
+        "avatar_url": "https://example.com/avatar.png",
+        "avatar_id": null,
+        "frame_id": null,
+        "friend_code": "TESTCODE"
+      }
+    },
+    {
+      "id": 8,
+      "board": {
+        "id": 2,
+        "slug": "culture",
+        "name": "文化"
+      },
+      "title": "測試標題",
+      "body": "測試內文",
+      "like_count": 0,
+      "comment_count": 0,
+      "is_pinned": false,
+      "is_liked": false,
+      "is_bookmarked": false,
+      "images": [],
+      "tags": [],
+      "created_at": "2026-09-03T08:22:01.017Z",
+      "updated_at": "2026-09-03T08:22:01.017Z",
+      "author": {
+        "uid": 22,
+        "display_name": "測試使用者",
+        "avatar_url": "https://example.com/avatar.png",
+        "avatar_id": null,
+        "frame_id": null,
+        "friend_code": "TESTCODE"
+      }
+    }
+  ],
+  "next_cursor": null
+}

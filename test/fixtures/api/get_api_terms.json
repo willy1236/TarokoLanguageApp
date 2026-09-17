@@ -1,0 +1,23 @@
+{
+  "documents": [
+    {
+      "doc_type": "privacy",
+      "version": 10,
+      "title": "測試標題",
+      "content_md": "測試內文",
+      "published_at": "2026-09-15T00:57:18.668Z",
+      "consented": true,
+      "consented_version": 10
+    },
+    {
+      "doc_type": "tos",
+      "version": 5,
+      "title": "測試標題",
+      "content_md": "測試內文",
+      "published_at": "2026-09-15T00:57:18.616Z",
+      "consented": true,
+      "consented_version": 5
+    }
+  ],
+  "all_consented": true
+}
