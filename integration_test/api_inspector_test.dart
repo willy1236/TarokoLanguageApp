@@ -588,6 +588,9 @@ const Map<String, F> _meOptional = {
   'video_call_count': F.number,
   'forum_post_count': F.number,
   'role': F.string,
+  'provider': F.string,
+  'updated_at': F.string,
+  'last_login_at': F.string,
 };
 
 /// GET /api/shop/items → lib/models/shop_item.dart ShopItem.fromJson
