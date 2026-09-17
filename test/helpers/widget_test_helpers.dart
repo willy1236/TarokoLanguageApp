@@ -33,12 +33,22 @@ Widget wrapScreen(Widget screen, {Map<String, WidgetBuilder>? routes}) {
 
 /// flutter_secure_storage 在測試環境沒有原生實作。
 /// ApiClient 會經 AuthService.currentToken() 讀它，不 stub 會炸 MissingPluginException。
-/// 回 null 等同「未登入」。
-void stubSecureStorage() {
+///
+/// 預設全部回 null，等同「未登入」—— 既有測試依賴這個預設，不要改。
+/// 要測「已登入」的流程（例如 splash 的分支導流）才傳 [token]。
+/// [expiresAt] 不給時 AuthService.isLoggedIn() 視為未過期（auth_service.dart:176-179）。
+void stubSecureStorage({String? token, String? expiresAt}) {
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
     const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-    (call) async => null,
+    (call) async {
+      if (token == null && expiresAt == null) return null;
+      final args = call.arguments;
+      final key = args is Map ? args['key'] : null;
+      if (key == 'session_token') return token;
+      if (key == 'session_expires_at') return expiresAt;
+      return null;
+    },
   );
 }
 
@@ -55,8 +65,10 @@ void stubCommonChannels({
   bool audio = false,
   bool vibration = false,
   bool urlLauncher = false,
+  String? token,
+  String? expiresAt,
 }) {
-  if (secureStorage) stubSecureStorage();
+  if (secureStorage) stubSecureStorage(token: token, expiresAt: expiresAt);
   if (audio) {
     stubChannel('xyz.luan/audioplayers');
     stubChannel('xyz.luan/audioplayers.global');
