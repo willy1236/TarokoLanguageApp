@@ -4,6 +4,7 @@ import '../../core/network/api_client.dart';
 import '../../models/history_models.dart';
 import '../../models/level_info.dart';
 import '../../services/history_service.dart';
+import '../../services/learn_refresh_notifier.dart';
 import '../../services/learn_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_widgets.dart';
@@ -28,18 +29,39 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
   @override
   void initState() {
     super.initState();
+    _assignFutures();
+    _loadSuggestedLevel();
+    // 測驗交卷後（含從本頁進去的測驗、以及 popUntil 直接彈回首頁的聽力流程）
+    // 重抓等級與最近練習。
+    LearnRefreshNotifier.revision.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    LearnRefreshNotifier.revision.removeListener(_reload);
+    super.dispose();
+  }
+
+  void _assignFutures() {
     _levelsFuture = LearnService.fetchLevels();
     _recentQuizzesFuture = HistoryService.fetchHistory(
       type: 'quiz',
       page: 1,
       pageSize: 5,
     );
-    _loadSuggestedLevel();
+  }
+
+  /// 重抓整頁。FutureBuilder 只認 Future 物件本身，不重新指派就永遠停在舊資料。
+  Future<void> _reload() async {
+    if (!mounted) return;
+    setState(_assignFutures);
+    await _loadSuggestedLevel();
   }
 
   Future<void> _loadSuggestedLevel() async {
     try {
-      final user = await UserService.fetchMe();
+      // 分級測驗會在後端改寫建議等級，快取的 user 是舊的，必須強制重抓。
+      final user = await UserService.fetchMe(forceRefresh: true);
       if (!mounted) return;
       setState(() {
         _quizSuggestedLevel = user.quizSuggestedLevel;
@@ -76,7 +98,10 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
               return _buildError(snapshot.error);
             }
             final levels = snapshot.data ?? const [];
-            return ListView(
+            return RefreshIndicator(
+              onRefresh: _reload,
+              color: AppColors.primary,
+              child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
               children: [
                 _buildHeader(),
@@ -114,6 +139,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
                 const SizedBox(height: 10),
                 _buildRecentPractice(),
               ],
+              ),
             );
           },
         ),

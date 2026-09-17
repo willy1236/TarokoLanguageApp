@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/history_models.dart';
 import '../../services/history_service.dart';
+import '../../services/learn_refresh_notifier.dart';
 import '../learn/lesson_card_screen.dart';
 import '../learn/listening_quiz_screen.dart';
 import 'listening_history_detail_screen.dart';
@@ -38,10 +39,17 @@ class _HistoryScreenState extends State<HistoryScreen> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _loadFirstPage();
+    // 續做未完成的測驗、或在別處交卷後回到本頁，紀錄要跟著更新。
+    LearnRefreshNotifier.revision.addListener(_onLearnRevision);
+  }
+
+  void _onLearnRevision() {
+    if (mounted) _loadFirstPage();
   }
 
   @override
   void dispose() {
+    LearnRefreshNotifier.revision.removeListener(_onLearnRevision);
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     super.dispose();
@@ -353,7 +361,10 @@ class _HistoryRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '${record.statusLabel} · ${_timeLabel()}',
-                    style: const TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
+                    style: const TextStyle(
+                      fontSize: AppTypography.caption,
+                      color: AppColors.fog,
+                    ),
                   ),
                 ],
               ),

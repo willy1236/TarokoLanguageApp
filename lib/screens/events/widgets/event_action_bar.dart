@@ -23,6 +23,10 @@ class EventActionBar extends StatelessWidget {
   final VoidCallback onExport;
   final VoidCallback onDelete;
 
+  /// 發送提醒成功後回呼（詳情頁據此重抓提醒紀錄）。ReminderComposeScreen 已
+  /// 依專案慣例 pop(context, true)，這裡負責把它接回上層。
+  final Future<void> Function()? onReminderSent;
+
   const EventActionBar({
     super.key,
     required this.event,
@@ -35,6 +39,7 @@ class EventActionBar extends StatelessWidget {
     required this.onEdit,
     required this.onExport,
     required this.onDelete,
+    this.onReminderSent,
   });
 
   @override
@@ -80,13 +85,14 @@ class EventActionBar extends StatelessWidget {
     final sendReminderButton = GestureDetector(
       onTap: () async {
         if (blockIfReadOnly()) return;
-        await Navigator.push(
+        final sent = await Navigator.push<bool>(
           context,
           MaterialPageRoute(
             builder: (_) =>
                 ReminderComposeScreen(eventId: e.id, eventTitle: e.title),
           ),
         );
+        if (sent == true) await onReminderSent?.call();
       },
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 15),

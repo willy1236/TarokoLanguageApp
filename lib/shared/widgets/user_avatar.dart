@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../models/shop_item.dart';
+import '../../models/user_model.dart';
+import '../../services/user_service.dart';
 
 // 使用者頭像渲染邏輯（與個人資料頁一致，見 頭像商店.md §5）：
 // 已配戴內建頭像（avatarId）優先，對照商店目錄取得 image_url；否則退回原始
@@ -68,6 +70,11 @@ class FramedUserAvatar extends StatelessWidget {
   final Color fallbackIconColor;
   final Widget? fallback;
 
+  /// 這個頭像屬於誰。等於目前登入者時改以 UserService 的快取為準並隨之更新：
+  /// 貼文、留言、參加者名單的作者欄是「當下的快照」，換頭像後不會自己變。
+  /// 傳 null 或別人的 uid 時行為完全不變。
+  final int? userUid;
+
   const FramedUserAvatar({
     super.key,
     this.avatarId,
@@ -77,10 +84,25 @@ class FramedUserAvatar extends StatelessWidget {
     required this.size,
     required this.fallbackIconColor,
     this.fallback,
+    this.userUid,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (userUid != null && userUid == UserService.currentUid) {
+      return ValueListenableBuilder<UserModel?>(
+        valueListenable: UserService.userNotifier,
+        builder: (context, me, _) => _build(
+          me?.uid == userUid ? me!.avatarId : avatarId,
+          me?.uid == userUid ? me!.avatarUrl : avatarUrl,
+          me?.uid == userUid ? me!.frameId : frameId,
+        ),
+      );
+    }
+    return _build(avatarId, avatarUrl, frameId);
+  }
+
+  Widget _build(String? avatarId, String? avatarUrl, String? frameId) {
     final frameImageUrl = frameId != null
         ? itemCatalogById[frameId]?.imageUrl
         : null;
@@ -88,7 +110,7 @@ class FramedUserAvatar extends StatelessWidget {
       child: SizedBox(
         width: size,
         height: size,
-        child: fallback != null && avatarId == null && (avatarUrl == null || avatarUrl!.isEmpty)
+        child: fallback != null && avatarId == null && (avatarUrl == null || avatarUrl.isEmpty)
             ? fallback
             : UserAvatar(
                 avatarId: avatarId,

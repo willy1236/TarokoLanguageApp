@@ -171,10 +171,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     }
   }
 
-  void _openChat() {
+  /// 聊天中可能封鎖或被對方變更關係，返回後重抓本頁。
+  Future<void> _openChat() async {
     final profile = _profile;
     if (profile == null) return;
-    Navigator.of(context).push(
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ChatScreen(
           partnerUid: profile.uid,
@@ -183,6 +184,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         ),
       ),
     );
+    if (!mounted) return;
+    _load();
   }
 
   Future<void> _handleAction(_ProfileAction action) async {

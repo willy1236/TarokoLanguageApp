@@ -185,6 +185,7 @@ class ForumCommentTile extends StatelessWidget {
       size: size,
       fallbackIconColor: AppColors.gold,
       fallback: _initialsAvatar(size),
+      userUid: author?.uid,
     );
   }
 

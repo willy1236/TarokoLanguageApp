@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/level_info.dart';
+import '../../services/learn_refresh_notifier.dart';
 import '../../services/learn_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
@@ -39,9 +40,18 @@ class _LearnScreenState extends State<LearnScreen> {
     super.initState();
     _levelsFuture = LearnService.fetchLevels();
     _loadSuggestedLevel();
+    // 本頁活在 IndexedStack 內只 initState 一次；測驗交卷後靠這條訂閱更新建議等級。
+    LearnRefreshNotifier.revision.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    LearnRefreshNotifier.revision.removeListener(_reload);
+    super.dispose();
   }
 
   Future<void> _reload() async {
+    if (!mounted) return;
     setState(() {
       _levelsFuture = LearnService.fetchLevels();
     });
@@ -51,7 +61,8 @@ class _LearnScreenState extends State<LearnScreen> {
 
   Future<void> _loadSuggestedLevel() async {
     try {
-      final user = await UserService.fetchMe();
+      // 分級測驗會在後端改寫建議等級，快取的 user 是舊的，必須強制重抓。
+      final user = await UserService.fetchMe(forceRefresh: true);
       if (!mounted) return;
       setState(() {
         _quizSuggestedLevel = user.quizSuggestedLevel;

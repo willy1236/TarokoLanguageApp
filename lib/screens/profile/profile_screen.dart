@@ -64,6 +64,21 @@ class _ProfileScreenState extends State<ProfileScreen> {
     super.initState();
     _loadUser();
     _loadItemCatalog();
+    // 別處（背包配戴、商店購買、換頭像）寫回快取時同步本頁：本頁活在 IndexedStack
+    // 內，initState 只會跑一次，不靠這條訂閱就只能等下次手動重抓。
+    UserService.userNotifier.addListener(_onUserChanged);
+  }
+
+  @override
+  void dispose() {
+    UserService.userNotifier.removeListener(_onUserChanged);
+    super.dispose();
+  }
+
+  void _onUserChanged() {
+    final user = UserService.cachedUser;
+    if (!mounted || user == null) return;
+    setState(() => _user = user);
   }
 
   Future<void> _loadUser() async {
@@ -348,6 +363,25 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await Navigator.of(
       context,
     ).push(MaterialPageRoute<void>(builder: (_) => const MilletLedgerScreen()));
+    if (!mounted) return;
+    _loadUser();
+  }
+
+  /// 好友頁可設定/取消展示好友，回本頁要重抓才看得到變動。
+  Future<void> _openFriends() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const FriendsListScreen()));
+    if (!mounted) return;
+    _loadUser();
+  }
+
+  Future<void> _openBookmarks() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const MyBookmarksScreen()));
+    if (!mounted) return;
+    _loadUser();
   }
 
   // ── 快速入口（好友／背包／商店／收藏）─────────────────────────────────────
@@ -357,9 +391,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ProfileQuickLink(
         icon: Icons.people_outline,
         label: '好友',
-        onTap: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const FriendsListScreen())),
+        onTap: _openFriends,
       ),
       ProfileQuickLink(
         icon: Icons.inventory_2_outlined,
@@ -374,9 +406,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ProfileQuickLink(
         icon: Icons.bookmark_outline,
         label: '收藏',
-        onTap: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const MyBookmarksScreen())),
+        onTap: _openBookmarks,
       ),
     ];
     return Padding(
