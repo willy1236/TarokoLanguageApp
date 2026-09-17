@@ -70,10 +70,11 @@ void main() {
 
     setUp(() => calls = []);
 
-    // 一般模式首頁不可捲動、模式卡吃滿剩餘高度，需要夠高的畫面；測試字型每個字
-    // 都是方塊、比實際字型寬，寬度也放大一些避免卡片內的族語名誤報溢位。
+    // 一般模式首頁不可捲動、模式卡吃滿剩餘高度，需要夠高的畫面。
+    // 寬度用 414（iPhone 14/15）：族語名改成 FittedBox 縮放後不再需要放寬避溢位，
+    // 守門測試見 test/widgets/mode_card_overflow_test.dart。
     Future<void> usePhoneSize(WidgetTester tester) async {
-      tester.view.physicalSize = const Size(600, 1000);
+      tester.view.physicalSize = const Size(414, 1000);
       tester.view.devicePixelRatio = 1.0;
       addTearDown(tester.view.reset);
     }

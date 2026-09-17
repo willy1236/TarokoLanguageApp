@@ -143,12 +143,14 @@ void resetGlobals() {
 /// 跨畫面測試常要同時 render 整個殼（含 IndexedStack 裡的所有分頁），
 /// 一定要先換成手機尺寸。
 ///
-/// 預設寬度刻意給 480 而非常見的 414：首頁 ModeCard（mode_card.dart:113 的 Row）
-/// 在 414 寬會橫向 overflow 18~33px。那是 production 的版面問題，不是測試問題，
-/// 這裡先避開以免測試被無關的 layout 噪音卡住。
+/// 預設寬度 414 = iPhone 14/15 的邏輯寬度，是主流機型裡最窄的一個。
+/// **不要為了讓測試變綠而把這個值調寬**：測試字型（Ahem）每個字都是方塊、比實際
+/// 字型更寬，414 下不 overflow 是比實機嚴格的條件，反過來若這裡 overflow，代表
+/// 版面在實機上很可能真的會出問題。歷史紀錄見 PR #73：當時為了避開 ModeCard 的
+/// overflow 把預設調成 480，等於把唯一的自動化警報拆掉，該 bug 已在後續修正。
 void usePhoneSurface(
   WidgetTester tester, {
-  Size size = const Size(480, 1000),
+  Size size = const Size(414, 1000),
 }) {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;

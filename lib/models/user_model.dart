@@ -37,6 +37,9 @@ class UserModel {
   final int videoCallCount; // 累計視訊通話次數（配對成功雙方各 +1）
   final int forumPostCount; // 目前有效發文篇數（軟刪除會扣減）
   final String? role; // user／organizer／admin，後台手動授予；只有 organizer/admin 能發起活動
+  final String? provider; // 登入方式：google／apple；後端回傳但 UI 尚未使用
+  final DateTime? updatedAt; // 帳號資料最後更新時間；後端回傳但 UI 尚未使用
+  final DateTime? lastLoginAt; // 最後一次登入時間；後端回傳但 UI 尚未使用
 
   const UserModel({
     required this.uid,
@@ -68,6 +71,9 @@ class UserModel {
     this.videoCallCount = 0,
     this.forumPostCount = 0,
     this.role,
+    this.provider,
+    this.updatedAt,
+    this.lastLoginAt,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -105,6 +111,15 @@ class UserModel {
       videoCallCount: json['video_call_count'] as int? ?? 0,
       forumPostCount: json['forum_post_count'] as int? ?? 0,
       role: json['role'] as String?,
+      provider: json['provider'] as String?,
+      // 與 created_at 不同，這兩個欄位是後端後來才加的，舊版本回應可能沒有，
+      // 一律「有值才 parse」，不可硬 parse。
+      updatedAt: json['updated_at'] == null
+          ? null
+          : DateTime.parse(json['updated_at'] as String),
+      lastLoginAt: json['last_login_at'] == null
+          ? null
+          : DateTime.parse(json['last_login_at'] as String),
     );
   }
 
@@ -138,6 +153,9 @@ class UserModel {
         'video_call_count': videoCallCount,
         'forum_post_count': forumPostCount,
         'role': role,
+        'provider': provider,
+        'updated_at': updatedAt?.toIso8601String(),
+        'last_login_at': lastLoginAt?.toIso8601String(),
       };
 
   int get joinedDays => DateTime.now().difference(createdAt).inDays;
@@ -174,6 +192,9 @@ class UserModel {
     int? videoCallCount,
     int? forumPostCount,
     String? role,
+    String? provider,
+    DateTime? updatedAt,
+    DateTime? lastLoginAt,
   }) {
     return UserModel(
       uid: uid ?? this.uid,
@@ -206,6 +227,9 @@ class UserModel {
       videoCallCount: videoCallCount ?? this.videoCallCount,
       forumPostCount: forumPostCount ?? this.forumPostCount,
       role: role ?? this.role,
+      provider: provider ?? this.provider,
+      updatedAt: updatedAt ?? this.updatedAt,
+      lastLoginAt: lastLoginAt ?? this.lastLoginAt,
     );
   }
 }

@@ -115,13 +115,26 @@ class ModeCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               ModeIcon(name: mode.icon, color: mode.accent),
-              Text(
-                mode.truku.toUpperCase(),
-                style: AppTypography.latin(
-                  fontStyle: FontStyle.italic,
-                  fontSize: AppTypography.caption,
-                  color: mode.accent,
-                  letterSpacing: 2.6,
+              const SizedBox(width: 8),
+              // 半寬卡在 414px 機型只剩約 113px 給族語名，KARI TRUKU／LNGLUNGAN
+              // 加上 2.6 的字距會撐破 Row。FittedBox 讓窄卡自動縮排版而非截字，
+              // 縮到底仍不夠才退 ellipsis。
+              Flexible(
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerRight,
+                  child: Text(
+                    mode.truku.toUpperCase(),
+                    maxLines: 1,
+                    softWrap: false,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.latin(
+                      fontStyle: FontStyle.italic,
+                      fontSize: AppTypography.caption,
+                      color: mode.accent,
+                      letterSpacing: 2.6,
+                    ),
+                  ),
                 ),
               ),
             ],
