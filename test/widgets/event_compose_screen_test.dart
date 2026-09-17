@@ -55,18 +55,13 @@ Future<void> _openForm(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-/// 錯誤訊息掛在表單 ListView 的最下方，預設視窗高度看不到，
-/// 沒捲下去就不會被建出來、finder 也找不到。
-Future<Finder> _scrollToError(WidgetTester tester, String contains) async {
-  final target = find.textContaining(contains);
-  await tester.dragUntilVisible(
-    target,
-    find.byType(ListView),
-    const Offset(0, -200),
-  );
-  await tester.pumpAndSettle();
-  return target;
-}
+/// 送出失敗的錯誤走 SnackBar，不捲動也該看得到。
+/// 這個斷言本身就是在守「錯誤訊息不會被藏在表單最底下」這件事：
+/// 若哪天有人把它改回 inline 渲染，這裡會因為沒有 SnackBar 而變紅。
+Finder _errorSnackBar(String contains) => find.descendant(
+      of: find.byType(SnackBar),
+      matching: find.textContaining(contains),
+    );
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -90,7 +85,7 @@ void main() {
 
     expect(calls, 0, reason: '驗證不過就不該送出');
     // 錯誤訊息的內容由 EventDraft.validate 決定，這裡只確認有顯示給使用者看。
-    expect(await _scrollToError(tester, '請填寫所有必填欄位'), findsOneWidget);
+    expect(_errorSnackBar('請填寫所有必填欄位'), findsOneWidget);
   });
 
   testWidgets('編輯模式預填既有內容，時間欄位標示不可改', (tester) async {
@@ -135,7 +130,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(popped, isNull, reason: '失敗不該關閉表單');
-    expect(await _scrollToError(tester, '需要活動主辦權限'), findsOneWidget);
+    expect(_errorSnackBar('需要活動主辦權限'), findsOneWidget);
   });
 
   testWidgets('編輯途中活動已被取消時退回上一頁，不讓使用者卡在存不了的表單', (tester) async {

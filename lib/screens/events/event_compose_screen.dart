@@ -51,7 +51,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   DateTime? _registrationDeadline;
   String? _category; // 選填，null = 不分類
   bool _submitting = false;
-  String? _error;
 
   // 常用分類（對應活動列表的篩選標籤）；點一下切換，可不選。
   static const _categories = ['族語', '走讀', '工藝', '線上', '音樂', '其他'];
@@ -185,9 +184,16 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     return '${two(dt.hour)}:${two(dt.minute)}';
   }
 
+  // 送出失敗一律用 SnackBar：送出按鈕在固定的 header，錯誤訊息若渲染在表單裡，
+  // 使用者按下去會看不到任何反應。與 reminder_compose_screen 的作法一致。
+  void _showError(String message) {
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.hideCurrentSnackBar();
+    messenger.showSnackBar(SnackBar(content: Text(message)));
+  }
+
   Future<void> _submit() async {
     if (_submitting) return;
-    setState(() => _error = null);
 
     final editing = widget.editing;
     final draft = _draft;
@@ -196,7 +202,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       now: DateTime.now(),
     );
     if (invalid != null) {
-      setState(() => _error = invalid);
+      _showError(invalid);
       return;
     }
 
@@ -227,10 +233,9 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         Navigator.pop(context, true);
         return;
       }
-      setState(() {
-        _submitting = false;
-        _error = e.toString(); // 後端訊息，例如「需要活動主辦權限（organizer / admin）」
-      });
+      setState(() => _submitting = false);
+      // 後端訊息，例如「需要活動主辦權限（organizer / admin）」
+      _showError(e.toString());
     }
   }
 
@@ -381,10 +386,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                       maxLength: 500,
                       seniorMode: seniorMode,
                     ),
-                  ],
-                  if (_error != null) ...[
-                    const SizedBox(height: 16),
-                    _buildErrorBox(_error!, seniorMode),
                   ],
                 ],
               ),
@@ -900,38 +901,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           ),
         );
       }).toList(),
-    );
-  }
-
-  Widget _buildErrorBox(String message, bool seniorMode) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      decoration: BoxDecoration(
-        color: AppColors.danger.withValues(alpha: 0.08),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: AppColors.danger.withValues(alpha: 0.3)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: seniorMode ? 22 : 16,
-            color: AppColors.dangerDark,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
-                color: AppColors.dangerDark,
-                height: 1.5,
-              ),
-            ),
-          ),
-        ],
-      ),
     );
   }
 }
