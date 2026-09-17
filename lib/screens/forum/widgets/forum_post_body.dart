@@ -11,8 +11,11 @@ class ForumPostBody extends StatelessWidget {
   final ForumPost post;
   final bool seniorMode;
 
-  /// 圖片簽章網址過期時呼叫（父層重新取貼文拿新網址）。
+  /// 圖片簽章網址過期時自動呼叫（父層重新取貼文拿新網址），父層有次數上限。
   final VoidCallback onImageExpired;
+
+  /// 使用者手動點破圖重試時呼叫，不受自動重試次數上限限制。
+  final VoidCallback onImageRetryTap;
   final VoidCallback onLike;
   final VoidCallback onBookmark;
 
@@ -21,6 +24,7 @@ class ForumPostBody extends StatelessWidget {
     required this.post,
     required this.seniorMode,
     required this.onImageExpired,
+    required this.onImageRetryTap,
     required this.onLike,
     required this.onBookmark,
   });
@@ -60,7 +64,11 @@ class ForumPostBody extends StatelessWidget {
       ),
       if (post.images.isNotEmpty) ...[
         const SizedBox(height: 14),
-        ForumImageGrid(urls: post.images, onImageExpired: onImageExpired),
+        ForumImageGrid(
+          urls: post.images,
+          onImageExpired: onImageExpired,
+          onRetryTap: onImageRetryTap,
+        ),
       ],
       if (post.tags.isNotEmpty) ...[
         const SizedBox(height: 12),
