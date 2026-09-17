@@ -146,44 +146,55 @@ class EventActionBar extends StatelessWidget {
       ),
     );
     final notStarted = e.startsAt.isAfter(DateTime.now());
-    final manageRow = Row(
-      children: [
-        // 後端只允許編輯未開始的活動，開始後 PATCH 回 409 EVENT_ENDED。
-        if (notStarted)
-          TextButton.icon(
-            onPressed: acting ? null : onEdit,
-            icon: Icon(Icons.edit_outlined, size: seniorMode ? 22 : 16),
-            label: Text('編輯活動', style: TextStyle(fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode))),
-          ),
-        TextButton.icon(
-          onPressed: acting ? null : onExport,
-          icon: Icon(Icons.file_download_outlined, size: seniorMode ? 22 : 16),
-          label: Text('匯出名單', style: TextStyle(fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode))),
+    final manageButtons = <Widget>[
+      // 後端只允許編輯未開始的活動，開始後 PATCH 回 409 EVENT_ENDED。
+      if (notStarted)
+        _outlinedButton(
+          label: '編輯活動',
+          icon: Icons.edit_outlined,
+          onTap: acting ? null : onEdit,
+          seniorMode: seniorMode,
         ),
-        if (notStarted)
-          TextButton.icon(
-            onPressed: acting ? null : onDelete,
-            icon: Icon(
-              Icons.delete_outline,
-              size: seniorMode ? 22 : 16,
-              color: AppColors.dangerDark,
-            ),
-            label: Text(
-              '刪除活動',
-              style: TextStyle(
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
-                color: AppColors.dangerDark,
-              ),
-            ),
-          ),
-      ],
-    );
+      _outlinedButton(
+        label: '匯出名單',
+        icon: Icons.file_download_outlined,
+        onTap: acting ? null : onExport,
+        seniorMode: seniorMode,
+      ),
+      if (notStarted)
+        _outlinedButton(
+          label: '刪除活動',
+          icon: Icons.delete_outline,
+          onTap: acting ? null : onDelete,
+          seniorMode: seniorMode,
+          danger: true,
+        ),
+    ];
+    // 精簡模式字大，三顆並排一定爆版，改成一顆一列。
+    final manageRow = seniorMode
+        ? Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (int i = 0; i < manageButtons.length; i++) ...[
+                if (i > 0) const SizedBox(height: 10),
+                SizedBox(width: double.infinity, child: manageButtons[i]),
+              ],
+            ],
+          )
+        : Row(
+            children: [
+              for (int i = 0; i < manageButtons.length; i++) ...[
+                if (i > 0) const SizedBox(width: 10),
+                Expanded(child: manageButtons[i]),
+              ],
+            ],
+          );
     if (seniorMode) {
       return Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           manageRow,
-          const SizedBox(height: 4),
+          const SizedBox(height: 10),
           SizedBox(width: double.infinity, child: sendReminderButton),
           const SizedBox(height: 10),
           SizedBox(width: double.infinity, child: cancelButton),
@@ -194,7 +205,7 @@ class EventActionBar extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         manageRow,
-        const SizedBox(height: 4),
+        const SizedBox(height: 10),
         Row(
           children: [
             Expanded(flex: 2, child: sendReminderButton),
@@ -206,6 +217,56 @@ class EventActionBar extends StatelessWidget {
     );
   }
 
+  /// 發起人管理動作共用的外框按鈕，樣式與底部的「取消活動」一致（透明底、圓角
+  /// 14、文字置中）；danger 為 true 時用紅色系，標示破壞性動作。
+  Widget _outlinedButton({
+    required String label,
+    required IconData icon,
+    required VoidCallback? onTap,
+    required bool seniorMode,
+    bool danger = false,
+  }) {
+    final color = danger ? AppColors.dangerDark : AppColors.primary;
+    final borderColor = (danger ? AppColors.danger : AppColors.primary)
+        .withValues(alpha: 0.5);
+    final disabled = onTap == null;
+    return GestureDetector(
+      onTap: onTap,
+      child: Opacity(
+        opacity: disabled ? 0.4 : 1.0,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.transparent,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: borderColor),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: seniorMode ? 22 : 16, color: color),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.serif(
+                    fontSize: AppTypography.size(
+                      AppTypography.body,
+                      seniorMode: seniorMode,
+                    ),
+                    fontWeight: FontWeight.w600,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
   // 參加者：已報名（可退出）
   Widget _joinedActions(bool seniorMode) {
     final joinedBadge = Container(

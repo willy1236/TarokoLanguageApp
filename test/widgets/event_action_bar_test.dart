@@ -5,6 +5,7 @@
 // 人工要湊齊這些組合得準備好幾個帳號與活動，是最不划算的重複勞動之一。
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
@@ -160,4 +161,55 @@ void main() {
 
     expect(find.text(readOnlyMessage), findsNothing);
   });
+  // 管理列（編輯／匯出／刪除）從文字鈕改成與底部一致的外框鈕後，三顆並排在窄
+  // 螢幕最容易爆版。RenderFlex overflow 在 widget test 會以例外浮出，用
+  // takeException 當守門。測試字型（Ahem）是等寬方塊、比實際字型寬，這裡過了
+  // 實機只會更寬鬆。
+  for (final width in [414.0, 360.0]) {
+    for (final seniorMode in [false, true]) {
+      final modeLabel = seniorMode ? '精簡模式' : '一般模式';
+      testWidgets('發起人管理列在 ${width.toInt()}px 寬的$modeLabel不會 overflow', (
+        tester,
+      ) async {
+        tester.view.physicalSize = Size(width, 1200);
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(_app(EventActionBar(
+          event: _event(),
+          uid: _hostUid,
+          acting: false,
+          seniorMode: seniorMode,
+          onJoin: () {},
+          onLeave: () {},
+          onCancel: () {},
+          onEdit: () {},
+          onExport: () {},
+          onDelete: () {},
+        )));
+
+        expect(
+          tester.takeException(),
+          isNull,
+          reason: '$width 寬的$modeLabel出現 overflow，管理列在實機上會截字',
+        );
+        // 三顆管理鈕與底部兩顆都要在（未開始的活動才有編輯／刪除）。
+        for (final label in ['編輯活動', '匯出名單', '刪除活動', '發送提醒', '取消活動']) {
+          expect(find.text(label), findsOneWidget, reason: '$label 不見了');
+        }
+        // 管理鈕的文字有 ellipsis 保護，不會 overflow，但被縮成「編輯活…」一樣
+        // 是壞掉的版面，所以另外確認沒有任何一顆被截字。
+        for (final label in ['編輯活動', '匯出名單', '刪除活動']) {
+          final paragraph = tester.renderObject<RenderParagraph>(
+            find.text(label),
+          );
+          expect(
+            paragraph.didExceedMaxLines,
+            isFalse,
+            reason: '$label 在 $width 寬的$modeLabel被截字',
+          );
+        }
+      });
+    }
+  }
 }
