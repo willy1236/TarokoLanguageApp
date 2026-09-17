@@ -200,46 +200,44 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   Widget _buildHeader(BuildContext context, bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 12),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      // 眉標獨立一行、不進下面那個 Row：它若和主標同欄，右側按鈕會跟「眉標+
+      // 主標」整欄置中，中心落在兩行之間，看起來就跟主標沒切齊。
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 精簡模式隱藏羅馬拼音眉標，與首頁、視訊配對一致。
-                if (!seniorMode) ...[
-                  Text(
-                    'ALANG · 廣場',
-                    style: AppTypography.latin(
-                      fontStyle: FontStyle.italic,
-                      fontSize: AppTypography.caption,
-                      color: AppColors.fog,
-                      letterSpacing: 3.0,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                ],
-                // 精簡模式字級放大後標題會被截斷，直接不顯示。
-                if (!seniorMode)
-                  Text(
-                    '族人在這裡',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.serif(
-                      fontSize: AppTypography.display26,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.ink,
-                      letterSpacing: 1.0,
-                    ),
-                  ),
-              ],
+          // 精簡模式隱藏羅馬拼音眉標，與首頁、視訊配對一致。
+          if (!seniorMode) ...[
+            Text(
+              'ALANG · 廣場',
+              style: AppTypography.latin(
+                fontStyle: FontStyle.italic,
+                fontSize: AppTypography.caption,
+                color: AppColors.fog,
+                letterSpacing: 3.0,
+              ),
             ),
-          ),
-          // 移除「我的收藏」後寬度足夠，次要圖示與發布鈕收回標題同一橫線。
+            const SizedBox(height: 4),
+          ],
           Row(
-            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
+              // 精簡模式字級放大後標題會被截斷，直接不顯示。
+              Expanded(
+                child: seniorMode
+                    ? const SizedBox.shrink()
+                    : Text(
+                        '族人在這裡',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.serif(
+                          fontSize: AppTypography.display26,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+              ),
+              // 移除「我的收藏」後寬度足夠，次要圖示與發布鈕收回主標同一橫線。
               _actionIcons(seniorMode),
               const SizedBox(width: 4),
               _composeButton(seniorMode),

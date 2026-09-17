@@ -219,27 +219,29 @@ class _EventsScreenState extends State<EventsScreen> {
   Widget _buildHeader(bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 14),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
+      // 眉標獨立一行、不進下面那個 Row：它若和主標同欄，右側按鈕會跟「眉標+
+      // 主標」整欄置中，中心落在兩行之間，看起來就跟主標沒切齊。
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 精簡模式隱藏羅馬拼音眉標，與首頁、視訊配對一致。
-                if (!seniorMode) ...[
-                  Text(
-                    'SMRATUC · 活動',
-                    style: AppTypography.latin(
-                      fontStyle: FontStyle.italic,
-                      fontSize: AppTypography.caption,
-                      color: AppColors.fog,
-                      letterSpacing: 3.0,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                ],
-                Text(
+          // 精簡模式隱藏羅馬拼音眉標，與首頁、視訊配對一致。
+          if (!seniorMode) ...[
+            Text(
+              'SMRATUC · 活動',
+              style: AppTypography.latin(
+                fontStyle: FontStyle.italic,
+                fontSize: AppTypography.caption,
+                color: AppColors.fog,
+                letterSpacing: 3.0,
+              ),
+            ),
+            const SizedBox(height: 4),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              Expanded(
+                child: Text(
                   '近期部落聚會',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
@@ -250,13 +252,8 @@ class _EventsScreenState extends State<EventsScreen> {
                     letterSpacing: 1.0,
                   ),
                 ),
-              ],
-            ),
-          ),
-          // 移除「我的收藏」後寬度足夠，次要圖示與發起鈕收回標題同一橫線。
-          Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+              ),
+              // 移除「我的收藏」後寬度足夠，次要圖示與發起鈕收回主標同一橫線。
               _actionIcons(seniorMode),
               const SizedBox(width: 4),
               _composeButton(seniorMode),
