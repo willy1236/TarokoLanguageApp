@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/friend_message_model.dart';
@@ -21,7 +22,6 @@ import '../chat/chat_screen.dart';
 import 'add_friend_screen.dart';
 import 'blocked_users_screen.dart';
 import 'friend_requests_screen.dart';
-import 'public_profile_screen.dart';
 import 'widgets/bond_level_badge.dart';
 import 'widgets/showcase_chip.dart';
 
@@ -128,25 +128,22 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     );
   }
 
-  Future<void> _openFriendProfile(Friendship f) async {
-    final code = f.friendCode;
-    if (code == null) return;
-    final changed = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => PublicProfileScreen(friendCode: code)),
-    );
-    if (changed == true) _load();
-  }
-
-  void _chatWithFriend(Friendship f) {
-    Navigator.of(context).push(
+  /// 聊天室裡可以再進對方的公開檔案，在那邊封鎖或刪好友都會改變這份清單，
+  /// 所以回來一律重載，而不是靠回傳值判斷。
+  Future<void> _chatWithFriend(Friendship f) async {
+    await Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => ChatScreen(
           partnerUid: f.uid,
           partnerNickname: f.nickname,
           partnerAvatarUrl: f.avatarUrl,
+          avatarId: f.avatarId,
+          frameId: f.frameId,
+          friendCode: f.friendCode,
         ),
       ),
     );
+    if (mounted) _load();
   }
 
   Future<void> _toggleShowcase(Friendship f) async {
@@ -244,6 +241,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         if (widget.showBackButton)
           IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
+            iconSize: AppIconSize.action(seniorMode),
             icon: const Icon(Icons.arrow_back, color: AppColors.ink),
           )
         else
@@ -258,6 +256,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
           valueListenable: NotificationSummaryService.notifier,
           builder: (context, summary, _) => IconButton(
             onPressed: _openRequests,
+            iconSize: AppIconSize.action(seniorMode),
             icon: Badge(
               isLabelVisible: summary.friendRequests > 0,
               label: Text(badgeLabel(summary.friendRequests)),
@@ -269,11 +268,13 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         ),
         IconButton(
           onPressed: _openBlockedUsers,
+          iconSize: AppIconSize.action(seniorMode),
           icon: const Icon(Icons.block, color: AppColors.fog),
           tooltip: '已封鎖名單',
         ),
         IconButton(
           onPressed: _openAddFriend,
+          iconSize: AppIconSize.action(seniorMode),
           icon: const Icon(Icons.person_add_alt_1, color: AppColors.primary),
           tooltip: '加好友',
         ),
@@ -309,8 +310,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   Widget _friendCard(Friendship f, bool seniorMode) {
     if (f.unavailable) return _unavailableFriendCard(f, seniorMode);
     final conversation = _conversationsByUid[f.uid];
+    // 整列點擊直接進聊天室（原本是進公開檔案，另有一顆聊天鈕，兩者重複且
+    // 小按鈕在實機容易誤觸）。要看公開檔案改從聊天室標題列的暱稱進入。
     return GestureDetector(
-      onTap: () => _openFriendProfile(f),
+      onTap: () => _chatWithFriend(f),
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(
@@ -366,12 +369,11 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               _unreadBadge(conversation!.unreadCount, seniorMode),
               const SizedBox(width: 4),
             ],
-            IconButton(
-              onPressed: () => _chatWithFriend(f),
-              icon: const Icon(Icons.chat_bubble_outline, color: AppColors.primary),
-              tooltip: '傳訊息',
+            Icon(
+              Icons.chevron_right,
+              color: AppColors.fog,
+              size: AppIconSize.chevron(seniorMode),
             ),
-            const Icon(Icons.chevron_right, color: AppColors.fog, size: 18),
           ],
         ),
       ),
