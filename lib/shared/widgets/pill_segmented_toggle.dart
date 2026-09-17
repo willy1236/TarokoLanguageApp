@@ -11,8 +11,8 @@ class PillSegmentedItem {
   const PillSegmentedItem({required this.label, required this.subtitle});
 }
 
-/// 兩段式膠囊切換元件——取代各畫面各自手刻的 TabBar/自製切換，統一視覺：
-/// 未選中為透明底，選中的那一半用實心圓角色塊蓋住並套用選中色。
+/// 多段式膠囊切換元件——取代各畫面各自手刻的 TabBar/自製切換，統一視覺：
+/// 未選中為透明底，選中的那一段用實心圓角色塊蓋住並套用選中色。
 class PillSegmentedToggle extends StatelessWidget {
   final List<PillSegmentedItem> items;
   final int index;
@@ -31,7 +31,7 @@ class PillSegmentedToggle extends StatelessWidget {
     this.selectedColor = AppColors.primary,
     this.selectedTextColor = AppColors.creamLight,
     this.unselectedTextColor = AppColors.inkSoft,
-  }) : assert(items.length == 2);
+  }) : assert(items.length >= 2);
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -78,6 +78,9 @@ class PillSegmentedToggle extends StatelessWidget {
           children: [
             Text(
               item.label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              textAlign: TextAlign.center,
               style: AppTypography.serif(
                 fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
                 fontWeight: FontWeight.w600,
@@ -88,10 +91,14 @@ class PillSegmentedToggle extends StatelessWidget {
               const SizedBox(height: 2),
               Text(
                 item.subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                textAlign: TextAlign.center,
                 style: AppTypography.latin(
                   fontSize: AppTypography.caption,
                   fontStyle: FontStyle.italic,
-                  letterSpacing: 1.5,
+                  // 三段以上每格變窄，收緊字距避免羅馬拼音被截斷。
+                  letterSpacing: items.length > 2 ? 1.0 : 1.5,
                   color: textColor.withValues(alpha: selected ? 0.85 : 0.7),
                 ),
               ),

@@ -176,7 +176,7 @@ class CultureVideoCard extends StatelessWidget {
                 children: [
                   Text(
                     video.title,
-                    maxLines: seniorMode ? 2 : 1,
+                    maxLines: 1, // 標題固定一行，過長以 … 截斷
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.serif(
                       fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
@@ -301,7 +301,7 @@ class CultureArticleCard extends StatelessWidget {
                       letterSpacing: 0.5,
                       height: 1.35,
                     ),
-                    maxLines: seniorMode ? 1 : 2,
+                    maxLines: 1, // 與影音卡一致：標題固定一行
                     overflow: TextOverflow.ellipsis,
                   ),
                   // 精簡模式下隱藏閱讀/本週統計數字，密度砍除聚焦標題判讀
