@@ -4,6 +4,7 @@
 //
 // 精簡模式下加大觸控熱區，避免長者手指誤觸鄰近按鈕（沿用論壇原本的作法）。
 import 'package:flutter/material.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 
 class EngagementIconButton extends StatelessWidget {
@@ -29,11 +30,15 @@ class EngagementIconButton extends StatelessWidget {
     behavior: HitTestBehavior.opaque,
     onTap: onTap,
     child: Padding(
-      padding: EdgeInsets.symmetric(vertical: seniorMode ? 12 : 6),
+      // 一般模式的熱區也要撐開：這幾顆按鈕彼此相鄰，實機上很容易按錯。
+      padding: EdgeInsets.symmetric(
+        vertical: seniorMode ? 12 : 10,
+        horizontal: 4,
+      ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: seniorMode ? 30 : 18, color: color),
+          Icon(icon, size: AppIconSize.inline(seniorMode), color: color),
           if (count != null) ...[
             const SizedBox(width: 5),
             Text(

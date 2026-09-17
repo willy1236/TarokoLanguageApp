@@ -2,6 +2,7 @@ import 'dart:typed_data';
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../services/senior_mode_controller.dart';
 
@@ -46,7 +47,7 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
         ),
         leading: IconButton(
           icon: const Icon(Icons.close),
-          iconSize: seniorMode ? 30 : 24,
+          iconSize: AppIconSize.action(seniorMode),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [

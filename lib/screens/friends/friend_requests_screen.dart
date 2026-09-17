@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/friend_model.dart';
@@ -134,6 +135,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
       children: [
         IconButton(
           onPressed: () => Navigator.of(context).pop(_changed),
+          iconSize: AppIconSize.action(seniorMode),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink),
         ),
         Expanded(
@@ -210,11 +212,13 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
           else ...[
             IconButton(
               onPressed: () => _decline(r),
+              iconSize: AppIconSize.action(seniorMode),
               icon: const Icon(Icons.close, color: AppColors.fog),
               tooltip: '拒絕',
             ),
             IconButton(
               onPressed: () => _accept(r),
+              iconSize: AppIconSize.action(seniorMode),
               icon: const Icon(Icons.check_circle, color: AppColors.primary),
               tooltip: '接受',
             ),
