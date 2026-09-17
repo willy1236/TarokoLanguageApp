@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
+import '../../../models/shop_item.dart';
 import '../../../shared/widgets/engagement_icon_button.dart';
+import '../../../shared/widgets/user_avatar.dart';
 import '../../../core/constants/app_typography.dart';
 
 class EventDetailBody extends StatelessWidget {
@@ -17,6 +19,10 @@ class EventDetailBody extends StatelessWidget {
   final VoidCallback onToggleLike;
   final VoidCallback onToggleBookmark;
 
+  /// 商店目錄（id → item），渲染發起人的內建頭像與頭像框用；空 map 代表尚未
+  /// 取得，此時顯示預設圖示。
+  final Map<String, ShopItem> itemCatalogById;
+
   const EventDetailBody({
     super.key,
     required this.event,
@@ -25,6 +31,7 @@ class EventDetailBody extends StatelessWidget {
     required this.seniorMode,
     required this.onToggleLike,
     required this.onToggleBookmark,
+    this.itemCatalogById = const {},
   });
 
   @override
@@ -33,12 +40,10 @@ class EventDetailBody extends StatelessWidget {
   Widget _buildBody(EventDetail e, bool seniorMode) {
     final start = e.startsAt.toLocal();
     final timeText = formatDateTime(start);
-    final hostName =
-        e.participants
-            .where((p) => p.uid == e.hostUid)
-            .map((p) => p.displayName)
-            .firstWhere((n) => n != null && n.isNotEmpty, orElse: () => null) ??
-        '發起人';
+    final host = e.participants.where((p) => p.uid == e.hostUid).firstOrNull;
+    final hostName = (host?.displayName?.isNotEmpty ?? false)
+        ? host!.displayName!
+        : '發起人';
     final isHost = e.isHostedBy(uid);
 
     return Padding(
@@ -49,13 +54,24 @@ class EventDetailBody extends StatelessWidget {
           // 發起人
           Row(
             children: [
-              CircleAvatar(
-                radius: seniorMode ? 20 : 15,
-                backgroundColor: AppColors.primary.withValues(alpha: 0.12),
-                child: Icon(
-                  Icons.person,
-                  size: seniorMode ? 22 : 16,
-                  color: AppColors.primary,
+              FramedUserAvatar(
+                avatarId: host?.avatarId,
+                avatarUrl: host?.avatarUrl,
+                frameId: host?.frameId,
+                itemCatalogById: itemCatalogById,
+                size: seniorMode ? 40 : 30,
+                fallbackIconColor: AppColors.primary,
+                // 發起人就是自己時，換頭像後不必重載活動就跟著換（貼文／活動的
+                // 作者欄都是當下的快照，見 FramedUserAvatar.userUid）。
+                userUid: e.hostUid,
+                fallback: Container(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.person,
+                    size: seniorMode ? 22 : 16,
+                    color: AppColors.primary,
+                  ),
                 ),
               ),
               const SizedBox(width: 10),

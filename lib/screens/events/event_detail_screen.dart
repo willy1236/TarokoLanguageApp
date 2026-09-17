@@ -4,11 +4,13 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_model.dart';
+import '../../models/shop_item.dart';
 import '../../shared/share_text_file.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/event_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import 'event_compose_screen.dart';
 import 'widgets/event_action_bar.dart';
@@ -41,11 +43,27 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   bool _acting = false; // 參加/退出/取消進行中，避免重複點
   bool _likeBusy = false;
   bool _bookmarkBusy = false;
+
+  /// 商店目錄（頭像＋頭像框，id → item），渲染發起人頭像用。
+  Map<String, ShopItem> _itemCatalogById = const {};
+
   @override
   void initState() {
     super.initState();
     _load();
+    _loadItemCatalog();
     FcmService.onReminderReceivedForOpenScreen = _onForegroundReminder;
+  }
+
+  Future<void> _loadItemCatalog() async {
+    try {
+      final catalog = await ShopService.fetchItemCatalogCached();
+      if (!mounted) return;
+      setState(() => _itemCatalogById = catalog);
+    } catch (e) {
+      // 目錄拿不到只影響內建頭像/頭像框的圖，退回預設圖示即可，不擋整頁。
+      debugPrint('Failed to fetch item catalog: $e');
+    }
   }
 
   @override
@@ -388,6 +406,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 seniorMode: seniorMode,
                 onToggleLike: _toggleLike,
                 onToggleBookmark: _toggleBookmark,
+                itemCatalogById: _itemCatalogById,
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
