@@ -9,7 +9,6 @@ import '../../services/forum_service.dart';
 import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../forum/forum_board_view.dart';
-import '../forum/forum_bookmarks_screen.dart';
 import '../forum/forum_compose_screen.dart';
 import '../forum/forum_detail_screen.dart';
 import '../forum/forum_notifications_screen.dart';
@@ -150,12 +149,13 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     _boardViewKey.currentState?.setBookmarked(postId, bookmarked);
   }
 
-  Future<void> _openPost(ForumPost post) async {
+  Future<void> _openPost(ForumPost post, {int? imageIndex}) async {
     final result = await Navigator.push<ForumDetailResult>(
       context,
       MaterialPageRoute(
         builder: (_) => ForumDetailScreen(
           postId: post.id,
+          initialImageIndex: imageIndex,
           onPostChanged: (p) => _boardViewKey.currentState?.replacePost(p),
         ),
       ),
@@ -200,46 +200,47 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   Widget _buildHeader(BuildContext context, bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 12),
-      child: Row(
+      // 眉標獨立一行、不進下面那個 Row：它若和主標同欄，右側按鈕會跟「眉標+
+      // 主標」整欄置中，中心落在兩行之間，看起來就跟主標沒切齊。
+      child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // 精簡模式隱藏羅馬拼音眉標，與首頁、視訊配對一致。
-                if (!seniorMode) ...[
-                  Text(
-                    'ALANG · 廣場',
-                    style: AppTypography.latin(
-                      fontStyle: FontStyle.italic,
-                      fontSize: AppTypography.caption,
-                      color: AppColors.fog,
-                      letterSpacing: 3.0,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                ],
-                Text(
-                  '族人在這裡',
-                  style: AppTypography.serif(
-                    fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ],
+          // 精簡模式隱藏羅馬拼音眉標，與首頁、視訊配對一致。
+          if (!seniorMode) ...[
+            Text(
+              'ALANG · 廣場',
+              style: AppTypography.latin(
+                fontStyle: FontStyle.italic,
+                fontSize: AppTypography.caption,
+                color: AppColors.fog,
+                letterSpacing: 3.0,
+              ),
             ),
-          ),
-          // 發布是主要動作放上排，三個次要入口收在它下面：
-          // 全部擠在同一列時，標題可用的寬度會被壓到換行。
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+            const SizedBox(height: 4),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              _composeButton(seniorMode),
-              const SizedBox(height: 2),
+              // 精簡模式字級放大後標題會被截斷，直接不顯示。
+              Expanded(
+                child: seniorMode
+                    ? const SizedBox.shrink()
+                    : Text(
+                        '族人在這裡',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.serif(
+                          fontSize: AppTypography.display26,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink,
+                          letterSpacing: 1.0,
+                        ),
+                      ),
+              ),
+              // 移除「我的收藏」後寬度足夠，次要圖示與發布鈕收回主標同一橫線。
               _actionIcons(seniorMode),
+              const SizedBox(width: 4),
+              _composeButton(seniorMode),
             ],
           ),
         ],
@@ -290,13 +291,6 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
           boards: _boards,
           onBookmarkChanged: _syncBookmark,
         ),
-      ),
-    ),
-    bookmarksTooltip: '我的收藏',
-    onBookmarks: () => Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => ForumBookmarksScreen(onBookmarkChanged: _syncBookmark),
       ),
     ),
     notificationsTooltip: '通知',

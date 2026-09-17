@@ -64,12 +64,13 @@ class _MyBookmarksScreenState extends State<MyBookmarksScreen> {
                 if (!result) _forumViewKey.currentState?.removePost(postId);
                 return result;
               },
-              onOpenPost: (post) async {
+              onOpenPost: (post, {imageIndex}) async {
                 final result = await Navigator.push<ForumDetailResult>(
                   context,
                   MaterialPageRoute(
                     builder: (_) => ForumDetailScreen(
                       postId: post.id,
+                      initialImageIndex: imageIndex,
                       onPostChanged: (p) =>
                           _forumViewKey.currentState?.replacePost(p),
                     ),

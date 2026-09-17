@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_draft.dart';
@@ -409,7 +410,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             icon: Icon(
               Icons.arrow_back,
               color: AppColors.ink,
-              size: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : 24,
+              size: AppIconSize.action(seniorMode),
             ),
           ),
           Expanded(

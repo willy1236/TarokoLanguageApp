@@ -1,6 +1,5 @@
 // 文化頁用到的小圖示與 hero 背景條紋 painter。
 
-import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 
@@ -60,48 +59,6 @@ class _PlayIconPainter extends CustomPainter {
       ..lineTo(0, size.height)
       ..close();
     canvas.drawPath(path, paint);
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}
-
-class CultureSearchIcon extends StatelessWidget {
-  const CultureSearchIcon({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return CustomPaint(size: const Size(16, 16), painter: _SearchIconPainter());
-  }
-}
-
-class _SearchIconPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = AppColors.gold
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6
-      ..strokeCap = StrokeCap.round;
-
-    // circle
-    canvas.drawCircle(
-      Offset(size.width * 0.46, size.height * 0.46),
-      size.width * 0.29,
-      paint,
-    );
-    // line
-    final r = size.width * 0.29;
-    final cx = size.width * 0.46;
-    final cy = size.height * 0.46;
-    final angle = math.pi * 0.75;
-    final x1 = cx + r * math.cos(angle);
-    final y1 = cy + r * math.sin(angle);
-    canvas.drawLine(
-      Offset(x1, y1),
-      Offset(size.width * 0.88, size.height * 0.88),
-      paint,
-    );
   }
 
   @override

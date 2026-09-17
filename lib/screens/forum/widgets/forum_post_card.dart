@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_icon_size.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';
 import '../../../models/shop_item.dart';
@@ -28,6 +29,9 @@ String forumRelativeTime(DateTime time) {
 class ForumPostCard extends StatelessWidget {
   final ForumPost post;
   final VoidCallback onTap;
+
+  /// 點附圖時呼叫，帶上被點的圖片索引。由呼叫端決定要開詳情頁還是放大檢視。
+  final ValueChanged<int>? onImageTap;
   final VoidCallback onLike;
   final VoidCallback onBookmark;
   final Map<String, ShopItem> itemCatalogById;
@@ -40,6 +44,7 @@ class ForumPostCard extends StatelessWidget {
     super.key,
     required this.post,
     required this.onTap,
+    this.onImageTap,
     required this.onLike,
     required this.onBookmark,
     this.itemCatalogById = const {},
@@ -93,8 +98,12 @@ class ForumPostCard extends StatelessWidget {
           ),
           if (post.images.isNotEmpty) ...[
             const SizedBox(height: 10),
-            // 列表上點附圖等同點卡片，一律進詳情頁；放大檢視只在詳情頁提供。
-            ForumImageGrid(urls: post.images, onTap: onTap),
+            // 列表上點附圖直接進放大檢視；詳情頁會先被推入堆疊，返回落在內文。
+            ForumImageGrid(
+              urls: post.images,
+              onTap: onTap,
+              onImageTap: onImageTap,
+            ),
           ],
           // 精簡模式隱藏標籤列：任務8.1「資訊密度也是精簡的一環」，標籤對是否
           // 點開貼文的判斷幫助不大，卻會多佔一整排視覺雜訊。
@@ -277,7 +286,7 @@ class ForumPostCard extends StatelessWidget {
             : VisualDensity.compact,
         icon: Icon(
           post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-          size: seniorMode ? 34 : 18,
+          size: AppIconSize.inline(seniorMode),
           color: post.isBookmarked ? AppColors.primary : AppColors.fog,
         ),
       ),

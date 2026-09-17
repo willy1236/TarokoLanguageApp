@@ -5,6 +5,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
@@ -15,18 +16,32 @@ import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
+import '../../models/shop_item.dart';
+import '../../services/shop_service.dart';
+import '../../shared/widgets/user_avatar.dart';
 import '../friends/directed_call_waiting_screen.dart';
+import '../friends/public_profile_screen.dart';
 
 class ChatScreen extends StatefulWidget {
   final int partnerUid;
   final String? partnerNickname;
   final String? partnerAvatarUrl;
 
+  /// 商店頭像與頭像框：後端有給就用，沒有就退回 [partnerAvatarUrl]。
+  final String? avatarId;
+  final String? frameId;
+
+  /// 有好友碼才能從標題列的暱稱進對方的公開檔案；沒有就不給點。
+  final String? friendCode;
+
   const ChatScreen({
     super.key,
     required this.partnerUid,
     this.partnerNickname,
     this.partnerAvatarUrl,
+    this.avatarId,
+    this.frameId,
+    this.friendCode,
   });
 
   @override
@@ -42,6 +57,9 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _loadingMore = false;
   int? _nextCursor;
 
+  /// 標題列頭像要查商店目錄才知道 avatarId/frameId 對應的圖。
+  Map<String, ShopItem> _itemCatalogById = const {};
+
   @override
   void initState() {
     super.initState();
@@ -50,6 +68,18 @@ class _ChatScreenState extends State<ChatScreen> {
     _scrollController.addListener(_onScroll);
     _load();
     _markRead();
+    _loadItemCatalog();
+  }
+
+  Future<void> _loadItemCatalog() async {
+    if (widget.avatarId == null && widget.frameId == null) return;
+    try {
+      final catalog = await ShopService.fetchItemCatalogCached();
+      if (!mounted) return;
+      setState(() => _itemCatalogById = catalog);
+    } catch (e) {
+      debugPrint('Failed to fetch item catalog: $e');
+    }
   }
 
   @override
@@ -239,22 +269,50 @@ class _ChatScreenState extends State<ChatScreen> {
     ),
   );
 
+  Widget _partnerAvatar(bool seniorMode) => FramedUserAvatar(
+    avatarId: widget.avatarId,
+    avatarUrl: widget.partnerAvatarUrl,
+    frameId: widget.frameId,
+    itemCatalogById: _itemCatalogById,
+    size: seniorMode ? 40 : 32,
+    fallbackIconColor: AppColors.gold,
+  );
+
+  Future<void> _openPartnerProfile() async {
+    final code = widget.friendCode;
+    if (code == null) return;
+    await Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => PublicProfileScreen(friendCode: code)),
+    );
+  }
+
   Widget _topBar(bool seniorMode) => Padding(
     padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
     child: Row(
       children: [
         IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
+          iconSize: AppIconSize.action(seniorMode),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink),
         ),
+        _partnerAvatar(seniorMode),
+        const SizedBox(width: 8),
         Expanded(
-          child: Text(
-            widget.partnerNickname?.isNotEmpty == true ? widget.partnerNickname! : '未命名旅人',
-            style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+          child: GestureDetector(
+            // 頭像旁的暱稱是對方公開檔案的入口（好友列表已不再直接進檔案頁）。
+            onTap: widget.friendCode == null ? null : _openPartnerProfile,
+            behavior: HitTestBehavior.opaque,
+            child: Text(
+              widget.partnerNickname?.isNotEmpty == true ? widget.partnerNickname! : '未命名旅人',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+            ),
           ),
         ),
         IconButton(
           onPressed: _startVideoCall,
+          iconSize: AppIconSize.action(seniorMode),
           icon: Icon(
             Icons.videocam_outlined,
             color: accountLockController.locked ? AppColors.fog : AppColors.primary,
@@ -388,6 +446,7 @@ class _ChatScreenState extends State<ChatScreen> {
           const SizedBox(width: 8),
           IconButton(
             onPressed: _sending || _locked ? null : _send,
+            iconSize: AppIconSize.action(seniorMode),
             icon: const Icon(Icons.send, color: AppColors.primary),
           ),
         ],

@@ -2,6 +2,8 @@
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_typography.dart';
+import '../../services/senior_mode_controller.dart';
 import '../culture/video_liked_bookmarked_list.dart';
 import '../culture/article_liked_bookmarked_list.dart';
 import '../events/event_liked_bookmarked_list.dart';
@@ -13,6 +15,13 @@ class MyLikesScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return ListenableBuilder(
+      listenable: seniorModeController,
+      builder: (context, _) => _buildScaffold(seniorModeController.enabled),
+    );
+  }
+
+  Widget _buildScaffold(bool seniorMode) {
     return DefaultTabController(
       length: 5,
       child: Scaffold(
@@ -21,7 +30,14 @@ class MyLikesScreen extends StatelessWidget {
           backgroundColor: AppColors.creamLight,
           foregroundColor: AppColors.ink,
           elevation: 0,
-          title: const Text('我按讚的內容'),
+          title: Text(
+            '我按讚的內容',
+            style: AppTypography.serif(
+              fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
+              fontWeight: FontWeight.w700,
+              color: AppColors.ink,
+            ),
+          ),
           bottom: const TabBar(
             labelColor: AppColors.primary,
             unselectedLabelColor: AppColors.fog,

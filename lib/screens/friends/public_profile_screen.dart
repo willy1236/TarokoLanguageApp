@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/public_profile_model.dart';
@@ -137,6 +138,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       children: [
         IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
+          iconSize: AppIconSize.action(seniorModeController.enabled),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink),
         ),
         const Spacer(),
@@ -144,6 +146,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             _profile!.uid != UserService.currentUid &&
             _relationship != null)
           PopupMenuButton<_ProfileAction>(
+            iconSize: AppIconSize.action(seniorModeController.enabled),
             icon: const Icon(Icons.more_vert, color: AppColors.ink),
             onSelected: _handleAction,
             itemBuilder: (context) => _menuItemsFor(_relationship!),
@@ -181,6 +184,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           partnerUid: profile.uid,
           partnerNickname: profile.nickname,
           partnerAvatarUrl: profile.avatarUrl,
+          avatarId: profile.avatarId,
+          frameId: profile.frameId,
+          // 已經在公開檔案頁了，聊天室不必再提供回到這裡的入口。
         ),
       ),
     );

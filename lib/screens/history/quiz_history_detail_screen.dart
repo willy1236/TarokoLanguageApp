@@ -1,6 +1,8 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
+import '../../services/senior_mode_controller.dart';
 import '../../core/network/api_client.dart';
 import '../../models/history_models.dart';
 import '../../services/history_service.dart';
@@ -78,6 +80,7 @@ class _QuizHistoryDetailScreenState extends State<QuizHistoryDetailScreen> {
               top: 8,
               child: IconButton(
                 onPressed: () => Navigator.pop(context),
+                iconSize: AppIconSize.action(seniorModeController.enabled),
                 icon: const Icon(Icons.arrow_back, color: AppColors.creamLight),
               ),
             ),

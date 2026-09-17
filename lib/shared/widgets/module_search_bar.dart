@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../search_range.dart';
 import 'tribe_picker_sheet.dart';
 import '../../models/tribe_model.dart';
@@ -110,7 +111,7 @@ class ModuleSearchAppBar extends StatelessWidget implements PreferredSizeWidget 
           icon: Icon(
             Icons.search,
             color: palette.accent,
-            size: seniorMode ? 30 : null,
+            size: AppIconSize.action(seniorMode),
           ),
         ),
       ],

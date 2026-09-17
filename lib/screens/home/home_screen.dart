@@ -77,7 +77,7 @@ const Map<String, int> _modeTabIndex = {
   'video': 4,
 };
 
-// learn/culture 的子分頁（LearnCultureScreen: 0=學習,1=影音）、
+// learn/culture 的子分頁（LearnCultureScreen: 0=學習,1=影音,2=文章）、
 // plaza/event 的子分頁（PlazaEventScreen: 0=廣場,1=活動）、
 // video 的子分頁（ProfileVideoScreen: 0=個人資料,1=視訊配對）。
 const Map<String, int> _modeSubTab = {

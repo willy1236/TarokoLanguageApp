@@ -18,7 +18,10 @@ import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import 'forum_compose_screen.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
 import 'widgets/forum_comment_input_bar.dart';
+import 'widgets/forum_image_grid.dart' show ForumImageViewer;
 import 'widgets/forum_comment_tile.dart';
 import 'widgets/forum_post_body.dart';
 import 'widgets/forum_toast.dart';
@@ -37,10 +40,15 @@ class ForumDetailScreen extends StatefulWidget {
   /// 貼文有異動（讚、收藏、留言數）時即時回報，讓列表頁不必等關閉才更新。
   final ValueChanged<ForumPost>? onPostChanged;
 
+  /// 不為 null 代表使用者是在列表上點附圖進來的：貼文載入完成後自動疊上
+  /// 全螢幕圖片檢視，於是返回時會先停在內文頁，再返回才回列表。
+  final int? initialImageIndex;
+
   const ForumDetailScreen({
     super.key,
     required this.postId,
     this.onPostChanged,
+    this.initialImageIndex,
   });
 
   @override
@@ -62,6 +70,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 圖片過期自動重整每次載入只做一次，避免多張圖同時過期時連環重打 API。
   bool _imageAutoRefreshed = false;
+
+  /// [ForumDetailScreen.initialImageIndex] 帶進來的全螢幕檢視只自動開一次，
+  /// 圖片過期重載或使用者關掉檢視後都不該再彈出來。
+  bool _autoViewerShown = false;
 
   /// 正在回覆的第一層留言；null 代表回覆貼文本身。
   ForumComment? _replyTarget;
@@ -117,6 +129,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _nextCursor = page.nextCursor;
         _loading = false;
       });
+      _maybeOpenInitialImage();
     } on ApiException catch (e) {
       if (!mounted) return;
       if (e.code == 'POST_NOT_FOUND') {
@@ -128,6 +141,29 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _loading = false;
       });
     }
+  }
+
+  /// 從列表點附圖進來時，等貼文（含圖片網址）到手後才疊上全螢幕檢視。
+  void _maybeOpenInitialImage() {
+    final index = widget.initialImageIndex;
+    if (index == null || _autoViewerShown) return;
+    final images = _post?.images ?? const <String>[];
+    if (index < 0 || index >= images.length) return;
+    _autoViewerShown = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => ForumImageViewer(
+            images: [
+              for (final url in images) CachedNetworkImageProvider(url),
+            ],
+            initialIndex: index,
+          ),
+        ),
+      );
+    });
   }
 
   Future<void> _loadMoreComments() async {

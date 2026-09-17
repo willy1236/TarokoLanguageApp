@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/article_models.dart';
 import '../../models/video_models.dart';
@@ -17,17 +18,21 @@ import 'widgets/culture_cards.dart';
 import 'widgets/culture_icons.dart';
 
 class CultureScreen extends StatefulWidget {
-  /// 由外層（合併分頁的膠囊切換）注入，顯示在 hero 與影音/文章分頁之間。
+  /// 由外層（合併分頁的膠囊切換）注入，顯示在 hero 下方。
   final Widget? topToggle;
 
-  const CultureScreen({super.key, this.topToggle});
+  /// 影音(0)/文章(1)。原本是本頁內第二層 tab bar，已併入外層膠囊三格切換。
+  final int cultureTabIndex;
+
+  const CultureScreen({super.key, this.topToggle, this.cultureTabIndex = 0});
 
   @override
   State<CultureScreen> createState() => _CultureScreenState();
 }
 
 class _CultureScreenState extends State<CultureScreen> {
-  int _tabIndex = 0; // 0=影音, 1=文章
+  // 0=影音, 1=文章——切換權在外層膠囊，本頁只跟著 widget 走。
+  int get _tabIndex => widget.cultureTabIndex;
   int _chipIndex = 0;
   String _sort = 'latest'; // latest | popular | weekly_popular
   late Future<VideoListResponse> _videosFuture;
@@ -102,7 +107,6 @@ class _CultureScreenState extends State<CultureScreen> {
                 child: widget.topToggle,
               ),
             ),
-          SliverToBoxAdapter(child: _buildTabBar(seniorMode)),
           if (_tabIndex == 0) ...[
             SliverToBoxAdapter(child: _buildChips(seniorMode)),
             SliverToBoxAdapter(child: _buildVideoSectionHeader(seniorMode)),
@@ -225,13 +229,20 @@ class _CultureScreenState extends State<CultureScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text(
-                      'LNGLUNGAN',
-                      style: AppTypography.latin(
-                        fontStyle: FontStyle.italic,
-                        fontSize: AppTypography.body,
-                        color: AppColors.gold,
-                        letterSpacing: 4.0,
+                    // 精選標題移到左上角，取代原本的 LNGLUNGAN 標記。
+                    Expanded(
+                      child: Text(
+                        hasData ? '本週精選 · 熱門' : '本週精選',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.mono(
+                          fontSize: AppTypography.size(
+                            AppTypography.caption,
+                            seniorMode: seniorMode,
+                          ),
+                          color: AppColors.gold,
+                          letterSpacing: 4.0,
+                        ),
                       ),
                     ),
                     GestureDetector(
@@ -243,8 +254,9 @@ class _CultureScreenState extends State<CultureScreen> {
                         ),
                       ),
                       child: Container(
-                        width: 36,
-                        height: 36,
+                        // 實機回報圖示太小不好按，圓鈕連同熱區一起放大。
+                        width: seniorMode ? 52 : 46,
+                        height: seniorMode ? 52 : 46,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: Colors.black.withValues(alpha: 0.4),
@@ -252,7 +264,13 @@ class _CultureScreenState extends State<CultureScreen> {
                             color: AppColors.gold.withValues(alpha: 0.25),
                           ),
                         ),
-                        child: const Center(child: CultureSearchIcon()),
+                        child: Center(
+                          child: Icon(
+                            Icons.search,
+                            size: AppIconSize.action(seniorMode),
+                            color: AppColors.gold,
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -268,15 +286,6 @@ class _CultureScreenState extends State<CultureScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  hasData ? '本週精選 · 熱門' : '本週精選',
-                  style: AppTypography.mono(
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
-                    color: AppColors.gold,
-                    letterSpacing: 4.0,
-                  ),
-                ),
-                const SizedBox(height: 8),
                 Text(
                   title,
                   style: AppTypography.serif(
@@ -335,81 +344,6 @@ class _CultureScreenState extends State<CultureScreen> {
           ),
         ),
       ],
-    );
-  }
-
-  // ── Tab Bar ───────────────────────────────────────────────────────────────
-
-  Widget _buildTabBar(bool seniorMode) {
-    final tabs = [('影音', 'patas hngak'), ('文章', 'patas kari')];
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: AppColors.cream.withValues(alpha: 0.09),
-            width: 1,
-          ),
-        ),
-      ),
-      child: Row(
-        children: List.generate(tabs.length, (i) {
-          final active = _tabIndex == i;
-          return Expanded(
-            child: GestureDetector(
-              onTap: () => setState(() => _tabIndex = i),
-              behavior: HitTestBehavior.opaque,
-              child: Stack(
-                alignment: Alignment.bottomCenter,
-                children: [
-                  Padding(
-                    padding: EdgeInsets.only(bottom: seniorMode ? 16 : 12),
-                    child: Column(
-                      children: [
-                        Text(
-                          tabs[i].$1,
-                          textAlign: TextAlign.center,
-                          style: AppTypography.serif(
-                            fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
-                            fontWeight: FontWeight.w600,
-                            color: active ? AppColors.gold : AppColors.fog,
-                            letterSpacing: 2.0,
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          tabs[i].$2,
-                          textAlign: TextAlign.center,
-                          style: AppTypography.latin(
-                            fontStyle: FontStyle.italic,
-                            fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
-                            color: active
-                                ? AppColors.cream.withValues(alpha: 0.7)
-                                : AppColors.fog.withValues(alpha: 0.5),
-                            letterSpacing: 2.4,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  if (active)
-                    Positioned(
-                      bottom: -1,
-                      left: 0,
-                      right: 0,
-                      child: Center(
-                        child: FractionallySizedBox(
-                          widthFactor: 0.6,
-                          child: Container(height: 2, color: AppColors.gold),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          );
-        }),
-      ),
     );
   }
 

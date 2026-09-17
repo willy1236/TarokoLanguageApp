@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/friend_model.dart';
@@ -100,6 +101,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
       children: [
         IconButton(
           onPressed: () => Navigator.of(context).maybePop(),
+          iconSize: AppIconSize.action(seniorMode),
           icon: const Icon(Icons.arrow_back, color: AppColors.ink),
         ),
         Expanded(

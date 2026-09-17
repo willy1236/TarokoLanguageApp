@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_icon_size.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';
 import '../../../services/forum_service.dart';
@@ -95,7 +96,7 @@ class ForumCommentInputBar extends StatelessWidget {
                   onPressed: sending || readOnly || controller.text.trim().isEmpty
                       ? null
                       : onSend,
-                  iconSize: seniorMode ? 30 : 20,
+                  iconSize: AppIconSize.action(seniorMode),
                   icon: const Icon(Icons.send, color: AppColors.primary),
                 ),
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../services/event_service.dart';
@@ -182,7 +183,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
         children: [
           IconButton(
             onPressed: () => Navigator.pop(context),
-            iconSize: seniorMode ? 30 : 24,
+            iconSize: AppIconSize.action(seniorMode),
             icon: const Icon(Icons.arrow_back, color: AppColors.ink),
           ),
           Expanded(

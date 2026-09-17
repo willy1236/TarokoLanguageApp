@@ -82,6 +82,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
           partnerUid: f.uid,
           partnerNickname: f.nickname,
           partnerAvatarUrl: f.avatarUrl,
+          avatarId: f.avatarId,
+          frameId: f.frameId,
+          friendCode: f.friendCode,
         ),
       ),
     );
