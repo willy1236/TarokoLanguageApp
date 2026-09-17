@@ -58,15 +58,13 @@ class _ForumBookmarksScreenState extends State<ForumBookmarksScreen> {
       onOpenPost: (post, {imageIndex}) async {
         final result = await Navigator.push<ForumDetailResult>(
           context,
-          MaterialPageRoute(
-            builder: (_) => ForumDetailScreen(
-              postId: post.id,
-              initialImageIndex: imageIndex,
-              onPostChanged: (p) {
-                _viewKey.currentState?.replacePost(p);
-                widget.onBookmarkChanged?.call(p.id, p.isBookmarked);
-              },
-            ),
+          ForumDetailScreen.route(
+            postId: post.id,
+            initialImageIndex: imageIndex,
+            onPostChanged: (p) {
+              _viewKey.currentState?.replacePost(p);
+              widget.onBookmarkChanged?.call(p.id, p.isBookmarked);
+            },
           ),
         );
         if (result == null) return;

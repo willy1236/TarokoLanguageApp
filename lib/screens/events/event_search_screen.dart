@@ -217,10 +217,7 @@ class _EventResultTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final d = event.startsAt.toLocal();
     return GestureDetector(
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: event.id)),
-      ),
+      onTap: () => Navigator.push(context, EventDetailScreen.route(event.id)),
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(

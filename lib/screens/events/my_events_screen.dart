@@ -141,10 +141,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
     String two(int n) => n.toString().padLeft(2, '0');
     return GestureDetector(
       onTap: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: e.id)),
-        );
+        await Navigator.push(context, EventDetailScreen.route(e.id));
         if (!mounted) return;
         _load(); // 從詳情頁回來（可能剛取消）刷新
       },

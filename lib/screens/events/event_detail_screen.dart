@@ -30,6 +30,22 @@ class EventDetailScreen extends StatefulWidget {
 
   const EventDetailScreen({super.key, required this.eventId});
 
+  /// route 名稱：讓通知導頁能用 popUntil 找回已經開著的那一份。
+  static String routeNameFor(int eventId) => 'event/detail/$eventId';
+
+  /// 所有呼叫端都走這個工廠，settings.name 才會一致。
+  static Route<T> route<T>(int eventId) => MaterialPageRoute<T>(
+    settings: RouteSettings(name: routeNameFor(eventId)),
+    builder: (_) => EventDetailScreen(eventId: eventId),
+  );
+
+  /// 目前開著的詳情頁：key = eventId，value = 該實例的重載函式。
+  static final Map<int, VoidCallback> _live = {};
+
+  static bool isOpen(int eventId) => _live.containsKey(eventId);
+
+  static void refreshIfOpen(int eventId) => _live[eventId]?.call();
+
   @override
   State<EventDetailScreen> createState() => _EventDetailScreenState();
 }
@@ -50,6 +66,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   @override
   void initState() {
     super.initState();
+    EventDetailScreen._live[widget.eventId] = _load;
     _load();
     _loadItemCatalog();
     FcmService.onReminderReceivedForOpenScreen = _onForegroundReminder;
@@ -68,6 +85,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   @override
   void dispose() {
+    // 同一 eventId 若已被新實例接手，不要把它的登記清掉。
+    if (EventDetailScreen._live[widget.eventId] == _load) {
+      EventDetailScreen._live.remove(widget.eventId);
+    }
     if (identical(
       FcmService.onReminderReceivedForOpenScreen,
       _onForegroundReminder,

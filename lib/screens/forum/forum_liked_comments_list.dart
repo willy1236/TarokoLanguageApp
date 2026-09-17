@@ -174,9 +174,7 @@ class _CommentListItem extends StatelessWidget {
       onTap: () async {
         await Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => ForumDetailScreen(postId: item.postId),
-          ),
+          ForumDetailScreen.route(postId: item.postId),
         );
         onReturn();
       },

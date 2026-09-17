@@ -135,10 +135,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   }
 
   void _openEventDetail(EventSummary e) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: e.id)),
-    ).then((_) {
+    Navigator.push(context, EventDetailScreen.route(e.id)).then((_) {
       if (mounted) _loadEvents();
     });
   }
@@ -152,12 +149,10 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   Future<void> _openPost(ForumPost post, {int? imageIndex}) async {
     final result = await Navigator.push<ForumDetailResult>(
       context,
-      MaterialPageRoute(
-        builder: (_) => ForumDetailScreen(
-          postId: post.id,
-          initialImageIndex: imageIndex,
-          onPostChanged: (p) => _boardViewKey.currentState?.replacePost(p),
-        ),
+      ForumDetailScreen.route(
+        postId: post.id,
+        initialImageIndex: imageIndex,
+        onPostChanged: (p) => _boardViewKey.currentState?.replacePost(p),
       ),
     );
     if (result == null) return;

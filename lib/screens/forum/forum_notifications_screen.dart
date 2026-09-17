@@ -125,10 +125,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       ForumService.markRead(ids: [item.id]).catchError((_) {});
     }
     if (postId == null) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ForumDetailScreen(postId: postId)),
-    );
+    await Navigator.push(context, ForumDetailScreen.route(postId: postId));
     if (mounted) _load();
   }
 

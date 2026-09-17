@@ -67,13 +67,11 @@ class _MyBookmarksScreenState extends State<MyBookmarksScreen> {
               onOpenPost: (post, {imageIndex}) async {
                 final result = await Navigator.push<ForumDetailResult>(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => ForumDetailScreen(
-                      postId: post.id,
-                      initialImageIndex: imageIndex,
-                      onPostChanged: (p) =>
-                          _forumViewKey.currentState?.replacePost(p),
-                    ),
+                  ForumDetailScreen.route(
+                    postId: post.id,
+                    initialImageIndex: imageIndex,
+                    onPostChanged: (p) =>
+                        _forumViewKey.currentState?.replacePost(p),
                   ),
                 );
                 if (result == null) return;

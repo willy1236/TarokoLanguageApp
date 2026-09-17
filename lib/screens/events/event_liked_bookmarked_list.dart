@@ -193,12 +193,7 @@ class _EventListItem extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EventDetailScreen(eventId: event.id),
-          ),
-        );
+        await Navigator.push(context, EventDetailScreen.route(event.id));
         onReturn();
       },
       child: Container(

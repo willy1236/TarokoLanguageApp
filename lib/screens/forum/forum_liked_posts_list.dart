@@ -173,10 +173,7 @@ class _PostListItem extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => ForumDetailScreen(postId: post.id)),
-        );
+        await Navigator.push(context, ForumDetailScreen.route(postId: post.id));
         onReturn();
       },
       child: Container(

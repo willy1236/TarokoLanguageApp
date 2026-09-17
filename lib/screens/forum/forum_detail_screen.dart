@@ -51,6 +51,32 @@ class ForumDetailScreen extends StatefulWidget {
     this.initialImageIndex,
   });
 
+  /// route 名稱：讓通知導頁能用 popUntil 找回已經開著的那一份。
+  static String routeNameFor(int postId) => 'forum/detail/$postId';
+
+  /// 所有呼叫端都走這個工廠，settings.name 才會一致。
+  static Route<ForumDetailResult> route({
+    required int postId,
+    ValueChanged<ForumPost>? onPostChanged,
+    int? initialImageIndex,
+  }) => MaterialPageRoute<ForumDetailResult>(
+    settings: RouteSettings(name: routeNameFor(postId)),
+    builder: (_) => ForumDetailScreen(
+      postId: postId,
+      onPostChanged: onPostChanged,
+      initialImageIndex: initialImageIndex,
+    ),
+  );
+
+  /// 目前開著的詳情頁：key = postId，value = 該實例的重載函式。
+  static final Map<int, VoidCallback> _live = {};
+
+  /// 該貼文的詳情頁是否已在畫面上。
+  static bool isOpen(int postId) => _live.containsKey(postId);
+
+  /// 開著才重載；沒開就什麼都不做。
+  static void refreshIfOpen(int postId) => _live[postId]?.call();
+
   @override
   State<ForumDetailScreen> createState() => _ForumDetailScreenState();
 }
@@ -95,12 +121,17 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   @override
   void initState() {
     super.initState();
+    ForumDetailScreen._live[widget.postId] = _load;
     _loadItemCatalog();
     _load();
   }
 
   @override
   void dispose() {
+    // 同一 postId 若已被新實例接手，不要把它的登記清掉。
+    if (ForumDetailScreen._live[widget.postId] == _load) {
+      ForumDetailScreen._live.remove(widget.postId);
+    }
     _inputController.dispose();
     _scrollController.dispose();
     super.dispose();

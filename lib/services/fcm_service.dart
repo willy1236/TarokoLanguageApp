@@ -79,6 +79,10 @@ class FcmService {
   /// 點擊論壇回覆通知時的導頁 callback。由 UI 層設定（用 navigatorKey 導到貼文詳情）。
   static void Function(int postId)? onForumReplyTapped;
 
+  /// 由 UI 層注入：該貼文的詳情頁是否正開在畫面上。前景收到該篇的回覆推播時
+  /// 據此靜音，避免通知列／SnackBar 蓋住正在使用的留言輸入列。
+  static bool Function(int postId)? isForumPostOpen;
+
   /// 收到好友定向來電推播時觸發（前景收到、或背景點擊通知開啟時皆會呼叫）。
   /// 由 UI 層設定，導向 IncomingCallScreen。響鈴逾時（60 秒）由後端控管，
   /// 這裡不做額外過期判斷；若使用者開啟時來電已結束，畫面內操作會收到
@@ -282,6 +286,8 @@ class FcmService {
 
     final forumPostId = _parseForumPayload(message.data);
     if (forumPostId != null) {
+      // 人就在那一頁，內容已即時更新，不再彈通知。
+      if (isForumPostOpen?.call(forumPostId) == true) return;
       final title = message.notification?.title ?? '有人回覆你';
       final body = message.notification?.body ?? '';
       unawaited(

@@ -128,12 +128,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
       // 標記失敗不該擋住導頁，紅點下次進來會再對齊。
       EventService.markNotificationsRead(ids: [item.id]).catchError((_) {});
     }
-    await Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder: (_) => EventDetailScreen(eventId: item.eventId),
-      ),
-    );
+    await Navigator.push(context, EventDetailScreen.route(item.eventId));
     if (mounted) _load();
   }
 
