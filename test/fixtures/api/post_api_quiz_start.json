@@ -1,0 +1,259 @@
+{
+  "session_id": "c85afbec-aa55-4555-be2f-a1606eb8c899",
+  "level": "初級",
+  "resumed": false,
+  "conflicting_level": null,
+  "total_questions": 10,
+  "questions": [
+    {
+      "question_id": "85dcfbd9-2ddb-4a7d-80f0-89171819cc5a",
+      "order": 1,
+      "direction": "zh_to_truku",
+      "prompt": "孩童",
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/05人物、身分/初級/音檔/孩童.wav",
+      "options": [
+        {
+          "option_id": 3084,
+          "text": "baga"
+        },
+        {
+          "option_id": 3004,
+          "text": "bubu"
+        },
+        {
+          "option_id": 3030,
+          "text": "laqi"
+        },
+        {
+          "option_id": 3026,
+          "text": "hangan"
+        }
+      ]
+    },
+    {
+      "question_id": "19fddef0-3e2f-4b88-ab2c-16bf33e08c7c",
+      "order": 2,
+      "direction": "zh_to_truku",
+      "prompt": "蹲坐",
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/26肢體動作/初級/音檔/蹲坐.wav",
+      "options": [
+        {
+          "option_id": 3568,
+          "text": "mksa"
+        },
+        {
+          "option_id": 3675,
+          "text": "tdangaw tluung"
+        },
+        {
+          "option_id": 3579,
+          "text": "mkkarang"
+        },
+        {
+          "option_id": 3576,
+          "text": "meiyah"
+        }
+      ]
+    },
+    {
+      "question_id": "89c320d1-e85a-415d-9a3f-2dee896d9997",
+      "order": 3,
+      "direction": "zh_to_truku",
+      "prompt": "貓頭鷹",
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/07動物(含昆蟲)/初級/音檔/貓頭鷹.wav",
+      "options": [
+        {
+          "option_id": 3152,
+          "text": "puurung"
+        },
+        {
+          "option_id": 3150,
+          "text": "qowlit"
+        },
+        {
+          "option_id": 3340,
+          "text": "krpuhan"
+        },
+        {
+          "option_id": 3149,
+          "text": "kacing"
+        }
+      ]
+    },
+    {
+      "question_id": "9a7a5036-a6f5-4176-aa74-d0d91a0fbb4b",
+      "order": 4,
+      "direction": "zh_to_truku",
+      "prompt": "哪裡",
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/03疑問詞/初級/音檔/哪裡.wav",
+      "options": [
+        {
+          "option_id": 3969,
+          "text": "ini kla"
+        },
+        {
+          "option_id": 2928,
+          "text": "rima"
+        },
+        {
+          "option_id": 2942,
+          "text": "maxal mngari"
+        },
+        {
+          "option_id": 2989,
+          "text": "quri inu"
+        }
+      ]
+    },
+    {
+      "question_id": "9649a825-29d5-4f4e-beb4-a2b1a3f04ac3",
+      "order": 5,
+      "direction": "zh_to_truku",
+      "prompt": "學生",
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/05人物、身分/初級/音檔/學生.wav",
+      "options": [
+        {
+          "option_id": 3081,
+          "text": "quwaq"
+        },
+        {
+          "option_id": 3038,
+          "text": "laqi matas"
+        },
+        {
+          "option_id": 3036,
+          "text": "mtgsa"
+        },
+        {
+          "option_id": 3035,
+          "text": "msapuh"
+        }
+      ]
+    },
+    {
+      "question_id": "c1122f3a-d971-4297-8350-6a5e1d8e3362",
+      "order": 6,
+      "direction": "zh_to_truku",
+      "prompt": "疾病",
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/31生老病死傷/初級/音檔/疾病.wav",
+      "options": [
+        {
+          "option_id": 3829,
+          "text": "narux"
+        },
+        {
+          "option_id": 3078,
+          "text": "btriq"
+        },
+        {
+          "option_id": 3003,
+          "text": "tama"
+        },
+        {
+          "option_id": 3010,
+          "text": "swayi"
+        }
+      ]
+    },
+    {
+      "question_id": "e9264303-fd63-434e-b9b6-bbc52650d831",
+      "order": 7,
+      "direction": "zh_to_truku",
+      "prompt": "畫圖",
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/26肢體動作/初級/音檔/畫圖.wav",
+      "options": [
+        {
+          "option_id": 3673,
+          "text": "rmisuh matas"
+        },
+        {
+          "option_id": 3580,
+          "text": "qtaan"
+        },
+        {
+          "option_id": 3579,
+          "text": "mkkarang"
+        },
+        {
+          "option_id": 3571,
+          "text": "qmbubu"
+        }
+      ]
+    },
+    {
+      "question_id": "e0d1530c-4ff1-414c-8771-73bcf3fd932b",
+      "order": 8,
+      "direction": "truku_to_zh",
+      "prompt": "tluung",
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/25行動/初級/音檔/坐著.wav",
+      "options": [
+        {
+          "option_id": 3578,
+          "text": "去了"
+        },
+        {
+          "option_id": 3565,
+          "text": "去"
+        },
+        {
+          "option_id": 3580,
+          "text": "看起來"
+        },
+        {
+          "option_id": 3573,
+          "text": "坐著"
+        }
+      ]
+    },
+    {
+      "question_id": "38906011-8d24-4593-8f1f-04db523e5543",
+      "order": 9,
+      "direction": "truku_to_zh",
+      "prompt": "kmjiyax",
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/27飲食/初級/音檔/吃午餐.wav",
+      "options": [
+        {
+          "option_id": 3710,
+          "text": "吃了"
+        },
+        {
+          "option_id": 3713,
+          "text": "吃晚餐"
+        },
+        {
+          "option_id": 3504,
+          "text": "水"
+        },
+        {
+          "option_id": 3712,
+          "text": "吃午餐"
+        }
+      ]
+    },
+    {
+      "question_id": "b26eb264-e079-4052-91fb-b92c5e0d5878",
+      "order": 10,
+      "direction": "zh_to_truku",
+      "prompt": "停止",
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/30生活作息/初級/音檔/停止.wav",
+      "options": [
+        {
+          "option_id": 3796,
+          "text": "mtaqi"
+        },
+        {
+          "option_id": 3268,
+          "text": "patas samaw"
+        },
+        {
+          "option_id": 3791,
+          "text": "qmeepah"
+        },
+        {
+          "option_id": 3792,
+          "text": "tndu"
+        }
+      ]
+    }
+  ]
+}

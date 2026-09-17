@@ -1,0 +1,40 @@
+{
+  "uid": 20,
+  "provider": "google",
+  "display_name": "測試使用者",
+  "avatar_url": "https://example.com/avatar.png",
+  "email": "redacted@example.com",
+  "email_verified": true,
+  "email_is_custom": false,
+  "created_at": "2026-07-22T07:19:46.956Z",
+  "updated_at": "2026-09-17T05:32:52.411Z",
+  "last_login_at": "2026-09-17T05:35:05.836Z",
+  "role": "user",
+  "avatar_id": "avatar_blue_02",
+  "frame_id": "frame_05",
+  "millet": 350,
+  "is_indigenous": true,
+  "ethnic_group": "測試族群",
+  "tribe_id": 31,
+  "tribe_name": "測試部落",
+  "tribal_name": "測試族名",
+  "video_nickname": "測試暱稱",
+  "self_intro": null,
+  "friend_code": "TESTCODE",
+  "quiz_suggested_level": "初級",
+  "listening_suggested_level": null,
+  "study_streak": 0,
+  "video_call_count": 3,
+  "forum_post_count": 1,
+  "profile_completed": true,
+  "owned_avatar_ids": [
+    "avatar_blue_01",
+    "avatar_blue_02",
+    "avatar_gold_01",
+    "avatar_gold_03"
+  ],
+  "owned_frame_ids": [
+    "frame_01",
+    "frame_05"
+  ]
+}

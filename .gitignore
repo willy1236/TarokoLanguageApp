@@ -51,3 +51,6 @@ app.*.map.json
 
 # Firebase CLI 部署快取
 .firebase/
+
+# API inspector 錄製的原始輸出（fixture 本身要進版控，這個中繼 log 不用）
+fixtures.log

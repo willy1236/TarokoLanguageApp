@@ -1,0 +1,240 @@
+{
+  "session_id": "e667f1e5-3825-4667-b23f-faee1d4dee9b",
+  "mode": "word_to_zh",
+  "level": "初級",
+  "resumed": false,
+  "conflicting_level": null,
+  "total_questions": 10,
+  "questions": [
+    {
+      "question_id": "73924b69-3a97-4153-bfaa-6ecae1050fec",
+      "order": 1,
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/01數字計量/初級/音檔/十四.wav",
+      "options": [
+        {
+          "option_id": 2937,
+          "text": "十四"
+        },
+        {
+          "option_id": 2930,
+          "text": "七"
+        },
+        {
+          "option_id": 2975,
+          "text": "那個"
+        },
+        {
+          "option_id": 3969,
+          "text": "不知道"
+        }
+      ]
+    },
+    {
+      "question_id": "c0e5ce56-9d30-4e21-a368-f39c7e6966ae",
+      "order": 2,
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/03疑問詞/初級/音檔/哪裡.wav",
+      "options": [
+        {
+          "option_id": 2989,
+          "text": "哪裡"
+        },
+        {
+          "option_id": 2929,
+          "text": "六"
+        },
+        {
+          "option_id": 2945,
+          "text": "二十二"
+        },
+        {
+          "option_id": 3946,
+          "text": "有"
+        }
+      ]
+    },
+    {
+      "question_id": "e70ca700-2f7a-46f4-b20b-6df8b6dc1580",
+      "order": 3,
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/35否定詞/初級/音檔/不要.wav",
+      "options": [
+        {
+          "option_id": 2987,
+          "text": "多少(具體可計算)"
+        },
+        {
+          "option_id": 3964,
+          "text": "不要"
+        },
+        {
+          "option_id": 2953,
+          "text": "七十"
+        },
+        {
+          "option_id": 2978,
+          "text": "那裡"
+        }
+      ]
+    },
+    {
+      "question_id": "bbfc970a-3bee-423a-9dd4-3555bad1a3be",
+      "order": 4,
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/32特徵/初級/音檔/炎熱.wav",
+      "options": [
+        {
+          "option_id": 3384,
+          "text": "晚上"
+        },
+        {
+          "option_id": 3390,
+          "text": "(幾)點鐘"
+        },
+        {
+          "option_id": 3877,
+          "text": "多"
+        },
+        {
+          "option_id": 3884,
+          "text": "炎熱"
+        }
+      ]
+    },
+    {
+      "question_id": "f6db9540-ec9a-4692-ac08-45bc0f154493",
+      "order": 5,
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/28認知感官/初級/音檔/閉.wav",
+      "options": [
+        {
+          "option_id": 3394,
+          "text": "現在"
+        },
+        {
+          "option_id": 3882,
+          "text": "懶惰"
+        },
+        {
+          "option_id": 3515,
+          "text": "白色"
+        },
+        {
+          "option_id": 3733,
+          "text": "閉(眼睛)"
+        }
+      ]
+    },
+    {
+      "question_id": "8d691d5d-3baf-456e-80e7-780aa597e4f1",
+      "order": 6,
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/30生活作息/初級/音檔/唱歌.wav",
+      "options": [
+        {
+          "option_id": 3798,
+          "text": "唱歌"
+        },
+        {
+          "option_id": 3267,
+          "text": "藥物"
+        },
+        {
+          "option_id": 3795,
+          "text": "再見"
+        },
+        {
+          "option_id": 3262,
+          "text": "球"
+        }
+      ]
+    },
+    {
+      "question_id": "a2550bf1-52b5-4113-88de-2b22ba4cbaf8",
+      "order": 7,
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/27飲食/初級/音檔/吃晚餐.wav",
+      "options": [
+        {
+          "option_id": 3711,
+          "text": "早餐"
+        },
+        {
+          "option_id": 3713,
+          "text": "吃晚餐"
+        },
+        {
+          "option_id": 3712,
+          "text": "吃午餐"
+        },
+        {
+          "option_id": 3710,
+          "text": "吃了"
+        }
+      ]
+    },
+    {
+      "question_id": "00847d17-8b37-4ba6-b0b1-b60b000175e4",
+      "order": 8,
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/25行動/初級/音檔/攜帶.wav",
+      "options": [
+        {
+          "option_id": 3582,
+          "text": "出去"
+        },
+        {
+          "option_id": 3572,
+          "text": "出現"
+        },
+        {
+          "option_id": 3569,
+          "text": "攜帶"
+        },
+        {
+          "option_id": 3674,
+          "text": "隨意"
+        }
+      ]
+    },
+    {
+      "question_id": "f22820b5-87b1-4438-bb2d-9ba63503ba21",
+      "order": 9,
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/12建築/初級/音檔/學校.wav",
+      "options": [
+        {
+          "option_id": 3795,
+          "text": "再見"
+        },
+        {
+          "option_id": 3271,
+          "text": "橡皮擦"
+        },
+        {
+          "option_id": 3270,
+          "text": "手錶"
+        },
+        {
+          "option_id": 3365,
+          "text": "學校"
+        }
+      ]
+    },
+    {
+      "question_id": "806ec81a-bdfa-4777-8413-fd82d196a72b",
+      "order": 10,
+      "prompt_audio_url": "https://storage.googleapis.com/truku-media/學習詞表/07動物(含昆蟲)/初級/音檔/魚.wav",
+      "options": [
+        {
+          "option_id": 3146,
+          "text": "魚"
+        },
+        {
+          "option_id": 3342,
+          "text": "日落"
+        },
+        {
+          "option_id": 3152,
+          "text": "貓頭鷹"
+        },
+        {
+          "option_id": 3193,
+          "text": "地瓜"
+        }
+      ]
+    }
+  ]
+}

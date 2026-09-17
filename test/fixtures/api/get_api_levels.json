@@ -1,0 +1,24 @@
+{
+  "levels": [
+    {
+      "code": "初級",
+      "label": "初級",
+      "available_words": 253
+    },
+    {
+      "code": "中級",
+      "label": "中級",
+      "available_words": 237
+    },
+    {
+      "code": "中高級",
+      "label": "中高級",
+      "available_words": 301
+    },
+    {
+      "code": "高級",
+      "label": "高級",
+      "available_words": 296
+    }
+  ]
+}
