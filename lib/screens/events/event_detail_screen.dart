@@ -405,6 +405,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         onEdit: _editEvent,
         onExport: _exportRoster,
         onDelete: _deleteEvent,
+        onReminderSent: _silentRefresh,
       ),
     );
   }

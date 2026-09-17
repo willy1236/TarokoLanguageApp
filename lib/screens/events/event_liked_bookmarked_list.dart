@@ -150,7 +150,13 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
               ),
             );
           }
-          return _EventListItem(event: _events[index], seniorMode: seniorMode);
+          return _EventListItem(
+            event: _events[index],
+            seniorMode: seniorMode,
+            // 在詳情頁取消收藏/按讚後返回，清單要重新整理，否則仍看得到
+            // 已經取消的項目。
+            onReturn: _load,
+          );
         },
       ),
     );
@@ -172,16 +178,29 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
 class _EventListItem extends StatelessWidget {
   final EventSummary event;
   final bool seniorMode;
-  const _EventListItem({required this.event, required this.seniorMode});
+
+  /// 從詳情頁返回時呼叫，讓清單重新整理。
+  final VoidCallback onReturn;
+
+  const _EventListItem({
+    required this.event,
+    required this.seniorMode,
+    required this.onReturn,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: event.id)),
-      ),
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EventDetailScreen(eventId: event.id),
+          ),
+        );
+        onReturn();
+      },
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(

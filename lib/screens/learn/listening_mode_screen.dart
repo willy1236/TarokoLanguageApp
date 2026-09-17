@@ -4,6 +4,7 @@ import '../../core/network/api_client.dart';
 import '../../models/history_models.dart';
 import '../../models/level_info.dart';
 import '../../services/history_service.dart';
+import '../../services/learn_refresh_notifier.dart';
 import '../../services/learn_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_widgets.dart';
@@ -68,18 +69,39 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
   @override
   void initState() {
     super.initState();
+    _assignFutures();
+    _loadSuggestedLevel();
+    // 聽力訂正頁走 popUntil 直接彈回首頁，本頁會被 dispose；重新進來時靠 initState
+    // 取得最新資料。若本頁仍在 stack 上，這條訂閱讓它即時更新。
+    LearnRefreshNotifier.revision.addListener(_reload);
+  }
+
+  @override
+  void dispose() {
+    LearnRefreshNotifier.revision.removeListener(_reload);
+    super.dispose();
+  }
+
+  void _assignFutures() {
     _levelsFuture = LearnService.fetchLevels();
     _recentListeningFuture = HistoryService.fetchHistory(
       type: 'listening',
       page: 1,
       pageSize: 5,
     );
-    _loadSuggestedLevel();
+  }
+
+  /// 重抓整頁。FutureBuilder 只認 Future 物件本身，不重新指派就永遠停在舊資料。
+  Future<void> _reload() async {
+    if (!mounted) return;
+    setState(_assignFutures);
+    await _loadSuggestedLevel();
   }
 
   Future<void> _loadSuggestedLevel() async {
     try {
-      final user = await UserService.fetchMe();
+      // 分級測驗會在後端改寫建議等級，快取的 user 是舊的，必須強制重抓。
+      final user = await UserService.fetchMe(forceRefresh: true);
       if (!mounted) return;
       setState(() {
         _listeningSuggestedLevel = user.listeningSuggestedLevel;
@@ -128,7 +150,10 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
               return _buildError(snapshot.error);
             }
             final levels = snapshot.data ?? const [];
-            return ListView(
+            return RefreshIndicator(
+              onRefresh: _reload,
+              color: AppColors.primary,
+              child: ListView(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
               children: [
                 _buildHeader(),
@@ -188,6 +213,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                 const SizedBox(height: 10),
                 _buildRecentPractice(),
               ],
+              ),
             );
           },
         ),

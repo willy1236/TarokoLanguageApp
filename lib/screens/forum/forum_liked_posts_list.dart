@@ -134,7 +134,12 @@ class _ForumLikedPostsListState extends State<ForumLikedPostsList> {
               ),
             );
           }
-          return _PostListItem(post: _posts[index], seniorMode: seniorMode);
+          return _PostListItem(
+            post: _posts[index],
+            seniorMode: seniorMode,
+            // 在詳情頁取消按讚後返回，清單要重新整理，否則仍看得到已取消的貼文。
+            onReturn: _load,
+          );
         },
       ),
     );
@@ -153,16 +158,27 @@ class _ForumLikedPostsListState extends State<ForumLikedPostsList> {
 class _PostListItem extends StatelessWidget {
   final ForumPost post;
   final bool seniorMode;
-  const _PostListItem({required this.post, required this.seniorMode});
+
+  /// 從詳情頁返回時呼叫，讓清單重新整理。
+  final VoidCallback onReturn;
+
+  const _PostListItem({
+    required this.post,
+    required this.seniorMode,
+    required this.onReturn,
+  });
 
   @override
   Widget build(BuildContext context) {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
-      onTap: () => Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => ForumDetailScreen(postId: post.id)),
-      ),
+      onTap: () async {
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => ForumDetailScreen(postId: post.id)),
+        );
+        onReturn();
+      },
       child: Container(
         padding: const EdgeInsets.all(14),
         decoration: BoxDecoration(

@@ -371,6 +371,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
             onLike: () => _like(post),
             onBookmark: () => _bookmark(post),
             itemCatalogById: _itemCatalogById,
+            onAuthorProfileReturn: _load,
           ),
         ),
       if (_loadingMore)

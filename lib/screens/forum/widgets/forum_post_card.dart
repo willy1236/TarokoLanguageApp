@@ -32,6 +32,10 @@ class ForumPostCard extends StatelessWidget {
   final VoidCallback onBookmark;
   final Map<String, ShopItem> itemCatalogById;
 
+  /// 從作者的公開檔案頁返回時呼叫。在那裡封鎖/解除封鎖會改變看板該顯示哪些
+  /// 貼文，不重載的話被封鎖者的貼文還留在畫面上。
+  final VoidCallback? onAuthorProfileReturn;
+
   const ForumPostCard({
     super.key,
     required this.post,
@@ -39,6 +43,7 @@ class ForumPostCard extends StatelessWidget {
     required this.onLike,
     required this.onBookmark,
     this.itemCatalogById = const {},
+    this.onAuthorProfileReturn,
   });
 
   @override
@@ -146,11 +151,12 @@ class ForumPostCard extends StatelessWidget {
         size: size,
         fallbackIconColor: AppColors.gold,
         fallback: _initialsAvatar(size),
+        userUid: author.uid,
       ),
     );
   }
 
-  void _openAuthorProfile(BuildContext context) {
+  Future<void> _openAuthorProfile(BuildContext context) async {
     final friendCode = post.author.friendCode;
     if (friendCode == null || friendCode.isEmpty) {
       // 作者帳號刪除中／已刪除時後端不給好友碼（顯示為「已刪除用戶」），沒有公開檔案可看。
@@ -159,12 +165,13 @@ class ForumPostCard extends StatelessWidget {
         ..showSnackBar(const SnackBar(content: Text('無法查看此使用者的個人檔案')));
       return;
     }
-    Navigator.push(
+    await Navigator.push(
       context,
       MaterialPageRoute(
         builder: (_) => PublicProfileScreen(friendCode: friendCode),
       ),
     );
+    onAuthorProfileReturn?.call();
   }
 
   Widget _header(bool seniorMode) => Row(

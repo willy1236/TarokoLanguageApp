@@ -9,6 +9,7 @@
 import 'package:flutter/foundation.dart';
 
 import '../../../core/network/api_client.dart';
+import '../../../services/learn_refresh_notifier.dart';
 
 class QuizFlowOption {
   final int id;
@@ -205,6 +206,8 @@ class QuizFlowController<R> extends ChangeNotifier {
         _result = result;
         _phase = QuizFlowPhase.done;
       });
+      // 交卷已落地：通知測驗紀錄頁與等級選擇頁重抓（四支測驗畫面共用這條路徑）。
+      LearnRefreshNotifier.bump();
       return result;
     } catch (e) {
       if (!_disposed) _fail(e);
