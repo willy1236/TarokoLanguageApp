@@ -16,8 +16,6 @@ class ProfileHero extends StatelessWidget {
   final bool seniorMode;
   final VoidCallback onAvatarTap;
   final VoidCallback onTribalNameTap;
-  final VoidCallback onVocabPlacementTap;
-  final VoidCallback onListeningPlacementTap;
 
   /// 上方已有其他元件（如合併分頁的膠囊切換）時傳 false，頂部不再預留狀態列空間。
   final bool reserveStatusBar;
@@ -32,8 +30,6 @@ class ProfileHero extends StatelessWidget {
     required this.seniorMode,
     required this.onAvatarTap,
     required this.onTribalNameTap,
-    required this.onVocabPlacementTap,
-    required this.onListeningPlacementTap,
     this.reserveStatusBar = true,
     this.topToggle,
   });
@@ -120,7 +116,7 @@ class ProfileHero extends StatelessWidget {
                       color: AppColors.creamLight.withValues(alpha: 0.75),
                     ),
                   ),
-                // 尚未載入時不畫標章，避免先閃「去測驗」再變成等級；精簡模式不顯示。
+                // 尚未載入時不畫標章，避免先閃「未測驗」再變成等級；精簡模式不顯示。
                 if (user != null && !seniorMode) ...[
                   const SizedBox(height: 10),
                   Wrap(
@@ -130,13 +126,11 @@ class ProfileHero extends StatelessWidget {
                       _levelBadge(
                         '單字',
                         user!.quizSuggestedLevel,
-                        onVocabPlacementTap,
                         seniorMode: seniorMode,
                       ),
                       _levelBadge(
                         '聽力',
                         user!.listeningSuggestedLevel,
-                        onListeningPlacementTap,
                         seniorMode: seniorMode,
                       ),
                     ],
@@ -177,15 +171,16 @@ class ProfileHero extends StatelessWidget {
     );
   }
 
-  /// 已分級顯示「單字 · 等級」；未分級顯示「單字 · 去測驗」並可點進分級測驗。
+  /// 純裝飾標章：顯示「單字 · 等級」，未分級顯示「單字 · 未測驗」。
+  /// 不可點——已分級的本來就不能點，只有未分級能點會讓人以為標章壞掉，
+  /// 分級測驗另有自己的入口。
   Widget _levelBadge(
     String label,
-    String? level,
-    VoidCallback onTap, {
+    String? level, {
     required bool seniorMode,
   }) {
     final tested = level != null;
-    final badge = Container(
+    return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
       decoration: BoxDecoration(
         color: tested
@@ -197,15 +192,13 @@ class ProfileHero extends StatelessWidget {
         ),
       ),
       child: Text(
-        '$label · ${level ?? '去測驗'}',
+        '$label · ${level ?? '未測驗'}',
         style: AppTypography.captionStyle(
           seniorMode: seniorMode,
           color: tested ? AppColors.gold : AppColors.creamLight,
         ),
       ),
     );
-    if (tested) return badge;
-    return GestureDetector(onTap: onTap, child: badge);
   }
 
   Widget _buildAvatar() {

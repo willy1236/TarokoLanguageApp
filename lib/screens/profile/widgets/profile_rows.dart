@@ -3,6 +3,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_icon_size.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_typography.dart';
 
@@ -102,7 +103,7 @@ Widget profileNavRow({
         children: [
           Row(
             children: [
-              Icon(icon, size: seniorMode ? 30 : 18, color: AppColors.primary),
+              Icon(icon, size: AppIconSize.inline(seniorMode), color: AppColors.primary),
               SizedBox(width: seniorMode ? AppSpacing.md : 10),
               Text(
                 label,
@@ -118,7 +119,7 @@ Widget profileNavRow({
           Icon(
             Icons.chevron_right,
             color: AppColors.fog,
-            size: seniorMode ? 24 : 16,
+            size: AppIconSize.chevron(seniorMode),
           ),
         ],
       ),
@@ -210,7 +211,7 @@ Widget profileSettingRow(
                 ],
               ),
               if (copyable)
-                Icon(Icons.copy_rounded, size: seniorMode ? 24 : 16, color: AppColors.primary)
+                Icon(Icons.copy_rounded, size: AppIconSize.inline(seniorMode), color: AppColors.primary)
               else if (editable)
                 CustomPaint(
                   size: Size.square(seniorMode ? 24 : 16),

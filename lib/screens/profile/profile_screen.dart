@@ -4,25 +4,23 @@ import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
 import '../../models/shop_item.dart';
-import '../../models/tribe_model.dart';
 import '../../models/user_model.dart';
 import '../../services/account_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/share_text_file.dart';
-import '../../shared/widgets/tribe_picker_sheet.dart';
 import '../account/account_delete_screen.dart';
 import 'about_app_screen.dart';
-import 'notification_email_screen.dart';
+import 'profile_info_screen.dart';
 import 'widgets/profile_hero.dart';
 import 'widgets/profile_logout_button.dart';
-import 'widgets/profile_rename_dialog.dart';
 import 'widgets/profile_rows.dart';
 import 'widgets/profile_stats.dart';
 import 'avatar_crop_screen.dart';
@@ -34,8 +32,6 @@ import 'my_bookmarks_screen.dart';
 import 'my_likes_screen.dart';
 import '../terms/terms_consent_screen.dart';
 import '../friends/friends_list_screen.dart';
-import '../learn/listening_placement_screen.dart';
-import '../learn/quiz_placement_screen.dart';
 
 // 頭像檔案限制（後端規則：≤8MB，僅接受 JPEG/PNG/WebP/GIF），前端先擋掉明顯無效
 // 的檔案以減少無效上傳，實際裁切壓縮一律由後端處理。
@@ -132,11 +128,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
               itemCatalogById: _itemCatalogById,
               seniorMode: seniorMode,
               onAvatarTap: _openAvatarOptions,
-              onTribalNameTap: _editTribalName,
-              onVocabPlacementTap: () =>
-                  _openPlacement(const QuizPlacementScreen()),
-              onListeningPlacementTap: () =>
-                  _openPlacement(const ListeningPlacementScreen()),
+              onTribalNameTap: () => _openProfileInfo(editTribalName: true),
               topToggle: widget.topToggle,
             ),
             ProfileCoinBanner(
@@ -147,7 +139,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ProfileStatsRow(user: _user, seniorMode: seniorMode),
             _buildQuickLinksGrid(seniorMode: seniorMode),
             _buildMoreSection(seniorMode: seniorMode),
-            _buildSettingsSection(seniorMode: seniorMode),
             _buildAppSettingsSection(seniorMode: seniorMode),
             _buildOtherSection(seniorMode: seniorMode),
             const ProfileLogoutButton(),
@@ -350,15 +341,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUser();
   }
 
-  // 分級測驗做完會更新 suggested level，回來重抓使用者讓 hero 標章同步。
-  Future<void> _openPlacement(Widget screen) async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => screen));
-    if (!mounted) return;
-    _loadUser();
-  }
-
   Future<void> _openMilletLedger() async {
     await Navigator.of(
       context,
@@ -446,6 +428,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildMoreSection({required bool seniorMode}) {
     return profileSection('SMRATUC · 更多', [
       profileNavRow(
+        icon: Icons.person_outline,
+        label: '個人資料設定',
+        seniorMode: seniorMode,
+        onTap: _openProfileInfo,
+      ),
+      const Divider(height: 1, color: AppColors.creamDeep),
+      profileNavRow(
         icon: Icons.event_note_outlined,
         label: '我發起的活動',
         seniorMode: seniorMode,
@@ -465,81 +454,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ], seniorMode: seniorMode);
   }
 
-  // ── 帳號設定 ──────────────────────────────────────────────────────────────
-
-  Widget _buildSettingsSection({required bool seniorMode}) {
-    final identityLocked = _user?.ethnicGroup != null;
-    return profileSection('PSPUNG · 個人資料設定', [
-      profileSettingRow(
-        '中文姓名',
-        _user?.displayName ?? 'Apyang Imiq',
-        editable: true,
-        onTap: _editDisplayName,
-        seniorMode: seniorMode,
-      ),
-      profileSettingRow(
-        '公開暱稱',
-        _user?.videoNickname ?? '尚未設定',
-        editable: true,
-        onTap: _editVideoNickname,
-        seniorMode: seniorMode,
-      ),
-      profileSettingRow(
-        '自我介紹',
-        (_user?.selfIntro == null || _user!.selfIntro!.isEmpty)
-            ? '尚未填寫'
-            : _user!.selfIntro!,
-        editable: true,
-        onTap: _editSelfIntro,
-        seniorMode: seniorMode,
-      ),
-      profileSettingRow(
-        '好友碼',
-        _user?.friendCode ?? '—',
-        editable: _user?.friendCode != null,
-        copyable: true,
-        onTap: _copyFriendCode,
-        seniorMode: seniorMode,
-      ),
-      profileSwitchRow(
-        '是否為原住民',
-        _user?.isIndigenous ?? false,
-        locked: true,
-        lockedHint: '已設定，如需更正請聯繫管理員',
-        onChanged: (_) {},
-        seniorMode: seniorMode,
-      ),
-      // 族語名只開放原住民填寫（與完善資料頁一致），非原住民不顯示這列。
-      if (_user?.isIndigenous == true)
-        profileSettingRow(
-          '族語名字',
-          _user?.tribalName ?? '尚未設定',
-          // 尚未設定時顯示中文提示字，不套用族語專用的斜體字型，避免字型跟中文不搭。
-          truku: _user?.tribalName != null && _user!.tribalName!.isNotEmpty,
-          editable: true,
-          onTap: _editTribalName,
-          seniorMode: seniorMode,
-        ),
-      profileSettingRow(
-        '部落',
-        _user?.tribeName ?? '尚未設定',
-        editable: !identityLocked,
-        onTap: identityLocked ? null : _editTribe,
-        seniorMode: seniorMode,
-      ),
-      profileSettingRow(
-        '通知信箱',
-        (_user?.email.isNotEmpty ?? false) ? _user!.email : '尚未設定',
-        editable: _user != null && _user!.uid != 0,
-        onTap: _editNotificationEmail,
-        badge: (_user?.email.isNotEmpty ?? false)
-            ? EmailVerifiedBadge(verified: _user!.emailVerified)
-            : null,
-        seniorMode: seniorMode,
-      ),
-    ], seniorMode: seniorMode);
-  }
-
   Widget _buildAppSettingsSection({required bool seniorMode}) {
     return profileSection('PUSU · App 設定', [
       profileSwitchRow(
@@ -549,167 +463,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onChanged: (v) => seniorModeController.setEnabled(v),
       ),
     ], seniorMode: seniorMode);
-  }
-
-  Future<void> _editDisplayName() async {
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (ctx) => ProfileRenameDialog(
-        title: '修改姓名',
-        label: '中文姓名',
-        initialValue: _user?.displayName ?? '',
-      ),
-    );
-    if (newName == null || newName.isEmpty || newName == _user?.displayName) {
-      return;
-    }
-    try {
-      final updated = await UserService.updateMe(displayName: newName);
-      if (mounted) setState(() => _user = updated);
-    } on ApiException catch (e) {
-      _showError(e.message);
-    } catch (e, st) {
-      debugPrint('Failed to update display name: $e');
-      debugPrintStack(stackTrace: st);
-      _showError('更新失敗，請稍後再試');
-    }
-  }
-
-  Future<void> _editTribalName() async {
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (ctx) => ProfileRenameDialog(
-        title: '修改族語名字',
-        label: '族語名字',
-        initialValue: _user?.tribalName ?? '',
-      ),
-    );
-    if (newName == null || newName == _user?.tribalName) return;
-    try {
-      final updated = await UserService.updateMe(tribalName: newName);
-      if (mounted) setState(() => _user = updated);
-    } on ApiException catch (e) {
-      _showError(e.message);
-    } catch (e, st) {
-      debugPrint('Failed to update tribal name: $e');
-      debugPrintStack(stackTrace: st);
-      _showError('更新失敗，請稍後再試');
-    }
-  }
-
-  // 視訊配對前必填；空字串視為清空，後端規則相同。
-  Future<void> _editVideoNickname() async {
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (ctx) => ProfileRenameDialog(
-        title: '修改公開暱稱',
-        label: '公開暱稱',
-        initialValue: _user?.videoNickname ?? '',
-      ),
-    );
-    if (newName == null || newName == _user?.videoNickname) return;
-    try {
-      final updated = await UserService.updateMe(videoNickname: newName);
-      if (mounted) setState(() => _user = updated);
-    } on ApiException catch (e) {
-      _showError(e.message);
-    } catch (e, st) {
-      debugPrint('Failed to update video nickname: $e');
-      debugPrintStack(stackTrace: st);
-      _showError('更新失敗，請稍後再試');
-    }
-  }
-
-  Future<void> _editSelfIntro() async {
-    final newIntro = await showDialog<String>(
-      context: context,
-      builder: (ctx) => ProfileRenameDialog(
-        title: '修改自我介紹',
-        label: '自我介紹',
-        initialValue: _user?.selfIntro ?? '',
-      ),
-    );
-    if (newIntro == null || newIntro == _user?.selfIntro) return;
-    try {
-      final updated = await UserService.updateMe(selfIntro: newIntro);
-      if (mounted) setState(() => _user = updated);
-    } on ApiException catch (e) {
-      _showError(e.message);
-    } catch (e, st) {
-      debugPrint('Failed to update self intro: $e');
-      debugPrintStack(stackTrace: st);
-      _showError('更新失敗，請稍後再試');
-    }
-  }
-
-  Future<void> _editNotificationEmail() async {
-    final user = _user;
-    if (user == null) return;
-    final updated = await Navigator.of(context).push<UserModel>(
-      MaterialPageRoute(builder: (_) => NotificationEmailScreen(user: user)),
-    );
-    if (updated != null && mounted) setState(() => _user = updated);
-  }
-
-  Future<void> _copyFriendCode() async {
-    final code = _user?.friendCode;
-    if (code == null) return;
-    await Clipboard.setData(ClipboardData(text: code));
-    if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('已複製好友碼')));
-  }
-
-  // 目前僅太魯閣族一個族群，選部落時固定連同 ethnic_group 一起送，
-  // 避免後端「改 ethnic_group 未附 tribe_id 就清空」的規則誤觸發。
-  static const String _defaultEthnicGroup = '太魯閣族';
-
-  Future<void> _editTribe() async {
-    final tribe = await showModalBottomSheet<Tribe>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (ctx) =>
-          const TribePickerSheet(ethnicGroup: _defaultEthnicGroup),
-    );
-    if (tribe == null) return;
-    if (tribe.id == kClearTribeId) {
-      if (_user?.tribeId == null) return;
-      try {
-        final updated = await UserService.updateMe(clearTribeId: true);
-        if (mounted) setState(() => _user = updated);
-      } on ApiException catch (e) {
-        if (e.isIdentityLocked) {
-          _showError('族群已設定，如需更正請聯繫管理員');
-        } else {
-          _showError(e.message);
-        }
-      } catch (e, st) {
-        debugPrint('Failed to clear tribe: $e');
-        debugPrintStack(stackTrace: st);
-        _showError('更新失敗，請稍後再試');
-      }
-      return;
-    }
-    if (tribe.id == _user?.tribeId) return;
-    try {
-      final updated = await UserService.updateMe(
-        ethnicGroup: _defaultEthnicGroup,
-        tribeId: tribe.id,
-      );
-      if (mounted) setState(() => _user = updated);
-    } on ApiException catch (e) {
-      if (e.isIdentityLocked) {
-        _showError('族群已設定，如需更正請聯繫管理員');
-      } else {
-        _showError(e.message);
-      }
-    } catch (e, st) {
-      debugPrint('Failed to update tribe: $e');
-      debugPrintStack(stackTrace: st);
-      _showError('更新失敗，請稍後再試');
-    }
   }
 
   // ── 其他 ──────────────────────────────────────────────────────────────────
@@ -750,7 +503,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Icon(
                       Icons.chevron_right,
                       color: AppColors.fog,
-                      size: seniorMode ? 24 : 16,
+                      size: AppIconSize.chevron(seniorMode),
                     ),
                   ],
                 ),
@@ -767,6 +520,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
         );
       }),
       seniorMode: seniorMode,
+    );
+  }
+
+  /// 個人資料設定獨立成頁；頁內寫入會同步 UserService.userNotifier，
+  /// 本頁的 _onUserChanged 會跟著更新，不必等返回值。
+  void _openProfileInfo({bool editTribalName = false}) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) =>
+            ProfileInfoScreen(editTribalNameOnOpen: editTribalName),
+      ),
     );
   }
 
