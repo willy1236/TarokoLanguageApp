@@ -142,6 +142,49 @@ void main() {
       final masked = maskPii({'display_name': null}) as Map<String, dynamic>;
       expect(masked['display_name'], isNull);
     });
+
+    test('使用者產生的內容整欄換掉，不留真實發文', () {
+      final masked = maskPii({
+        'title': '官方活動整理｜布洛灣景觀復原行動',
+        'body': '這是某位使用者真的發過的內文。',
+        'content_md': '# 服務條款\n\n如有問題請來信 someone@gmail.com。',
+      }) as Map<String, dynamic>;
+
+      expect(masked['title'], '測試標題');
+      expect(masked['body'], '測試內文');
+      expect(masked['content_md'], '測試內文');
+    });
+
+    // 下面兩支用不在名單裡的欄位名，測的是兜底那層：
+    // 後端哪天多回一個沒人想到的欄位，個資也不該漏出去。
+    test('沒列在名單裡的欄位，內文裡的 email 仍會被遮', () {
+      final masked = maskPii({
+        'some_new_field': '有問題請來信 someone@gmail.com 與我們聯繫。',
+      }) as Map<String, dynamic>;
+
+      expect(masked['some_new_field'], contains('redacted@example.com'));
+      expect(masked['some_new_field'], isNot(contains('someone@gmail.com')));
+      // 只換掉 email 本身，其餘原樣保留。
+      expect(masked['some_new_field'], contains('與我們聯繫'));
+    });
+
+    test('沒列在名單裡的欄位，內文裡的電話仍會被遮', () {
+      final masked = maskPii({'some_new_field': '報名請撥 0912-345678'})
+          as Map<String, dynamic>;
+      expect(masked['some_new_field'], '報名請撥 0900000000');
+    });
+
+    test('UUID 裡長得像電話的片段不會被誤遮', () {
+      const uuid = 'aec52c55-fc91-415a-be04-9204538467df';
+      final masked = maskPii({'session_id': uuid}) as Map<String, dynamic>;
+      expect(masked['session_id'], uuid);
+    });
+
+    test('ISO 時間字串不會被誤遮', () {
+      const at = '2026-09-04T05:28:38.406Z';
+      final masked = maskPii({'created_at': at}) as Map<String, dynamic>;
+      expect(masked['created_at'], at);
+    });
   });
 
   group('fixtureName', () {

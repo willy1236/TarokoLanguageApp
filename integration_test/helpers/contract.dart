@@ -17,6 +17,10 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
+import 'pii_mask.dart';
+
+export 'pii_mask.dart' show maskPii, kStringMasks;
+
 /// 是否處於 fixture 錄製模式。
 const bool kRecordFixtures = bool.fromEnvironment('RECORD_FIXTURES');
 
@@ -150,52 +154,6 @@ void expectErrorShape(http.Response response, {String? code}) {
   }
 }
 
-// ---------------------------------------------------------------
-// PII 遮罩
-// ---------------------------------------------------------------
-
-/// 遮罩後仍保留原型別的替代值。fixture 會被餵進 model.fromJson，
-/// 所以不能把字串換成 `***` 以外型別，也不能把欄位刪掉。
-const Map<String, String> _stringMasks = {
-  'email': 'redacted@example.com',
-  'contact_email': 'redacted@example.com',
-  'notification_email': 'redacted@example.com',
-  'contact_phone': '0900000000',
-  'phone': '0900000000',
-  'display_name': '測試使用者',
-  'video_nickname': '測試暱稱',
-  'tribal_name': '測試族名',
-  'tribe_name': '測試部落',
-  'ethnic_group': '測試族群',
-  'friend_code': 'TESTCODE',
-  'avatar_url': 'https://example.com/avatar.png',
-  'token': 'REDACTED',
-  'id_token': 'REDACTED',
-  'access_token': 'REDACTED',
-  'refresh_token': 'REDACTED',
-  'rtc_token': 'REDACTED',
-  'fcm_token': 'REDACTED',
-  'app_id': 'REDACTED',
-  'device_id': 'REDACTED',
-  'firebase_uid': 'REDACTED',
-};
-
-/// 遞迴遮罩 JSON 中的個資欄位，保留結構與型別。
-Object? maskPii(Object? json) {
-  if (json is List) return json.map(maskPii).toList();
-  if (json is! Map) return json;
-  final out = <String, dynamic>{};
-  json.forEach((key, value) {
-    final k = key.toString();
-    final mask = _stringMasks[k];
-    if (mask != null && value is String) {
-      out[k] = mask;
-    } else {
-      out[k] = maskPii(value);
-    }
-  });
-  return out;
-}
 
 // ---------------------------------------------------------------
 // Fixture 錄製
