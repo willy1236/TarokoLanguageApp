@@ -30,6 +30,14 @@
           }
         },
         {
+          "client_id": "230831538559-bifp20tmltae8ao5drjpohrvjgh4k422.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.idv.willy1236.truku",
+            "certificate_hash": "0c9e597b8f216a47051ce7b0c89b939916e699cc"
+          }
+        },
+        {
           "client_id": "230831538559-ipgemtce0jed11ba52jjcktdfsgp4fo3.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
@@ -51,6 +59,142 @@
           "android_info": {
             "package_name": "tw.idv.willy1236.truku",
             "certificate_hash": "7c598347d80c68b49765fdf872bcb13ecb42624f"
+          }
+        },
+        {
+          "client_id": "230831538559-l8j9lo5t6s5sajcrd457b537cjn3d3er.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCuVOZZJEImEownPFtIDvZPeZp2R4muM9w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "230831538559-l8j9lo5t6s5sajcrd457b537cjn3d3er.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "230831538559-qpbohb53gfr9tuqvktr0sdv326al0dcc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "tw.idv.willy1236.truku"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:230831538559:android:cacad21a22d06597109a4a",
+        "android_client_info": {
+          "package_name": "tw.truku.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "230831538559-l8j9lo5t6s5sajcrd457b537cjn3d3er.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCuVOZZJEImEownPFtIDvZPeZp2R4muM9w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "230831538559-l8j9lo5t6s5sajcrd457b537cjn3d3er.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "230831538559-qpbohb53gfr9tuqvktr0sdv326al0dcc.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "tw.idv.willy1236.truku"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:230831538559:android:581a18769c36354f109a4a",
+        "android_client_info": {
+          "package_name": "tw.yujiantailuge.app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "230831538559-0tf4pohca18e8adlpd3ofaccgu3dn4bt.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.yujiantailuge.app",
+            "certificate_hash": "2363ca5fe640e84456b2d4d17ab58bc05b3f4d74"
+          }
+        },
+        {
+          "client_id": "230831538559-495gj95ejvg707m1g2jr4jbvekvidre5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.yujiantailuge.app",
+            "certificate_hash": "0c9e597b8f216a47051ce7b0c89b939916e699cc"
+          }
+        },
+        {
+          "client_id": "230831538559-8hr9hiama8mqe6gqora9mtf2m9c3q6am.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.yujiantailuge.app",
+            "certificate_hash": "54785ddb615cde95db9fd31656ea75e5509051bb"
+          }
+        },
+        {
+          "client_id": "230831538559-gci7h040mrsl64j3egr4d1pl0sda5rr4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.yujiantailuge.app",
+            "certificate_hash": "dd6e56aa720baa4f5cc53fc43f451325e65ec254"
+          }
+        },
+        {
+          "client_id": "230831538559-k3648s177u7iltrml3ct139pnioj7qj5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.yujiantailuge.app",
+            "certificate_hash": "3a0fdcbbd87563cc842a44421a9b9ed6d424f87e"
+          }
+        },
+        {
+          "client_id": "230831538559-kj9aah4556vf2o764vg6arutkqe5tej4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.yujiantailuge.app",
+            "certificate_hash": "7c598347d80c68b49765fdf872bcb13ecb42624f"
+          }
+        },
+        {
+          "client_id": "230831538559-nmd6aor7ru89d4rc7detp2is7g7r2f06.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.yujiantailuge.app",
+            "certificate_hash": "6872d66add2a1eeb552edbae8933f704658f0483"
+          }
+        },
+        {
+          "client_id": "230831538559-vc22m8pr84pkiro6c45v1n94b554c812.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.yujiantailuge.app",
+            "certificate_hash": "da056936d6f02ba8816d2bdcd9a16608530e66ce"
           }
         },
         {
