@@ -54,7 +54,6 @@ lib/
 └── shared/                 # 共用元件（底部導覽、painter、reward overlay…）
 test/                       # 單元與 widget 測試
 integration_test/           # API Inspector、需要真機的整合測試
-claude-design-src/          # 設計稿 (JSX / HTML prototype)，Flutter UI 的對照來源
 docs/                       # 開發文件
 ```
 
