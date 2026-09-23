@@ -51,7 +51,7 @@ class DefaultFirebaseOptions {
 
   static const FirebaseOptions android = FirebaseOptions(
     apiKey: 'AIzaSyCuVOZZJEImEownPFtIDvZPeZp2R4muM9w',
-    appId: '1:230831538559:android:27c8692ed5dea049109a4a',
+    appId: '1:230831538559:android:581a18769c36354f109a4a',
     messagingSenderId: '230831538559',
     projectId: 'extreme-quasar-494406-v7',
     storageBucket: 'extreme-quasar-494406-v7.firebasestorage.app',
