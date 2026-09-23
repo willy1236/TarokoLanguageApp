@@ -158,6 +158,14 @@
           }
         },
         {
+          "client_id": "230831538559-gci7h040mrsl64j3egr4d1pl0sda5rr4.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "tw.yujiantailuge.app",
+            "certificate_hash": "dd6e56aa720baa4f5cc53fc43f451325e65ec254"
+          }
+        },
+        {
           "client_id": "230831538559-k3648s177u7iltrml3ct139pnioj7qj5.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
