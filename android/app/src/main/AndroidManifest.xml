@@ -1,5 +1,10 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <!-- 套件自帶但未使用的前景服務：better_player_plus 背景播放、Agora 螢幕分享。
+         移除以免 Play 要求申報前景服務用途。 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" tools:node="remove"/>
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PROJECTION" tools:node="remove"/>
     <!-- Android 13 (API 33)+ 需宣告才能請求通知權限（FCM 活動提醒） -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
     <!-- 視訊通話（Agora RTC）需要的相機/麥克風權限 -->
@@ -44,6 +49,12 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@mipmap/ic_launcher" />
+        <service
+            android:name="uz.shs.better_player_plus.BetterPlayerForegroundService"
+            tools:node="remove" />
+        <service
+            android:name="io.agora.rtc2.extensions.MediaProjectionMgr$LocalScreenSharingService"
+            tools:node="remove" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
