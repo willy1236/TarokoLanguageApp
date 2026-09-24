@@ -1,0 +1,22 @@
+# 未簽章的 iOS 建置檢查：確認能編譯，並產出可上傳 Appetize.io 的模擬器版本。
+# 繳 Apple 年費後再加 ios_signing / publishing 做 TestFlight 發布。
+workflows:
+  ios-check:
+    name: iOS Build Check
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: 安裝套件
+        script: flutter pub get
+      - name: 建置 Release（不簽章）
+        script: flutter build ios --release --no-codesign
+      - name: 建置模擬器版
+        script: |
+          flutter build ios --simulator --debug
+          cd build/ios/iphonesimulator && zip -r Runner.app.zip Runner.app
+    artifacts:
+      - build/ios/iphonesimulator/Runner.app.zip
