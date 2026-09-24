@@ -242,7 +242,8 @@ class _EventsScreenState extends State<EventsScreen> {
             children: [
               Expanded(
                 child: Text(
-                  '近期部落聚會',
+                  // 精簡模式字級放大後長標題會被截斷，改用與切換鈕一致的短標題。
+                  seniorMode ? '活動' : '近期部落聚會',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.serif(
