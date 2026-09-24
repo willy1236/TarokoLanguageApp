@@ -119,7 +119,9 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
                 _hint!,
                 style: TextStyle(
                   color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
+                  fontSize: seniorMode
+                      ? AppTypography.bodyLarge + AppTypography.seniorStep
+                      : null,
                 ),
               ),
             ),
@@ -196,7 +198,10 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
         backgroundColor: AppColors.cream,
         selectedColor: AppColors.primary.withValues(alpha: 0.16),
         labelStyle: TextStyle(
-          fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.body,
+            seniorMode: seniorMode,
+          ),
           color: selected ? AppColors.primary : AppColors.inkSoft,
           fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
         ),

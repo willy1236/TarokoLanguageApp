@@ -243,7 +243,9 @@ class _EventsScreenState extends State<EventsScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.serif(
-                    fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
+                    fontSize: seniorMode
+                        ? AppTypography.display32
+                        : AppTypography.display26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 1.0,
@@ -314,7 +316,10 @@ class _EventsScreenState extends State<EventsScreen> {
                 child: Text(
                   _filters[i],
                   style: TextStyle(
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.caption,
+                      seniorMode: seniorMode,
+                    ),
                     color: active ? AppColors.creamLight : AppColors.inkSoft,
                     letterSpacing: 1.0,
                   ),

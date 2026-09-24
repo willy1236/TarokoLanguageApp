@@ -77,7 +77,9 @@ Future<void> main() async {
       if (session == null || session.id != sessionId) return;
       final navState = navigatorKey.currentState;
       if (navState == null) {
-        debugPrint('FcmService.onVideoMatchedColdStart: navigatorKey 尚未掛上，導頁被忽略');
+        debugPrint(
+          'FcmService.onVideoMatchedColdStart: navigatorKey 尚未掛上，導頁被忽略',
+        );
         return;
       }
       navState.push(
@@ -432,9 +434,7 @@ class _MainContainerState extends State<MainContainer>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            status.weeklyBonusEarned
-                ? '簽到成功，+50 小米・週全勤再 +50！'
-                : '簽到成功，+50 小米',
+            status.weeklyBonusEarned ? '簽到成功，+50 小米・週全勤再 +50！' : '簽到成功，+50 小米',
           ),
         ),
       );
@@ -549,8 +549,10 @@ class _MainContainerState extends State<MainContainer>
               onTap: _navigate,
               seniorMode: seniorMode,
               badges: {
-                _plazaEventIndex: NotificationSummaryService.notifier.value.plaza,
-                _friendsIndex: NotificationSummaryService.notifier.value.friends,
+                _plazaEventIndex:
+                    NotificationSummaryService.notifier.value.plaza,
+                _friendsIndex:
+                    NotificationSummaryService.notifier.value.friends,
               },
             ),
           ),

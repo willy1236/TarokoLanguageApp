@@ -48,7 +48,11 @@ void main() {
       final path = request.url.path;
       Map<String, dynamic> body;
       if (path.endsWith('/comments')) {
-        body = {'comments': <dynamic>[], 'replies': <dynamic>[], 'next_cursor': null};
+        body = {
+          'comments': <dynamic>[],
+          'replies': <dynamic>[],
+          'next_cursor': null,
+        };
       } else {
         final id =
             int.tryParse(path.split('/').where((s) => s.isNotEmpty).last) ?? 0;

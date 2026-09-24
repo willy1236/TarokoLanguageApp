@@ -190,7 +190,10 @@ class _PostListItem extends StatelessWidget {
               post.board.name,
               style: TextStyle(
                 color: AppColors.primary,
-                fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.caption,
+                  seniorMode: seniorMode,
+                ),
                 letterSpacing: 1.0,
               ),
             ),
@@ -201,7 +204,10 @@ class _PostListItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: AppColors.ink,
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -219,7 +225,10 @@ class _PostListItem extends StatelessWidget {
                   '${post.likeCount}',
                   style: TextStyle(
                     color: AppColors.fog,
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.caption,
+                      seniorMode: seniorMode,
+                    ),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -233,7 +242,10 @@ class _PostListItem extends StatelessWidget {
                   '${post.commentCount}',
                   style: TextStyle(
                     color: AppColors.fog,
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.caption,
+                      seniorMode: seniorMode,
+                    ),
                   ),
                 ),
               ],

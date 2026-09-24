@@ -187,9 +187,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => ForumImageViewer(
-            images: [
-              for (final url in images) CachedNetworkImageProvider(url),
-            ],
+            images: [for (final url in images) CachedNetworkImageProvider(url)],
             initialIndex: index,
           ),
         ),
@@ -469,7 +467,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   Widget build(BuildContext context) => Theme(
     data: forumTheme(context),
     child: ListenableBuilder(
-      listenable: Listenable.merge([seniorModeController, accountLockController]),
+      listenable: Listenable.merge([
+        seniorModeController,
+        accountLockController,
+      ]),
       builder: (context, _) =>
           _buildScaffold(context, seniorModeController.enabled),
     ),
@@ -487,7 +488,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         foregroundColor: AppColors.ink,
         title: Text(
           '貼文',
-          style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+          style: AppTypography.titleStyle(
+            seniorMode: seniorMode,
+            color: AppColors.ink,
+          ),
         ),
         actions: [
           if (post != null && (_isMine || !locked))
@@ -559,7 +563,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 Text(
                   '留言 ${post.commentCount}',
                   style: AppTypography.serif(
-                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.body,
+                      seniorMode: seniorMode,
+                    ),
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                   ),
@@ -571,7 +578,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                       '還沒有人留言，來說第一句吧。',
                       style: TextStyle(
                         color: AppColors.fog,
-                        fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
+                        fontSize: seniorMode
+                            ? AppTypography.bodyLarge + AppTypography.seniorStep
+                            : null,
                       ),
                     ),
                   ),
@@ -585,11 +594,13 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                         ? null
                         : () => setState(() => _replyTarget = thread.root),
                     onDelete: () => _deleteComment(thread.root),
-                    onReport: locked ? null : () => showForumReportSheet(
-                      context,
-                      targetType: 'comment',
-                      targetId: thread.root.id,
-                    ),
+                    onReport: locked
+                        ? null
+                        : () => showForumReportSheet(
+                            context,
+                            targetType: 'comment',
+                            targetId: thread.root.id,
+                          ),
                     itemCatalogById: _itemCatalogById,
                   ),
                   for (final reply in thread.replies)
@@ -604,11 +615,13 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                           : () => setState(() => _replyTarget = thread.root),
                       onDelete: () => _deleteComment(reply),
                       itemCatalogById: _itemCatalogById,
-                      onReport: locked ? null : () => showForumReportSheet(
-                        context,
-                        targetType: 'comment',
-                        targetId: reply.id,
-                      ),
+                      onReport: locked
+                          ? null
+                          : () => showForumReportSheet(
+                              context,
+                              targetType: 'comment',
+                              targetId: reply.id,
+                            ),
                     ),
                 ],
               ],

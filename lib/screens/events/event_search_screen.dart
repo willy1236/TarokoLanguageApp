@@ -145,7 +145,9 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
                 _error!,
                 style: TextStyle(
                   color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
+                  fontSize: seniorMode
+                      ? AppTypography.bodyLarge + AppTypography.seniorStep
+                      : null,
                 ),
               ),
             ),
@@ -178,7 +180,9 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
           '找不到符合的活動',
           style: TextStyle(
             color: AppColors.fog,
-            fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
+            fontSize: seniorMode
+                ? AppTypography.bodyLarge + AppTypography.seniorStep
+                : null,
           ),
         ),
       );
@@ -242,14 +246,20 @@ class _EventResultTile extends StatelessWidget {
                     Text(
                       '${d.month}月',
                       style: TextStyle(
-                        fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+                        fontSize: AppTypography.size(
+                          AppTypography.micro,
+                          seniorMode: seniorMode,
+                        ),
                         color: AppColors.gold,
                       ),
                     ),
                     Text(
                       '${d.day}',
                       style: AppTypography.serif(
-                        fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
+                        fontSize: AppTypography.size(
+                          AppTypography.subtitle,
+                          seniorMode: seniorMode,
+                        ),
                         fontWeight: FontWeight.w700,
                         color: AppColors.creamLight,
                         height: 1,
@@ -267,7 +277,10 @@ class _EventResultTile extends StatelessWidget {
                   Text(
                     event.title,
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.body,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                     ),
@@ -276,7 +289,10 @@ class _EventResultTile extends StatelessWidget {
                   Text(
                     '${event.location ?? '線上'} · ${event.participantCount} 人報名',
                     style: TextStyle(
-                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.caption,
+                        seniorMode: seniorMode,
+                      ),
                       color: AppColors.fog,
                     ),
                   ),
