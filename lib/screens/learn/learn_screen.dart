@@ -20,7 +20,10 @@ class LearnScreen extends StatefulWidget {
   /// 使用者再次點擊底部「學習影音」時觸發：捲回頂部並重新整理。
   final Listenable? reselectSignal;
 
-  const LearnScreen({super.key, this.reselectSignal});
+  /// 頭卡織紋的垂直位移，傳入上方固定切換欄的高度，讓兩塊織紋接成一片。
+  final double weaveOffsetY;
+
+  const LearnScreen({super.key, this.reselectSignal, this.weaveOffsetY = 0});
 
   @override
   State<LearnScreen> createState() => _LearnScreenState();
@@ -170,8 +173,25 @@ class _LearnScreenState extends State<LearnScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: AppColors.creamLight,
+    // 頂端墊一條紅底：外層切換欄高度常是小數像素，交界的反鋸齒會透出底色，
+    // 底色是奶油色就會在紅色頭卡上方看到一條淺線。
+    return Stack(
+      children: [
+        const Positioned.fill(child: ColoredBox(color: AppColors.creamLight)),
+        const Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          height: 4,
+          child: ColoredBox(color: AppColors.primary),
+        ),
+        _buildBody(context),
+      ],
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return SizedBox.expand(
       child: FutureBuilder<List<LevelInfo>>(
         future: _levelsFuture,
         builder: (context, snapshot) {
@@ -188,7 +208,9 @@ class _LearnScreenState extends State<LearnScreen> {
             padding: EdgeInsets.zero,
             children: [
               _buildHero(levels),
-              Padding(
+              // 卡片區自帶奶油底，捲動後才不會透出頂端墊的紅條。
+              Container(
+                color: AppColors.creamLight,
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -245,102 +267,107 @@ class _LearnScreenState extends State<LearnScreen> {
 
   Widget _buildHero(List<LevelInfo> levels) {
     final totalWords = levels.fold<int>(0, (sum, l) => sum + l.wordCount);
-    return Container(
-      color: AppColors.primary,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.2,
-              child: CustomPaint(
-                painter: TrukuWeavePainter(
-                  color: AppColors.gold,
-                  opacity: 1.0,
-                  scale: 0.7,
+    // 織紋會多畫一排到邊界外，不裁切會溢到下方奶油底色上。
+    return ClipRect(
+      child: Container(
+        color: AppColors.primary,
+        child: Stack(
+          children: [
+            // 織紋接續上方固定切換欄的織紋，兩塊看起來是同一片。
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.2,
+                child: CustomPaint(
+                  painter: TrukuWeavePainter(
+                    color: AppColors.gold,
+                    opacity: 1.0,
+                    scale: 0.7,
+                    offsetY: widget.weaveOffsetY,
+                  ),
                 ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'KARI TRUKU · 族語學習',
-                  style: AppTypography.latin(
-                    fontSize: AppTypography.caption,
-                    fontStyle: FontStyle.italic,
-                    color: AppColors.gold,
-                    letterSpacing: 3.0,
+            Padding(
+              padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'KARI TRUKU · 族語學習',
+                    style: AppTypography.latin(
+                      fontSize: AppTypography.caption,
+                      fontStyle: FontStyle.italic,
+                      color: AppColors.gold,
+                      letterSpacing: 3.0,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  '一句一句，把話說回來',
-                  style: AppTypography.serif(
-                    fontSize: AppTypography.display28,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.creamLight,
-                    letterSpacing: 1.12,
+                  const SizedBox(height: 6),
+                  Text(
+                    '一句一句，把話說回來',
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.display28,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.creamLight,
+                      letterSpacing: 1.12,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: '$totalWords',
-                            style: AppTypography.serif(
-                              fontSize: AppTypography.subtitle,
-                              color: AppColors.gold,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextSpan(
-                            text: '　可學單字',
-                            style: AppTypography.serif(
-                              fontSize: AppTypography.body,
-                              color: AppColors.creamLight.withValues(
-                                alpha: 0.85,
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '$totalWords',
+                              style: AppTypography.serif(
+                                fontSize: AppTypography.subtitle,
+                                color: AppColors.gold,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    RichText(
-                      text: TextSpan(
-                        children: [
-                          TextSpan(
-                            text: '${levels.length}',
-                            style: AppTypography.serif(
-                              fontSize: AppTypography.subtitle,
-                              color: AppColors.gold,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextSpan(
-                            text: '　個級別',
-                            style: AppTypography.serif(
-                              fontSize: AppTypography.body,
-                              color: AppColors.creamLight.withValues(
-                                alpha: 0.85,
+                            TextSpan(
+                              text: '　可學單字',
+                              style: AppTypography.serif(
+                                fontSize: AppTypography.body,
+                                color: AppColors.creamLight.withValues(
+                                  alpha: 0.85,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ],
+                      const SizedBox(width: 16),
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: '${levels.length}',
+                              style: AppTypography.serif(
+                                fontSize: AppTypography.subtitle,
+                                color: AppColors.gold,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            TextSpan(
+                              text: '　個級別',
+                              style: AppTypography.serif(
+                                fontSize: AppTypography.body,
+                                color: AppColors.creamLight.withValues(
+                                  alpha: 0.85,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

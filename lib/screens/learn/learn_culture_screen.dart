@@ -29,12 +29,23 @@ class LearnCultureScreen extends StatefulWidget {
 
 class _LearnCultureScreenState extends State<LearnCultureScreen> {
   late int _tabIndex = widget.initialTabIndex;
+  final _headerKey = GlobalKey();
+  double _headerHeight = 0;
+
+  // 頂部高度隨狀態列、精簡模式字級而變，量出實際高度讓學習頭卡的織紋接得上。
+  void _measureHeader() {
+    final height = _headerKey.currentContext?.size?.height;
+    if (height != null && height != _headerHeight && mounted) {
+      setState(() => _headerHeight = height);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isLearn = _tabIndex == 0;
+    WidgetsBinding.instance.addPostFrameCallback((_) => _measureHeader());
     return Scaffold(
-      backgroundColor: isLearn ? AppColors.creamLight : AppColors.midnight,
+      backgroundColor: isLearn ? AppColors.primary : AppColors.midnight,
       body: Column(
         children: [
           _buildHeader(isLearn),
@@ -46,6 +57,7 @@ class _LearnCultureScreenState extends State<LearnCultureScreen> {
               children: [
                 LearnScreen(
                   reselectSignal: isLearn ? widget.reselectSignal : null,
+                  weaveOffsetY: _headerHeight,
                 ),
                 CultureScreen(
                   cultureTabIndex: isLearn ? 0 : _tabIndex - 1,
@@ -60,10 +72,15 @@ class _LearnCultureScreenState extends State<LearnCultureScreen> {
   }
 
   // 底色跟著分頁走（學習紅、文化深色），膠囊本身的位置與大小三頁完全一致。
+  // 學習分頁的織紋從螢幕頂端起算，下方頭卡以本區高度為位移接續，兩塊接成一片。
   Widget _buildHeader(bool isLearn) {
     return AnimatedContainer(
+      key: _headerKey,
       duration: const Duration(milliseconds: 200),
-      color: isLearn ? AppColors.primary : AppColors.midnight,
+      clipBehavior: Clip.hardEdge,
+      decoration: BoxDecoration(
+        color: isLearn ? AppColors.primary : AppColors.midnight,
+      ),
       child: Stack(
         children: [
           if (isLearn)
