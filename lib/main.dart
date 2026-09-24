@@ -92,7 +92,7 @@ Future<void> main() async {
       MaterialPageRoute(builder: (_) => IncomingCallScreen(call: call)),
     );
   };
-  // FCM 掛載（要權限、掛前景/點擊監聽）。失敗不阻斷 App 啟動；token 上傳待登入後。
+  // FCM 掛載（掛前景/點擊監聽，通知權限延到首頁才問）。失敗不阻斷 App 啟動；token 上傳待登入後。
   try {
     await FcmService.init();
   } catch (e) {
@@ -291,6 +291,10 @@ class _MainContainerState extends State<MainContainer>
     _loadCheckinStatus();
     NotificationSummaryService.refresh();
     AppBadge.clear();
+    // 首頁一定在條款同意之後才進得來，通知權限放在這時才問。
+    FcmService.requestPermission().catchError(
+      (Object e) => debugPrint('FcmService.requestPermission 失敗：$e'),
+    );
     WidgetsBinding.instance.addObserver(this);
     seniorModeController.addListener(_onSeniorModeChanged);
     UserService.userNotifier.addListener(_onUserChanged);
