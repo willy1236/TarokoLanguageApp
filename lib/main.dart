@@ -56,9 +56,16 @@ Future<void> main() async {
       debugPrint('FcmService.onReminderTapped: navigatorKey 尚未掛上，導頁被忽略');
       return;
     }
-    navState.push(
-      MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: eventId)),
-    );
+    // 同一場活動已經開著就回到那一份並重載，不再疊第二頁（疊了會在返回時
+    // 看到舊狀態）。
+    if (EventDetailScreen.isOpen(eventId)) {
+      navState.popUntil(
+        (r) => r.settings.name == EventDetailScreen.routeNameFor(eventId),
+      );
+      EventDetailScreen.refreshIfOpen(eventId);
+      return;
+    }
+    navState.push(EventDetailScreen.route(eventId));
   };
   // 冷啟動/背景點擊 video_matched 通知 → 查目前 active session 並導到通話畫面。
   // FCM payload 只有 session_id/channel，權威資料一律重新查詢（見 fcm_service.dart
@@ -70,7 +77,9 @@ Future<void> main() async {
       if (session == null || session.id != sessionId) return;
       final navState = navigatorKey.currentState;
       if (navState == null) {
-        debugPrint('FcmService.onVideoMatchedColdStart: navigatorKey 尚未掛上，導頁被忽略');
+        debugPrint(
+          'FcmService.onVideoMatchedColdStart: navigatorKey 尚未掛上，導頁被忽略',
+        );
         return;
       }
       navState.push(
@@ -80,11 +89,21 @@ Future<void> main() async {
       debugPrint('FcmService.onVideoMatchedColdStart: 查詢 session 失敗：$e');
     }
   };
-  // 點論壇回覆通知 → 導到該貼文詳情頁。
+  // 人已經在該貼文詳情頁時，前景推播不打擾（留言早就即時反映在畫面上）。
+  FcmService.isForumPostOpen = ForumDetailScreen.isOpen;
+  // 點論壇回覆通知 → 導到該貼文詳情頁。同一篇已經開著就回到那一份並重載，
+  // 不再疊第二頁（疊了會在返回時看到留言前的舊狀態）。
   FcmService.onForumReplyTapped = (postId) {
-    navigatorKey.currentState?.push(
-      MaterialPageRoute(builder: (_) => ForumDetailScreen(postId: postId)),
-    );
+    final nav = navigatorKey.currentState;
+    if (nav == null) return;
+    if (ForumDetailScreen.isOpen(postId)) {
+      nav.popUntil(
+        (r) => r.settings.name == ForumDetailScreen.routeNameFor(postId),
+      );
+      ForumDetailScreen.refreshIfOpen(postId);
+      return;
+    }
+    nav.push(ForumDetailScreen.route(postId: postId));
   };
   // 收到好友定向來電（前景推播、或背景點擊通知開啟）→ 導到響鈴畫面。
   FcmService.onFriendCallIncoming = (call) {
@@ -415,9 +434,7 @@ class _MainContainerState extends State<MainContainer>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            status.weeklyBonusEarned
-                ? '簽到成功，+50 小米・週全勤再 +50！'
-                : '簽到成功，+50 小米',
+            status.weeklyBonusEarned ? '簽到成功，+50 小米・週全勤再 +50！' : '簽到成功，+50 小米',
           ),
         ),
       );
@@ -532,8 +549,10 @@ class _MainContainerState extends State<MainContainer>
               onTap: _navigate,
               seniorMode: seniorMode,
               badges: {
-                _plazaEventIndex: NotificationSummaryService.notifier.value.plaza,
-                _friendsIndex: NotificationSummaryService.notifier.value.friends,
+                _plazaEventIndex:
+                    NotificationSummaryService.notifier.value.plaza,
+                _friendsIndex:
+                    NotificationSummaryService.notifier.value.friends,
               },
             ),
           ),

@@ -51,6 +51,32 @@ class ForumDetailScreen extends StatefulWidget {
     this.initialImageIndex,
   });
 
+  /// route 名稱：讓通知導頁能用 popUntil 找回已經開著的那一份。
+  static String routeNameFor(int postId) => 'forum/detail/$postId';
+
+  /// 所有呼叫端都走這個工廠，settings.name 才會一致。
+  static Route<ForumDetailResult> route({
+    required int postId,
+    ValueChanged<ForumPost>? onPostChanged,
+    int? initialImageIndex,
+  }) => MaterialPageRoute<ForumDetailResult>(
+    settings: RouteSettings(name: routeNameFor(postId)),
+    builder: (_) => ForumDetailScreen(
+      postId: postId,
+      onPostChanged: onPostChanged,
+      initialImageIndex: initialImageIndex,
+    ),
+  );
+
+  /// 目前開著的詳情頁：key = postId，value = 該實例的重載函式。
+  static final Map<int, VoidCallback> _live = {};
+
+  /// 該貼文的詳情頁是否已在畫面上。
+  static bool isOpen(int postId) => _live.containsKey(postId);
+
+  /// 開著才重載；沒開就什麼都不做。
+  static void refreshIfOpen(int postId) => _live[postId]?.call();
+
   @override
   State<ForumDetailScreen> createState() => _ForumDetailScreenState();
 }
@@ -95,12 +121,17 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   @override
   void initState() {
     super.initState();
+    ForumDetailScreen._live[widget.postId] = _load;
     _loadItemCatalog();
     _load();
   }
 
   @override
   void dispose() {
+    // 同一 postId 若已被新實例接手，不要把它的登記清掉。
+    if (ForumDetailScreen._live[widget.postId] == _load) {
+      ForumDetailScreen._live.remove(widget.postId);
+    }
     _inputController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -156,9 +187,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         context,
         MaterialPageRoute(
           builder: (_) => ForumImageViewer(
-            images: [
-              for (final url in images) CachedNetworkImageProvider(url),
-            ],
+            images: [for (final url in images) CachedNetworkImageProvider(url)],
             initialIndex: index,
           ),
         ),
@@ -438,7 +467,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   Widget build(BuildContext context) => Theme(
     data: forumTheme(context),
     child: ListenableBuilder(
-      listenable: Listenable.merge([seniorModeController, accountLockController]),
+      listenable: Listenable.merge([
+        seniorModeController,
+        accountLockController,
+      ]),
       builder: (context, _) =>
           _buildScaffold(context, seniorModeController.enabled),
     ),
@@ -456,7 +488,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         foregroundColor: AppColors.ink,
         title: Text(
           '貼文',
-          style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+          style: AppTypography.titleStyle(
+            seniorMode: seniorMode,
+            color: AppColors.ink,
+          ),
         ),
         actions: [
           if (post != null && (_isMine || !locked))
@@ -528,7 +563,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 Text(
                   '留言 ${post.commentCount}',
                   style: AppTypography.serif(
-                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.body,
+                      seniorMode: seniorMode,
+                    ),
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                   ),
@@ -540,7 +578,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                       '還沒有人留言，來說第一句吧。',
                       style: TextStyle(
                         color: AppColors.fog,
-                        fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
+                        fontSize: seniorMode
+                            ? AppTypography.bodyLarge + AppTypography.seniorStep
+                            : null,
                       ),
                     ),
                   ),
@@ -554,11 +594,13 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                         ? null
                         : () => setState(() => _replyTarget = thread.root),
                     onDelete: () => _deleteComment(thread.root),
-                    onReport: locked ? null : () => showForumReportSheet(
-                      context,
-                      targetType: 'comment',
-                      targetId: thread.root.id,
-                    ),
+                    onReport: locked
+                        ? null
+                        : () => showForumReportSheet(
+                            context,
+                            targetType: 'comment',
+                            targetId: thread.root.id,
+                          ),
                     itemCatalogById: _itemCatalogById,
                   ),
                   for (final reply in thread.replies)
@@ -573,11 +615,13 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                           : () => setState(() => _replyTarget = thread.root),
                       onDelete: () => _deleteComment(reply),
                       itemCatalogById: _itemCatalogById,
-                      onReport: locked ? null : () => showForumReportSheet(
-                        context,
-                        targetType: 'comment',
-                        targetId: reply.id,
-                      ),
+                      onReport: locked
+                          ? null
+                          : () => showForumReportSheet(
+                              context,
+                              targetType: 'comment',
+                              targetId: reply.id,
+                            ),
                     ),
                 ],
               ],

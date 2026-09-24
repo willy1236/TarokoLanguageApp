@@ -193,12 +193,7 @@ class _EventListItem extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () async {
-        await Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (_) => EventDetailScreen(eventId: event.id),
-          ),
-        );
+        await Navigator.push(context, EventDetailScreen.route(event.id));
         onReturn();
       },
       child: Container(
@@ -217,7 +212,10 @@ class _EventListItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: AppColors.ink,
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -234,7 +232,10 @@ class _EventListItem extends StatelessWidget {
                   formatDateTime(event.startsAt.toLocal()),
                   style: TextStyle(
                     color: AppColors.inkSoft,
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.caption,
+                      seniorMode: seniorMode,
+                    ),
                   ),
                 ),
               ],
@@ -256,7 +257,10 @@ class _EventListItem extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         color: AppColors.inkSoft,
-                        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                        fontSize: AppTypography.size(
+                          AppTypography.caption,
+                          seniorMode: seniorMode,
+                        ),
                       ),
                     ),
                   ),
@@ -276,7 +280,10 @@ class _EventListItem extends StatelessWidget {
                   '${event.likeCount}',
                   style: TextStyle(
                     color: AppColors.fog,
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.caption,
+                      seniorMode: seniorMode,
+                    ),
                   ),
                 ),
               ],

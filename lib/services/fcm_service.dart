@@ -64,12 +64,14 @@ class FcmService {
 
   /// 冷啟動／背景點擊通知時收到 video_matched。全域註冊一次（main.dart），
   /// 用 navigatorKey 直接導頁到通話等待/通話畫面。
-  static void Function(int? sessionId, String? channel)? onVideoMatchedColdStart;
+  static void Function(int? sessionId, String? channel)?
+  onVideoMatchedColdStart;
 
   /// 前景收到 video_matched 時觸發，只在配對等待畫面開著時有意義，由
   /// VideoWaitingScreen 在 initState/dispose 掛上/清空——收到後應立即重新查詢
   /// GET /api/video/session/current 取得權威資料，不要直接用 payload 欄位。
-  static void Function(int? sessionId, String? channel)? onVideoMatchedForeground;
+  static void Function(int? sessionId, String? channel)?
+  onVideoMatchedForeground;
 
   /// 收到 video_session_ended（前景/背景點擊/冷啟動皆可能觸發）。由
   /// VideoCallScreen 在 initState/dispose 掛上/清空；若收到時不在通話畫面可
@@ -78,6 +80,10 @@ class FcmService {
 
   /// 點擊論壇回覆通知時的導頁 callback。由 UI 層設定（用 navigatorKey 導到貼文詳情）。
   static void Function(int postId)? onForumReplyTapped;
+
+  /// 由 UI 層注入：該貼文的詳情頁是否正開在畫面上。前景收到該篇的回覆推播時
+  /// 據此靜音，避免通知列／SnackBar 蓋住正在使用的留言輸入列。
+  static bool Function(int postId)? isForumPostOpen;
 
   /// 收到好友定向來電推播時觸發（前景收到、或背景點擊通知開啟時皆會呼叫）。
   /// 由 UI 層設定，導向 IncomingCallScreen。響鈴逾時（60 秒）由後端控管，
@@ -130,7 +136,9 @@ class FcmService {
         final payload = response.payload ?? '';
         if (payload.startsWith('video:')) {
           onVideoMatchedColdStart?.call(
-              int.tryParse(payload.substring('video:'.length)), null);
+            int.tryParse(payload.substring('video:'.length)),
+            null,
+          );
           return;
         }
         if (payload.startsWith('forum:')) {
@@ -215,7 +223,8 @@ class FcmService {
 
   /// 解析視訊配對相關通知的 payload，非視訊類型回傳 null。
   static (String type, int? sessionId, String? channel)? _parseVideoPayload(
-      Map<String, dynamic> data) {
+    Map<String, dynamic> data,
+  ) {
     final type = data['type'];
     if (type != 'video_matched' && type != 'video_session_ended') return null;
     final sessionId = int.tryParse(data['session_id']?.toString() ?? '');
@@ -269,7 +278,9 @@ class FcmService {
     }
 
     if (message.data['type'] == 'friend_call_cancelled') {
-      final cancelledId = int.tryParse(message.data['call_id']?.toString() ?? '');
+      final cancelledId = int.tryParse(
+        message.data['call_id']?.toString() ?? '',
+      );
       if (cancelledId != null) onFriendCallCancelled?.call(cancelledId);
       return;
     }
@@ -282,6 +293,8 @@ class FcmService {
 
     final forumPostId = _parseForumPayload(message.data);
     if (forumPostId != null) {
+      // 人就在那一頁，內容已即時更新，不再彈通知。
+      if (isForumPostOpen?.call(forumPostId) == true) return;
       final title = message.notification?.title ?? '有人回覆你';
       final body = message.notification?.body ?? '';
       unawaited(
@@ -346,7 +359,8 @@ class FcmService {
   /// 系統通知，避免使用者正看著等待/通話畫面卻又跳一則通知打擾；沒有對應
   /// 訂閱者（代表使用者不在該畫面）時才彈通知。
   static void _onForegroundVideoMessage(
-      (String type, int? sessionId, String? channel) parsed) {
+    (String type, int? sessionId, String? channel) parsed,
+  ) {
     final (type, sessionId, channel) = parsed;
 
     if (type == 'video_matched') {
@@ -354,13 +368,15 @@ class FcmService {
         onVideoMatchedForeground!(sessionId, channel);
         return;
       }
-      unawaited(_localNotifications.show(
-        sessionId ?? DateTime.now().millisecondsSinceEpoch,
-        '找到語伴了！',
-        '點開始你們的視訊練習',
-        const NotificationDetails(android: _reminderAndroidDetails),
-        payload: 'video:$sessionId',
-      ));
+      unawaited(
+        _localNotifications.show(
+          sessionId ?? DateTime.now().millisecondsSinceEpoch,
+          '找到語伴了！',
+          '點開始你們的視訊練習',
+          const NotificationDetails(android: _reminderAndroidDetails),
+          payload: 'video:$sessionId',
+        ),
+      );
       return;
     }
 
@@ -371,13 +387,15 @@ class FcmService {
     }
     // 對稱於 video_matched：沒有訂閱者代表使用者不在通話畫面，
     // 少了這則 fallback，對方掛斷時使用者完全不會被告知通話已結束。
-    unawaited(_localNotifications.show(
-      sessionId ?? DateTime.now().millisecondsSinceEpoch,
-      '視訊練習已結束',
-      '這次的通話已經結束了',
-      const NotificationDetails(android: _reminderAndroidDetails),
-      payload: 'video_ended:$sessionId',
-    ));
+    unawaited(
+      _localNotifications.show(
+        sessionId ?? DateTime.now().millisecondsSinceEpoch,
+        '視訊練習已結束',
+        '這次的通話已經結束了',
+        const NotificationDetails(android: _reminderAndroidDetails),
+        payload: 'video_ended:$sessionId',
+      ),
+    );
   }
 
   static void _handleOpened(RemoteMessage message) {

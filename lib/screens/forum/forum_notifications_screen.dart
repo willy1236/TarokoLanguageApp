@@ -125,10 +125,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       ForumService.markRead(ids: [item.id]).catchError((_) {});
     }
     if (postId == null) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => ForumDetailScreen(postId: postId)),
-    );
+    await Navigator.push(context, ForumDetailScreen.route(postId: postId));
     if (mounted) _load();
   }
 
@@ -149,7 +146,10 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       foregroundColor: AppColors.ink,
       title: Text(
         '通知',
-        style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+        style: AppTypography.titleStyle(
+          seniorMode: seniorMode,
+          color: AppColors.ink,
+        ),
       ),
       actions: [
         TextButton(
@@ -158,7 +158,9 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
             '全部已讀',
             style: TextStyle(
               color: AppColors.primary,
-              fontSize: seniorMode ? AppTypography.body + AppTypography.seniorStep : null,
+              fontSize: seniorMode
+                  ? AppTypography.body + AppTypography.seniorStep
+                  : null,
             ),
           ),
         ),
@@ -222,7 +224,10 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
           title: Text(
             '${item.actor.displayName} $action',
             style: AppTypography.serif(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
             ),
@@ -233,7 +238,10 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.caption,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.fog,
             ),
           ),

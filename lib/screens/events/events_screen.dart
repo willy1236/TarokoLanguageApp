@@ -124,10 +124,7 @@ class _EventsScreenState extends State<EventsScreen> {
   void _openDetail(EventSummary e) {
     // 詳情頁自行以 eventId 打 GET /api/events/:id 取真資料（含發起人姓名、
     // isHost 判斷、報名狀態）。回來後刷新清單，反映報名/退出。
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: e.id)),
-    ).then((_) {
+    Navigator.push(context, EventDetailScreen.route(e.id)).then((_) {
       if (mounted) _load();
     });
   }
@@ -246,7 +243,9 @@ class _EventsScreenState extends State<EventsScreen> {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.serif(
-                    fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
+                    fontSize: seniorMode
+                        ? AppTypography.display32
+                        : AppTypography.display26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 1.0,
@@ -317,7 +316,10 @@ class _EventsScreenState extends State<EventsScreen> {
                 child: Text(
                   _filters[i],
                   style: TextStyle(
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.caption,
+                      seniorMode: seniorMode,
+                    ),
                     color: active ? AppColors.creamLight : AppColors.inkSoft,
                     letterSpacing: 1.0,
                   ),

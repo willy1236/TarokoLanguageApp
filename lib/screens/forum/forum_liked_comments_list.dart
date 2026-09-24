@@ -174,9 +174,7 @@ class _CommentListItem extends StatelessWidget {
       onTap: () async {
         await Navigator.push(
           context,
-          MaterialPageRoute(
-            builder: (_) => ForumDetailScreen(postId: item.postId),
-          ),
+          ForumDetailScreen.route(postId: item.postId),
         );
         onReturn();
       },
@@ -197,7 +195,10 @@ class _CommentListItem extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: AppColors.primary,
-                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.caption,
+                    seniorMode: seniorMode,
+                  ),
                   letterSpacing: 0.5,
                 ),
               ),
@@ -208,7 +209,10 @@ class _CommentListItem extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               style: TextStyle(
                 color: AppColors.ink,
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
                 height: 1.5,
               ),
             ),
@@ -225,7 +229,10 @@ class _CommentListItem extends StatelessWidget {
                   '${item.comment.likeCount}',
                   style: TextStyle(
                     color: AppColors.fog,
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.caption,
+                      seniorMode: seniorMode,
+                    ),
                   ),
                 ),
               ],
