@@ -1,5 +1,5 @@
 // 認證流程：
-//   Google Sign-In → 拿 Firebase ID Token → POST /api/auth/login 換系統 JWT
+//   Google Sign-In／Apple 登入（僅 iOS）→ 拿 Firebase ID Token → POST /api/auth/login 換系統 JWT
 //   系統 JWT 存在 flutter_secure_storage，給之後 API 呼叫帶 Authorization header
 //
 // 規格書對應：API設計/資料交換表_核心.md §2.1 POST /api/auth/login
@@ -57,6 +57,27 @@ class AuthService {
       throw AuthException('Google 登入失敗：${e.description ?? e.code}');
     }
     return _exchangeAndStore(googleUser);
+  }
+
+  /// 走 Apple 登入（目前僅 iOS 原生），流程與回傳同 [signInWithGoogle]。
+  /// Firebase 直接叫出系統的 Apple 登入面板，不需另外的套件。
+  static Future<LoginResult> signInWithApple() async {
+    final provider = AppleAuthProvider()
+      ..addScope('email')
+      ..addScope('name');
+    final UserCredential userCred;
+    try {
+      userCred = await _auth.signInWithProvider(provider);
+    } on FirebaseAuthException catch (e) {
+      // 使用者關掉面板：iOS 回 ASAuthorizationError 1001，code 依版本不同。
+      if (e.code == 'canceled' ||
+          e.code == 'web-context-canceled' ||
+          (e.message?.contains('1001') ?? false)) {
+        throw AuthException('使用者取消登入');
+      }
+      throw AuthException('Apple 登入失敗：${e.message ?? e.code}');
+    }
+    return _loginWithFirebaseUser(userCred.user);
   }
 
   /// 靜默登入：重用裝置上先前已授權過本 app 的 Google 帳號，不叫出任何 UI。

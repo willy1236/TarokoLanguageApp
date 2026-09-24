@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/account_lock_controller.dart';
@@ -18,13 +19,21 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  bool _loggingIn = false;
+  /// 登入進行中的方式（'google'／'apple'），null 表示閒置。
+  String? _loggingProvider;
 
-  Future<void> _handleGoogleLogin() async {
-    if (_loggingIn) return;
-    setState(() => _loggingIn = true);
+  // Apple 登入目前只接 iOS 原生；Android／Web 需另設 Service ID，先不顯示。
+  bool get _showApple =>
+      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+  Future<void> _handleLogin(
+    String provider,
+    Future<LoginResult> Function() signIn,
+  ) async {
+    if (_loggingProvider != null) return;
+    setState(() => _loggingProvider = provider);
     try {
-      final result = await AuthService.signInWithGoogle();
+      final result = await signIn();
       if (!mounted) return;
       // 非 active 帳號的 token 打一般 API 都會被狀態閘擋下，不能照常進 App。
       if (result.isPendingDeletion) {
@@ -81,15 +90,15 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
       ).showSnackBar(SnackBar(content: Text('登入發生未預期錯誤：$e')));
     } finally {
-      if (mounted) setState(() => _loggingIn = false);
+      if (mounted) setState(() => _loggingProvider = null);
     }
   }
 
-  void _showSoon(String name) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text('$name 登入即將推出')));
-  }
+  Widget _loadingIcon() => const SizedBox(
+    width: 18,
+    height: 18,
+    child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.gold),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -240,33 +249,34 @@ class _LoginScreenState extends State<LoginScreen> {
         // 第三方登入
         Row(
           children: [
-            _buildSocialButton(
-              icon: const Icon(
-                Icons.apple,
-                color: AppColors.creamLight,
-                size: 20,
-              ),
-              label: 'Apple',
-              onTap: () => _showSoon('Apple'),
-            ),
-            const SizedBox(width: 10),
-            _buildSocialButton(
-              icon: _loggingIn
-                  ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.gold,
+            if (_showApple) ...[
+              _buildSocialButton(
+                icon: _loggingProvider == 'apple'
+                    ? _loadingIcon()
+                    : const Icon(
+                        Icons.apple,
+                        color: AppColors.creamLight,
+                        size: 20,
                       ),
-                    )
+                label: 'Apple',
+                onTap: _loggingProvider != null
+                    ? null
+                    : () => _handleLogin('apple', AuthService.signInWithApple),
+              ),
+              const SizedBox(width: 10),
+            ],
+            _buildSocialButton(
+              icon: _loggingProvider == 'google'
+                  ? _loadingIcon()
                   : const Icon(
                       Icons.g_mobiledata_rounded,
                       color: AppColors.creamLight,
                       size: 24,
                     ),
               label: 'Google',
-              onTap: _loggingIn ? null : _handleGoogleLogin,
+              onTap: _loggingProvider != null
+                  ? null
+                  : () => _handleLogin('google', AuthService.signInWithGoogle),
             ),
           ],
         ),
