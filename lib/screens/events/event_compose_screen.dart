@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_draft.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 /// 發起／編輯活動表單。
 ///
@@ -405,14 +405,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       ),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(
-              Icons.arrow_back,
-              color: AppColors.ink,
-              size: AppIconSize.action(seniorMode),
-            ),
-          ),
+          const AppBackButton(),
           Expanded(
             child: Text(
               _isEditing ? '編輯活動' : '新發布',

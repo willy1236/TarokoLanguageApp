@@ -10,6 +10,7 @@ import '../events/event_liked_bookmarked_list.dart';
 import '../forum/forum_board_view.dart';
 import '../forum/forum_detail_screen.dart';
 import '../../services/forum_service.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class MyBookmarksScreen extends StatefulWidget {
   const MyBookmarksScreen({super.key});
@@ -28,6 +29,7 @@ class _MyBookmarksScreenState extends State<MyBookmarksScreen> {
       child: Scaffold(
         backgroundColor: AppColors.creamLight,
         appBar: AppBar(
+          leading: const AppBackButton(),
           backgroundColor: AppColors.creamLight,
           foregroundColor: AppColors.ink,
           elevation: 0,

@@ -12,6 +12,7 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../services/account_service.dart';
 import '../../services/session_service.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class AccountDeleteScreen extends StatefulWidget {
   const AccountDeleteScreen({super.key});
@@ -72,6 +73,7 @@ class _AccountDeleteScreenState extends State<AccountDeleteScreen> {
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
+        leading: const AppBackButton(),
         backgroundColor: AppColors.cream,
         elevation: 0,
         foregroundColor: AppColors.ink,

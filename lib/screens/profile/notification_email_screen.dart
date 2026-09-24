@@ -13,6 +13,7 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/user_model.dart';
 import '../../services/user_service.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class NotificationEmailScreen extends StatefulWidget {
   final UserModel user;
@@ -140,6 +141,7 @@ class _NotificationEmailScreenState extends State<NotificationEmailScreen> {
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
+        leading: const AppBackButton(),
         backgroundColor: AppColors.cream,
         elevation: 0,
         foregroundColor: AppColors.ink,

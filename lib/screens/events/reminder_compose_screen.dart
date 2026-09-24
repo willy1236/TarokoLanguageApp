@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 /// 發送提醒表單，送出時呼叫 POST /api/events/:id/reminders。
 ///
@@ -181,11 +181,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
       padding: const EdgeInsets.fromLTRB(12, 8, 20, 8),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            iconSize: AppIconSize.action(seniorMode),
-            icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-          ),
+          const AppBackButton(),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,

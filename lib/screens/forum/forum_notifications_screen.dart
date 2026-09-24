@@ -15,6 +15,7 @@ import '../../services/senior_mode_controller.dart';
 import 'forum_detail_screen.dart';
 import 'widgets/forum_toast.dart';
 import 'widgets/forum_post_card.dart' show forumRelativeTime;
+import '../../shared/widgets/app_back_button.dart';
 
 class ForumNotificationsScreen extends StatefulWidget {
   const ForumNotificationsScreen({super.key});
@@ -144,6 +145,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
   Widget _buildScaffold(BuildContext context, bool seniorMode) => Scaffold(
     backgroundColor: AppColors.creamLight,
     appBar: AppBar(
+      leading: const AppBackButton(),
       backgroundColor: AppColors.creamLight,
       elevation: 0,
       foregroundColor: AppColors.ink,

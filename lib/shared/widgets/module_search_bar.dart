@@ -11,6 +11,7 @@ import '../search_range.dart';
 import 'tribe_picker_sheet.dart';
 import '../../models/tribe_model.dart';
 import '../../core/constants/app_typography.dart';
+import './app_back_button.dart';
 
 /// 搜尋列配色。影音/文章走深色（midnight/gold），活動/論壇走淺色（cream/primary）。
 class SearchBarPalette {
@@ -84,6 +85,7 @@ class ModuleSearchAppBar extends StatelessWidget implements PreferredSizeWidget 
   @override
   Widget build(BuildContext context) {
     return AppBar(
+      leading: AppBackButton(onDark: palette.background == AppColors.midnight),
       backgroundColor: palette.background,
       elevation: 0,
       foregroundColor: palette.foreground,

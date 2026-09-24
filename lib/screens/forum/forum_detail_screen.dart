@@ -26,6 +26,7 @@ import 'widgets/forum_comment_tile.dart';
 import 'widgets/forum_post_body.dart';
 import 'widgets/forum_toast.dart';
 import 'widgets/forum_report_sheet.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 /// 詳情頁關閉時回報的結果：貼文是否被刪除。
 class ForumDetailResult {
@@ -451,6 +452,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       appBar: AppBar(
+        leading: const AppBackButton(),
         backgroundColor: AppColors.creamLight,
         elevation: 0,
         foregroundColor: AppColors.ink,

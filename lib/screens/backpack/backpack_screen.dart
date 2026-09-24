@@ -9,6 +9,7 @@ import '../../shared/widgets/shop_shared.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../shop/shop_screen.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 /// 統一查看已擁有頭像／頭像框的背包頁，並可在此直接配戴。
 /// 取代原本散落在個人資料頁的頭像/頭像框選擇區塊。
@@ -159,22 +160,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: AppColors.creamLight.withValues(alpha: 0.15),
-                    ),
-                    child: const Icon(
-                      Icons.chevron_left,
-                      color: AppColors.creamLight,
-                      size: 18,
-                    ),
-                  ),
-                ),
+                const AppBackButton(onDark: true),
                 Text(
                   'PATAS · 我的背包',
                   style: AppTypography.latin(

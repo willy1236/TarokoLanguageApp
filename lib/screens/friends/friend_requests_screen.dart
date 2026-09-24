@@ -11,6 +11,7 @@ import '../../services/account_lock_controller.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_empty_state.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class FriendRequestsScreen extends StatefulWidget {
   const FriendRequestsScreen({super.key});
@@ -133,11 +134,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
     padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
     child: Row(
       children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).pop(_changed),
-          iconSize: AppIconSize.action(seniorMode),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-        ),
+        AppBackButton(onPressed: () => Navigator.of(context).pop(_changed)),
         Expanded(
           child: Text(
             '好友邀請',

@@ -9,6 +9,7 @@ import '../../services/account_lock_controller.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/engagement_icon_button.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class ArticleDetailScreen extends StatefulWidget {
   final int articleId;
@@ -101,6 +102,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.midnight,
       appBar: AppBar(
+        leading: const AppBackButton(onDark: true),
         backgroundColor: AppColors.midnight,
         foregroundColor: AppColors.cream,
         elevation: 0,

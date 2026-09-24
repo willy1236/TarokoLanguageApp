@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class AddFriendScreen extends StatefulWidget {
   const AddFriendScreen({super.key});
@@ -126,11 +126,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
     padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
     child: Row(
       children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          iconSize: AppIconSize.action(seniorMode),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-        ),
+        const AppBackButton(),
         Expanded(
           child: Text(
             '加好友',

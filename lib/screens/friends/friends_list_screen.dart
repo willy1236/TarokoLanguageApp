@@ -24,6 +24,7 @@ import 'blocked_users_screen.dart';
 import 'friend_requests_screen.dart';
 import 'widgets/bond_level_badge.dart';
 import 'widgets/showcase_chip.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class FriendsListScreen extends StatefulWidget {
   /// 作為底部導航分頁時傳 false：沒有上一頁可回，不顯示返回鍵。
@@ -239,11 +240,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     child: Row(
       children: [
         if (widget.showBackButton)
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            iconSize: AppIconSize.action(seniorMode),
-            icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-          )
+          const AppBackButton()
         else
           const SizedBox(width: 12),
         Expanded(

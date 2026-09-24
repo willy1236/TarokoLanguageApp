@@ -21,6 +21,7 @@ import '../../services/shop_service.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../friends/directed_call_waiting_screen.dart';
 import '../friends/public_profile_screen.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class ChatScreen extends StatefulWidget {
   final int partnerUid;
@@ -290,11 +291,7 @@ class _ChatScreenState extends State<ChatScreen> {
     padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
     child: Row(
       children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          iconSize: AppIconSize.action(seniorMode),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-        ),
+        const AppBackButton(),
         _partnerAvatar(seniorMode),
         const SizedBox(width: 8),
         Expanded(

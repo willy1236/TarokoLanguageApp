@@ -12,6 +12,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
 import '../../shared/widgets/engagement_icon_button.dart';
 import '../../shared/widgets/hls_web_player/hls_web_player.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class VideoDetailScreen extends StatefulWidget {
   final int videoId;
@@ -130,6 +131,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.midnight,
       appBar: AppBar(
+        leading: const AppBackButton(onDark: true),
         backgroundColor: AppColors.midnight,
         foregroundColor: AppColors.cream,
         elevation: 0,

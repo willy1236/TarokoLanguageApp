@@ -11,6 +11,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_painters.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class AboutAppScreen extends StatelessWidget {
   const AboutAppScreen({super.key});
@@ -64,25 +65,7 @@ class AboutAppScreen extends StatelessWidget {
           Positioned(
             top: 52,
             left: 16,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: seniorMode ? 50 : 38,
-                height: seniorMode ? 50 : 38,
-                decoration: BoxDecoration(
-                  color: AppColors.ink.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.creamLight.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: Icon(
-                  Icons.arrow_back,
-                  color: AppColors.creamLight,
-                  size: seniorMode ? 26 : 18,
-                ),
-              ),
-            ),
+            child: const AppBackButton(onDark: true),
           ),
           Center(
             child: Column(

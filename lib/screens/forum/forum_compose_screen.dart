@@ -26,6 +26,7 @@ import '../../shared/widgets/user_avatar.dart';
 import 'widgets/forum_compose_images.dart';
 import 'widgets/forum_image_grid.dart' show ForumImageViewer;
 import 'widgets/forum_toast.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 /// 依後端硬性限制檢查，回傳第一個錯誤訊息；全部通過回 null。
 String? forumComposeError({
@@ -287,6 +288,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
   Widget _buildScaffold(BuildContext context, bool seniorMode) => Scaffold(
     backgroundColor: AppColors.creamLight,
     appBar: AppBar(
+      leading: const AppBackButton(),
       backgroundColor: AppColors.creamLight,
       elevation: 0,
       foregroundColor: AppColors.ink,

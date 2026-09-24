@@ -6,6 +6,7 @@ import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
 import '../../../shared/widgets/truku_painters.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/widgets/app_back_button.dart';
 
 class EventDetailHero extends StatelessWidget {
   final EventDetail event;
@@ -51,25 +52,7 @@ class EventDetailHero extends StatelessWidget {
           Positioned(
             top: 52,
             left: 16,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: seniorMode ? 50 : 38,
-                height: seniorMode ? 50 : 38,
-                decoration: BoxDecoration(
-                  color: AppColors.ink.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.creamLight.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: Icon(
-                  Icons.arrow_back,
-                  color: AppColors.creamLight,
-                  size: seniorMode ? 26 : 18,
-                ),
-              ),
-            ),
+            child: const AppBackButton(onDark: true),
           ),
           // 標籤（分類，可能沒有）
           if (e.category != null && e.category!.isNotEmpty)

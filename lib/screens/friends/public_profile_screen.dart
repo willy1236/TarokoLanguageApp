@@ -23,6 +23,7 @@ import '../../shared/widgets/truku_empty_state.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../chat/chat_screen.dart';
 import 'widgets/bond_level_badge.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 enum _ProfileAction { addFriend, removeFriend, block, unblock }
 
@@ -136,11 +137,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
     child: Row(
       children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          iconSize: AppIconSize.action(seniorModeController.enabled),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-        ),
+        const AppBackButton(),
         const Spacer(),
         if (_profile != null &&
             _profile!.uid != UserService.currentUid &&

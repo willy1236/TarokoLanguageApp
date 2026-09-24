@@ -12,6 +12,7 @@ import '../history/quiz_history_detail_screen.dart';
 import 'lesson_card_screen.dart';
 import 'quiz_placement_screen.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class VocabLevelScreen extends StatefulWidget {
   const VocabLevelScreen({super.key});
@@ -204,10 +205,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
   Widget _buildHeader() {
     return Row(
       children: [
-        GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back, color: AppColors.ink),
-        ),
+        const AppBackButton(),
         const SizedBox(width: 12),
         Text(
           '單字測驗',

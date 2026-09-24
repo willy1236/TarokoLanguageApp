@@ -12,6 +12,7 @@ import '../history/listening_history_detail_screen.dart';
 import 'listening_placement_screen.dart';
 import 'listening_quiz_screen.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 Color _levelColor(String level) {
   if (level.contains('高')) {
@@ -279,10 +280,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
   Widget _buildHeader() {
     return Row(
       children: [
-        GestureDetector(
-          onTap: () => Navigator.pop(context),
-          child: const Icon(Icons.arrow_back, color: AppColors.ink),
-        ),
+        const AppBackButton(),
         const SizedBox(width: 12),
         Text(
           '聽力測驗',

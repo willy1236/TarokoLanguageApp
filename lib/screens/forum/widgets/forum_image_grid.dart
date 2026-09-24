@@ -10,6 +10,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/widgets/app_back_button.dart';
 
 class ForumImageGrid extends StatelessWidget {
   final List<String> urls;
@@ -213,6 +214,7 @@ class _ForumImageViewerState extends State<ForumImageViewer> {
   Widget build(BuildContext context) => Scaffold(
     backgroundColor: AppColors.midnight,
     appBar: AppBar(
+      leading: const AppBackButton(onDark: true),
       backgroundColor: AppColors.midnight,
       elevation: 0,
       iconTheme: const IconThemeData(color: AppColors.creamLight),

@@ -12,6 +12,7 @@ import '../../shared/widgets/shop_shared.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../millet/millet_ledger_screen.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -252,14 +253,7 @@ class _ShopScreenState extends State<ShopScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _circleBtn(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: const Icon(
-                        Icons.chevron_left,
-                        color: AppColors.creamLight,
-                        size: 18,
-                      ),
-                    ),
+                    const AppBackButton(onDark: true),
                     Text(
                       'SAPAH SMPUNG · 小米商店',
                       style: AppTypography.latin(
