@@ -17,10 +17,10 @@ import '../../core/constants/app_typography.dart';
 // ── LearnScreen ───────────────────────────────────────────────────────────────
 
 class LearnScreen extends StatefulWidget {
-  /// 由外層（合併分頁的膠囊切換）注入，顯示在紅色頭卡片底部。
-  final Widget? topToggle;
+  /// 使用者再次點擊底部「學習影音」時觸發：捲回頂部並重新整理。
+  final Listenable? reselectSignal;
 
-  const LearnScreen({super.key, this.topToggle});
+  const LearnScreen({super.key, this.reselectSignal});
 
   @override
   State<LearnScreen> createState() => _LearnScreenState();
@@ -31,6 +31,7 @@ class _LearnScreenState extends State<LearnScreen> {
   String? _quizSuggestedLevel;
   String? _listeningSuggestedLevel;
   bool _suggestedLevelLoaded = false;
+  final _scrollController = ScrollController();
 
   bool get _hasAnyPlacement =>
       _quizSuggestedLevel != null || _listeningSuggestedLevel != null;
@@ -42,12 +43,35 @@ class _LearnScreenState extends State<LearnScreen> {
     _loadSuggestedLevel();
     // 本頁活在 IndexedStack 內只 initState 一次；測驗交卷後靠這條訂閱更新建議等級。
     LearnRefreshNotifier.revision.addListener(_reload);
+    widget.reselectSignal?.addListener(_onReselect);
+  }
+
+  @override
+  void didUpdateWidget(LearnScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.reselectSignal != widget.reselectSignal) {
+      oldWidget.reselectSignal?.removeListener(_onReselect);
+      widget.reselectSignal?.addListener(_onReselect);
+    }
   }
 
   @override
   void dispose() {
     LearnRefreshNotifier.revision.removeListener(_reload);
+    widget.reselectSignal?.removeListener(_onReselect);
+    _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onReselect() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+      );
+    }
+    _reload();
   }
 
   Future<void> _reload() async {
@@ -158,12 +182,16 @@ class _LearnScreenState extends State<LearnScreen> {
             return TrukuErrorView(error: snapshot.error, onRetry: _reload);
           }
           final levels = snapshot.data ?? const [];
-          return Column(
+          // 頭卡片跟著內容一起捲，膠囊切換已移到外層固定在頂部。
+          return ListView(
+            controller: _scrollController,
+            padding: EdgeInsets.zero,
             children: [
               _buildHero(levels),
-              Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     _suggestedLevelLoaded && _hasAnyPlacement
                         ? LearnPlacementSummaryCard(
@@ -234,7 +262,7 @@ class _LearnScreenState extends State<LearnScreen> {
             ),
           ),
           Padding(
-            padding: const EdgeInsets.fromLTRB(24, 64, 24, 28),
+            padding: const EdgeInsets.fromLTRB(24, 4, 24, 24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -309,10 +337,6 @@ class _LearnScreenState extends State<LearnScreen> {
                     ),
                   ],
                 ),
-                if (widget.topToggle != null) ...[
-                  const SizedBox(height: 20),
-                  widget.topToggle!,
-                ],
               ],
             ),
           ),

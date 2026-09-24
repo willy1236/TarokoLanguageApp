@@ -1,4 +1,4 @@
-// 文化頁的影片卡、文章卡與 hero 播放鈕。
+// 文化頁的影片卡、文章卡與分類 chip 列。
 
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
@@ -10,47 +10,18 @@ import '../../../shared/widgets/truku_painters.dart';
 import '../video_detail_screen.dart';
 import 'culture_icons.dart';
 
-class CulturePlayButton extends StatelessWidget {
-  final String label;
-  final VoidCallback? onTap;
-  final bool seniorMode;
-  const CulturePlayButton({
-    super.key,
-    required this.label,
-    this.onTap,
-    this.seniorMode = false,
-  });
+/// 分類 chip 列：影音與文章分頁共用的橫向捲動外框。
+class CultureChipsRow extends StatelessWidget {
+  final Widget chips;
+
+  const CultureChipsRow({super.key, required this.chips});
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: EdgeInsets.symmetric(
-          horizontal: seniorMode ? 26 : 20,
-          vertical: seniorMode ? 14 : 10,
-        ),
-        decoration: BoxDecoration(
-          color: AppColors.gold,
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            CulturePlayIcon(size: seniorMode ? 16 : 12, color: AppColors.ink),
-            const SizedBox(width: 10),
-            Text(
-              label,
-              style: AppTypography.serif(
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
-                fontWeight: FontWeight.w600,
-                color: AppColors.ink,
-                letterSpacing: 2.4,
-              ),
-            ),
-          ],
-        ),
-      ),
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+      child: chips,
     );
   }
 }
@@ -119,7 +90,10 @@ class CultureVideoCard extends StatelessWidget {
                       child: Text(
                         VideoCategory.label(video.category),
                         style: TextStyle(
-                          fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+                          fontSize: AppTypography.size(
+                            AppTypography.micro,
+                            seniorMode: seniorMode,
+                          ),
                           color: AppColors.gold,
                           letterSpacing: 2.4,
                         ),
@@ -141,7 +115,10 @@ class CultureVideoCard extends StatelessWidget {
                       child: Text(
                         _formatDuration(video.durationSec),
                         style: AppTypography.mono(
-                          fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+                          fontSize: AppTypography.size(
+                            AppTypography.micro,
+                            seniorMode: seniorMode,
+                          ),
                           color: AppColors.creamLight,
                         ),
                       ),
@@ -179,7 +156,10 @@ class CultureVideoCard extends StatelessWidget {
                     maxLines: 1, // 標題固定一行，過長以 … 截斷
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.body,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       letterSpacing: 1.0,
@@ -189,7 +169,10 @@ class CultureVideoCard extends StatelessWidget {
                   Text(
                     '${video.viewCount} 次觀看',
                     style: TextStyle(
-                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.caption,
+                        seniorMode: seniorMode,
+                      ),
                       color: AppColors.fog,
                       letterSpacing: 1.2,
                     ),
@@ -285,7 +268,10 @@ class CultureArticleCard extends StatelessWidget {
                     child: Text(
                       ArticleCategory.label(item.category),
                       style: TextStyle(
-                        fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+                        fontSize: AppTypography.size(
+                          AppTypography.micro,
+                          seniorMode: seniorMode,
+                        ),
                         color: AppColors.gold,
                         letterSpacing: 2.8,
                       ),
@@ -295,7 +281,10 @@ class CultureArticleCard extends StatelessWidget {
                   Text(
                     item.title,
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.body,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       letterSpacing: 0.5,

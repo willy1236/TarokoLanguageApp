@@ -7,7 +7,6 @@ import '../../models/video_models.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
-import '../../shared/widgets/truku_painters.dart';
 import 'article_detail_screen.dart';
 import 'article_search_screen.dart';
 import 'video_detail_screen.dart';
@@ -15,29 +14,37 @@ import 'video_search_screen.dart';
 import '../../shared/widgets/async_state_view.dart';
 import 'widgets/culture_article_section.dart';
 import 'widgets/culture_cards.dart';
-import 'widgets/culture_icons.dart';
+import 'widgets/culture_featured_carousel.dart';
 
 class CultureScreen extends StatefulWidget {
-  /// 由外層（合併分頁的膠囊切換）注入，顯示在 hero 下方。
-  final Widget? topToggle;
-
-  /// 影音(0)/文章(1)。原本是本頁內第二層 tab bar，已併入外層膠囊三格切換。
+  /// 影音(0)/文章(1)。切換權在外層 LearnCultureScreen 固定在頂部的膠囊。
   final int cultureTabIndex;
 
-  const CultureScreen({super.key, this.topToggle, this.cultureTabIndex = 0});
+  /// 使用者再次點擊底部「學習影音」時觸發：捲回頂部並重新整理目前分頁。
+  final Listenable? reselectSignal;
+
+  const CultureScreen({
+    super.key,
+    this.cultureTabIndex = 0,
+    this.reselectSignal,
+  });
 
   @override
   State<CultureScreen> createState() => _CultureScreenState();
 }
 
 class _CultureScreenState extends State<CultureScreen> {
+  static const _featuredCount = 5;
+
   // 0=影音, 1=文章——切換權在外層膠囊，本頁只跟著 widget 走。
   int get _tabIndex => widget.cultureTabIndex;
   int _chipIndex = 0;
   String _sort = 'latest'; // latest | popular | weekly_popular
   late Future<VideoListResponse> _videosFuture;
-  late Future<VideoSummary?> _featuredFuture;
-  late Future<ArticleSummary?> _featuredArticleFuture;
+  List<VideoSummary>? _featuredVideos;
+  List<ArticleSummary>? _featuredArticles;
+  final _scrollController = ScrollController();
+  final _articleSectionKey = GlobalKey<CultureArticleSectionState>();
 
   static final _chips = ['全部', ...VideoCategory.all.map(VideoCategory.label)];
 
@@ -51,26 +58,74 @@ class _CultureScreenState extends State<CultureScreen> {
   void initState() {
     super.initState();
     _videosFuture = _fetchVideos();
-    _featuredFuture = _fetchFeatured();
-    _featuredArticleFuture = _fetchFeaturedArticle();
+    _loadFeaturedVideos();
+    _loadFeaturedArticles();
+    widget.reselectSignal?.addListener(_onReselect);
   }
 
-  // 後端無獨立「精選」欄位/endpoint，改用本週熱門第一名頂替本週精選。
-  Future<VideoSummary?> _fetchFeatured() async {
-    final res = await VideoService.fetchVideos(
-      sort: 'weekly_popular',
-      pageSize: 1,
-    );
-    return res.videos.isEmpty ? null : res.videos.first;
+  @override
+  void didUpdateWidget(CultureScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.reselectSignal != widget.reselectSignal) {
+      oldWidget.reselectSignal?.removeListener(_onReselect);
+      widget.reselectSignal?.addListener(_onReselect);
+    }
+    // 影音與文章共用同一條捲動，切分頁時回到頂部，不要停在另一頁的捲動位置。
+    if (oldWidget.cultureTabIndex != widget.cultureTabIndex &&
+        _scrollController.hasClients) {
+      _scrollController.jumpTo(0);
+    }
   }
 
-  // 文章分頁的本週精選，同樣取本週熱門第一名。
-  Future<ArticleSummary?> _fetchFeaturedArticle() async {
-    final res = await ArticleService.fetchArticles(
-      sort: 'weekly_popular',
-      pageSize: 1,
-    );
-    return res.articles.isEmpty ? null : res.articles.first;
+  @override
+  void dispose() {
+    widget.reselectSignal?.removeListener(_onReselect);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onReselect() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 350),
+        curve: Curves.easeOut,
+      );
+    }
+    if (_tabIndex == 0) {
+      _loadFeaturedVideos();
+      _reloadVideos();
+    } else {
+      _loadFeaturedArticles();
+      _articleSectionKey.currentState?.reload();
+    }
+  }
+
+  // 後端無獨立「精選」欄位/endpoint，改用本週熱門前幾名當本週精選輪播。
+  Future<void> _loadFeaturedVideos() async {
+    try {
+      final res = await VideoService.fetchVideos(
+        sort: 'weekly_popular',
+        pageSize: _featuredCount,
+      );
+      if (mounted) setState(() => _featuredVideos = res.videos);
+    } catch (e) {
+      debugPrint('CultureScreen._loadFeaturedVideos failed: $e');
+      if (mounted) setState(() => _featuredVideos = const []);
+    }
+  }
+
+  Future<void> _loadFeaturedArticles() async {
+    try {
+      final res = await ArticleService.fetchArticles(
+        sort: 'weekly_popular',
+        pageSize: _featuredCount,
+      );
+      if (mounted) setState(() => _featuredArticles = res.articles);
+    } catch (e) {
+      debugPrint('CultureScreen._loadFeaturedArticles failed: $e');
+      if (mounted) setState(() => _featuredArticles = const []);
+    }
   }
 
   String? get _selectedCategory =>
@@ -98,15 +153,9 @@ class _CultureScreenState extends State<CultureScreen> {
     return ColoredBox(
       color: AppColors.midnight,
       child: CustomScrollView(
+        controller: _scrollController,
         slivers: [
-          SliverToBoxAdapter(child: _buildHero(seniorMode)),
-          if (widget.topToggle != null)
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-                child: widget.topToggle,
-              ),
-            ),
+          SliverToBoxAdapter(child: _buildFeatured(seniorMode)),
           if (_tabIndex == 0) ...[
             SliverToBoxAdapter(child: _buildChips(seniorMode)),
             SliverToBoxAdapter(child: _buildVideoSectionHeader(seniorMode)),
@@ -116,7 +165,10 @@ class _CultureScreenState extends State<CultureScreen> {
           SliverToBoxAdapter(
             child: Offstage(
               offstage: _tabIndex != 1,
-              child: CultureArticleSection(seniorMode: seniorMode),
+              child: CultureArticleSection(
+                key: _articleSectionKey,
+                seniorMode: seniorMode,
+              ),
             ),
           ),
           const SliverToBoxAdapter(child: SizedBox(height: 120)),
@@ -125,235 +177,88 @@ class _CultureScreenState extends State<CultureScreen> {
     );
   }
 
-  // ── Hero ──────────────────────────────────────────────────────────────────
+  // ── 本週精選輪播 ──────────────────────────────────────────────────────────
 
-  // 本週精選依目前分頁切換：影音分頁顯示本週熱門影片，文章分頁顯示本週熱門文章。
-  Widget _buildHero(bool seniorMode) {
+  Widget _buildFeatured(bool seniorMode) {
     if (_tabIndex == 1) {
-      return FutureBuilder<ArticleSummary?>(
-        future: _featuredArticleFuture,
-        builder: (context, snapshot) {
-          final article = snapshot.data;
-          return _buildHeroContent(
-            seniorMode: seniorMode,
-            hasData: article != null,
-            imageUrl: article?.coverImageUrl,
-            title: article?.title ?? '太魯閣族文章',
-            subtitle: article == null
-                ? null
-                : '${ArticleCategory.label(article.category)}　|　本週 ${article.weeklyViewCount} 次閱讀',
-            buttonLabel: '立即閱讀',
-            onTap: article == null
-                ? null
-                : () => Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ArticleDetailScreen(articleId: article.id),
-                    ),
+      return CultureFeaturedCarousel(
+        key: const ValueKey('featured_articles'),
+        seniorMode: seniorMode,
+        action: _buildSearchButton(seniorMode),
+        items: _featuredArticles
+            ?.map(
+              (a) => CultureFeaturedItem(
+                imageUrl: a.coverImageUrl,
+                title: a.title,
+                subtitle:
+                    '${ArticleCategory.label(a.category)}　|　本週 ${a.weeklyViewCount} 次閱讀',
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute(
+                    builder: (_) => ArticleDetailScreen(articleId: a.id),
                   ),
-          );
-        },
+                ),
+              ),
+            )
+            .toList(),
       );
     }
-    return FutureBuilder<VideoSummary?>(
-      future: _featuredFuture,
-      builder: (context, snapshot) {
-        final video = snapshot.data;
-        return _buildHeroContent(
-          seniorMode: seniorMode,
-          hasData: video != null,
-          imageUrl: video?.thumbnailUrl,
-          title: video?.title ?? '太魯閣族影音',
-          subtitle: video == null
-              ? null
-              : '${VideoCategory.label(video.category)}　|　本週 ${video.weeklyViewCount} 次觀看',
-          buttonLabel: '立即觀看',
-          onTap: video == null
-              ? null
-              : () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => VideoDetailScreen(videoId: video.id),
-                  ),
+    return CultureFeaturedCarousel(
+      key: const ValueKey('featured_videos'),
+      seniorMode: seniorMode,
+      action: _buildSearchButton(seniorMode),
+      items: _featuredVideos
+          ?.map(
+            (v) => CultureFeaturedItem(
+              imageUrl: v.thumbnailUrl,
+              title: v.title,
+              subtitle:
+                  '${VideoCategory.label(v.category)}　|　本週 ${v.weeklyViewCount} 次觀看',
+              onTap: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => VideoDetailScreen(videoId: v.id),
                 ),
-        );
-      },
-    );
-  }
-
-  Widget _buildHeroContent({
-    required bool seniorMode,
-    required bool hasData,
-    required String? imageUrl,
-    required String title,
-    required String? subtitle,
-    required String buttonLabel,
-    required VoidCallback? onTap,
-  }) {
-    return SizedBox(
-      height: 320,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 封面背景（有精選內容時）／漸層底色 + 裝飾占位圖案
-          if (imageUrl != null)
-            Image.network(
-              imageUrl,
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => _heroFallbackDecoration(),
-            )
-          else
-            _heroFallbackDecoration(),
-          // 漸層遮罩
-          Container(
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: [0.0, 0.5, 1.0],
-                colors: [
-                  Colors.transparent,
-                  Colors.transparent,
-                  AppColors.midnight,
-                ],
               ),
             ),
-          ),
-          // 頂部 nav
-          Positioned(
-            top: 60,
-            left: 20,
-            right: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    // 精選標題移到左上角，取代原本的 LNGLUNGAN 標記。
-                    Expanded(
-                      child: Text(
-                        hasData ? '本週精選 · 熱門' : '本週精選',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.mono(
-                          fontSize: AppTypography.size(
-                            AppTypography.caption,
-                            seniorMode: seniorMode,
-                          ),
-                          color: AppColors.gold,
-                          letterSpacing: 4.0,
-                        ),
-                      ),
-                    ),
-                    GestureDetector(
-                      onTap: () => Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => _tabIndex == 0
-                              ? const VideoSearchScreen()
-                              : const ArticleSearchScreen(),
-                        ),
-                      ),
-                      child: Container(
-                        // 實機回報圖示太小不好按，圓鈕連同熱區一起放大。
-                        width: seniorMode ? 52 : 46,
-                        height: seniorMode ? 52 : 46,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withValues(alpha: 0.4),
-                          border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.25),
-                          ),
-                        ),
-                        child: Center(
-                          child: Icon(
-                            Icons.search,
-                            size: AppIconSize.action(seniorMode),
-                            color: AppColors.gold,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          // Hero info
-          Positioned(
-            bottom: 24,
-            left: 20,
-            right: 20,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: AppTypography.serif(
-                    fontSize: seniorMode
-                        ? AppTypography.display32
-                        : AppTypography.display26,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.creamLight,
-                    letterSpacing: 1.0,
-                    height: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  subtitle ?? '精選內容載入中…',
-                  style: TextStyle(
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
-                    color: AppColors.creamLight.withValues(alpha: 0.7),
-                    letterSpacing: 1.2,
-                  ),
-                ),
-                const SizedBox(height: 14),
-                CulturePlayButton(
-                  label: buttonLabel,
-                  seniorMode: seniorMode,
-                  onTap: onTap,
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
+          )
+          .toList(),
     );
   }
 
-  // 沒有真實縮圖時的裝飾占位背景（漸層 + 條紋 + 織紋）
-  Widget _heroFallbackDecoration() {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const DecoratedBox(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [AppColors.mossDeep, AppColors.midnight],
-            ),
-          ),
+  // 搜尋鈕沿用原本 hero 的位置：疊在精選卡右上角，不跟著輪播翻頁。
+  Widget _buildSearchButton(bool seniorMode) {
+    final size = seniorMode ? 48.0 : 40.0;
+    return GestureDetector(
+      onTap: () => Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) => _tabIndex == 0
+              ? const VideoSearchScreen()
+              : const ArticleSearchScreen(),
         ),
-        CustomPaint(painter: CultureStripePainter()),
-        CustomPaint(
-          painter: TrukuWeavePainter(
+      ),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.black.withValues(alpha: 0.3),
+          border: Border.all(color: AppColors.gold.withValues(alpha: 0.25)),
+        ),
+        child: Center(
+          child: Icon(
+            Icons.search,
+            size: AppIconSize.action(seniorMode),
             color: AppColors.gold,
-            opacity: 0.25,
-            scale: 1.0,
           ),
         ),
-      ],
+      ),
     );
   }
 
   // ── Category Chips ────────────────────────────────────────────────────────
 
   Widget _buildChips(bool seniorMode) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-      child: Row(
+    return CultureChipsRow(
+      chips: Row(
         children: List.generate(_chips.length, (i) {
           final active = _chipIndex == i;
           return Padding(
@@ -380,7 +285,10 @@ class _CultureScreenState extends State<CultureScreen> {
                 child: Text(
                   _chips[i],
                   style: TextStyle(
-                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.body,
+                      seniorMode: seniorMode,
+                    ),
                     color: active ? AppColors.creamLight : AppColors.cream,
                     letterSpacing: 2.0,
                   ),
@@ -409,7 +317,10 @@ class _CultureScreenState extends State<CultureScreen> {
               Text(
                 title,
                 style: AppTypography.serif(
-                  fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.bodyLarge,
+                    seniorMode: seniorMode,
+                  ),
                   fontWeight: FontWeight.w600,
                   color: AppColors.cream,
                   letterSpacing: 1.5,
@@ -420,7 +331,10 @@ class _CultureScreenState extends State<CultureScreen> {
                 'patas hngak',
                 style: AppTypography.latin(
                   fontStyle: FontStyle.italic,
-                  fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.micro,
+                    seniorMode: seniorMode,
+                  ),
                   color: AppColors.fog,
                   letterSpacing: 3.6,
                 ),
@@ -451,7 +365,10 @@ class _CultureScreenState extends State<CultureScreen> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.caption,
+            seniorMode: seniorMode,
+          ),
           fontWeight: active ? FontWeight.w700 : FontWeight.w400,
           color: active ? AppColors.gold : AppColors.fog,
           letterSpacing: 1.5,
@@ -487,7 +404,10 @@ class _CultureScreenState extends State<CultureScreen> {
                   '目前沒有影片',
                   style: TextStyle(
                     color: AppColors.fog,
-                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.body,
+                      seniorMode: seniorMode,
+                    ),
                   ),
                 ),
               ),

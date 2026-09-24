@@ -70,7 +70,9 @@ Future<void> main() async {
       if (session == null || session.id != sessionId) return;
       final navState = navigatorKey.currentState;
       if (navState == null) {
-        debugPrint('FcmService.onVideoMatchedColdStart: navigatorKey 尚未掛上，導頁被忽略');
+        debugPrint(
+          'FcmService.onVideoMatchedColdStart: navigatorKey 尚未掛上，導頁被忽略',
+        );
         return;
       }
       navState.push(
@@ -273,6 +275,7 @@ class _MainContainerState extends State<MainContainer>
   late int _learnCultureSubTab = _defaultLearnCultureSubTab(_seniorMode);
   int _plazaEventSubTab = 0;
   int _profileVideoSubTab = 0;
+  final _learnCultureReselect = _ReselectSignal();
   String? _displayName;
   int? _millet;
   String? _avatarId;
@@ -307,6 +310,7 @@ class _MainContainerState extends State<MainContainer>
     seniorModeController.removeListener(_onSeniorModeChanged);
     UserService.userNotifier.removeListener(_onUserChanged);
     NotificationSummaryService.notifier.removeListener(_onSummaryChanged);
+    _learnCultureReselect.dispose();
     super.dispose();
   }
 
@@ -419,9 +423,7 @@ class _MainContainerState extends State<MainContainer>
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            status.weeklyBonusEarned
-                ? '簽到成功，+50 小米・週全勤再 +50！'
-                : '簽到成功，+50 小米',
+            status.weeklyBonusEarned ? '簽到成功，+50 小米・週全勤再 +50！' : '簽到成功，+50 小米',
           ),
         ),
       );
@@ -443,6 +445,15 @@ class _MainContainerState extends State<MainContainer>
         context,
       ).showSnackBar(const SnackBar(content: Text('簽到失敗，請稍後再試')));
     }
+  }
+
+  // 底部導航再次點擊目前所在的「學習影音」：通知該頁捲回頂部並重新整理。
+  void _onBottomTabTap(int index) {
+    if (index == _currentIndex && index == _learnCultureIndex) {
+      _learnCultureReselect.notifyListeners();
+      return;
+    }
+    _navigate(index);
   }
 
   void _navigate(int index, {int? subTab}) => setState(() {
@@ -519,6 +530,7 @@ class _MainContainerState extends State<MainContainer>
                 LearnCultureScreen(
                   key: ValueKey('learn_culture_$_learnCultureSubTab'),
                   initialTabIndex: _learnCultureSubTab,
+                  reselectSignal: _learnCultureReselect,
                 ),
                 PlazaEventScreen(
                   key: ValueKey('plaza_event_$_plazaEventSubTab'),
@@ -533,11 +545,13 @@ class _MainContainerState extends State<MainContainer>
             ),
             bottomNavigationBar: TrukuBottomTab(
               currentIndex: _currentIndex,
-              onTap: _navigate,
+              onTap: _onBottomTabTap,
               seniorMode: seniorMode,
               badges: {
-                _plazaEventIndex: NotificationSummaryService.notifier.value.plaza,
-                _friendsIndex: NotificationSummaryService.notifier.value.friends,
+                _plazaEventIndex:
+                    NotificationSummaryService.notifier.value.plaza,
+                _friendsIndex:
+                    NotificationSummaryService.notifier.value.friends,
               },
             ),
           ),
@@ -545,4 +559,10 @@ class _MainContainerState extends State<MainContainer>
       },
     );
   }
+}
+
+/// 純事件訊號（無值），給「再次點擊底部分頁」這類一次性通知用。
+class _ReselectSignal extends ChangeNotifier {
+  @override
+  void notifyListeners() => super.notifyListeners();
 }
