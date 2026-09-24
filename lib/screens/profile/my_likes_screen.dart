@@ -9,6 +9,7 @@ import '../culture/article_liked_bookmarked_list.dart';
 import '../events/event_liked_bookmarked_list.dart';
 import '../forum/forum_liked_posts_list.dart';
 import '../forum/forum_liked_comments_list.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class MyLikesScreen extends StatelessWidget {
   const MyLikesScreen({super.key});
@@ -27,13 +28,17 @@ class MyLikesScreen extends StatelessWidget {
       child: Scaffold(
         backgroundColor: AppColors.creamLight,
         appBar: AppBar(
+          leading: const AppBackButton(),
           backgroundColor: AppColors.creamLight,
           foregroundColor: AppColors.ink,
           elevation: 0,
           title: Text(
             '我按讚的內容',
             style: AppTypography.serif(
-              fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.subtitle,
+                seniorMode: seniorMode,
+              ),
               fontWeight: FontWeight.w700,
               color: AppColors.ink,
             ),

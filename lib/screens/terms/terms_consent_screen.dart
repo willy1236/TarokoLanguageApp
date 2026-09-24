@@ -8,6 +8,10 @@
 //
 // 兩種用途都是同一支 /api/terms 一次拿回全部文件；當文件數 > 1 時用 TabBar
 // 在同一頁內分頁顯示，而不是各自開一個新畫面。
+//
+// 強制同意時每份文件各自同意：勾選框固定在底部列（對應目前分頁的文件），
+// 但要把該份文件捲到底才解鎖；全部勾完「同意並繼續」才能按。後端 POST /api/terms/consent 一次同意全部 doc_type，
+// 所以分開同意只在前端把關，送出仍是同一支。
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -16,6 +20,7 @@ import '../../core/network/api_client.dart';
 import '../../models/terms_models.dart';
 import '../../services/terms_service.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class TermsConsentScreen extends StatefulWidget {
   final bool readOnly;
@@ -31,6 +36,34 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
   String? _error;
   bool _loading = true;
   bool _submitting = false;
+
+  /// 已勾選同意的 doc_type。
+  final Set<String> _agreed = {};
+
+  /// 已捲到底、可以勾選同意的 doc_type。
+  final Set<String> _readToEnd = {};
+
+  /// 捲動到距底部這個距離內就算讀完，避免差幾 px 卡住。
+  static const double _endThreshold = 24;
+
+  bool _onScroll(TermsDocument doc, ScrollMetrics metrics) {
+    if (!_readToEnd.contains(doc.docType) &&
+        metrics.extentAfter <= _endThreshold) {
+      setState(() => _readToEnd.add(doc.docType));
+    }
+    return false;
+  }
+
+  /// 包住單份文件的捲動區，偵測是否已捲到底；內容不足一頁時首次排版就算讀完。
+  Widget _trackScroll(TermsDocument doc, Widget child) {
+    return NotificationListener<ScrollMetricsNotification>(
+      onNotification: (n) => _onScroll(doc, n.metrics),
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (n) => _onScroll(doc, n.metrics),
+        child: child,
+      ),
+    );
+  }
 
   @override
   void initState() {
@@ -71,9 +104,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     try {
       await TermsService.consent();
       if (!mounted) return;
-      Navigator.of(
-        context,
-      ).pushNamedAndRemoveUntil('/home', (route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
     } on ApiException catch (e) {
       if (!mounted) return;
       _showError(e.message);
@@ -101,7 +132,9 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         appBar: AppBar(
           backgroundColor: AppColors.cream,
           elevation: 0,
-          automaticallyImplyLeading: readOnly,
+          foregroundColor: AppColors.ink,
+          automaticallyImplyLeading: false,
+          leading: readOnly ? const AppBackButton() : null,
           title: Text(
             '服務條款與隱私權政策',
             style: AppTypography.titleStyle(color: AppColors.ink),
@@ -144,12 +177,15 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
       return Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-              child: _buildDocument(documents.first),
+            child: _trackScroll(
+              documents.first,
+              SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                child: _buildDocument(documents.first),
+              ),
             ),
           ),
-          if (!readOnly) _buildAgreeBar(),
+          if (!readOnly) _buildAgreeBar(documents, documents.first),
         ],
       );
     }
@@ -166,22 +202,52 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
               fontWeight: FontWeight.w600,
             ),
             tabs: documents
-                .map((doc) => Tab(text: doc.title))
+                .map(
+                  (doc) => Tab(
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (!readOnly && _agreed.contains(doc.docType)) ...[
+                          const Icon(
+                            Icons.check_circle,
+                            size: 16,
+                            color: AppColors.moss,
+                          ),
+                          const SizedBox(width: 6),
+                        ],
+                        Text(doc.title),
+                      ],
+                    ),
+                  ),
+                )
                 .toList(),
           ),
           Expanded(
             child: TabBarView(
               children: documents
                   .map(
-                    (doc) => SingleChildScrollView(
-                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                      child: _buildDocument(doc, showTitle: false),
+                    (doc) => _trackScroll(
+                      doc,
+                      SingleChildScrollView(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                        child: _buildDocument(doc, showTitle: false),
+                      ),
                     ),
                   )
                   .toList(),
             ),
           ),
-          if (!readOnly) _buildAgreeBar(),
+          if (!readOnly)
+            Builder(
+              builder: (context) {
+                final controller = DefaultTabController.of(context);
+                return ListenableBuilder(
+                  listenable: controller,
+                  builder: (context, _) =>
+                      _buildAgreeBar(documents, documents[controller.index]),
+                );
+              },
+            ),
         ],
       ),
     );
@@ -214,7 +280,10 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         ],
         Text(
           '第 ${doc.version} 版',
-          style: TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
+          style: TextStyle(
+            fontSize: AppTypography.caption,
+            color: AppColors.fog,
+          ),
         ),
         const SizedBox(height: 12),
         MarkdownBody(
@@ -238,6 +307,19 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
               fontWeight: FontWeight.w700,
               color: AppColors.ink,
             ),
+            // 預設 blockquote 底色跟著 dark theme 變深，粗體的 ink 字會看不到。
+            blockquote: TextStyle(
+              fontSize: AppTypography.body,
+              height: 1.6,
+              color: AppColors.ink.withValues(alpha: 0.85),
+            ),
+            blockquotePadding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
+            blockquoteDecoration: BoxDecoration(
+              color: AppColors.creamDeep,
+              border: const Border(
+                left: BorderSide(color: AppColors.gold, width: 4),
+              ),
+            ),
             listBullet: TextStyle(
               fontSize: AppTypography.body,
               color: AppColors.ink.withValues(alpha: 0.85),
@@ -248,7 +330,61 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     );
   }
 
-  Widget _buildAgreeBar() {
+  /// 底部列的單份同意勾選；該份文件捲到底之前鎖住。
+  Widget _buildDocCheck(TermsDocument doc) {
+    final agreed = _agreed.contains(doc.docType);
+    final unlocked = _readToEnd.contains(doc.docType);
+    return Material(
+      color: agreed
+          ? AppColors.moss.withValues(alpha: 0.1)
+          : AppColors.creamLight,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(12),
+        side: BorderSide(color: agreed ? AppColors.moss : AppColors.creamDeep),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: unlocked
+            ? () => setState(() {
+                if (agreed) {
+                  _agreed.remove(doc.docType);
+                } else {
+                  _agreed.add(doc.docType);
+                }
+              })
+            : null,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(8, 10, 14, 10),
+          child: Row(
+            children: [
+              IgnorePointer(
+                child: Checkbox(
+                  value: agreed,
+                  onChanged: (_) {},
+                  activeColor: AppColors.moss,
+                  side: const BorderSide(color: AppColors.fog, width: 1.5),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  unlocked ? '我已閱讀並同意《${doc.title}》' : '請先閱讀至《${doc.title}》最下方',
+                  style: AppTypography.bodyStyle(
+                    color: unlocked ? AppColors.ink : AppColors.fog,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAgreeBar(List<TermsDocument> documents, TermsDocument current) {
+    final remaining = documents
+        .where((doc) => !_agreed.contains(doc.docType))
+        .length;
+    final ready = remaining == 0;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
       decoration: BoxDecoration(
@@ -257,30 +393,49 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
       ),
       child: SafeArea(
         top: false,
-        child: SizedBox(
-          width: double.infinity,
-          height: 52,
-          child: ElevatedButton(
-            onPressed: _submitting ? null : _agree,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.gold,
-              foregroundColor: AppColors.ink,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            _buildDocCheck(current),
+            const SizedBox(height: 8),
+            if (!ready && documents.length > 1) ...[
+              Text(
+                '每份文件都需個別同意（尚餘 $remaining 份）',
+                textAlign: TextAlign.center,
+                style: AppTypography.captionStyle(color: AppColors.fog),
               ),
-              elevation: 0,
-            ),
-            child: _submitting
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2),
-                  )
-                : Text(
-                    '我已閱讀並同意',
-                    style: AppTypography.titleStyle(),
+              const SizedBox(height: 8),
+            ],
+            SizedBox(
+              width: double.infinity,
+              height: 52,
+              child: ElevatedButton(
+                onPressed: (_submitting || !ready) ? null : _agree,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.gold,
+                  foregroundColor: AppColors.ink,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
                   ),
-          ),
+                  elevation: 0,
+                  disabledBackgroundColor: AppColors.creamDeep,
+                  disabledForegroundColor: AppColors.fog,
+                ),
+                child: _submitting
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : Text(
+                        '同意並繼續',
+                        style: AppTypography.titleStyle(
+                          color: ready ? AppColors.ink : AppColors.fog,
+                        ),
+                      ),
+              ),
+            ),
+          ],
         ),
       ),
     );

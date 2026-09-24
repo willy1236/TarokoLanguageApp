@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import 'event_liked_bookmarked_list.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class EventBookmarksScreen extends StatelessWidget {
   const EventBookmarksScreen({super.key});
@@ -14,6 +15,7 @@ class EventBookmarksScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       appBar: AppBar(
+        leading: const AppBackButton(),
         backgroundColor: AppColors.creamLight,
         elevation: 0,
         foregroundColor: AppColors.ink,

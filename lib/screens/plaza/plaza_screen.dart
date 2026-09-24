@@ -216,21 +216,21 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
           Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              // 精簡模式字級放大後標題會被截斷，直接不顯示。
+              // 精簡模式字級放大後長標題會被截斷，改用與切換鈕一致的短標題。
               Expanded(
-                child: seniorMode
-                    ? const SizedBox.shrink()
-                    : Text(
-                        '族人在這裡',
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.serif(
-                          fontSize: AppTypography.display26,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.ink,
-                          letterSpacing: 1.0,
-                        ),
-                      ),
+                child: Text(
+                  seniorMode ? '動態' : '族人在這裡',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.serif(
+                    fontSize: seniorMode
+                        ? AppTypography.display32
+                        : AppTypography.display26,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.ink,
+                    letterSpacing: 1.0,
+                  ),
+                ),
               ),
               // 移除「我的收藏」後寬度足夠，次要圖示與發布鈕收回主標同一橫線。
               _actionIcons(seniorMode),

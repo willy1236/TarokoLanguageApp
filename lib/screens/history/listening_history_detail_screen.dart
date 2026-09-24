@@ -1,13 +1,12 @@
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_icon_size.dart';
-import '../../services/senior_mode_controller.dart';
 import '../../core/network/api_client.dart';
 import '../../models/history_models.dart';
 import '../../services/history_service.dart';
 import 'history_review_card.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class ListeningHistoryDetailScreen extends StatefulWidget {
   final String sessionId;
@@ -81,11 +80,7 @@ class _ListeningHistoryDetailScreenState
             Positioned(
               left: 8,
               top: 8,
-              child: IconButton(
-                onPressed: () => Navigator.pop(context),
-                iconSize: AppIconSize.action(seniorModeController.enabled),
-                icon: const Icon(Icons.arrow_back, color: AppColors.creamLight),
-              ),
+              child: const AppBackButton(onDark: true),
             ),
           ],
         ),

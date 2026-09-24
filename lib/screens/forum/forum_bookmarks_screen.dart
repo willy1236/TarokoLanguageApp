@@ -11,6 +11,7 @@ import '../../services/forum_service.dart';
 import 'forum_board_view.dart';
 import 'forum_detail_screen.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class ForumBookmarksScreen extends StatefulWidget {
   /// 在這裡取消（或重新加入）收藏時回報，讓推開這一頁的列表同步書籤圖示，
@@ -33,6 +34,7 @@ class _ForumBookmarksScreenState extends State<ForumBookmarksScreen> {
   Widget _buildScaffold(BuildContext context) => Scaffold(
     backgroundColor: AppColors.creamLight,
     appBar: AppBar(
+      leading: const AppBackButton(),
       backgroundColor: AppColors.creamLight,
       elevation: 0,
       foregroundColor: AppColors.ink,

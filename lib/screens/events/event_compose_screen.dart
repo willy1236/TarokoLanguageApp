@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_draft.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 /// 發起／編輯活動表單。
 ///
@@ -226,9 +226,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         // 活動在編輯期間被取消或已開始：留在表單也存不了，退回詳情頁刷新狀態。
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(
-              code == 'EVENT_CLOSED' ? '活動已取消，無法修改' : '活動已開始，無法修改',
-            ),
+            content: Text(code == 'EVENT_CLOSED' ? '活動已取消，無法修改' : '活動已開始，無法修改'),
           ),
         );
         Navigator.pop(context, true);
@@ -340,7 +338,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     child: Text(
                       '未設定時，預設為活動開始前 2 小時截止',
                       style: TextStyle(
-                        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                        fontSize: AppTypography.size(
+                          AppTypography.caption,
+                          seniorMode: seniorMode,
+                        ),
                         color: AppColors.fog,
                       ),
                     ),
@@ -405,20 +406,16 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       ),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            icon: Icon(
-              Icons.arrow_back,
-              color: AppColors.ink,
-              size: AppIconSize.action(seniorMode),
-            ),
-          ),
+          const AppBackButton(),
           Expanded(
             child: Text(
               _isEditing ? '編輯活動' : '新發布',
               textAlign: TextAlign.center,
               style: AppTypography.serif(
-                fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.subtitle,
+                  seniorMode: seniorMode,
+                ),
                 fontWeight: FontWeight.w700,
                 color: AppColors.ink,
               ),
@@ -449,7 +446,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                   : Text(
                       _isEditing ? '儲存' : '發布',
                       style: TextStyle(
-                        fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                        fontSize: AppTypography.size(
+                          AppTypography.body,
+                          seniorMode: seniorMode,
+                        ),
                         fontWeight: FontWeight.w600,
                         color: AppColors.creamLight,
                       ),
@@ -487,7 +487,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               '活動時間與報名截止發布後就不能再改（灰底欄位）。'
               '需要調整時間，請取消這場活動後重新發起。',
               style: TextStyle(
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
                 color: AppColors.inkSoft,
                 height: 1.5,
               ),
@@ -529,7 +532,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             Text(
               '活動封面（尚未開放）',
               style: TextStyle(
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
                 color: AppColors.creamLight.withValues(alpha: 0.85),
                 letterSpacing: 1.0,
               ),
@@ -573,7 +579,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                 Text(
                   label,
                   style: TextStyle(
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.caption,
+                      seniorMode: seniorMode,
+                    ),
                     color: AppColors.fog,
                     letterSpacing: 1.0,
                   ),
@@ -584,7 +593,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             Text(
               value ?? placeholder,
               style: TextStyle(
-                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.bodyLarge,
+                  seniorMode: seniorMode,
+                ),
                 fontWeight: FontWeight.w600,
                 color: value == null ? AppColors.fog : AppColors.ink,
               ),
@@ -597,7 +609,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                 child: Text(
                   subValue,
                   style: TextStyle(
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.caption,
+                      seniorMode: seniorMode,
+                    ),
                     color: AppColors.inkSoft,
                   ),
                 ),
@@ -632,7 +647,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               Text(
                 '地點',
                 style: TextStyle(
-                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.caption,
+                    seniorMode: seniorMode,
+                  ),
                   color: AppColors.fog,
                   letterSpacing: 1.0,
                 ),
@@ -645,7 +663,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             focusNode: _locationFocus,
             maxLength: 200,
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.bodyLarge,
+                seniorMode: seniorMode,
+              ),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
             ),
@@ -653,7 +674,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               hintText: '例如：秀林部落活動中心',
               hintStyle: TextStyle(
                 color: AppColors.fog,
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
               ),
               border: InputBorder.none,
               counterText: '',
@@ -683,14 +707,20 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               maxLength: 6,
               onChanged: (_) => setState(() {}),
               style: TextStyle(
-                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.bodyLarge,
+                  seniorMode: seniorMode,
+                ),
                 color: AppColors.ink,
               ),
               decoration: InputDecoration(
                 hintText: '留空 = 不限名額',
                 hintStyle: TextStyle(
                   color: AppColors.fog,
-                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.body,
+                    seniorMode: seniorMode,
+                  ),
                 ),
                 border: InputBorder.none,
                 counterText: '',
@@ -754,7 +784,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           Text(
             text,
             style: AppTypography.serif(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 1.0,
@@ -766,7 +799,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               child: Text(
                 '*',
                 style: TextStyle(
-                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.body,
+                    seniorMode: seniorMode,
+                  ),
                   color: AppColors.primary,
                 ),
               ),
@@ -777,7 +813,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               child: Text(
                 '選填',
                 style: TextStyle(
-                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.caption,
+                    seniorMode: seniorMode,
+                  ),
                   color: AppColors.fog,
                 ),
               ),
@@ -813,7 +852,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         maxLength: maxLength,
         keyboardType: keyboardType,
         style: TextStyle(
-          fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.body,
+            seniorMode: seniorMode,
+          ),
           color: AppColors.ink,
           height: 1.5,
         ),
@@ -821,7 +863,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           hintText: hint,
           hintStyle: TextStyle(
             color: AppColors.fog,
-            fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.body,
+              seniorMode: seniorMode,
+            ),
           ),
           border: InputBorder.none,
           counterText: '',
@@ -859,7 +904,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               child: Text(
                 value == null ? placeholder : _formatDateTime(value),
                 style: TextStyle(
-                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.body,
+                    seniorMode: seniorMode,
+                  ),
                   color: value == null ? AppColors.fog : AppColors.ink,
                   letterSpacing: 0.5,
                 ),
@@ -894,7 +942,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             child: Text(
               '# $c',
               style: AppTypography.serif(
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
                 color: selected ? AppColors.creamLight : AppColors.inkSoft,
                 fontWeight: FontWeight.w600,
               ),

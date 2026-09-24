@@ -131,8 +131,7 @@ class HomeScreen extends StatelessWidget {
     builder: (context, _) => _buildPage(context, seniorModeController.enabled),
   );
 
-  // 一般模式首頁在空間足夠時不可捲動，模式卡吃掉剩餘高度；空間不足時模式卡區
-  // 自己改成可捲（見 _buildModeGrid）。精簡模式字放大後可能塞不下，2x2 模式卡
+  // 一般模式首頁一頁完整顯示（見 _buildFittedPage）。精簡模式字放大後可能塞不下，2x2 模式卡
   // 仍吃滿剩餘高度，但畫面太矮時整頁可捲動。
   Widget _buildPage(BuildContext context, bool seniorMode) {
     return ColoredBox(
@@ -157,14 +156,69 @@ class HomeScreen extends StatelessWidget {
                   ),
                 ],
               )
-            : Column(
-                children: [
-                  _buildTopStrip(),
-                  _buildHeader(context, seniorMode),
-                  Expanded(child: _buildModeGrid()),
-                ],
-              ),
+            : _buildFittedPage(context),
       ),
+    );
+  }
+
+  // 一般模式首頁永遠一頁完整顯示、不捲動，並讓不同長寬比的畫面看起來一致：
+  // - 畫面太矮（web 矮視窗、橫向、分割畫面、放大字級）：以 _designMinHeight
+  //   為基準排版後整頁等比縮小，版面比例不變、不會出現半截捲動區。
+  // - 畫面太高（細長手機）：模式卡列高封頂，多出的空間平均分到進度卡與模式卡
+  //   之間、以及模式卡下方，避免卡片被拉得過長。
+  static const _designMinHeight = 680.0;
+  static const _modeRowMaxHeight = 190.0;
+  static const _modeRowGap = 12.0;
+
+  Widget _buildFittedPage(BuildContext context) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final textScale = MediaQuery.textScalerOf(context).scale(1.0);
+        final minHeight = _designMinHeight * textScale;
+        final page = _buildPageColumn(context, textScale);
+        if (constraints.maxHeight >= minHeight) return page;
+        // 以 minHeight 排版，寬度同比例放大，再由 FittedBox 等比縮回可用空間。
+        final scale = constraints.maxHeight / minHeight;
+        return FittedBox(
+          fit: BoxFit.contain,
+          alignment: Alignment.topCenter,
+          child: SizedBox(
+            width: constraints.maxWidth / scale,
+            height: minHeight,
+            child: page,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildPageColumn(BuildContext context, double textScale) {
+    return Column(
+      children: [
+        _buildTopStrip(),
+        _buildHeader(context, false),
+        Expanded(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              const bottomPad = 12.0;
+              final rowMax = _modeRowMaxHeight * textScale;
+              final gridMax = rowMax * 3 + _modeRowGap * 2;
+              final extra = constraints.maxHeight - bottomPad - gridMax;
+              if (extra <= 0) return _buildModeGrid();
+              return Column(
+                children: [
+                  SizedBox(height: extra / 2),
+                  SizedBox(
+                    height: gridMax + bottomPad,
+                    child: _buildModeGrid(),
+                  ),
+                  SizedBox(height: extra / 2),
+                ],
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -271,7 +325,9 @@ class HomeScreen extends StatelessWidget {
                       // 精簡模式字大，刻意在逗號後換行，避免從字中間斷開。
                       '${displayName ?? 'Yudaw'}，${seniorMode ? '\n' : ''}今天學什麼？',
                       style: AppTypography.serif(
-                        fontSize: seniorMode ? AppTypography.display28 : AppTypography.display24,
+                        fontSize: seniorMode
+                            ? AppTypography.display28
+                            : AppTypography.display24,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 1.0,
@@ -313,49 +369,27 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  // ④ 模式卡格（第一張全寬，後四張兩欄）
-  //
-  // 空間夠時三列平分剩餘高度、整頁不可捲，維持原本的滿版鋪排；空間不夠時
-  // （web 矮視窗、手機橫向、分割畫面、放大字級）改成每列固定最小高度並讓整區
-  // 可捲——硬撐的話卡片內容會被 ModeCard 的 Clip.hardEdge 切掉。
-  //
-  // 這裡刻意用可用高度判斷而非 kIsWeb：矮視窗不是 web 獨有的情況。
+  // ④ 模式卡格（第一張全寬，後四張兩欄），三列平分給定高度。
+  // 高度下限由 _buildFittedPage 的等比縮放保證，上限由 _buildPageColumn 封頂。
   //
   // Scaffold(extendBody: false) 已經把導覽列的高度從 body 可用空間中扣除，
   // 這裡不需要再手動預留底部間距。
-  static const _modeRowMinHeight = 112.0;
-  static const _modeRowGap = 12.0;
-
   Widget _buildModeGrid() {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // 放大字級時卡片需要的最小高度也跟著長，否則降級後照樣被裁。
-        final scale = MediaQuery.textScalerOf(context).scale(1.0);
-        final rowMin = _modeRowMinHeight * scale;
-        final needed = rowMin * 3 + _modeRowGap * 2 + 12;
-        final scrollable = constraints.maxHeight < needed;
-        final rows = [
-          _modeRowLarge(),
-          _modeRowPair(_modes[1], _modes[2]),
-          _modeRowPair(_modes[0], _modes[4]),
-        ];
-        final children = <Widget>[
+    final rows = [
+      _modeRowLarge(),
+      _modeRowPair(_modes[1], _modes[2]),
+      _modeRowPair(_modes[0], _modes[4]),
+    ];
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
+      child: Column(
+        children: [
           for (var i = 0; i < rows.length; i++) ...[
             if (i > 0) const SizedBox(height: _modeRowGap),
-            scrollable
-                ? SizedBox(height: rowMin, child: rows[i])
-                : Expanded(child: rows[i]),
+            Expanded(child: rows[i]),
           ],
-        ];
-        final grid = Padding(
-          padding: const EdgeInsets.fromLTRB(24, 0, 24, 12),
-          child: Column(
-            mainAxisSize: scrollable ? MainAxisSize.min : MainAxisSize.max,
-            children: children,
-          ),
-        );
-        return scrollable ? SingleChildScrollView(child: grid) : grid;
-      },
+        ],
+      ),
     );
   }
 
@@ -368,9 +402,13 @@ class HomeScreen extends StatelessWidget {
   Widget _modeRowPair(ModeData left, ModeData right) => Row(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Expanded(child: ModeCard(mode: left, onTap: () => _onModeTap(left))),
+      Expanded(
+        child: ModeCard(mode: left, onTap: () => _onModeTap(left)),
+      ),
       const SizedBox(width: _modeRowGap),
-      Expanded(child: ModeCard(mode: right, onTap: () => _onModeTap(right))),
+      Expanded(
+        child: ModeCard(mode: right, onTap: () => _onModeTap(right)),
+      ),
     ],
   );
 }
@@ -467,7 +505,10 @@ class _TodayProgressCard extends StatelessWidget {
                             Text(
                               '${millet ?? 0}',
                               style: AppTypography.serif(
-                                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                                fontSize: AppTypography.size(
+                                  AppTypography.body,
+                                  seniorMode: seniorMode,
+                                ),
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.gold,
                                 letterSpacing: 0.5,
@@ -486,7 +527,10 @@ class _TodayProgressCard extends StatelessWidget {
                 RichText(
                   text: TextSpan(
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.headline, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.headline,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       height: 1.3,
@@ -571,7 +615,10 @@ class _TodayProgressCard extends StatelessWidget {
     return Text(
       checkinStreak > 0 ? '每日簽到 +50 · 已連續 $checkinStreak 天' : '每日簽到 +50 小米幣',
       style: AppTypography.sans(
-        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+        fontSize: AppTypography.size(
+          AppTypography.caption,
+          seniorMode: seniorMode,
+        ),
         color: AppColors.creamLight.withValues(alpha: 0.85),
         letterSpacing: 0.5,
       ),
@@ -599,7 +646,10 @@ class _TodayProgressCard extends StatelessWidget {
         child: Text(
           checkedInToday ? '已簽到' : '立即簽到',
           style: AppTypography.serif(
-            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.caption,
+              seniorMode: seniorMode,
+            ),
             fontWeight: FontWeight.w600,
             color: checkedInToday
                 ? AppColors.gold.withValues(alpha: 0.4)

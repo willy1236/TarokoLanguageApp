@@ -12,6 +12,7 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../services/account_service.dart';
 import '../../services/session_service.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class AccountDeleteScreen extends StatefulWidget {
   const AccountDeleteScreen({super.key});
@@ -72,10 +73,14 @@ class _AccountDeleteScreenState extends State<AccountDeleteScreen> {
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
+        leading: const AppBackButton(),
         backgroundColor: AppColors.cream,
         elevation: 0,
         foregroundColor: AppColors.ink,
-        title: Text('刪除帳號', style: AppTypography.titleStyle(color: AppColors.ink)),
+        title: Text(
+          '刪除帳號',
+          style: AppTypography.titleStyle(color: AppColors.ink),
+        ),
       ),
       body: SafeArea(
         child: ListView(
@@ -158,7 +163,9 @@ class _AccountDeleteScreenState extends State<AccountDeleteScreen> {
                       )
                     : Text(
                         '刪除帳號',
-                        style: AppTypography.titleStyle(color: AppColors.creamLight),
+                        style: AppTypography.titleStyle(
+                          color: AppColors.creamLight,
+                        ),
                       ),
               ),
             ),
@@ -219,8 +226,7 @@ class AccountDeletedScreen extends StatelessWidget {
 
   const AccountDeletedScreen({super.key, this.purgeAt});
 
-  String _formatDate(DateTime d) =>
-      '${d.year} 年 ${d.month} 月 ${d.day} 日';
+  String _formatDate(DateTime d) => '${d.year} 年 ${d.month} 月 ${d.day} 日';
 
   @override
   Widget build(BuildContext context) {
@@ -261,7 +267,9 @@ class AccountDeletedScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         _formatDate(purgeAt),
-                        style: AppTypography.headlineStyle(color: AppColors.ink),
+                        style: AppTypography.headlineStyle(
+                          color: AppColors.ink,
+                        ),
                       ),
                     ],
                   ),

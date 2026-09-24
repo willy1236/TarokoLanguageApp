@@ -113,10 +113,15 @@ class TrukuWeavePainter extends CustomPainter {
   final double opacity;
   final double scale;
 
+  /// 織紋的垂直起點位移。上下相鄰的兩塊各自畫織紋時，下方那塊傳入上方的高度，
+  /// 兩塊的菱形就會接成同一片。
+  final double offsetY;
+
   const TrukuWeavePainter({
     this.color = const Color(0xFF7A1F1A),
     this.opacity = 0.12,
     this.scale = 1.0,
+    this.offsetY = 0,
   });
 
   @override
@@ -137,7 +142,7 @@ class TrukuWeavePainter extends CustomPainter {
       ..style = PaintingStyle.fill;
 
     for (double x = 0; x < size.width + s; x += s) {
-      for (double y = 0; y < size.height + s; y += s) {
+      for (double y = -(offsetY % s); y < size.height + s; y += s) {
         // 外菱形
         final outer = Path()
           ..moveTo(x + s * 0.5, y + s * 0.1)
@@ -169,7 +174,10 @@ class TrukuWeavePainter extends CustomPainter {
 
   @override
   bool shouldRepaint(TrukuWeavePainter old) =>
-      old.color != color || old.opacity != opacity || old.scale != scale;
+      old.color != color ||
+      old.opacity != opacity ||
+      old.scale != scale ||
+      old.offsetY != offsetY;
 }
 
 /// 太魯閣峽谷山脈剪影 — 呼應太魯閣峽谷地景

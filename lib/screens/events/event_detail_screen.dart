@@ -17,6 +17,7 @@ import 'widgets/event_action_bar.dart';
 import 'widgets/event_detail_body.dart';
 import 'widgets/event_detail_dialogs.dart';
 import 'widgets/event_detail_hero.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 /// 活動詳情頁 — 進頁後以 [eventId] 打 GET /api/events/:id 取真資料。
 ///
@@ -395,6 +396,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       return Scaffold(
         backgroundColor: AppColors.creamLight,
         appBar: AppBar(
+          leading: const AppBackButton(),
           backgroundColor: AppColors.creamLight,
           foregroundColor: AppColors.ink,
           elevation: 0,

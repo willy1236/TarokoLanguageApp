@@ -24,6 +24,7 @@ import 'blocked_users_screen.dart';
 import 'friend_requests_screen.dart';
 import 'widgets/bond_level_badge.dart';
 import 'widgets/showcase_chip.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class FriendsListScreen extends StatefulWidget {
   /// 作為底部導航分頁時傳 false：沒有上一頁可回，不顯示返回鍵。
@@ -109,9 +110,9 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   }
 
   Future<void> _openAddFriend() async {
-    final added = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(builder: (_) => const AddFriendScreen()),
-    );
+    final added = await Navigator.of(
+      context,
+    ).push<bool>(MaterialPageRoute(builder: (_) => const AddFriendScreen()));
     if (added == true) _load();
   }
 
@@ -123,9 +124,9 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   }
 
   void _openBlockedUsers() {
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const BlockedUsersScreen()),
-    );
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const BlockedUsersScreen()));
   }
 
   /// 聊天室裡可以再進對方的公開檔案，在那邊封鎖或刪好友都會改變這份清單，
@@ -239,17 +240,16 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     child: Row(
       children: [
         if (widget.showBackButton)
-          IconButton(
-            onPressed: () => Navigator.of(context).maybePop(),
-            iconSize: AppIconSize.action(seniorMode),
-            icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-          )
+          const AppBackButton()
         else
           const SizedBox(width: 12),
         Expanded(
           child: Text(
             '好友',
-            style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+            style: AppTypography.titleStyle(
+              seniorMode: seniorMode,
+              color: AppColors.ink,
+            ),
           ),
         ),
         ValueListenableBuilder<NotificationSummary>(
@@ -284,7 +284,9 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
   Widget _buildBody(bool seniorMode) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
     final friends = _friends ?? const [];
     if (friends.isEmpty) {
@@ -331,7 +333,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                 children: [
                   Text(
                     f.nickname?.isNotEmpty == true ? f.nickname! : '未命名旅人',
-                    style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.ink),
+                    style: AppTypography.bodyLargeStyle(
+                      seniorMode: seniorMode,
+                      color: AppColors.ink,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Wrap(
@@ -359,7 +364,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                           : conversation.lastMessage!.body,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodyStyle(seniorMode: seniorMode, color: AppColors.fog),
+                      style: AppTypography.bodyStyle(
+                        seniorMode: seniorMode,
+                        color: AppColors.fog,
+                      ),
                     ),
                   ],
                 ],
@@ -402,12 +410,18 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                 children: [
                   Text(
                     f.nickname?.isNotEmpty == true ? f.nickname! : '暫時無法使用',
-                    style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.fog),
+                    style: AppTypography.bodyLargeStyle(
+                      seniorMode: seniorMode,
+                      color: AppColors.fog,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '對方帳號目前無法使用',
-                    style: AppTypography.bodyStyle(seniorMode: seniorMode, color: AppColors.fog),
+                    style: AppTypography.bodyStyle(
+                      seniorMode: seniorMode,
+                      color: AppColors.fog,
+                    ),
                   ),
                 ],
               ),
@@ -420,10 +434,16 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
   Widget _unreadBadge(int count, bool seniorMode) => Container(
     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-    decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(10)),
+    decoration: BoxDecoration(
+      color: AppColors.primary,
+      borderRadius: BorderRadius.circular(10),
+    ),
     child: Text(
       count > 99 ? '99+' : '$count',
-      style: AppTypography.captionStyle(seniorMode: seniorMode, color: Colors.white),
+      style: AppTypography.captionStyle(
+        seniorMode: seniorMode,
+        color: Colors.white,
+      ),
     ),
   );
 
@@ -444,7 +464,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         size: size,
         fallbackIconColor: AppColors.gold,
         fallback: DecoratedBox(
-          decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.ink),
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.ink,
+          ),
           child: Center(
             child: Text(
               f.nickname?.characters.firstOrNull ?? '?',

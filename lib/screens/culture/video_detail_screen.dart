@@ -12,6 +12,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
 import '../../shared/widgets/engagement_icon_button.dart';
 import '../../shared/widgets/hls_web_player/hls_web_player.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class VideoDetailScreen extends StatefulWidget {
   final int videoId;
@@ -130,6 +131,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.midnight,
       appBar: AppBar(
+        leading: const AppBackButton(onDark: true),
         backgroundColor: AppColors.midnight,
         foregroundColor: AppColors.cream,
         elevation: 0,
@@ -185,7 +187,10 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.cream,
-                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.bodyLarge,
+                  seniorMode: seniorMode,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -267,7 +272,10 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                 Text(
                   video.title,
                   style: AppTypography.serif(
-                    fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.title,
+                      seniorMode: seniorMode,
+                    ),
                     fontWeight: FontWeight.w600,
                     color: AppColors.creamLight,
                     height: 1.3,
@@ -376,7 +384,10 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                     video.description!,
                     style: TextStyle(
                       color: AppColors.mist,
-                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.body,
+                        seniorMode: seniorMode,
+                      ),
                       height: 1.6,
                     ),
                   ),
@@ -402,7 +413,10 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.micro,
+            seniorMode: seniorMode,
+          ),
           color: AppColors.gold,
           letterSpacing: 1.5,
         ),

@@ -23,6 +23,7 @@ import '../../shared/widgets/truku_empty_state.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../chat/chat_screen.dart';
 import 'widgets/bond_level_badge.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 enum _ProfileAction { addFriend, removeFriend, block, unblock }
 
@@ -136,11 +137,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
     child: Row(
       children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          iconSize: AppIconSize.action(seniorModeController.enabled),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-        ),
+        const AppBackButton(),
         const Spacer(),
         if (_profile != null &&
             _profile!.uid != UserService.currentUid &&
@@ -155,11 +152,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     ),
   );
 
-  List<PopupMenuItem<_ProfileAction>> _menuItemsFor(_Relationship relationship) {
+  List<PopupMenuItem<_ProfileAction>> _menuItemsFor(
+    _Relationship relationship,
+  ) {
     switch (relationship) {
       case _Relationship.friend:
         return const [
-          PopupMenuItem(value: _ProfileAction.removeFriend, child: Text('刪除好友')),
+          PopupMenuItem(
+            value: _ProfileAction.removeFriend,
+            child: Text('刪除好友'),
+          ),
           PopupMenuItem(value: _ProfileAction.block, child: Text('封鎖')),
         ];
       case _Relationship.blocked:
@@ -247,7 +249,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
   Widget _buildBody(bool seniorMode) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
     if (_notFound || _profile == null) {
       return TrukuEmptyState(
@@ -266,13 +270,19 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           const SizedBox(height: 16),
           Text(
             profile.nickname?.isNotEmpty == true ? profile.nickname! : '未命名旅人',
-            style: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.ink),
+            style: AppTypography.headlineStyle(
+              seniorMode: seniorMode,
+              color: AppColors.ink,
+            ),
             textAlign: TextAlign.center,
           ),
           const SizedBox(height: 6),
           Text(
             '加入 ${profile.joinedDays} 天',
-            style: AppTypography.subtitleStyle(seniorMode: seniorMode, color: AppColors.fog),
+            style: AppTypography.subtitleStyle(
+              seniorMode: seniorMode,
+              color: AppColors.fog,
+            ),
           ),
           if (profile.bondShowcase.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -283,7 +293,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             _card(
               child: Text(
                 profile.selfIntro!,
-                style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.ink),
+                style: AppTypography.bodyLargeStyle(
+                  seniorMode: seniorMode,
+                  color: AppColors.ink,
+                ),
               ),
             ),
             const SizedBox(height: 14),
@@ -299,12 +312,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                     children: [
                       Text(
                         '好友碼',
-                        style: AppTypography.captionStyle(seniorMode: seniorMode, color: AppColors.fog),
+                        style: AppTypography.captionStyle(
+                          seniorMode: seniorMode,
+                          color: AppColors.fog,
+                        ),
                       ),
                       const SizedBox(height: 2),
                       Text(
                         profile.friendCode,
-                        style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+                        style: AppTypography.titleStyle(
+                          seniorMode: seniorMode,
+                          color: AppColors.ink,
+                        ),
                       ),
                     ],
                   ),
@@ -318,15 +337,23 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             width: double.infinity,
             child: OutlinedButton.icon(
               onPressed: _openChat,
-              icon: const Icon(Icons.chat_bubble_outline, color: AppColors.primary),
+              icon: const Icon(
+                Icons.chat_bubble_outline,
+                color: AppColors.primary,
+              ),
               label: Text(
                 '傳訊息',
-                style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.primary),
+                style: AppTypography.bodyLargeStyle(
+                  seniorMode: seniorMode,
+                  color: AppColors.primary,
+                ),
               ),
               style: OutlinedButton.styleFrom(
                 padding: const EdgeInsets.symmetric(vertical: 12),
                 side: const BorderSide(color: AppColors.primary),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ),
@@ -352,7 +379,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         size: size,
         fallbackIconColor: AppColors.gold,
         fallback: DecoratedBox(
-          decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.ink),
+          decoration: const BoxDecoration(
+            shape: BoxShape.circle,
+            color: AppColors.ink,
+          ),
           child: _initialsAvatar(profile, size),
         ),
       ),
@@ -369,28 +399,34 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     ),
   );
 
-  Widget _bondShowcaseRow(List<BondShowcaseItem> items, bool seniorMode) => Column(
-    crossAxisAlignment: CrossAxisAlignment.center,
-    children: [
-      Text(
-        '羈絆好友',
-        style: AppTypography.subtitleStyle(seniorMode: seniorMode, color: AppColors.fog),
-      ),
-      const SizedBox(height: 6),
-      Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        alignment: WrapAlignment.center,
-        children: items
-            .map((item) => BondLevelBadge(
-                  level: item.bondLevel.level,
-                  name: item.bondLevel.name,
-                  seniorMode: seniorMode,
-                ))
-            .toList(),
-      ),
-    ],
-  );
+  Widget _bondShowcaseRow(List<BondShowcaseItem> items, bool seniorMode) =>
+      Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Text(
+            '羈絆好友',
+            style: AppTypography.subtitleStyle(
+              seniorMode: seniorMode,
+              color: AppColors.fog,
+            ),
+          ),
+          const SizedBox(height: 6),
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            alignment: WrapAlignment.center,
+            children: items
+                .map(
+                  (item) => BondLevelBadge(
+                    level: item.bondLevel.level,
+                    name: item.bondLevel.name,
+                    seniorMode: seniorMode,
+                  ),
+                )
+                .toList(),
+          ),
+        ],
+      );
 
   Widget _card({required Widget child}) => Container(
     width: double.infinity,

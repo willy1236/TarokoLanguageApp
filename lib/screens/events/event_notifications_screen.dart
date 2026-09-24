@@ -11,6 +11,7 @@ import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import 'event_detail_screen.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 String _relativeTime(DateTime time) {
   final diff = DateTime.now().difference(time);
@@ -141,6 +142,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
   Widget _buildScaffold(bool seniorMode) => Scaffold(
     backgroundColor: AppColors.creamLight,
     appBar: AppBar(
+      leading: const AppBackButton(),
       backgroundColor: AppColors.creamLight,
       elevation: 0,
       foregroundColor: AppColors.ink,

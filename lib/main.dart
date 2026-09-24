@@ -111,7 +111,7 @@ Future<void> main() async {
       MaterialPageRoute(builder: (_) => IncomingCallScreen(call: call)),
     );
   };
-  // FCM 掛載（要權限、掛前景/點擊監聽）。失敗不阻斷 App 啟動；token 上傳待登入後。
+  // FCM 掛載（掛前景/點擊監聽，通知權限延到首頁才問）。失敗不阻斷 App 啟動；token 上傳待登入後。
   try {
     await FcmService.init();
   } catch (e) {
@@ -292,6 +292,7 @@ class _MainContainerState extends State<MainContainer>
   late int _learnCultureSubTab = _defaultLearnCultureSubTab(_seniorMode);
   int _plazaEventSubTab = 0;
   int _profileVideoSubTab = 0;
+  final _learnCultureReselect = _ReselectSignal();
   String? _displayName;
   int? _millet;
   String? _avatarId;
@@ -310,6 +311,10 @@ class _MainContainerState extends State<MainContainer>
     _loadCheckinStatus();
     NotificationSummaryService.refresh();
     AppBadge.clear();
+    // 首頁一定在條款同意之後才進得來，通知權限放在這時才問。
+    FcmService.requestPermission().catchError(
+      (Object e) => debugPrint('FcmService.requestPermission 失敗：$e'),
+    );
     WidgetsBinding.instance.addObserver(this);
     seniorModeController.addListener(_onSeniorModeChanged);
     UserService.userNotifier.addListener(_onUserChanged);
@@ -322,6 +327,7 @@ class _MainContainerState extends State<MainContainer>
     seniorModeController.removeListener(_onSeniorModeChanged);
     UserService.userNotifier.removeListener(_onUserChanged);
     NotificationSummaryService.notifier.removeListener(_onSummaryChanged);
+    _learnCultureReselect.dispose();
     super.dispose();
   }
 
@@ -458,6 +464,15 @@ class _MainContainerState extends State<MainContainer>
     }
   }
 
+  // 底部導航再次點擊目前所在的「學習影音」：通知該頁捲回頂部並重新整理。
+  void _onBottomTabTap(int index) {
+    if (index == _currentIndex && index == _learnCultureIndex) {
+      _learnCultureReselect.notifyListeners();
+      return;
+    }
+    _navigate(index);
+  }
+
   void _navigate(int index, {int? subTab}) => setState(() {
     _currentIndex = index;
     if (subTab != null) {
@@ -532,6 +547,7 @@ class _MainContainerState extends State<MainContainer>
                 LearnCultureScreen(
                   key: ValueKey('learn_culture_$_learnCultureSubTab'),
                   initialTabIndex: _learnCultureSubTab,
+                  reselectSignal: _learnCultureReselect,
                 ),
                 PlazaEventScreen(
                   key: ValueKey('plaza_event_$_plazaEventSubTab'),
@@ -546,7 +562,7 @@ class _MainContainerState extends State<MainContainer>
             ),
             bottomNavigationBar: TrukuBottomTab(
               currentIndex: _currentIndex,
-              onTap: _navigate,
+              onTap: _onBottomTabTap,
               seniorMode: seniorMode,
               badges: {
                 _plazaEventIndex:
@@ -560,4 +576,10 @@ class _MainContainerState extends State<MainContainer>
       },
     );
   }
+}
+
+/// 純事件訊號（無值），給「再次點擊底部分頁」這類一次性通知用。
+class _ReselectSignal extends ChangeNotifier {
+  @override
+  void notifyListeners() => super.notifyListeners();
 }

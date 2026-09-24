@@ -18,10 +18,10 @@ class CultureArticleSection extends StatefulWidget {
   const CultureArticleSection({super.key, required this.seniorMode});
 
   @override
-  State<CultureArticleSection> createState() => _CultureArticleSectionState();
+  State<CultureArticleSection> createState() => CultureArticleSectionState();
 }
 
-class _CultureArticleSectionState extends State<CultureArticleSection> {
+class CultureArticleSectionState extends State<CultureArticleSection> {
   int _articleChipIndex = 0;
   String _articleSort = 'latest'; // latest | popular | weekly_popular
   late Future<ArticleListResponse> _articlesFuture;
@@ -50,6 +50,9 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
       sort: _articleSort,
     );
   }
+
+  /// 外層（再次點擊底部分頁）要求重新整理時呼叫。
+  void reload() => _reloadArticles();
 
   void _reloadArticles() {
     setState(() {
@@ -102,7 +105,10 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
                   '目前沒有文章',
                   style: TextStyle(
                     color: AppColors.fog,
-                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.body,
+                      seniorMode: seniorMode,
+                    ),
                   ),
                 ),
               ),
@@ -125,10 +131,8 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
   }
 
   Widget _buildArticleChips(bool seniorMode) {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-      child: Row(
+    return CultureChipsRow(
+      chips: Row(
         children: List.generate(_articleChipLabels.length, (i) {
           final active = _articleChipIndex == i;
           return Padding(
@@ -159,7 +163,10 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
                 child: Text(
                   _articleChipLabels[i],
                   style: TextStyle(
-                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.body,
+                      seniorMode: seniorMode,
+                    ),
                     color: active ? AppColors.creamLight : AppColors.cream,
                     letterSpacing: 2.0,
                   ),
@@ -194,7 +201,10 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
               Text(
                 title,
                 style: AppTypography.serif(
-                  fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.bodyLarge,
+                    seniorMode: seniorMode,
+                  ),
                   fontWeight: FontWeight.w600,
                   color: AppColors.cream,
                   letterSpacing: 1.5,
@@ -205,7 +215,10 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
                 'patas kari',
                 style: AppTypography.latin(
                   fontStyle: FontStyle.italic,
-                  fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.micro,
+                    seniorMode: seniorMode,
+                  ),
                   color: AppColors.fog,
                   letterSpacing: 3.6,
                 ),
@@ -238,7 +251,10 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.caption,
+            seniorMode: seniorMode,
+          ),
           fontWeight: active ? FontWeight.w700 : FontWeight.w400,
           color: active ? AppColors.gold : AppColors.fog,
           letterSpacing: 1.5,
@@ -294,7 +310,10 @@ class _CultureArticleSectionState extends State<CultureArticleSection> {
                         child: Text(
                           ArticleCategory.label(article.category),
                           style: TextStyle(
-                            fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+                            fontSize: AppTypography.size(
+                              AppTypography.micro,
+                              seniorMode: seniorMode,
+                            ),
                             color: AppColors.ink,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 2.8,

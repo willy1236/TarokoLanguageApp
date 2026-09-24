@@ -8,6 +8,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 const _pageSize = 20;
 
@@ -107,6 +108,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       appBar: AppBar(
+        leading: const AppBackButton(),
         backgroundColor: AppColors.creamLight,
         elevation: 0,
         iconTheme: const IconThemeData(color: AppColors.ink),
@@ -231,7 +233,10 @@ class _MilletRow extends StatelessWidget {
                   subtitle != null
                       ? '$subtitle · ${_timeLabel()}'
                       : _timeLabel(),
-                  style: const TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
+                  style: const TextStyle(
+                    fontSize: AppTypography.caption,
+                    color: AppColors.fog,
+                  ),
                 ),
               ],
             ),
@@ -250,7 +255,10 @@ class _MilletRow extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 '餘額 ${transaction.balanceAfter}',
-                style: const TextStyle(fontSize: AppTypography.micro, color: AppColors.fog),
+                style: const TextStyle(
+                  fontSize: AppTypography.micro,
+                  color: AppColors.fog,
+                ),
               ),
             ],
           ),

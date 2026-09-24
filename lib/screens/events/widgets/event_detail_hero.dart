@@ -6,6 +6,7 @@ import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
 import '../../../shared/widgets/truku_painters.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/widgets/app_back_button.dart';
 
 class EventDetailHero extends StatelessWidget {
   final EventDetail event;
@@ -51,25 +52,7 @@ class EventDetailHero extends StatelessWidget {
           Positioned(
             top: 52,
             left: 16,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                width: seniorMode ? 50 : 38,
-                height: seniorMode ? 50 : 38,
-                decoration: BoxDecoration(
-                  color: AppColors.ink.withValues(alpha: 0.4),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: AppColors.creamLight.withValues(alpha: 0.25),
-                  ),
-                ),
-                child: Icon(
-                  Icons.arrow_back,
-                  color: AppColors.creamLight,
-                  size: seniorMode ? 26 : 18,
-                ),
-              ),
-            ),
+            child: const AppBackButton(onDark: true),
           ),
           // 標籤（分類，可能沒有）
           if (e.category != null && e.category!.isNotEmpty)
@@ -88,7 +71,10 @@ class EventDetailHero extends StatelessWidget {
                 child: Text(
                   e.category!,
                   style: TextStyle(
-                    fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.micro,
+                      seniorMode: seniorMode,
+                    ),
                     color: AppColors.ink,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 2.5,
@@ -119,7 +105,10 @@ class EventDetailHero extends StatelessWidget {
                       child: Text(
                         cancelled ? '已取消' : '已結束',
                         style: TextStyle(
-                          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                          fontSize: AppTypography.size(
+                            AppTypography.caption,
+                            seniorMode: seniorMode,
+                          ),
                           color: AppColors.creamLight,
                           letterSpacing: 1.5,
                         ),
@@ -130,7 +119,10 @@ class EventDetailHero extends StatelessWidget {
                   '${monthLabel(start)}${start.day}日 · ${weekdayLabel(start)}',
                   style: AppTypography.serif(
                     fontStyle: FontStyle.italic,
-                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.body,
+                      seniorMode: seniorMode,
+                    ),
                     color: AppColors.gold,
                     letterSpacing: 2.0,
                   ),
@@ -139,7 +131,9 @@ class EventDetailHero extends StatelessWidget {
                 Text(
                   e.title,
                   style: AppTypography.serif(
-                    fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
+                    fontSize: seniorMode
+                        ? AppTypography.display32
+                        : AppTypography.display26,
                     fontWeight: FontWeight.w700,
                     color: AppColors.creamLight,
                     letterSpacing: 0.8,

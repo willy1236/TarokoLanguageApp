@@ -8,7 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/tribe_model.dart';
@@ -19,6 +18,7 @@ import '../../shared/widgets/tribe_picker_sheet.dart';
 import 'notification_email_screen.dart';
 import 'widgets/profile_rename_dialog.dart';
 import 'widgets/profile_rows.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class ProfileInfoScreen extends StatefulWidget {
   /// 從「我的」主頁 hero 上的族語名進來時為 true：開頁即彈出族語名編輯對話框，
@@ -107,11 +107,7 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
     padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
     child: Row(
       children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          iconSize: AppIconSize.action(seniorMode),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-        ),
+        const AppBackButton(),
         Expanded(
           child: Text(
             '個人資料設定',

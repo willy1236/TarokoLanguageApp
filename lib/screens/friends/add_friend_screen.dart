@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class AddFriendScreen extends StatefulWidget {
   const AddFriendScreen({super.key});
@@ -126,15 +126,14 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
     padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
     child: Row(
       children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          iconSize: AppIconSize.action(seniorMode),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-        ),
+        const AppBackButton(),
         Expanded(
           child: Text(
             '加好友',
-            style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+            style: AppTypography.titleStyle(
+              seniorMode: seniorMode,
+              color: AppColors.ink,
+            ),
           ),
         ),
       ],
@@ -148,7 +147,10 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       children: [
         Text(
           '輸入對方的好友碼',
-          style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.fog),
+          style: AppTypography.bodyLargeStyle(
+            seniorMode: seniorMode,
+            color: AppColors.fog,
+          ),
         ),
         const SizedBox(height: 12),
         TextField(
@@ -157,10 +159,16 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           textCapitalization: TextCapitalization.characters,
           maxLength: 8,
           inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
-          style: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.ink),
+          style: AppTypography.headlineStyle(
+            seniorMode: seniorMode,
+            color: AppColors.ink,
+          ),
           decoration: InputDecoration(
             hintText: '例如 A7C9K2XZ',
-            hintStyle: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.fog),
+            hintStyle: AppTypography.headlineStyle(
+              seniorMode: seniorMode,
+              color: AppColors.fog,
+            ),
             errorText: _error,
             filled: true,
             fillColor: AppColors.cream,
@@ -187,7 +195,10 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Text('送出邀請', style: TextStyle(color: Colors.white)),
           ),
@@ -219,12 +230,18 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                 children: [
                   Text(
                     '我的好友碼（點擊複製，分享給朋友）',
-                    style: AppTypography.captionStyle(seniorMode: seniorMode, color: AppColors.fog),
+                    style: AppTypography.captionStyle(
+                      seniorMode: seniorMode,
+                      color: AppColors.fog,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     code,
-                    style: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.ink),
+                    style: AppTypography.headlineStyle(
+                      seniorMode: seniorMode,
+                      color: AppColors.ink,
+                    ),
                   ),
                 ],
               ),

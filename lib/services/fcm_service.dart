@@ -102,13 +102,13 @@ class FcmService {
   /// 避免被 splash 的 pushReplacementNamed 蓋掉（見 splash_screen.dart）。
   static RemoteMessage? _pendingInitialMessage;
 
-  /// App 啟動時呼叫一次：註冊背景 handler、要通知權限、掛前景/點擊監聽。
+  /// App 啟動時呼叫一次：註冊背景 handler、掛前景/點擊監聽。通知權限不在這裡要，
+  /// 等使用者同意條款、進到首頁後才由 [requestPermission] 詢問。
   /// 不在這裡上傳 token —— 上傳需要 JWT，登入成功後再呼叫 [registerDevice]。
   static Future<void> init() async {
     if (!PlatformFeatures.supportsPush) return;
     FirebaseMessaging.onBackgroundMessage(firebaseMessagingBackgroundHandler);
 
-    await _fm.requestPermission();
     await _initLocalNotifications();
 
     // 前景收到訊息
@@ -125,11 +125,21 @@ class FcmService {
     });
   }
 
+  /// 詢問通知權限。系統只會在尚未決定時跳窗，之後重複呼叫不會再打擾使用者。
+  static Future<void> requestPermission() async {
+    if (!PlatformFeatures.supportsPush) return;
+    await _fm.requestPermission();
+  }
+
   /// 初始化系統通知列（Android channel + 點擊回呼）。iOS 走最小設定，
   /// 本階段推播只支援 Android（見檔案頂部註解）。
   static Future<void> _initLocalNotifications() async {
     const androidInit = AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosInit = DarwinInitializationSettings();
+    const iosInit = DarwinInitializationSettings(
+      requestAlertPermission: false,
+      requestBadgePermission: false,
+      requestSoundPermission: false,
+    );
     await _localNotifications.initialize(
       const InitializationSettings(android: androidInit, iOS: iosInit),
       onDidReceiveNotificationResponse: (response) {

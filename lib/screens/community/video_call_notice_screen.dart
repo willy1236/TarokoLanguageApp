@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 const _prefsKey = 'video_call_notice_seen';
 
@@ -40,6 +41,7 @@ class VideoCallNoticeScreen extends StatelessWidget {
     return Scaffold(
       backgroundColor: AppColors.cream,
       appBar: AppBar(
+        leading: const AppBackButton(),
         backgroundColor: AppColors.cream,
         elevation: 0,
         title: Text(

@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 /// 發送提醒表單，送出時呼叫 POST /api/events/:id/reminders。
 ///
@@ -181,25 +181,27 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
       padding: const EdgeInsets.fromLTRB(12, 8, 20, 8),
       child: Row(
         children: [
-          IconButton(
-            onPressed: () => Navigator.pop(context),
-            iconSize: AppIconSize.action(seniorMode),
-            icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-          ),
+          const AppBackButton(),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   '發送提醒',
-                  style: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.ink),
+                  style: AppTypography.headlineStyle(
+                    seniorMode: seniorMode,
+                    color: AppColors.ink,
+                  ),
                 ),
                 Text(
                   widget.eventTitle,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: TextStyle(
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.caption,
+                      seniorMode: seniorMode,
+                    ),
                     color: AppColors.fog,
                     letterSpacing: 0.5,
                   ),
@@ -232,7 +234,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
             child: Text(
               '提醒將推播給此活動的所有參加者',
               style: TextStyle(
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
                 color: AppColors.inkSoft,
                 height: 1.4,
               ),
@@ -247,7 +252,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
     return Text(
       text,
       style: AppTypography.serif(
-        fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+        fontSize: AppTypography.size(
+          AppTypography.body,
+          seniorMode: seniorMode,
+        ),
         fontWeight: FontWeight.w600,
         color: AppColors.ink,
         letterSpacing: 1.0,
@@ -272,7 +280,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
             maxLength: _maxLen,
             onChanged: (_) => setState(() {}),
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.ink,
               height: 1.6,
             ),
@@ -280,7 +291,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
               hintText: '輸入要提醒參加者的內容…',
               hintStyle: TextStyle(
                 color: AppColors.fog,
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
               ),
               border: InputBorder.none,
               counterText: '',
@@ -289,7 +303,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
           Text(
             '${_controller.text.characters.length} / $_maxLen',
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.caption,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.fog,
             ),
           ),
@@ -325,7 +342,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
             child: Text(
               t,
               style: TextStyle(
-                fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.caption,
+                  seniorMode: seniorMode,
+                ),
                 color: AppColors.inkSoft,
               ),
             ),
@@ -386,7 +406,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
                     child: Text(
                       _formatDateTime(_scheduledAt!),
                       style: TextStyle(
-                        fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                        fontSize: AppTypography.size(
+                          AppTypography.body,
+                          seniorMode: seniorMode,
+                        ),
                         color: AppColors.ink,
                         letterSpacing: 0.5,
                       ),
@@ -395,7 +418,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
                   Text(
                     '更改',
                     style: TextStyle(
-                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.caption,
+                        seniorMode: seniorMode,
+                      ),
                       color: AppColors.primary,
                     ),
                   ),
@@ -408,7 +434,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
         Text(
           '※ 系統每分鐘檢查一次，實際送達可能有約 1 分鐘誤差。',
           style: TextStyle(
-            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.caption,
+              seniorMode: seniorMode,
+            ),
             color: AppColors.fog,
             height: 1.5,
           ),
@@ -438,7 +467,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
           child: Text(
             label,
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               color: selected ? AppColors.creamLight : AppColors.inkSoft,
               fontWeight: FontWeight.w600,
               letterSpacing: 1.0,
@@ -481,7 +513,10 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
                 : Text(
                     _sendNow ? '立即發送提醒' : '排定發送',
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.bodyLarge,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       letterSpacing: 2.0,

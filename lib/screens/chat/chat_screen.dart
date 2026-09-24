@@ -21,6 +21,7 @@ import '../../services/shop_service.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../friends/directed_call_waiting_screen.dart';
 import '../friends/public_profile_screen.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class ChatScreen extends StatefulWidget {
   final int partnerUid;
@@ -91,7 +92,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _onScroll() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 40) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 40) {
       _loadMore();
     }
   }
@@ -101,7 +103,8 @@ class _ChatScreenState extends State<ChatScreen> {
     if (event == null) return;
     if (event.type == ChatSocketEventType.message) {
       final m = event.message!;
-      if (m.senderUid == widget.partnerUid || m.recipientUid == widget.partnerUid) {
+      if (m.senderUid == widget.partnerUid ||
+          m.recipientUid == widget.partnerUid) {
         if (!mounted) return;
         setState(() => _messages.insert(0, m));
         if (m.senderUid == widget.partnerUid) _markRead();
@@ -151,7 +154,10 @@ class _ChatScreenState extends State<ChatScreen> {
     if (cursor == null || _loadingMore) return;
     setState(() => _loadingMore = true);
     try {
-      final page = await FriendService.getMessages(widget.partnerUid, cursor: cursor);
+      final page = await FriendService.getMessages(
+        widget.partnerUid,
+        cursor: cursor,
+      );
       if (!mounted) return;
       setState(() {
         _messages.addAll(page.messages);
@@ -290,11 +296,7 @@ class _ChatScreenState extends State<ChatScreen> {
     padding: const EdgeInsets.fromLTRB(8, 8, 16, 0),
     child: Row(
       children: [
-        IconButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          iconSize: AppIconSize.action(seniorMode),
-          icon: const Icon(Icons.arrow_back, color: AppColors.ink),
-        ),
+        const AppBackButton(),
         _partnerAvatar(seniorMode),
         const SizedBox(width: 8),
         Expanded(
@@ -303,10 +305,15 @@ class _ChatScreenState extends State<ChatScreen> {
             onTap: widget.friendCode == null ? null : _openPartnerProfile,
             behavior: HitTestBehavior.opaque,
             child: Text(
-              widget.partnerNickname?.isNotEmpty == true ? widget.partnerNickname! : '未命名旅人',
+              widget.partnerNickname?.isNotEmpty == true
+                  ? widget.partnerNickname!
+                  : '未命名旅人',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+              style: AppTypography.titleStyle(
+                seniorMode: seniorMode,
+                color: AppColors.ink,
+              ),
             ),
           ),
         ),
@@ -315,7 +322,9 @@ class _ChatScreenState extends State<ChatScreen> {
           iconSize: AppIconSize.action(seniorMode),
           icon: Icon(
             Icons.videocam_outlined,
-            color: accountLockController.locked ? AppColors.fog : AppColors.primary,
+            color: accountLockController.locked
+                ? AppColors.fog
+                : AppColors.primary,
           ),
           tooltip: '視訊通話',
         ),
@@ -325,7 +334,9 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Widget _buildBody(bool seniorMode) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
     if (_messages.isEmpty) {
       return TrukuEmptyState(
@@ -344,10 +355,13 @@ class _ChatScreenState extends State<ChatScreen> {
         if (i >= _messages.length) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
-            child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.primary),
+            ),
           );
         }
-        final isLastMine = i ==
+        final isLastMine =
+            i ==
             _messages.indexWhere((m) => m.senderUid == UserService.currentUid);
         return _bubble(_messages[i], seniorMode, showStatus: isLastMine);
       },
@@ -359,11 +373,15 @@ class _ChatScreenState extends State<ChatScreen> {
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(
-        onLongPress: mine || accountLockController.locked ? null : () => _reportMessage(m),
+        onLongPress: mine || accountLockController.locked
+            ? null
+            : () => _reportMessage(m),
         child: Container(
           margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          constraints: BoxConstraints(maxWidth: MediaQuery.of(context).size.width * 0.72),
+          constraints: BoxConstraints(
+            maxWidth: MediaQuery.of(context).size.width * 0.72,
+          ),
           decoration: BoxDecoration(
             color: mine ? AppColors.primary : AppColors.cream,
             borderRadius: BorderRadius.circular(16),
@@ -427,14 +445,29 @@ class _ChatScreenState extends State<ChatScreen> {
               minLines: 1,
               maxLines: 4,
               maxLength: 2000,
-              buildCounter: (_, {required currentLength, required isFocused, maxLength}) => null,
-              style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.ink),
+              buildCounter:
+                  (
+                    _, {
+                    required currentLength,
+                    required isFocused,
+                    maxLength,
+                  }) => null,
+              style: AppTypography.bodyLargeStyle(
+                seniorMode: seniorMode,
+                color: AppColors.ink,
+              ),
               decoration: InputDecoration(
                 hintText: _locked ? '帳號唯讀中，無法傳送訊息' : '傳送訊息…',
-                hintStyle: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.fog),
+                hintStyle: AppTypography.bodyLargeStyle(
+                  seniorMode: seniorMode,
+                  color: AppColors.fog,
+                ),
                 filled: true,
                 fillColor: AppColors.cream,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 10,
+                ),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(20),
                   borderSide: BorderSide(color: AppColors.creamDeep),

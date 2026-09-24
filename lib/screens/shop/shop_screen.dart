@@ -12,6 +12,7 @@ import '../../shared/widgets/shop_shared.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../millet/millet_ledger_screen.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/app_back_button.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -103,12 +104,12 @@ class _ShopScreenState extends State<ShopScreen> {
         _user = owned
             ? updated
             : item.type == 'frame'
-                ? updated.copyWith(
-                    ownedFrameIds: [...updated.ownedFrameIds, item.id],
-                  )
-                : updated.copyWith(
-                    ownedAvatarIds: [...updated.ownedAvatarIds, item.id],
-                  );
+            ? updated.copyWith(
+                ownedFrameIds: [...updated.ownedFrameIds, item.id],
+              )
+            : updated.copyWith(
+                ownedAvatarIds: [...updated.ownedAvatarIds, item.id],
+              );
         // 卡片的「已擁有／可兌換」與「已擁有」分頁都看 ShopItem.isOwned，
         // 不同步這裡的話買完仍顯示「兌換」且可以再點一次。
         _markOwnedLocally(item.id);
@@ -252,14 +253,7 @@ class _ShopScreenState extends State<ShopScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _circleBtn(
-                      onTap: () => Navigator.of(context).pop(),
-                      child: const Icon(
-                        Icons.chevron_left,
-                        color: AppColors.creamLight,
-                        size: 18,
-                      ),
-                    ),
+                    const AppBackButton(onDark: true),
                     Text(
                       'SAPAH SMPUNG · 小米商店',
                       style: AppTypography.latin(
