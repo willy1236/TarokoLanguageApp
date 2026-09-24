@@ -155,65 +155,65 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
               onRefresh: _reload,
               color: AppColors.primary,
               child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 20),
-                if (_suggestedLevelLoaded && _listeningSuggestedLevel == null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: _PlacementBanner(onTap: _goToPlacement),
-                  ),
-                if (_suggestedLevelLoaded && _listeningSuggestedLevel != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: _PlacementResultBanner(
-                      level: _listeningSuggestedLevel!,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 20),
+                  if (_suggestedLevelLoaded && _listeningSuggestedLevel == null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: _PlacementBanner(onTap: _goToPlacement),
                     ),
-                  ),
-                _buildSectionLabel('選擇模式'),
-                const SizedBox(height: 10),
-                for (final option in _modeOptions) ...[
-                  _ModeCard(
-                    option: option,
-                    selected: _selectedMode == option.value,
-                    onTap: () => setState(() => _selectedMode = option.value),
-                  ),
+                  if (_suggestedLevelLoaded && _listeningSuggestedLevel != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: _PlacementResultBanner(
+                        level: _listeningSuggestedLevel!,
+                      ),
+                    ),
+                  _buildSectionLabel('選擇模式'),
                   const SizedBox(height: 10),
+                  for (final option in _modeOptions) ...[
+                    _ModeCard(
+                      option: option,
+                      selected: _selectedMode == option.value,
+                      onTap: () => setState(() => _selectedMode = option.value),
+                    ),
+                    const SizedBox(height: 10),
+                  ],
+                  const SizedBox(height: 12),
+                  _buildSectionLabel('選擇級別'),
+                  const SizedBox(height: 10),
+                  if (levels.isEmpty)
+                    Text(
+                      '目前沒有可用的級別',
+                      style: AppTypography.bodyLargeStyle(color: AppColors.fog),
+                    )
+                  else
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        for (final level in levels)
+                          _LevelChip(
+                            level: level,
+                            selected: _selectedLevel == level.level,
+                            isRecommended:
+                                _suggestedLevelLoaded &&
+                                _listeningSuggestedLevel != null &&
+                                level.level == _listeningSuggestedLevel,
+                            onTap: () =>
+                                setState(() => _selectedLevel = level.level),
+                          ),
+                      ],
+                    ),
+                  const SizedBox(height: 28),
+                  _buildStartButton(),
+                  const SizedBox(height: 28),
+                  _buildSectionLabel('最近練習'),
+                  const SizedBox(height: 10),
+                  _buildRecentPractice(),
                 ],
-                const SizedBox(height: 12),
-                _buildSectionLabel('選擇級別'),
-                const SizedBox(height: 10),
-                if (levels.isEmpty)
-                  Text(
-                    '目前沒有可用的級別',
-                    style: AppTypography.bodyLargeStyle(color: AppColors.fog),
-                  )
-                else
-                  Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      for (final level in levels)
-                        _LevelChip(
-                          level: level,
-                          selected: _selectedLevel == level.level,
-                          isRecommended:
-                              _suggestedLevelLoaded &&
-                              _listeningSuggestedLevel != null &&
-                              level.level == _listeningSuggestedLevel,
-                          onTap: () =>
-                              setState(() => _selectedLevel = level.level),
-                        ),
-                    ],
-                  ),
-                const SizedBox(height: 28),
-                _buildStartButton(),
-                const SizedBox(height: 28),
-                _buildSectionLabel('最近練習'),
-                const SizedBox(height: 10),
-                _buildRecentPractice(),
-              ],
               ),
             );
           },
@@ -385,7 +385,9 @@ class _ModeCard extends StatelessWidget {
           children: [
             Text(
               option.title,
-              style: AppTypography.titleStyle(color: selected ? AppColors.primary : AppColors.ink),
+              style: AppTypography.titleStyle(
+                color: selected ? AppColors.primary : AppColors.ink,
+              ),
             ),
             const SizedBox(height: 4),
             Text(
@@ -518,7 +520,10 @@ class _RecentPracticeRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     _timeLabel(),
-                    style: const TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
+                    style: const TextStyle(
+                      fontSize: AppTypography.caption,
+                      color: AppColors.fog,
+                    ),
                   ),
                 ],
               ),
@@ -609,12 +614,16 @@ class _PlacementBanner extends StatelessWidget {
                 children: [
                   Text(
                     '還沒做過分級測驗',
-                    style: AppTypography.titleStyle(color: AppColors.creamLight),
+                    style: AppTypography.titleStyle(
+                      color: AppColors.creamLight,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '先做一次測驗，幫你找出適合的起始等級',
-                    style: AppTypography.bodyStyle(color: AppColors.creamLight.withValues(alpha: 0.8)),
+                    style: AppTypography.bodyStyle(
+                      color: AppColors.creamLight.withValues(alpha: 0.8),
+                    ),
                   ),
                 ],
               ),

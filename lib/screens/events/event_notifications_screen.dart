@@ -153,7 +153,10 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
       foregroundColor: AppColors.ink,
       title: Text(
         '活動通知',
-        style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+        style: AppTypography.titleStyle(
+          seniorMode: seniorMode,
+          color: AppColors.ink,
+        ),
       ),
       actions: [
         TextButton(
@@ -162,7 +165,9 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
             '全部已讀',
             style: TextStyle(
               color: AppColors.primary,
-              fontSize: seniorMode ? AppTypography.body + AppTypography.seniorStep : null,
+              fontSize: seniorMode
+                  ? AppTypography.body + AppTypography.seniorStep
+                  : null,
             ),
           ),
         ),
@@ -221,7 +226,10 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTypography.serif(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
             ),
@@ -231,7 +239,10 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.caption,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.fog,
             ),
           ),

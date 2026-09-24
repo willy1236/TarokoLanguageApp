@@ -35,7 +35,10 @@ class MyLikesScreen extends StatelessWidget {
           title: Text(
             '我按讚的內容',
             style: AppTypography.serif(
-              fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.subtitle,
+                seniorMode: seniorMode,
+              ),
               fontWeight: FontWeight.w700,
               color: AppColors.ink,
             ),

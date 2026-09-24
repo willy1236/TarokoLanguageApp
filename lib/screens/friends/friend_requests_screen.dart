@@ -138,7 +138,10 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
         Expanded(
           child: Text(
             '好友邀請',
-            style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+            style: AppTypography.titleStyle(
+              seniorMode: seniorMode,
+              color: AppColors.ink,
+            ),
           ),
         ),
       ],
@@ -147,7 +150,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
 
   Widget _buildBody(bool seniorMode) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
     final requests = _requests ?? const [];
     if (requests.isEmpty) {
@@ -183,7 +188,10 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
               children: [
                 Text(
                   r.nickname?.isNotEmpty == true ? r.nickname! : '未命名旅人',
-                  style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.ink),
+                  style: AppTypography.bodyLargeStyle(
+                    seniorMode: seniorMode,
+                    color: AppColors.ink,
+                  ),
                 ),
                 if (r.selfIntro != null && r.selfIntro!.isNotEmpty) ...[
                   const SizedBox(height: 2),
@@ -191,7 +199,10 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                     r.selfIntro!,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.captionStyle(seniorMode: seniorMode, color: AppColors.fog),
+                    style: AppTypography.captionStyle(
+                      seniorMode: seniorMode,
+                      color: AppColors.fog,
+                    ),
                   ),
                 ],
               ],
@@ -203,7 +214,10 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
               ),
             )
           else ...[

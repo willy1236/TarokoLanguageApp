@@ -77,7 +77,10 @@ class _AccountDeleteScreenState extends State<AccountDeleteScreen> {
         backgroundColor: AppColors.cream,
         elevation: 0,
         foregroundColor: AppColors.ink,
-        title: Text('刪除帳號', style: AppTypography.titleStyle(color: AppColors.ink)),
+        title: Text(
+          '刪除帳號',
+          style: AppTypography.titleStyle(color: AppColors.ink),
+        ),
       ),
       body: SafeArea(
         child: ListView(
@@ -160,7 +163,9 @@ class _AccountDeleteScreenState extends State<AccountDeleteScreen> {
                       )
                     : Text(
                         '刪除帳號',
-                        style: AppTypography.titleStyle(color: AppColors.creamLight),
+                        style: AppTypography.titleStyle(
+                          color: AppColors.creamLight,
+                        ),
                       ),
               ),
             ),
@@ -221,8 +226,7 @@ class AccountDeletedScreen extends StatelessWidget {
 
   const AccountDeletedScreen({super.key, this.purgeAt});
 
-  String _formatDate(DateTime d) =>
-      '${d.year} 年 ${d.month} 月 ${d.day} 日';
+  String _formatDate(DateTime d) => '${d.year} 年 ${d.month} 月 ${d.day} 日';
 
   @override
   Widget build(BuildContext context) {
@@ -263,7 +267,9 @@ class AccountDeletedScreen extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         _formatDate(purgeAt),
-                        style: AppTypography.headlineStyle(color: AppColors.ink),
+                        style: AppTypography.headlineStyle(
+                          color: AppColors.ink,
+                        ),
                       ),
                     ],
                   ),

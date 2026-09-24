@@ -71,7 +71,10 @@ class EventDetailHero extends StatelessWidget {
                 child: Text(
                   e.category!,
                   style: TextStyle(
-                    fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.micro,
+                      seniorMode: seniorMode,
+                    ),
                     color: AppColors.ink,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 2.5,
@@ -102,7 +105,10 @@ class EventDetailHero extends StatelessWidget {
                       child: Text(
                         cancelled ? '已取消' : '已結束',
                         style: TextStyle(
-                          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                          fontSize: AppTypography.size(
+                            AppTypography.caption,
+                            seniorMode: seniorMode,
+                          ),
                           color: AppColors.creamLight,
                           letterSpacing: 1.5,
                         ),
@@ -113,7 +119,10 @@ class EventDetailHero extends StatelessWidget {
                   '${monthLabel(start)}${start.day}日 · ${weekdayLabel(start)}',
                   style: AppTypography.serif(
                     fontStyle: FontStyle.italic,
-                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.body,
+                      seniorMode: seniorMode,
+                    ),
                     color: AppColors.gold,
                     letterSpacing: 2.0,
                   ),
@@ -122,7 +131,9 @@ class EventDetailHero extends StatelessWidget {
                 Text(
                   e.title,
                   style: AppTypography.serif(
-                    fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
+                    fontSize: seniorMode
+                        ? AppTypography.display32
+                        : AppTypography.display26,
                     fontWeight: FontWeight.w700,
                     color: AppColors.creamLight,
                     letterSpacing: 0.8,

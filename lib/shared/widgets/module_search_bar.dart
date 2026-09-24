@@ -61,7 +61,8 @@ class SearchBarPalette {
 }
 
 /// 搜尋頁的 AppBar：關鍵字輸入框 + 搜尋鈕。
-class ModuleSearchAppBar extends StatelessWidget implements PreferredSizeWidget {
+class ModuleSearchAppBar extends StatelessWidget
+    implements PreferredSizeWidget {
   final TextEditingController controller;
   final String hint;
   final VoidCallback onSubmit;
@@ -183,7 +184,10 @@ class ModuleSearchFilterRow extends StatelessWidget {
         backgroundColor: palette.chipBackground,
         selectedColor: palette.chipSelectedBackground,
         labelStyle: TextStyle(
-          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.caption,
+            seniorMode: seniorMode,
+          ),
           color: selected ? palette.accent : palette.soft,
         ),
         side: BorderSide(
@@ -207,7 +211,10 @@ class ModuleSearchFilterRow extends StatelessWidget {
         label: Text(tribe?.name ?? '部落'),
         backgroundColor: palette.chipBackground,
         labelStyle: TextStyle(
-          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.caption,
+            seniorMode: seniorMode,
+          ),
           color: selected ? palette.accent : palette.soft,
         ),
         side: BorderSide(

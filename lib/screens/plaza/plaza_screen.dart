@@ -228,7 +228,9 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.serif(
-                    fontSize: seniorMode ? AppTypography.display32 : AppTypography.display26,
+                    fontSize: seniorMode
+                        ? AppTypography.display32
+                        : AppTypography.display26,
                     fontWeight: FontWeight.w600,
                     color: AppColors.ink,
                     letterSpacing: 1.0,

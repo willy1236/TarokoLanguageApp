@@ -187,7 +187,10 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.cream,
-                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.bodyLarge,
+                  seniorMode: seniorMode,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -269,7 +272,10 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                 Text(
                   video.title,
                   style: AppTypography.serif(
-                    fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.title,
+                      seniorMode: seniorMode,
+                    ),
                     fontWeight: FontWeight.w600,
                     color: AppColors.creamLight,
                     height: 1.3,
@@ -378,7 +384,10 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
                     video.description!,
                     style: TextStyle(
                       color: AppColors.mist,
-                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.body,
+                        seniorMode: seniorMode,
+                      ),
                       height: 1.6,
                     ),
                   ),
@@ -404,7 +413,10 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.micro,
+            seniorMode: seniorMode,
+          ),
           color: AppColors.gold,
           letterSpacing: 1.5,
         ),

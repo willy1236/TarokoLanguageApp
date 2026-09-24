@@ -208,7 +208,10 @@ class HomeScreen extends StatelessWidget {
               return Column(
                 children: [
                   SizedBox(height: extra / 2),
-                  SizedBox(height: gridMax + bottomPad, child: _buildModeGrid()),
+                  SizedBox(
+                    height: gridMax + bottomPad,
+                    child: _buildModeGrid(),
+                  ),
                   SizedBox(height: extra / 2),
                 ],
               );
@@ -322,7 +325,9 @@ class HomeScreen extends StatelessWidget {
                       // 精簡模式字大，刻意在逗號後換行，避免從字中間斷開。
                       '${displayName ?? 'Yudaw'}，${seniorMode ? '\n' : ''}今天學什麼？',
                       style: AppTypography.serif(
-                        fontSize: seniorMode ? AppTypography.display28 : AppTypography.display24,
+                        fontSize: seniorMode
+                            ? AppTypography.display28
+                            : AppTypography.display24,
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 1.0,
@@ -397,9 +402,13 @@ class HomeScreen extends StatelessWidget {
   Widget _modeRowPair(ModeData left, ModeData right) => Row(
     crossAxisAlignment: CrossAxisAlignment.stretch,
     children: [
-      Expanded(child: ModeCard(mode: left, onTap: () => _onModeTap(left))),
+      Expanded(
+        child: ModeCard(mode: left, onTap: () => _onModeTap(left)),
+      ),
       const SizedBox(width: _modeRowGap),
-      Expanded(child: ModeCard(mode: right, onTap: () => _onModeTap(right))),
+      Expanded(
+        child: ModeCard(mode: right, onTap: () => _onModeTap(right)),
+      ),
     ],
   );
 }
@@ -496,7 +505,10 @@ class _TodayProgressCard extends StatelessWidget {
                             Text(
                               '${millet ?? 0}',
                               style: AppTypography.serif(
-                                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                                fontSize: AppTypography.size(
+                                  AppTypography.body,
+                                  seniorMode: seniorMode,
+                                ),
                                 fontWeight: FontWeight.w700,
                                 color: AppColors.gold,
                                 letterSpacing: 0.5,
@@ -515,7 +527,10 @@ class _TodayProgressCard extends StatelessWidget {
                 RichText(
                   text: TextSpan(
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.headline, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.headline,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       height: 1.3,
@@ -600,7 +615,10 @@ class _TodayProgressCard extends StatelessWidget {
     return Text(
       checkinStreak > 0 ? '每日簽到 +50 · 已連續 $checkinStreak 天' : '每日簽到 +50 小米幣',
       style: AppTypography.sans(
-        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+        fontSize: AppTypography.size(
+          AppTypography.caption,
+          seniorMode: seniorMode,
+        ),
         color: AppColors.creamLight.withValues(alpha: 0.85),
         letterSpacing: 0.5,
       ),
@@ -628,7 +646,10 @@ class _TodayProgressCard extends StatelessWidget {
         child: Text(
           checkedInToday ? '已簽到' : '立即簽到',
           style: AppTypography.serif(
-            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.caption,
+              seniorMode: seniorMode,
+            ),
             fontWeight: FontWeight.w600,
             color: checkedInToday
                 ? AppColors.gold.withValues(alpha: 0.4)

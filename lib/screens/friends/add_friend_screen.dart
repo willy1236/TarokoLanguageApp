@@ -130,7 +130,10 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
         Expanded(
           child: Text(
             '加好友',
-            style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+            style: AppTypography.titleStyle(
+              seniorMode: seniorMode,
+              color: AppColors.ink,
+            ),
           ),
         ),
       ],
@@ -144,7 +147,10 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       children: [
         Text(
           '輸入對方的好友碼',
-          style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.fog),
+          style: AppTypography.bodyLargeStyle(
+            seniorMode: seniorMode,
+            color: AppColors.fog,
+          ),
         ),
         const SizedBox(height: 12),
         TextField(
@@ -153,10 +159,16 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           textCapitalization: TextCapitalization.characters,
           maxLength: 8,
           inputFormatters: [FilteringTextInputFormatter.deny(RegExp(r'\s'))],
-          style: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.ink),
+          style: AppTypography.headlineStyle(
+            seniorMode: seniorMode,
+            color: AppColors.ink,
+          ),
           decoration: InputDecoration(
             hintText: '例如 A7C9K2XZ',
-            hintStyle: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.fog),
+            hintStyle: AppTypography.headlineStyle(
+              seniorMode: seniorMode,
+              color: AppColors.fog,
+            ),
             errorText: _error,
             filled: true,
             fillColor: AppColors.cream,
@@ -183,7 +195,10 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                 ? const SizedBox(
                     width: 20,
                     height: 20,
-                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: Colors.white,
+                    ),
                   )
                 : const Text('送出邀請', style: TextStyle(color: Colors.white)),
           ),
@@ -215,12 +230,18 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                 children: [
                   Text(
                     '我的好友碼（點擊複製，分享給朋友）',
-                    style: AppTypography.captionStyle(seniorMode: seniorMode, color: AppColors.fog),
+                    style: AppTypography.captionStyle(
+                      seniorMode: seniorMode,
+                      color: AppColors.fog,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     code,
-                    style: AppTypography.headlineStyle(seniorMode: seniorMode, color: AppColors.ink),
+                    style: AppTypography.headlineStyle(
+                      seniorMode: seniorMode,
+                      color: AppColors.ink,
+                    ),
                   ),
                 ],
               ),

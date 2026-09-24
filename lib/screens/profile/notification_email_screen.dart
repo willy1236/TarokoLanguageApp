@@ -145,7 +145,10 @@ class _NotificationEmailScreenState extends State<NotificationEmailScreen> {
         backgroundColor: AppColors.cream,
         elevation: 0,
         foregroundColor: AppColors.ink,
-        title: Text('通知信箱', style: AppTypography.titleStyle(color: AppColors.ink)),
+        title: Text(
+          '通知信箱',
+          style: AppTypography.titleStyle(color: AppColors.ink),
+        ),
       ),
       body: SafeArea(
         child: ListView(

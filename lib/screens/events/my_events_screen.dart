@@ -83,7 +83,10 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         title: Text(
           '我發起的活動',
           style: AppTypography.serif(
-            fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.subtitle,
+              seniorMode: seniorMode,
+            ),
             fontWeight: FontWeight.w700,
             color: AppColors.ink,
           ),
@@ -167,7 +170,10 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                   Text(
                     monthLabel(d),
                     style: TextStyle(
-                      fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.micro,
+                        seniorMode: seniorMode,
+                      ),
                       color: AppColors.primary,
                       letterSpacing: 0.5,
                     ),
@@ -175,7 +181,10 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                   Text(
                     two(d.day),
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.headline, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.headline,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w700,
                       color: AppColors.ink,
                       height: 1.1,
@@ -193,7 +202,10 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                     e.title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+                    style: AppTypography.titleStyle(
+                      seniorMode: seniorMode,
+                      color: AppColors.ink,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Row(
@@ -207,7 +219,10 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
                       Text(
                         '${e.participantCount} 人參加',
                         style: TextStyle(
-                          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                          fontSize: AppTypography.size(
+                            AppTypography.caption,
+                            seniorMode: seniorMode,
+                          ),
                           color: AppColors.inkSoft,
                         ),
                       ),
@@ -228,7 +243,10 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
               child: Text(
                 chip.text,
                 style: TextStyle(
-                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.caption,
+                    seniorMode: seniorMode,
+                  ),
                   color: chip.color,
                   letterSpacing: 0.5,
                 ),

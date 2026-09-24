@@ -155,7 +155,10 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: AppColors.cream,
-                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.bodyLarge,
+                  seniorMode: seniorMode,
+                ),
               ),
             ),
             const SizedBox(height: 20),
@@ -197,7 +200,10 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                 Text(
                   article.title,
                   style: AppTypography.serif(
-                    fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.title,
+                      seniorMode: seniorMode,
+                    ),
                     fontWeight: FontWeight.w600,
                     color: AppColors.creamLight,
                     height: 1.3,
@@ -323,22 +329,34 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                   styleSheet: MarkdownStyleSheet(
                     p: TextStyle(
                       color: AppColors.mist,
-                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.body,
+                        seniorMode: seniorMode,
+                      ),
                       height: 1.6,
                     ),
                     h1: TextStyle(
                       color: AppColors.creamLight,
-                      fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.title,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                     ),
                     h2: TextStyle(
                       color: AppColors.creamLight,
-                      fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.subtitle,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                     ),
                     h3: TextStyle(
                       color: AppColors.creamLight,
-                      fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.bodyLarge,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                     ),
                     strong: TextStyle(
@@ -374,7 +392,10 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       child: Text(
         label,
         style: TextStyle(
-          fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.micro,
+            seniorMode: seniorMode,
+          ),
           color: AppColors.gold,
           letterSpacing: 1.5,
         ),

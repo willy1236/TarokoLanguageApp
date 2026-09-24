@@ -221,7 +221,10 @@ class _ForumImageViewerState extends State<ForumImageViewer> {
       title: widget.images.length > 1
           ? Text(
               '${_index + 1} / ${widget.images.length}',
-              style: const TextStyle(color: AppColors.creamLight, fontSize: AppTypography.body),
+              style: const TextStyle(
+                color: AppColors.creamLight,
+                fontSize: AppTypography.body,
+              ),
             )
           : null,
       centerTitle: true,

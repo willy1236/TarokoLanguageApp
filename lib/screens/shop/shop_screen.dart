@@ -104,12 +104,12 @@ class _ShopScreenState extends State<ShopScreen> {
         _user = owned
             ? updated
             : item.type == 'frame'
-                ? updated.copyWith(
-                    ownedFrameIds: [...updated.ownedFrameIds, item.id],
-                  )
-                : updated.copyWith(
-                    ownedAvatarIds: [...updated.ownedAvatarIds, item.id],
-                  );
+            ? updated.copyWith(
+                ownedFrameIds: [...updated.ownedFrameIds, item.id],
+              )
+            : updated.copyWith(
+                ownedAvatarIds: [...updated.ownedAvatarIds, item.id],
+              );
         // 卡片的「已擁有／可兌換」與「已擁有」分頁都看 ShopItem.isOwned，
         // 不同步這裡的話買完仍顯示「兌換」且可以再點一次。
         _markOwnedLocally(item.id);

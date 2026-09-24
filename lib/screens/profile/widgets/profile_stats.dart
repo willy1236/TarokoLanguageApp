@@ -50,10 +50,16 @@ class ProfileCoinBanner extends StatelessWidget {
                 children: [
                   Text(
                     '${user?.millet ?? 0}',
-                    style: AppTypography.headlineStyle(
-                      seniorMode: seniorMode,
-                      color: AppColors.primary,
-                    ).copyWith(fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode)),
+                    style:
+                        AppTypography.headlineStyle(
+                          seniorMode: seniorMode,
+                          color: AppColors.primary,
+                        ).copyWith(
+                          fontSize: AppTypography.size(
+                            AppTypography.subtitle,
+                            seniorMode: seniorMode,
+                          ),
+                        ),
                   ),
                   Text(
                     '小米幣',

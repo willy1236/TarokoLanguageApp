@@ -76,7 +76,10 @@ class AboutAppScreen extends StatelessWidget {
                 Text(
                   '語見・太魯閣',
                   style: AppTypography.serif(
-                    fontSize: AppTypography.size(AppTypography.headline, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.headline,
+                      seniorMode: seniorMode,
+                    ),
                     fontWeight: FontWeight.w700,
                     color: AppColors.creamLight,
                     letterSpacing: 3,
@@ -86,7 +89,10 @@ class AboutAppScreen extends StatelessWidget {
                 Text(
                   'QITA SDA TRUKU',
                   style: AppTypography.latin(
-                    fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.caption,
+                      seniorMode: seniorMode,
+                    ),
                     fontStyle: FontStyle.italic,
                     color: AppColors.gold,
                     letterSpacing: 4,
@@ -140,7 +146,10 @@ class AboutAppScreen extends StatelessWidget {
             '社群交流，降低族語學習門檻，讓語言與文化不只被保存，更能持續'
             '被使用與傳承。',
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.inkSoft,
               height: 1.9,
               letterSpacing: 0.3,
@@ -168,7 +177,10 @@ class AboutAppScreen extends StatelessWidget {
       Text(
         text,
         style: AppTypography.serif(
-          fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.subtitle,
+            seniorMode: seniorMode,
+          ),
           fontWeight: FontWeight.w700,
           color: AppColors.ink,
           letterSpacing: 1.0,
@@ -194,7 +206,10 @@ class AboutAppScreen extends StatelessWidget {
               Text(
                 '品牌故事',
                 style: AppTypography.latin(
-                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.caption,
+                    seniorMode: seniorMode,
+                  ),
                   fontStyle: FontStyle.italic,
                   color: AppColors.gold,
                   letterSpacing: 2,
@@ -212,7 +227,10 @@ class AboutAppScreen extends StatelessWidget {
           Text(
             '「織語者」',
             style: AppTypography.serif(
-              fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.title,
+                seniorMode: seniorMode,
+              ),
               fontWeight: FontWeight.w700,
               color: AppColors.creamLight,
               letterSpacing: 2,
@@ -224,7 +242,10 @@ class AboutAppScreen extends StatelessWidget {
             '以太魯閣族為起點，透過數位專屬平台，讓這些族語不僅被保存，'
             '更能透過互動與交流，在每個世代間繼續傳承。',
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.mist,
               height: 1.9,
               letterSpacing: 0.3,
@@ -279,7 +300,10 @@ class AboutAppScreen extends StatelessWidget {
                         Text(
                           strands[i].label,
                           style: TextStyle(
-                            fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                            fontSize: AppTypography.size(
+                              AppTypography.body,
+                              seniorMode: seniorMode,
+                            ),
                             fontWeight: FontWeight.w600,
                             color: AppColors.creamLight,
                           ),
@@ -352,7 +376,10 @@ class AboutAppScreen extends StatelessWidget {
                       Text(
                         pillars[i].title,
                         style: AppTypography.serif(
-                          fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                          fontSize: AppTypography.size(
+                            AppTypography.body,
+                            seniorMode: seniorMode,
+                          ),
                           fontWeight: FontWeight.w600,
                           color: AppColors.ink,
                         ),
@@ -361,7 +388,10 @@ class AboutAppScreen extends StatelessWidget {
                       Text(
                         pillars[i].desc,
                         style: TextStyle(
-                          fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                          fontSize: AppTypography.size(
+                            AppTypography.body,
+                            seniorMode: seniorMode,
+                          ),
                           color: AppColors.inkSoft,
                           height: 1.5,
                         ),

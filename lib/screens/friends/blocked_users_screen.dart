@@ -103,7 +103,10 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
         Expanded(
           child: Text(
             '已封鎖名單',
-            style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+            style: AppTypography.titleStyle(
+              seniorMode: seniorMode,
+              color: AppColors.ink,
+            ),
           ),
         ),
       ],
@@ -112,7 +115,9 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
 
   Widget _buildBody(bool seniorMode) {
     if (_loading) {
-      return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
     final blocked = _blocked ?? const [];
     if (blocked.isEmpty) {
@@ -145,7 +150,10 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
           Expanded(
             child: Text(
               u.nickname?.isNotEmpty == true ? u.nickname! : '未命名旅人',
-              style: AppTypography.bodyLargeStyle(seniorMode: seniorMode, color: AppColors.ink),
+              style: AppTypography.bodyLargeStyle(
+                seniorMode: seniorMode,
+                color: AppColors.ink,
+              ),
             ),
           ),
           if (busy)
@@ -154,14 +162,14 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
               child: SizedBox(
                 width: 20,
                 height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.primary,
+                ),
               ),
             )
           else
-            TextButton(
-              onPressed: () => _unblock(u),
-              child: const Text('解除封鎖'),
-            ),
+            TextButton(onPressed: () => _unblock(u), child: const Text('解除封鎖')),
         ],
       ),
     );

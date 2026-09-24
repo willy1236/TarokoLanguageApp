@@ -233,7 +233,10 @@ class _MilletRow extends StatelessWidget {
                   subtitle != null
                       ? '$subtitle · ${_timeLabel()}'
                       : _timeLabel(),
-                  style: const TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
+                  style: const TextStyle(
+                    fontSize: AppTypography.caption,
+                    color: AppColors.fog,
+                  ),
                 ),
               ],
             ),
@@ -252,7 +255,10 @@ class _MilletRow extends StatelessWidget {
               const SizedBox(height: 4),
               Text(
                 '餘額 ${transaction.balanceAfter}',
-                style: const TextStyle(fontSize: AppTypography.micro, color: AppColors.fog),
+                style: const TextStyle(
+                  fontSize: AppTypography.micro,
+                  color: AppColors.fog,
+                ),
               ),
             ],
           ),

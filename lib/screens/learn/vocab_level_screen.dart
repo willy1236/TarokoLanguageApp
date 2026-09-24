@@ -103,43 +103,45 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
               onRefresh: _reload,
               color: AppColors.primary,
               child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
-              children: [
-                _buildHeader(),
-                const SizedBox(height: 20),
-                if (_suggestedLevelLoaded && _quizSuggestedLevel == null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: _PlacementBanner(onTap: _goToPlacement),
-                  ),
-                if (_suggestedLevelLoaded && _quizSuggestedLevel != null)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 20),
-                    child: _PlacementResultBanner(level: _quizSuggestedLevel!),
-                  ),
-                _buildSectionLabel('選擇級別'),
-                const SizedBox(height: 10),
-                if (levels.isEmpty)
-                  Text(
-                    '目前沒有可學習的級別',
-                    style: AppTypography.bodyLargeStyle(color: AppColors.fog),
-                  )
-                else
-                  for (int i = 0; i < levels.length; i++) ...[
-                    if (i > 0) const SizedBox(height: 12),
-                    _LevelRow(
-                      level: levels[i],
-                      isRecommended:
-                          _suggestedLevelLoaded &&
-                          _quizSuggestedLevel != null &&
-                          levels[i].level == _quizSuggestedLevel,
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                children: [
+                  _buildHeader(),
+                  const SizedBox(height: 20),
+                  if (_suggestedLevelLoaded && _quizSuggestedLevel == null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: _PlacementBanner(onTap: _goToPlacement),
                     ),
-                  ],
-                const SizedBox(height: 28),
-                _buildSectionLabel('最近練習'),
-                const SizedBox(height: 10),
-                _buildRecentPractice(),
-              ],
+                  if (_suggestedLevelLoaded && _quizSuggestedLevel != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 20),
+                      child: _PlacementResultBanner(
+                        level: _quizSuggestedLevel!,
+                      ),
+                    ),
+                  _buildSectionLabel('選擇級別'),
+                  const SizedBox(height: 10),
+                  if (levels.isEmpty)
+                    Text(
+                      '目前沒有可學習的級別',
+                      style: AppTypography.bodyLargeStyle(color: AppColors.fog),
+                    )
+                  else
+                    for (int i = 0; i < levels.length; i++) ...[
+                      if (i > 0) const SizedBox(height: 12),
+                      _LevelRow(
+                        level: levels[i],
+                        isRecommended:
+                            _suggestedLevelLoaded &&
+                            _quizSuggestedLevel != null &&
+                            levels[i].level == _quizSuggestedLevel,
+                      ),
+                    ],
+                  const SizedBox(height: 28),
+                  _buildSectionLabel('最近練習'),
+                  const SizedBox(height: 10),
+                  _buildRecentPractice(),
+                ],
               ),
             );
           },
@@ -419,7 +421,10 @@ class _RecentPracticeRow extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     _timeLabel(),
-                    style: const TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
+                    style: const TextStyle(
+                      fontSize: AppTypography.caption,
+                      color: AppColors.fog,
+                    ),
                   ),
                 ],
               ),
@@ -510,12 +515,16 @@ class _PlacementBanner extends StatelessWidget {
                 children: [
                   Text(
                     '還沒做過分級測驗',
-                    style: AppTypography.titleStyle(color: AppColors.creamLight),
+                    style: AppTypography.titleStyle(
+                      color: AppColors.creamLight,
+                    ),
                   ),
                   const SizedBox(height: 4),
                   Text(
                     '先做一次測驗，幫你找出適合的起始等級',
-                    style: AppTypography.bodyStyle(color: AppColors.creamLight.withValues(alpha: 0.8)),
+                    style: AppTypography.bodyStyle(
+                      color: AppColors.creamLight.withValues(alpha: 0.8),
+                    ),
                   ),
                 ],
               ),

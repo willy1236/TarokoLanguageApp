@@ -296,7 +296,10 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
       centerTitle: true,
       title: Text(
         _isEditing ? '編輯貼文' : '發文',
-        style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+        style: AppTypography.titleStyle(
+          seniorMode: seniorMode,
+          color: AppColors.ink,
+        ),
       ),
       actions: [
         Padding(
@@ -317,7 +320,10 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
               child: Text(
                 _saving ? '送出中…' : '送出',
                 style: AppTypography.serif(
-                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.body,
+                    seniorMode: seniorMode,
+                  ),
                   fontWeight: FontWeight.w600,
                   color: AppColors.creamLight,
                   letterSpacing: 1.2,
@@ -347,7 +353,10 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
             maxLength: ForumService.titleMax,
             onChanged: (_) => setState(() {}),
             style: AppTypography.serif(
-              fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.subtitle,
+                seniorMode: seniorMode,
+              ),
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
             ),
@@ -375,7 +384,9 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
             style: TextStyle(
               color: AppColors.ink,
               height: 1.6,
-              fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
+              fontSize: seniorMode
+                  ? AppTypography.bodyLarge + AppTypography.seniorStep
+                  : null,
             ),
             decoration: const InputDecoration(
               hintText: '想說的話…',
@@ -421,7 +432,10 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
               Text(
                 _user?.displayName ?? '',
                 style: AppTypography.serif(
-                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.body,
+                    seniorMode: seniorMode,
+                  ),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
                   letterSpacing: 0.6,
@@ -439,7 +453,10 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
                   Text(
                     '公開 · 所有族人都看得到',
                     style: TextStyle(
-                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.caption,
+                        seniorMode: seniorMode,
+                      ),
                       color: AppColors.fog,
                       letterSpacing: 0.8,
                     ),
@@ -491,7 +508,10 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           overflow: TextOverflow.ellipsis,
           textAlign: TextAlign.center,
           style: AppTypography.serif(
-            fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.body,
+              seniorMode: seniorMode,
+            ),
             fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
             color: selected ? AppColors.primary : AppColors.fog,
           ),
@@ -520,7 +540,10 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           Text(
             '標籤無法在編輯時變更',
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.caption,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.fog,
             ),
           ),
@@ -537,7 +560,10 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
         'HANGAN · 標籤',
         style: AppTypography.latin(
           fontStyle: FontStyle.italic,
-          fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.micro,
+            seniorMode: seniorMode,
+          ),
           color: AppColors.fog,
           letterSpacing: 3.0,
         ),
@@ -551,12 +577,17 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
               maxLength: ForumService.tagNameMax,
               onSubmitted: (_) => _addTag(),
               style: TextStyle(
-                fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
+                fontSize: seniorMode
+                    ? AppTypography.bodyLarge + AppTypography.seniorStep
+                    : null,
               ),
               decoration: InputDecoration(
                 hintText: '加入標籤',
                 hintStyle: seniorMode
-                    ? const TextStyle(fontSize: AppTypography.bodyLarge + AppTypography.seniorStep)
+                    ? const TextStyle(
+                        fontSize:
+                            AppTypography.bodyLarge + AppTypography.seniorStep,
+                      )
                     : null,
                 counterText: '',
                 isDense: true,
@@ -568,7 +599,10 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
             style: seniorMode
                 ? TextButton.styleFrom(
                     minimumSize: const Size(64, 44),
-                    textStyle: const TextStyle(fontSize: AppTypography.bodyLarge + AppTypography.seniorStep),
+                    textStyle: const TextStyle(
+                      fontSize:
+                          AppTypography.bodyLarge + AppTypography.seniorStep,
+                    ),
                   )
                 : null,
             child: const Text('加入'),
@@ -593,7 +627,10 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           'HOT · 熱門標籤',
           style: AppTypography.latin(
             fontStyle: FontStyle.italic,
-            fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.micro,
+              seniorMode: seniorMode,
+            ),
             color: AppColors.fog,
             letterSpacing: 3.0,
           ),
@@ -672,7 +709,10 @@ class _TagPill extends StatelessWidget {
             '#$label',
             style: AppTypography.latin(
               fontStyle: FontStyle.italic,
-              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.caption,
+                seniorMode: seniorMode,
+              ),
               color: filled ? AppColors.creamLight : AppColors.inkSoft,
               letterSpacing: 1.2,
             ),
