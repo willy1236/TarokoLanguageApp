@@ -15,7 +15,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>truku</string>
+	<string>語見・太魯閣</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -53,6 +53,10 @@
 	<string>需要使用麥克風以進行語伴視訊通話</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>需要存取相簿以選擇照片作為頭像</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
