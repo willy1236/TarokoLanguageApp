@@ -19,6 +19,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/terms_models.dart';
 import '../../services/terms_service.dart';
+import '../../services/user_service.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/app_back_button.dart';
 
@@ -103,8 +104,18 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     setState(() => _submitting = true);
     try {
       await TermsService.consent();
+      // 新帳號會先被擋在同意條款，同意後要接續完善資料；查不到就照舊進首頁。
+      var profileCompleted = true;
+      try {
+        profileCompleted = (await UserService.fetchMe()).profileCompleted;
+      } catch (e) {
+        debugPrint('TermsConsentScreen: fetchMe 失敗，略過完善資料檢查：$e');
+      }
       if (!mounted) return;
-      Navigator.of(context).pushNamedAndRemoveUntil('/home', (route) => false);
+      Navigator.of(context).pushNamedAndRemoveUntil(
+        profileCompleted ? '/home' : '/complete-profile',
+        (route) => false,
+      );
     } on ApiException catch (e) {
       if (!mounted) return;
       _showError(e.message);
