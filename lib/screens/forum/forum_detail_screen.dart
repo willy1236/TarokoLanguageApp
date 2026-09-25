@@ -90,6 +90,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   final List<ForumComment> _comments = [];
   final List<ForumComment> _replies = [];
   int? _nextCursor;
+
+  /// 伺服器回過的第一層留言裡最大的 id。和 [_nextCursor] 不同：自己送出的
+  /// 留言只在本地插入、沒經過伺服器分頁，所以不推進它。
+  int? _serverCursor;
+
+  /// 每次 [_load] 加一；非同步請求回來時對不上就代表列表已被整頁換掉，
+  /// 結果直接丟掉，不能接到新列表上。
+  int _generation = 0;
   bool _loading = true;
   bool _loadingMore = false;
   bool _sending = false;
@@ -141,15 +149,17 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// [resetImageRetry] 為 false 時保留 [_imageAutoRefreshed]。圖片過期觸發的
   /// 重載必須這樣呼叫——否則它會把擋住自己的旗標清掉，變成無限重打。
   Future<void> _load({bool resetImageRetry = true}) async {
+    final generation = ++_generation;
     setState(() {
       _loading = true;
+      _loadingMore = false;
       _error = null;
       if (resetImageRetry) _imageAutoRefreshed = false;
     });
     try {
       final post = await ForumService.post(widget.postId);
       final page = await ForumService.comments(widget.postId);
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() {
         _post = post;
         _comments
@@ -159,11 +169,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           ..clear()
           ..addAll(page.replies);
         _nextCursor = page.nextCursor;
+        _serverCursor = _maxId(page.comments);
         _loading = false;
       });
       _maybeOpenInitialImage();
     } on ApiException catch (e) {
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       if (e.code == 'POST_NOT_FOUND') {
         _popDeleted('這篇貼文已被刪除');
         return;
@@ -200,22 +211,57 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     if (_loadingMore) return;
     final cursor = _nextCursor;
     if (cursor == null) return;
+    final generation = _generation;
     setState(() => _loadingMore = true);
     try {
       final page = await ForumService.comments(widget.postId, cursor: cursor);
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() {
-        _comments.addAll(page.comments);
-        _replies.addAll(page.replies);
-        _nextCursor = page.nextCursor;
+        _mergeComments(page, advanceCursors: true);
         _loadingMore = false;
       });
     } on ApiException catch (e) {
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() => _loadingMore = false);
       _toast(e.message);
     }
   }
+
+  /// 把一批留言併進列表：按 id 去重、按 id 排序（id 越大越新）。
+  /// 本地先插入的留言之後可能又從伺服器分頁回來，只靠 append 會重複且亂序。
+  /// [advanceCursors] 只給伺服器分頁結果用，會推進 [_nextCursor] 與 [_serverCursor]。
+  /// 回傳真正新加入的筆數。
+  int _mergeComments(ForumCommentPage page, {bool advanceCursors = false}) {
+    final added =
+        _mergeById(_comments, page.comments) +
+        _mergeById(_replies, page.replies);
+    if (advanceCursors) {
+      _nextCursor = page.nextCursor;
+      final maxId = _maxId(page.comments);
+      final current = _serverCursor;
+      if (maxId != null && (current == null || maxId > current)) {
+        _serverCursor = maxId;
+      }
+    }
+    return added;
+  }
+
+  static int _mergeById(List<ForumComment> into, List<ForumComment> incoming) {
+    if (incoming.isEmpty) return 0;
+    final byId = {for (final c in into) c.id: c};
+    final before = byId.length;
+    for (final c in incoming) {
+      byId[c.id] = c;
+    }
+    into
+      ..clear()
+      ..addAll(byId.values.toList()..sort((a, b) => a.id.compareTo(b.id)));
+    return byId.length - before;
+  }
+
+  static int? _maxId(List<ForumComment> comments) => comments.isEmpty
+      ? null
+      : comments.map((c) => c.id).reduce((a, b) => a > b ? a : b);
 
   /// 圖片簽章網址過期時自動重打貼文 API 拿新網址；用旗標保證每次進頁最多
   /// 自動重試一次，避免多張圖同時過期或重整後仍失敗時無限連環重打。
@@ -342,11 +388,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       );
       if (!mounted) return;
       setState(() {
-        if (created.parentCommentId == null) {
-          _comments.add(created);
-        } else {
-          _replies.add(created);
-        }
+        final isRoot = created.parentCommentId == null;
+        _mergeComments(
+          ForumCommentPage(
+            comments: isRoot ? [created] : const [],
+            replies: isRoot ? const [] : [created],
+            nextCursor: null,
+          ),
+        );
         final post = _post;
         if (post != null) {
           _post = post.copyWith(commentCount: post.commentCount + 1);
