@@ -18,6 +18,7 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/terms_models.dart';
+import '../../services/fcm_service.dart';
 import '../../services/terms_service.dart';
 import '../../services/user_service.dart';
 import '../../core/constants/app_typography.dart';
@@ -116,6 +117,8 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         profileCompleted ? '/home' : '/complete-profile',
         (route) => false,
       );
+      // 冷啟動被條款擋下時，splash 沒處理通知深連結，同意進首頁後補上。
+      if (profileCompleted) FcmService.consumePendingInitialMessage();
     } on ApiException catch (e) {
       if (!mounted) return;
       _showError(e.message);
