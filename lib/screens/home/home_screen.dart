@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_density.dart';
@@ -201,7 +203,13 @@ class HomeScreen extends StatelessWidget {
           child: LayoutBuilder(
             builder: (context, constraints) {
               const bottomPad = 12.0;
-              final rowMax = _modeRowMaxHeight * textScale;
+              // 平板寬度下卡片本身就寬，列高上限跟著寬度放大，避免中間留大片空白；
+              // 手機寬度算出來低於 _modeRowMaxHeight，行為不變。
+              final pairCellWidth = (constraints.maxWidth - 48 - _modeRowGap) / 2;
+              final rowMax = math.max(
+                _modeRowMaxHeight * textScale,
+                pairCellWidth * 0.6,
+              );
               final gridMax = rowMax * 3 + _modeRowGap * 2;
               final extra = constraints.maxHeight - bottomPad - gridMax;
               if (extra <= 0) return _buildModeGrid();
