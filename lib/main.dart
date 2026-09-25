@@ -548,6 +548,7 @@ class _MainContainerState extends State<MainContainer>
                   key: ValueKey('learn_culture_$_learnCultureSubTab'),
                   initialTabIndex: _learnCultureSubTab,
                   reselectSignal: _learnCultureReselect,
+                  active: _currentIndex == _learnCultureIndex,
                 ),
                 PlazaEventScreen(
                   key: ValueKey('plaza_event_$_plazaEventSubTab'),
