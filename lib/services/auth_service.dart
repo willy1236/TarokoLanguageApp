@@ -156,10 +156,8 @@ class AuthService {
   /// 授權，撤銷需要一次性、數分鐘內過期的 authorization code，只能當場
   /// 叫面板重新取得。非 Apple 登入回 `null`；使用者取消 throw [AuthException]。
   static Future<String?> reauthenticateAppleForRevocation() async {
-    final user = _auth.currentUser;
-    final isApple =
-        user?.providerData.any((p) => p.providerId == 'apple.com') ?? false;
-    if (user == null || !isApple) return null;
+    final user = _currentUserOrNull();
+    if (user == null || !_hasProvider(user, 'apple.com')) return null;
     try {
       final cred = await user.reauthenticateWithProvider(AppleAuthProvider());
       return cred.additionalUserInfo?.authorizationCode;
@@ -186,12 +184,8 @@ class AuthService {
         debugPrint('AuthService: 撤銷 Apple 授權失敗：$e');
       }
     }
-    final isGoogle =
-        _auth.currentUser?.providerData.any(
-          (p) => p.providerId == 'google.com',
-        ) ??
-        false;
-    if (isGoogle && !kIsWeb) {
+    final user = _currentUserOrNull();
+    if (user != null && _hasProvider(user, 'google.com') && !kIsWeb) {
       try {
         await _ensureGoogleSignInInitialized();
         await _googleSignIn.disconnect();
@@ -200,6 +194,18 @@ class AuthService {
       }
     }
   }
+
+  /// Firebase 未初始化（例如 widget test）時存取 [_auth] 會 throw，視同未登入。
+  static User? _currentUserOrNull() {
+    try {
+      return _auth.currentUser;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static bool _hasProvider(User user, String providerId) =>
+      user.providerData.any((p) => p.providerId == providerId);
 
   /// 完全登出（Firebase + Google + 清本機 token；不撤銷後端 JWT）
   static Future<void> signOut() async {
