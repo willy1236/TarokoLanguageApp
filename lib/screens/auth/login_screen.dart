@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../services/account_lock_controller.dart';
@@ -22,9 +21,6 @@ class _LoginScreenState extends State<LoginScreen> {
   /// 登入進行中的方式（'google'／'apple'），null 表示閒置。
   String? _loggingProvider;
 
-  // Apple 登入目前只接 iOS 原生；Android／Web 需另設 Service ID，先不顯示。
-  bool get _showApple =>
-      !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
 
   Future<void> _handleLogin(
     String provider,
@@ -50,9 +46,9 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!result.isActive && !result.isLocked) {
         await SessionService.signOut(unregisterDevice: false);
         if (!mounted) return;
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('此帳號目前無法使用，如有疑問請聯絡我們')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('此帳號目前無法使用，如有疑問請聯絡我們')));
         return;
       }
       // 登入成功才上傳 FCM token（需 JWT）。失敗不阻斷進首頁，故獨立 try/catch。
@@ -249,22 +245,20 @@ class _LoginScreenState extends State<LoginScreen> {
         // 第三方登入
         Row(
           children: [
-            if (_showApple) ...[
-              _buildSocialButton(
-                icon: _loggingProvider == 'apple'
-                    ? _loadingIcon()
-                    : const Icon(
-                        Icons.apple,
-                        color: AppColors.creamLight,
-                        size: 20,
-                      ),
-                label: 'Apple',
-                onTap: _loggingProvider != null
-                    ? null
-                    : () => _handleLogin('apple', AuthService.signInWithApple),
-              ),
-              const SizedBox(width: 10),
-            ],
+            _buildSocialButton(
+              icon: _loggingProvider == 'apple'
+                  ? _loadingIcon()
+                  : const Icon(
+                      Icons.apple,
+                      color: AppColors.creamLight,
+                      size: 20,
+                    ),
+              label: 'Apple',
+              onTap: _loggingProvider != null
+                  ? null
+                  : () => _handleLogin('apple', AuthService.signInWithApple),
+            ),
+            const SizedBox(width: 10),
             _buildSocialButton(
               icon: _loggingProvider == 'google'
                   ? _loadingIcon()

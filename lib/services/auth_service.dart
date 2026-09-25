@@ -59,19 +59,23 @@ class AuthService {
     return _exchangeAndStore(googleUser);
   }
 
-  /// 走 Apple 登入（目前僅 iOS 原生），流程與回傳同 [signInWithGoogle]。
-  /// Firebase 直接叫出系統的 Apple 登入面板，不需另外的套件。
+  /// 走 Apple 登入，流程與回傳同 [signInWithGoogle]。iOS 叫出系統原生面板；
+  /// Android 開瀏覽器分頁、Web 開彈窗，兩者走 Firebase 的 Services ID 網頁流程。
   static Future<LoginResult> signInWithApple() async {
     final provider = AppleAuthProvider()
       ..addScope('email')
       ..addScope('name');
     final UserCredential userCred;
     try {
-      userCred = await _auth.signInWithProvider(provider);
+      userCred = kIsWeb
+          ? await _auth.signInWithPopup(provider)
+          : await _auth.signInWithProvider(provider);
     } on FirebaseAuthException catch (e) {
       // 使用者關掉面板：iOS 回 ASAuthorizationError 1001，code 依版本不同。
       if (e.code == 'canceled' ||
           e.code == 'web-context-canceled' ||
+          e.code == 'popup-closed-by-user' ||
+          e.code == 'cancelled-popup-request' ||
           (e.message?.contains('1001') ?? false)) {
         throw AuthException('使用者取消登入');
       }
