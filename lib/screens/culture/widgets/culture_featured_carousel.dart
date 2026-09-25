@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/truku_painters.dart';
-import 'culture_icons.dart';
 
 class CultureFeaturedItem {
   final String? imageUrl;
@@ -247,10 +246,6 @@ class _CultureFeaturedCarouselState extends State<CultureFeaturedCarousel> {
                     ],
                   ),
                 ),
-                if (item != null) ...[
-                  const SizedBox(width: 8),
-                  CultureArrowIcon(size: seniorMode ? 24 : 20),
-                ],
               ],
             ),
           ),
