@@ -590,95 +590,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     final locked = accountLockController.locked;
     return Column(
       children: [
-        Expanded(
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (n) {
-              if (n.metrics.pixels >= n.metrics.maxScrollExtent - 200) {
-                _loadMoreComments();
-              }
-              return false;
-            },
-            child: ListView(
-              controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-              children: [
-                ForumPostBody(
-                  post: post,
-                  seniorMode: seniorMode,
-                  onImageExpired: _onImageExpired,
-                  onImageRetryTap: _onImageRetryTap,
-                  onLike: _likePost,
-                  onBookmark: _bookmarkPost,
-                ),
-                const Divider(color: AppColors.creamDeep, height: 28),
-                Text(
-                  '留言 ${post.commentCount}',
-                  style: AppTypography.serif(
-                    fontSize: AppTypography.size(
-                      AppTypography.body,
-                      seniorMode: seniorMode,
-                    ),
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
-                  ),
-                ),
-                if (threads.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Text(
-                      '還沒有人留言，來說第一句吧。',
-                      style: TextStyle(
-                        color: AppColors.fog,
-                        fontSize: seniorMode
-                            ? AppTypography.bodyLarge + AppTypography.seniorStep
-                            : null,
-                      ),
-                    ),
-                  ),
-                for (final thread in threads) ...[
-                  ForumCommentTile(
-                    comment: thread.root,
-                    isReply: false,
-                    isMine: thread.root.author?.uid == UserService.currentUid,
-                    onLike: () => _likeComment(thread.root),
-                    onReply: locked
-                        ? null
-                        : () => setState(() => _replyTarget = thread.root),
-                    onDelete: () => _deleteComment(thread.root),
-                    onReport: locked
-                        ? null
-                        : () => showForumReportSheet(
-                            context,
-                            targetType: 'comment',
-                            targetId: thread.root.id,
-                          ),
-                    itemCatalogById: _itemCatalogById,
-                  ),
-                  for (final reply in thread.replies)
-                    ForumCommentTile(
-                      comment: reply,
-                      isReply: true,
-                      isMine: reply.author?.uid == UserService.currentUid,
-                      onLike: () => _likeComment(reply),
-                      // 論壇只有兩層：回覆「回覆」時，parent 仍是第一層那則。
-                      onReply: locked
-                          ? null
-                          : () => setState(() => _replyTarget = thread.root),
-                      onDelete: () => _deleteComment(reply),
-                      itemCatalogById: _itemCatalogById,
-                      onReport: locked
-                          ? null
-                          : () => showForumReportSheet(
-                              context,
-                              targetType: 'comment',
-                              targetId: reply.id,
-                            ),
-                    ),
-                ],
-              ],
-            ),
-          ),
-        ),
+        Expanded(child: _buildCommentList(post, threads, locked, seniorMode)),
         ForumCommentInputBar(
           controller: _inputController,
           replyTarget: _replyTarget,
@@ -689,6 +601,101 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           onCancelReply: () => setState(() => _replyTarget = null),
         ),
       ],
+    );
+  }
+
+  Widget _buildCommentList(
+    ForumPost post,
+    List<ForumCommentThread> threads,
+    bool locked,
+    bool seniorMode,
+  ) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (n) {
+        if (n.metrics.pixels >= n.metrics.maxScrollExtent - 200) {
+          _loadMoreComments();
+        }
+        return false;
+      },
+      child: ListView(
+        controller: _scrollController,
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+        children: [
+          ForumPostBody(
+            post: post,
+            seniorMode: seniorMode,
+            onImageExpired: _onImageExpired,
+            onImageRetryTap: _onImageRetryTap,
+            onLike: _likePost,
+            onBookmark: _bookmarkPost,
+          ),
+          const Divider(color: AppColors.creamDeep, height: 28),
+          Text(
+            '留言 ${post.commentCount}',
+            style: AppTypography.serif(
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
+            ),
+          ),
+          if (threads.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                '還沒有人留言，來說第一句吧。',
+                style: TextStyle(
+                  color: AppColors.fog,
+                  fontSize: seniorMode
+                      ? AppTypography.bodyLarge + AppTypography.seniorStep
+                      : null,
+                ),
+              ),
+            ),
+          for (final thread in threads) ...[
+            ForumCommentTile(
+              comment: thread.root,
+              isReply: false,
+              isMine: thread.root.author?.uid == UserService.currentUid,
+              onLike: () => _likeComment(thread.root),
+              onReply: locked
+                  ? null
+                  : () => setState(() => _replyTarget = thread.root),
+              onDelete: () => _deleteComment(thread.root),
+              onReport: locked
+                  ? null
+                  : () => showForumReportSheet(
+                      context,
+                      targetType: 'comment',
+                      targetId: thread.root.id,
+                    ),
+              itemCatalogById: _itemCatalogById,
+            ),
+            for (final reply in thread.replies)
+              ForumCommentTile(
+                comment: reply,
+                isReply: true,
+                isMine: reply.author?.uid == UserService.currentUid,
+                onLike: () => _likeComment(reply),
+                // 論壇只有兩層：回覆「回覆」時，parent 仍是第一層那則。
+                onReply: locked
+                    ? null
+                    : () => setState(() => _replyTarget = thread.root),
+                onDelete: () => _deleteComment(reply),
+                itemCatalogById: _itemCatalogById,
+                onReport: locked
+                    ? null
+                    : () => showForumReportSheet(
+                        context,
+                        targetType: 'comment',
+                        targetId: reply.id,
+                      ),
+              ),
+          ],
+        ],
+      ),
     );
   }
 }
