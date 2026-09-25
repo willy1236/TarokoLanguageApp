@@ -19,6 +19,7 @@ class ForumCommentTile extends StatelessWidget {
   final bool isReply;
   final bool isMine;
   final VoidCallback onLike;
+
   /// null 時不顯示（唯讀帳號不能留言、檢舉）。
   final VoidCallback? onReply;
   final VoidCallback onDelete;
@@ -63,7 +64,10 @@ class ForumCommentTile extends StatelessWidget {
         Text(
           '此留言已刪除',
           style: AppTypography.serif(
-            fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.body,
+              seniorMode: seniorMode,
+            ),
             fontStyle: FontStyle.italic,
             color: AppColors.fog,
           ),
@@ -89,7 +93,10 @@ class ForumCommentTile extends StatelessWidget {
                 comment.author?.displayName ?? '匿名使用者',
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.serif(
-                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.body,
+                    seniorMode: seniorMode,
+                  ),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
                 ),
@@ -99,7 +106,10 @@ class ForumCommentTile extends StatelessWidget {
             Text(
               forumRelativeTime(comment.createdAt),
               style: TextStyle(
-                fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.caption,
+                  seniorMode: seniorMode,
+                ),
                 color: AppColors.fog,
               ),
             ),
@@ -111,7 +121,10 @@ class ForumCommentTile extends StatelessWidget {
           child: Text(
             comment.body,
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.inkSoft,
               height: 1.5,
             ),
@@ -142,14 +155,18 @@ class ForumCommentTile extends StatelessWidget {
                     Text(
                       '${comment.likeCount}',
                       style: TextStyle(
-                        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                        fontSize: AppTypography.size(
+                          AppTypography.caption,
+                          seniorMode: seniorMode,
+                        ),
                         color: AppColors.fog,
                       ),
                     ),
                   ],
                 ),
               ),
-              if (onReply case final onReply?) _action('回覆', onReply, seniorMode),
+              if (onReply case final onReply?)
+                _action('回覆', onReply, seniorMode),
               if (isMine)
                 _action('刪除', onDelete, seniorMode)
               else if (onReport case final onReport?)
@@ -171,7 +188,10 @@ class ForumCommentTile extends StatelessWidget {
     alignment: Alignment.center,
     child: Text(
       comment.author?.displayName.characters.firstOrNull ?? '?',
-      style: AppTypography.serif(fontSize: AppTypography.caption, color: AppColors.gold),
+      style: AppTypography.serif(
+        fontSize: AppTypography.caption,
+        color: AppColors.gold,
+      ),
     ),
   );
 
@@ -196,7 +216,10 @@ class ForumCommentTile extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.caption,
+              seniorMode: seniorMode,
+            ),
             color: AppColors.fog,
           ),
         ),

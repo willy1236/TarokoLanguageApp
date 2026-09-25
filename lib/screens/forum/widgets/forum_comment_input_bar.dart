@@ -55,7 +55,10 @@ class ForumCommentInputBar extends StatelessWidget {
                   child: Text(
                     '回覆 @${target.author?.displayName ?? '匿名使用者'}',
                     style: TextStyle(
-                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.caption,
+                        seniorMode: seniorMode,
+                      ),
                       color: AppColors.fog,
                     ),
                   ),
@@ -80,7 +83,9 @@ class ForumCommentInputBar extends StatelessWidget {
                   minLines: 1,
                   maxLines: 4,
                   style: TextStyle(
-                    fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
+                    fontSize: seniorMode
+                        ? AppTypography.bodyLarge + AppTypography.seniorStep
+                        : null,
                   ),
                   decoration: InputDecoration(
                     hintText: readOnly ? '帳號唯讀中，無法留言' : '說點什麼…',
@@ -93,7 +98,8 @@ class ForumCommentInputBar extends StatelessWidget {
               ListenableBuilder(
                 listenable: controller,
                 builder: (context, _) => IconButton(
-                  onPressed: sending || readOnly || controller.text.trim().isEmpty
+                  onPressed:
+                      sending || readOnly || controller.text.trim().isEmpty
                       ? null
                       : onSend,
                   iconSize: AppIconSize.action(seniorMode),

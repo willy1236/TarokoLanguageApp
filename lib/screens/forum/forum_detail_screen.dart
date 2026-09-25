@@ -125,6 +125,21 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// 不自動重載：會閃載入畫面並丟掉已載入的留言，交給使用者點提示決定。
   int _pendingReplyCount = 0;
 
+  /// 累積的推播裡有「回覆留言」。推播沒帶那則回覆掛在哪一串，只能整頁重載。
+  bool _pendingNeedsFullLoad = false;
+
+  /// 累積的推播裡最後一則帶來的 comment_id。
+  int? _pendingCommentId;
+
+  /// 增量抓取新留言（只抓 [_serverCursor] 之後的）是否正在跑。
+  bool _fetchingNew = false;
+
+  /// 增量抓取途中又收到「回覆貼文」：跑完要再補抓一次，不能略過。
+  bool _refetchQueued = false;
+
+  /// 增量抓取完該出現的那則；不在結果裡就退回整頁重載一次。
+  int? _awaitedCommentId;
+
   /// 正在回覆的第一層留言；null 代表回覆貼文本身。
   ForumComment? _replyTarget;
 
@@ -168,7 +183,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     setState(() {
       _loading = true;
       _loadingMore = false;
-      _pendingReplyCount = 0;
+      _clearPendingReplies();
+      _fetchingNew = false;
+      _refetchQueued = false;
+      _awaitedCommentId = null;
       _error = null;
       if (resetImageRetry) _imageAutoRefreshed = false;
     });
@@ -204,11 +222,86 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   void _onNewReply(String type, int? commentId) {
     if (!mounted) return;
-    setState(() => _pendingReplyCount++);
+    // 正在增量抓取：跑完補抓一次這則就會進來，不必再提示。
+    if (_fetchingNew && type == 'reply_post') {
+      _refetchQueued = true;
+      _awaitedCommentId = commentId;
+      return;
+    }
+    setState(() {
+      _pendingReplyCount++;
+      if (type != 'reply_post') _pendingNeedsFullLoad = true;
+      _pendingCommentId = commentId;
+    });
   }
 
-  /// 點「有新回覆」提示：整頁重載，新留言就在裡面。
-  void _showNewReplies() => _load();
+  void _clearPendingReplies() {
+    _pendingReplyCount = 0;
+    _pendingNeedsFullLoad = false;
+    _pendingCommentId = null;
+  }
+
+  /// 還有較舊的留言沒載完：新的第一層留言排在最後，要往下載入才看得到。
+  bool get _newRepliesBelowUnloaded =>
+      !_pendingNeedsFullLoad && _nextCursor != null;
+
+  /// 點「有新回覆」提示。只有全是「回覆貼文」且留言已載完時，新留言必定接在
+  /// 最後，才能只抓尾巴接上去、保留已載入的留言和捲動位置；其餘整頁重載。
+  void _showNewReplies() {
+    if (_pendingNeedsFullLoad || _nextCursor != null) {
+      _load();
+      return;
+    }
+    _awaitedCommentId = _pendingCommentId;
+    setState(_clearPendingReplies);
+    _fetchNewComments();
+  }
+
+  Future<void> _fetchNewComments() async {
+    if (_fetchingNew) {
+      _refetchQueued = true;
+      return;
+    }
+    final generation = _generation;
+    _fetchingNew = true;
+    try {
+      ForumCommentPage page;
+      var added = 0;
+      do {
+        _refetchQueued = false;
+        page = await ForumService.comments(
+          widget.postId,
+          cursor: _serverCursor,
+        );
+        if (!mounted || generation != _generation) return;
+        setState(() => added += _mergeComments(page, advanceCursors: true));
+      } while (_refetchQueued);
+      _fetchingNew = false;
+
+      final post = _post;
+      if (added > 0 && post != null) {
+        setState(
+          () => _post = post.copyWith(commentCount: post.commentCount + added),
+        );
+        widget.onPostChanged?.call(_post!);
+      }
+
+      // 本頁已到底才驗得了。推播帶來的那則不在結果裡（已被刪除，或作者是
+      // 你封鎖的人而被後端濾掉）時整頁重載一次；_load 會清掉等待，不會一直重試。
+      final awaited = _awaitedCommentId;
+      _awaitedCommentId = null;
+      if (page.nextCursor == null &&
+          awaited != null &&
+          !_comments.any((c) => c.id == awaited)) {
+        _load();
+      }
+    } on ApiException catch (e) {
+      if (!mounted || generation != _generation) return;
+      _fetchingNew = false;
+      _refetchQueued = false;
+      _toast(e.message);
+    }
+  }
 
   /// 從列表點附圖進來時，等貼文（含圖片網址）到手後才疊上全螢幕檢視。
   void _maybeOpenInitialImage() {
@@ -627,6 +720,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 child: Center(
                   child: ForumNewReplyChip(
                     count: _pendingReplyCount,
+                    needsScrollToLoad: _newRepliesBelowUnloaded,
                     seniorMode: seniorMode,
                     onTap: _showNewReplies,
                   ),
