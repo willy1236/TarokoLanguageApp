@@ -294,6 +294,50 @@ void main() {
     );
   });
 
+  test('PROFANITY 未禁言時原樣用後端訊息，muted=true 才接到期時間', () async {
+    Future<ApiException> errorFor(Map<String, dynamic> error) async {
+      ApiClient.httpClient = MockClient(
+        (_) async => http.Response(
+          jsonEncode({'error': error}),
+          400,
+          headers: _utf8Json,
+        ),
+      );
+      try {
+        await ApiClient.post('/api/forum/posts');
+      } on ApiException catch (e) {
+        return e;
+      }
+      fail('應丟出 ApiException');
+    }
+
+    final warned = await errorFor({
+      'code': 'PROFANITY',
+      'muted': false,
+      'message': '內容含不當用語，未送出',
+    });
+    expect(warned.isProfanity, isTrue);
+    expect(warned.muteUntil, isNull);
+    expect(warned.message, '內容含不當用語，未送出');
+
+    final muted = await errorFor({
+      'code': 'PROFANITY',
+      'muted': true,
+      'mute_until': '2026-09-26T10:00:00.000Z',
+      'message': '暫停發言 24 小時',
+    });
+    final until = DateTime.utc(2026, 9, 26, 10).toLocal();
+    expect(muted.muteUntil, until);
+    expect(muted.message, '暫停發言 24 小時（至 ${formatMuteUntil(until)}）');
+  });
+
+  test('410 下架內容不當成帳號已刪除', () {
+    for (final code in ['ARTICLE_ARCHIVED', 'VIDEO_ARCHIVED', 'SESSION_ENDED']) {
+      final e = ApiException(statusCode: 410, code: code, message: '');
+      expect(e.isAccountPurged, isFalse, reason: code);
+    }
+  });
+
   testWidgets('/api/account/* 的 403 PENDING 不重複導頁', (tester) async {
     await tester.pumpWidget(
       MaterialApp(

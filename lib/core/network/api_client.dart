@@ -41,7 +41,8 @@ class ApiException implements Exception {
   /// 其餘錯誤為 null。畫面可據此顯示「N 秒後可再試」倒數。
   final int? retryAfter;
 
-  /// MUTED 時後端帶的禁言到期時間（`error.mute_until`），其餘錯誤為 null。
+  /// MUTED，或 PROFANITY 且觸發禁言（`error.muted=true`）時，後端帶的禁言
+  /// 到期時間（`error.mute_until`），其餘錯誤為 null。
   final DateTime? muteUntil;
 
   ApiException({
@@ -59,7 +60,9 @@ class ApiException implements Exception {
   // 帳號刪除（見 Truku_backend 說明文件/前端交接/帳號刪除串接指南.md §5）
   bool get isAccountPendingDeletion =>
       statusCode == 403 && code == 'ACCOUNT_PENDING_DELETION';
-  bool get isAccountPurged => statusCode == 410;
+  // 410 也用在已下架內容（ARTICLE_ARCHIVED／VIDEO_ARCHIVED）與 SESSION_ENDED，
+  // 只看狀態碼會把讀下架文章的人強制登出。
+  bool get isAccountPurged => statusCode == 410 && code == 'ACCOUNT_PURGED';
   bool get isAccountLocked => statusCode == 403 && code == 'ACCOUNT_LOCKED';
   bool get isUserUnavailable => code == 'USER_UNAVAILABLE';
   bool get isSessionNotFound => code == 'SESSION_NOT_FOUND';
@@ -498,8 +501,10 @@ class ApiClient {
       }
       final code = error?['code'] as String? ?? 'UNKNOWN';
       var message = error?['message'] as String? ?? '發生未知錯誤';
-      // 禁言期間依 strike 次數為 14／30 天，把到期時間接在後端訊息後面。
-      final muteUntil = code == 'MUTED'
+      // 禁言到期時間接在後端訊息後面：MUTED 依 strike 次數為 14／30 天；
+      // PROFANITY 只有 24 小時內第 3 次（muted=true）才帶 mute_until。
+      final muteUntil =
+          code == 'MUTED' || (code == 'PROFANITY' && error?['muted'] == true)
           ? DateTime.tryParse(error?['mute_until'] as String? ?? '')?.toLocal()
           : null;
       if (muteUntil != null) message = '$message（至 ${formatMuteUntil(muteUntil)}）';
