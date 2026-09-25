@@ -311,7 +311,11 @@ class _MainContainerState extends State<MainContainer>
     _loadCheckinStatus();
     NotificationSummaryService.refresh();
     AppBadge.clear();
-    // 首頁一定在條款同意之後才進得來，通知權限放在這時才問。
+    // 通知權限放在進首頁時才問：大多數情況首頁在同意條款之後才進得來。
+    // 例外是登入時條款狀態查詢失敗（login_screen.dart 的 fetchStatus），或在
+    // 別台裝置重新啟用帳號後直接回首頁（account_pending_screen.dart 的
+    // _refreshStatus）；這時首頁的 API 會被 CONSENT_REQUIRED 擋下並導去條款頁，
+    // 權限框可能和條款頁同時出現。
     FcmService.requestPermission().catchError(
       (Object e) => debugPrint('FcmService.requestPermission 失敗：$e'),
     );
