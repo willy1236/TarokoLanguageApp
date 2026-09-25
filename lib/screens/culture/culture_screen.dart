@@ -428,16 +428,25 @@ class _CultureScreenState extends State<CultureScreen> {
                   .toList(),
             );
           }
-          return GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.78,
-            children: videos
-                .map((v) => CultureVideoCard(video: v, seniorMode: false))
-                .toList(),
+          // 兩欄逐列排、卡片取自然高度；固定 aspect ratio 在寬螢幕會把卡片拉得過高。
+          return Column(
+            children: [
+              for (var i = 0; i < videos.length; i += 2) ...[
+                if (i > 0) const SizedBox(height: 12),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(child: CultureVideoCard(video: videos[i])),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: i + 1 < videos.length
+                          ? CultureVideoCard(video: videos[i + 1])
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
+              ],
+            ],
           );
         },
       ),
