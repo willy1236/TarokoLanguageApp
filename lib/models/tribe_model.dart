@@ -43,3 +43,19 @@ class Tribe {
     );
   }
 }
+
+/// 內容標註的「相關部落」（論壇貼文的 `tribe`）。由作者自選，與作者本人的
+/// 部落無關，顯示時不可寫成「作者部落」。
+class TribeTag {
+  final int id;
+  final String name;
+
+  const TribeTag({required this.id, required this.name});
+
+  static TribeTag? fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final id = json['id'];
+    if (id is! num) return null;
+    return TribeTag(id: id.toInt(), name: json['name'] as String? ?? '');
+  }
+}

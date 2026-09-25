@@ -5,6 +5,8 @@
 //   - id 與計數一律經 _asInt：pg driver 會把 BIGINT 以字串回傳，v1 為此修過三個 commit。
 //   - 缺欄位一律有安全預設，後端補欄位或前端搶先實作（如 is_bookmarked）都不會炸。
 
+import 'tribe_model.dart';
+
 int _asInt(dynamic value) => int.tryParse(value?.toString() ?? '') ?? 0;
 
 int? _asIntOrNull(dynamic value) =>
@@ -98,6 +100,9 @@ class ForumPost {
   final bool isBookmarked;
   final List<String> images;
   final List<ForumTag> tags;
+
+  /// 作者自選的「相關部落」標籤，未標為 null。與作者本人的部落無關。
+  final TribeTag? tribe;
   final DateTime createdAt;
   final DateTime updatedAt;
   final ForumAuthor author;
@@ -114,6 +119,7 @@ class ForumPost {
     required this.isBookmarked,
     required this.images,
     required this.tags,
+    this.tribe,
     required this.createdAt,
     required this.updatedAt,
     required this.author,
@@ -137,6 +143,7 @@ class ForumPost {
         .whereType<Map<String, dynamic>>()
         .map(ForumTag.fromJson)
         .toList(),
+    tribe: TribeTag.fromJson(j['tribe']),
     createdAt: _asDate(j['created_at']),
     updatedAt: _asDate(j['updated_at']),
     author: ForumAuthor.fromJson(
@@ -165,6 +172,7 @@ class ForumPost {
     isBookmarked: isBookmarked ?? this.isBookmarked,
     images: images,
     tags: tags ?? this.tags,
+    tribe: tribe,
     createdAt: createdAt,
     updatedAt: updatedAt,
     author: author,

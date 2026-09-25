@@ -13,7 +13,16 @@ const int kClearTribeId = -1;
 class TribePickerSheet extends StatefulWidget {
   final String? ethnicGroup;
   final bool allowClear;
-  const TribePickerSheet({super.key, this.ethnicGroup, this.allowClear = true});
+
+  /// 清除選項的文字。內容標註（貼文、活動的相關部落）用「不標註部落」較貼切。
+  final String clearLabel;
+
+  const TribePickerSheet({
+    super.key,
+    this.ethnicGroup,
+    this.allowClear = true,
+    this.clearLabel = '不設定部落',
+  });
 
   @override
   State<TribePickerSheet> createState() => _TribePickerSheetState();
@@ -167,7 +176,7 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
         if (widget.allowClear && i == 0) {
           return ListTile(
             title: Text(
-              '不設定部落',
+              widget.clearLabel,
               style: AppTypography.serif(
                 fontSize: AppTypography.body,
                 color: AppColors.fog,
