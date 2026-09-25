@@ -22,6 +22,13 @@ class EventDraft {
   final String? category; // null = 不分類
   final String reminderNote;
 
+  /// 發起人自選的相關部落，null = 不標註；不可預設帶發起人自己的部落。
+  final int? tribeId;
+
+  /// 建立時推播給 [tribeId] 部落的成員；沒選部落時不送（後端會回
+  /// 400 EVENT_TRIBE_REQUIRED）。只在建立時有效，編輯改標籤不會重新推播。
+  final bool notifyTribe;
+
   const EventDraft({
     this.title = '',
     this.description = '',
@@ -34,6 +41,8 @@ class EventDraft {
     this.maxParticipantsText = '',
     this.category,
     this.reminderNote = '',
+    this.tribeId,
+    this.notifyTribe = false,
   });
 
   factory EventDraft.fromDetail(EventDetail e) => EventDraft(
@@ -48,6 +57,7 @@ class EventDraft {
     maxParticipantsText: e.maxParticipants?.toString() ?? '',
     category: e.category,
     reminderNote: e.reminderNote ?? '',
+    tribeId: e.tribeId,
   );
 
   /// 後端 PATCH 接受的欄位（JSON key）。
@@ -61,6 +71,7 @@ class EventDraft {
     'reminder_note',
     'category',
     'max_participants',
+    'tribe_id',
   };
 
   /// 名額：留空 = 不限（null）；格式錯誤時也回 null，先呼叫 [validate] 擋掉。
@@ -115,6 +126,11 @@ class EventDraft {
     optional('category', category);
     final max = maxParticipants;
     if (max != null) body['max_participants'] = max;
+    final tribe = tribeId;
+    if (tribe != null) {
+      body['tribe_id'] = tribe;
+      if (notifyTribe) body['notify_tribe'] = true;
+    }
     return body;
   }
 
@@ -140,5 +156,6 @@ class EventDraft {
     'reminder_note': d.reminderNote.trim(),
     'category': d.category?.trim() ?? '',
     'max_participants': d.maxParticipants,
+    'tribe_id': d.tribeId,
   };
 }

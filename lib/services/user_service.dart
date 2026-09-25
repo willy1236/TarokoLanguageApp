@@ -169,4 +169,18 @@ class UserService {
       'tribes',
     ).map((e) => Tribe.fromJson(e as Map<String, dynamic>)).toList();
   }
+
+  static Future<Map<int, String>>? _tribeNames;
+
+  /// 部落 id → 名稱。活動等只回 tribe_id 的內容用這個對照顯示名稱；
+  /// 部落清單幾乎不變，整個 App 生命週期只抓一次，失敗則下次重抓。
+  static Future<String?> tribeName(int id) async {
+    final names = _tribeNames ??= fetchTribes()
+        .then((tribes) => {for (final t in tribes) t.id: t.name})
+        .catchError((Object e) {
+          _tribeNames = null;
+          throw e;
+        });
+    return (await names)[id];
+  }
 }

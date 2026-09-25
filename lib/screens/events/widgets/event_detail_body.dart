@@ -23,6 +23,9 @@ class EventDetailBody extends StatelessWidget {
   /// 取得，此時顯示預設圖示。
   final Map<String, ShopItem> itemCatalogById;
 
+  /// 發起人自選的相關部落名稱（由 event.tribe_id 對照而來），null 不顯示。
+  final String? tribeName;
+
   const EventDetailBody({
     super.key,
     required this.event,
@@ -32,6 +35,7 @@ class EventDetailBody extends StatelessWidget {
     required this.onToggleLike,
     required this.onToggleBookmark,
     this.itemCatalogById = const {},
+    this.tribeName,
   });
 
   @override
@@ -144,6 +148,11 @@ class EventDetailBody extends StatelessWidget {
           ],
           if (e.address != null && e.address!.isNotEmpty) ...[
             _infoRow(Icons.map_outlined, '地址', e.address!, seniorMode),
+            const SizedBox(height: 12),
+          ],
+          // 刻意寫「相關部落」而非「發起人部落」：標籤由發起人自選。
+          if (tribeName case final name?) ...[
+            _infoRow(Icons.place_outlined, '相關部落', name, seniorMode),
             const SizedBox(height: 12),
           ],
           if (e.registrationDeadline != null) ...[

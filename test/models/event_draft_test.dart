@@ -98,6 +98,59 @@ void main() {
     expect(body['starts_at'], future.toUtc().toIso8601String());
   });
 
+  group('相關部落', () {
+    test('沒選部落時不送 tribe_id，也不送 notify_tribe', () {
+      final body = EventDraft(
+        title: 't',
+        description: 'd',
+        location: 'l',
+        address: 'a',
+        startsAt: future,
+        notifyTribe: true,
+      ).toCreateBody();
+      expect(body.containsKey('tribe_id'), isFalse);
+      expect(body.containsKey('notify_tribe'), isFalse);
+    });
+
+    test('選了部落才送 tribe_id 與 notify_tribe', () {
+      final body = EventDraft(
+        title: 't',
+        description: 'd',
+        location: 'l',
+        address: 'a',
+        startsAt: future,
+        tribeId: 30,
+        notifyTribe: true,
+      ).toCreateBody();
+      expect(body['tribe_id'], 30);
+      expect(body['notify_tribe'], isTrue);
+    });
+
+    test('編輯清除部落送 tribe_id: null', () {
+      final e = EventDetail(
+        id: 1,
+        hostUid: 9,
+        title: 't',
+        description: 'd',
+        startsAt: future,
+        location: 'l',
+        address: 'a',
+        tribeId: 30,
+        status: 'active',
+      );
+      final d = EventDraft.fromDetail(e);
+      final cleared = EventDraft(
+        title: d.title,
+        description: d.description,
+        location: d.location,
+        address: d.address,
+        startsAt: d.startsAt,
+      );
+      expect(cleared.toPatchBody(e), {'tribe_id': null});
+      expect(d.toPatchBody(e), isEmpty);
+    });
+  });
+
   group('toPatchBody', () {
     test('沒有變更回傳空 map', () {
       final e = detail();
