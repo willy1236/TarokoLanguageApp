@@ -4,6 +4,7 @@
 // - 確認頁須明列 45 天可反悔，以及「第 0 天即不可逆」的活動取消。
 // - 到期提醒信與推播都不可靠，成功頁是唯一可靠的告知管道，須顯示 purge_at。
 // - 成功後 token 立即失效：清本地 token、Firebase signOut、導回登入頁。
+// - 刪除成功後撤銷 Apple／Google 登入授權（App Store 規定 Apple 必須撤銷）。
 
 import 'package:flutter/material.dart';
 
@@ -11,6 +12,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../services/account_service.dart';
+import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
 import '../../shared/widgets/app_back_button.dart';
 
@@ -38,8 +40,13 @@ class _AccountDeleteScreenState extends State<AccountDeleteScreen> {
     if (_submitting || !_acknowledged) return;
     setState(() => _submitting = true);
     try {
+      // Apple 登入者先重新驗證取得撤銷用的 code；取消就不刪。
+      final appleCode = await AuthService.reauthenticateAppleForRevocation();
       final status = await AccountService.deleteAccount(
         reason: _reasonController.text,
+      );
+      await AuthService.revokeProviderAuthorization(
+        appleAuthorizationCode: appleCode,
       );
       // token 已被後端撤銷：先清本機登入狀態，再清掉整個 stack，
       // 避免背景畫面拿失效 token 打 API 觸發「登入已過期」導頁蓋掉成功頁。
@@ -52,6 +59,9 @@ class _AccountDeleteScreenState extends State<AccountDeleteScreen> {
         (_) => false,
       );
     } on ApiException catch (e) {
+      if (!mounted) return;
+      _showError(e.message);
+    } on AuthException catch (e) {
       if (!mounted) return;
       _showError(e.message);
     } catch (_) {

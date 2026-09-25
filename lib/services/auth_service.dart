@@ -148,6 +148,55 @@ class AuthService {
     return LoginResult.fromJson(data);
   }
 
+  /// 刪除帳號前的 Apple 重新驗證：Apple 規定刪帳號要撤銷 Sign in with Apple
+  /// 授權，撤銷需要一次性、數分鐘內過期的 authorization code，只能當場
+  /// 叫面板重新取得。非 Apple 登入回 `null`；使用者取消 throw [AuthException]。
+  static Future<String?> reauthenticateAppleForRevocation() async {
+    final user = _auth.currentUser;
+    final isApple =
+        user?.providerData.any((p) => p.providerId == 'apple.com') ?? false;
+    if (user == null || !isApple) return null;
+    try {
+      final cred = await user.reauthenticateWithProvider(AppleAuthProvider());
+      return cred.additionalUserInfo?.authorizationCode;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'canceled' ||
+          e.code == 'web-context-canceled' ||
+          (e.message?.contains('1001') ?? false)) {
+        throw AuthException('需要重新驗證 Apple 帳號才能刪除');
+      }
+      throw AuthException('Apple 驗證失敗：${e.message ?? e.code}');
+    }
+  }
+
+  /// 帳號刪除成功後撤銷第三方登入授權：Apple 用 [appleAuthorizationCode]
+  /// 經 Firebase 撤銷，Google 用 disconnect。刪除已完成，撤銷失敗不 throw。
+  /// 須在 [signOut] 之前呼叫，否則 Google 已無登入中的帳號可 disconnect。
+  static Future<void> revokeProviderAuthorization({
+    String? appleAuthorizationCode,
+  }) async {
+    if (appleAuthorizationCode != null) {
+      try {
+        await _auth.revokeTokenWithAuthorizationCode(appleAuthorizationCode);
+      } catch (e) {
+        debugPrint('AuthService: 撤銷 Apple 授權失敗：$e');
+      }
+    }
+    final isGoogle =
+        _auth.currentUser?.providerData.any(
+          (p) => p.providerId == 'google.com',
+        ) ??
+        false;
+    if (isGoogle && !kIsWeb) {
+      try {
+        await _ensureGoogleSignInInitialized();
+        await _googleSignIn.disconnect();
+      } catch (e) {
+        debugPrint('AuthService: 撤銷 Google 授權失敗：$e');
+      }
+    }
+  }
+
   /// 完全登出（Firebase + Google + 清本機 token；不撤銷後端 JWT）
   static Future<void> signOut() async {
     // Web 沒走 google_sign_in（未 initialize），只需登出 Firebase。
