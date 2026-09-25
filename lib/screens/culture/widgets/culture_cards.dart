@@ -35,11 +35,16 @@ class CultureVideoCard extends StatelessWidget {
     this.seniorMode = false,
   });
 
-  static String _formatDuration(int? sec) {
-    if (sec == null) return '--:--';
+  static String _formatDuration(int sec) {
     final m = sec ~/ 60;
     final s = sec % 60;
     return '$m:${s.toString().padLeft(2, '0')}';
+  }
+
+  static String? _badgeText(VideoSummary video) {
+    final sec = video.durationSec;
+    if (sec != null) return _formatDuration(sec);
+    return video.isYoutube ? 'YouTube' : null;
   }
 
   @override
@@ -100,30 +105,33 @@ class CultureVideoCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  Positioned(
-                    bottom: 8,
-                    right: 8,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: seniorMode ? 8 : 6,
-                        vertical: seniorMode ? 3 : 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.7),
-                        borderRadius: BorderRadius.circular(3),
-                      ),
-                      child: Text(
-                        _formatDuration(video.durationSec),
-                        style: AppTypography.mono(
-                          fontSize: AppTypography.size(
-                            AppTypography.micro,
-                            seniorMode: seniorMode,
+                  // YouTube 影片沒有長度（duration_sec 為 null），改標來源；
+                  // 其他沒長度的影片直接不顯示，不要顯示成 0:00。
+                  if (_badgeText(video) case final badge?)
+                    Positioned(
+                      bottom: 8,
+                      right: 8,
+                      child: Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: seniorMode ? 8 : 6,
+                          vertical: seniorMode ? 3 : 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.7),
+                          borderRadius: BorderRadius.circular(3),
+                        ),
+                        child: Text(
+                          badge,
+                          style: AppTypography.mono(
+                            fontSize: AppTypography.size(
+                              AppTypography.micro,
+                              seniorMode: seniorMode,
+                            ),
+                            color: AppColors.creamLight,
                           ),
-                          color: AppColors.creamLight,
                         ),
                       ),
                     ),
-                  ),
                   Center(
                     child: Container(
                       width: seniorMode ? 52 : 36,

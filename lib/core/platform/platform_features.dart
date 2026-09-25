@@ -26,6 +26,10 @@ class PlatformFeatures {
   /// Web 版以 `<video>` + hls.js（web/vendor/hls.min.js）內嵌播放 HLS。
   static bool get supportsWebHlsPlayer => kIsWeb;
 
+  /// youtube_player_iframe 官方 IFrame 播放器（行動平台走 WebView，Web 走 iframe；
+  /// Windows 沒有實作，改外開 watch_url）。
+  static bool get supportsYoutubeEmbed => kIsWeb || isMobile;
+
   /// 有本機檔案系統可寫暫存檔（Web 沒有，改傳 bytes）。
   static bool get hasFileSystem => !kIsWeb;
 

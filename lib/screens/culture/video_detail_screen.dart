@@ -1,6 +1,7 @@
 import 'package:better_player_plus/better_player_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:youtube_player_iframe/youtube_player_iframe.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
@@ -27,6 +28,9 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
   VideoDetail? _video;
   Object? _error;
   BetterPlayerController? _playerController;
+
+  /// YouTube 影片且可嵌入時的官方播放器；依 YouTube 條款不可遮蓋其標誌或廣告。
+  YoutubePlayerController? _youtubeController;
   bool _webPlayerFailed = false;
   bool _likeBusy = false;
   bool _bookmarkBusy = false;
@@ -40,8 +44,24 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
   Future<void> _load() async {
     try {
       final detail = await VideoService.fetchVideoDetail(widget.videoId);
+      if (detail.isYoutube) {
+        // 擁有者關閉嵌入或平台沒有播放器實作時不建 controller，改外開 watch_url。
+        final youtube = detail.youtube;
+        if (youtube != null &&
+            youtube.embeddable &&
+            PlatformFeatures.supportsYoutubeEmbed) {
+          _youtubeController = YoutubePlayerController.fromVideoId(
+            videoId: youtube.videoId,
+            autoPlay: true,
+            params: const YoutubePlayerParams(showFullscreenButton: true),
+          );
+        }
+        _video = detail;
+        return;
+      }
       // better_player_plus 只有行動平台實作，其他平台改顯示外開連結。
-      if (!PlatformFeatures.supportsHlsPlayer) {
+      final hlsUrl = detail.hlsUrl;
+      if (!PlatformFeatures.supportsHlsPlayer || hlsUrl == null) {
         _video = detail;
         return;
       }
@@ -53,7 +73,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
         ),
         betterPlayerDataSource: BetterPlayerDataSource(
           BetterPlayerDataSourceType.network,
-          detail.hlsUrl,
+          hlsUrl,
           videoFormat: BetterPlayerVideoFormat.hls,
         ),
       );
@@ -66,6 +86,7 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
   @override
   void dispose() {
     _playerController?.dispose();
+    _youtubeController?.close();
     super.dispose();
   }
 
@@ -209,8 +230,13 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     );
   }
 
-  /// 不支援內嵌 HLS 播放的平台：提示並提供以瀏覽器開啟串流網址。
-  Widget _buildExternalPlayerFallback(VideoDetail video, bool seniorMode) {
+  /// 無法內嵌播放時：提示並提供外開連結（HLS 串流網址或 YouTube watch_url）。
+  Widget _buildExternalPlayerFallback({
+    required String message,
+    required String buttonLabel,
+    required String? url,
+    required bool seniorMode,
+  }) {
     return ColoredBox(
       color: Colors.black,
       child: Center(
@@ -218,41 +244,65 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              '此平台暫不支援內嵌播放',
+              message,
+              textAlign: TextAlign.center,
               style: AppTypography.bodyStyle(
                 seniorMode: seniorMode,
                 color: Colors.white,
               ),
             ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
-              icon: const Icon(Icons.open_in_new),
-              label: const Text('在新視窗開啟影片'),
-              onPressed: () => launchUrl(
-                Uri.parse(video.hlsUrl),
-                mode: LaunchMode.externalApplication,
+            if (url != null) ...[
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(foregroundColor: Colors.white),
+                icon: const Icon(Icons.open_in_new),
+                label: Text(buttonLabel),
+                onPressed: () => launchUrl(
+                  Uri.parse(url),
+                  mode: LaunchMode.externalApplication,
+                ),
               ),
-            ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  /// 手機走 better_player_plus；Web 走 `<video>` + hls.js，播放失敗再退回外開連結；
-  /// 其餘平台（桌面）直接顯示外開連結。
+  /// YouTube：可嵌入且平台支援時用官方播放器，否則外開 watch_url（系統瀏覽器
+  /// 或 YouTube App）。
+  /// HLS：手機走 better_player_plus；Web 走 `<video>` + hls.js，播放失敗再退回
+  /// 外開連結；其餘平台（桌面）直接顯示外開連結。
   Widget _buildPlayer(VideoDetail video, bool seniorMode) {
+    if (video.isYoutube) {
+      final controller = _youtubeController;
+      if (controller != null) return YoutubePlayer(controller: controller);
+      final embeddable = video.youtube?.embeddable ?? false;
+      return _buildExternalPlayerFallback(
+        message: embeddable ? '此平台暫不支援內嵌播放' : '影片擁有者未開放在 App 內播放',
+        buttonLabel: '在 YouTube 開啟',
+        url: video.youtube?.watchUrl,
+        seniorMode: seniorMode,
+      );
+    }
     if (_playerController != null) {
       return BetterPlayer(controller: _playerController!);
     }
-    if (PlatformFeatures.supportsWebHlsPlayer && !_webPlayerFailed) {
+    final hlsUrl = video.hlsUrl;
+    if (hlsUrl != null &&
+        PlatformFeatures.supportsWebHlsPlayer &&
+        !_webPlayerFailed) {
       return HlsWebPlayer(
-        url: video.hlsUrl,
+        url: hlsUrl,
         onError: () => setState(() => _webPlayerFailed = true),
       );
     }
-    return _buildExternalPlayerFallback(video, seniorMode);
+    return _buildExternalPlayerFallback(
+      message: hlsUrl == null ? '影片暫時無法播放' : '此平台暫不支援內嵌播放',
+      buttonLabel: '在新視窗開啟影片',
+      url: hlsUrl,
+      seniorMode: seniorMode,
+    );
   }
 
   Widget _buildContent(VideoDetail video, bool seniorMode) {

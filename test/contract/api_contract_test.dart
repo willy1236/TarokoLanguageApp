@@ -64,6 +64,8 @@ final List<_Contract> _contracts = [
   _Contract('get_api_videos_sort_popular.json', 'VideoListResponse(popular)',
       VideoListResponse.fromJson),
   _Contract('get_api_video_detail.json', 'VideoDetail', VideoDetail.fromJson),
+  _Contract('get_api_video_detail_youtube.json', 'VideoDetail(youtube)',
+      VideoDetail.fromJson),
   _Contract('get_api_videos_search_q_a_range_1m.json', 'VideoListResponse(search)',
       VideoListResponse.fromJson),
   _Contract('get_api_articles_search_q_a_range_1m.json', 'ArticleListResponse',
