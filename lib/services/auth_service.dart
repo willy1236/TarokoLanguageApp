@@ -1,5 +1,5 @@
 // 認證流程：
-//   Google Sign-In → 拿 Firebase ID Token → POST /api/auth/login 換系統 JWT
+//   Google Sign-In／Apple 登入（僅 iOS）→ 拿 Firebase ID Token → POST /api/auth/login 換系統 JWT
 //   系統 JWT 存在 flutter_secure_storage，給之後 API 呼叫帶 Authorization header
 //
 // 規格書對應：API設計/資料交換表_核心.md §2.1 POST /api/auth/login
@@ -57,6 +57,31 @@ class AuthService {
       throw AuthException('Google 登入失敗：${e.description ?? e.code}');
     }
     return _exchangeAndStore(googleUser);
+  }
+
+  /// 走 Apple 登入，流程與回傳同 [signInWithGoogle]。iOS 叫出系統原生面板；
+  /// Android 開瀏覽器分頁、Web 開彈窗，兩者走 Firebase 的 Services ID 網頁流程。
+  static Future<LoginResult> signInWithApple() async {
+    final provider = AppleAuthProvider()
+      ..addScope('email')
+      ..addScope('name');
+    final UserCredential userCred;
+    try {
+      userCred = kIsWeb
+          ? await _auth.signInWithPopup(provider)
+          : await _auth.signInWithProvider(provider);
+    } on FirebaseAuthException catch (e) {
+      // 使用者關掉面板：iOS 回 ASAuthorizationError 1001，code 依版本不同。
+      if (e.code == 'canceled' ||
+          e.code == 'web-context-canceled' ||
+          e.code == 'popup-closed-by-user' ||
+          e.code == 'cancelled-popup-request' ||
+          (e.message?.contains('1001') ?? false)) {
+        throw AuthException('使用者取消登入');
+      }
+      throw AuthException('Apple 登入失敗：${e.message ?? e.code}');
+    }
+    return _loginWithFirebaseUser(userCred.user);
   }
 
   /// 靜默登入：重用裝置上先前已授權過本 app 的 Google 帳號，不叫出任何 UI。
@@ -126,6 +151,61 @@ class AuthService {
     await _storage.write(key: _expiresKey, value: data['expires_at']);
     return LoginResult.fromJson(data);
   }
+
+  /// 刪除帳號前的 Apple 重新驗證：Apple 規定刪帳號要撤銷 Sign in with Apple
+  /// 授權，撤銷需要一次性、數分鐘內過期的 authorization code，只能當場
+  /// 叫面板重新取得。非 Apple 登入回 `null`；使用者取消 throw [AuthException]。
+  static Future<String?> reauthenticateAppleForRevocation() async {
+    final user = _currentUserOrNull();
+    if (user == null || !_hasProvider(user, 'apple.com')) return null;
+    try {
+      final cred = await user.reauthenticateWithProvider(AppleAuthProvider());
+      return cred.additionalUserInfo?.authorizationCode;
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'canceled' ||
+          e.code == 'web-context-canceled' ||
+          (e.message?.contains('1001') ?? false)) {
+        throw AuthException('需要重新驗證 Apple 帳號才能刪除');
+      }
+      throw AuthException('Apple 驗證失敗：${e.message ?? e.code}');
+    }
+  }
+
+  /// 帳號刪除成功後撤銷第三方登入授權：Apple 用 [appleAuthorizationCode]
+  /// 經 Firebase 撤銷，Google 用 disconnect。刪除已完成，撤銷失敗不 throw。
+  /// 須在 [signOut] 之前呼叫，否則 Google 已無登入中的帳號可 disconnect。
+  static Future<void> revokeProviderAuthorization({
+    String? appleAuthorizationCode,
+  }) async {
+    if (appleAuthorizationCode != null) {
+      try {
+        await _auth.revokeTokenWithAuthorizationCode(appleAuthorizationCode);
+      } catch (e) {
+        debugPrint('AuthService: 撤銷 Apple 授權失敗：$e');
+      }
+    }
+    final user = _currentUserOrNull();
+    if (user != null && _hasProvider(user, 'google.com') && !kIsWeb) {
+      try {
+        await _ensureGoogleSignInInitialized();
+        await _googleSignIn.disconnect();
+      } catch (e) {
+        debugPrint('AuthService: 撤銷 Google 授權失敗：$e');
+      }
+    }
+  }
+
+  /// Firebase 未初始化（例如 widget test）時存取 [_auth] 會 throw，視同未登入。
+  static User? _currentUserOrNull() {
+    try {
+      return _auth.currentUser;
+    } catch (_) {
+      return null;
+    }
+  }
+
+  static bool _hasProvider(User user, String providerId) =>
+      user.providerData.any((p) => p.providerId == providerId);
 
   /// 完全登出（Firebase + Google + 清本機 token；不撤銷後端 JWT）
   static Future<void> signOut() async {

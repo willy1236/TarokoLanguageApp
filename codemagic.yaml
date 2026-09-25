@@ -1,0 +1,54 @@
+# ios-check：未簽章的建置檢查，並產出可上傳 Appetize.io 的模擬器版本。
+# ios-testflight：簽章後上傳 TestFlight。需先在 Codemagic 後台建立名為
+#   codemagic_asc 的 App Store Connect API Key integration。
+workflows:
+  ios-testflight:
+    name: iOS TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    integrations:
+      app_store_connect: codemagic_asc
+    environment:
+      flutter: stable
+      xcode: latest
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: tw.yujiantailuge.app
+    scripts:
+      - name: 安裝套件
+        script: flutter pub get
+      - name: 套用簽章設定
+        script: xcode-project use-profiles
+      - name: 建置 IPA
+        # build number 用 Codemagic 的建置序號，確保每次上傳都遞增
+        script: |
+          flutter build ipa --release \
+            --build-number=$BUILD_NUMBER \
+            --export-options-plist=/Users/builder/export_options.plist
+    artifacts:
+      - build/ios/ipa/*.ipa
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+
+
+  ios-check:
+    name: iOS Build Check
+    instance_type: mac_mini_m2
+    max_build_duration: 60
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
+    scripts:
+      - name: 安裝套件
+        script: flutter pub get
+      - name: 建置 Release（不簽章）
+        script: flutter build ios --release --no-codesign
+      - name: 建置模擬器版
+        script: |
+          flutter build ios --simulator --debug
+          cd build/ios/iphonesimulator && zip -r Runner.app.zip Runner.app
+    artifacts:
+      - build/ios/iphonesimulator/Runner.app.zip

@@ -23,10 +23,7 @@ class DefaultFirebaseOptions {
       case TargetPlatform.android:
         return android;
       case TargetPlatform.iOS:
-        throw UnsupportedError(
-          'DefaultFirebaseOptions have not been configured for ios - '
-          'you can reconfigure this by running the FlutterFire CLI again.',
-        );
+        return ios;
       case TargetPlatform.macOS:
         throw UnsupportedError(
           'DefaultFirebaseOptions have not been configured for macos - '
@@ -56,6 +53,16 @@ class DefaultFirebaseOptions {
     projectId: 'extreme-quasar-494406-v7',
     storageBucket: 'extreme-quasar-494406-v7.firebasestorage.app',
   );
+  static const FirebaseOptions ios = FirebaseOptions(
+    apiKey: 'AIzaSyAdCeNFpKr-R2dQWElYhzrMoDN_qAYG_Jc',
+    appId: '1:230831538559:ios:f18de25cc9135fb1109a4a',
+    messagingSenderId: '230831538559',
+    projectId: 'extreme-quasar-494406-v7',
+    storageBucket: 'extreme-quasar-494406-v7.firebasestorage.app',
+    iosClientId: '230831538559-8adaulnc7rd66dlug5gu55esgk0gse26.apps.googleusercontent.com',
+    iosBundleId: 'tw.yujiantailuge.app',
+  );
+
   static const FirebaseOptions web = FirebaseOptions(
     apiKey: 'AIzaSyB6SlI2ttzzS9z5RO5Mt-XyMWY_3cItKpI',
     appId: '1:230831538559:web:128976472264c677109a4a',
