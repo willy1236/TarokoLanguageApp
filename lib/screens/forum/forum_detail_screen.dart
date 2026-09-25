@@ -23,6 +23,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'widgets/forum_comment_input_bar.dart';
 import 'widgets/forum_image_grid.dart' show ForumImageViewer;
 import 'widgets/forum_comment_tile.dart';
+import 'widgets/forum_new_reply_chip.dart';
 import 'widgets/forum_post_body.dart';
 import 'widgets/forum_toast.dart';
 import 'widgets/forum_report_sheet.dart';
@@ -69,14 +70,24 @@ class ForumDetailScreen extends StatefulWidget {
     ),
   );
 
-  /// 目前開著的詳情頁：key = postId，value = 該實例的重載函式。
-  static final Map<int, VoidCallback> _live = {};
+  /// 目前開著的詳情頁：key = postId。
+  static final Map<int, _ForumDetailScreenState> _live = {};
 
   /// 該貼文的詳情頁是否已在畫面上。
   static bool isOpen(int postId) => _live.containsKey(postId);
 
   /// 開著才重載；沒開就什麼都不做。
-  static void refreshIfOpen(int postId) => _live[postId]?.call();
+  static void refreshIfOpen(int postId) => _live[postId]?._load();
+
+  /// 有人回覆了這篇貼文或其中的留言（前景推播）。該篇開著時在頁內浮出提示並
+  /// 回傳 true；沒開則回傳 false，由呼叫端照常通知。
+  /// [type] 是推播的 'reply_post' 或 'reply_comment'。
+  static bool notifyNewReply(int postId, String type, int? commentId) {
+    final state = _live[postId];
+    if (state == null) return false;
+    state._onNewReply(type, commentId);
+    return true;
+  }
 
   @override
   State<ForumDetailScreen> createState() => _ForumDetailScreenState();
@@ -110,6 +121,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// 圖片過期重載或使用者關掉檢視後都不該再彈出來。
   bool _autoViewerShown = false;
 
+  /// 停在本頁時收到、還沒載入的回覆推播數，大於 0 就浮出提示。
+  /// 不自動重載：會閃載入畫面並丟掉已載入的留言，交給使用者點提示決定。
+  int _pendingReplyCount = 0;
+
   /// 正在回覆的第一層留言；null 代表回覆貼文本身。
   ForumComment? _replyTarget;
 
@@ -130,7 +145,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   @override
   void initState() {
     super.initState();
-    ForumDetailScreen._live[widget.postId] = _load;
+    ForumDetailScreen._live[widget.postId] = this;
     _loadItemCatalog();
     _load();
   }
@@ -138,7 +153,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   @override
   void dispose() {
     // 同一 postId 若已被新實例接手，不要把它的登記清掉。
-    if (ForumDetailScreen._live[widget.postId] == _load) {
+    if (ForumDetailScreen._live[widget.postId] == this) {
       ForumDetailScreen._live.remove(widget.postId);
     }
     _inputController.dispose();
@@ -153,6 +168,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     setState(() {
       _loading = true;
       _loadingMore = false;
+      _pendingReplyCount = 0;
       _error = null;
       if (resetImageRetry) _imageAutoRefreshed = false;
     });
@@ -185,6 +201,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       });
     }
   }
+
+  void _onNewReply(String type, int? commentId) {
+    if (!mounted) return;
+    setState(() => _pendingReplyCount++);
+  }
+
+  /// 點「有新回覆」提示：整頁重載，新留言就在裡面。
+  void _showNewReplies() => _load();
 
   /// 從列表點附圖進來時，等貼文（含圖片網址）到手後才疊上全螢幕檢視。
   void _maybeOpenInitialImage() {
@@ -590,7 +614,27 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     final locked = accountLockController.locked;
     return Column(
       children: [
-        Expanded(child: _buildCommentList(post, threads, locked, seniorMode)),
+        Expanded(
+          child: Stack(
+            children: [
+              _buildCommentList(post, threads, locked, seniorMode),
+              // 浮在列表頂端、不跟著捲動：捲到很下面或正在輸入時都看得到，
+              // 也不會蓋住底下的輸入列。
+              Positioned(
+                top: 12,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: ForumNewReplyChip(
+                    count: _pendingReplyCount,
+                    seniorMode: seniorMode,
+                    onTap: _showNewReplies,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
         ForumCommentInputBar(
           controller: _inputController,
           replyTarget: _replyTarget,

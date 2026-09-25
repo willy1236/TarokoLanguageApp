@@ -89,8 +89,8 @@ Future<void> main() async {
       debugPrint('FcmService.onVideoMatchedColdStart: 查詢 session 失敗：$e');
     }
   };
-  // 人已經在該貼文詳情頁時，前景推播不打擾（留言早就即時反映在畫面上）。
-  FcmService.isForumPostOpen = ForumDetailScreen.isOpen;
+  // 人已經在該貼文詳情頁時，前景推播不彈通知，改在頁內浮出「有新回覆」提示。
+  FcmService.onForumReplyWhileOpen = ForumDetailScreen.notifyNewReply;
   // 點論壇回覆通知 → 導到該貼文詳情頁。同一篇已經開著就回到那一份並重載，
   // 不再疊第二頁（疊了會在返回時看到留言前的舊狀態）。
   FcmService.onForumReplyTapped = (postId) {

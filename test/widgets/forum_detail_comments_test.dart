@@ -1,5 +1,6 @@
 // 貼文詳情的留言列表：本地插入、分頁「載入更多」、整頁重載交錯時，
-// 留言不重複、不亂序，過期的請求結果不會接到新列表上。
+// 留言不重複、不亂序，過期的請求結果不會接到新列表上；停在頁內收到回覆推播時，
+// 浮出「有新回覆」提示，點了才載入。
 import 'dart:async';
 import 'dart:convert';
 
@@ -139,9 +140,7 @@ Future<void> _openDetail(WidgetTester tester) async {
   tester.view.physicalSize = const Size(800, 4000);
   tester.view.devicePixelRatio = 1;
   addTearDown(tester.view.reset);
-  await tester.pumpWidget(
-    wrapScreen(const ForumDetailScreen(postId: _postId)),
-  );
+  await tester.pumpWidget(wrapScreen(const ForumDetailScreen(postId: _postId)));
   await tester.pumpAndSettle();
 }
 
@@ -165,13 +164,7 @@ void main() {
 
     await _scrollToBottom(tester);
     await _scrollToBottom(tester);
-    expect(_visibleComments(tester), [
-      '留言1',
-      '留言2',
-      '留言3',
-      '留言4',
-      '留言100',
-    ]);
+    expect(_visibleComments(tester), ['留言1', '留言2', '留言3', '留言4', '留言100']);
   });
 
   testWidgets('送出第二層回覆時行為不變', (tester) async {
@@ -189,9 +182,7 @@ void main() {
     expect(forum.replyParent, {100: 1});
   });
 
-  testWidgets('「載入更多」途中整頁重載，舊的那頁不接到新列表，之後仍能載入更多', (
-    tester,
-  ) async {
+  testWidgets('「載入更多」途中整頁重載，舊的那頁不接到新列表，之後仍能載入更多', (tester) async {
     final forum = _FakeForum([1, 2, 3, 4, 5, 6]);
     ApiClient.httpClient = forum.client();
     await _openDetail(tester);
@@ -216,5 +207,74 @@ void main() {
     await _scrollToBottom(tester);
     expect(forum.commentRequests.last.queryParameters['cursor'], '2');
     expect(_visibleComments(tester), ['留言1', '留言2', '留言3', '留言4']);
+  });
+
+  group('停在頁內收到回覆推播', () {
+    Finder chip(int n) => find.text('有 $n 則新回覆');
+
+    testWidgets('浮出提示並累加數量，點了才載入新留言，提示消失', (tester) async {
+      final forum = _FakeForum([1]);
+      ApiClient.httpClient = forum.client();
+      await _openDetail(tester);
+      final requestsBefore = forum.commentRequests.length;
+
+      forum.roots.addAll([2, 3]);
+      expect(
+        ForumDetailScreen.notifyNewReply(_postId, 'reply_post', 2),
+        isTrue,
+      );
+      await tester.pumpAndSettle();
+      expect(chip(1), findsOneWidget);
+      expect(
+        ForumDetailScreen.notifyNewReply(_postId, 'reply_comment', 3),
+        isTrue,
+      );
+      await tester.pumpAndSettle();
+      expect(chip(2), findsOneWidget);
+
+      // 提示只是提示：沒點之前不會自己重載。
+      expect(forum.commentRequests.length, requestsBefore);
+      expect(_visibleComments(tester), ['留言1']);
+
+      await tester.tap(chip(2));
+      await tester.pumpAndSettle();
+      expect(_visibleComments(tester), ['留言1', '留言2']);
+      expect(find.textContaining('則新回覆'), findsNothing);
+    });
+
+    testWidgets('別篇貼文的回覆不在本頁提示，交回呼叫端照常通知', (tester) async {
+      final forum = _FakeForum([1]);
+      ApiClient.httpClient = forum.client();
+      await _openDetail(tester);
+
+      expect(ForumDetailScreen.notifyNewReply(99, 'reply_post', 5), isFalse);
+      await tester.pumpAndSettle();
+      expect(find.textContaining('則新回覆'), findsNothing);
+    });
+
+    testWidgets('離開頁面後不再接手推播', (tester) async {
+      final forum = _FakeForum([1]);
+      ApiClient.httpClient = forum.client();
+      final navKey = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        MaterialApp(navigatorKey: navKey, home: const Text('列表')),
+      );
+      navKey.currentState!.push(ForumDetailScreen.route(postId: _postId));
+      await tester.pumpAndSettle();
+      ForumDetailScreen.notifyNewReply(_postId, 'reply_post', 2);
+      await tester.pumpAndSettle();
+      expect(chip(1), findsOneWidget);
+
+      navKey.currentState!.pop();
+      await tester.pumpAndSettle();
+      expect(
+        ForumDetailScreen.notifyNewReply(_postId, 'reply_post', 3),
+        isFalse,
+      );
+
+      navKey.currentState!.push(ForumDetailScreen.route(postId: _postId));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('則新回覆'), findsNothing);
+    });
   });
 }
