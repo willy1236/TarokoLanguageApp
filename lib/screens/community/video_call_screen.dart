@@ -3,6 +3,7 @@ import 'package:permission_handler/permission_handler.dart'
     show openAppSettings;
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../main.dart' show scaffoldMessengerKey;
 import '../../models/video_call_model.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/directed_call_service.dart';
@@ -52,6 +53,13 @@ class _VideoCallScreenState extends State<VideoCallScreen>
 
   /// 通話中由自己封鎖對方而結束。
   bool _blockedPeer = false;
+
+  /// 封鎖請求送出、還沒回來。這段期間對方剛好掛斷時，不該對剛封鎖的人問檢舉。
+  bool _blockInFlight = false;
+
+  /// [_onLeft] 已處理過離開（已導回首頁）。封鎖晚於通話結束才成功時，
+  /// 提示要由 [_blockPeer] 自己補上。
+  bool _leftHandled = false;
 
   @override
   void initState() {
@@ -104,12 +112,11 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     final directedCallId = widget.directedCallId;
     // 沒接通就結束（例如權限被拒）不需要問檢舉。
     // 唯讀帳號不能檢舉（後端擋），就不問了。
-    // 自己剛封鎖對方就不再問檢舉，直接離開。
-    if (_blockedPeer) {
+    // 自己剛封鎖（或正在封鎖）對方就不再問檢舉，直接離開。
+    _leftHandled = true;
+    if (_blockedPeer || _blockInFlight) {
       Navigator.popUntil(context, (r) => r.isFirst);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('已封鎖對方，通話已結束')));
+      if (_blockedPeer) _showBlockedNotice();
       return;
     }
     if (directedCallId != null &&
@@ -144,17 +151,32 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       ),
     );
     if (confirmed != true || !mounted || _call.leaving) return;
+    _blockInFlight = true;
     try {
       await FriendService.blockUser(widget.session.peerUid);
     } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
+      // 通話可能已在等待期間結束、本頁已關，改用全域 messenger 提示。
+      scaffoldMessengerKey.currentState?.showSnackBar(
         SnackBar(content: Text(apiErrorMessage(e, fallback: '封鎖失敗，請稍後再試'))),
       );
       return;
+    } finally {
+      _blockInFlight = false;
     }
     _blockedPeer = true;
-    await _call.leaveEndedByServer();
+    if (_leftHandled) {
+      // 對方在請求期間先掛斷，離開流程已跑完，只剩提示要補。
+      _showBlockedNotice();
+    } else if (!_call.leaving) {
+      await _call.leaveEndedByServer();
+    }
+    // 其餘情況：離開流程進行中，_onLeft 會看到 _blockedPeer 自行提示。
+  }
+
+  void _showBlockedNotice() {
+    scaffoldMessengerKey.currentState?.showSnackBar(
+      const SnackBar(content: Text('已封鎖對方，通話已結束')),
+    );
   }
 
   Future<void> _offerReport(int callId) async {

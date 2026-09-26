@@ -312,6 +312,8 @@ class EventFeaturedCard extends StatelessWidget {
       text = '進行中';
     } else if (e.isFull) {
       text = '已額滿';
+    } else if (e.isRegistrationNotOpen) {
+      text = '即將開放報名';
     } else if (e.registrationOpen) {
       text = '我要參加';
     } else {

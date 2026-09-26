@@ -11,6 +11,7 @@ import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../models/shop_item.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/block_refresh_notifier.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
@@ -90,6 +91,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
     _scrollController.addListener(_onScroll);
     _load();
     _loadItemCatalog();
+    BlockRefreshNotifier.revision.addListener(_load);
   }
 
   Future<void> _loadItemCatalog() async {
@@ -112,6 +114,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
 
   @override
   void dispose() {
+    BlockRefreshNotifier.revision.removeListener(_load);
     _scrollController.dispose();
     super.dispose();
   }

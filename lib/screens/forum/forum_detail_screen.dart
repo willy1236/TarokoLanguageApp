@@ -10,6 +10,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/shop_item.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/block_refresh_notifier.dart';
 import '../../services/shop_service.dart';
 import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
@@ -163,6 +164,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     ForumDetailScreen._live[widget.postId] = this;
     _loadItemCatalog();
     _load();
+    BlockRefreshNotifier.revision.addListener(_load);
   }
 
   @override
@@ -171,6 +173,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     if (ForumDetailScreen._live[widget.postId] == this) {
       ForumDetailScreen._live.remove(widget.postId);
     }
+    BlockRefreshNotifier.revision.removeListener(_load);
     _inputController.dispose();
     _scrollController.dispose();
     super.dispose();

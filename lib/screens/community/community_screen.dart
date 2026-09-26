@@ -8,6 +8,7 @@ import '../../main.dart';
 import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/block_refresh_notifier.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
@@ -43,6 +44,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
     super.initState();
     _loadFriends();
     _loadItemCatalog();
+    BlockRefreshNotifier.revision.addListener(_loadFriends);
+  }
+
+  @override
+  void dispose() {
+    BlockRefreshNotifier.revision.removeListener(_loadFriends);
+    super.dispose();
   }
 
   Future<void> _loadFriends() async {
