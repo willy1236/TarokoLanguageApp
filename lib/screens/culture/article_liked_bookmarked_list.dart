@@ -237,7 +237,10 @@ class _ArticleListItem extends StatelessWidget {
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       color: AppColors.creamLight,
-                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.body,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -257,7 +260,10 @@ class _ArticleListItem extends StatelessWidget {
                         '${article.likeCount}',
                         style: TextStyle(
                           color: AppColors.fog,
-                          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                          fontSize: AppTypography.size(
+                            AppTypography.caption,
+                            seniorMode: seniorMode,
+                          ),
                         ),
                       ),
                       const SizedBox(width: 12),
@@ -271,7 +277,10 @@ class _ArticleListItem extends StatelessWidget {
                         '${article.viewCount}',
                         style: TextStyle(
                           color: AppColors.fog,
-                          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                          fontSize: AppTypography.size(
+                            AppTypography.caption,
+                            seniorMode: seniorMode,
+                          ),
                         ),
                       ),
                     ],

@@ -31,7 +31,9 @@ class RelatedTribeField extends StatelessWidget {
     );
     if (picked == null) return;
     onChanged(
-      picked.id == kClearTribeId ? null : TribeTag(id: picked.id, name: picked.name),
+      picked.id == kClearTribeId
+          ? null
+          : TribeTag(id: picked.id, name: picked.name),
     );
   }
 
@@ -79,8 +81,9 @@ class RelatedTribeField extends StatelessWidget {
                     AppTypography.caption,
                     seniorMode: seniorMode,
                   ),
-                  fontWeight:
-                      selected != null ? FontWeight.w600 : FontWeight.w400,
+                  fontWeight: selected != null
+                      ? FontWeight.w600
+                      : FontWeight.w400,
                   color: selected != null ? AppColors.primary : AppColors.fog,
                 ),
               ),

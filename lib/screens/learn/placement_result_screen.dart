@@ -147,7 +147,9 @@ class PlacementResultScreen extends StatelessWidget {
             child: Text(
               '這只是建議，你隨時可以手動選擇其他等級開始測驗。',
               textAlign: TextAlign.center,
-              style: AppTypography.bodyStyle(color: AppColors.creamLight.withValues(alpha: 0.6)),
+              style: AppTypography.bodyStyle(
+                color: AppColors.creamLight.withValues(alpha: 0.6),
+              ),
             ),
           ),
         ],

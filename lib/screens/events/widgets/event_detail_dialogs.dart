@@ -69,7 +69,10 @@ class _JoinEmailDialogState extends State<JoinEmailDialog> {
             controller: _controller,
             keyboardType: TextInputType.emailAddress,
             autofocus: true,
-            style: const TextStyle(fontSize: AppTypography.body, color: AppColors.ink),
+            style: const TextStyle(
+              fontSize: AppTypography.body,
+              color: AppColors.ink,
+            ),
             decoration: InputDecoration(
               hintText: 'name@example.com',
               hintStyle: TextStyle(color: AppColors.fog),
@@ -135,7 +138,10 @@ class _CancelReasonDialogState extends State<CancelReasonDialog> {
             maxLines: 3,
             maxLength: 500,
             autofocus: true,
-            style: const TextStyle(fontSize: AppTypography.body, color: AppColors.ink),
+            style: const TextStyle(
+              fontSize: AppTypography.body,
+              color: AppColors.ink,
+            ),
             decoration: InputDecoration(
               hintText: '例如：因天候因素順延…',
               hintStyle: TextStyle(color: AppColors.fog),

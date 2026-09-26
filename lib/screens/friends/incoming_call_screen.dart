@@ -69,7 +69,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   static const _ringerModeChannel = MethodChannel('truku/ringer_mode');
 
   Future<String> _ringerMode() async {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) return 'normal';
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android)
+      return 'normal';
     try {
       return await _ringerModeChannel.invokeMethod<String>('getRingerMode') ??
           'normal';
@@ -86,8 +87,10 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     if (!_ringing || mode == 'silent') return;
     if (!kIsWeb) {
       // 與 ringtone.wav 同步：震 0.7s、停 0.15s、震 0.7s、停 0.85s，整輪 2.4s 循環。
-      Vibration.vibrate(pattern: [0, 700, 150, 700, 850], repeat: 0)
-          .catchError((e) => debugPrint('Failed to vibrate: $e'));
+      Vibration.vibrate(
+        pattern: [0, 700, 150, 700, 850],
+        repeat: 0,
+      ).catchError((e) => debugPrint('Failed to vibrate: $e'));
     }
     if (mode == 'vibrate') return;
     try {
@@ -321,7 +324,10 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
           size: 120,
           fallbackIconColor: AppColors.gold,
           fallback: DecoratedBox(
-            decoration: const BoxDecoration(shape: BoxShape.circle, color: AppColors.ink),
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.ink,
+            ),
             child: Center(
               child: Text(
                 call.callerNickname?.characters.firstOrNull ?? '?',

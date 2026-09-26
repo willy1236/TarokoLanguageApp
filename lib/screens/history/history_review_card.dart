@@ -57,9 +57,9 @@ class ReviewCard extends StatelessWidget {
         message: message,
       );
       if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('已送出回報，感謝您的協助')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('已送出回報，感謝您的協助')));
     } catch (e) {
       if (!context.mounted) return;
       final text = e is ApiException
@@ -173,7 +173,10 @@ class ReviewCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       const Text(
                         '原題發音',
-                        style: TextStyle(fontSize: AppTypography.micro, color: AppColors.fog),
+                        style: TextStyle(
+                          fontSize: AppTypography.micro,
+                          color: AppColors.fog,
+                        ),
                       ),
                     ],
                   ),
@@ -256,7 +259,10 @@ class ReviewCard extends StatelessWidget {
                       const SizedBox(height: 2),
                       const Text(
                         '標準發音',
-                        style: TextStyle(fontSize: AppTypography.micro, color: AppColors.fog),
+                        style: TextStyle(
+                          fontSize: AppTypography.micro,
+                          color: AppColors.fog,
+                        ),
                       ),
                     ],
                   ),
@@ -273,10 +279,17 @@ class ReviewCard extends StatelessWidget {
                 minimumSize: Size.zero,
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
               ),
-              icon: const Icon(Icons.flag_outlined, size: 14, color: AppColors.fog),
+              icon: const Icon(
+                Icons.flag_outlined,
+                size: 14,
+                color: AppColors.fog,
+              ),
               label: const Text(
                 '回報問題',
-                style: TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
+                style: TextStyle(
+                  fontSize: AppTypography.caption,
+                  color: AppColors.fog,
+                ),
               ),
             ),
           ),
@@ -292,7 +305,10 @@ class ReviewCard extends StatelessWidget {
           width: 64,
           child: Text(
             label,
-            style: const TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
+            style: const TextStyle(
+              fontSize: AppTypography.caption,
+              color: AppColors.fog,
+            ),
           ),
         ),
         Expanded(

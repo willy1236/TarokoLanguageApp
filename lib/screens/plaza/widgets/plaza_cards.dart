@@ -84,7 +84,10 @@ class PlazaBoardTab extends StatelessWidget {
               child: Text(
                 label,
                 style: AppTypography.serif(
-                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.body,
+                    seniorMode: seniorMode,
+                  ),
                   fontWeight: FontWeight.w600,
                   color: color,
                   letterSpacing: 1.5,

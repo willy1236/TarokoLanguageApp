@@ -51,7 +51,8 @@ class AccountService {
   }
 
   /// 匯出本人所有資料，回傳 JSON 原文（直接存檔，不在 App 內解析）。
-  static Future<String> exportData() => ApiClient.getRaw(ApiConfig.accountExport);
+  static Future<String> exportData() =>
+      ApiClient.getRaw(ApiConfig.accountExport);
 }
 
 /// 距離 [purgeAt] 還剩幾天（無條件進位，最少 0）。

@@ -85,7 +85,10 @@ class EventDetailBody extends StatelessWidget {
                   Text(
                     '發起人',
                     style: TextStyle(
-                      fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.micro,
+                        seniorMode: seniorMode,
+                      ),
                       color: AppColors.fog,
                       letterSpacing: 1.5,
                     ),
@@ -93,7 +96,10 @@ class EventDetailBody extends StatelessWidget {
                   Text(
                     hostName,
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.body,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                     ),
@@ -114,7 +120,10 @@ class EventDetailBody extends StatelessWidget {
                   child: Text(
                     '你發起的',
                     style: TextStyle(
-                      fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.micro,
+                        seniorMode: seniorMode,
+                      ),
                       color: AppColors.goldDeep,
                       letterSpacing: 1.0,
                     ),
@@ -174,13 +183,19 @@ class EventDetailBody extends StatelessWidget {
           if (e.description != null && e.description!.isNotEmpty) ...[
             Text(
               '活動介紹',
-              style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+              style: AppTypography.titleStyle(
+                seniorMode: seniorMode,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             Text(
               e.description!,
               style: TextStyle(
-                fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
                 color: AppColors.inkSoft,
                 height: 1.7,
                 letterSpacing: 0.4,
@@ -199,7 +214,10 @@ class EventDetailBody extends StatelessWidget {
           if (reminders.isNotEmpty) ...[
             Text(
               '提醒紀錄',
-              style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+              style: AppTypography.titleStyle(
+                seniorMode: seniorMode,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             if (_pendingReminders().isNotEmpty) ...[
@@ -226,7 +244,10 @@ class EventDetailBody extends StatelessWidget {
               (e.contactPhone != null && e.contactPhone!.isNotEmpty)) ...[
             Text(
               '聯絡資訊',
-              style: AppTypography.titleStyle(seniorMode: seniorMode, color: AppColors.ink),
+              style: AppTypography.titleStyle(
+                seniorMode: seniorMode,
+                color: AppColors.ink,
+              ),
             ),
             const SizedBox(height: 8),
             if (e.contactEmail != null && e.contactEmail!.isNotEmpty)
@@ -255,7 +276,10 @@ class EventDetailBody extends StatelessWidget {
         Text(
           '$label ',
           style: TextStyle(
-            fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.caption,
+              seniorMode: seniorMode,
+            ),
             color: AppColors.fog,
             letterSpacing: 1.0,
           ),
@@ -265,7 +289,10 @@ class EventDetailBody extends StatelessWidget {
           child: Text(
             value,
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.ink,
               letterSpacing: 0.4,
             ),
@@ -298,7 +325,10 @@ class EventDetailBody extends StatelessWidget {
               Text(
                 title,
                 style: TextStyle(
-                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.caption,
+                    seniorMode: seniorMode,
+                  ),
                   color: AppColors.goldDeep,
                   letterSpacing: 1.0,
                 ),
@@ -309,7 +339,10 @@ class EventDetailBody extends StatelessWidget {
           Text(
             body,
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.inkSoft,
               height: 1.6,
             ),
@@ -321,9 +354,7 @@ class EventDetailBody extends StatelessWidget {
 
   /// 排定發送（尚未送達，含派送中）：依排定時間由近到遠排序。
   List<EventReminder> _pendingReminders() {
-    final list = reminders
-        .where((r) => r.isPending || r.isProcessing)
-        .toList();
+    final list = reminders.where((r) => r.isPending || r.isProcessing).toList();
     list.sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
     return list;
   }
@@ -342,7 +373,10 @@ class EventDetailBody extends StatelessWidget {
     return Text(
       text,
       style: TextStyle(
-        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+        fontSize: AppTypography.size(
+          AppTypography.caption,
+          seniorMode: seniorMode,
+        ),
         color: AppColors.fog,
         letterSpacing: 1.5,
       ),
@@ -377,7 +411,10 @@ class EventDetailBody extends StatelessWidget {
           Text(
             r.message,
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.ink,
               height: 1.6,
             ),
@@ -386,7 +423,10 @@ class EventDetailBody extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.caption,
+                seniorMode: seniorMode,
+              ),
               color: color,
               letterSpacing: 0.6,
             ),
@@ -415,7 +455,10 @@ class EventDetailBody extends StatelessWidget {
               Text(
                 '報名人數',
                 style: TextStyle(
-                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.caption,
+                    seniorMode: seniorMode,
+                  ),
                   color: AppColors.inkSoft,
                   letterSpacing: 1.0,
                 ),
@@ -425,7 +468,10 @@ class EventDetailBody extends StatelessWidget {
                     ? '$count 人 · 不限名額'
                     : '$count / $max 人 · 剩 ${max - count} 個名額',
                 style: TextStyle(
-                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.caption,
+                    seniorMode: seniorMode,
+                  ),
                   color: AppColors.primary,
                   fontWeight: FontWeight.w600,
                 ),

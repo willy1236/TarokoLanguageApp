@@ -294,10 +294,8 @@ class ForumService {
   }
 
   /// 不帶 [ids] 代表全部標記已讀。
-  static Future<void> markRead({List<int>? ids}) => ApiClient.post(
-    ApiConfig.forumNotificationsRead,
-    {'ids': ?ids},
-  );
+  static Future<void> markRead({List<int>? ids}) =>
+      ApiClient.post(ApiConfig.forumNotificationsRead, {'ids': ?ids});
 
   // ── 書籤 ──────────────────────────────────────────────────
 

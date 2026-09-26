@@ -43,10 +43,12 @@ void main() {
   group('blockIfReadOnly', () {
     testWidgets('非唯讀時放行，不顯示提示', (tester) async {
       accountLockController.setLocked(false);
-      await tester.pumpWidget(MaterialApp(
-        scaffoldMessengerKey: scaffoldMessengerKey,
-        home: const Scaffold(body: SizedBox()),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          home: const Scaffold(body: SizedBox()),
+        ),
+      );
 
       expect(blockIfReadOnly(), isFalse);
       await tester.pump();
@@ -55,10 +57,12 @@ void main() {
 
     testWidgets('唯讀時攔下動作並顯示統一提示', (tester) async {
       accountLockController.setLocked(true);
-      await tester.pumpWidget(MaterialApp(
-        scaffoldMessengerKey: scaffoldMessengerKey,
-        home: const Scaffold(body: SizedBox()),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          home: const Scaffold(body: SizedBox()),
+        ),
+      );
 
       expect(blockIfReadOnly(), isTrue);
       await tester.pump();
@@ -67,10 +71,12 @@ void main() {
 
     testWidgets('連續觸發只留一則提示，不會疊一整排', (tester) async {
       accountLockController.setLocked(true);
-      await tester.pumpWidget(MaterialApp(
-        scaffoldMessengerKey: scaffoldMessengerKey,
-        home: const Scaffold(body: SizedBox()),
-      ));
+      await tester.pumpWidget(
+        MaterialApp(
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          home: const Scaffold(body: SizedBox()),
+        ),
+      );
 
       blockIfReadOnly();
       blockIfReadOnly();

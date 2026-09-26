@@ -43,7 +43,10 @@ class ShowcaseChip extends StatelessWidget {
         ),
         child: Text(
           label,
-          style: AppTypography.subtitleStyle(seniorMode: seniorMode, color: color),
+          style: AppTypography.subtitleStyle(
+            seniorMode: seniorMode,
+            color: color,
+          ),
         ),
       ),
     );

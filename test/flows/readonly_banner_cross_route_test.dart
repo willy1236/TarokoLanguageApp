@@ -22,19 +22,19 @@ import '../helpers/widget_test_helpers.dart';
 const int _eventId = 1;
 
 Map<String, dynamic> _eventDetail() => {
-      'id': _eventId,
-      'host_uid': 100,
-      'title': '部落豐年祭',
-      'description': '一起來跳舞',
-      'starts_at': '2026-12-01T10:00:00Z',
-      'status': 'active',
-      'effective_status': 'active',
-      'registration_open': true,
-      'is_joined': false,
-      'is_liked': false,
-      'like_count': 3,
-      'participant_count': 5,
-    };
+  'id': _eventId,
+  'host_uid': 100,
+  'title': '部落豐年祭',
+  'description': '一起來跳舞',
+  'starts_at': '2026-12-01T10:00:00Z',
+  'status': 'active',
+  'effective_status': 'active',
+  'registration_open': true,
+  'is_joined': false,
+  'is_liked': false,
+  'like_count': 3,
+  'participant_count': 5,
+};
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -50,38 +50,38 @@ void main() {
   });
 
   Map<String, Object?> routes() => {
-        '/api/me': {
-          'uid': 1,
-          'display_name': '測試使用者',
-          'created_at': '2026-01-01T00:00:00Z',
-          'email': 'me@example.com',
-          'millet': 100,
-          'profile_completed': true,
-        },
-        '/api/shop/items': {'items': <dynamic>[]},
-        '/api/checkin/status': {
-          'checked_in_today': false,
-          'streak': 0,
-          'weekly_count': 0,
-          'weekly_bonus_earned': false,
-        },
-        '/api/notifications/summary': {
-          'forum_unread': 0,
-          'event_unread': 0,
-          'friend_requests': 0,
-        },
-        '/api/levels': {'levels': <dynamic>[]},
-        '/api/videos': {'videos': <dynamic>[], 'total': 0},
-        '/api/articles': {'articles': <dynamic>[], 'total': 0},
-        '/api/events': {'events': <dynamic>[], 'total': 0},
-        '/api/forum/boards': {'boards': <dynamic>[]},
-        '/api/forum/posts': {'posts': <dynamic>[], 'total': 0},
-        '/api/friends': {'friends': <dynamic>[]},
-        '/api/friends/requests': {'requests': <dynamic>[]},
-        '/api/friends/messages': {'conversations': <dynamic>[]},
-        '/api/events/$_eventId': _eventDetail(),
-        '/api/events/$_eventId/reminders': {'reminders': <dynamic>[]},
-      };
+    '/api/me': {
+      'uid': 1,
+      'display_name': '測試使用者',
+      'created_at': '2026-01-01T00:00:00Z',
+      'email': 'me@example.com',
+      'millet': 100,
+      'profile_completed': true,
+    },
+    '/api/shop/items': {'items': <dynamic>[]},
+    '/api/checkin/status': {
+      'checked_in_today': false,
+      'streak': 0,
+      'weekly_count': 0,
+      'weekly_bonus_earned': false,
+    },
+    '/api/notifications/summary': {
+      'forum_unread': 0,
+      'event_unread': 0,
+      'friend_requests': 0,
+    },
+    '/api/levels': {'levels': <dynamic>[]},
+    '/api/videos': {'videos': <dynamic>[], 'total': 0},
+    '/api/articles': {'articles': <dynamic>[], 'total': 0},
+    '/api/events': {'events': <dynamic>[], 'total': 0},
+    '/api/forum/boards': {'boards': <dynamic>[]},
+    '/api/forum/posts': {'posts': <dynamic>[], 'total': 0},
+    '/api/friends': {'friends': <dynamic>[]},
+    '/api/friends/requests': {'requests': <dynamic>[]},
+    '/api/friends/messages': {'conversations': <dynamic>[]},
+    '/api/events/$_eventId': _eventDetail(),
+    '/api/events/$_eventId/reminders': {'reminders': <dynamic>[]},
+  };
 
   Future<void> pumpLockedHome(WidgetTester tester) async {
     installMockClient(routes());

@@ -35,35 +35,35 @@ void main() {
   /// installMockClient 對沒備的 path 會直接 fail 並印出是哪一支，
   /// 之後要加分頁時照著錯誤訊息補即可。
   Map<String, Object?> routes() => {
-        '/api/me': {
-          'uid': 1,
-          'display_name': '測試使用者',
-          'created_at': '2026-01-01T00:00:00Z',
-          'millet': 100,
-          'profile_completed': true,
-        },
-        '/api/shop/items': {'items': <dynamic>[]},
-        '/api/checkin/status': {
-          'checked_in_today': false,
-          'streak': 0,
-          'weekly_count': 0,
-          'weekly_bonus_earned': false,
-        },
-        '/api/notifications/summary': {
-          'forum_unread': 0,
-          'event_unread': 0,
-          'friend_requests': 0,
-        },
-        '/api/levels': {'levels': <dynamic>[]},
-        '/api/videos': {'videos': <dynamic>[], 'total': 0},
-        '/api/articles': {'articles': <dynamic>[], 'total': 0},
-        '/api/events': {'events': <dynamic>[], 'total': 0},
-        '/api/forum/boards': {'boards': <dynamic>[]},
-        '/api/friends': {'friends': <dynamic>[]},
-        '/api/friends/requests': {'requests': <dynamic>[]},
-        '/api/friends/messages': {'conversations': <dynamic>[]},
-        '/api/forum/posts': {'posts': <dynamic>[], 'total': 0},
-      };
+    '/api/me': {
+      'uid': 1,
+      'display_name': '測試使用者',
+      'created_at': '2026-01-01T00:00:00Z',
+      'millet': 100,
+      'profile_completed': true,
+    },
+    '/api/shop/items': {'items': <dynamic>[]},
+    '/api/checkin/status': {
+      'checked_in_today': false,
+      'streak': 0,
+      'weekly_count': 0,
+      'weekly_bonus_earned': false,
+    },
+    '/api/notifications/summary': {
+      'forum_unread': 0,
+      'event_unread': 0,
+      'friend_requests': 0,
+    },
+    '/api/levels': {'levels': <dynamic>[]},
+    '/api/videos': {'videos': <dynamic>[], 'total': 0},
+    '/api/articles': {'articles': <dynamic>[], 'total': 0},
+    '/api/events': {'events': <dynamic>[], 'total': 0},
+    '/api/forum/boards': {'boards': <dynamic>[]},
+    '/api/friends': {'friends': <dynamic>[]},
+    '/api/friends/requests': {'requests': <dynamic>[]},
+    '/api/friends/messages': {'conversations': <dynamic>[]},
+    '/api/forum/posts': {'posts': <dynamic>[], 'total': 0},
+  };
 
   /// 底部分頁沒有 widget Key，只能用標籤文字點。
   /// 標籤定義在 truku_bottom_tab.dart:24。
@@ -77,13 +77,11 @@ void main() {
     await pumpFrames(tester);
   }
 
-  testWidgets('切到廣場活動再切回首頁，廣場分頁不會被重建（IndexedStack 保留 State）',
-      (tester) async {
+  testWidgets('切到廣場活動再切回首頁，廣場分頁不會被重建（IndexedStack 保留 State）', (tester) async {
     final calls = <String, int>{};
     installMockClient(
       routes(),
-      onRequest: (r) =>
-          calls[r.url.path] = (calls[r.url.path] ?? 0) + 1,
+      onRequest: (r) => calls[r.url.path] = (calls[r.url.path] ?? 0) + 1,
     );
 
     usePhoneSurface(tester);
@@ -101,8 +99,11 @@ void main() {
     await tapTab(tester, '廣場活動');
 
     // 關鍵斷言：切回來不該重打 API。重打代表 State 被丟掉了。
-    expect(calls['/api/events'] ?? 0, eventCallsAfterFirstVisit,
-        reason: '切回廣場活動時重新打了 /api/events，代表分頁 State 沒有被保留');
+    expect(
+      calls['/api/events'] ?? 0,
+      eventCallsAfterFirstVisit,
+      reason: '切回廣場活動時重新打了 /api/events，代表分頁 State 沒有被保留',
+    );
   });
 
   testWidgets('五個分頁都切得過去，且切換不會讓 MainContainer 重建', (tester) async {

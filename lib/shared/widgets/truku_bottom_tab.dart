@@ -20,7 +20,13 @@ class TrukuBottomTab extends StatelessWidget {
     this.badges = const {},
   });
 
-  static const _keys = ['home', 'learn_culture', 'plaza_event', 'friends', 'me'];
+  static const _keys = [
+    'home',
+    'learn_culture',
+    'plaza_event',
+    'friends',
+    'me',
+  ];
   static const _labels = ['首頁', '學習影音', '廣場活動', '好友', '我的'];
   static const _seniorHiddenKeys = <String>{};
 
@@ -56,18 +62,13 @@ class TrukuBottomTab extends StatelessWidget {
                 Builder(
                   builder: (context) {
                     final isActive = i == currentIndex;
-                    final color = isActive
-                        ? AppColors.primary
-                        : AppColors.fog;
+                    final color = isActive ? AppColors.primary : AppColors.fog;
                     return GestureDetector(
                       onTap: () => onTap(i),
                       behavior: HitTestBehavior.opaque,
                       child: ConstrainedBox(
                         constraints: seniorMode
-                            ? const BoxConstraints(
-                                minWidth: 56,
-                                minHeight: 56,
-                              )
+                            ? const BoxConstraints(minWidth: 56, minHeight: 56)
                             : const BoxConstraints(),
                         child: Padding(
                           padding: EdgeInsets.symmetric(

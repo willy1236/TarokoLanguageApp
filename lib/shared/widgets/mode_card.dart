@@ -150,7 +150,8 @@ class ModeCard extends StatelessWidget {
         final pad = _padFor(constraints.maxHeight, full + 36);
         // 連最小內距都塞不下完整內容時，副標是最先該讓位的——它是輔助說明，
         // 中文標題與 icon 才是這張卡的識別。
-        final showSub = !constraints.maxHeight.isFinite ||
+        final showSub =
+            !constraints.maxHeight.isFinite ||
             constraints.maxHeight >= full + pad * 2;
         return Padding(
           padding: EdgeInsets.all(pad),

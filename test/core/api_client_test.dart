@@ -145,12 +145,15 @@ void main() {
 
     test('body 沒有時改讀 Retry-After header', () async {
       ApiClient.httpClient = MockClient(
-        (_) async => http.Response('Too Many', 429, headers: {'retry-after': '7'}),
+        (_) async =>
+            http.Response('Too Many', 429, headers: {'retry-after': '7'}),
       );
 
       expect(
         () => ApiClient.get('/api/ping'),
-        throwsA(isA<ApiException>().having((e) => e.retryAfter, 'retryAfter', 7)),
+        throwsA(
+          isA<ApiException>().having((e) => e.retryAfter, 'retryAfter', 7),
+        ),
       );
     });
 
@@ -169,12 +172,18 @@ void main() {
   });
 
   test('410 ACCOUNT_PURGED 解析為 isAccountPurged', () {
-    final e = ApiException(statusCode: 410, code: 'ACCOUNT_PURGED', message: '');
+    final e = ApiException(
+      statusCode: 410,
+      code: 'ACCOUNT_PURGED',
+      message: '',
+    );
     expect(e.isAccountPurged, isTrue);
     expect(e.isUnauthorized, isFalse);
   });
 
-  testWidgets('403 ACCOUNT_PENDING_DELETION 導去 /account-pending', (tester) async {
+  testWidgets('403 ACCOUNT_PENDING_DELETION 導去 /account-pending', (
+    tester,
+  ) async {
     await tester.pumpWidget(
       MaterialApp(
         navigatorKey: navigatorKey,
@@ -197,11 +206,13 @@ void main() {
     await tester.runAsync(() async {
       await expectLater(
         ApiClient.get('/api/me'),
-        throwsA(isA<ApiException>().having(
-          (e) => e.isAccountPendingDeletion,
-          'isAccountPendingDeletion',
-          isTrue,
-        )),
+        throwsA(
+          isA<ApiException>().having(
+            (e) => e.isAccountPendingDeletion,
+            'isAccountPendingDeletion',
+            isTrue,
+          ),
+        ),
       );
     });
     await tester.pumpAndSettle();
@@ -234,11 +245,13 @@ void main() {
       await tester.runAsync(() async {
         await expectLater(
           ApiClient.post('/api/forum/posts/1/like'),
-          throwsA(isA<ApiException>().having(
-            (e) => e.isAccountLocked,
-            'isAccountLocked',
-            isTrue,
-          )),
+          throwsA(
+            isA<ApiException>().having(
+              (e) => e.isAccountLocked,
+              'isAccountLocked',
+              isTrue,
+            ),
+          ),
         );
       });
       await tester.pump();
@@ -259,7 +272,10 @@ void main() {
         ),
       );
 
-      await expectLater(ApiClient.get('/api/ping'), throwsA(isA<ApiException>()));
+      await expectLater(
+        ApiClient.get('/api/ping'),
+        throwsA(isA<ApiException>()),
+      );
       expect(accountLockController.locked, isFalse);
     });
   });
@@ -332,7 +348,11 @@ void main() {
   });
 
   test('410 下架內容不當成帳號已刪除', () {
-    for (final code in ['ARTICLE_ARCHIVED', 'VIDEO_ARCHIVED', 'SESSION_ENDED']) {
+    for (final code in [
+      'ARTICLE_ARCHIVED',
+      'VIDEO_ARCHIVED',
+      'SESSION_ENDED',
+    ]) {
       final e = ApiException(statusCode: 410, code: code, message: '');
       expect(e.isAccountPurged, isFalse, reason: code);
     }

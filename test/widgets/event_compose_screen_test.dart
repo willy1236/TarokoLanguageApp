@@ -15,20 +15,23 @@ import '../helpers/widget_test_helpers.dart';
 
 /// 編輯模式會用既有活動預填表單，省去在測試裡操作日期／時間選擇器。
 EventDetail _editing() => EventDetail(
-      id: 1,
-      hostUid: 100,
-      title: '部落豐年祭',
-      description: '一起來跳舞',
-      startsAt: DateTime.now().add(const Duration(days: 30)),
-      location: '花蓮縣秀林鄉',
-      address: '秀林鄉中正路 1 號',
-      status: 'active',
-      effectiveStatus: 'active',
-      registrationOpen: true,
-    );
+  id: 1,
+  hostUid: 100,
+  title: '部落豐年祭',
+  description: '一起來跳舞',
+  startsAt: DateTime.now().add(const Duration(days: 30)),
+  location: '花蓮縣秀林鄉',
+  address: '秀林鄉中正路 1 號',
+  status: 'active',
+  effectiveStatus: 'active',
+  registrationOpen: true,
+);
 
 /// 用一顆按鈕把表單 push 起來，才能接到 Navigator.pop 的回傳值。
-Widget _host({required EventDetail? editing, required void Function(Object?) onPop}) {
+Widget _host({
+  required EventDetail? editing,
+  required void Function(Object?) onPop,
+}) {
   return MaterialApp(
     home: Builder(
       builder: (context) => Scaffold(
@@ -59,9 +62,9 @@ Future<void> _openForm(WidgetTester tester) async {
 /// 這個斷言本身就是在守「錯誤訊息不會被藏在表單最底下」這件事：
 /// 若哪天有人把它改回 inline 渲染，這裡會因為沒有 SnackBar 而變紅。
 Finder _errorSnackBar(String contains) => find.descendant(
-      of: find.byType(SnackBar),
-      matching: find.textContaining(contains),
-    );
+  of: find.byType(SnackBar),
+  matching: find.textContaining(contains),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -71,10 +74,9 @@ void main() {
 
   testWidgets('新建表單必填未填時顯示錯誤且不打 API', (tester) async {
     var calls = 0;
-    installMockClient(
-      {'/api/events': <String, dynamic>{}},
-      onRequest: (_) => calls++,
-    );
+    installMockClient({
+      '/api/events': <String, dynamic>{},
+    }, onRequest: (_) => calls++);
 
     await tester.pumpWidget(_host(editing: null, onPop: (_) {}));
     await _openForm(tester);
@@ -102,7 +104,9 @@ void main() {
     Object? popped;
     installMockClient({'/api/events/1': <String, dynamic>{}});
 
-    await tester.pumpWidget(_host(editing: _editing(), onPop: (r) => popped = r));
+    await tester.pumpWidget(
+      _host(editing: _editing(), onPop: (r) => popped = r),
+    );
     await _openForm(tester);
 
     await tester.enterText(find.text('部落豐年祭').first, '部落豐年祭（改期）');
@@ -122,7 +126,9 @@ void main() {
       ),
     });
 
-    await tester.pumpWidget(_host(editing: _editing(), onPop: (r) => popped = r));
+    await tester.pumpWidget(
+      _host(editing: _editing(), onPop: (r) => popped = r),
+    );
     await _openForm(tester);
 
     await tester.enterText(find.text('部落豐年祭').first, '改個名字');
@@ -139,7 +145,9 @@ void main() {
       '/api/events/1': errorResponse('EVENT_CLOSED', status: 409),
     });
 
-    await tester.pumpWidget(_host(editing: _editing(), onPop: (r) => popped = r));
+    await tester.pumpWidget(
+      _host(editing: _editing(), onPop: (r) => popped = r),
+    );
     await _openForm(tester);
 
     await tester.enterText(find.text('部落豐年祭').first, '改個名字');
@@ -156,7 +164,9 @@ void main() {
       '/api/events/1': errorResponse('EVENT_ENDED', status: 409),
     });
 
-    await tester.pumpWidget(_host(editing: _editing(), onPop: (r) => popped = r));
+    await tester.pumpWidget(
+      _host(editing: _editing(), onPop: (r) => popped = r),
+    );
     await _openForm(tester);
 
     await tester.enterText(find.text('部落豐年祭').first, '改個名字');

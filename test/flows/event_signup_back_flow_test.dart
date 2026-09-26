@@ -26,21 +26,25 @@ import '../helpers/widget_test_helpers.dart';
 const int _eventId = 41;
 
 /// fixture 第一筆（id=41）改成「還沒開始、開放報名」。
-Map<String, dynamic> _openedUp(Map<String, dynamic> base, int participantCount) =>
-    {
-      ...base,
-      'title': '部落豐年祭',
-      'starts_at': '2099-12-01T10:00:00Z',
-      'registration_deadline': '2099-11-30T10:00:00Z',
-      'effective_status': 'active',
-      'registration_open': true,
-      'participant_count': participantCount,
-    };
+Map<String, dynamic> _openedUp(
+  Map<String, dynamic> base,
+  int participantCount,
+) => {
+  ...base,
+  'title': '部落豐年祭',
+  'starts_at': '2099-12-01T10:00:00Z',
+  'registration_deadline': '2099-11-30T10:00:00Z',
+  'effective_status': 'active',
+  'registration_open': true,
+  'participant_count': participantCount,
+};
 
 Map<String, dynamic> _list(int participantCount) {
   final base = loadFixtureMap('get_api_events_scope_all.json');
-  final first =
-      loadFixtureList('get_api_events_scope_all.json', 'events').first;
+  final first = loadFixtureList(
+    'get_api_events_scope_all.json',
+    'events',
+  ).first;
   return {
     ...base,
     'total': 1,
@@ -48,23 +52,22 @@ Map<String, dynamic> _list(int participantCount) {
   };
 }
 
-Map<String, dynamic> _detail(int participantCount) => _openedUp(
-      loadFixtureMap('get_api_event_detail.json'),
-      participantCount,
-    )..['is_joined'] = false;
+Map<String, dynamic> _detail(int participantCount) =>
+    _openedUp(loadFixtureMap('get_api_event_detail.json'), participantCount)
+      ..['is_joined'] = false;
 
 Map<String, dynamic> _me() => {
-      'uid': 1,
-      'display_name': '測試使用者',
-      'created_at': '2026-01-01T00:00:00Z',
-      'email': 'me@example.com',
-      'profile_completed': true,
-    };
+  'uid': 1,
+  'display_name': '測試使用者',
+  'created_at': '2026-01-01T00:00:00Z',
+  'email': 'me@example.com',
+  'profile_completed': true,
+};
 
 Widget _app() => MaterialApp(
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      home: const Scaffold(body: EventsScreen()),
-    );
+  scaffoldMessengerKey: scaffoldMessengerKey,
+  home: const Scaffold(body: EventsScreen()),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -133,13 +136,12 @@ void main() {
     await pumpFrames(tester, times: 10);
 
     expect(find.byType(EventsScreen), findsOneWidget);
+    expect(listCalls, 2, reason: '從詳情頁返回後列表應該重新載入，否則報名完的參加人數不會同步');
     expect(
-      listCalls,
-      2,
-      reason: '從詳情頁返回後列表應該重新載入，否則報名完的參加人數不會同步',
+      find.textContaining('6 人報名'),
+      findsWidgets,
+      reason: '列表重載了，卡片上的人數也要跟著換成後端的新值',
     );
-    expect(find.textContaining('6 人報名'), findsWidgets,
-        reason: '列表重載了，卡片上的人數也要跟著換成後端的新值');
     expect(find.textContaining('5 人報名'), findsNothing);
   });
 }

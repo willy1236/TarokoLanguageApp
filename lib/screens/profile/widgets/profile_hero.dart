@@ -174,11 +174,7 @@ class ProfileHero extends StatelessWidget {
   /// 純裝飾標章：顯示「單字 · 等級」，未分級顯示「單字 · 未測驗」。
   /// 不可點——已分級的本來就不能點，只有未分級能點會讓人以為標章壞掉，
   /// 分級測驗另有自己的入口。
-  Widget _levelBadge(
-    String label,
-    String? level, {
-    required bool seniorMode,
-  }) {
+  Widget _levelBadge(String label, String? level, {required bool seniorMode}) {
     final tested = level != null;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),

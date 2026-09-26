@@ -59,7 +59,8 @@ class DefaultFirebaseOptions {
     messagingSenderId: '230831538559',
     projectId: 'extreme-quasar-494406-v7',
     storageBucket: 'extreme-quasar-494406-v7.firebasestorage.app',
-    iosClientId: '230831538559-8adaulnc7rd66dlug5gu55esgk0gse26.apps.googleusercontent.com',
+    iosClientId:
+        '230831538559-8adaulnc7rd66dlug5gu55esgk0gse26.apps.googleusercontent.com',
     iosBundleId: 'tw.yujiantailuge.app',
   );
 

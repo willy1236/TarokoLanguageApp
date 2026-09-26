@@ -33,9 +33,10 @@ class FriendService {
 
   static Future<List<FriendRequest>> getIncomingRequests() async {
     final data = await ApiClient.get(ApiConfig.friendRequests);
-    return ApiClient.unwrapList(data, 'requests')
-        .map((e) => FriendRequest.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.unwrapList(
+      data,
+      'requests',
+    ).map((e) => FriendRequest.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   static Future<void> acceptRequest(int uid) async {
@@ -50,9 +51,10 @@ class FriendService {
 
   static Future<List<Friendship>> getFriends() async {
     final data = await ApiClient.get(ApiConfig.friends);
-    return ApiClient.unwrapList(data, 'friends')
-        .map((e) => Friendship.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.unwrapList(
+      data,
+      'friends',
+    ).map((e) => Friendship.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// 解除好友，或取消我送出的邀請（後端同一個端點依現況處理）。
@@ -70,9 +72,10 @@ class FriendService {
 
   static Future<List<BlockedUser>> getBlockedUsers() async {
     final data = await ApiClient.get(ApiConfig.friendBlocks);
-    return ApiClient.unwrapList(data, 'blocks')
-        .map((e) => BlockedUser.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.unwrapList(
+      data,
+      'blocks',
+    ).map((e) => BlockedUser.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// 同意展示與此好友的羈絆（雙方皆同意才會出現在雙方公開檔案上）。
@@ -87,27 +90,38 @@ class FriendService {
   }
 
   static Future<FriendMessage> sendMessage(int uid, String body) async {
-    final data = await ApiClient.post(ApiConfig.friendMessagesSend(uid), {'body': body});
+    final data = await ApiClient.post(ApiConfig.friendMessagesSend(uid), {
+      'body': body,
+    });
     return FriendMessage.fromJson(data['message'] as Map<String, dynamic>);
   }
 
   static Future<List<Conversation>> getConversations() async {
     final data = await ApiClient.get(ApiConfig.friendConversations);
-    return ApiClient.unwrapList(data, 'conversations')
-        .map((e) => Conversation.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.unwrapList(
+      data,
+      'conversations',
+    ).map((e) => Conversation.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// 依 cursor（訊息 id）往舊訊息分頁；cursor 為 null 取最新一頁。
-  static Future<ChatMessagePage> getMessages(int uid, {int? cursor, int limit = 30}) async {
+  static Future<ChatMessagePage> getMessages(
+    int uid, {
+    int? cursor,
+    int limit = 30,
+  }) async {
     final data = await ApiClient.get(
       ApiConfig.friendMessages(uid),
       query: {'limit': '$limit', if (cursor != null) 'cursor': '$cursor'},
     );
-    final messages = ApiClient.unwrapList(data, 'messages')
-        .map((e) => FriendMessage.fromJson(e as Map<String, dynamic>))
-        .toList();
-    return ChatMessagePage(messages: messages, nextCursor: (data['next_cursor'] as num?)?.toInt());
+    final messages = ApiClient.unwrapList(
+      data,
+      'messages',
+    ).map((e) => FriendMessage.fromJson(e as Map<String, dynamic>)).toList();
+    return ChatMessagePage(
+      messages: messages,
+      nextCursor: (data['next_cursor'] as num?)?.toInt(),
+    );
   }
 
   static Future<int> markRead(int uid) async {

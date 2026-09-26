@@ -39,9 +39,12 @@ class ApiConfig {
   static const String listeningAnswer = '/api/listening/answer';
   static const String listeningSubmit = '/api/listening/submit';
 
-  static const String listeningPlacementStart = '/api/listening/placement/start';
-  static const String listeningPlacementAnswer = '/api/listening/placement/answer';
-  static const String listeningPlacementSubmit = '/api/listening/placement/submit';
+  static const String listeningPlacementStart =
+      '/api/listening/placement/start';
+  static const String listeningPlacementAnswer =
+      '/api/listening/placement/answer';
+  static const String listeningPlacementSubmit =
+      '/api/listening/placement/submit';
 
   static const String historyList = '/api/history';
 
@@ -95,8 +98,7 @@ class ApiConfig {
   static const String eventBookmarks = '/api/events/bookmarks';
   static const String eventSearch = '/api/events/search';
   static const String eventNotifications = '/api/events/notifications';
-  static const String eventNotificationsRead =
-      '/api/events/notifications/read';
+  static const String eventNotificationsRead = '/api/events/notifications/read';
   static const String devices = '/api/devices';
 
   // 每日簽到（issue #24，見 每日簽到.md）
@@ -136,8 +138,10 @@ class ApiConfig {
 
   // 好友關係與封鎖（見 Truku_backend backend/routes/friends.ts）
   static const String friendRequests = '/api/friends/requests';
-  static String friendRequestAccept(int uid) => '/api/friends/requests/$uid/accept';
-  static String friendRequestDecline(int uid) => '/api/friends/requests/$uid/decline';
+  static String friendRequestAccept(int uid) =>
+      '/api/friends/requests/$uid/accept';
+  static String friendRequestDecline(int uid) =>
+      '/api/friends/requests/$uid/decline';
   static const String friends = '/api/friends';
   static String friendDetail(int uid) => '/api/friends/$uid';
   static const String friendBlocks = '/api/friends/blocks';
@@ -158,6 +162,8 @@ class ApiConfig {
   static String friendMessagesSend(int uid) => '/api/friends/$uid/messages';
   static const String friendConversations = '/api/friends/messages';
   static String friendMessages(int uid) => '/api/friends/$uid/messages';
-  static String friendMessagesRead(int uid) => '/api/friends/$uid/messages/read';
-  static String friendMessageReport(int id) => '/api/friends/messages/$id/report';
+  static String friendMessagesRead(int uid) =>
+      '/api/friends/$uid/messages/read';
+  static String friendMessageReport(int id) =>
+      '/api/friends/messages/$id/report';
 }

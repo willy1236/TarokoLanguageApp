@@ -61,7 +61,10 @@ class TrukuEmptyState extends StatelessWidget {
         Text(
           message,
           style: AppTypography.serif(
-            fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.subtitle,
+              seniorMode: seniorMode,
+            ),
             fontWeight: FontWeight.w700,
             color: AppColors.ink,
           ),
@@ -71,7 +74,9 @@ class TrukuEmptyState extends StatelessWidget {
           subtitle,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: seniorMode ? AppTypography.body + AppTypography.seniorStep : null,
+            fontSize: seniorMode
+                ? AppTypography.body + AppTypography.seniorStep
+                : null,
             color: AppColors.fog,
           ),
         ),

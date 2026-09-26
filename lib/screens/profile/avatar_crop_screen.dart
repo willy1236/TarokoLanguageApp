@@ -43,7 +43,11 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
         foregroundColor: Colors.white,
         title: Text(
           '裁切頭像',
-          style: TextStyle(fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null),
+          style: TextStyle(
+            fontSize: seniorMode
+                ? AppTypography.bodyLarge + AppTypography.seniorStep
+                : null,
+          ),
         ),
         leading: IconButton(
           icon: const Icon(Icons.close),
@@ -70,7 +74,9 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
                     style: TextStyle(
                       color: AppColors.cream,
                       fontWeight: FontWeight.bold,
-                      fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
+                      fontSize: seniorMode
+                          ? AppTypography.bodyLarge + AppTypography.seniorStep
+                          : null,
                     ),
                   ),
           ),

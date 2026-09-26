@@ -18,14 +18,14 @@ import 'package:flutter_application_1/shared/widgets/async_state_view.dart';
 import '../helpers/widget_test_helpers.dart';
 
 QuizFlowQuestion _q(String id, {int? selected}) => QuizFlowQuestion(
-      id: id,
-      prompt: '題目 $id',
-      options: [
-        QuizFlowOption(id: 1, text: '$id-選項一'),
-        QuizFlowOption(id: 2, text: '$id-選項二'),
-      ],
-      selectedOptionId: selected,
-    );
+  id: id,
+  prompt: '題目 $id',
+  options: [
+    QuizFlowOption(id: 1, text: '$id-選項一'),
+    QuizFlowOption(id: 2, text: '$id-選項二'),
+  ],
+  selectedOptionId: selected,
+);
 
 QuizFlowSession _session(List<QuizFlowQuestion> questions) =>
     QuizFlowSession(sessionId: 's1', level: '初級', questions: questions);
@@ -82,10 +82,8 @@ void main() {
 
   testWidgets('載入中顯示轉圈', (tester) async {
     final controller = _controller(
-      start: () => Future.delayed(
-        const Duration(seconds: 1),
-        () => _session([_q('a')]),
-      ),
+      start: () =>
+          Future.delayed(const Duration(seconds: 1), () => _session([_q('a')])),
     );
     addTearDown(controller.dispose);
 
@@ -146,9 +144,7 @@ void main() {
   });
 
   testWidgets('最後一題的按鈕文字換成完成測驗', (tester) async {
-    final controller = _controller(
-      start: () async => _session([_q('a')]),
-    );
+    final controller = _controller(start: () async => _session([_q('a')]));
     addTearDown(controller.dispose);
 
     await tester.pumpWidget(_view(controller));
@@ -161,11 +157,7 @@ void main() {
 
   testWidgets('續接時跳到第一個沒作答的題目', (tester) async {
     final controller = _controller(
-      start: () async => _session([
-        _q('a', selected: 1),
-        _q('b'),
-        _q('c'),
-      ]),
+      start: () async => _session([_q('a', selected: 1), _q('b'), _q('c')]),
     );
     addTearDown(controller.dispose);
 
@@ -213,9 +205,14 @@ void main() {
     );
     addTearDown(controller.dispose);
 
-    await tester.pumpWidget(_view(controller, onRetry: () async {
-      retried = true;
-    }));
+    await tester.pumpWidget(
+      _view(
+        controller,
+        onRetry: () async {
+          retried = true;
+        },
+      ),
+    );
     await controller.load();
     await tester.pump();
 
@@ -247,15 +244,12 @@ void main() {
   });
 
   testWidgets('送出完成後顯示 doneBuilder 的內容', (tester) async {
-    final controller = _controller(
-      start: () async => _session([_q('a')]),
-    );
+    final controller = _controller(start: () async => _session([_q('a')]));
     addTearDown(controller.dispose);
 
-    await tester.pumpWidget(_view(
-      controller,
-      doneBuilder: (_) => const Center(child: Text('計分中')),
-    ));
+    await tester.pumpWidget(
+      _view(controller, doneBuilder: (_) => const Center(child: Text('計分中'))),
+    );
     await controller.load();
     await tester.pump();
 

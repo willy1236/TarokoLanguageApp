@@ -82,7 +82,10 @@ class PillSegmentedToggle extends StatelessWidget {
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.center,
               style: AppTypography.serif(
-                fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.subtitle,
+                  seniorMode: seniorMode,
+                ),
                 fontWeight: FontWeight.w600,
                 color: textColor,
               ),

@@ -38,7 +38,8 @@ abstract class AppTypography {
   static const double seniorStep = 2;
 
   /// 依模式換算字級：精簡模式 = [base] + [seniorStep]
-  static double size(double base, {bool seniorMode = false}) => seniorMode ? base + seniorStep : base;
+  static double size(double base, {bool seniorMode = false}) =>
+      seniorMode ? base + seniorStep : base;
 
   // ── 字族 builder ─────────────────────────────────────────
   // 沒有對應 *Style() 角色的組合用這組，參數與 GoogleFonts 同名；字級請傳代幣。
@@ -122,48 +123,55 @@ abstract class AppTypography {
   // 方法名稱代表字族／字重的「角色」，不代表字級排名；各角色的一般模式字級沿用
   // 原設計（標在各方法註解），精簡模式同樣 +[seniorStep]。
   // notoSerifTc + w700：大標題／強調數字（20）
-  static TextStyle headlineStyle({bool seniorMode = false, Color? color}) => GoogleFonts.notoSerifTc(
-    fontSize: size(title, seniorMode: seniorMode),
-    fontWeight: FontWeight.w700,
-    color: color,
-  );
+  static TextStyle headlineStyle({bool seniorMode = false, Color? color}) =>
+      GoogleFonts.notoSerifTc(
+        fontSize: size(title, seniorMode: seniorMode),
+        fontWeight: FontWeight.w700,
+        color: color,
+      );
 
   // notoSerifTc + w600（大字）：畫面主標題（16）
-  static TextStyle titleStyle({bool seniorMode = false, Color? color}) => GoogleFonts.notoSerifTc(
-    fontSize: size(bodyLarge, seniorMode: seniorMode),
-    fontWeight: FontWeight.w600,
-    color: color,
-  );
+  static TextStyle titleStyle({bool seniorMode = false, Color? color}) =>
+      GoogleFonts.notoSerifTc(
+        fontSize: size(bodyLarge, seniorMode: seniorMode),
+        fontWeight: FontWeight.w600,
+        color: color,
+      );
 
   // notoSerifTc + w600（小字）：次標題／tab 標籤，最常見的樣式群（12）
-  static TextStyle subtitleStyle({bool seniorMode = false, Color? color}) => GoogleFonts.notoSerifTc(
-    fontSize: size(caption, seniorMode: seniorMode),
-    fontWeight: FontWeight.w600,
-    color: color,
-  );
+  static TextStyle subtitleStyle({bool seniorMode = false, Color? color}) =>
+      GoogleFonts.notoSerifTc(
+        fontSize: size(caption, seniorMode: seniorMode),
+        fontWeight: FontWeight.w600,
+        color: color,
+      );
 
   // notoSansTc, regular：內文主要（14）
-  static TextStyle bodyLargeStyle({bool seniorMode = false, Color? color}) => GoogleFonts.notoSansTc(
-    fontSize: size(body, seniorMode: seniorMode),
-    color: color,
-  );
+  static TextStyle bodyLargeStyle({bool seniorMode = false, Color? color}) =>
+      GoogleFonts.notoSansTc(
+        fontSize: size(body, seniorMode: seniorMode),
+        color: color,
+      );
 
   // notoSansTc, regular：內文次要（12）
-  static TextStyle bodyStyle({bool seniorMode = false, Color? color}) => GoogleFonts.notoSansTc(
-    fontSize: size(caption, seniorMode: seniorMode),
-    color: color,
-  );
+  static TextStyle bodyStyle({bool seniorMode = false, Color? color}) =>
+      GoogleFonts.notoSansTc(
+        fontSize: size(caption, seniorMode: seniorMode),
+        color: color,
+      );
 
   // notoSansTc, regular（更小字）：輔助說明文字（10）
-  static TextStyle captionStyle({bool seniorMode = false, Color? color}) => GoogleFonts.notoSansTc(
-    fontSize: size(micro, seniorMode: seniorMode),
-    color: color,
-  );
+  static TextStyle captionStyle({bool seniorMode = false, Color? color}) =>
+      GoogleFonts.notoSansTc(
+        fontSize: size(micro, seniorMode: seniorMode),
+        color: color,
+      );
 
   // crimsonPro + italic：族語拉丁拼音專用（10）
-  static TextStyle romanized({bool seniorMode = false, Color? color}) => GoogleFonts.crimsonPro(
-    fontSize: size(micro, seniorMode: seniorMode),
-    fontStyle: FontStyle.italic,
-    color: color,
-  );
+  static TextStyle romanized({bool seniorMode = false, Color? color}) =>
+      GoogleFonts.crimsonPro(
+        fontSize: size(micro, seniorMode: seniorMode),
+        fontStyle: FontStyle.italic,
+        color: color,
+      );
 }

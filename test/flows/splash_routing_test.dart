@@ -27,14 +27,14 @@ void main() {
 
   /// splash 的四個可能目的地都換成假畫面，斷言時找文字即可。
   Widget app() => buildTestApp(
-        initialRoute: '/splash',
-        overrides: {
-          '/login': (_) => fakeRoute('LOGIN'),
-          '/complete-profile': (_) => fakeRoute('COMPLETE_PROFILE'),
-          '/terms-consent': (_) => fakeRoute('TERMS'),
-          '/home': (_) => fakeRoute('HOME'),
-        },
-      );
+    initialRoute: '/splash',
+    overrides: {
+      '/login': (_) => fakeRoute('LOGIN'),
+      '/complete-profile': (_) => fakeRoute('COMPLETE_PROFILE'),
+      '/terms-consent': (_) => fakeRoute('TERMS'),
+      '/home': (_) => fakeRoute('HOME'),
+    },
+  );
 
   /// splash 的分支包在 `Future.delayed(2500ms)` 裡（splash_screen.dart:32），
   /// 一定要先把時間推過去。pumpAndSettle 在這裡不能用。
@@ -72,7 +72,8 @@ void main() {
 
   testWidgets('資料已完善但條款未全同意時導向條款頁', (tester) async {
     stubCommonChannels(token: 'test-token');
-    final terms = loadFixtureMap('get_api_terms.json')..['all_consented'] = false;
+    final terms = loadFixtureMap('get_api_terms.json')
+      ..['all_consented'] = false;
     installMockClient({
       '/api/account/status': loadFixtureMap('get_api_account_status.json'),
       '/api/me': loadFixtureMap('get_api_me.json'),

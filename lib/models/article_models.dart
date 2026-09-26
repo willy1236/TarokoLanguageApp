@@ -116,11 +116,7 @@ class ArticleDetail extends ArticleSummary {
 
   /// 底下三個樂觀更新方法統一走這裡：手動重寫全部欄位的話，日後新增欄位
   /// 很容易漏改其中一兩處，導致更新後該欄位被悄悄重置。
-  ArticleDetail copyWith({
-    int? likeCount,
-    bool? isLiked,
-    bool? isBookmarked,
-  }) {
+  ArticleDetail copyWith({int? likeCount, bool? isLiked, bool? isBookmarked}) {
     return ArticleDetail(
       id: id,
       title: title,

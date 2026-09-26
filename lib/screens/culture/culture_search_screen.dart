@@ -163,7 +163,9 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
                 _error!,
                 style: TextStyle(
                   color: AppColors.fog,
-                  fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
+                  fontSize: seniorMode
+                      ? AppTypography.bodyLarge + AppTypography.seniorStep
+                      : null,
                 ),
               ),
             ),
@@ -196,7 +198,9 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
           widget.emptyText,
           style: TextStyle(
             color: AppColors.fog,
-            fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null,
+            fontSize: seniorMode
+                ? AppTypography.bodyLarge + AppTypography.seniorStep
+                : null,
           ),
         ),
       );

@@ -96,12 +96,15 @@ class ApiException implements Exception {
 }
 
 /// 畫面上常見的「錯誤是不是因為未登入」判斷，統一隱藏 `is ApiException` 轉型。
-bool isAuthError(Object? error) => error is ApiException && error.isUnauthorized;
+bool isAuthError(Object? error) =>
+    error is ApiException && error.isUnauthorized;
 
 /// 給使用者看的錯誤文案：後端 [ApiException] 已是中文訊息直接用，
 /// 其他（程式錯誤、型別錯誤）不外露原始內容，改顯示 [fallback]。
 String apiErrorMessage(Object? error, {String fallback = '發生錯誤，請稍後再試'}) =>
-    error is ApiException && error.message.isNotEmpty ? error.message : fallback;
+    error is ApiException && error.message.isNotEmpty
+    ? error.message
+    : fallback;
 
 /// 禁言到期時間的顯示格式：yyyy/MM/dd HH:mm（本地時間）。
 String formatMuteUntil(DateTime d) {
@@ -229,11 +232,14 @@ class ApiClient {
         await http.MultipartFile.fromPath(
           fieldName,
           file.path,
-          contentType: contentType == null ? null : MediaType.parse(contentType),
+          contentType: contentType == null
+              ? null
+              : MediaType.parse(contentType),
         ),
       ],
       // 只記檔名與大小，不記完整本機路徑（可能含使用者名稱）。
-      logBody: 'field=$fieldName, file=${file.uri.pathSegments.last} (${file.lengthSync()} bytes)',
+      logBody:
+          'field=$fieldName, file=${file.uri.pathSegments.last} (${file.lengthSync()} bytes)',
     );
   }
 
@@ -252,7 +258,9 @@ class ApiClient {
           fieldName,
           bytes,
           filename: filename,
-          contentType: contentType == null ? null : MediaType.parse(contentType),
+          contentType: contentType == null
+              ? null
+              : MediaType.parse(contentType),
         ),
       ],
       logBody: 'field=$fieldName, file=$filename (${bytes.length} bytes)',
@@ -318,10 +326,7 @@ class ApiClient {
           // 字串值："email":"a@b.c"
           .replaceAll(RegExp('"$key"\\s*:\\s*"[^"]*"'), '"$key":"***"')
           // 非字串值（數字/bool/null）："is_indigenous":true
-          .replaceAll(
-            RegExp('"$key"\\s*:\\s*(?!")[^,}\\]]+'),
-            '"$key":***',
-          );
+          .replaceAll(RegExp('"$key"\\s*:\\s*(?!")[^,}\\]]+'), '"$key":***');
     }
     return out;
   }
@@ -472,9 +477,7 @@ class ApiClient {
       _showingConsent = false;
       return;
     }
-    nav
-        .pushNamed('/terms-consent')
-        .whenComplete(() => _showingConsent = false);
+    nav.pushNamed('/terms-consent').whenComplete(() => _showingConsent = false);
   }
 
   static ApiException _parseError(http.Response resp) {
@@ -485,9 +488,7 @@ class ApiClient {
       return ApiException(
         statusCode: 429,
         code: 'RATE_LIMITED',
-        message: seconds != null
-            ? '操作太頻繁，請 $seconds 秒後再試'
-            : '操作太頻繁，請稍後再試',
+        message: seconds != null ? '操作太頻繁，請 $seconds 秒後再試' : '操作太頻繁，請稍後再試',
         retryAfter: seconds,
       );
     }
@@ -507,7 +508,8 @@ class ApiClient {
           code == 'MUTED' || (code == 'PROFANITY' && error?['muted'] == true)
           ? DateTime.tryParse(error?['mute_until'] as String? ?? '')?.toLocal()
           : null;
-      if (muteUntil != null) message = '$message（至 ${formatMuteUntil(muteUntil)}）';
+      if (muteUntil != null)
+        message = '$message（至 ${formatMuteUntil(muteUntil)}）';
       return ApiException(
         statusCode: resp.statusCode,
         code: code,
