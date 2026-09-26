@@ -1,8 +1,8 @@
 // 單則留言。論壇只有兩層，[isReply] 決定是否縮排，沒有更深的層級。
 //
-// 已刪除但底下還有回覆的第一層留言，後端會保留成佔位（is_deleted = true，
-// body 與 author 皆為 null），此時只顯示「此留言已刪除」，不給任何操作按鈕——
-// 對已刪除的留言做任何操作後端一律回 404。
+// 被刪除的留言（第一層或回覆，不論作者自刪、後台下架或帳號刪除），後端一律
+// 保留成佔位（is_deleted = true，body 與 author 皆為 null），此時只顯示
+// 「留言已被刪除」，不給任何操作按鈕——對已刪除的留言做任何操作後端一律回 404。
 
 import 'package:flutter/material.dart';
 
@@ -62,7 +62,7 @@ class ForumCommentTile extends StatelessWidget {
         ),
         const SizedBox(width: 8),
         Text(
-          '此留言已刪除',
+          '留言已被刪除',
           style: AppTypography.serif(
             fontSize: AppTypography.size(
               AppTypography.body,

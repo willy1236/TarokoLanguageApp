@@ -8,7 +8,7 @@ import 'event_model.dart';
 ///
 /// 後端契約（PATCH /api/events/:id）：只接受 [editableFields]；省略＝不動，
 /// 文字欄位送空字串或 null 皆為清空（title/location/address 不可清空），
-/// 名額送 null＝不限名額。starts_at／報名截止不可改。
+/// 名額送 null＝不限名額。所有時間欄位（開始、結束、報名開始／截止）不可改。
 class EventDraft {
   final String title;
   final String description;
@@ -16,6 +16,12 @@ class EventDraft {
   final String address;
   final DateTime? startsAt;
   final DateTime? registrationDeadline;
+
+  /// 報名開始，null = 建立即開放。
+  final DateTime? registrationStartsAt;
+
+  /// 活動結束，null = 後端預設開始後 3 小時（後端之後會改為必填）。
+  final DateTime? endsAt;
   final String contactEmail;
   final String contactPhone;
   final String maxParticipantsText;
@@ -36,6 +42,8 @@ class EventDraft {
     this.address = '',
     this.startsAt,
     this.registrationDeadline,
+    this.registrationStartsAt,
+    this.endsAt,
     this.contactEmail = '',
     this.contactPhone = '',
     this.maxParticipantsText = '',
@@ -52,6 +60,8 @@ class EventDraft {
     address: e.address ?? '',
     startsAt: e.startsAt,
     registrationDeadline: e.registrationDeadline,
+    registrationStartsAt: e.registrationStartsAt,
+    endsAt: e.endsAt,
     contactEmail: e.contactEmail ?? '',
     contactPhone: e.contactPhone ?? '',
     maxParticipantsText: e.maxParticipants?.toString() ?? '',
@@ -77,6 +87,9 @@ class EventDraft {
   /// 名額：留空 = 不限（null）；格式錯誤時也回 null，先呼叫 [validate] 擋掉。
   int? get maxParticipants => int.tryParse(maxParticipantsText.trim());
 
+  /// 活動最長時間（後端 INVALID_END_TIME 的上限）。
+  static const maxDuration = Duration(days: 30);
+
   /// 回傳第一個錯誤訊息；null 表示可送出。
   /// [creating] 為 false（編輯模式）時時間欄位是唯讀的，不重驗。
   String? validate({required bool creating, required DateTime now}) {
@@ -98,6 +111,19 @@ class EventDraft {
     if (deadline != null && deadline.isAfter(starts)) {
       return '報名截止時間不能晚於活動開始時間';
     }
+    final ends = endsAt;
+    if (ends != null) {
+      if (!ends.isAfter(starts)) return '活動結束時間需晚於開始時間';
+      if (ends.difference(starts) > maxDuration) return '活動最長 30 天';
+    }
+    final regStart = registrationStartsAt;
+    if (regStart != null) {
+      if (!regStart.isAfter(now)) return '報名開始時間需為未來，或留空表示立即開放';
+      if (!regStart.isBefore(starts)) return '報名開始時間需早於活動開始時間';
+      if (deadline != null && !regStart.isBefore(deadline)) {
+        return '報名開始時間需早於報名截止時間';
+      }
+    }
     return null;
   }
 
@@ -110,11 +136,13 @@ class EventDraft {
       'address': address.trim(),
       'starts_at': startsAt!.toUtc().toIso8601String(),
     };
-    if (registrationDeadline != null) {
-      body['registration_deadline'] = registrationDeadline!
-          .toUtc()
-          .toIso8601String();
+    void time(String key, DateTime? value) {
+      if (value != null) body[key] = value.toUtc().toIso8601String();
     }
+
+    time('registration_deadline', registrationDeadline);
+    time('registration_starts_at', registrationStartsAt);
+    time('ends_at', endsAt);
     void optional(String key, String? value) {
       final v = value?.trim() ?? '';
       if (v.isNotEmpty) body[key] = v;

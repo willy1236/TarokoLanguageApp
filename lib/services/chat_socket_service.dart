@@ -1,5 +1,6 @@
-// 一對一聊天即時通道：wss://.../ws?token=<JWT>（見 Truku_backend backend/realtime.ts）。
-// 只接收，不送出——送訊息/已讀一律走 FriendService 的 REST 端點，WS 純粹是推播。
+// 一對一聊天即時通道：wss://.../ws，連上後第一則訊息送 {type:auth, token}（見 Truku_backend backend/realtime.ts）。
+// token 不放網址：Cloud Run 請求日誌會記下完整網址（後端已知問題 SEC-01）。
+// 除驗證訊息外只接收，不送出——送訊息/已讀一律走 FriendService 的 REST 端點，WS 純粹是推播。
 // 指數退避重連；close code 4001 "token expired"（連線中 JWT 自然過期）先重換 JWT 再重連
 // （連上前只換一次，換完仍被踢就退回退避），
 // 其他 4001（unauthorized / token revoked）不重連、交給 REST 401 導回登入；
@@ -55,11 +56,11 @@ class ChatController extends ChangeNotifier {
     final token = await AuthService.currentToken();
     if (token == null) return;
     final wsBase = ApiConfig.baseUrl.replaceFirst(RegExp(r'^https'), 'wss');
-    final uri = Uri.parse(
-      '$wsBase/ws',
-    ).replace(queryParameters: {'token': token});
+    final uri = Uri.parse('$wsBase/ws');
     try {
       final channel = WebSocketChannel.connect(uri);
+      // 10 秒內沒送驗證會被後端以 4001 關閉；連上前 sink 會先暫存這則訊息。
+      channel.sink.add(jsonEncode({'type': 'auth', 'token': token}));
       _channel = channel;
       _sub = channel.stream.listen(
         _onData,

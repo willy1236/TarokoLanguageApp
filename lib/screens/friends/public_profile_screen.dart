@@ -22,10 +22,11 @@ import '../../services/user_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../chat/chat_screen.dart';
+import '../forum/widgets/forum_report_sheet.dart';
 import 'widgets/bond_level_badge.dart';
 import '../../shared/widgets/app_back_button.dart';
 
-enum _ProfileAction { addFriend, removeFriend, block, unblock }
+enum _ProfileAction { addFriend, removeFriend, block, unblock, report }
 
 enum _Relationship { friend, blocked, stranger }
 
@@ -163,6 +164,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             child: Text('刪除好友'),
           ),
           PopupMenuItem(value: _ProfileAction.block, child: Text('封鎖')),
+          PopupMenuItem(value: _ProfileAction.report, child: Text('檢舉')),
         ];
       case _Relationship.blocked:
         return const [
@@ -172,6 +174,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         return const [
           PopupMenuItem(value: _ProfileAction.addFriend, child: Text('加好友')),
           PopupMenuItem(value: _ProfileAction.block, child: Text('封鎖')),
+          PopupMenuItem(value: _ProfileAction.report, child: Text('檢舉')),
         ];
     }
   }
@@ -201,6 +204,15 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     if (profile == null) return;
     // 唯讀帳號只擋加好友；刪除好友、封鎖等清理動作後端放行。
     if (action == _ProfileAction.addFriend && blockIfReadOnly()) return;
+    if (action == _ProfileAction.report) {
+      await showForumReportSheet(
+        context,
+        targetType: 'profile',
+        targetId: profile.uid,
+      );
+      return;
+    }
+    if (action == _ProfileAction.block && !await _confirmBlock()) return;
     try {
       switch (action) {
         case _ProfileAction.addFriend:
@@ -214,6 +226,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         case _ProfileAction.block:
           await FriendService.blockUser(profile.uid);
           _showMessage('已封鎖此使用者');
+          break;
+        case _ProfileAction.report:
           break;
         case _ProfileAction.unblock:
           await FriendService.unblockUser(profile.uid);
@@ -230,9 +244,35 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     }
   }
 
+  /// 封鎖會雙向切斷且解封不回復（後端 2026-09-26 起），送出前先講清楚。
+  Future<bool> _confirmBlock() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('封鎖此使用者？'),
+        content: const Text(
+          '封鎖後會解除好友，並移除你們在彼此貼文上的留言與讚；進行中的通話也會結束。'
+          '\n\n解除封鎖後，這些都不會恢復，需要重新加好友。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('封鎖'),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true && mounted;
+  }
+
   String _friendlyErrorMessage(ApiException e) {
     if (e.isAlreadyFriends) return '你們已經是好友';
     if (e.isRequestAlreadySent) return '已送出邀請，等待對方回覆';
+    if (e.isRequestCooldown) return e.requestCooldownMessage;
     if (e.isBlocked) return '因封鎖關係，無法執行此操作';
     if (e.isUserUnavailable) return '該使用者暫時無法使用';
     if (e.isNotFriends) return '你們還不是好友';

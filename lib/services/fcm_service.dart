@@ -27,6 +27,7 @@ import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../core/platform/platform_features.dart';
 import '../main.dart';
 import '../models/friend_model.dart';
+import 'account_lock_controller.dart';
 import 'auth_service.dart';
 import 'directed_call_service.dart';
 import 'event_service.dart';
@@ -286,6 +287,11 @@ class FcmService {
   }
 
   static void _onForegroundMessage(RemoteMessage message) {
+    if (message.data['type'] == 'moderation') {
+      _showModerationNotice(message);
+      return;
+    }
+
     final callId = _parseFriendCallIncoming(message.data);
     if (callId != null) {
       unawaited(
@@ -380,6 +386,48 @@ class FcmService {
     onReminderReceivedForOpenScreen?.call(eventId);
   }
 
+  /// 處置通知（內容被隱藏、個人檔案被重設、確認違規、禁言／解除禁言）。
+  /// title／body 已是後端寫好的完整中文說明，前景時直接彈對話框顯示，
+  /// 不走 SnackBar——理由較長，且當事人需要確實看到。
+  static void _showModerationNotice(RemoteMessage message) {
+    final data = message.data;
+    if (data['locked']?.toString() == 'true') {
+      accountLockController.setLocked(true);
+    }
+    final context = navigatorKey.currentContext;
+    if (context == null) return;
+    final title = message.notification?.title ?? '內容審核通知';
+    final body = message.notification?.body ?? '';
+    // 撤銷處置且目標是貼文：提供回到該貼文的入口。
+    final restoredPostId =
+        data['action'] == 'case_overturned' && data['target_type'] == 'post'
+        ? int.tryParse(data['target_id']?.toString() ?? '')
+        : null;
+    unawaited(
+      showDialog<void>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: Text(title),
+          content: SingleChildScrollView(child: Text(body)),
+          actions: [
+            if (restoredPostId != null)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  onForumReplyTapped?.call(restoredPostId);
+                },
+                child: const Text('查看貼文'),
+              ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('我知道了'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   /// 前景收到視訊配對相關通知：畫面自己開著時交給畫面等級訂閱處理，不彈本地
   /// 系統通知，避免使用者正看著等待/通話畫面卻又跳一則通知打擾；沒有對應
   /// 訂閱者（代表使用者不在該畫面）時才彈通知。
@@ -424,6 +472,12 @@ class FcmService {
   }
 
   static void _handleOpened(RemoteMessage message) {
+    if (message.data['type'] == 'moderation') {
+      // 背景時系統通知列已自動顯示，點開後再顯示一次完整說明。
+      _showModerationNotice(message);
+      return;
+    }
+
     final callId = _parseFriendCallIncoming(message.data);
     if (callId != null) {
       unawaited(

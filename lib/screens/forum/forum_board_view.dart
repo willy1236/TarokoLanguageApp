@@ -11,6 +11,7 @@ import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../models/shop_item.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/block_refresh_notifier.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
@@ -90,6 +91,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
     _scrollController.addListener(_onScroll);
     _load();
     _loadItemCatalog();
+    BlockRefreshNotifier.revision.addListener(_load);
   }
 
   Future<void> _loadItemCatalog() async {
@@ -112,6 +114,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
 
   @override
   void dispose() {
+    BlockRefreshNotifier.revision.removeListener(_load);
     _scrollController.dispose();
     super.dispose();
   }
@@ -239,8 +242,15 @@ class ForumBoardViewState extends State<ForumBoardView> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _replace(original));
-      _toast(e.message);
+      _handleActionError(e);
     }
+  }
+
+  /// 403 BLOCKED：與作者有封鎖關係（列表還沒重新整理時會發生），提示後重載列表。
+  void _handleActionError(ApiException e) {
+    if (!e.isBlocked) return _toast(e.message);
+    _toast('無法與此使用者互動');
+    _load();
   }
 
   Future<void> _bookmark(ForumPost post) async {
@@ -256,7 +266,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _replace(original));
-      _toast(e.message);
+      _handleActionError(e);
     }
   }
 

@@ -53,6 +53,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
 
   DateTime? _startsAt;
   DateTime? _registrationDeadline;
+  DateTime? _registrationStartsAt;
+  DateTime? _endsAt;
   String? _category; // 選填，null = 不分類
 
   /// 相關部落，預設不選；不可預設帶發起人自己的部落。
@@ -83,6 +85,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     _reminderNote.text = d.reminderNote;
     _startsAt = d.startsAt;
     _registrationDeadline = d.registrationDeadline;
+    _registrationStartsAt = d.registrationStartsAt;
+    _endsAt = d.endsAt;
     _category = d.category;
     final tribeId = d.tribeId;
     if (tribeId != null) {
@@ -109,6 +113,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     address: _address.text,
     startsAt: _startsAt,
     registrationDeadline: _registrationDeadline,
+    registrationStartsAt: _registrationStartsAt,
+    endsAt: _endsAt,
     contactEmail: _email.text,
     contactPhone: _phone.text,
     maxParticipantsText: _maxParticipants.text,
@@ -195,6 +201,65 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         t.minute,
       );
     });
+  }
+
+  /// 依序選日期與時間；任一步取消回 null。
+  Future<DateTime?> _pickDateAndTime({
+    required DateTime initial,
+    required DateTime firstDate,
+    required DateTime lastDate,
+    required String dateHelp,
+    required String timeHelp,
+  }) async {
+    final clamped = initial.isBefore(firstDate)
+        ? firstDate
+        : (initial.isAfter(lastDate) ? lastDate : initial);
+    final date = await showDatePicker(
+      context: context,
+      initialDate: clamped,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      helpText: dateHelp,
+    );
+    if (date == null || !mounted) return null;
+    final t = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay.fromDateTime(initial),
+      helpText: timeHelp,
+    );
+    if (t == null || !mounted) return null;
+    return DateTime(date.year, date.month, date.day, t.hour, t.minute);
+  }
+
+  Future<void> _pickEndsAt() async {
+    final starts = _startsAt;
+    if (starts == null) {
+      _showError('請先選擇活動開始時間');
+      return;
+    }
+    final picked = await _pickDateAndTime(
+      initial: _endsAt ?? starts.add(const Duration(hours: 3)),
+      firstDate: DateTime(starts.year, starts.month, starts.day),
+      lastDate: starts.add(EventDraft.maxDuration),
+      dateHelp: '選擇活動結束日期',
+      timeHelp: '選擇活動結束時間',
+    );
+    if (picked != null) setState(() => _endsAt = picked);
+  }
+
+  Future<void> _pickRegistrationStartsAt() async {
+    final now = DateTime.now();
+    final last = _registrationDeadline ?? _startsAt;
+    final picked = await _pickDateAndTime(
+      initial: _registrationStartsAt ?? now.add(const Duration(hours: 1)),
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: last != null && last.isAfter(now)
+          ? last
+          : now.add(const Duration(days: 365)),
+      dateHelp: '選擇報名開始日期',
+      timeHelp: '選擇報名開始時間',
+    );
+    if (picked != null) setState(() => _registrationStartsAt = picked);
   }
 
   String _formatDateTime(DateTime dt) {
@@ -349,6 +414,15 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                       ),
                     ),
                   const SizedBox(height: 18),
+                  _label('活動結束時間', required: false, seniorMode: seniorMode),
+                  _buildDateField(
+                    value: _endsAt,
+                    onTap: _isEditing ? null : _pickEndsAt,
+                    placeholder: '選擇日期與時間（選填）',
+                    seniorMode: seniorMode,
+                  ),
+                  _caption('未設定時，預設為活動開始後 3 小時結束', seniorMode),
+                  const SizedBox(height: 18),
                   _label('詳細地址', required: true, seniorMode: seniorMode),
                   _textField(
                     _address,
@@ -357,6 +431,15 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     seniorMode: seniorMode,
                   ),
                   const SizedBox(height: 18),
+                  _label('報名開始時間', required: false, seniorMode: seniorMode),
+                  _buildDateField(
+                    value: _registrationStartsAt,
+                    onTap: _isEditing ? null : _pickRegistrationStartsAt,
+                    placeholder: '選擇日期與時間（選填）',
+                    seniorMode: seniorMode,
+                  ),
+                  _caption('未設定時，活動發起後立即開放報名', seniorMode),
+                  const SizedBox(height: 18),
                   _label('報名截止時間', required: false, seniorMode: seniorMode),
                   _buildDateField(
                     value: _registrationDeadline,
@@ -364,19 +447,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     placeholder: '選擇日期與時間（選填）',
                     seniorMode: seniorMode,
                   ),
-                  Padding(
-                    padding: const EdgeInsets.only(top: 6, left: 2),
-                    child: Text(
-                      '未設定時，預設為活動開始前 2 小時截止',
-                      style: TextStyle(
-                        fontSize: AppTypography.size(
-                          AppTypography.caption,
-                          seniorMode: seniorMode,
-                        ),
-                        color: AppColors.fog,
-                      ),
-                    ),
-                  ),
+                  _caption('未設定時，預設為活動開始前 2 小時截止', seniorMode),
                   const SizedBox(height: 18),
                   _label('名額', required: false, seniorMode: seniorMode),
                   _buildParticipantsStepper(seniorMode),
@@ -944,6 +1015,17 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       ),
     );
   }
+
+  Widget _caption(String text, bool seniorMode) => Padding(
+    padding: const EdgeInsets.only(top: 6, left: 2),
+    child: Text(
+      text,
+      style: AppTypography.captionStyle(
+        seniorMode: seniorMode,
+        color: AppColors.fog,
+      ),
+    ),
+  );
 
   Widget _buildDateField({
     required DateTime? value,

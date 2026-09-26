@@ -85,6 +85,8 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             ? '你們已經是好友'
             : e.isRequestAlreadySent
             ? '已送出邀請，等待對方回覆'
+            : e.isRequestCooldown
+            ? e.requestCooldownMessage
             : e.isBlocked
             ? '因封鎖關係，無法送出邀請'
             : e.isUserUnavailable
