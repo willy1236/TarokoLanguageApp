@@ -59,8 +59,10 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         return (text: '已取消', color: AppColors.dangerDark);
       case 'ended':
         return (text: '已結束', color: AppColors.fog);
-      default:
+      case 'ongoing':
         return (text: '進行中', color: AppColors.mossDeep);
+      default:
+        return (text: '即將舉行', color: AppColors.primary);
     }
   }
 

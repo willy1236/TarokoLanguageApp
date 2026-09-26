@@ -69,6 +69,50 @@ void main() {
       );
     });
 
+    test('建立時檢查活動結束與報名開始', () {
+      EventDraft withTimes({DateTime? ends, DateTime? regStart}) => EventDraft(
+        title: '走讀',
+        description: '說明',
+        location: '部落',
+        address: '秀林鄉',
+        startsAt: future,
+        endsAt: ends,
+        registrationStartsAt: regStart,
+      );
+      expect(
+        withTimes(ends: future).validate(creating: true, now: now),
+        '活動結束時間需晚於開始時間',
+      );
+      expect(
+        withTimes(
+          ends: future.add(const Duration(days: 31)),
+        ).validate(creating: true, now: now),
+        '活動最長 30 天',
+      );
+      expect(
+        withTimes(regStart: now).validate(creating: true, now: now),
+        '報名開始時間需為未來，或留空表示立即開放',
+      );
+      expect(
+        withTimes(regStart: future).validate(creating: true, now: now),
+        '報名開始時間需早於活動開始時間',
+      );
+      final ok = withTimes(
+        ends: future.add(const Duration(hours: 2)),
+        regStart: now.add(const Duration(days: 1)),
+      );
+      expect(ok.validate(creating: true, now: now), isNull);
+      final body = ok.toCreateBody();
+      expect(
+        body['ends_at'],
+        future.add(const Duration(hours: 2)).toUtc().toIso8601String(),
+      );
+      expect(
+        body['registration_starts_at'],
+        now.add(const Duration(days: 1)).toUtc().toIso8601String(),
+      );
+    });
+
     test('編輯模式不驗唯讀的時間欄位', () {
       expect(valid(startsAt: now).validate(creating: false, now: now), isNull);
     });

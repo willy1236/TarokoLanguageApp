@@ -2,6 +2,7 @@
 
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
 import '../../../services/account_lock_controller.dart';
 import '../reminder_compose_screen.dart';
@@ -58,8 +59,16 @@ class EventActionBar extends StatelessWidget {
       content = _disabledButton('活動已結束', seniorMode);
     } else if (isHost) {
       content = _hostActions(context, e, seniorMode);
+    } else if (status == 'ongoing') {
+      content = _disabledButton(isJoined ? '已報名 · 活動進行中' : '活動進行中', seniorMode);
     } else if (isJoined) {
       content = _joinedActions(seniorMode);
+    } else if (e.isRegistrationNotOpen) {
+      final opens = e.registrationStartsAt;
+      content = _disabledButton(
+        opens == null ? '尚未開放報名' : '報名將於 ${formatDateTime(opens.toLocal())} 開始',
+        seniorMode,
+      );
     } else if (e.registrationOpen && !e.isFull) {
       content = _primaryButton('我要參加', acting ? null : onJoin, seniorMode);
     } else if (e.isFull) {

@@ -33,7 +33,9 @@ String _statusLabel(EventSummary e) {
   if (e.isJoined) return '已報名';
   if (e.displayStatus == 'ended') return '已結束';
   if (e.displayStatus == 'cancelled') return '已取消';
+  if (e.displayStatus == 'ongoing') return '進行中';
   if (e.isFull) return '已額滿';
+  if (e.isRegistrationNotOpen) return '即將開放報名';
   if (e.registrationOpen) return '報名中';
   return '';
 }
@@ -306,6 +308,8 @@ class EventFeaturedCard extends StatelessWidget {
       text = '已結束';
     } else if (e.displayStatus == 'cancelled') {
       text = '已取消';
+    } else if (e.displayStatus == 'ongoing') {
+      text = '進行中';
     } else if (e.isFull) {
       text = '已額滿';
     } else if (e.registrationOpen) {

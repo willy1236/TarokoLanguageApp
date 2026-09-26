@@ -45,13 +45,22 @@ class ApiException implements Exception {
   /// 到期時間（`error.mute_until`），其餘錯誤為 null。
   final DateTime? muteUntil;
 
+  /// 錯誤回應的原始 JSON body（解析失敗為 null）。部分錯誤會附額外欄位，
+  /// 例如 REQUEST_COOLDOWN 的 `error.retry_after_at`、TERMS_VERSION_OUTDATED
+  /// 的最新 `documents`，由畫面自行讀取。
+  final Map<String, dynamic>? body;
+
   ApiException({
     required this.statusCode,
     required this.code,
     required this.message,
     this.retryAfter,
     this.muteUntil,
+    this.body,
   });
+
+  /// `body.error` 裡的額外欄位。
+  Object? errorField(String key) => (body?['error'] as Map?)?[key];
 
   bool get isUnauthorized => statusCode == 401;
   bool get isRateLimited => statusCode == 429;
@@ -90,6 +99,24 @@ class ApiException implements Exception {
   bool get isCallExpired => code == 'CALL_EXPIRED';
   bool get isNeedFriend => code == 'NEED_FRIEND';
   bool get isProfanity => code == 'PROFANITY';
+  bool get isRequestCooldown => code == 'REQUEST_COOLDOWN';
+
+  /// REQUEST_COOLDOWN 的提示：有 `retry_after_at` 時換成具體可再邀請的時間。
+  String get requestCooldownMessage {
+    final at = DateTime.tryParse(
+      errorField('retry_after_at')?.toString() ?? '',
+    );
+    return at == null
+        ? message
+        : '對方先前婉拒了你的邀請，${formatMuteUntil(at.toLocal())} 後才能再次邀請';
+  }
+
+  // 條款（見 Truku_backend 說明文件/API/同意條款.md §2）
+  bool get isTermsVersionOutdated => code == 'TERMS_VERSION_OUTDATED';
+
+  // 活動（見 Truku_backend 說明文件/API/活動提醒.md）
+  bool get isRegistrationNotOpen => code == 'REGISTRATION_NOT_OPEN';
+  bool get isBelowCurrentParticipants => code == 'BELOW_CURRENT_PARTICIPANTS';
 
   @override
   String toString() => message;
@@ -481,10 +508,13 @@ class ApiClient {
   }
 
   static ApiException _parseError(http.Response resp) {
-    // 全域速率限制：訊息統一換成固定文案，並帶上後端建議的等待秒數。
+    // 全域速率限制（body 帶 retry_after）：訊息換成含秒數的固定文案。
+    // 其他 429（好友邀請每日上限、私訊新對象上限）有專屬訊息，保留後端的 code／message。
     // 不做自動重試——429 當下立刻重打只會讓限流更嚴重，交給使用者自己重試。
     if (resp.statusCode == 429) {
       final seconds = _parseRetryAfter(resp);
+      final specific = _parseSpecific429(resp);
+      if (specific != null && seconds == null) return specific;
       return ApiException(
         statusCode: 429,
         code: 'RATE_LIMITED',
@@ -516,6 +546,7 @@ class ApiClient {
         code: code,
         message: message,
         muteUntil: muteUntil,
+        body: j is Map<String, dynamic> ? j : null,
       );
     } catch (e) {
       _logVerbose(
@@ -526,6 +557,24 @@ class ApiClient {
         code: resp.statusCode == 401 ? 'UNAUTHORIZED' : 'UNKNOWN',
         message: resp.statusCode == 401 ? '請先登入' : '發生未知錯誤',
       );
+    }
+  }
+
+  /// 後端業務邏輯回的 429（有 error.message）；解析不到回 null，改用固定文案。
+  static ApiException? _parseSpecific429(http.Response resp) {
+    try {
+      final j = jsonDecode(resp.body) as Map<String, dynamic>;
+      final error = j['error'] as Map?;
+      final message = error?['message'] as String?;
+      if (message == null || message.isEmpty) return null;
+      return ApiException(
+        statusCode: 429,
+        code: error?['code'] as String? ?? 'RATE_LIMITED',
+        message: message,
+        body: j,
+      );
+    } catch (_) {
+      return null;
     }
   }
 

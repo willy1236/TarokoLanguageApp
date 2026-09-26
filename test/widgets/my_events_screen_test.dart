@@ -46,11 +46,12 @@ void main() {
   tearDown(restoreHttp);
 
   group('MyEventsScreen', () {
-    testWidgets('顯示我發起的活動與三種狀態標籤', (tester) async {
+    testWidgets('顯示我發起的活動與四種狀態標籤', (tester) async {
       installMockClient({
         '/api/events/mine': {
           'events': [
-            _event(id: 1, title: '進行中的活動'),
+            _event(id: 1, title: '即將舉行的活動'),
+            _event(id: 4, title: '進行中的活動', effectiveStatus: 'ongoing'),
             _event(id: 2, title: '結束的活動', effectiveStatus: 'ended'),
             _event(id: 3, title: '取消的活動', effectiveStatus: 'cancelled'),
           ],
@@ -61,6 +62,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('進行中的活動'), findsOneWidget);
+      expect(find.text('即將舉行'), findsOneWidget);
       expect(find.text('進行中'), findsOneWidget);
       expect(find.text('已結束'), findsOneWidget);
       expect(find.text('已取消'), findsOneWidget);

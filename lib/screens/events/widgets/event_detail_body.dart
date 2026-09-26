@@ -41,9 +41,15 @@ class EventDetailBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) => _buildBody(event, seniorMode);
 
+  static bool _sameDay(DateTime a, DateTime b) =>
+      a.year == b.year && a.month == b.month && a.day == b.day;
+
   Widget _buildBody(EventDetail e, bool seniorMode) {
     final start = e.startsAt.toLocal();
-    final timeText = formatDateTime(start);
+    final end = e.endsAt?.toLocal();
+    final timeText = end == null
+        ? formatDateTime(start)
+        : '${formatDateTime(start)} ～ ${_sameDay(start, end) ? formatTime(end) : formatDateTime(end)}';
     final host = e.participants.where((p) => p.uid == e.hostUid).firstOrNull;
     final hostName = (host?.displayName?.isNotEmpty ?? false)
         ? host!.displayName!
@@ -162,6 +168,15 @@ class EventDetailBody extends StatelessWidget {
           // 刻意寫「相關部落」而非「發起人部落」：標籤由發起人自選。
           if (tribeName case final name?) ...[
             _infoRow(Icons.place_outlined, '相關部落', name, seniorMode),
+            const SizedBox(height: 12),
+          ],
+          if (e.registrationStartsAt != null) ...[
+            _infoRow(
+              Icons.event_available_outlined,
+              '報名開始',
+              formatDateTime(e.registrationStartsAt!.toLocal()),
+              seniorMode,
+            ),
             const SizedBox(height: 12),
           ],
           if (e.registrationDeadline != null) ...[

@@ -104,7 +104,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     if (_submitting) return;
     setState(() => _submitting = true);
     try {
-      await TermsService.consent();
+      await TermsService.consent(_status?.documents ?? const []);
       // 新帳號會先被擋在同意條款，同意後要接續完善資料；查不到就照舊進首頁。
       var profileCompleted = true;
       try {
@@ -121,13 +121,42 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
       if (profileCompleted) FcmService.consumePendingInitialMessage();
     } on ApiException catch (e) {
       if (!mounted) return;
-      _showError(e.message);
+      if (e.isTermsVersionOutdated) {
+        _reloadOutdated(e);
+      } else {
+        _showError(e.message);
+      }
     } catch (e) {
       if (!mounted) return;
       _showError('送出失敗，請稍後再試');
     } finally {
       if (mounted) setState(() => _submitting = false);
     }
+  }
+
+  /// 閱讀期間後台發布了新版：換成回應附的最新條款，版本有變的文件要重新閱讀、同意。
+  void _reloadOutdated(ApiException e) {
+    final body = e.body;
+    if (body == null || body['documents'] is! List) {
+      _showError(e.message);
+      _load();
+      return;
+    }
+    final latest = TermsStatus.fromJson(body);
+    final oldVersions = {
+      for (final d in _status?.documents ?? const <TermsDocument>[])
+        d.docType: d.version,
+    };
+    setState(() {
+      _status = latest;
+      for (final d in latest.documents) {
+        if (oldVersions[d.docType] != d.version) {
+          _agreed.remove(d.docType);
+          _readToEnd.remove(d.docType);
+        }
+      }
+    });
+    _showError(e.message);
   }
 
   void _showError(String message) {

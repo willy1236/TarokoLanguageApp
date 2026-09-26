@@ -12,9 +12,12 @@ class TermsService {
     return TermsStatus.fromJson(json);
   }
 
-  /// 同意目前存在的每一種 doc_type 的最新版本。
-  static Future<TermsStatus> consent() async {
-    final json = await ApiClient.post(ApiConfig.termsConsent);
+  /// 同意 [documents]（使用者畫面上看到的版本）。後端若已發布更新版本，
+  /// 丟 409 TERMS_VERSION_OUTDATED，`body` 附最新狀態，可用 [TermsStatus.fromJson] 重新顯示。
+  static Future<TermsStatus> consent(List<TermsDocument> documents) async {
+    final json = await ApiClient.post(ApiConfig.termsConsent, {
+      'versions': {for (final d in documents) d.docType: d.version},
+    });
     return TermsStatus.fromJson(json);
   }
 }

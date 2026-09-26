@@ -134,7 +134,7 @@ void main() {
       ),
     );
 
-    expect(find.text('此留言已刪除'), findsOneWidget);
+    expect(find.text('留言已被刪除'), findsOneWidget);
     // 對已刪除的留言操作後端一律回 404，所以不該有任何入口。
     expect(find.text('回覆'), findsNothing);
     expect(find.text('檢舉'), findsNothing);
