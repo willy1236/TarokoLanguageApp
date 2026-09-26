@@ -224,6 +224,9 @@ class VideoCallController extends ChangeNotifier {
     unawaited(_leave(notifyBackend: false));
   }
 
+  /// 後端已結束這通通話（例如自己封鎖了對方）：本地清理，不再通知後端。
+  Future<void> leaveEndedByServer() => _leave(notifyBackend: false);
+
   /// 使用者掛斷、倒數到期、或錯誤畫面返回。
   Future<void> hangUp() => _leave(notifyBackend: true);
 
