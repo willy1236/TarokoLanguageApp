@@ -203,7 +203,7 @@ class PlacementAnswer {
   });
 
   Map<String, dynamic> toJson() => {
-        'question_id': questionId,
-        'selected_option_id': selectedOptionId,
-      };
+    'question_id': questionId,
+    'selected_option_id': selectedOptionId,
+  };
 }

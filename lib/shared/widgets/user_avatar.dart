@@ -110,7 +110,10 @@ class FramedUserAvatar extends StatelessWidget {
       child: SizedBox(
         width: size,
         height: size,
-        child: fallback != null && avatarId == null && (avatarUrl == null || avatarUrl.isEmpty)
+        child:
+            fallback != null &&
+                avatarId == null &&
+                (avatarUrl == null || avatarUrl.isEmpty)
             ? fallback
             : UserAvatar(
                 avatarId: avatarId,

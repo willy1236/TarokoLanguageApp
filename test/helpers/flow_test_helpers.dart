@@ -61,8 +61,8 @@ Widget buildTestApp({
       '/complete-profile': (_) => const CompleteProfileScreen(),
       '/terms-consent': (_) => const TermsConsentScreen(),
       '/account-pending': (context) => AccountPendingScreen(
-            purgeAt: ModalRoute.of(context)?.settings.arguments as DateTime?,
-          ),
+        purgeAt: ModalRoute.of(context)?.settings.arguments as DateTime?,
+      ),
       '/home': (_) => const MainContainer(),
       '/shop': (_) => const ShopScreen(),
       '/backpack': (_) => const BackpackScreen(),
@@ -148,10 +148,7 @@ void resetGlobals() {
 /// 字型更寬，414 下不 overflow 是比實機嚴格的條件，反過來若這裡 overflow，代表
 /// 版面在實機上很可能真的會出問題。歷史紀錄見 PR #73：當時為了避開 ModeCard 的
 /// overflow 把預設調成 480，等於把唯一的自動化警報拆掉，該 bug 已在後續修正。
-void usePhoneSurface(
-  WidgetTester tester, {
-  Size size = const Size(414, 1000),
-}) {
+void usePhoneSurface(WidgetTester tester, {Size size = const Size(414, 1000)}) {
   tester.view.physicalSize = size;
   tester.view.devicePixelRatio = 1.0;
   addTearDown(tester.view.resetPhysicalSize);

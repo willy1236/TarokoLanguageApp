@@ -13,15 +13,14 @@ import 'package:flutter_application_1/services/user_service.dart';
 import '../helpers/widget_test_helpers.dart';
 
 Widget _app(Widget screen) => MaterialApp(
-      home: screen,
-      routes: {'/login': (_) => const Scaffold(body: Text('LOGIN'))},
-    );
+  home: screen,
+  routes: {'/login': (_) => const Scaffold(body: Text('LOGIN'))},
+);
 
 /// 取確認頁底部那顆送出鈕。
 /// AppBar 標題同樣是「刪除帳號」，所以要限定在 ElevatedButton 底下找。
-ElevatedButton _submitButton(WidgetTester tester) => tester.widget<ElevatedButton>(
-      find.widgetWithText(ElevatedButton, '刪除帳號'),
-    );
+ElevatedButton _submitButton(WidgetTester tester) =>
+    tester.widget<ElevatedButton>(find.widgetWithText(ElevatedButton, '刪除帳號'));
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -114,9 +113,9 @@ void main() {
   });
 
   testWidgets('成功頁「我知道了」回登入頁', (tester) async {
-    await tester.pumpWidget(_app(
-      AccountDeletedScreen(purgeAt: DateTime(2026, 11, 1)),
-    ));
+    await tester.pumpWidget(
+      _app(AccountDeletedScreen(purgeAt: DateTime(2026, 11, 1))),
+    );
 
     await tester.tap(find.text('我知道了'));
     await tester.pumpAndSettle();

@@ -27,7 +27,8 @@ class ChatSocketEvent {
 
   const ChatSocketEvent._(this.type, {this.message, this.byUid, this.count});
 
-  factory ChatSocketEvent.connected() => const ChatSocketEvent._(ChatSocketEventType.connected);
+  factory ChatSocketEvent.connected() =>
+      const ChatSocketEvent._(ChatSocketEventType.connected);
 
   factory ChatSocketEvent.message(FriendMessage message) =>
       ChatSocketEvent._(ChatSocketEventType.message, message: message);
@@ -54,7 +55,9 @@ class ChatController extends ChangeNotifier {
     final token = await AuthService.currentToken();
     if (token == null) return;
     final wsBase = ApiConfig.baseUrl.replaceFirst(RegExp(r'^https'), 'wss');
-    final uri = Uri.parse('$wsBase/ws').replace(queryParameters: {'token': token});
+    final uri = Uri.parse(
+      '$wsBase/ws',
+    ).replace(queryParameters: {'token': token});
     try {
       final channel = WebSocketChannel.connect(uri);
       _channel = channel;

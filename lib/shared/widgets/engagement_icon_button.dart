@@ -44,7 +44,10 @@ class EngagementIconButton extends StatelessWidget {
             Text(
               '$count',
               style: TextStyle(
-                fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.caption,
+                  seniorMode: seniorMode,
+                ),
                 color: color,
               ),
             ),

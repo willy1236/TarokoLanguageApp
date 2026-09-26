@@ -21,13 +21,16 @@ class DirectedCallService {
 
   static Future<List<IncomingCall>> getIncomingCalls() async {
     final data = await ApiClient.get(ApiConfig.friendCallsIncoming);
-    return ApiClient.unwrapList(data, 'incoming')
-        .map((e) => IncomingCall.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return ApiClient.unwrapList(
+      data,
+      'incoming',
+    ).map((e) => IncomingCall.fromJson(e as Map<String, dynamic>)).toList();
   }
 
   /// 被叫方接聽，回傳可直接進通話畫面的 session + Agora 憑證。
-  static Future<(VideoSession, AgoraCallCredentials)> acceptCall(int callId) async {
+  static Future<(VideoSession, AgoraCallCredentials)> acceptCall(
+    int callId,
+  ) async {
     final data = await ApiClient.post(ApiConfig.friendCallAccept(callId));
     final sessionJson = data['session'] as Map<String, dynamic>;
     final session = VideoSession.fromJson(sessionJson);
@@ -49,6 +52,8 @@ class DirectedCallService {
 
   /// 檢舉一通我參與過的通話，reason 為 1-500 字的檢舉原因。
   static Future<void> reportCall(int callId, String reason) async {
-    await ApiClient.post(ApiConfig.friendCallReport(callId), {'reason': reason});
+    await ApiClient.post(ApiConfig.friendCallReport(callId), {
+      'reason': reason,
+    });
   }
 }

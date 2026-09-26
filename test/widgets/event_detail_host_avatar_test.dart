@@ -32,11 +32,7 @@ EventDetail _event({List<EventParticipant> participants = const []}) =>
     );
 
 EventParticipant _host({String? avatarUrl = _snapshotUrl}) =>
-    EventParticipant(
-      uid: _hostUid,
-      displayName: '織語者',
-      avatarUrl: avatarUrl,
-    );
+    EventParticipant(uid: _hostUid, displayName: '織語者', avatarUrl: avatarUrl);
 
 Widget _app(EventDetail event, {int? uid}) => MaterialApp(
   home: Scaffold(

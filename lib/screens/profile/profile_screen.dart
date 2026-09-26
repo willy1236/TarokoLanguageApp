@@ -494,7 +494,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     Text(
                       label,
                       style: AppTypography.serif(
-                        fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                        fontSize: AppTypography.size(
+                          AppTypography.body,
+                          seniorMode: seniorMode,
+                        ),
                         fontWeight: FontWeight.w600,
                         color: AppColors.ink,
                         letterSpacing: 0.5,
@@ -528,8 +531,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void _openProfileInfo({bool editTribalName = false}) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (_) =>
-            ProfileInfoScreen(editTribalNameOnOpen: editTribalName),
+        builder: (_) => ProfileInfoScreen(editTribalNameOnOpen: editTribalName),
       ),
     );
   }

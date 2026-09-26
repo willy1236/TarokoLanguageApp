@@ -59,7 +59,11 @@ void main() {
         return http.Response(
           jsonEncode({
             'history': [
-              {'q': 'lokah', 'module': 'forum', 'created_at': '2026-09-15T00:00:00Z'},
+              {
+                'q': 'lokah',
+                'module': 'forum',
+                'created_at': '2026-09-15T00:00:00Z',
+              },
             ],
           }),
           200,

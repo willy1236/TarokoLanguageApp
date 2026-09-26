@@ -25,45 +25,43 @@ EventDetail _event({
   int? maxParticipants,
   int participantCount = 0,
   bool isJoined = false,
-}) =>
-    EventDetail(
-      id: 1,
-      hostUid: _hostUid,
-      title: '部落豐年祭',
-      startsAt: DateTime(2026, 12, 1),
-      status: status,
-      effectiveStatus: effectiveStatus,
-      registrationOpen: registrationOpen,
-      maxParticipants: maxParticipants,
-      participantCountRaw: participantCount,
-      isJoined: isJoined,
-    );
+}) => EventDetail(
+  id: 1,
+  hostUid: _hostUid,
+  title: '部落豐年祭',
+  startsAt: DateTime(2026, 12, 1),
+  status: status,
+  effectiveStatus: effectiveStatus,
+  registrationOpen: registrationOpen,
+  maxParticipants: maxParticipants,
+  participantCountRaw: participantCount,
+  isJoined: isJoined,
+);
 
 /// blockIfReadOnly() 的提示走 main.dart 的全域 scaffoldMessengerKey，
 /// 所以測試用的 App 必須掛同一把 key，否則提示不會出現在這棵樹裡。
 Widget _app(Widget child) => MaterialApp(
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      home: Scaffold(body: child),
-    );
+  scaffoldMessengerKey: scaffoldMessengerKey,
+  home: Scaffold(body: child),
+);
 
 Widget _bar(
   EventDetail event, {
   int? uid,
   bool acting = false,
   VoidCallback? onJoin,
-}) =>
-    EventActionBar(
-      event: event,
-      uid: uid,
-      acting: acting,
-      seniorMode: false,
-      onJoin: onJoin ?? () {},
-      onLeave: () {},
-      onCancel: () {},
-      onEdit: () {},
-      onExport: () {},
-      onDelete: () {},
-    );
+}) => EventActionBar(
+  event: event,
+  uid: uid,
+  acting: acting,
+  seniorMode: false,
+  onJoin: onJoin ?? () {},
+  onLeave: () {},
+  onCancel: () {},
+  onEdit: () {},
+  onExport: () {},
+  onDelete: () {},
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -82,35 +80,41 @@ void main() {
   });
 
   testWidgets('名額已滿時顯示「名額已滿」而不是報名鈕', (tester) async {
-    await tester.pumpWidget(_app(_bar(
-      _event(maxParticipants: 10, participantCount: 10),
-      uid: _strangerUid,
-    )));
+    await tester.pumpWidget(
+      _app(
+        _bar(
+          _event(maxParticipants: 10, participantCount: 10),
+          uid: _strangerUid,
+        ),
+      ),
+    );
 
     expect(find.text('名額已滿'), findsOneWidget);
     expect(find.text('我要參加'), findsNothing);
   });
 
   testWidgets('報名已截止時顯示截止提示', (tester) async {
-    await tester.pumpWidget(_app(_bar(
-      _event(registrationOpen: false),
-      uid: _strangerUid,
-    )));
+    await tester.pumpWidget(
+      _app(_bar(_event(registrationOpen: false), uid: _strangerUid)),
+    );
 
     expect(find.text('報名已截止'), findsOneWidget);
   });
 
   testWidgets('活動已結束／已取消時蓋過其他狀態', (tester) async {
-    await tester.pumpWidget(_app(_bar(
-      _event(effectiveStatus: 'ended'),
-      uid: _strangerUid,
-    )));
+    await tester.pumpWidget(
+      _app(_bar(_event(effectiveStatus: 'ended'), uid: _strangerUid)),
+    );
     expect(find.text('活動已結束'), findsOneWidget);
 
-    await tester.pumpWidget(_app(_bar(
-      _event(status: 'cancelled', effectiveStatus: 'cancelled'),
-      uid: _hostUid,
-    )));
+    await tester.pumpWidget(
+      _app(
+        _bar(
+          _event(status: 'cancelled', effectiveStatus: 'cancelled'),
+          uid: _hostUid,
+        ),
+      ),
+    );
     expect(find.text('活動已取消'), findsOneWidget);
     // 已取消的活動，發起人也不該還看得到發送提醒。
     expect(find.text('發送提醒'), findsNothing);
@@ -125,18 +129,25 @@ void main() {
 
   testWidgets('操作進行中時顯示轉圈並吃掉重複點擊', (tester) async {
     var joined = false;
-    await tester.pumpWidget(_app(_bar(
-      _event(),
-      uid: _strangerUid,
-      acting: true,
-      onJoin: () => joined = true,
-    )));
+    await tester.pumpWidget(
+      _app(
+        _bar(
+          _event(),
+          uid: _strangerUid,
+          acting: true,
+          onJoin: () => joined = true,
+        ),
+      ),
+    );
 
     // 進行中時按鈕文字換成轉圈，避免使用者以為沒反應而連按。
     expect(find.text('我要參加'), findsNothing);
     expect(find.byType(CircularProgressIndicator), findsOneWidget);
 
-    await tester.tap(find.byType(CircularProgressIndicator), warnIfMissed: false);
+    await tester.tap(
+      find.byType(CircularProgressIndicator),
+      warnIfMissed: false,
+    );
     await tester.pump();
 
     expect(joined, isFalse);
@@ -175,18 +186,22 @@ void main() {
         tester.view.devicePixelRatio = 1.0;
         addTearDown(tester.view.reset);
 
-        await tester.pumpWidget(_app(EventActionBar(
-          event: _event(),
-          uid: _hostUid,
-          acting: false,
-          seniorMode: seniorMode,
-          onJoin: () {},
-          onLeave: () {},
-          onCancel: () {},
-          onEdit: () {},
-          onExport: () {},
-          onDelete: () {},
-        )));
+        await tester.pumpWidget(
+          _app(
+            EventActionBar(
+              event: _event(),
+              uid: _hostUid,
+              acting: false,
+              seniorMode: seniorMode,
+              onJoin: () {},
+              onLeave: () {},
+              onCancel: () {},
+              onEdit: () {},
+              onExport: () {},
+              onDelete: () {},
+            ),
+          ),
+        );
 
         expect(
           tester.takeException(),

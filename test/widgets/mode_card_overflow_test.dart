@@ -17,13 +17,11 @@ import 'package:flutter_application_1/screens/home/home_screen.dart';
 import 'package:flutter_application_1/services/senior_mode_controller.dart';
 
 Widget _home({double textScale = 1.0}) => MaterialApp(
-      home: MediaQuery(
-        data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
-        child: Scaffold(
-          body: HomeScreen(onNavigateToTab: (index, {subTab}) {}),
-        ),
-      ),
-    );
+  home: MediaQuery(
+    data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+    child: Scaffold(body: HomeScreen(onNavigateToTab: (index, {subTab}) {})),
+  ),
+);
 
 void main() {
   setUp(() async {
@@ -48,7 +46,13 @@ void main() {
       );
 
       // 縮放不該把文字整個吃掉：五張卡的族語名都要還在。
-      for (final truku in ['KARI TRUKU', 'LNGLUNGAN', 'PGKALA', 'ALANG', 'SMRATUC']) {
+      for (final truku in [
+        'KARI TRUKU',
+        'LNGLUNGAN',
+        'PGKALA',
+        'ALANG',
+        'SMRATUC',
+      ]) {
         expect(find.text(truku), findsOneWidget, reason: '$truku 不見了');
       }
     });

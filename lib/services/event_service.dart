@@ -103,7 +103,10 @@ class EventService {
   }
 
   /// 參加活動。[contactEmail] 為後端必填欄位（供主辦聯繫用，可與帳號 email 不同）。
-  static Future<void> joinEvent(int eventId, {required String contactEmail}) async {
+  static Future<void> joinEvent(
+    int eventId, {
+    required String contactEmail,
+  }) async {
     await ApiClient.post(ApiConfig.eventJoin(eventId), {
       'contact_email': contactEmail.trim(),
     });
@@ -242,10 +245,8 @@ class EventService {
   }
 
   /// 不帶 [ids] 代表全部標記已讀。
-  static Future<void> markNotificationsRead({List<int>? ids}) => ApiClient.post(
-    ApiConfig.eventNotificationsRead,
-    {'ids': ?ids},
-  );
+  static Future<void> markNotificationsRead({List<int>? ids}) =>
+      ApiClient.post(ApiConfig.eventNotificationsRead, {'ids': ?ids});
 
   // ── 裝置推播 token ──────────────────────────────────────────
 

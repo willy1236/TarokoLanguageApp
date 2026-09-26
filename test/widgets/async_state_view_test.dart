@@ -98,9 +98,7 @@ void main() {
           ),
         ),
       );
-      c.completeError(
-        ApiException(statusCode: 500, code: 'X', message: '壞了'),
-      );
+      c.completeError(ApiException(statusCode: 500, code: 'X', message: '壞了'));
       await tester.pump();
       expect(find.text('壞了'), findsOneWidget);
       expect(find.text('重試'), findsOneWidget);

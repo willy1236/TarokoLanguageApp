@@ -42,5 +42,6 @@ class SearchAssistService {
   }
 
   /// 清空我的所有搜尋歷史（後端不分模組）。
-  static Future<void> clearHistory() => ApiClient.delete(ApiConfig.searchHistory);
+  static Future<void> clearHistory() =>
+      ApiClient.delete(ApiConfig.searchHistory);
 }

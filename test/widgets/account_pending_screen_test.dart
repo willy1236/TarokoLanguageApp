@@ -15,20 +15,20 @@ import '../helpers/widget_test_helpers.dart';
 
 /// /api/me 的最小合法回應：UserModel.fromJson 只硬性要求 uid 與 created_at。
 Map<String, dynamic> _me({bool profileCompleted = true}) => {
-      'uid': 1,
-      'created_at': '2026-01-01T00:00:00Z',
-      'profile_completed': profileCompleted,
-    };
+  'uid': 1,
+  'created_at': '2026-01-01T00:00:00Z',
+  'profile_completed': profileCompleted,
+};
 
 /// 把畫面放進帶命名路由的 App，才能驗證 pushNamedAndRemoveUntil 導去哪裡。
 Widget _app(Widget screen) => MaterialApp(
-      home: screen,
-      routes: {
-        '/home': (_) => const Scaffold(body: Text('HOME')),
-        '/login': (_) => const Scaffold(body: Text('LOGIN')),
-        '/complete-profile': (_) => const Scaffold(body: Text('COMPLETE')),
-      },
-    );
+  home: screen,
+  routes: {
+    '/home': (_) => const Scaffold(body: Text('HOME')),
+    '/login': (_) => const Scaffold(body: Text('LOGIN')),
+    '/complete-profile': (_) => const Scaffold(body: Text('COMPLETE')),
+  },
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -154,8 +154,11 @@ void main() {
   testWidgets('重新啟用失敗時留在原畫面並顯示後端錯誤訊息', (tester) async {
     installMockClient({
       '/api/account/status': jsonResponse({'status': 'pending_deletion'}),
-      '/api/account/reactivate':
-          errorResponse('REACTIVATE_FAILED', status: 400, message: '無法重新啟用'),
+      '/api/account/reactivate': errorResponse(
+        'REACTIVATE_FAILED',
+        status: 400,
+        message: '無法重新啟用',
+      ),
     });
 
     await tester.pumpWidget(_app(const AccountPendingScreen()));

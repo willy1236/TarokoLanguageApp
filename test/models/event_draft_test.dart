@@ -6,19 +6,16 @@ void main() {
   final now = DateTime(2026, 9, 11, 12);
   final future = DateTime(2026, 9, 20, 10);
 
-  EventDraft valid({
-    DateTime? startsAt,
-    DateTime? deadline,
-    String max = '',
-  }) => EventDraft(
-    title: '走讀',
-    description: '說明',
-    location: '部落',
-    address: '秀林鄉',
-    startsAt: startsAt ?? future,
-    registrationDeadline: deadline,
-    maxParticipantsText: max,
-  );
+  EventDraft valid({DateTime? startsAt, DateTime? deadline, String max = ''}) =>
+      EventDraft(
+        title: '走讀',
+        description: '說明',
+        location: '部落',
+        address: '秀林鄉',
+        startsAt: startsAt ?? future,
+        registrationDeadline: deadline,
+        maxParticipantsText: max,
+      );
 
   EventDetail detail() => EventDetail(
     id: 1,

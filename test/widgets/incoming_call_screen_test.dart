@@ -23,9 +23,13 @@ MockClient _backend(String Function() status) => MockClient((req) async {
     return _json({'call_id': _callId, 'status': status(), 'peer_uid': 2});
   }
   if (path == '/api/friends/calls/$_callId/accept') {
-    return _json({'error': {'code': 'INTERNAL', 'message': 'boom'}}, 500);
+    return _json({
+      'error': {'code': 'INTERNAL', 'message': 'boom'},
+    }, 500);
   }
-  return _json({'error': {'code': 'NOT_FOUND', 'message': 'not found'}}, 404);
+  return _json({
+    'error': {'code': 'NOT_FOUND', 'message': 'not found'},
+  }, 404);
 });
 
 /// 從首頁 push 出響鈴畫面，才能驗證它有沒有自己 pop 回來。
@@ -69,7 +73,10 @@ void main() {
       'xyz.luan/audioplayers.global',
       'vibration',
     ]) {
-      messenger.setMockMethodCallHandler(MethodChannel(name), (_) async => null);
+      messenger.setMockMethodCallHandler(
+        MethodChannel(name),
+        (_) async => null,
+      );
     }
   });
 

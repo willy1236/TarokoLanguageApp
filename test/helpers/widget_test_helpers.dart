@@ -22,7 +22,9 @@ import 'package:flutter_application_1/core/network/api_client.dart';
 Widget wrap(Widget child, {double height = 800, ThemeData? theme}) {
   return MaterialApp(
     theme: theme,
-    home: Scaffold(body: SizedBox(height: height, child: child)),
+    home: Scaffold(
+      body: SizedBox(height: height, child: child),
+    ),
   );
 }
 
@@ -40,16 +42,16 @@ Widget wrapScreen(Widget screen, {Map<String, WidgetBuilder>? routes}) {
 void stubSecureStorage({String? token, String? expiresAt}) {
   TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
       .setMockMethodCallHandler(
-    const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
-    (call) async {
-      if (token == null && expiresAt == null) return null;
-      final args = call.arguments;
-      final key = args is Map ? args['key'] : null;
-      if (key == 'session_token') return token;
-      if (key == 'session_expires_at') return expiresAt;
-      return null;
-    },
-  );
+        const MethodChannel('plugins.it_nomads.com/flutter_secure_storage'),
+        (call) async {
+          if (token == null && expiresAt == null) return null;
+          final args = call.arguments;
+          final key = args is Map ? args['key'] : null;
+          if (key == 'session_token') return token;
+          if (key == 'session_expires_at') return expiresAt;
+          return null;
+        },
+      );
 }
 
 /// 吞掉指定 MethodChannel 的呼叫，回傳 [result]。

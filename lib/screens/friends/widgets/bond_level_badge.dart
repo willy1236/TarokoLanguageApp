@@ -27,7 +27,10 @@ class BondLevelBadge extends StatelessWidget {
     ),
     child: Text(
       '羈絆 · $name',
-      style: AppTypography.subtitleStyle(seniorMode: seniorMode, color: AppColors.goldDeep),
+      style: AppTypography.subtitleStyle(
+        seniorMode: seniorMode,
+        color: AppColors.goldDeep,
+      ),
     ),
   );
 }

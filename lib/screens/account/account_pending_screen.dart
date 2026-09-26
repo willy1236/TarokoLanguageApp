@@ -70,13 +70,9 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
         user.profileCompleted ? '/home' : '/complete-profile',
         (_) => false,
       );
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(
+      ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            status.isLocked ? '帳號已重新啟用，目前為唯讀狀態' : '帳號已重新啟用，歡迎回來',
-          ),
+          content: Text(status.isLocked ? '帳號已重新啟用，目前為唯讀狀態' : '帳號已重新啟用，歡迎回來'),
         ),
       );
     } on ApiException catch (e) {

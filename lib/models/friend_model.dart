@@ -66,7 +66,8 @@ class FriendRequest extends FriendUser {
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,
     selfIntro: j['self_intro'] as String?,
-    createdAt: DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
+    createdAt:
+        DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
   );
 }
 
@@ -77,7 +78,11 @@ class Showcase {
   final bool theirs;
   final bool mutual;
 
-  const Showcase({required this.mine, required this.theirs, required this.mutual});
+  const Showcase({
+    required this.mine,
+    required this.theirs,
+    required this.mutual,
+  });
 
   factory Showcase.fromJson(Map<String, dynamic> j) => Showcase(
     mine: j['mine'] as bool? ?? false,
@@ -191,14 +196,16 @@ class IncomingCall {
     callerAvatarUrl: j['caller_avatar_url'] as String?,
     callerAvatarId: j['caller_avatar_id'] as String?,
     callerFrameId: j['caller_frame_id'] as String?,
-    createdAt: DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
+    createdAt:
+        DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
   );
 }
 
 /// GET /api/friends/calls/:id 的一通來電狀態（撥出方輪詢用）。
 class DirectedCallStatus {
   final int callId;
-  final String status; // ringing / accepted / declined / cancelled / missed / ended
+  final String
+  status; // ringing / accepted / declined / cancelled / missed / ended
   final int? sessionId;
   final int peerUid;
   final String? peerNickname;
@@ -211,13 +218,14 @@ class DirectedCallStatus {
     this.peerNickname,
   });
 
-  factory DirectedCallStatus.fromJson(Map<String, dynamic> j) => DirectedCallStatus(
-    callId: int.tryParse(j['call_id']?.toString() ?? '') ?? 0,
-    status: j['status'] as String? ?? '',
-    sessionId: int.tryParse(j['session_id']?.toString() ?? ''),
-    peerUid: int.tryParse(j['peer_uid']?.toString() ?? '') ?? 0,
-    peerNickname: j['peer_nickname'] as String?,
-  );
+  factory DirectedCallStatus.fromJson(Map<String, dynamic> j) =>
+      DirectedCallStatus(
+        callId: int.tryParse(j['call_id']?.toString() ?? '') ?? 0,
+        status: j['status'] as String? ?? '',
+        sessionId: int.tryParse(j['session_id']?.toString() ?? ''),
+        peerUid: int.tryParse(j['peer_uid']?.toString() ?? '') ?? 0,
+        peerNickname: j['peer_nickname'] as String?,
+      );
 }
 
 class BlockedUser extends FriendUser {
@@ -242,6 +250,7 @@ class BlockedUser extends FriendUser {
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,
     selfIntro: j['self_intro'] as String?,
-    createdAt: DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
+    createdAt:
+        DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
   );
 }

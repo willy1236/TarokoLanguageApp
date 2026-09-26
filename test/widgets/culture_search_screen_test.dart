@@ -18,20 +18,20 @@ import '../helpers/widget_test_helpers.dart';
 
 /// 搜尋建議（歷史／熱門）一進畫面就會打，先備好空回應。
 Map<String, Object?> _suggestionRoutes() => {
-      '/api/search/history': {'history': <dynamic>[]},
-      '/api/search/popular': {'popular': <dynamic>[]},
-    };
+  '/api/search/history': {'history': <dynamic>[]},
+  '/api/search/popular': {'popular': <dynamic>[]},
+};
 
 /// 用純字串當結果項目：這層測的是骨架行為，不是卡片長相。
 Widget _app(CultureSearchFetch<String> fetch) => MaterialApp(
-      home: CultureSearchScreen<String>(
-        module: SearchModule.articles,
-        hint: '搜尋文章',
-        emptyText: '找不到符合的文章',
-        fetch: fetch,
-        itemBuilder: (item, _) => ListTile(title: Text(item)),
-      ),
-    );
+  home: CultureSearchScreen<String>(
+    module: SearchModule.articles,
+    hint: '搜尋文章',
+    emptyText: '找不到符合的文章',
+    fetch: fetch,
+    itemBuilder: (item, _) => ListTile(title: Text(item)),
+  ),
+);
 
 /// 有更多結果時清單尾端會掛一顆轉圈，pumpAndSettle 等不到靜止。
 Future<void> _searchFor(WidgetTester tester, String q) async {
@@ -52,10 +52,12 @@ void main() {
   tearDown(restoreHttp);
 
   testWidgets('搜尋後顯示結果', (tester) async {
-    await tester.pumpWidget(_app(
-      ({q, range, tribeId, required page}) async =>
-          (items: ['太魯閣族的織布', '獵人的一天'], total: 2),
-    ));
+    await tester.pumpWidget(
+      _app(
+        ({q, range, tribeId, required page}) async =>
+            (items: ['太魯閣族的織布', '獵人的一天'], total: 2),
+      ),
+    );
     await tester.pumpAndSettle();
     await _searchFor(tester, '織布');
 
@@ -66,13 +68,13 @@ void main() {
   testWidgets('關鍵字與篩選條件會傳給 fetch', (tester) async {
     String? gotQ;
     int gotPage = 0;
-    await tester.pumpWidget(_app(
-      ({q, range, tribeId, required page}) async {
+    await tester.pumpWidget(
+      _app(({q, range, tribeId, required page}) async {
         gotQ = q;
         gotPage = page;
         return (items: <String>[], total: 0);
-      },
-    ));
+      }),
+    );
     await tester.pumpAndSettle();
     await _searchFor(tester, '  織布  ');
 
@@ -82,10 +84,12 @@ void main() {
   });
 
   testWidgets('沒有結果時顯示自訂空狀態文案', (tester) async {
-    await tester.pumpWidget(_app(
-      ({q, range, tribeId, required page}) async =>
-          (items: <String>[], total: 0),
-    ));
+    await tester.pumpWidget(
+      _app(
+        ({q, range, tribeId, required page}) async =>
+            (items: <String>[], total: 0),
+      ),
+    );
     await tester.pumpAndSettle();
     await _searchFor(tester, '不存在');
 
@@ -93,13 +97,15 @@ void main() {
   });
 
   testWidgets('後端錯誤顯示後端訊息', (tester) async {
-    await tester.pumpWidget(_app(
-      ({q, range, tribeId, required page}) async => throw ApiException(
-        statusCode: 400,
-        code: 'INVALID_RANGE',
-        message: '時間區間不合法',
+    await tester.pumpWidget(
+      _app(
+        ({q, range, tribeId, required page}) async => throw ApiException(
+          statusCode: 400,
+          code: 'INVALID_RANGE',
+          message: '時間區間不合法',
+        ),
       ),
-    ));
+    );
     await tester.pumpAndSettle();
     await _searchFor(tester, '織布');
 
@@ -107,10 +113,12 @@ void main() {
   });
 
   testWidgets('非後端錯誤顯示通用文案，不把例外內容丟給使用者', (tester) async {
-    await tester.pumpWidget(_app(
-      ({q, range, tribeId, required page}) async =>
-          throw StateError('internal detail'),
-    ));
+    await tester.pumpWidget(
+      _app(
+        ({q, range, tribeId, required page}) async =>
+            throw StateError('internal detail'),
+      ),
+    );
     await tester.pumpAndSettle();
     await _searchFor(tester, '織布');
 
@@ -120,15 +128,12 @@ void main() {
 
   testWidgets('總數大於已載入時捲到底會續載下一頁', (tester) async {
     final pages = <int>[];
-    await tester.pumpWidget(_app(
-      ({q, range, tribeId, required page}) async {
+    await tester.pumpWidget(
+      _app(({q, range, tribeId, required page}) async {
         pages.add(page);
-        return (
-          items: List.generate(10, (i) => '第 $page 頁第 $i 筆'),
-          total: 20,
-        );
-      },
-    ));
+        return (items: List.generate(10, (i) => '第 $page 頁第 $i 筆'), total: 20);
+      }),
+    );
     await tester.pumpAndSettle();
     await _searchFor(tester, '織布');
 
@@ -144,12 +149,12 @@ void main() {
 
   testWidgets('已載入數量等於總數時不再續載', (tester) async {
     final pages = <int>[];
-    await tester.pumpWidget(_app(
-      ({q, range, tribeId, required page}) async {
+    await tester.pumpWidget(
+      _app(({q, range, tribeId, required page}) async {
         pages.add(page);
         return (items: List.generate(3, (i) => '第 $i 筆'), total: 3);
-      },
-    ));
+      }),
+    );
     await tester.pumpAndSettle();
     await _searchFor(tester, '織布');
 
@@ -162,16 +167,16 @@ void main() {
 
   testWidgets('回應晚到的舊查詢不會覆蓋新查詢的結果', (tester) async {
     var calls = 0;
-    await tester.pumpWidget(_app(
-      ({q, range, tribeId, required page}) async {
+    await tester.pumpWidget(
+      _app(({q, range, tribeId, required page}) async {
         calls++;
         if (calls == 1) {
           await Future<void>.delayed(const Duration(milliseconds: 500));
           return (items: ['舊查詢結果'], total: 1);
         }
         return (items: ['新查詢結果'], total: 1);
-      },
-    ));
+      }),
+    );
     await tester.pumpAndSettle();
 
     await tester.enterText(find.byType(TextField).first, '舊');
@@ -191,5 +196,5 @@ void main() {
 
 /// 篩選列也是一個（水平）ListView，所以要指名垂直的那個結果清單。
 Finder _resultList() => find.byWidgetPredicate(
-      (w) => w is ListView && w.scrollDirection == Axis.vertical,
-    );
+  (w) => w is ListView && w.scrollDirection == Axis.vertical,
+);

@@ -44,7 +44,10 @@ void main() {
     installMockClient(
       {
         '/api/forum/posts/1': _postJson(),
-        '/api/forum/posts/1/comments': {'comments': <Object?>[], 'replies': <Object?>[]},
+        '/api/forum/posts/1/comments': {
+          'comments': <Object?>[],
+          'replies': <Object?>[],
+        },
         '/api/shop/items': {'items': <Object?>[]},
       },
       onRequest: (request) {

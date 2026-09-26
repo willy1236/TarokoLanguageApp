@@ -203,7 +203,11 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
                 shape: BoxShape.circle,
                 color: Colors.white.withValues(alpha: 0.1),
               ),
-              child: const Icon(Icons.close, size: 18, color: AppColors.creamLight),
+              child: const Icon(
+                Icons.close,
+                size: 18,
+                color: AppColors.creamLight,
+              ),
             ),
           ),
         ],
@@ -254,7 +258,10 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
                           height: 140,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            border: Border.all(color: AppColors.gold, width: 1.0),
+                            border: Border.all(
+                              color: AppColors.gold,
+                              width: 1.0,
+                            ),
                           ),
                         ),
                       ),
@@ -280,7 +287,11 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
                   ],
                 ),
                 child: const Center(
-                  child: TrukuDiamond(size: 70, color: AppColors.gold, strokeWidth: 1.5),
+                  child: TrukuDiamond(
+                    size: 70,
+                    color: AppColors.gold,
+                    strokeWidth: 1.5,
+                  ),
                 ),
               ),
             ],
@@ -312,7 +323,9 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
           padding: const EdgeInsets.symmetric(horizontal: 36, vertical: 14),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(30),
-            border: Border.all(color: AppColors.creamLight.withValues(alpha: 0.25)),
+            border: Border.all(
+              color: AppColors.creamLight.withValues(alpha: 0.25),
+            ),
           ),
           child: Text(
             _errorMessage != null ? '返回' : '取消',

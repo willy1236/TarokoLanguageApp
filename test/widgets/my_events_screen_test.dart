@@ -17,29 +17,27 @@ Map<String, dynamic> _event({
   required int id,
   required String title,
   String effectiveStatus = 'active',
-}) =>
-    {
-      'id': id,
-      'title': title,
-      'starts_at': '2026-12-01T10:00:00Z',
-      'status': effectiveStatus == 'cancelled' ? 'cancelled' : 'active',
-      'effective_status': effectiveStatus,
-      'participant_count': 3,
-    };
+}) => {
+  'id': id,
+  'title': title,
+  'starts_at': '2026-12-01T10:00:00Z',
+  'status': effectiveStatus == 'cancelled' ? 'cancelled' : 'active',
+  'effective_status': effectiveStatus,
+  'participant_count': 3,
+};
 
 Map<String, dynamic> _notification({
   required int id,
   required String message,
   bool isRead = false,
-}) =>
-    {
-      'id': id,
-      'event_id': 1,
-      'event_title': '部落豐年祭',
-      'message': message,
-      'sent_at': DateTime.now().toIso8601String(),
-      'is_read': isRead,
-    };
+}) => {
+  'id': id,
+  'event_id': 1,
+  'event_title': '部落豐年祭',
+  'message': message,
+  'sent_at': DateTime.now().toIso8601String(),
+  'is_read': isRead,
+};
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -82,10 +80,9 @@ void main() {
 
     testWidgets('載入失敗時顯示錯誤並可重試', (tester) async {
       var calls = 0;
-      installMockClient(
-        {'/api/events/mine': errorResponse('SERVER_ERROR', status: 500)},
-        onRequest: (_) => calls++,
-      );
+      installMockClient({
+        '/api/events/mine': errorResponse('SERVER_ERROR', status: 500),
+      }, onRequest: (_) => calls++);
 
       await tester.pumpWidget(const MaterialApp(home: MyEventsScreen()));
       await tester.pumpAndSettle();
@@ -143,8 +140,11 @@ void main() {
 
     testWidgets('載入失敗時顯示錯誤', (tester) async {
       installMockClient({
-        '/api/events/notifications':
-            errorResponse('SERVER_ERROR', status: 500, message: '伺服器忙碌中'),
+        '/api/events/notifications': errorResponse(
+          'SERVER_ERROR',
+          status: 500,
+          message: '伺服器忙碌中',
+        ),
       });
 
       await tester.pumpWidget(

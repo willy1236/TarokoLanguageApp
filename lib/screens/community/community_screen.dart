@@ -154,7 +154,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
             '面對面，學族語',
             style: AppTypography.serif(
               // headline token（22）比一般模式的 26 還小，精簡模式另外放大。
-              fontSize: seniorMode ? AppTypography.display30 : AppTypography.display26,
+              fontSize: seniorMode
+                  ? AppTypography.display30
+                  : AppTypography.display26,
               fontWeight: FontWeight.w600,
               color: AppColors.ink,
               letterSpacing: 1.0,
@@ -216,7 +218,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   Text(
                     '和耆老一對一\n用族語聊 10 分鐘',
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.title,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                       height: 1.3,
@@ -227,7 +232,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   Text(
                     '系統會幫你配對線上的族人',
                     style: TextStyle(
-                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.caption,
+                        seniorMode: seniorMode,
+                      ),
                       color: AppColors.creamLight.withValues(
                         alpha: seniorMode ? 0.85 : 0.7,
                       ),
@@ -287,7 +295,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
               Text(
                 '查看視訊配對須知',
                 style: TextStyle(
-                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.caption,
+                    seniorMode: seniorMode,
+                  ),
                   color: AppColors.fog,
                   decoration: TextDecoration.underline,
                   decorationColor: AppColors.fog,
@@ -469,7 +480,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
             Text(
               _isJoining ? '配對中…' : '開始配對',
               style: AppTypography.serif(
-                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.bodyLarge,
+                  seniorMode: seniorMode,
+                ),
                 fontWeight: FontWeight.w600,
                 color: AppColors.ink,
                 letterSpacing: 2.0,
@@ -498,7 +512,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
               Text(
                 '我的好友',
                 style: AppTypography.serif(
-                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.body,
+                    seniorMode: seniorMode,
+                  ),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
                   letterSpacing: 1.5,
@@ -531,7 +548,10 @@ class _CommunityScreenState extends State<CommunityScreen> {
               child: Text(
                 '尚無好友，先去加好友吧',
                 style: TextStyle(
-                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.caption,
+                    seniorMode: seniorMode,
+                  ),
                   color: AppColors.fog,
                 ),
               ),
@@ -612,7 +632,10 @@ class _FriendTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.body,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                       letterSpacing: 1.0,

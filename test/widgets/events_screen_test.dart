@@ -23,27 +23,26 @@ Map<String, dynamic> _event({
   int id = 1,
   String title = '部落豐年祭',
   String? category,
-}) =>
-    {
-      'id': id,
-      'title': title,
-      'starts_at': '2026-12-01T10:00:00Z',
-      'category': category,
-      'status': 'active',
-      'effective_status': 'active',
-      'registration_open': true,
-    };
+}) => {
+  'id': id,
+  'title': title,
+  'starts_at': '2026-12-01T10:00:00Z',
+  'category': category,
+  'status': 'active',
+  'effective_status': 'active',
+  'registration_open': true,
+};
 
 Map<String, dynamic> _me({String role = 'user'}) => {
-      'uid': 1,
-      'created_at': '2026-01-01T00:00:00Z',
-      'role': role,
-    };
+  'uid': 1,
+  'created_at': '2026-01-01T00:00:00Z',
+  'role': role,
+};
 
 Widget _app() => MaterialApp(
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      home: const Scaffold(body: EventsScreen()),
-    );
+  scaffoldMessengerKey: scaffoldMessengerKey,
+  home: const Scaffold(body: EventsScreen()),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -118,7 +117,9 @@ void main() {
     final scopes = <String?>[];
     installMockClient(
       {
-        '/api/events': {'events': [_event()]},
+        '/api/events': {
+          'events': [_event()],
+        },
         '/api/me': _me(),
       },
       onRequest: (req) {
@@ -186,7 +187,9 @@ void main() {
 
   testWidgets('一般使用者的發起鈕停用（沒有 organizer 權限）', (tester) async {
     installMockClient({
-      '/api/events': {'events': [_event()]},
+      '/api/events': {
+        'events': [_event()],
+      },
       '/api/me': _me(role: 'user'),
     });
 
@@ -194,14 +197,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      tester.widget<ModuleComposeButton>(find.byType(ModuleComposeButton)).enabled,
+      tester
+          .widget<ModuleComposeButton>(find.byType(ModuleComposeButton))
+          .enabled,
       isFalse,
     );
   });
 
   testWidgets('organizer 的發起鈕啟用', (tester) async {
     installMockClient({
-      '/api/events': {'events': [_event()]},
+      '/api/events': {
+        'events': [_event()],
+      },
       '/api/me': _me(role: 'organizer'),
     });
 
@@ -209,14 +216,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      tester.widget<ModuleComposeButton>(find.byType(ModuleComposeButton)).enabled,
+      tester
+          .widget<ModuleComposeButton>(find.byType(ModuleComposeButton))
+          .enabled,
       isTrue,
     );
   });
 
   testWidgets('查不到身分時保守擋下發起（不能因為 API 失敗就放行）', (tester) async {
     installMockClient({
-      '/api/events': {'events': [_event()]},
+      '/api/events': {
+        'events': [_event()],
+      },
       '/api/me': errorResponse('SERVER_ERROR', status: 500),
     });
 
@@ -224,14 +235,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      tester.widget<ModuleComposeButton>(find.byType(ModuleComposeButton)).enabled,
+      tester
+          .widget<ModuleComposeButton>(find.byType(ModuleComposeButton))
+          .enabled,
       isFalse,
     );
   });
 
   testWidgets('唯讀模式下 organizer 按發起會被擋並顯示提示', (tester) async {
     installMockClient({
-      '/api/events': {'events': [_event()]},
+      '/api/events': {
+        'events': [_event()],
+      },
       '/api/me': _me(role: 'organizer'),
     });
 

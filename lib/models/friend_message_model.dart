@@ -30,8 +30,11 @@ class FriendMessage {
     senderUid: (j['sender_uid'] as num?)?.toInt() ?? 0,
     recipientUid: (j['recipient_uid'] as num?)?.toInt() ?? 0,
     body: j['body'] as String? ?? '',
-    createdAt: DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
-    readAt: j['read_at'] == null ? null : DateTime.tryParse(j['read_at'].toString()),
+    createdAt:
+        DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
+    readAt: j['read_at'] == null
+        ? null
+        : DateTime.tryParse(j['read_at'].toString()),
   );
 }
 
@@ -47,11 +50,14 @@ class ConversationPreview {
     required this.mine,
   });
 
-  factory ConversationPreview.fromJson(Map<String, dynamic> j) => ConversationPreview(
-    body: j['body'] as String? ?? '',
-    createdAt: DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
-    mine: j['mine'] as bool? ?? false,
-  );
+  factory ConversationPreview.fromJson(Map<String, dynamic> j) =>
+      ConversationPreview(
+        body: j['body'] as String? ?? '',
+        createdAt:
+            DateTime.tryParse(j['created_at']?.toString() ?? '') ??
+            DateTime.now(),
+        mine: j['mine'] as bool? ?? false,
+      );
 }
 
 class Conversation {
@@ -84,7 +90,9 @@ class Conversation {
     frameId: j['frame_id'] as String?,
     unreadCount: (j['unread_count'] as num?)?.toInt() ?? 0,
     lastMessage: j['last_message'] is Map<String, dynamic>
-        ? ConversationPreview.fromJson(j['last_message'] as Map<String, dynamic>)
+        ? ConversationPreview.fromJson(
+            j['last_message'] as Map<String, dynamic>,
+          )
         : null,
   );
 }

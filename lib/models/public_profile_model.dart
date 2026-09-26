@@ -76,8 +76,10 @@ class PublicProfile {
     avatarUrl: j['avatar_url'] as String?,
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,
-    joinedAt: DateTime.tryParse(j['joined_at']?.toString() ?? '') ?? DateTime.now(),
-    bondShowcase: (j['bond_showcase'] as List?)
+    joinedAt:
+        DateTime.tryParse(j['joined_at']?.toString() ?? '') ?? DateTime.now(),
+    bondShowcase:
+        (j['bond_showcase'] as List?)
             ?.map((e) => BondShowcaseItem.fromJson(e as Map<String, dynamic>))
             .toList() ??
         const [],

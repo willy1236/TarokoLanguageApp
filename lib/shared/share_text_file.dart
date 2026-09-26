@@ -21,7 +21,11 @@ Future<void> shareTextFile({
     await SharePlus.instance.share(
       ShareParams(
         files: [
-          XFile.fromData(utf8.encode(content), name: filename, mimeType: mimeType),
+          XFile.fromData(
+            utf8.encode(content),
+            name: filename,
+            mimeType: mimeType,
+          ),
         ],
         subject: subject,
       ),

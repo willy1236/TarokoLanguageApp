@@ -112,7 +112,10 @@ class EventActionBar extends StatelessWidget {
             Text(
               '發送提醒',
               style: AppTypography.serif(
-                fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+                fontSize: AppTypography.size(
+                  AppTypography.bodyLarge,
+                  seniorMode: seniorMode,
+                ),
                 fontWeight: FontWeight.w600,
                 color: AppColors.creamLight,
                 letterSpacing: 1.5,
@@ -136,7 +139,10 @@ class EventActionBar extends StatelessWidget {
           child: Text(
             '取消活動',
             style: AppTypography.serif(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               fontWeight: FontWeight.w600,
               color: AppColors.dangerDark,
               letterSpacing: 1.0,
@@ -267,6 +273,7 @@ class EventActionBar extends StatelessWidget {
       ),
     );
   }
+
   // 參加者：已報名（可退出）
   Widget _joinedActions(bool seniorMode) {
     final joinedBadge = Container(
@@ -288,7 +295,10 @@ class EventActionBar extends StatelessWidget {
           Text(
             '已報名',
             style: AppTypography.serif(
-              fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.bodyLarge,
+                seniorMode: seniorMode,
+              ),
               fontWeight: FontWeight.w600,
               color: AppColors.mossDeep,
               letterSpacing: 1.5,
@@ -313,7 +323,10 @@ class EventActionBar extends StatelessWidget {
           child: Text(
             '退出',
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.inkSoft,
               letterSpacing: 1.0,
             ),
@@ -367,7 +380,10 @@ class EventActionBar extends StatelessWidget {
               : Text(
                   label,
                   style: AppTypography.serif(
-                    fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.bodyLarge,
+                      seniorMode: seniorMode,
+                    ),
                     fontWeight: FontWeight.w600,
                     color: AppColors.creamLight,
                     letterSpacing: 2.0,
@@ -390,7 +406,10 @@ class EventActionBar extends StatelessWidget {
         child: Text(
           label,
           style: TextStyle(
-            fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.bodyLarge,
+              seniorMode: seniorMode,
+            ),
             fontWeight: FontWeight.w600,
             color: AppColors.inkSoft,
             letterSpacing: 2.0,

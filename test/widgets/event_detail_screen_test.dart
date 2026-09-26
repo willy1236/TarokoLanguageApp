@@ -26,32 +26,31 @@ Map<String, dynamic> _detail({
   bool isLiked = false,
   int likeCount = 3,
   String effectiveStatus = 'active',
-}) =>
-    {
-      'id': _eventId,
-      'host_uid': hostUid,
-      'title': '部落豐年祭',
-      'description': '一起來跳舞',
-      'starts_at': '2026-12-01T10:00:00Z',
-      'status': 'active',
-      'effective_status': effectiveStatus,
-      'registration_open': true,
-      'is_joined': isJoined,
-      'is_liked': isLiked,
-      'like_count': likeCount,
-      'participant_count': 5,
-    };
+}) => {
+  'id': _eventId,
+  'host_uid': hostUid,
+  'title': '部落豐年祭',
+  'description': '一起來跳舞',
+  'starts_at': '2026-12-01T10:00:00Z',
+  'status': 'active',
+  'effective_status': effectiveStatus,
+  'registration_open': true,
+  'is_joined': isJoined,
+  'is_liked': isLiked,
+  'like_count': likeCount,
+  'participant_count': 5,
+};
 
 Map<String, dynamic> _me() => {
-      'uid': _myUid,
-      'created_at': '2026-01-01T00:00:00Z',
-      'email': 'me@example.com',
-    };
+  'uid': _myUid,
+  'created_at': '2026-01-01T00:00:00Z',
+  'email': 'me@example.com',
+};
 
 Widget _app() => MaterialApp(
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      home: const EventDetailScreen(eventId: _eventId),
-    );
+  scaffoldMessengerKey: scaffoldMessengerKey,
+  home: const EventDetailScreen(eventId: _eventId),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -214,8 +213,11 @@ void main() {
       '/api/events/1': _detail(),
       '/api/events/1/reminders': {'reminders': <dynamic>[]},
       '/api/me': _me(),
-      '/api/events/1/join':
-          errorResponse('EVENT_FULL', status: 409, message: '名額已滿'),
+      '/api/events/1/join': errorResponse(
+        'EVENT_FULL',
+        status: 409,
+        message: '名額已滿',
+      ),
     });
 
     await tester.pumpWidget(_app());

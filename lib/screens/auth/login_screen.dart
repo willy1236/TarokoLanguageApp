@@ -22,7 +22,6 @@ class _LoginScreenState extends State<LoginScreen> {
   /// 登入進行中的方式（'google'／'apple'），null 表示閒置。
   String? _loggingProvider;
 
-
   Future<void> _handleLogin(
     String provider,
     Future<LoginResult> Function() signIn,

@@ -77,7 +77,10 @@ class _ArticleResultTile extends StatelessWidget {
                     maxLines: seniorMode ? 1 : 2,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.body,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
                     ),

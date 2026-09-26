@@ -25,53 +25,52 @@ Map<String, dynamic> _summary({
   required String title,
   String category = 'education', // 刻意不用 cultural：卡片上的分類徽章也會印同樣的字，
   // 會讓「文化紀錄」這個 chip 的 finder 變得不唯一。
-}) =>
-    {
-      'id': id,
-      'title': title,
-      'summary': '摘要 $id',
-      'cover_image_url': null,
-      'category': category,
-      'view_count': 10,
-      'weekly_view_count': 3,
-      'like_count': 1,
-      'is_liked': false,
-      'is_bookmarked': false,
-      'published_at': '2026-09-01T00:00:00Z',
-    };
+}) => {
+  'id': id,
+  'title': title,
+  'summary': '摘要 $id',
+  'cover_image_url': null,
+  'category': category,
+  'view_count': 10,
+  'weekly_view_count': 3,
+  'like_count': 1,
+  'is_liked': false,
+  'is_bookmarked': false,
+  'published_at': '2026-09-01T00:00:00Z',
+};
 
 Map<String, dynamic> _list() => {
-      'total': 2,
-      'page': 1,
-      'page_size': 20,
-      'sort': 'latest',
-      'articles': [
-        _summary(id: 1, title: '太魯閣族的織布'),
-        _summary(id: 2, title: '獵人的山林智慧'),
-      ],
-    };
+  'total': 2,
+  'page': 1,
+  'page_size': 20,
+  'sort': 'latest',
+  'articles': [
+    _summary(id: 1, title: '太魯閣族的織布'),
+    _summary(id: 2, title: '獵人的山林智慧'),
+  ],
+};
 
 Map<String, dynamic> _detail() => {
-      'id': 1,
-      'title': '太魯閣族的織布',
-      'category': 'cultural',
-      'content_md': '# 織布\n\n這是內文。',
-      'summary': '關於織布的故事',
-      'like_count': 1,
-      'is_liked': false,
-      'is_bookmarked': false,
-      'view_count': 10,
-      'published_at': '2026-09-01T00:00:00Z',
-    };
+  'id': 1,
+  'title': '太魯閣族的織布',
+  'category': 'cultural',
+  'content_md': '# 織布\n\n這是內文。',
+  'summary': '關於織布的故事',
+  'like_count': 1,
+  'is_liked': false,
+  'is_bookmarked': false,
+  'view_count': 10,
+  'published_at': '2026-09-01T00:00:00Z',
+};
 
 Widget _app() => MaterialApp(
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      home: const Scaffold(
-        body: SingleChildScrollView(
-          child: CultureArticleSection(seniorMode: false),
-        ),
-      ),
-    );
+  scaffoldMessengerKey: scaffoldMessengerKey,
+  home: const Scaffold(
+    body: SingleChildScrollView(
+      child: CultureArticleSection(seniorMode: false),
+    ),
+  ),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -89,10 +88,7 @@ void main() {
   testWidgets('清單 → 詳情 → 返回，清單不會重新載入', (tester) async {
     var listCalls = 0;
     installMockClient(
-      {
-        '/api/articles': _list(),
-        '/api/articles/1': _detail(),
-      },
+      {'/api/articles': _list(), '/api/articles/1': _detail()},
       onRequest: (r) {
         if (r.url.path == '/api/articles') listCalls++;
       },
@@ -117,7 +113,8 @@ void main() {
     expect(
       listCalls,
       1,
-      reason: '返回清單時重打了 /api/articles，代表 section 的 State 沒被保留，'
+      reason:
+          '返回清單時重打了 /api/articles，代表 section 的 State 沒被保留，'
           '使用者會看到清單重新轉圈圈',
     );
   });
@@ -125,10 +122,7 @@ void main() {
   testWidgets('先切分類再進詳情再返回，選中的分類不會被重設', (tester) async {
     final requestedCategories = <String?>[];
     installMockClient(
-      {
-        '/api/articles': _list(),
-        '/api/articles/1': _detail(),
-      },
+      {'/api/articles': _list(), '/api/articles/1': _detail()},
       onRequest: (r) {
         if (r.url.path == '/api/articles') {
           requestedCategories.add(r.url.queryParameters['category']);
@@ -153,10 +147,9 @@ void main() {
     await tester.tap(find.byIcon(Icons.arrow_back));
     await pumpFrames(tester, times: 10);
 
-    expect(
-      requestedCategories,
-      [null, 'cultural'],
-      reason: '返回後不該再打一次 /api/articles，也不該退回「全部」重查',
-    );
+    expect(requestedCategories, [
+      null,
+      'cultural',
+    ], reason: '返回後不該再打一次 /api/articles，也不該退回「全部」重查');
   });
 }

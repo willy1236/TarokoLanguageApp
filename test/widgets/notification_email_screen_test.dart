@@ -22,11 +22,11 @@ UserModel _user({String email = 'me@example.com', bool verified = false}) =>
 
 /// /api/me 的最小合法回應，驗證成功後 verifyEmail 會 forceRefresh 打這支。
 Map<String, dynamic> _meJson() => {
-      'uid': 1,
-      'created_at': '2026-01-01T00:00:00Z',
-      'email': 'me@example.com',
-      'email_verified': true,
-    };
+  'uid': 1,
+  'created_at': '2026-01-01T00:00:00Z',
+  'email': 'me@example.com',
+  'email_verified': true,
+};
 
 Widget _app(Widget screen) => MaterialApp(home: screen);
 
@@ -58,13 +58,17 @@ void main() {
     expect(find.text('me@example.com'), findsNWidgets(2));
     expect(find.byType(EmailVerifiedBadge), findsOneWidget);
     expect(
-      tester.widget<EmailVerifiedBadge>(find.byType(EmailVerifiedBadge)).verified,
+      tester
+          .widget<EmailVerifiedBadge>(find.byType(EmailVerifiedBadge))
+          .verified,
       isTrue,
     );
   });
 
   testWidgets('尚未設定信箱時顯示提示且不顯示驗證標記', (tester) async {
-    await tester.pumpWidget(_app(NotificationEmailScreen(user: _user(email: ''))));
+    await tester.pumpWidget(
+      _app(NotificationEmailScreen(user: _user(email: ''))),
+    );
 
     expect(find.text('尚未設定'), findsOneWidget);
     expect(find.byType(EmailVerifiedBadge), findsNothing);
@@ -72,8 +76,9 @@ void main() {
 
   testWidgets('信箱格式無效時顯示錯誤且不打 API', (tester) async {
     var called = false;
-    installMockClient({'/api/me/email': <String, dynamic>{}},
-        onRequest: (_) => called = true);
+    installMockClient({
+      '/api/me/email': <String, dynamic>{},
+    }, onRequest: (_) => called = true);
 
     await tester.pumpWidget(_app(NotificationEmailScreen(user: _user())));
     await tester.enterText(find.byType(TextField), 'not-an-email');
@@ -136,20 +141,22 @@ void main() {
     });
 
     UserModel? popped;
-    await tester.pumpWidget(MaterialApp(
-      home: Builder(
-        builder: (context) => ElevatedButton(
-          onPressed: () async {
-            popped = await Navigator.of(context).push<UserModel>(
-              MaterialPageRoute(
-                builder: (_) => NotificationEmailScreen(user: _user()),
-              ),
-            );
-          },
-          child: const Text('OPEN'),
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => ElevatedButton(
+            onPressed: () async {
+              popped = await Navigator.of(context).push<UserModel>(
+                MaterialPageRoute(
+                  builder: (_) => NotificationEmailScreen(user: _user()),
+                ),
+              );
+            },
+            child: const Text('OPEN'),
+          ),
         ),
       ),
-    ));
+    );
 
     await tester.tap(find.text('OPEN'));
     await tester.pumpAndSettle();
@@ -169,8 +176,11 @@ void main() {
   testWidgets('驗證碼過期時顯示可行動的文案（而不是後端原始訊息）', (tester) async {
     installMockClient({
       '/api/me/email': <String, dynamic>{},
-      '/api/me/email/verify':
-          errorResponse('CODE_EXPIRED', status: 400, message: 'code expired'),
+      '/api/me/email/verify': errorResponse(
+        'CODE_EXPIRED',
+        status: 400,
+        message: 'code expired',
+      ),
     });
 
     await tester.pumpWidget(_app(NotificationEmailScreen(user: _user())));

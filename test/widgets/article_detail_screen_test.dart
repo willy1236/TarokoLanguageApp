@@ -17,24 +17,23 @@ Map<String, dynamic> _article({
   bool isLiked = false,
   bool isBookmarked = false,
   int likeCount = 5,
-}) =>
-    {
-      'id': 1,
-      'title': '太魯閣族的織布',
-      'category': 'culture',
-      'content_md': '# 織布\n\n這是內文。',
-      'summary': '關於織布的故事',
-      'like_count': likeCount,
-      'is_liked': isLiked,
-      'is_bookmarked': isBookmarked,
-      'view_count': 100,
-      'published_at': '2026-09-01T00:00:00Z',
-    };
+}) => {
+  'id': 1,
+  'title': '太魯閣族的織布',
+  'category': 'culture',
+  'content_md': '# 織布\n\n這是內文。',
+  'summary': '關於織布的故事',
+  'like_count': likeCount,
+  'is_liked': isLiked,
+  'is_bookmarked': isBookmarked,
+  'view_count': 100,
+  'published_at': '2026-09-01T00:00:00Z',
+};
 
 Widget _app() => MaterialApp(
-      scaffoldMessengerKey: scaffoldMessengerKey,
-      home: const ArticleDetailScreen(articleId: 1),
-    );
+  scaffoldMessengerKey: scaffoldMessengerKey,
+  home: const ArticleDetailScreen(articleId: 1),
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -61,8 +60,11 @@ void main() {
 
   testWidgets('文章不存在時顯示看得懂的話，而不是錯誤碼', (tester) async {
     installMockClient({
-      '/api/articles/1':
-          errorResponse('ARTICLE_NOT_FOUND', status: 404, message: 'not found'),
+      '/api/articles/1': errorResponse(
+        'ARTICLE_NOT_FOUND',
+        status: 404,
+        message: 'not found',
+      ),
     });
 
     await tester.pumpWidget(_app());
@@ -74,8 +76,11 @@ void main() {
 
   testWidgets('文章已下架時顯示下架說明', (tester) async {
     installMockClient({
-      '/api/articles/1':
-          errorResponse('ARTICLE_ARCHIVED', status: 410, message: 'archived'),
+      '/api/articles/1': errorResponse(
+        'ARTICLE_ARCHIVED',
+        status: 410,
+        message: 'archived',
+      ),
     });
 
     await tester.pumpWidget(_app());

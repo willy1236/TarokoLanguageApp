@@ -47,7 +47,9 @@ class SeniorModeToggleIcon extends StatelessWidget {
                   child: FadeTransition(opacity: animation, child: child),
                 ),
                 child: Icon(
-                  enabled ? Icons.accessibility_new_rounded : Icons.grid_view_rounded,
+                  enabled
+                      ? Icons.accessibility_new_rounded
+                      : Icons.grid_view_rounded,
                   key: ValueKey(enabled),
                   size: 22,
                   color: enabled ? AppColors.gold : AppColors.fog,

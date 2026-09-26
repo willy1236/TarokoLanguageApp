@@ -2,8 +2,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/models/user_model.dart';
 import 'package:flutter_application_1/services/user_service.dart';
 
-UserModel _user(int uid, String name) =>
-    UserModel(uid: uid, email: '', createdAt: DateTime(2026), displayName: name);
+UserModel _user(int uid, String name) => UserModel(
+  uid: uid,
+  email: '',
+  createdAt: DateTime(2026),
+  displayName: name,
+);
 
 void main() {
   tearDown(UserService.clearCache);

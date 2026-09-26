@@ -205,7 +205,8 @@ class HomeScreen extends StatelessWidget {
               const bottomPad = 12.0;
               // 平板寬度下卡片本身就寬，列高上限跟著寬度放大，避免中間留大片空白；
               // 手機寬度算出來低於 _modeRowMaxHeight，行為不變。
-              final pairCellWidth = (constraints.maxWidth - 48 - _modeRowGap) / 2;
+              final pairCellWidth =
+                  (constraints.maxWidth - 48 - _modeRowGap) / 2;
               final rowMax = math.max(
                 _modeRowMaxHeight * textScale,
                 pairCellWidth * 0.6,

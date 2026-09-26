@@ -12,19 +12,19 @@ import 'package:flutter_application_1/screens/events/event_search_screen.dart';
 import '../helpers/widget_test_helpers.dart';
 
 Map<String, dynamic> _event({required int id, required String title}) => {
-      'id': id,
-      'title': title,
-      'starts_at': '2026-12-01T10:00:00Z',
-      'status': 'active',
-      'effective_status': 'active',
-      'registration_open': true,
-    };
+  'id': id,
+  'title': title,
+  'starts_at': '2026-12-01T10:00:00Z',
+  'status': 'active',
+  'effective_status': 'active',
+  'registration_open': true,
+};
 
 /// 搜尋頁一進來會先打搜尋建議（歷史／熱門），先備好空回應。
 Map<String, Object?> _suggestionRoutes() => {
-      '/api/search/history': {'history': <dynamic>[]},
-      '/api/search/popular': {'popular': <dynamic>[]},
-    };
+  '/api/search/history': {'history': <dynamic>[]},
+  '/api/search/popular': {'popular': <dynamic>[]},
+};
 
 Widget _app() => const MaterialApp(home: EventSearchScreen());
 
@@ -138,7 +138,8 @@ void main() {
         }
       },
       // onRequest 先跑，所以第一次進到這裡時 searchCalls 已經是 1。
-      delayFor: (req) => req.url.path == '/api/events/search' && searchCalls == 1
+      delayFor: (req) =>
+          req.url.path == '/api/events/search' && searchCalls == 1
           ? const Duration(milliseconds: 500)
           : Duration.zero,
     );

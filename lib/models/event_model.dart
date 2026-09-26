@@ -278,7 +278,8 @@ class EventReminder {
   final int? eventId;
   final String message;
   final DateTime scheduledAt;
-  final String status; // pending | processing | sent | failed | cancelled（processing＝派送中，不可取消）
+  final String
+  status; // pending | processing | sent | failed | cancelled（processing＝派送中，不可取消）
   final DateTime? sentAt;
 
   const EventReminder({

@@ -208,7 +208,10 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
           ),
           subtitle: Text(
             '${tribe.county}${tribe.township} · ${tribe.nameTruku}',
-            style: TextStyle(fontSize: AppTypography.caption, color: AppColors.fog),
+            style: TextStyle(
+              fontSize: AppTypography.caption,
+              color: AppColors.fog,
+            ),
           ),
           onTap: () => Navigator.pop(context, tribe),
         );

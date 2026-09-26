@@ -54,7 +54,8 @@ class NotificationSummary {
       other.total == total;
 
   @override
-  int get hashCode => Object.hash(forum, events, messages, friendRequests, total);
+  int get hashCode =>
+      Object.hash(forum, events, messages, friendRequests, total);
 }
 
 /// 徽章文字：超過 99（含後端封頂的 100）顯示「99+」。

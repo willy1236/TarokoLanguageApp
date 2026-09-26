@@ -18,10 +18,16 @@ Widget profileStatCell(bool seniorMode, String value, String label) {
       children: [
         Text(
           value,
-          style: AppTypography.titleStyle(
-            seniorMode: seniorMode,
-            color: AppColors.primary,
-          ).copyWith(fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode)),
+          style:
+              AppTypography.titleStyle(
+                seniorMode: seniorMode,
+                color: AppColors.primary,
+              ).copyWith(
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
+              ),
         ),
         const SizedBox(height: 2),
         Text(
@@ -72,10 +78,16 @@ Widget profileQuickLinkCard(ProfileQuickLink link, {required bool seniorMode}) {
           Expanded(
             child: Text(
               link.label,
-              style: AppTypography.titleStyle(
-                seniorMode: seniorMode,
-                color: AppColors.ink,
-              ).copyWith(fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode)),
+              style:
+                  AppTypography.titleStyle(
+                    seniorMode: seniorMode,
+                    color: AppColors.ink,
+                  ).copyWith(
+                    fontSize: AppTypography.size(
+                      AppTypography.body,
+                      seniorMode: seniorMode,
+                    ),
+                  ),
             ),
           ),
         ],
@@ -103,12 +115,19 @@ Widget profileNavRow({
         children: [
           Row(
             children: [
-              Icon(icon, size: AppIconSize.inline(seniorMode), color: AppColors.primary),
+              Icon(
+                icon,
+                size: AppIconSize.inline(seniorMode),
+                color: AppColors.primary,
+              ),
               SizedBox(width: seniorMode ? AppSpacing.md : 10),
               Text(
                 label,
                 style: AppTypography.serif(
-                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.body,
+                    seniorMode: seniorMode,
+                  ),
                   fontWeight: FontWeight.w600,
                   color: AppColors.ink,
                   letterSpacing: 0.5,
@@ -127,7 +146,11 @@ Widget profileNavRow({
   );
 }
 
-Widget profileSection(String label, List<Widget> children, {bool seniorMode = false}) {
+Widget profileSection(
+  String label,
+  List<Widget> children, {
+  bool seniorMode = false,
+}) {
   return Padding(
     padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
     child: Column(
@@ -137,7 +160,10 @@ Widget profileSection(String label, List<Widget> children, {bool seniorMode = fa
           label,
           style: AppTypography.latin(
             fontStyle: FontStyle.italic,
-            fontSize: AppTypography.size(AppTypography.micro, seniorMode: seniorMode),
+            fontSize: AppTypography.size(
+              AppTypography.micro,
+              seniorMode: seniorMode,
+            ),
             color: AppColors.fog,
             letterSpacing: 3,
           ),
@@ -172,7 +198,10 @@ Widget profileSettingRow(
       GestureDetector(
         onTap: editable ? onTap : null,
         child: Padding(
-          padding: EdgeInsets.symmetric(horizontal: 16, vertical: seniorMode ? AppSpacing.lg : 14),
+          padding: EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: seniorMode ? AppSpacing.lg : 14,
+          ),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
@@ -182,7 +211,10 @@ Widget profileSettingRow(
                   Text(
                     label,
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.caption,
+                        seniorMode: seniorMode,
+                      ),
                       color: AppColors.fog,
                       letterSpacing: 1,
                     ),
@@ -199,7 +231,10 @@ Widget profileSettingRow(
                                       )
                                     : AppTypography.serif())
                                 .copyWith(
-                                  fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                                  fontSize: AppTypography.size(
+                                    AppTypography.body,
+                                    seniorMode: seniorMode,
+                                  ),
                                   fontWeight: FontWeight.w600,
                                   color: AppColors.ink,
                                   letterSpacing: 0.5,
@@ -211,7 +246,11 @@ Widget profileSettingRow(
                 ],
               ),
               if (copyable)
-                Icon(Icons.copy_rounded, size: AppIconSize.inline(seniorMode), color: AppColors.primary)
+                Icon(
+                  Icons.copy_rounded,
+                  size: AppIconSize.inline(seniorMode),
+                  color: AppColors.primary,
+                )
               else if (editable)
                 CustomPaint(
                   size: Size.square(seniorMode ? 24 : 16),
@@ -261,7 +300,10 @@ Widget profileSwitchRow(
                   Text(
                     label,
                     style: AppTypography.serif(
-                      fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                      fontSize: AppTypography.size(
+                        AppTypography.body,
+                        seniorMode: seniorMode,
+                      ),
                       fontWeight: FontWeight.w600,
                       color: AppColors.ink,
                       letterSpacing: 0.5,
@@ -272,7 +314,10 @@ Widget profileSwitchRow(
                     Text(
                       lockedHint,
                       style: AppTypography.serif(
-                        fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                        fontSize: AppTypography.size(
+                          AppTypography.caption,
+                          seniorMode: seniorMode,
+                        ),
                         color: AppColors.fog,
                       ),
                     ),
