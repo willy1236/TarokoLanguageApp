@@ -4,9 +4,12 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_draft.dart';
 import '../../models/event_model.dart';
+import '../../models/tribe_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../services/user_service.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/related_tribe_field.dart';
 
 /// 發起／編輯活動表單。
 ///
@@ -15,7 +18,7 @@ import '../../shared/widgets/app_back_button.dart';
 /// 送出呼叫 EventService.updateEvent（PATCH /api/events/:id）。
 ///
 /// **編輯模式只能改後端 PATCH 接受的欄位**：活動名稱、說明、地點、詳細地址、
-/// 聯絡 Email/電話、提醒事項、標籤、名額。開始時間與報名截止在後端不可改
+/// 聯絡 Email/電話、提醒事項、標籤、名額、相關部落。開始時間與報名截止在後端不可改
 /// （牽涉提醒重新排程），所以表單設為唯讀並顯示說明。
 /// 清空語意：文字欄位送空字串即清空；名額留空送 null（不限名額）。
 /// 後端只允許編輯未取消、未開始的活動，否則回 409 EVENT_CLOSED / EVENT_ENDED。
@@ -51,6 +54,12 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   DateTime? _startsAt;
   DateTime? _registrationDeadline;
   String? _category; // 選填，null = 不分類
+
+  /// 相關部落，預設不選；不可預設帶發起人自己的部落。
+  TribeTag? _tribe;
+
+  /// 推播給相關部落成員。只在建立時提供，且要先選部落才能勾。
+  bool _notifyTribe = false;
   bool _submitting = false;
 
   // 常用分類（對應活動列表的篩選標籤）；點一下切換，可不選。
@@ -75,6 +84,22 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     _startsAt = d.startsAt;
     _registrationDeadline = d.registrationDeadline;
     _category = d.category;
+    final tribeId = d.tribeId;
+    if (tribeId != null) {
+      _tribe = TribeTag(id: tribeId, name: '');
+      _loadTribeName(tribeId);
+    }
+  }
+
+  /// 活動只回 tribe_id，名稱另外對照；查不到就維持空白，不影響送出。
+  Future<void> _loadTribeName(int id) async {
+    try {
+      final name = await UserService.tribeName(id);
+      if (!mounted || name == null || _tribe?.id != id) return;
+      setState(() => _tribe = TribeTag(id: id, name: name));
+    } catch (e) {
+      debugPrint('EventComposeScreen: 部落名稱載入失敗（忽略）：$e');
+    }
   }
 
   EventDraft get _draft => EventDraft(
@@ -89,6 +114,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     maxParticipantsText: _maxParticipants.text,
     category: _category,
     reminderNote: _reminderNote.text,
+    tribeId: _tribe?.id,
+    notifyTribe: _notifyTribe,
   );
 
   @override
@@ -233,6 +260,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         return;
       }
       setState(() => _submitting = false);
+      if (code == 'EVENT_TRIBE_REQUIRED') {
+        _showError('請先選擇相關部落');
+        return;
+      }
       // 後端訊息，例如「需要活動主辦權限（organizer / admin）」
       _showError(e.toString());
     }
@@ -362,6 +393,17 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                   _label('標籤', required: false, seniorMode: seniorMode),
                   _buildCategoryChips(seniorMode),
                   const SizedBox(height: 18),
+                  RelatedTribeField(
+                    tribe: _tribe,
+                    seniorMode: seniorMode,
+                    onChanged: (tribe) => setState(() {
+                      _tribe = tribe;
+                      if (tribe == null) _notifyTribe = false;
+                    }),
+                  ),
+                  // 部落推播只在建立時送出；編輯改標籤後端不會重新推播。
+                  if (!_isEditing) _buildNotifyTribeToggle(seniorMode),
+                  const SizedBox(height: 18),
                   _label('聯絡 Email', required: false, seniorMode: seniorMode),
                   _textField(
                     _email,
@@ -393,6 +435,33 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               ),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  /// 沒選相關部落時停用：後端要求 notify_tribe 必須搭配 tribe_id。
+  Widget _buildNotifyTribeToggle(bool seniorMode) {
+    final tribe = _tribe;
+    final enabled = tribe != null;
+    return CheckboxListTile(
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
+      activeColor: AppColors.primary,
+      value: enabled && _notifyTribe,
+      onChanged: enabled
+          ? (v) => setState(() => _notifyTribe = v ?? false)
+          : null,
+      title: Text(
+        enabled
+            ? '推播給${tribe.name.isEmpty ? '相關部落' : tribe.name}的成員'
+            : '推播給部落成員（請先選擇相關部落）',
+        style: AppTypography.serif(
+          fontSize: AppTypography.size(
+            AppTypography.caption,
+            seniorMode: seniorMode,
+          ),
+          color: enabled ? AppColors.ink : AppColors.fog,
         ),
       ),
     );

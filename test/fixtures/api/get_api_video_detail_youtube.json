@@ -1,0 +1,23 @@
+{
+  "id": 5,
+  "title": "測試標題",
+  "description": null,
+  "category": "cultural",
+  "source": "youtube",
+  "duration_sec": null,
+  "thumbnail_url": "https://i.ytimg.com/vi/g4KvRyUVTxE/hqdefault.jpg",
+  "hls_url": null,
+  "youtube": {
+    "video_id": "g4KvRyUVTxE",
+    "embed_url": "https://www.youtube.com/embed/g4KvRyUVTxE",
+    "watch_url": "https://www.youtube.com/watch?v=g4KvRyUVTxE",
+    "embeddable": true
+  },
+  "view_count": 5,
+  "weekly_view_count": 5,
+  "like_count": 0,
+  "is_liked": false,
+  "is_bookmarked": false,
+  "original_size_mb": null,
+  "published_at": "2026-09-24T23:50:42.698Z"
+}

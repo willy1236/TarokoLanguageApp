@@ -26,11 +26,53 @@ class VideoCategory {
   }
 }
 
+/// 影片來源：自家轉檔的 HLS，或官方 YouTube 影片（規格 §2.5）。
+class VideoSource {
+  static const hls = 'hls';
+  static const youtube = 'youtube';
+}
+
+/// `source="youtube"` 時詳情頁的 `youtube` 物件。
+/// [embedUrl]／[watchUrl] 一律用後端回傳值，不要自己用 id 拼。
+class YoutubeVideoInfo {
+  final String videoId;
+  final String embedUrl;
+  final String watchUrl;
+
+  /// 影片擁有者關閉嵌入時為 false，只能外開 [watchUrl]。
+  final bool embeddable;
+
+  const YoutubeVideoInfo({
+    required this.videoId,
+    required this.embedUrl,
+    required this.watchUrl,
+    required this.embeddable,
+  });
+
+  static YoutubeVideoInfo? fromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final videoId = json['video_id'] as String?;
+    final watchUrl = json['watch_url'] as String?;
+    if (videoId == null || watchUrl == null) return null;
+    return YoutubeVideoInfo(
+      videoId: videoId,
+      embedUrl: json['embed_url'] as String? ?? '',
+      watchUrl: watchUrl,
+      embeddable: json['embeddable'] as bool? ?? false,
+    );
+  }
+}
+
 class VideoSummary {
   final int id;
   final String title;
   final String? description;
   final String category;
+
+  /// [VideoSource.hls] 或 [VideoSource.youtube]；舊回應沒這欄時視為 hls。
+  final String source;
+
+  /// YouTube 影片為 null，此時要隱藏長度而不是顯示 0:00。
   final int? durationSec;
   final String? thumbnailUrl;
   final int viewCount;
@@ -45,6 +87,7 @@ class VideoSummary {
     required this.title,
     this.description,
     required this.category,
+    this.source = VideoSource.hls,
     this.durationSec,
     this.thumbnailUrl,
     required this.viewCount,
@@ -55,12 +98,15 @@ class VideoSummary {
     this.publishedAt,
   });
 
+  bool get isYoutube => source == VideoSource.youtube;
+
   factory VideoSummary.fromJson(Map<String, dynamic> json) {
     return VideoSummary(
       id: json['id'] as int,
       title: json['title'] as String,
       description: json['description'] as String?,
       category: json['category'] as String,
+      source: json['source'] as String? ?? VideoSource.hls,
       durationSec: json['duration_sec'] as int?,
       thumbnailUrl: json['thumbnail_url'] as String?,
       viewCount: json['view_count'] as int? ?? 0,
@@ -76,7 +122,11 @@ class VideoSummary {
 }
 
 class VideoDetail extends VideoSummary {
-  final String hlsUrl;
+  /// 自家影片的串流網址；YouTube 影片為 null。
+  final String? hlsUrl;
+
+  /// YouTube 影片的播放資訊；自家影片為 null。
+  final YoutubeVideoInfo? youtube;
   final int? originalSizeMb;
 
   const VideoDetail({
@@ -84,6 +134,7 @@ class VideoDetail extends VideoSummary {
     required super.title,
     super.description,
     required super.category,
+    super.source,
     super.durationSec,
     super.thumbnailUrl,
     required super.viewCount,
@@ -92,7 +143,8 @@ class VideoDetail extends VideoSummary {
     super.isLiked,
     super.isBookmarked,
     super.publishedAt,
-    required this.hlsUrl,
+    this.hlsUrl,
+    this.youtube,
     this.originalSizeMb,
   });
 
@@ -102,6 +154,7 @@ class VideoDetail extends VideoSummary {
       title: json['title'] as String,
       description: json['description'] as String?,
       category: json['category'] as String,
+      source: json['source'] as String? ?? VideoSource.hls,
       durationSec: json['duration_sec'] as int?,
       thumbnailUrl: json['thumbnail_url'] as String?,
       viewCount: json['view_count'] as int? ?? 0,
@@ -112,23 +165,21 @@ class VideoDetail extends VideoSummary {
       publishedAt: json['published_at'] != null
           ? DateTime.tryParse(json['published_at'] as String)
           : null,
-      hlsUrl: json['hls_url'] as String,
+      hlsUrl: json['hls_url'] as String?,
+      youtube: YoutubeVideoInfo.fromJson(json['youtube']),
       originalSizeMb: json['original_size_mb'] as int?,
     );
   }
 
   /// 底下三個樂觀更新方法統一走這裡：手動重寫全部欄位的話，日後新增欄位
   /// 很容易漏改其中一兩處，導致更新後該欄位被悄悄重置。
-  VideoDetail copyWith({
-    int? likeCount,
-    bool? isLiked,
-    bool? isBookmarked,
-  }) {
+  VideoDetail copyWith({int? likeCount, bool? isLiked, bool? isBookmarked}) {
     return VideoDetail(
       id: id,
       title: title,
       description: description,
       category: category,
+      source: source,
       durationSec: durationSec,
       thumbnailUrl: thumbnailUrl,
       viewCount: viewCount,
@@ -138,6 +189,7 @@ class VideoDetail extends VideoSummary {
       isBookmarked: isBookmarked ?? this.isBookmarked,
       publishedAt: publishedAt,
       hlsUrl: hlsUrl,
+      youtube: youtube,
       originalSizeMb: originalSizeMb,
     );
   }

@@ -53,6 +53,9 @@ class EventDetailScreen extends StatefulWidget {
 
 class _EventDetailScreenState extends State<EventDetailScreen> {
   EventDetail? _event;
+
+  /// 活動只回 tribe_id，名稱另外對照；查不到就不顯示相關部落列。
+  String? _tribeName;
   int? _uid;
   List<EventReminder> _reminders = [];
   bool _loading = true;
@@ -108,6 +111,20 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     });
   }
 
+  Future<void> _loadTribeName(int? tribeId) async {
+    if (tribeId == null) {
+      if (_tribeName != null) setState(() => _tribeName = null);
+      return;
+    }
+    try {
+      final name = await UserService.tribeName(tribeId);
+      if (!mounted || _event?.tribeId != tribeId) return;
+      setState(() => _tribeName = name);
+    } catch (e) {
+      debugPrint('[EventDetailScreen] 部落名稱載入失敗（忽略）：$e');
+    }
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
@@ -127,6 +144,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         _reminders = results[2] as List<EventReminder>;
         _loading = false;
       });
+      _loadTribeName(_event?.tribeId);
     } catch (e, st) {
       debugPrint('[EventDetailScreen] _load 失敗：$e');
       debugPrint('$st');
@@ -430,6 +448,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 onToggleLike: _toggleLike,
                 onToggleBookmark: _toggleBookmark,
                 itemCatalogById: _itemCatalogById,
+                tribeName: _tribeName,
               ),
             ),
             const SliverToBoxAdapter(child: SizedBox(height: 120)),

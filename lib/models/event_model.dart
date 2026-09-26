@@ -29,6 +29,7 @@ class EventDetail {
   final String? reminderNote; // 發起人給參加者的備註
   final int? maxParticipants; // null = 不限名額
   final String? category; // 活動分類標籤，可能為 null
+  final int? tribeId; // 發起人自選的相關部落，null = 未標註；名稱用 GET /api/tribes 對照
   final String status; // active | cancelled（原始 DB 狀態）
   final String? effectiveStatus; // 後端即時算：active | ended | cancelled
   final bool registrationOpen; // 仍 active、未過截止、未開始
@@ -56,6 +57,7 @@ class EventDetail {
     this.reminderNote,
     this.maxParticipants,
     this.category,
+    this.tribeId,
     required this.status,
     this.effectiveStatus,
     this.registrationOpen = false,
@@ -105,6 +107,7 @@ class EventDetail {
       reminderNote: json['reminder_note'] as String?,
       maxParticipants: asEventInt(json['max_participants']),
       category: json['category'] as String?,
+      tribeId: asEventInt(json['tribe_id']),
       status: json['status'] as String? ?? 'active',
       effectiveStatus: json['effective_status'] as String?,
       registrationOpen: json['registration_open'] as bool? ?? false,
@@ -149,6 +152,7 @@ class EventDetail {
         reminderNote: reminderNote,
         maxParticipants: maxParticipants,
         category: category,
+        tribeId: tribeId,
         status: status,
         effectiveStatus: effectiveStatus,
         registrationOpen: registrationOpen,

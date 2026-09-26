@@ -103,12 +103,14 @@ class ForumService {
 
   /// 發文。後端同一個端點吃 JSON 與 multipart，有附圖時必須走 multipart。
   /// 附圖須由呼叫端先壓縮到 [imageMaxBytes] 以內——後端不做伺服器端壓縮。
+  /// [tribeId] 是作者自選的「相關部落」，不帶＝不標；後端不會自動帶入作者的部落。
   static Future<ForumPost> createPost({
     required int boardId,
     required String title,
     required String body,
     List<String> tags = const [],
     List<MultipartFileData> images = const [],
+    int? tribeId,
   }) async {
     final Map<String, dynamic> data;
     if (images.isEmpty) {
@@ -117,6 +119,7 @@ class ForumService {
         'title': title,
         'body': body,
         if (tags.isNotEmpty) 'tags': tags,
+        'tribe_id': ?tribeId,
       });
     } else {
       data = await ApiClient.postMultipart(
@@ -128,6 +131,7 @@ class ForumService {
           // multipart 的欄位值只能是字串，後端在此格式下以逗號分隔解析
           // （後端 API 文件 §3.1），不是 JSON。
           if (tags.isNotEmpty) 'tags': tags.join(','),
+          if (tribeId != null) 'tribe_id': '$tribeId',
         },
         files: images,
       );
@@ -135,17 +139,23 @@ class ForumService {
     return ForumPost.fromJson(data['post'] as Map<String, dynamic>);
   }
 
-  /// 編輯。後端只接受 title 與 body，且兩者至少要給一個，否則回 400；
+  /// 編輯。後端接受 title、body、tribe_id，至少要給一個，否則回 400；
   /// board_id、tags、images 一律不可變更（後端 API 文件 §3.3）。
+  /// [tribe] 為 null 表示不改相關部落；`(id: null)` 表示清除標籤。
   static Future<ForumPost> updatePost(
     int id, {
     String? title,
     String? body,
+    ({int? id})? tribe,
   }) async {
-    assert(title != null || body != null, 'title 與 body 至少要給一個');
+    assert(
+      title != null || body != null || tribe != null,
+      'title、body、tribe 至少要給一個',
+    );
     final data = await ApiClient.patch(ApiConfig.forumPost(id), {
       'title': ?title,
       'body': ?body,
+      if (tribe != null) 'tribe_id': tribe.id,
     });
     return ForumPost.fromJson(data['post'] as Map<String, dynamic>);
   }

@@ -193,6 +193,44 @@ void main() {
     expect(seen.single.method, 'PATCH');
   });
 
+  test('createPost 帶相關部落時送 tribe_id，並解析回應的 tribe', () async {
+    respondWith({
+      'post': {
+        ...postJson(),
+        'tribe': {'id': 30, 'name': '富世部落'},
+      },
+    });
+
+    final post = await ForumService.createPost(
+      boardId: 2,
+      title: 't',
+      body: 'b',
+      tribeId: 30,
+    );
+
+    final body = jsonDecode((seen.single as http.Request).body);
+    expect(body['tribe_id'], 30);
+    expect(post.tribe?.name, '富世部落');
+  });
+
+  test('createPost 沒選部落就不送 tribe_id', () async {
+    respondWith({'post': postJson()});
+
+    await ForumService.createPost(boardId: 2, title: 't', body: 'b');
+
+    final body = jsonDecode((seen.single as http.Request).body);
+    expect(body.containsKey('tribe_id'), isFalse);
+  });
+
+  test('updatePost 清除相關部落時送 tribe_id: null', () async {
+    respondWith({'post': postJson()});
+
+    await ForumService.updatePost(1, tribe: (id: null));
+
+    final body = jsonDecode((seen.single as http.Request).body);
+    expect(body, {'tribe_id': null});
+  });
+
   test('search 去除空白後為空直接丟錯，不發請求', () async {
     respondWith({'posts': [], 'next_cursor': null});
 

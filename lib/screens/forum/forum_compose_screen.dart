@@ -17,11 +17,13 @@ import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
 import '../../models/forum_models.dart';
 import '../../models/shop_item.dart';
+import '../../models/tribe_model.dart';
 import '../../models/user_model.dart';
 import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
+import '../../shared/widgets/related_tribe_field.dart';
 import '../../shared/widgets/user_avatar.dart';
 import 'widgets/forum_compose_images.dart';
 import 'widgets/forum_image_grid.dart' show ForumImageViewer;
@@ -78,6 +80,9 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
   final List<_PickedImage> _images = [];
 
   int? _boardId;
+
+  /// 相關部落，預設不選；不可預設帶作者自己的部落（見 [RelatedTribeField]）。
+  TribeTag? _tribe;
   bool _saving = false;
   List<ForumTagStat> _hotTags = [];
   UserModel? _user;
@@ -94,6 +99,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
       _bodyController.text = editing.body;
       _tags.addAll(editing.tags.map((t) => t.name));
       _boardId = editing.board.id;
+      _tribe = editing.tribe;
     } else {
       _boardId = widget.boards.isEmpty ? null : widget.boards.first.id;
     }
@@ -243,11 +249,13 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     try {
       final editing = widget.editing;
       if (editing != null) {
-        // 後端 PATCH 只吃 title 與 body，標籤與附圖都不可變更。
+        // 後端 PATCH 只吃 title、body、tribe_id，標籤與附圖都不可變更。
+        // 相關部落沒動就不送，避免無謂覆寫。
         await ForumService.updatePost(
           editing.id,
           title: _titleController.text.trim(),
           body: _bodyController.text.trim(),
+          tribe: _tribe?.id == editing.tribe?.id ? null : (id: _tribe?.id),
         );
       } else {
         await ForumService.createPost(
@@ -255,6 +263,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           title: _titleController.text.trim(),
           body: _bodyController.text.trim(),
           tags: _tags,
+          tribeId: _tribe?.id,
           images: [
             for (final image in _images)
               MultipartFileData(
@@ -396,6 +405,12 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
         ),
         const SizedBox(height: 12),
         _tagSection(seniorMode),
+        const SizedBox(height: 12),
+        RelatedTribeField(
+          tribe: _tribe,
+          seniorMode: seniorMode,
+          onChanged: (tribe) => setState(() => _tribe = tribe),
+        ),
         const SizedBox(height: 16),
         _imageSection(seniorMode),
       ],

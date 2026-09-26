@@ -233,6 +233,15 @@ void main() {
       shape: _videoDetailShape,
       optional: _videoSummaryOptional,
     ));
+    // video 5 是第一支上架的 YouTube 影片（後端 2026-09-25 前端待辦 A1）。
+    test('GET /api/videos/5 (YouTube 影片)', () => _inspect(
+      'GET',
+      ApiConfig.videoDetail(5),
+      fixtureAs: 'get_api_video_detail_youtube.json',
+      shape: _youtubeVideoDetailShape,
+      nullable: const {'hls_url', 'duration_sec'},
+      optional: _videoSummaryOptional,
+    ));
     test('GET /api/videos/999999 (測 404 格式)', () => _inspect(
       'GET',
       ApiConfig.videoDetail(999999),
@@ -631,6 +640,17 @@ const Map<String, F> _videoDetailShape = {
   'title': F.string,
   'category': F.string,
   'hls_url': F.string,
+};
+
+/// GET /api/videos/:id（source=youtube）：hls_url／duration_sec 為 null，多 youtube 物件。
+const Map<String, F> _youtubeVideoDetailShape = {
+  'id': F.number,
+  'title': F.string,
+  'category': F.string,
+  'source': F.string,
+  'hls_url': F.any,
+  'duration_sec': F.any,
+  'youtube': F.object,
 };
 
 /// GET /api/articles/search → lib/models/article_models.dart ArticleSummary

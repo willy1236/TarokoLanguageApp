@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';
+import '../../../shared/widgets/related_tribe_field.dart';
 import 'forum_image_grid.dart';
 import 'forum_post_card.dart' show forumRelativeTime;
 
@@ -78,6 +79,10 @@ class ForumPostBody extends StatelessWidget {
           onImageExpired: onImageExpired,
           onRetryTap: onImageRetryTap,
         ),
+      ],
+      if (post.tribe case final tribe?) ...[
+        const SizedBox(height: 12),
+        RelatedTribeLabel(name: tribe.name, seniorMode: seniorMode),
       ],
       if (post.tags.isNotEmpty) ...[
         const SizedBox(height: 12),

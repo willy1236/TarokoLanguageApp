@@ -208,7 +208,7 @@ class ModuleSearchFilterRow extends StatelessWidget {
           size: seniorMode ? 22 : 16,
           color: selected ? palette.accent : palette.soft,
         ),
-        label: Text(tribe?.name ?? '部落'),
+        label: Text(tribe?.name ?? '相關部落'),
         backgroundColor: palette.chipBackground,
         labelStyle: TextStyle(
           fontSize: AppTypography.size(

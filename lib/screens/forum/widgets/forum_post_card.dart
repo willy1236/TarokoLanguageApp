@@ -13,6 +13,7 @@ import '../../../models/forum_models.dart';
 import '../../../models/shop_item.dart';
 import '../../../services/senior_mode_controller.dart';
 import '../../../shared/widgets/engagement_icon_button.dart';
+import '../../../shared/widgets/related_tribe_field.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../friends/public_profile_screen.dart';
 import 'forum_image_grid.dart';
@@ -113,6 +114,10 @@ class ForumPostCard extends StatelessWidget {
           ],
           // 精簡模式隱藏標籤列：任務8.1「資訊密度也是精簡的一環」，標籤對是否
           // 點開貼文的判斷幫助不大，卻會多佔一整排視覺雜訊。
+          if (post.tribe case final tribe?) ...[
+            const SizedBox(height: 8),
+            RelatedTribeLabel(name: tribe.name, seniorMode: seniorMode),
+          ],
           if (post.tags.isNotEmpty && !seniorMode) ...[
             const SizedBox(height: 10),
             Wrap(
