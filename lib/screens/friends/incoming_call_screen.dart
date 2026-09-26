@@ -69,8 +69,9 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
   static const _ringerModeChannel = MethodChannel('truku/ringer_mode');
 
   Future<String> _ringerMode() async {
-    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android)
+    if (kIsWeb || defaultTargetPlatform != TargetPlatform.android) {
       return 'normal';
+    }
     try {
       return await _ringerModeChannel.invokeMethod<String>('getRingerMode') ??
           'normal';

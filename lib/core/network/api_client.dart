@@ -508,8 +508,9 @@ class ApiClient {
           code == 'MUTED' || (code == 'PROFANITY' && error?['muted'] == true)
           ? DateTime.tryParse(error?['mute_until'] as String? ?? '')?.toLocal()
           : null;
-      if (muteUntil != null)
+      if (muteUntil != null) {
         message = '$message（至 ${formatMuteUntil(muteUntil)}）';
+      }
       return ApiException(
         statusCode: resp.statusCode,
         code: code,
