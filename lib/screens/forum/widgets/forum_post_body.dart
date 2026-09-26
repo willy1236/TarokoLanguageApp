@@ -38,7 +38,10 @@ class ForumPostBody extends StatelessWidget {
       Text(
         post.title,
         style: AppTypography.serif(
-          fontSize: AppTypography.size(AppTypography.title, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.title,
+            seniorMode: seniorMode,
+          ),
           fontWeight: FontWeight.w700,
           color: AppColors.ink,
           height: 1.4,
@@ -49,7 +52,10 @@ class ForumPostBody extends StatelessWidget {
         '${post.author.displayName} · ${post.board.name} · '
         '${forumRelativeTime(post.createdAt)}',
         style: TextStyle(
-          fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.caption,
+            seniorMode: seniorMode,
+          ),
           color: AppColors.fog,
         ),
       ),
@@ -57,7 +63,10 @@ class ForumPostBody extends StatelessWidget {
       Text(
         post.body,
         style: TextStyle(
-          fontSize: AppTypography.size(AppTypography.bodyLarge, seniorMode: seniorMode),
+          fontSize: AppTypography.size(
+            AppTypography.bodyLarge,
+            seniorMode: seniorMode,
+          ),
           color: AppColors.inkSoft,
           height: 1.7,
         ),
@@ -80,7 +89,10 @@ class ForumPostBody extends StatelessWidget {
                 '#${tag.name}',
                 style: AppTypography.latin(
                   fontStyle: FontStyle.italic,
-                  fontSize: AppTypography.size(AppTypography.caption, seniorMode: seniorMode),
+                  fontSize: AppTypography.size(
+                    AppTypography.caption,
+                    seniorMode: seniorMode,
+                  ),
                   color: AppColors.primary,
                 ),
               ),
@@ -105,7 +117,10 @@ class ForumPostBody extends StatelessWidget {
                 Text(
                   '${post.likeCount}',
                   style: TextStyle(
-                    fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+                    fontSize: AppTypography.size(
+                      AppTypography.body,
+                      seniorMode: seniorMode,
+                    ),
                     color: AppColors.fog,
                   ),
                 ),

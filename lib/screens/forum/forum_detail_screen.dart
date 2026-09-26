@@ -23,6 +23,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'widgets/forum_comment_input_bar.dart';
 import 'widgets/forum_image_grid.dart' show ForumImageViewer;
 import 'widgets/forum_comment_tile.dart';
+import 'widgets/forum_new_reply_chip.dart';
 import 'widgets/forum_post_body.dart';
 import 'widgets/forum_toast.dart';
 import 'widgets/forum_report_sheet.dart';
@@ -69,14 +70,24 @@ class ForumDetailScreen extends StatefulWidget {
     ),
   );
 
-  /// 目前開著的詳情頁：key = postId，value = 該實例的重載函式。
-  static final Map<int, VoidCallback> _live = {};
+  /// 目前開著的詳情頁：key = postId。
+  static final Map<int, _ForumDetailScreenState> _live = {};
 
   /// 該貼文的詳情頁是否已在畫面上。
   static bool isOpen(int postId) => _live.containsKey(postId);
 
   /// 開著才重載；沒開就什麼都不做。
-  static void refreshIfOpen(int postId) => _live[postId]?.call();
+  static void refreshIfOpen(int postId) => _live[postId]?._load();
+
+  /// 有人回覆了這篇貼文或其中的留言（前景推播）。該篇開著時在頁內浮出提示並
+  /// 回傳 true；沒開則回傳 false，由呼叫端照常通知。
+  /// [type] 是推播的 'reply_post' 或 'reply_comment'。
+  static bool notifyNewReply(int postId, String type, int? commentId) {
+    final state = _live[postId];
+    if (state == null) return false;
+    state._onNewReply(type, commentId);
+    return true;
+  }
 
   @override
   State<ForumDetailScreen> createState() => _ForumDetailScreenState();
@@ -90,6 +101,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   final List<ForumComment> _comments = [];
   final List<ForumComment> _replies = [];
   int? _nextCursor;
+
+  /// 伺服器回過的第一層留言裡最大的 id。和 [_nextCursor] 不同：自己送出的
+  /// 留言只在本地插入、沒經過伺服器分頁，所以不推進它。
+  int? _serverCursor;
+
+  /// 每次 [_load] 加一；非同步請求回來時對不上就代表列表已被整頁換掉，
+  /// 結果直接丟掉，不能接到新列表上。
+  int _generation = 0;
   bool _loading = true;
   bool _loadingMore = false;
   bool _sending = false;
@@ -101,6 +120,25 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// [ForumDetailScreen.initialImageIndex] 帶進來的全螢幕檢視只自動開一次，
   /// 圖片過期重載或使用者關掉檢視後都不該再彈出來。
   bool _autoViewerShown = false;
+
+  /// 停在本頁時收到、還沒載入的回覆推播數，大於 0 就浮出提示。
+  /// 不自動重載：會閃載入畫面並丟掉已載入的留言，交給使用者點提示決定。
+  int _pendingReplyCount = 0;
+
+  /// 累積的推播裡有「回覆留言」。推播沒帶那則回覆掛在哪一串，只能整頁重載。
+  bool _pendingNeedsFullLoad = false;
+
+  /// 累積的推播裡最後一則帶來的 comment_id。
+  int? _pendingCommentId;
+
+  /// 增量抓取新留言（只抓 [_serverCursor] 之後的）是否正在跑。
+  bool _fetchingNew = false;
+
+  /// 增量抓取途中又收到「回覆貼文」：跑完要再補抓一次，不能略過。
+  bool _refetchQueued = false;
+
+  /// 增量抓取完該出現的那則；不在結果裡就退回整頁重載一次。
+  int? _awaitedCommentId;
 
   /// 正在回覆的第一層留言；null 代表回覆貼文本身。
   ForumComment? _replyTarget;
@@ -122,7 +160,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   @override
   void initState() {
     super.initState();
-    ForumDetailScreen._live[widget.postId] = _load;
+    ForumDetailScreen._live[widget.postId] = this;
     _loadItemCatalog();
     _load();
   }
@@ -130,7 +168,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   @override
   void dispose() {
     // 同一 postId 若已被新實例接手，不要把它的登記清掉。
-    if (ForumDetailScreen._live[widget.postId] == _load) {
+    if (ForumDetailScreen._live[widget.postId] == this) {
       ForumDetailScreen._live.remove(widget.postId);
     }
     _inputController.dispose();
@@ -141,15 +179,21 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// [resetImageRetry] 為 false 時保留 [_imageAutoRefreshed]。圖片過期觸發的
   /// 重載必須這樣呼叫——否則它會把擋住自己的旗標清掉，變成無限重打。
   Future<void> _load({bool resetImageRetry = true}) async {
+    final generation = ++_generation;
     setState(() {
       _loading = true;
+      _loadingMore = false;
+      _clearPendingReplies();
+      _fetchingNew = false;
+      _refetchQueued = false;
+      _awaitedCommentId = null;
       _error = null;
       if (resetImageRetry) _imageAutoRefreshed = false;
     });
     try {
       final post = await ForumService.post(widget.postId);
       final page = await ForumService.comments(widget.postId);
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() {
         _post = post;
         _comments
@@ -159,11 +203,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           ..clear()
           ..addAll(page.replies);
         _nextCursor = page.nextCursor;
+        _serverCursor = _maxId(page.comments);
         _loading = false;
       });
       _maybeOpenInitialImage();
     } on ApiException catch (e) {
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       if (e.code == 'POST_NOT_FOUND') {
         _popDeleted('這篇貼文已被刪除');
         return;
@@ -172,6 +217,89 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _error = e.message;
         _loading = false;
       });
+    }
+  }
+
+  void _onNewReply(String type, int? commentId) {
+    if (!mounted) return;
+    // 正在增量抓取：跑完補抓一次這則就會進來，不必再提示。
+    if (_fetchingNew && type == 'reply_post') {
+      _refetchQueued = true;
+      _awaitedCommentId = commentId;
+      return;
+    }
+    setState(() {
+      _pendingReplyCount++;
+      if (type != 'reply_post') _pendingNeedsFullLoad = true;
+      _pendingCommentId = commentId;
+    });
+  }
+
+  void _clearPendingReplies() {
+    _pendingReplyCount = 0;
+    _pendingNeedsFullLoad = false;
+    _pendingCommentId = null;
+  }
+
+  /// 還有較舊的留言沒載完：新的第一層留言排在最後，要往下載入才看得到。
+  bool get _newRepliesBelowUnloaded =>
+      !_pendingNeedsFullLoad && _nextCursor != null;
+
+  /// 點「有新回覆」提示。只有全是「回覆貼文」且留言已載完時，新留言必定接在
+  /// 最後，才能只抓尾巴接上去、保留已載入的留言和捲動位置；其餘整頁重載。
+  void _showNewReplies() {
+    if (_pendingNeedsFullLoad || _nextCursor != null) {
+      _load();
+      return;
+    }
+    _awaitedCommentId = _pendingCommentId;
+    setState(_clearPendingReplies);
+    _fetchNewComments();
+  }
+
+  Future<void> _fetchNewComments() async {
+    if (_fetchingNew) {
+      _refetchQueued = true;
+      return;
+    }
+    final generation = _generation;
+    _fetchingNew = true;
+    try {
+      ForumCommentPage page;
+      var added = 0;
+      do {
+        _refetchQueued = false;
+        page = await ForumService.comments(
+          widget.postId,
+          cursor: _serverCursor,
+        );
+        if (!mounted || generation != _generation) return;
+        setState(() => added += _mergeComments(page, advanceCursors: true));
+      } while (_refetchQueued);
+      _fetchingNew = false;
+
+      final post = _post;
+      if (added > 0 && post != null) {
+        setState(
+          () => _post = post.copyWith(commentCount: post.commentCount + added),
+        );
+        widget.onPostChanged?.call(_post!);
+      }
+
+      // 本頁已到底才驗得了。推播帶來的那則不在結果裡（已被刪除，或作者是
+      // 你封鎖的人而被後端濾掉）時整頁重載一次；_load 會清掉等待，不會一直重試。
+      final awaited = _awaitedCommentId;
+      _awaitedCommentId = null;
+      if (page.nextCursor == null &&
+          awaited != null &&
+          !_comments.any((c) => c.id == awaited)) {
+        _load();
+      }
+    } on ApiException catch (e) {
+      if (!mounted || generation != _generation) return;
+      _fetchingNew = false;
+      _refetchQueued = false;
+      _toast(e.message);
     }
   }
 
@@ -200,22 +328,57 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     if (_loadingMore) return;
     final cursor = _nextCursor;
     if (cursor == null) return;
+    final generation = _generation;
     setState(() => _loadingMore = true);
     try {
       final page = await ForumService.comments(widget.postId, cursor: cursor);
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() {
-        _comments.addAll(page.comments);
-        _replies.addAll(page.replies);
-        _nextCursor = page.nextCursor;
+        _mergeComments(page, advanceCursors: true);
         _loadingMore = false;
       });
     } on ApiException catch (e) {
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() => _loadingMore = false);
       _toast(e.message);
     }
   }
+
+  /// 把一批留言併進列表：按 id 去重、按 id 排序（id 越大越新）。
+  /// 本地先插入的留言之後可能又從伺服器分頁回來，只靠 append 會重複且亂序。
+  /// [advanceCursors] 只給伺服器分頁結果用，會推進 [_nextCursor] 與 [_serverCursor]。
+  /// 回傳真正新加入的筆數。
+  int _mergeComments(ForumCommentPage page, {bool advanceCursors = false}) {
+    final added =
+        _mergeById(_comments, page.comments) +
+        _mergeById(_replies, page.replies);
+    if (advanceCursors) {
+      _nextCursor = page.nextCursor;
+      final maxId = _maxId(page.comments);
+      final current = _serverCursor;
+      if (maxId != null && (current == null || maxId > current)) {
+        _serverCursor = maxId;
+      }
+    }
+    return added;
+  }
+
+  static int _mergeById(List<ForumComment> into, List<ForumComment> incoming) {
+    if (incoming.isEmpty) return 0;
+    final byId = {for (final c in into) c.id: c};
+    final before = byId.length;
+    for (final c in incoming) {
+      byId[c.id] = c;
+    }
+    into
+      ..clear()
+      ..addAll(byId.values.toList()..sort((a, b) => a.id.compareTo(b.id)));
+    return byId.length - before;
+  }
+
+  static int? _maxId(List<ForumComment> comments) => comments.isEmpty
+      ? null
+      : comments.map((c) => c.id).reduce((a, b) => a > b ? a : b);
 
   /// 圖片簽章網址過期時自動重打貼文 API 拿新網址；用旗標保證每次進頁最多
   /// 自動重試一次，避免多張圖同時過期或重整後仍失敗時無限連環重打。
@@ -342,11 +505,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       );
       if (!mounted) return;
       setState(() {
-        if (created.parentCommentId == null) {
-          _comments.add(created);
-        } else {
-          _replies.add(created);
-        }
+        final isRoot = created.parentCommentId == null;
+        _mergeComments(
+          ForumCommentPage(
+            comments: isRoot ? [created] : const [],
+            replies: isRoot ? const [] : [created],
+            nextCursor: null,
+          ),
+        );
         final post = _post;
         if (post != null) {
           _post = post.copyWith(commentCount: post.commentCount + 1);
@@ -542,92 +708,25 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     return Column(
       children: [
         Expanded(
-          child: NotificationListener<ScrollNotification>(
-            onNotification: (n) {
-              if (n.metrics.pixels >= n.metrics.maxScrollExtent - 200) {
-                _loadMoreComments();
-              }
-              return false;
-            },
-            child: ListView(
-              controller: _scrollController,
-              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
-              children: [
-                ForumPostBody(
-                  post: post,
-                  seniorMode: seniorMode,
-                  onImageExpired: _onImageExpired,
-                  onImageRetryTap: _onImageRetryTap,
-                  onLike: _likePost,
-                  onBookmark: _bookmarkPost,
-                ),
-                const Divider(color: AppColors.creamDeep, height: 28),
-                Text(
-                  '留言 ${post.commentCount}',
-                  style: AppTypography.serif(
-                    fontSize: AppTypography.size(
-                      AppTypography.body,
-                      seniorMode: seniorMode,
-                    ),
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
+          child: Stack(
+            children: [
+              _buildCommentList(post, threads, locked, seniorMode),
+              // 浮在列表頂端、不跟著捲動：捲到很下面或正在輸入時都看得到，
+              // 也不會蓋住底下的輸入列。
+              Positioned(
+                top: 12,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: ForumNewReplyChip(
+                    count: _pendingReplyCount,
+                    needsScrollToLoad: _newRepliesBelowUnloaded,
+                    seniorMode: seniorMode,
+                    onTap: _showNewReplies,
                   ),
                 ),
-                if (threads.isEmpty)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 24),
-                    child: Text(
-                      '還沒有人留言，來說第一句吧。',
-                      style: TextStyle(
-                        color: AppColors.fog,
-                        fontSize: seniorMode
-                            ? AppTypography.bodyLarge + AppTypography.seniorStep
-                            : null,
-                      ),
-                    ),
-                  ),
-                for (final thread in threads) ...[
-                  ForumCommentTile(
-                    comment: thread.root,
-                    isReply: false,
-                    isMine: thread.root.author?.uid == UserService.currentUid,
-                    onLike: () => _likeComment(thread.root),
-                    onReply: locked
-                        ? null
-                        : () => setState(() => _replyTarget = thread.root),
-                    onDelete: () => _deleteComment(thread.root),
-                    onReport: locked
-                        ? null
-                        : () => showForumReportSheet(
-                            context,
-                            targetType: 'comment',
-                            targetId: thread.root.id,
-                          ),
-                    itemCatalogById: _itemCatalogById,
-                  ),
-                  for (final reply in thread.replies)
-                    ForumCommentTile(
-                      comment: reply,
-                      isReply: true,
-                      isMine: reply.author?.uid == UserService.currentUid,
-                      onLike: () => _likeComment(reply),
-                      // 論壇只有兩層：回覆「回覆」時，parent 仍是第一層那則。
-                      onReply: locked
-                          ? null
-                          : () => setState(() => _replyTarget = thread.root),
-                      onDelete: () => _deleteComment(reply),
-                      itemCatalogById: _itemCatalogById,
-                      onReport: locked
-                          ? null
-                          : () => showForumReportSheet(
-                              context,
-                              targetType: 'comment',
-                              targetId: reply.id,
-                            ),
-                    ),
-                ],
-              ],
-            ),
+              ),
+            ],
           ),
         ),
         ForumCommentInputBar(
@@ -640,6 +739,101 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           onCancelReply: () => setState(() => _replyTarget = null),
         ),
       ],
+    );
+  }
+
+  Widget _buildCommentList(
+    ForumPost post,
+    List<ForumCommentThread> threads,
+    bool locked,
+    bool seniorMode,
+  ) {
+    return NotificationListener<ScrollNotification>(
+      onNotification: (n) {
+        if (n.metrics.pixels >= n.metrics.maxScrollExtent - 200) {
+          _loadMoreComments();
+        }
+        return false;
+      },
+      child: ListView(
+        controller: _scrollController,
+        padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+        children: [
+          ForumPostBody(
+            post: post,
+            seniorMode: seniorMode,
+            onImageExpired: _onImageExpired,
+            onImageRetryTap: _onImageRetryTap,
+            onLike: _likePost,
+            onBookmark: _bookmarkPost,
+          ),
+          const Divider(color: AppColors.creamDeep, height: 28),
+          Text(
+            '留言 ${post.commentCount}',
+            style: AppTypography.serif(
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
+              fontWeight: FontWeight.w600,
+              color: AppColors.ink,
+            ),
+          ),
+          if (threads.isEmpty)
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Text(
+                '還沒有人留言，來說第一句吧。',
+                style: TextStyle(
+                  color: AppColors.fog,
+                  fontSize: seniorMode
+                      ? AppTypography.bodyLarge + AppTypography.seniorStep
+                      : null,
+                ),
+              ),
+            ),
+          for (final thread in threads) ...[
+            ForumCommentTile(
+              comment: thread.root,
+              isReply: false,
+              isMine: thread.root.author?.uid == UserService.currentUid,
+              onLike: () => _likeComment(thread.root),
+              onReply: locked
+                  ? null
+                  : () => setState(() => _replyTarget = thread.root),
+              onDelete: () => _deleteComment(thread.root),
+              onReport: locked
+                  ? null
+                  : () => showForumReportSheet(
+                      context,
+                      targetType: 'comment',
+                      targetId: thread.root.id,
+                    ),
+              itemCatalogById: _itemCatalogById,
+            ),
+            for (final reply in thread.replies)
+              ForumCommentTile(
+                comment: reply,
+                isReply: true,
+                isMine: reply.author?.uid == UserService.currentUid,
+                onLike: () => _likeComment(reply),
+                // 論壇只有兩層：回覆「回覆」時，parent 仍是第一層那則。
+                onReply: locked
+                    ? null
+                    : () => setState(() => _replyTarget = thread.root),
+                onDelete: () => _deleteComment(reply),
+                itemCatalogById: _itemCatalogById,
+                onReport: locked
+                    ? null
+                    : () => showForumReportSheet(
+                        context,
+                        targetType: 'comment',
+                        targetId: reply.id,
+                      ),
+              ),
+          ],
+        ],
+      ),
     );
   }
 }

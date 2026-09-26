@@ -89,8 +89,8 @@ Future<void> main() async {
       debugPrint('FcmService.onVideoMatchedColdStart: 查詢 session 失敗：$e');
     }
   };
-  // 人已經在該貼文詳情頁時，前景推播不打擾（留言早就即時反映在畫面上）。
-  FcmService.isForumPostOpen = ForumDetailScreen.isOpen;
+  // 人已經在該貼文詳情頁時，前景推播不彈通知，改在頁內浮出「有新回覆」提示。
+  FcmService.onForumReplyWhileOpen = ForumDetailScreen.notifyNewReply;
   // 點論壇回覆通知 → 導到該貼文詳情頁。同一篇已經開著就回到那一份並重載，
   // 不再疊第二頁（疊了會在返回時看到留言前的舊狀態）。
   FcmService.onForumReplyTapped = (postId) {
@@ -311,7 +311,11 @@ class _MainContainerState extends State<MainContainer>
     _loadCheckinStatus();
     NotificationSummaryService.refresh();
     AppBadge.clear();
-    // 首頁一定在條款同意之後才進得來，通知權限放在這時才問。
+    // 通知權限放在進首頁時才問：大多數情況首頁在同意條款之後才進得來。
+    // 例外是登入時條款狀態查詢失敗（login_screen.dart 的 fetchStatus），或在
+    // 別台裝置重新啟用帳號後直接回首頁（account_pending_screen.dart 的
+    // _refreshStatus）；這時首頁的 API 會被 CONSENT_REQUIRED 擋下並導去條款頁，
+    // 權限框可能和條款頁同時出現。
     FcmService.requestPermission().catchError(
       (Object e) => debugPrint('FcmService.requestPermission 失敗：$e'),
     );
@@ -548,6 +552,7 @@ class _MainContainerState extends State<MainContainer>
                   key: ValueKey('learn_culture_$_learnCultureSubTab'),
                   initialTabIndex: _learnCultureSubTab,
                   reselectSignal: _learnCultureReselect,
+                  active: _currentIndex == _learnCultureIndex,
                 ),
                 PlazaEventScreen(
                   key: ValueKey('plaza_event_$_plazaEventSubTab'),

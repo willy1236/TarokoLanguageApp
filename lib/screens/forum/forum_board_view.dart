@@ -31,6 +31,7 @@ class ForumBoardView extends StatefulWidget {
   final ForumPageLoader loadPage;
   final ForumLikeToggler toggleLike;
   final ForumBookmarkToggler toggleBookmark;
+
   /// 開啟貼文詳情。[imageIndex] 不為 null 時代表使用者是點附圖進來的，
   /// 詳情頁會直接疊上全螢幕圖片檢視，返回時剛好落在內文頁。
   final void Function(ForumPost post, {int? imageIndex}) onOpenPost;

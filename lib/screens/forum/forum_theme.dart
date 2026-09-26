@@ -29,20 +29,32 @@ ThemeData forumTheme(BuildContext context) {
     canvasColor: AppColors.creamLight,
     hintColor: AppColors.fog,
     // 字族沿用全域主題（main.dart 已套 notoSansTc），這裡只換成淺底用的深色字
-    textTheme: base.textTheme.apply(bodyColor: AppColors.inkSoft, displayColor: AppColors.ink),
+    textTheme: base.textTheme.apply(
+      bodyColor: AppColors.inkSoft,
+      displayColor: AppColors.ink,
+    ),
     inputDecorationTheme: const InputDecorationTheme(
       hintStyle: TextStyle(color: AppColors.fog),
       labelStyle: TextStyle(color: AppColors.fog),
-      counterStyle: TextStyle(color: AppColors.fog, fontSize: AppTypography.caption),
+      counterStyle: TextStyle(
+        color: AppColors.fog,
+        fontSize: AppTypography.caption,
+      ),
       helperStyle: TextStyle(color: AppColors.fog),
     ),
     dialogTheme: const DialogThemeData(
       backgroundColor: AppColors.creamLight,
-      contentTextStyle: TextStyle(color: AppColors.inkSoft, fontSize: AppTypography.bodyLarge),
+      contentTextStyle: TextStyle(
+        color: AppColors.inkSoft,
+        fontSize: AppTypography.bodyLarge,
+      ),
     ),
     popupMenuTheme: const PopupMenuThemeData(
       color: AppColors.creamLight,
-      textStyle: TextStyle(color: AppColors.inkSoft, fontSize: AppTypography.body),
+      textStyle: TextStyle(
+        color: AppColors.inkSoft,
+        fontSize: AppTypography.body,
+      ),
     ),
     textButtonTheme: TextButtonThemeData(
       style: TextButton.styleFrom(foregroundColor: AppColors.primary),

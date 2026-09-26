@@ -23,10 +23,14 @@ class CultureScreen extends StatefulWidget {
   /// 使用者再次點擊底部「學習影音」時觸發：捲回頂部並重新整理目前分頁。
   final Listenable? reselectSignal;
 
+  /// 本頁是否正顯示在畫面上（主分頁與子分頁都選中），決定精選輪播要不要自動翻頁。
+  final bool active;
+
   const CultureScreen({
     super.key,
     this.cultureTabIndex = 0,
     this.reselectSignal,
+    this.active = true,
   });
 
   @override
@@ -41,8 +45,10 @@ class _CultureScreenState extends State<CultureScreen> {
   int _chipIndex = 0;
   String _sort = 'latest'; // latest | popular | weekly_popular
   late Future<VideoListResponse> _videosFuture;
-  List<VideoSummary>? _featuredVideos;
-  List<ArticleSummary>? _featuredArticles;
+  // 精選輪播的項目在資料抓回來時就組好存著：每次 build 重組會是新清單，
+  // 輪播會以為資料換了而跳回第一張。
+  List<CultureFeaturedItem>? _featuredVideos;
+  List<CultureFeaturedItem>? _featuredArticles;
   final _scrollController = ScrollController();
   final _articleSectionKey = GlobalKey<CultureArticleSectionState>();
 
@@ -108,7 +114,11 @@ class _CultureScreenState extends State<CultureScreen> {
         sort: 'weekly_popular',
         pageSize: _featuredCount,
       );
-      if (mounted) setState(() => _featuredVideos = res.videos);
+      if (mounted) {
+        setState(
+          () => _featuredVideos = res.videos.map(_featuredVideoItem).toList(),
+        );
+      }
     } catch (e) {
       debugPrint('CultureScreen._loadFeaturedVideos failed: $e');
       if (mounted) setState(() => _featuredVideos = const []);
@@ -121,7 +131,13 @@ class _CultureScreenState extends State<CultureScreen> {
         sort: 'weekly_popular',
         pageSize: _featuredCount,
       );
-      if (mounted) setState(() => _featuredArticles = res.articles);
+      if (mounted) {
+        setState(
+          () => _featuredArticles = res.articles
+              .map(_featuredArticleItem)
+              .toList(),
+        );
+      }
     } catch (e) {
       debugPrint('CultureScreen._loadFeaturedArticles failed: $e');
       if (mounted) setState(() => _featuredArticles = const []);
@@ -179,48 +195,37 @@ class _CultureScreenState extends State<CultureScreen> {
 
   // ── 本週精選輪播 ──────────────────────────────────────────────────────────
 
+  // onTap 用的是 State 的 context，存起來重用不會失效。
+  CultureFeaturedItem _featuredVideoItem(VideoSummary v) => CultureFeaturedItem(
+    imageUrl: v.thumbnailUrl,
+    title: v.title,
+    subtitle:
+        '${VideoCategory.label(v.category)}　|　本週 ${v.weeklyViewCount} 次觀看',
+    onTap: () => Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => VideoDetailScreen(videoId: v.id))),
+  );
+
+  CultureFeaturedItem _featuredArticleItem(
+    ArticleSummary a,
+  ) => CultureFeaturedItem(
+    imageUrl: a.coverImageUrl,
+    title: a.title,
+    subtitle:
+        '${ArticleCategory.label(a.category)}　|　本週 ${a.weeklyViewCount} 次閱讀',
+    onTap: () => Navigator.of(context).push(
+      MaterialPageRoute(builder: (_) => ArticleDetailScreen(articleId: a.id)),
+    ),
+  );
+
   Widget _buildFeatured(bool seniorMode) {
-    if (_tabIndex == 1) {
-      return CultureFeaturedCarousel(
-        key: const ValueKey('featured_articles'),
-        seniorMode: seniorMode,
-        action: _buildSearchButton(seniorMode),
-        items: _featuredArticles
-            ?.map(
-              (a) => CultureFeaturedItem(
-                imageUrl: a.coverImageUrl,
-                title: a.title,
-                subtitle:
-                    '${ArticleCategory.label(a.category)}　|　本週 ${a.weeklyViewCount} 次閱讀',
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => ArticleDetailScreen(articleId: a.id),
-                  ),
-                ),
-              ),
-            )
-            .toList(),
-      );
-    }
+    final isArticles = _tabIndex == 1;
     return CultureFeaturedCarousel(
-      key: const ValueKey('featured_videos'),
+      key: ValueKey(isArticles ? 'featured_articles' : 'featured_videos'),
       seniorMode: seniorMode,
+      active: widget.active,
       action: _buildSearchButton(seniorMode),
-      items: _featuredVideos
-          ?.map(
-            (v) => CultureFeaturedItem(
-              imageUrl: v.thumbnailUrl,
-              title: v.title,
-              subtitle:
-                  '${VideoCategory.label(v.category)}　|　本週 ${v.weeklyViewCount} 次觀看',
-              onTap: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (_) => VideoDetailScreen(videoId: v.id),
-                ),
-              ),
-            ),
-          )
-          .toList(),
+      items: isArticles ? _featuredArticles : _featuredVideos,
     );
   }
 

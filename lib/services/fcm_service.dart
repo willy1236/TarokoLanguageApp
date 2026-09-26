@@ -81,9 +81,11 @@ class FcmService {
   /// 點擊論壇回覆通知時的導頁 callback。由 UI 層設定（用 navigatorKey 導到貼文詳情）。
   static void Function(int postId)? onForumReplyTapped;
 
-  /// 由 UI 層注入：該貼文的詳情頁是否正開在畫面上。前景收到該篇的回覆推播時
-  /// 據此靜音，避免通知列／SnackBar 蓋住正在使用的留言輸入列。
-  static bool Function(int postId)? isForumPostOpen;
+  /// 由 UI 層注入：前景收到論壇回覆推播時先交給該貼文開著的詳情頁，回傳 true
+  /// 代表畫面已接手（改在頁內提示），就不彈通知列／SnackBar，避免蓋住留言輸入列。
+  /// [type] 是 'reply_post' 或 'reply_comment'。
+  static bool Function(int postId, String type, int? commentId)?
+  onForumReplyWhileOpen;
 
   /// 收到好友定向來電推播時觸發（前景收到、或背景點擊通知開啟時皆會呼叫）。
   /// 由 UI 層設定，導向 IncomingCallScreen。響鈴逾時（60 秒）由後端控管，
@@ -246,14 +248,21 @@ class FcmService {
 
   /// 解析論壇回覆通知的 payload，非論壇類型回傳 null。
   /// 後端送出的 data：{ type: 'reply_post' | 'reply_comment', post_id, comment_id }
-  static int? _parseForumPayload(Map<String, dynamic> data) {
+  static ({int postId, String type, int? commentId})? _parseForumPayload(
+    Map<String, dynamic> data,
+  ) {
     final type = data['type'];
     if (type != 'reply_post' && type != 'reply_comment') return null;
     final postId = int.tryParse(data['post_id']?.toString() ?? '');
     if (postId == null) {
       debugPrint('FcmService: post_id 缺失或無法解析，忽略：${data['post_id']}');
+      return null;
     }
-    return postId;
+    return (
+      postId: postId,
+      type: type as String,
+      commentId: int.tryParse(data['comment_id']?.toString() ?? ''),
+    );
   }
 
   /// 解析好友定向來電推播的 call_id，非此類型回傳 null。
@@ -301,10 +310,16 @@ class FcmService {
       return;
     }
 
-    final forumPostId = _parseForumPayload(message.data);
-    if (forumPostId != null) {
-      // 人就在那一頁，內容已即時更新，不再彈通知。
-      if (isForumPostOpen?.call(forumPostId) == true) return;
+    final forum = _parseForumPayload(message.data);
+    if (forum != null) {
+      final forumPostId = forum.postId;
+      // 人就在那一頁：改由頁內提示，不再彈通知。
+      final handled = onForumReplyWhileOpen?.call(
+        forumPostId,
+        forum.type,
+        forum.commentId,
+      );
+      if (handled == true) return;
       final title = message.notification?.title ?? '有人回覆你';
       final body = message.notification?.body ?? '';
       unawaited(
@@ -430,9 +445,9 @@ class FcmService {
       return;
     }
 
-    final forumPostId = _parseForumPayload(message.data);
-    if (forumPostId != null) {
-      onForumReplyTapped?.call(forumPostId);
+    final forum = _parseForumPayload(message.data);
+    if (forum != null) {
+      onForumReplyTapped?.call(forum.postId);
       return;
     }
     final parsed = _parseReminderPayload(message.data);

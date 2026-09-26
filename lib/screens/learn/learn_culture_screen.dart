@@ -17,10 +17,14 @@ class LearnCultureScreen extends StatefulWidget {
   /// 使用者再次點擊底部「學習影音」時觸發，由目前分頁捲回頂部並重新整理。
   final Listenable? reselectSignal;
 
+  /// 本分頁是否為底部導航目前選中的那格。
+  final bool active;
+
   const LearnCultureScreen({
     super.key,
     this.initialTabIndex = 0,
     this.reselectSignal,
+    this.active = true,
   });
 
   @override
@@ -62,6 +66,7 @@ class _LearnCultureScreenState extends State<LearnCultureScreen> {
                 CultureScreen(
                   cultureTabIndex: isLearn ? 0 : _tabIndex - 1,
                   reselectSignal: isLearn ? null : widget.reselectSignal,
+                  active: widget.active && !isLearn,
                 ),
               ],
             ),

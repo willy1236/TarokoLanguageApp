@@ -30,11 +30,17 @@ class CultureFeaturedCarousel extends StatefulWidget {
   /// 疊在卡片右上角、不隨翻頁移動的元件（搜尋鈕）；沒有精選時改單獨靠右顯示。
   final Widget? action;
 
+  /// 輪播所在分頁是否正顯示在畫面上。為 false 時停止自動翻頁、停在目前這張；
+  /// 回到 true 時從這張重新計時。父層在 IndexedStack 裡一直活著，不能靠
+  /// TickerMode 判斷（IndexedStack 不會關掉它，Timer 也不是 Ticker）。
+  final bool active;
+
   const CultureFeaturedCarousel({
     super.key,
     required this.items,
     required this.seniorMode,
     this.action,
+    this.active = true,
   });
 
   @override
@@ -58,9 +64,13 @@ class _CultureFeaturedCarouselState extends State<CultureFeaturedCarousel> {
   @override
   void didUpdateWidget(CultureFeaturedCarousel oldWidget) {
     super.didUpdateWidget(oldWidget);
+    // 比對的是清單本身：父層只在精選真的重新抓回來時才換新清單，
+    // 其餘重建（簽到、切分類、排序）傳進來的都是同一份，不重設。
     if (oldWidget.items != widget.items) {
       _page = 0;
       if (_controller.hasClients) _controller.jumpToPage(0);
+      _restartTimer();
+    } else if (oldWidget.active != widget.active) {
       _restartTimer();
     }
   }
@@ -75,7 +85,7 @@ class _CultureFeaturedCarouselState extends State<CultureFeaturedCarousel> {
   // 使用者手動滑過後重新計時，避免剛滑完就被自動翻走。
   void _restartTimer() {
     _timer?.cancel();
-    if ((widget.items?.length ?? 0) < 2) return;
+    if (!widget.active || (widget.items?.length ?? 0) < 2) return;
     _timer = Timer.periodic(_interval, (_) {
       if (!_controller.hasClients) return;
       final next = (_page + 1) % widget.items!.length;

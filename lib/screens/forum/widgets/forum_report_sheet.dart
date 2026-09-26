@@ -91,7 +91,10 @@ class _ReportSheetState extends State<_ReportSheet> {
           Text(
             '檢舉',
             style: AppTypography.serif(
-              fontSize: AppTypography.size(AppTypography.subtitle, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.subtitle,
+                seniorMode: seniorMode,
+              ),
               fontWeight: FontWeight.w700,
               color: AppColors.ink,
             ),
@@ -100,7 +103,10 @@ class _ReportSheetState extends State<_ReportSheet> {
           Text(
             '請說明檢舉的原因，管理員會再確認。',
             style: TextStyle(
-              fontSize: AppTypography.size(AppTypography.body, seniorMode: seniorMode),
+              fontSize: AppTypography.size(
+                AppTypography.body,
+                seniorMode: seniorMode,
+              ),
               color: AppColors.fog,
             ),
           ),
@@ -110,11 +116,18 @@ class _ReportSheetState extends State<_ReportSheet> {
             maxLines: 4,
             maxLength: ForumService.reasonMax,
             onChanged: (_) => setState(() {}),
-            style: TextStyle(fontSize: seniorMode ? AppTypography.bodyLarge + AppTypography.seniorStep : null),
+            style: TextStyle(
+              fontSize: seniorMode
+                  ? AppTypography.bodyLarge + AppTypography.seniorStep
+                  : null,
+            ),
             decoration: InputDecoration(
               hintText: '例如：廣告、人身攻擊、不實資訊',
               hintStyle: seniorMode
-                  ? const TextStyle(fontSize: AppTypography.bodyLarge + AppTypography.seniorStep)
+                  ? const TextStyle(
+                      fontSize:
+                          AppTypography.bodyLarge + AppTypography.seniorStep,
+                    )
                   : null,
               border: const OutlineInputBorder(),
             ),
@@ -132,7 +145,10 @@ class _ReportSheetState extends State<_ReportSheet> {
               child: Text(
                 _sending ? '送出中…' : '送出檢舉',
                 style: seniorMode
-                    ? const TextStyle(fontSize: AppTypography.bodyLarge + AppTypography.seniorStep)
+                    ? const TextStyle(
+                        fontSize:
+                            AppTypography.bodyLarge + AppTypography.seniorStep,
+                      )
                     : null,
               ),
             ),
