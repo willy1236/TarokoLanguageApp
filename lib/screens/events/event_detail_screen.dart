@@ -19,6 +19,7 @@ import 'widgets/event_detail_body.dart';
 import 'widgets/event_detail_dialogs.dart';
 import 'widgets/event_detail_hero.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/confirm_dialog.dart';
 
 /// 活動詳情頁 — 進頁後以 [eventId] 打 GET /api/events/:id 取真資料。
 ///
@@ -390,22 +391,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   Future<void> _deleteEvent() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('刪除活動？'),
-        content: const Text('刪除後將無法復原，已報名的參加者也會看不到這個活動。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('刪除'),
-          ),
-        ],
-      ),
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '刪除活動？',
+      message: '刪除後將無法復原，已報名的參加者也會看不到這個活動。',
+      cancelText: '取消',
+      confirmText: '刪除',
     );
     if (confirmed != true) return;
     await _guarded(failurePrefix: '刪除失敗', () async {

@@ -16,6 +16,7 @@ import 'video_call/call_permissions.dart';
 import 'video_call/video_call_controller.dart';
 import 'video_call/widgets/call_controls.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/confirm_dialog.dart';
 
 /// 通話畫面。狀態機在 [VideoCallController]；這裡只負責畫面、導頁、檢舉
 /// 對話框與 FCM 回呼註冊。
@@ -130,25 +131,14 @@ class _VideoCallScreenState extends State<VideoCallScreen>
 
   /// 通話中封鎖：後端會結束這通通話並只推播給對方，自己這端要主動離開頻道。
   Future<void> _blockPeer() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('封鎖對方？'),
-        content: const Text(
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '封鎖對方？',
+      message:
           '通話會立即結束。封鎖後會解除好友，並移除你們在彼此貼文上的留言與讚。'
           '\n\n解除封鎖後，這些都不會恢復，需要重新加好友。',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('封鎖'),
-          ),
-        ],
-      ),
+      cancelText: '取消',
+      confirmText: '封鎖',
     );
     if (confirmed != true || !mounted || _call.leaving) return;
     _blockInFlight = true;
@@ -180,22 +170,12 @@ class _VideoCallScreenState extends State<VideoCallScreen>
   }
 
   Future<void> _offerReport(int callId) async {
-    final shouldReport = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('通話已結束'),
-        content: const Text('若這通通話有不當內容，可以在此檢舉。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('返回'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('檢舉此通話'),
-          ),
-        ],
-      ),
+    final shouldReport = await showConfirmDialog(
+      context,
+      title: '通話已結束',
+      message: '若這通通話有不當內容，可以在此檢舉。',
+      cancelText: '返回',
+      confirmText: '檢舉此通話',
     );
     if (shouldReport != true || !mounted) return;
     final reason = await showDialog<String>(

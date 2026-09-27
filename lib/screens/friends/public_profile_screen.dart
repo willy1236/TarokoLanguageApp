@@ -25,6 +25,7 @@ import '../chat/chat_screen.dart';
 import '../forum/widgets/forum_report_sheet.dart';
 import 'widgets/bond_level_badge.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/confirm_dialog.dart';
 
 enum _ProfileAction { addFriend, removeFriend, block, unblock, report }
 
@@ -246,25 +247,14 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
 
   /// 封鎖會雙向切斷且解封不回復（後端 2026-09-26 起），送出前先講清楚。
   Future<bool> _confirmBlock() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('封鎖此使用者？'),
-        content: const Text(
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '封鎖此使用者？',
+      message:
           '封鎖後會解除好友，並移除你們在彼此貼文上的留言與讚；進行中的通話也會結束。'
           '\n\n解除封鎖後，這些都不會恢復，需要重新加好友。',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('封鎖'),
-          ),
-        ],
-      ),
+      cancelText: '取消',
+      confirmText: '封鎖',
     );
     return confirmed == true && mounted;
   }

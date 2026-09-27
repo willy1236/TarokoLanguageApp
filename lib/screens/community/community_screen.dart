@@ -21,6 +21,7 @@ import '../profile/profile_screen.dart';
 import 'video_call_notice_screen.dart';
 import 'video_call_screen.dart';
 import 'video_waiting_screen.dart';
+import '../../shared/widgets/confirm_dialog.dart';
 
 class CommunityScreen extends StatefulWidget {
   /// 由外層（合併分頁的膠囊切換）注入，顯示在頁面最上方。
@@ -442,22 +443,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Future<void> _showVideoNicknameRequiredDialog() async {
     if (!mounted) return;
-    final goToProfile = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('請先設定公開暱稱'),
-        content: const Text('視訊配對前需要先在個人資料設定一個公開暱稱，讓對方在通話時看到。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('前往設定'),
-          ),
-        ],
-      ),
+    final goToProfile = await showConfirmDialog(
+      context,
+      title: '請先設定公開暱稱',
+      message: '視訊配對前需要先在個人資料設定一個公開暱稱，讓對方在通話時看到。',
+      cancelText: '取消',
+      confirmText: '前往設定',
     );
     if (goToProfile == true && mounted) {
       Navigator.push(

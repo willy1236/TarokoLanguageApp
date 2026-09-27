@@ -25,6 +25,7 @@ import 'friend_requests_screen.dart';
 import 'widgets/bond_level_badge.dart';
 import 'widgets/showcase_chip.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/confirm_dialog.dart';
 
 class FriendsListScreen extends StatefulWidget {
   /// 作為底部導航分頁時傳 false：沒有上一頁可回，不顯示返回鍵。
@@ -153,22 +154,12 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     final idx = friends.indexOf(f);
     if (idx == -1) return;
     if (f.showcase.mutual) {
-      final confirmed = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('取消顯示羈絆？'),
-          content: const Text('對方檔案上將立即看不到你們的羈絆等級。'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('返回'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('取消顯示'),
-            ),
-          ],
-        ),
+      final confirmed = await showConfirmDialog(
+        context,
+        title: '取消顯示羈絆？',
+        message: '對方檔案上將立即看不到你們的羈絆等級。',
+        cancelText: '返回',
+        confirmText: '取消顯示',
       );
       if (confirmed != true || !mounted) return;
     }
