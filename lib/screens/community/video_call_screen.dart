@@ -3,10 +3,12 @@ import 'package:permission_handler/permission_handler.dart'
     show openAppSettings;
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../main.dart' show scaffoldMessengerKey;
 import '../../models/video_call_model.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/directed_call_service.dart';
 import '../../services/fcm_service.dart';
+import '../../services/friend_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import 'video_call/agora_video_rtc.dart';
@@ -48,6 +50,16 @@ class _VideoCallScreenState extends State<VideoCallScreen>
 
   /// 通話固定長度，用來從剩餘時間換算已通話時間。
   static const _callLength = Duration(minutes: 30);
+
+  /// 通話中由自己封鎖對方而結束。
+  bool _blockedPeer = false;
+
+  /// 封鎖請求送出、還沒回來。這段期間對方剛好掛斷時，不該對剛封鎖的人問檢舉。
+  bool _blockInFlight = false;
+
+  /// [_onLeft] 已處理過離開（已導回首頁）。封鎖晚於通話結束才成功時，
+  /// 提示要由 [_blockPeer] 自己補上。
+  bool _leftHandled = false;
 
   @override
   void initState() {
@@ -100,6 +112,13 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     final directedCallId = widget.directedCallId;
     // 沒接通就結束（例如權限被拒）不需要問檢舉。
     // 唯讀帳號不能檢舉（後端擋），就不問了。
+    // 自己剛封鎖（或正在封鎖）對方就不再問檢舉，直接離開。
+    _leftHandled = true;
+    if (_blockedPeer || _blockInFlight) {
+      Navigator.popUntil(context, (r) => r.isFirst);
+      if (_blockedPeer) _showBlockedNotice();
+      return;
+    }
     if (directedCallId != null &&
         _call.joinError == null &&
         !accountLockController.locked) {
@@ -107,6 +126,57 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     }
     if (!mounted) return;
     Navigator.popUntil(context, (r) => r.isFirst);
+  }
+
+  /// 通話中封鎖：後端會結束這通通話並只推播給對方，自己這端要主動離開頻道。
+  Future<void> _blockPeer() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('封鎖對方？'),
+        content: const Text(
+          '通話會立即結束。封鎖後會解除好友，並移除你們在彼此貼文上的留言與讚。'
+          '\n\n解除封鎖後，這些都不會恢復，需要重新加好友。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('封鎖'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted || _call.leaving) return;
+    _blockInFlight = true;
+    try {
+      await FriendService.blockUser(widget.session.peerUid);
+    } catch (e) {
+      // 通話可能已在等待期間結束、本頁已關，改用全域 messenger 提示。
+      scaffoldMessengerKey.currentState?.showSnackBar(
+        SnackBar(content: Text(apiErrorMessage(e, fallback: '封鎖失敗，請稍後再試'))),
+      );
+      return;
+    } finally {
+      _blockInFlight = false;
+    }
+    _blockedPeer = true;
+    if (_leftHandled) {
+      // 對方在請求期間先掛斷，離開流程已跑完，只剩提示要補。
+      _showBlockedNotice();
+    } else if (!_call.leaving) {
+      await _call.leaveEndedByServer();
+    }
+    // 其餘情況：離開流程進行中，_onLeft 會看到 _blockedPeer 自行提示。
+  }
+
+  void _showBlockedNotice() {
+    scaffoldMessengerKey.currentState?.showSnackBar(
+      const SnackBar(content: Text('已封鎖對方，通話已結束')),
+    );
   }
 
   Future<void> _offerReport(int callId) async {
@@ -388,14 +458,22 @@ class _VideoCallScreenState extends State<VideoCallScreen>
               ],
             ),
           ),
-          Container(
-            width: 40,
-            height: 40,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.ink.withValues(alpha: 0.6),
+          PopupMenuButton<String>(
+            tooltip: '更多',
+            enabled: !_call.leaving,
+            onSelected: (_) => _blockPeer(),
+            itemBuilder: (context) => const [
+              PopupMenuItem(value: 'block', child: Text('封鎖對方')),
+            ],
+            child: Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: AppColors.ink.withValues(alpha: 0.6),
+              ),
+              child: const Center(child: CallDotsIcon()),
             ),
-            child: const Center(child: CallDotsIcon()),
           ),
         ],
       ),

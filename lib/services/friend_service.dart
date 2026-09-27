@@ -6,6 +6,7 @@ import '../core/network/api_client.dart';
 import '../models/friend_message_model.dart';
 import '../models/friend_model.dart';
 import '../models/public_profile_model.dart';
+import 'block_refresh_notifier.dart';
 import 'notification_summary_service.dart';
 
 class ChatMessagePage {
@@ -64,6 +65,7 @@ class FriendService {
 
   static Future<void> blockUser(int uid) async {
     await ApiClient.post(ApiConfig.friendBlocks, {'uid': uid});
+    BlockRefreshNotifier.bump();
   }
 
   static Future<void> unblockUser(int uid) async {

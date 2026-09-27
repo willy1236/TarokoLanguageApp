@@ -157,6 +157,32 @@ void main() {
       );
     });
 
+    test('業務邏輯的 429（無 retry_after）保留後端 code 與訊息', () async {
+      ApiClient.httpClient = MockClient(
+        (_) async => http.Response.bytes(
+          utf8.encode(
+            jsonEncode({
+              'error': {
+                'code': 'FRIEND_REQUEST_LIMIT',
+                'message': '24 小時內最多送出 30 個好友邀請，請明天再試',
+              },
+            }),
+          ),
+          429,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        ),
+      );
+
+      expect(
+        () => ApiClient.post('/api/friends/requests', {'uid': 1}),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.code, 'code', 'FRIEND_REQUEST_LIMIT')
+              .having((e) => e.message, 'message', contains('30 個好友邀請')),
+        ),
+      );
+    });
+
     test('都沒有時 retryAfter 為 null、沿用固定文案', () async {
       ApiClient.httpClient = MockClient((_) async => http.Response('', 429));
 

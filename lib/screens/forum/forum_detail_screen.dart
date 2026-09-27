@@ -10,6 +10,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/shop_item.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/block_refresh_notifier.dart';
 import '../../services/shop_service.dart';
 import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
@@ -163,6 +164,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     ForumDetailScreen._live[widget.postId] = this;
     _loadItemCatalog();
     _load();
+    BlockRefreshNotifier.revision.addListener(_load);
   }
 
   @override
@@ -171,6 +173,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     if (ForumDetailScreen._live[widget.postId] == this) {
       ForumDetailScreen._live.remove(widget.postId);
     }
+    BlockRefreshNotifier.revision.removeListener(_load);
     _inputController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -435,6 +438,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           ),
         );
       }
+      if (e.isBlocked) return _handleBlocked();
       _toast(e.message);
     }
   }
@@ -461,6 +465,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           () => _post = current.copyWith(isBookmarked: post.isBookmarked),
         );
       }
+      if (e.isBlocked) return _handleBlocked();
       _toast(e.message);
     }
   }
@@ -489,6 +494,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => replace(comment));
+      if (e.isBlocked) return _handleBlocked();
       _toast(e.message);
     }
   }
@@ -530,26 +536,30 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _popDeleted('這篇貼文已被刪除');
         return;
       }
+      // 回覆的對象已被刪除（變成佔位）：重載讓畫面換成佔位，輸入內容保留。
+      if (e.code == 'COMMENT_NOT_FOUND' && _replyTarget != null) {
+        setState(() => _replyTarget = null);
+        _toast('這則留言已被刪除，無法回覆');
+        _load();
+        return;
+      }
+      if (e.isBlocked) return _handleBlocked();
       _toast(e.message);
     }
   }
 
-  /// 本地反映後端的刪除語意（後端 API 文件 §4.3 / §4.4）：
-  /// 第一層留言底下若還有存活回覆，後端會把它保留成佔位讓回覆有東西可掛，
-  /// 只有沒有回覆時才整則消失。回覆本身一律直接消失。
+  /// 本地反映後端的刪除語意（後端 API 文件 §4.4，2026-09-26 起）：
+  /// 被刪的留言（第一層或回覆）一律保留成佔位，底下的回覆照常掛著。
   void _applyCommentDeleted(ForumComment comment) {
-    if (comment.parentCommentId != null) {
-      _replies.removeWhere((c) => c.id == comment.id);
-      return;
-    }
-    final hasLiveReplies = _replies.any((c) => c.parentCommentId == comment.id);
-    final index = _comments.indexWhere((c) => c.id == comment.id);
-    if (index < 0) return;
-    if (hasLiveReplies) {
-      _comments[index] = comment.asDeletedPlaceholder();
-    } else {
-      _comments.removeAt(index);
-    }
+    final list = comment.parentCommentId == null ? _comments : _replies;
+    final index = list.indexWhere((c) => c.id == comment.id);
+    if (index >= 0) list[index] = comment.asDeletedPlaceholder();
+  }
+
+  /// 403 BLOCKED：與對方有封鎖關係（畫面還沒重新整理時會發生），提示後重載本頁。
+  void _handleBlocked() {
+    _toast('無法與此使用者互動');
+    _load();
   }
 
   Future<void> _deleteComment(ForumComment comment) async {

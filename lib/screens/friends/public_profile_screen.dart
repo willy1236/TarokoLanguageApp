@@ -22,10 +22,11 @@ import '../../services/user_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../chat/chat_screen.dart';
+import '../forum/widgets/forum_report_sheet.dart';
 import 'widgets/bond_level_badge.dart';
 import '../../shared/widgets/app_back_button.dart';
 
-enum _ProfileAction { addFriend, removeFriend, block, unblock }
+enum _ProfileAction { addFriend, removeFriend, block, unblock, report }
 
 enum _Relationship { friend, blocked, stranger }
 
@@ -163,6 +164,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             child: Text('刪除好友'),
           ),
           PopupMenuItem(value: _ProfileAction.block, child: Text('封鎖')),
+          PopupMenuItem(value: _ProfileAction.report, child: Text('檢舉')),
         ];
       case _Relationship.blocked:
         return const [
@@ -172,6 +174,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         return const [
           PopupMenuItem(value: _ProfileAction.addFriend, child: Text('加好友')),
           PopupMenuItem(value: _ProfileAction.block, child: Text('封鎖')),
+          PopupMenuItem(value: _ProfileAction.report, child: Text('檢舉')),
         ];
     }
   }
@@ -201,6 +204,15 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     if (profile == null) return;
     // 唯讀帳號只擋加好友；刪除好友、封鎖等清理動作後端放行。
     if (action == _ProfileAction.addFriend && blockIfReadOnly()) return;
+    if (action == _ProfileAction.report) {
+      await showForumReportSheet(
+        context,
+        targetType: 'profile',
+        targetId: profile.uid,
+      );
+      return;
+    }
+    if (action == _ProfileAction.block && !await _confirmBlock()) return;
     try {
       switch (action) {
         case _ProfileAction.addFriend:
@@ -214,6 +226,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         case _ProfileAction.block:
           await FriendService.blockUser(profile.uid);
           _showMessage('已封鎖此使用者');
+          break;
+        case _ProfileAction.report:
           break;
         case _ProfileAction.unblock:
           await FriendService.unblockUser(profile.uid);
@@ -230,9 +244,35 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     }
   }
 
+  /// 封鎖會雙向切斷且解封不回復（後端 2026-09-26 起），送出前先講清楚。
+  Future<bool> _confirmBlock() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('封鎖此使用者？'),
+        content: const Text(
+          '封鎖後會解除好友，並移除你們在彼此貼文上的留言與讚；進行中的通話也會結束。'
+          '\n\n解除封鎖後，這些都不會恢復，需要重新加好友。',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('取消'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('封鎖'),
+          ),
+        ],
+      ),
+    );
+    return confirmed == true && mounted;
+  }
+
   String _friendlyErrorMessage(ApiException e) {
     if (e.isAlreadyFriends) return '你們已經是好友';
     if (e.isRequestAlreadySent) return '已送出邀請，等待對方回覆';
+    if (e.isRequestCooldown) return e.requestCooldownMessage;
     if (e.isBlocked) return '因封鎖關係，無法執行此操作';
     if (e.isUserUnavailable) return '該使用者暫時無法使用';
     if (e.isNotFriends) return '你們還不是好友';
@@ -284,10 +324,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               color: AppColors.fog,
             ),
           ),
-          if (profile.bondShowcase.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _bondShowcaseRow(profile.bondShowcase, seniorMode),
-          ],
           const SizedBox(height: 20),
           if (profile.selfIntro != null && profile.selfIntro!.isNotEmpty) ...[
             _card(
@@ -332,6 +368,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               ),
             ),
           ),
+          if (profile.bondShowcase.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _bondShowcaseCard(profile.bondShowcase, seniorMode),
+          ],
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
@@ -399,33 +439,55 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     ),
   );
 
-  Widget _bondShowcaseRow(List<BondShowcaseItem> items, bool seniorMode) =>
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            '羈絆好友',
-            style: AppTypography.subtitleStyle(
-              seniorMode: seniorMode,
-              color: AppColors.fog,
+  Widget _bondShowcaseCard(List<BondShowcaseItem> items, bool seniorMode) =>
+      _card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '羈絆好友',
+              style: AppTypography.captionStyle(
+                seniorMode: seniorMode,
+                color: AppColors.fog,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: items
-                .map(
-                  (item) => BondLevelBadge(
+            // 每筆要帶出是誰，只放等級徽章會被讀成「檢視者與此人的羈絆」。
+            for (final item in items) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  FramedUserAvatar(
+                    avatarId: item.avatarId,
+                    avatarUrl: item.avatarUrl,
+                    frameId: item.frameId,
+                    itemCatalogById: _itemCatalogById,
+                    size: seniorMode ? 40 : 32,
+                    fallbackIconColor: AppColors.gold,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      item.nickname?.isNotEmpty == true
+                          ? item.nickname!
+                          : '未命名旅人',
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodyStyle(
+                        seniorMode: seniorMode,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  BondLevelBadge(
                     level: item.bondLevel.level,
                     name: item.bondLevel.name,
                     seniorMode: seniorMode,
                   ),
-                )
-                .toList(),
-          ),
-        ],
+                ],
+              ),
+            ],
+          ],
+        ),
       );
 
   Widget _card({required Widget child}) => Container(

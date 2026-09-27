@@ -238,6 +238,19 @@ void main() {
     });
   });
 
+  test('後端已結束（自己封鎖對方）：釋放媒體、不通知後端', () {
+    fakeAsync((async) {
+      final h = _Harness();
+      h.call.start();
+      async.flushMicrotasks();
+      h.call.leaveEndedByServer();
+      async.flushMicrotasks();
+      expect(h.log, ['rtc.start', 'rtc.join:tok', 'rtc.release']);
+      expect(h.leftCount, 1);
+      h.call.dispose();
+    });
+  });
+
   test('倒數到期自動掛斷', () {
     fakeAsync((async) {
       final h = _Harness(callLength: const Duration(seconds: 3));

@@ -15,6 +15,8 @@ int? asEventInt(dynamic v) {
   return null;
 }
 
+DateTime? _parseTime(dynamic v) => v is String ? DateTime.tryParse(v) : null;
+
 class EventDetail {
   final int id;
   final int hostUid;
@@ -31,8 +33,13 @@ class EventDetail {
   final String? category; // 活動分類標籤，可能為 null
   final int? tribeId; // 發起人自選的相關部落，null = 未標註；名稱用 GET /api/tribes 對照
   final String status; // active | cancelled（原始 DB 狀態）
-  final String? effectiveStatus; // 後端即時算：active | ended | cancelled
-  final bool registrationOpen; // 仍 active、未過截止、未開始
+  final String?
+  effectiveStatus; // 後端即時算：active（尚未開始）| ongoing | ended | cancelled
+  final bool registrationOpen; // 報名中：已開放、未額滿、未過截止、未開始
+  final DateTime? endsAt; // 活動結束；舊資料可能沒有
+  final DateTime? registrationStartsAt; // 報名開始，null = 建立即開放
+  final String? registrationStatus; // not_open | open | full | closed
+  final bool? isFullRaw; // 後端算好的額滿
   final DateTime? createdAt;
   final List<EventParticipant> participants;
   // 後端直接算好的人數；非發起人只會收到空 participants 陣列，這時仍要靠這個
@@ -61,6 +68,10 @@ class EventDetail {
     required this.status,
     this.effectiveStatus,
     this.registrationOpen = false,
+    this.endsAt,
+    this.registrationStartsAt,
+    this.registrationStatus,
+    this.isFullRaw,
     this.createdAt,
     this.participants = const [],
     this.participantCountRaw,
@@ -82,9 +93,13 @@ class EventDetail {
   bool isJoinedBy(int? uid) =>
       isJoined || (uid != null && participants.any((p) => p.uid == uid));
 
-  /// 名額是否已滿（不限名額時永遠 false）。
+  /// 名額是否已滿（不限名額時永遠 false）；優先用後端的 is_full。
   bool get isFull =>
-      maxParticipants != null && participantCount >= maxParticipants!;
+      isFullRaw ??
+      (maxParticipants != null && participantCount >= maxParticipants!);
+
+  /// 報名尚未開始（registration_status = not_open）。
+  bool get isRegistrationNotOpen => registrationStatus == 'not_open';
 
   /// 對外顯示狀態；後端沒帶時退回原始 status。
   String get displayStatus => effectiveStatus ?? status;
@@ -111,6 +126,10 @@ class EventDetail {
       status: json['status'] as String? ?? 'active',
       effectiveStatus: json['effective_status'] as String?,
       registrationOpen: json['registration_open'] as bool? ?? false,
+      endsAt: _parseTime(json['ends_at']),
+      registrationStartsAt: _parseTime(json['registration_starts_at']),
+      registrationStatus: json['registration_status'] as String?,
+      isFullRaw: json['is_full'] as bool?,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
@@ -156,6 +175,10 @@ class EventDetail {
         status: status,
         effectiveStatus: effectiveStatus,
         registrationOpen: registrationOpen,
+        endsAt: endsAt,
+        registrationStartsAt: registrationStartsAt,
+        registrationStatus: registrationStatus,
+        isFullRaw: isFullRaw,
         createdAt: createdAt,
         participants: participants,
         participantCountRaw: participantCountRaw,
@@ -180,8 +203,13 @@ class EventSummary {
   final int participantCount;
   final bool isJoined;
   final DateTime? registrationDeadline;
-  final String? effectiveStatus; // 後端即時算：active / ended / cancelled
+  final String?
+  effectiveStatus; // 後端即時算：active（尚未開始）/ ongoing / ended / cancelled
   final bool registrationOpen;
+  final DateTime? endsAt;
+  final DateTime? registrationStartsAt;
+  final String? registrationStatus; // not_open | open | full | closed
+  final bool? isFullRaw;
   final int likeCount; // 即時 COUNT，非反正規化欄位
   final bool isLiked;
   final bool isBookmarked;
@@ -200,6 +228,10 @@ class EventSummary {
     this.registrationDeadline,
     this.effectiveStatus,
     this.registrationOpen = false,
+    this.endsAt,
+    this.registrationStartsAt,
+    this.registrationStatus,
+    this.isFullRaw,
     this.likeCount = 0,
     this.isLiked = false,
     this.isBookmarked = false,
@@ -207,9 +239,13 @@ class EventSummary {
 
   bool isHostedBy(int? uid) => uid != null && uid == hostUid;
 
-  /// 名額是否已滿（不限名額時永遠 false）。
+  /// 名額是否已滿（不限名額時永遠 false）；優先用後端的 is_full。
   bool get isFull =>
-      maxParticipants != null && participantCount >= maxParticipants!;
+      isFullRaw ??
+      (maxParticipants != null && participantCount >= maxParticipants!);
+
+  /// 報名尚未開始（registration_status = not_open）。
+  bool get isRegistrationNotOpen => registrationStatus == 'not_open';
 
   /// 對外顯示狀態；後端沒帶時退回原始 status。
   String get displayStatus => effectiveStatus ?? status;
@@ -231,6 +267,10 @@ class EventSummary {
           : null,
       effectiveStatus: json['effective_status'] as String?,
       registrationOpen: json['registration_open'] as bool? ?? false,
+      endsAt: _parseTime(json['ends_at']),
+      registrationStartsAt: _parseTime(json['registration_starts_at']),
+      registrationStatus: json['registration_status'] as String?,
+      isFullRaw: json['is_full'] as bool?,
       likeCount: asEventInt(json['like_count']) ?? 0,
       isLiked: json['is_liked'] as bool? ?? false,
       isBookmarked: json['is_bookmarked'] as bool? ?? false,

@@ -12,6 +12,7 @@ import '../../services/fcm_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
+import '../forum/widgets/forum_report_sheet.dart';
 import 'event_compose_screen.dart';
 import 'widgets/event_action_bar.dart';
 import 'widgets/event_detail_body.dart';
@@ -265,12 +266,30 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     try {
       await action();
     } on ApiException catch (e) {
+      if (e.isBlocked) return _handleBlocked();
       _snack(e.message);
+      // 報名尚未開始：畫面狀態過期，重抓讓按鈕換成「報名將於 X 開始」。
+      if (e.isRegistrationNotOpen) await _silentRefresh();
     } catch (e) {
       _snack('$failurePrefix：$e');
     } finally {
       if (mounted) setState(() => _acting = false);
     }
+  }
+
+  /// 403 BLOCKED：與發起人有封鎖關係（畫面還沒重新整理時會發生），重載後詳情會回 404。
+  void _handleBlocked() {
+    _snack('無法與此活動互動');
+    _load();
+  }
+
+  void _report() {
+    if (blockIfReadOnly()) return;
+    showForumReportSheet(
+      context,
+      targetType: 'event',
+      targetId: widget.eventId,
+    );
   }
 
   void _snack(String message) {
@@ -304,9 +323,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
           likeCount: result.likeCount,
         );
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _event = event);
+      if (e is ApiException && e.isBlocked) _handleBlocked();
     } finally {
       if (mounted) setState(() => _likeBusy = false);
     }
@@ -324,9 +344,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         widget.eventId,
         add: !event.isBookmarked,
       );
-    } catch (_) {
+    } catch (e) {
       if (!mounted) return;
       setState(() => _event = event);
+      if (e is ApiException && e.isBlocked) _handleBlocked();
     } finally {
       if (mounted) setState(() => _bookmarkBusy = false);
     }
@@ -451,6 +472,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 tribeName: _tribeName,
               ),
             ),
+            // 發起人自己的活動不顯示檢舉。
+            if (!e.isHostedBy(_uid))
+              SliverToBoxAdapter(
+                child: Center(
+                  child: TextButton.icon(
+                    onPressed: _report,
+                    icon: const Icon(Icons.flag_outlined, size: 18),
+                    label: const Text('檢舉此活動'),
+                    style: TextButton.styleFrom(foregroundColor: AppColors.fog),
+                  ),
+                ),
+              ),
             const SliverToBoxAdapter(child: SizedBox(height: 120)),
           ],
         ),

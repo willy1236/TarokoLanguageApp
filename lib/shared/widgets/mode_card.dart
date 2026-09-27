@@ -103,7 +103,7 @@ class ModeCard extends StatelessWidget {
     );
   }
 
-  /// 內容量到的高度超過可用高度時把 18 的內距逐步收到 8，讓文字先保住。
+  /// 內容量到的高度超過可用高度時把 18 的垂直內距逐步收到 8，讓文字先保住。
   double _padFor(double available, double contentHeight) {
     if (!available.isFinite) return 18;
     final slack = available - contentHeight;
@@ -154,7 +154,8 @@ class ModeCard extends StatelessWidget {
             !constraints.maxHeight.isFinite ||
             constraints.maxHeight >= full + pad * 2;
         return Padding(
-          padding: EdgeInsets.all(pad),
+          // 只縮垂直內距：左右縮了會讓文字在矮機型上貼邊，跟其他頁卡片對不齊。
+          padding: EdgeInsets.symmetric(horizontal: 18, vertical: pad),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
