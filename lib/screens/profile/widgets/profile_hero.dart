@@ -199,33 +199,35 @@ class ProfileHero extends StatelessWidget {
 
   Widget _buildAvatar() {
     // 頭像框疊加在頭像外圍：見共用元件 FramedUserAvatar（lib/shared/widgets/user_avatar.dart）。
-    return SizedBox(
-      width: 96,
-      height: 96,
-      child: Stack(
-        alignment: Alignment.center,
-        children: [
-          Container(
-            decoration: user?.frameId == null
-                ? BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.gold, width: 2),
-                  )
-                : null,
-            child: FramedUserAvatar(
-              avatarId: user?.avatarId,
-              avatarUrl: user?.avatarUrl,
-              frameId: user?.frameId,
-              itemCatalogById: itemCatalogById,
-              size: 80,
-              fallbackIconColor: AppColors.gold.withValues(alpha: 0.7),
+    // 整顆頭像都可點，鉛筆只是提示；只綁鉛筆時實機很難點中。
+    return GestureDetector(
+      onTap: onAvatarTap,
+      behavior: HitTestBehavior.opaque,
+      child: SizedBox(
+        width: 96,
+        height: 96,
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            Container(
+              decoration: user?.frameId == null
+                  ? BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.gold, width: 2),
+                    )
+                  : null,
+              child: FramedUserAvatar(
+                avatarId: user?.avatarId,
+                avatarUrl: user?.avatarUrl,
+                frameId: user?.frameId,
+                itemCatalogById: itemCatalogById,
+                size: 80,
+                fallbackIconColor: AppColors.gold.withValues(alpha: 0.7),
+              ),
             ),
-          ),
-          Positioned(
-            bottom: 6,
-            right: 6,
-            child: GestureDetector(
-              onTap: onAvatarTap,
+            Positioned(
+              bottom: 6,
+              right: 6,
               child: Container(
                 width: 26,
                 height: 26,
@@ -237,8 +239,8 @@ class ProfileHero extends StatelessWidget {
                 child: CustomPaint(painter: ProfileEditIconPainter()),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
