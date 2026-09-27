@@ -144,7 +144,10 @@ class FcmService {
       requestSoundPermission: false,
     );
     await _localNotifications.initialize(
-      const InitializationSettings(android: androidInit, iOS: iosInit),
+      settings: const InitializationSettings(
+        android: androidInit,
+        iOS: iosInit,
+      ),
       onDidReceiveNotificationResponse: (response) {
         final payload = response.payload ?? '';
         if (payload.startsWith('video:')) {
@@ -330,10 +333,12 @@ class FcmService {
       final body = message.notification?.body ?? '';
       unawaited(
         _localNotifications.show(
-          message.hashCode,
-          title,
-          body,
-          const NotificationDetails(android: _reminderAndroidDetails),
+          id: message.hashCode,
+          title: title,
+          body: body,
+          notificationDetails: const NotificationDetails(
+            android: _reminderAndroidDetails,
+          ),
           // 事件通知的 payload 是純數字的 event_id，論壇加前綴區分兩者。
           payload: 'forum:$forumPostId',
         ),
@@ -361,10 +366,12 @@ class FcmService {
 
     unawaited(
       _localNotifications.show(
-        message.hashCode,
-        title,
-        body,
-        const NotificationDetails(android: _reminderAndroidDetails),
+        id: message.hashCode,
+        title: title,
+        body: body,
+        notificationDetails: const NotificationDetails(
+          android: _reminderAndroidDetails,
+        ),
         payload: eventId?.toString(),
       ),
     );
@@ -443,10 +450,12 @@ class FcmService {
       }
       unawaited(
         _localNotifications.show(
-          sessionId ?? DateTime.now().millisecondsSinceEpoch,
-          '找到語伴了！',
-          '點開始你們的視訊練習',
-          const NotificationDetails(android: _reminderAndroidDetails),
+          id: sessionId ?? DateTime.now().millisecondsSinceEpoch,
+          title: '找到語伴了！',
+          body: '點開始你們的視訊練習',
+          notificationDetails: const NotificationDetails(
+            android: _reminderAndroidDetails,
+          ),
           payload: 'video:$sessionId',
         ),
       );
@@ -462,10 +471,12 @@ class FcmService {
     // 少了這則 fallback，對方掛斷時使用者完全不會被告知通話已結束。
     unawaited(
       _localNotifications.show(
-        sessionId ?? DateTime.now().millisecondsSinceEpoch,
-        '視訊練習已結束',
-        '這次的通話已經結束了',
-        const NotificationDetails(android: _reminderAndroidDetails),
+        id: sessionId ?? DateTime.now().millisecondsSinceEpoch,
+        title: '視訊練習已結束',
+        body: '這次的通話已經結束了',
+        notificationDetails: const NotificationDetails(
+          android: _reminderAndroidDetails,
+        ),
         payload: 'video_ended:$sessionId',
       ),
     );
