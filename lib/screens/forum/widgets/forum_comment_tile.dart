@@ -12,6 +12,7 @@ import '../../../models/forum_models.dart';
 import '../../../models/shop_item.dart';
 import '../../../services/senior_mode_controller.dart';
 import '../../../shared/widgets/user_avatar.dart';
+import '../../friends/public_profile_screen.dart';
 import 'forum_post_card.dart' show forumRelativeTime;
 
 class ForumCommentTile extends StatelessWidget {
@@ -84,21 +85,35 @@ class ForumCommentTile extends StatelessWidget {
       children: [
         Row(
           children: [
-            _avatar(
-              size: seniorMode ? (isReply ? 32 : 40) : (isReply ? 24 : 30),
-            ),
-            const SizedBox(width: 8),
             Expanded(
-              child: Text(
-                comment.author?.displayName ?? '匿名使用者',
-                overflow: TextOverflow.ellipsis,
-                style: AppTypography.serif(
-                  fontSize: AppTypography.size(
-                    AppTypography.body,
-                    seniorMode: seniorMode,
+              child: Builder(
+                builder: (context) => GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: () => _openAuthorProfile(context),
+                  child: Row(
+                    children: [
+                      _avatar(
+                        size: seniorMode
+                            ? (isReply ? 32 : 40)
+                            : (isReply ? 24 : 30),
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          comment.author?.displayName ?? '匿名使用者',
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.serif(
+                            fontSize: AppTypography.size(
+                              AppTypography.body,
+                              seniorMode: seniorMode,
+                            ),
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.ink,
                 ),
               ),
             ),
@@ -177,6 +192,23 @@ class ForumCommentTile extends StatelessWidget {
       ],
     ),
   );
+
+  void _openAuthorProfile(BuildContext context) {
+    final friendCode = comment.author?.friendCode;
+    if (friendCode == null || friendCode.isEmpty) {
+      // 作者帳號刪除中／已刪除時後端不給好友碼，沒有公開檔案可看。
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(const SnackBar(content: Text('無法查看此使用者的個人檔案')));
+      return;
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PublicProfileScreen(friendCode: friendCode),
+      ),
+    );
+  }
 
   Widget _initialsAvatar(double size) => Container(
     width: size,
