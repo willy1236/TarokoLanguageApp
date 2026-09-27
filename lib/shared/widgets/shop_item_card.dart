@@ -244,19 +244,29 @@ class ShopItemGrid extends StatelessWidget {
 
   static const int _minColumns = 3;
   static const double _targetCellWidth = 130;
+  static const double _minCellHeight = 190;
 
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
         final fit = (constraints.maxWidth / _targetCellWidth).floor();
-        return GridView.count(
+        final columns = fit < _minColumns ? _minColumns : fit;
+        final cellWidth = (constraints.maxWidth - 8 * (columns - 1)) / columns;
+        // 窄螢幕時等比例高度塞不下圖示＋名稱＋價格＋按鈕，保底一個內容高度。
+        final minExtent = MediaQuery.textScalerOf(
+          context,
+        ).scale(_minCellHeight);
+        final ratioExtent = cellWidth / 0.66;
+        return GridView(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          crossAxisCount: fit < _minColumns ? _minColumns : fit,
-          crossAxisSpacing: 8,
-          mainAxisSpacing: 8,
-          childAspectRatio: 0.66,
+          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: columns,
+            crossAxisSpacing: 8,
+            mainAxisSpacing: 8,
+            mainAxisExtent: ratioExtent > minExtent ? ratioExtent : minExtent,
+          ),
           children: children,
         );
       },

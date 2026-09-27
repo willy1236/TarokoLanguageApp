@@ -254,13 +254,19 @@ class _ShopScreenState extends State<ShopScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     const AppBackButton(onDark: true),
-                    Text(
-                      'SAPAH SMPUNG · 小米商店',
-                      style: AppTypography.latin(
-                        fontStyle: FontStyle.italic,
-                        fontSize: AppTypography.caption,
-                        color: AppColors.gold,
-                        letterSpacing: 4,
+                    // 窄螢幕時夾在兩顆圓鈕間放不下，縮小字級而非 overflow。
+                    Flexible(
+                      child: FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'SAPAH SMPUNG · 小米商店',
+                          style: AppTypography.latin(
+                            fontStyle: FontStyle.italic,
+                            fontSize: AppTypography.caption,
+                            color: AppColors.gold,
+                            letterSpacing: 4,
+                          ),
+                        ),
                       ),
                     ),
                     _circleBtn(
