@@ -519,6 +519,11 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       contentPadding: EdgeInsets.zero,
       controlAffinity: ListTileControlAffinity.leading,
       activeColor: AppColors.primary,
+      // activeColor 只管勾選後；未勾選的外框預設色太淡，在米色底上幾乎看不見。
+      side: BorderSide(
+        color: enabled ? AppColors.primary : AppColors.fog,
+        width: 1.5,
+      ),
       value: enabled && _notifyTribe,
       onChanged: enabled
           ? (v) => setState(() => _notifyTribe = v ?? false)
