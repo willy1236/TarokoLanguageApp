@@ -27,13 +27,16 @@ import 'models/user_model.dart';
 import 'services/account_lock_controller.dart';
 import 'services/checkin_service.dart';
 import 'services/app_badge.dart';
+import 'services/app_update/app_update_service.dart';
 import 'services/fcm_service.dart';
 import 'services/notification_summary_service.dart';
 import 'services/senior_mode_controller.dart';
 import 'services/shop_service.dart';
 import 'services/user_service.dart';
 import 'services/video_call_service.dart';
+import 'shared/widgets/app_update_prompt.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
+import 'shared/widgets/confirm_dialog.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
@@ -126,6 +129,9 @@ Future<void> main() async {
   }
 
   runApp(const KariTrukuApp());
+
+  // 冷啟動檢查新版本；不等登入／條款流程，也不阻斷啟動。
+  AppUpdateService.checkOnLaunch();
 }
 
 class KariTrukuApp extends StatelessWidget {
@@ -194,7 +200,9 @@ class KariTrukuApp extends StatelessWidget {
               maxScaleFactor: seniorMode ? 1.5 : 1.15,
             ),
           ),
-          child: _ReadOnlyBannerFrame(child: child!),
+          child: AppUpdatePromptLayer(
+            child: _ReadOnlyBannerFrame(child: child!),
+          ),
         );
       },
       initialRoute: '/splash',
@@ -495,22 +503,12 @@ class _MainContainerState extends State<MainContainer>
   }
 
   Future<void> _confirmExit() async {
-    final shouldExit = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('離開'),
-        content: const Text('確定要關閉 App 嗎？'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('取消'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('離開'),
-          ),
-        ],
-      ),
+    final shouldExit = await showConfirmDialog(
+      context,
+      title: '離開',
+      message: '確定要關閉 App 嗎？',
+      cancelText: '取消',
+      confirmText: '離開',
     );
     if (shouldExit == true) {
       await SystemNavigator.pop();
