@@ -324,10 +324,6 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               color: AppColors.fog,
             ),
           ),
-          if (profile.bondShowcase.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            _bondShowcaseRow(profile.bondShowcase, seniorMode),
-          ],
           const SizedBox(height: 20),
           if (profile.selfIntro != null && profile.selfIntro!.isNotEmpty) ...[
             _card(
@@ -372,6 +368,10 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               ),
             ),
           ),
+          if (profile.bondShowcase.isNotEmpty) ...[
+            const SizedBox(height: 14),
+            _bondShowcaseCard(profile.bondShowcase, seniorMode),
+          ],
           const SizedBox(height: 14),
           SizedBox(
             width: double.infinity,
@@ -439,33 +439,55 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     ),
   );
 
-  Widget _bondShowcaseRow(List<BondShowcaseItem> items, bool seniorMode) =>
-      Column(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          Text(
-            '羈絆好友',
-            style: AppTypography.subtitleStyle(
-              seniorMode: seniorMode,
-              color: AppColors.fog,
+  Widget _bondShowcaseCard(List<BondShowcaseItem> items, bool seniorMode) =>
+      _card(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '羈絆好友',
+              style: AppTypography.captionStyle(
+                seniorMode: seniorMode,
+                color: AppColors.fog,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            alignment: WrapAlignment.center,
-            children: items
-                .map(
-                  (item) => BondLevelBadge(
+            // 每筆要帶出是誰，只放等級徽章會被讀成「檢視者與此人的羈絆」。
+            for (final item in items) ...[
+              const SizedBox(height: 10),
+              Row(
+                children: [
+                  FramedUserAvatar(
+                    avatarId: item.avatarId,
+                    avatarUrl: item.avatarUrl,
+                    frameId: item.frameId,
+                    itemCatalogById: _itemCatalogById,
+                    size: seniorMode ? 40 : 32,
+                    fallbackIconColor: AppColors.gold,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      item.nickname?.isNotEmpty == true
+                          ? item.nickname!
+                          : '未命名旅人',
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodyStyle(
+                        seniorMode: seniorMode,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  BondLevelBadge(
                     level: item.bondLevel.level,
                     name: item.bondLevel.name,
                     seniorMode: seniorMode,
                   ),
-                )
-                .toList(),
-          ),
-        ],
+                ],
+              ),
+            ],
+          ],
+        ),
       );
 
   Widget _card({required Widget child}) => Container(
