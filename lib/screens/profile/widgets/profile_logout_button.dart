@@ -1,6 +1,7 @@
 // 登出按鈕：先註銷 FCM token、清快取、登出，任一步失敗都不擋導回登入頁。
 
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../services/session_service.dart';
@@ -9,6 +10,9 @@ import 'profile_rows.dart';
 
 class ProfileLogoutButton extends StatelessWidget {
   const ProfileLogoutButton({super.key});
+
+  // 版本號整個 app 生命週期不變，只讀一次。
+  static final Future<PackageInfo> _packageInfo = PackageInfo.fromPlatform();
 
   @override
   Widget build(BuildContext context) => _buildLogout(context);
@@ -60,13 +64,22 @@ class ProfileLogoutButton extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-          Text(
-            'v1.0.0 · MHUWAY SU',
-            style: AppTypography.mono(
-              fontSize: AppTypography.micro,
-              color: AppColors.fog,
-              letterSpacing: 2,
-            ),
+          FutureBuilder<PackageInfo>(
+            future: _packageInfo,
+            builder: (context, snapshot) {
+              final info = snapshot.data;
+              final version = info == null
+                  ? ''
+                  : 'v${info.version} (${info.buildNumber}) · ';
+              return Text(
+                '${version}MHUWAY SU',
+                style: AppTypography.mono(
+                  fontSize: AppTypography.micro,
+                  color: AppColors.fog,
+                  letterSpacing: 2,
+                ),
+              );
+            },
           ),
         ],
       ),
