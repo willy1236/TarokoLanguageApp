@@ -17,7 +17,8 @@ if (keystorePropertiesFile.exists()) {
 
 android {
     namespace = "tw.idv.willy1236.truku"
-    compileSdk = flutter.compileSdkVersion
+    // permission_handler_android 14 需要以 SDK 37 編譯；只影響編譯，targetSdk 不變。
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {
