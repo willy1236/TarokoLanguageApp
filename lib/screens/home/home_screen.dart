@@ -481,13 +481,20 @@ class _TodayProgressCard extends StatelessWidget {
                     if (seniorMode)
                       const SizedBox.shrink()
                     else
-                      Text(
-                        'TODAY · SAYANG',
-                        style: AppTypography.latin(
-                          fontStyle: FontStyle.italic,
-                          fontSize: AppTypography.caption,
-                          color: AppColors.gold,
-                          letterSpacing: 3.2,
+                      // 窄螢幕時與小米幣 chip 搶寬度，縮小眉標而非 overflow。
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'TODAY · SAYANG',
+                            style: AppTypography.latin(
+                              fontStyle: FontStyle.italic,
+                              fontSize: AppTypography.caption,
+                              color: AppColors.gold,
+                              letterSpacing: 3.2,
+                            ),
+                          ),
                         ),
                       ),
                     // 小米幣 chip

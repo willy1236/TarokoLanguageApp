@@ -238,18 +238,22 @@ class _EventsScreenState extends State<EventsScreen> {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Expanded(
-                child: Text(
-                  // 精簡模式字級放大後長標題會被截斷，改用與切換鈕一致的短標題。
-                  seniorMode ? '活動' : '近期部落聚會',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.serif(
-                    fontSize: seniorMode
-                        ? AppTypography.display32
-                        : AppTypography.display26,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.ink,
-                    letterSpacing: 1.0,
+                // 窄螢幕或放大顯示時寬度不足，縮小字級而非截成「…」。
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  alignment: Alignment.centerLeft,
+                  child: Text(
+                    // 精簡模式字級放大後長標題會被截斷，改用與切換鈕一致的短標題。
+                    seniorMode ? '活動' : '近期部落聚會',
+                    maxLines: 1,
+                    style: AppTypography.serif(
+                      fontSize: seniorMode
+                          ? AppTypography.display32
+                          : AppTypography.display26,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.ink,
+                      letterSpacing: 1.0,
+                    ),
                   ),
                 ),
               ),
