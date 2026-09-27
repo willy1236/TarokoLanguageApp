@@ -29,6 +29,7 @@ import 'widgets/forum_post_body.dart';
 import 'widgets/forum_toast.dart';
 import 'widgets/forum_report_sheet.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/confirm_dialog.dart';
 
 /// 詳情頁關閉時回報的結果：貼文是否被刪除。
 class ForumDetailResult {
@@ -607,22 +608,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
   }
 
-  Future<bool?> _confirm(String message) => showDialog<bool>(
-    context: context,
-    builder: (c) => AlertDialog(
-      content: Text(message),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(c, false),
-          child: const Text('取消'),
-        ),
-        TextButton(
-          onPressed: () => Navigator.pop(c, true),
-          child: const Text('刪除'),
-        ),
-      ],
-    ),
-  );
+  Future<bool> _confirm(String message) =>
+      showConfirmDialog(context, message: message, confirmText: '刪除');
 
   Future<void> _edit() async {
     final post = _post;

@@ -8,6 +8,7 @@ import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'video_call_screen.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/confirm_dialog.dart';
 
 class VideoWaitingScreen extends StatefulWidget {
   const VideoWaitingScreen({super.key});
@@ -93,22 +94,12 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
       debugPrint('VideoWaitingScreen: 離開佇列失敗：$e');
       if (!mounted) return;
       setState(() => _cancelling = false);
-      final leaveAnyway = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('無法取消配對'),
-          content: const Text('目前無法連上伺服器。仍要離開嗎？若離開，稍後可能仍會收到配對通知。'),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(false),
-              child: const Text('留在此頁'),
-            ),
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(true),
-              child: const Text('仍要離開'),
-            ),
-          ],
-        ),
+      final leaveAnyway = await showConfirmDialog(
+        context,
+        title: '無法取消配對',
+        message: '目前無法連上伺服器。仍要離開嗎？若離開，稍後可能仍會收到配對通知。',
+        cancelText: '留在此頁',
+        confirmText: '仍要離開',
       );
       if (leaveAnyway == true && mounted) Navigator.pop(context);
     }
