@@ -250,9 +250,15 @@ class AuthService {
   /// refresh 端點，登入端點就是換 token 的唯一途徑）。成功回 true；沒有
   /// Firebase user 或換 token 失敗回 false，不 throw，由呼叫端決定備援。
   static Future<bool> refreshSession() async {
-    final user = _auth.currentUser;
-    if (user == null) return false;
     try {
+      // Web 啟動時 Firebase 從 IndexedDB 還原登入是非同步的，currentUser 還沒就緒，
+      // 等第一個 auth 狀態再判斷。
+      final user =
+          _auth.currentUser ??
+          await _auth.authStateChanges().first.timeout(
+            const Duration(seconds: 5),
+          );
+      if (user == null) return false;
       await _loginWithFirebaseUser(user);
       return true;
     } catch (e) {

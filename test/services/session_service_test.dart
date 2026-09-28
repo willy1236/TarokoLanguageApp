@@ -80,7 +80,7 @@ void main() {
       expect(await SessionService.restore(), isFalse);
     });
 
-    test('token 過期：完整登出後回 false', () async {
+    test('token 過期且續期失敗（Firebase 未登入）：完整登出後回 false', () async {
       final store = stubStatefulSecureStorage({
         'session_token': 'jwt',
         'session_expires_at': past,

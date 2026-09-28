@@ -12,11 +12,14 @@ import 'notification_summary_service.dart';
 import 'user_service.dart';
 
 class SessionService {
-  /// 啟動時呼叫：本機 JWT 有效回 true。JWT 已過期就完整登出後回 false，
-  /// 確保這台手機不再收到舊帳號的推播。
+  /// 啟動時呼叫：本機 JWT 有效回 true。JWT 已過期時先用仍登入中的 Firebase
+  /// 帳號換新 JWT，成功回 true；換不到才完整登出後回 false，確保這台手機
+  /// 不再收到舊帳號的推播。只在啟動時續期：使用中 API 回 401 照舊強制登出，
+  /// 後端對已撤銷的 token 也回 TOKEN_EXPIRED，續期會讓「登出所有裝置」失效。
   static Future<bool> restore() async {
     if (await AuthService.isLoggedIn()) return true;
     if (await AuthService.currentToken() == null) return false;
+    if (await AuthService.refreshSession()) return true;
     await signOut(unregisterDevice: false);
     return false;
   }
