@@ -88,6 +88,46 @@ void main() {
       expect(out.selection.baseOffset, 4);
     });
 
+    test('組字結束但文字不變（Gboard 拉丁字母）：截回上限內', () {
+      final composing = TextEditingValue(
+        text: 'abcdhello',
+        selection: const TextSelection.collapsed(offset: 9),
+        composing: const TextRange(start: 4, end: 9),
+      );
+      final committed = TextEditingValue(
+        text: 'abcdhello',
+        selection: const TextSelection.collapsed(offset: 9),
+      );
+      expect(formatter.formatEditUpdate(composing, committed).text, 'abcdh');
+    });
+
+    test('已滿時在中間組字後再打空白：組字內容與空白都不收', () {
+      final composing = TextEditingValue(
+        text: 'abxcde',
+        selection: const TextSelection.collapsed(offset: 3),
+        composing: const TextRange(start: 2, end: 3),
+      );
+      final typed = TextEditingValue(
+        text: 'abx cde',
+        selection: const TextSelection.collapsed(offset: 4),
+      );
+      expect(formatter.formatEditUpdate(composing, typed).text, 'abcde');
+    });
+
+    test('重複字元時依游標定位插入點', () {
+      final old = TextEditingValue(
+        text: 'abab',
+        selection: const TextSelection.collapsed(offset: 2),
+      );
+      final pasted = TextEditingValue(
+        text: 'ababab',
+        selection: const TextSelection.collapsed(offset: 4),
+      );
+      final out = formatter.formatEditUpdate(old, pasted);
+      expect(out.text, 'abaab');
+      expect(out.selection.baseOffset, 3);
+    });
+
     test('輸入法組字中先不截，組字完成才截', () {
       final composing = _value(
         'abcdㄊㄞ',

@@ -47,19 +47,64 @@ class Utf16LengthLimitingTextInputFormatter extends TextInputFormatter {
     if (newValue.composing.isValid && !newValue.composing.isCollapsed) {
       return newValue;
     }
-    final oldText = oldValue.text;
     final newText = newValue.text;
+    final range = _insertedRange(oldValue, newText);
+    final head = newText.substring(0, range.start);
+    final tail = newText.substring(range.end);
+    // 插入點以外的文字本身就超過上限（例如組字中放行的內容），只能整段截斷。
+    if (head.length + tail.length > maxLength) {
+      final truncated = truncateUtf16(newText, maxLength);
+      return TextEditingValue(
+        text: truncated,
+        selection: TextSelection.collapsed(offset: truncated.length),
+      );
+    }
+    final kept = truncateUtf16(
+      newText.substring(range.start, range.end),
+      maxLength - head.length - tail.length,
+    );
+    return TextEditingValue(
+      text: '$head$kept$tail',
+      selection: TextSelection.collapsed(offset: head.length + kept.length),
+    );
+  }
 
-    // 新舊文字相同的開頭與結尾之間，就是這次插入（或取代）的內容。
+  /// 這次插入（或取代）的內容在 [newText] 中的範圍。依序以舊值的組字範圍
+  /// （組字結束時文字可能不變）、舊值的選取範圍定位；都對不上才比對新舊
+  /// 文字相同的開頭與結尾。
+  static TextRange _insertedRange(TextEditingValue oldValue, String newText) {
+    final oldText = oldValue.text;
+
+    TextRange? replacing(TextRange oldRange) {
+      if (!oldRange.isValid || oldRange.end > oldText.length) return null;
+      final end = newText.length - (oldText.length - oldRange.end);
+      if (end < oldRange.start ||
+          !newText.startsWith(oldText.substring(0, oldRange.start)) ||
+          !newText.endsWith(oldText.substring(oldRange.end))) {
+        return null;
+      }
+      return TextRange(start: oldRange.start, end: end);
+    }
+
+    final composing = oldValue.composing;
+    final selection = oldValue.selection;
+    final located =
+        (composing.isValid && !composing.isCollapsed
+            ? replacing(composing)
+            : null) ??
+        (selection.isValid
+            ? replacing(TextRange(start: selection.start, end: selection.end))
+            : null);
+    if (located != null) return located;
+
     var prefix = 0;
-    final maxPrefix = min(oldText.length, newText.length);
-    while (prefix < maxPrefix &&
+    final shorter = min(oldText.length, newText.length);
+    while (prefix < shorter &&
         oldText.codeUnitAt(prefix) == newText.codeUnitAt(prefix)) {
       prefix++;
     }
     var suffix = 0;
-    final maxSuffix = min(oldText.length, newText.length) - prefix;
-    while (suffix < maxSuffix &&
+    while (suffix < shorter - prefix &&
         oldText.codeUnitAt(oldText.length - 1 - suffix) ==
             newText.codeUnitAt(newText.length - 1 - suffix)) {
       suffix++;
@@ -72,17 +117,7 @@ class Utf16LengthLimitingTextInputFormatter extends TextInputFormatter {
         _isLowSurrogate(newText.codeUnitAt(newText.length - suffix))) {
       suffix--;
     }
-
-    final head = newText.substring(0, prefix);
-    final tail = newText.substring(newText.length - suffix);
-    final inserted = newText.substring(prefix, newText.length - suffix);
-    final room = max(0, maxLength - head.length - tail.length);
-    final kept = truncateUtf16(inserted, room);
-    final cursor = head.length + kept.length;
-    return TextEditingValue(
-      text: '$head$kept$tail',
-      selection: TextSelection.collapsed(offset: cursor),
-    );
+    return TextRange(start: prefix, end: newText.length - suffix);
   }
 
   static bool _isHighSurrogate(int unit) => unit >= 0xD800 && unit <= 0xDBFF;
