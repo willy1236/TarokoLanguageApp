@@ -115,8 +115,13 @@ class AuthService {
   }
 
   /// 拿 Firebase ID token 打後端換系統 JWT 並存入 storage。
-  static Future<LoginResult> _loginWithFirebaseUser(User? user) async {
-    final firebaseToken = await user?.getIdToken();
+  /// [timeout] 給啟動續期用：逾時丟 TimeoutException，回應晚到也不會寫入 token。
+  static Future<LoginResult> _loginWithFirebaseUser(
+    User? user, {
+    Duration? timeout,
+  }) async {
+    Future<T> limit<T>(Future<T> f) => timeout == null ? f : f.timeout(timeout);
+    final firebaseToken = user == null ? null : await limit(user.getIdToken());
     if (firebaseToken == null) {
       throw AuthException('取得 Firebase token 失敗');
     }
@@ -128,10 +133,12 @@ class AuthService {
     // 手機上的 ClientException 維持原樣往外丟）。
     final http.Response resp;
     try {
-      resp = await http.post(
-        Uri.parse(ApiConfig.baseUrl + ApiConfig.authLogin),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'firebase_token': firebaseToken}),
+      resp = await limit(
+        http.post(
+          Uri.parse(ApiConfig.baseUrl + ApiConfig.authLogin),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'firebase_token': firebaseToken}),
+        ),
       );
     } on SocketException {
       throw AuthException('無法連線到伺服器，請檢查網路');
@@ -249,6 +256,7 @@ class AuthService {
   /// 系統 JWT 自然過期時，用仍登入中的 Firebase user 重新換一張（後端沒有
   /// refresh 端點，登入端點就是換 token 的唯一途徑）。成功回 true；沒有
   /// Firebase user 或換 token 失敗回 false，不 throw，由呼叫端決定備援。
+  /// 每一步限時 10 秒：啟動畫面在等它，弱網路下不能卡到系統 TCP 逾時。
   static Future<bool> refreshSession() async {
     try {
       // Web 啟動時 Firebase 從 IndexedDB 還原登入是非同步的，currentUser 還沒就緒，
@@ -259,7 +267,7 @@ class AuthService {
             const Duration(seconds: 5),
           );
       if (user == null) return false;
-      await _loginWithFirebaseUser(user);
+      await _loginWithFirebaseUser(user, timeout: const Duration(seconds: 10));
       return true;
     } catch (e) {
       debugPrint('AuthService.refreshSession failed: $e');
