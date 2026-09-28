@@ -161,6 +161,7 @@ class _CancelReasonDialogState extends State<CancelReasonDialog> {
           onPressed: () {
             final r = _controller.text.trim();
             if (r.isEmpty) return;
+            if (!withinUtf16Limit(context, r, 500, label: '取消理由')) return;
             Navigator.pop(context, r);
           },
           child: const Text(

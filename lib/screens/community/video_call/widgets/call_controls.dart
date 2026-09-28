@@ -351,7 +351,10 @@ class _CallReportDialogState extends State<CallReportDialog> {
         child: const Text('取消'),
       ),
       TextButton(
-        onPressed: () => Navigator.of(context).pop(_controller.text),
+        onPressed: () {
+          if (!withinUtf16Limit(context, _controller.text, 500)) return;
+          Navigator.of(context).pop(_controller.text);
+        },
         child: const Text('送出'),
       ),
     ],

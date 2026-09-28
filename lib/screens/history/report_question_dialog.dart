@@ -42,7 +42,11 @@ class _ReportQuestionDialogState extends State<ReportQuestionDialog> {
         TextButton(
           onPressed: _controller.text.trim().isEmpty
               ? null
-              : () => Navigator.pop(context, _controller.text.trim()),
+              : () {
+                  final text = _controller.text.trim();
+                  if (!withinUtf16Limit(context, text, 1000)) return;
+                  Navigator.pop(context, text);
+                },
           child: const Text('送出'),
         ),
       ],

@@ -39,6 +39,14 @@ class _AccountDeleteScreenState extends State<AccountDeleteScreen> {
 
   Future<void> _submit() async {
     if (_submitting || !_acknowledged) return;
+    if (!withinUtf16Limit(
+      context,
+      _reasonController.text,
+      _reasonMaxLength,
+      label: '原因',
+    )) {
+      return;
+    }
     setState(() => _submitting = true);
     try {
       // Apple 登入者先重新驗證取得撤銷用的 code；取消就不刪。

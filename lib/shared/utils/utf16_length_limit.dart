@@ -144,3 +144,18 @@ InputCounterWidgetBuilder utf16CounterBuilder(
     );
   };
 }
+
+/// 送出前的長度檢查。輸入法組字中 formatter 會先放行，這時直接按送出，
+/// 內容可能超過上限；超過時提示「[label]不能超過 [max] 字」並回傳 false。
+bool withinUtf16Limit(
+  BuildContext context,
+  String text,
+  int max, {
+  String label = '內容',
+}) {
+  if (text.length <= max) return true;
+  ScaffoldMessenger.of(context)
+    ..hideCurrentSnackBar()
+    ..showSnackBar(SnackBar(content: Text('$label不能超過 $max 字')));
+  return false;
+}

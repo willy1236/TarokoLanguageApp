@@ -190,4 +190,28 @@ void main() {
     expect(controller.text, '中😀😀');
     expect(find.text('5/5'), findsOneWidget);
   });
+
+  testWidgets('送出前檢查：組字中放行而超過上限時提示並擋下', (tester) async {
+    late BuildContext context;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (c) {
+              context = c;
+              return const SizedBox();
+            },
+          ),
+        ),
+      ),
+    );
+
+    expect(withinUtf16Limit(context, '中😀😀', 5), isTrue);
+    await tester.pump();
+    expect(find.byType(SnackBar), findsNothing);
+
+    expect(withinUtf16Limit(context, '中😀😀😀', 5, label: '訊息'), isFalse);
+    await tester.pump();
+    expect(find.text('訊息不能超過 5 字'), findsOneWidget);
+  });
 }

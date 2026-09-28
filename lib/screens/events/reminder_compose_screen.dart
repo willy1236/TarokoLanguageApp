@@ -91,6 +91,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
       ).showSnackBar(const SnackBar(content: Text('請先輸入提醒訊息')));
       return;
     }
+    if (!withinUtf16Limit(context, msg, _maxLen, label: '提醒訊息')) return;
     if (!_sendNow && _scheduledAt == null) {
       ScaffoldMessenger.of(
         context,

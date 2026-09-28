@@ -80,6 +80,9 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  /// 後端 friendMessages.ts 的訊息長度上限。
+  static const _messageMax = 2000;
+
   final List<FriendMessage> _messages = []; // 新到舊排序（index 0 = 最新）
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
@@ -275,6 +278,7 @@ class _ChatScreenState extends State<ChatScreen> {
   Future<void> _send() async {
     final body = _inputController.text.trim();
     if (body.isEmpty || _sending) return;
+    if (!withinUtf16Limit(context, body, _messageMax, label: '訊息')) return;
     setState(() => _sending = true);
     try {
       final message = await FriendService.sendMessage(widget.partnerUid, body);
@@ -534,7 +538,7 @@ class _ChatScreenState extends State<ChatScreen> {
               minLines: 1,
               maxLines: 4,
               inputFormatters: const [
-                Utf16LengthLimitingTextInputFormatter(2000),
+                Utf16LengthLimitingTextInputFormatter(_messageMax),
               ],
               style: AppTypography.bodyLargeStyle(
                 seniorMode: seniorMode,
@@ -610,7 +614,12 @@ class _ReportDialogState extends State<_ReportDialog> {
         child: const Text('取消'),
       ),
       TextButton(
-        onPressed: () => Navigator.of(context).pop(_controller.text),
+        onPressed: () {
+          if (!withinUtf16Limit(context, _controller.text, _reportReasonMax)) {
+            return;
+          }
+          Navigator.of(context).pop(_controller.text);
+        },
         child: const Text('送出'),
       ),
     ],

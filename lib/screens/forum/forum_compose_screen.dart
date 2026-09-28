@@ -219,6 +219,14 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
   void _addTag() {
     final name = _tagController.text.trim();
     if (name.isEmpty) return;
+    if (!withinUtf16Limit(
+      context,
+      name,
+      ForumService.tagNameMax,
+      label: '標籤',
+    )) {
+      return;
+    }
     if (_tags.contains(name)) {
       _tagController.clear();
       return;
