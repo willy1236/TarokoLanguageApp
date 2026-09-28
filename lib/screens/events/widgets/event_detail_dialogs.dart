@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/utils/utf16_length_limit.dart';
 
 /// 「取消活動」理由輸入對話框。獨立成 StatefulWidget 讓
 /// [TextEditingController] 隨這個 dialog 元件自身的生命週期建立/釋放，
@@ -136,7 +137,8 @@ class _CancelReasonDialogState extends State<CancelReasonDialog> {
           TextField(
             controller: _controller,
             maxLines: 3,
-            maxLength: 500,
+            inputFormatters: const [Utf16LengthLimitingTextInputFormatter(500)],
+            buildCounter: utf16CounterBuilder(_controller, 500),
             autofocus: true,
             style: const TextStyle(
               fontSize: AppTypography.body,

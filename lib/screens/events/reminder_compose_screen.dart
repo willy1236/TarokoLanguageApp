@@ -5,6 +5,7 @@ import '../../core/network/api_client.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/utils/utf16_length_limit.dart';
 
 /// 發送提醒表單，送出時呼叫 POST /api/events/:id/reminders。
 ///
@@ -277,7 +278,9 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
           TextField(
             controller: _controller,
             maxLines: 4,
-            maxLength: _maxLen,
+            inputFormatters: const [
+              Utf16LengthLimitingTextInputFormatter(_maxLen),
+            ],
             onChanged: (_) => setState(() {}),
             style: TextStyle(
               fontSize: AppTypography.size(
@@ -301,7 +304,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
             ),
           ),
           Text(
-            '${_controller.text.characters.length} / $_maxLen',
+            '${_controller.text.length} / $_maxLen',
             style: TextStyle(
               fontSize: AppTypography.size(
                 AppTypography.caption,

@@ -22,6 +22,7 @@ import '../../shared/widgets/user_avatar.dart';
 import '../friends/directed_call_waiting_screen.dart';
 import '../friends/public_profile_screen.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/utils/utf16_length_limit.dart';
 
 class ChatScreen extends StatefulWidget {
   final int partnerUid;
@@ -532,14 +533,9 @@ class _ChatScreenState extends State<ChatScreen> {
               enabled: !_locked,
               minLines: 1,
               maxLines: 4,
-              maxLength: 2000,
-              buildCounter:
-                  (
-                    _, {
-                    required currentLength,
-                    required isFocused,
-                    maxLength,
-                  }) => null,
+              inputFormatters: const [
+                Utf16LengthLimitingTextInputFormatter(2000),
+              ],
               style: AppTypography.bodyLargeStyle(
                 seniorMode: seniorMode,
                 color: AppColors.ink,
@@ -585,6 +581,9 @@ class _ReportDialog extends StatefulWidget {
 }
 
 class _ReportDialogState extends State<_ReportDialog> {
+  /// 後端 friendMessages.ts 的 REASON_MAX。
+  static const _reportReasonMax = 500;
+
   final _controller = TextEditingController();
 
   @override
@@ -599,6 +598,10 @@ class _ReportDialogState extends State<_ReportDialog> {
     content: TextField(
       controller: _controller,
       maxLines: 3,
+      inputFormatters: const [
+        Utf16LengthLimitingTextInputFormatter(_reportReasonMax),
+      ],
+      buildCounter: utf16CounterBuilder(_controller, _reportReasonMax),
       decoration: const InputDecoration(hintText: '請說明檢舉原因'),
     ),
     actions: [

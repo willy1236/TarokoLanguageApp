@@ -15,6 +15,7 @@ import '../../services/account_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/utils/utf16_length_limit.dart';
 
 class AccountDeleteScreen extends StatefulWidget {
   const AccountDeleteScreen({super.key});
@@ -125,7 +126,13 @@ class _AccountDeleteScreenState extends State<AccountDeleteScreen> {
             const SizedBox(height: 16),
             TextField(
               controller: _reasonController,
-              maxLength: _reasonMaxLength,
+              inputFormatters: const [
+                Utf16LengthLimitingTextInputFormatter(_reasonMaxLength),
+              ],
+              buildCounter: utf16CounterBuilder(
+                _reasonController,
+                _reasonMaxLength,
+              ),
               maxLines: 3,
               minLines: 2,
               style: AppTypography.bodyLargeStyle(color: AppColors.ink),

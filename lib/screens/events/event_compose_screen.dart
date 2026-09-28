@@ -10,6 +10,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/related_tribe_field.dart';
+import '../../shared/utils/utf16_length_limit.dart';
 
 /// 發起／編輯活動表單。
 ///
@@ -806,7 +807,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           TextField(
             controller: _location,
             focusNode: _locationFocus,
-            maxLength: 200,
+            inputFormatters: const [Utf16LengthLimitingTextInputFormatter(200)],
             style: TextStyle(
               fontSize: AppTypography.size(
                 AppTypography.bodyLarge,
@@ -994,7 +995,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         readOnly: readOnly,
         onChanged: (_) => setState(() {}),
         maxLines: maxLines,
-        maxLength: maxLength,
+        inputFormatters: [
+          if (maxLength != null)
+            Utf16LengthLimitingTextInputFormatter(maxLength),
+        ],
         keyboardType: keyboardType,
         style: TextStyle(
           fontSize: AppTypography.size(

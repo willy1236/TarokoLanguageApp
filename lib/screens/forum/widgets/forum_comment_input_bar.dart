@@ -6,6 +6,7 @@ import '../../../core/constants/app_icon_size.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';
 import '../../../services/forum_service.dart';
+import '../../../shared/utils/utf16_length_limit.dart';
 
 class ForumCommentInputBar extends StatelessWidget {
   final TextEditingController controller;
@@ -79,7 +80,11 @@ class ForumCommentInputBar extends StatelessWidget {
                 child: TextField(
                   controller: controller,
                   enabled: !readOnly,
-                  maxLength: ForumService.commentMax,
+                  inputFormatters: const [
+                    Utf16LengthLimitingTextInputFormatter(
+                      ForumService.commentMax,
+                    ),
+                  ],
                   minLines: 1,
                   maxLines: 4,
                   style: TextStyle(
