@@ -34,7 +34,12 @@ void openForumReplyPush(RouteStack routes, int postId) {
     ForumDetailScreen.refreshRoute(top);
     return;
   }
-  routes.navigator?.push(ForumDetailScreen.route(postId: postId));
+  final nav = routes.navigator;
+  if (nav == null) {
+    debugPrint('openForumReplyPush: Navigator 尚未掛上，導頁被忽略');
+    return;
+  }
+  nav.push(ForumDetailScreen.route(postId: postId));
 }
 
 /// 前景收到論壇回覆推播：人正看著該貼文（最上層的整頁）時改在頁內提示並回傳
