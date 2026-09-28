@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
+import '../../core/utils/date_format.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
@@ -237,7 +238,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           ),
                           if (article.publishedAt != null)
                             Text(
-                              _formatDate(article.publishedAt!),
+                              formatDate(article.publishedAt!),
                               style: TextStyle(
                                 color: AppColors.fog,
                                 fontSize: AppTypography.bodyLarge,
@@ -291,7 +292,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                           if (article.publishedAt != null) ...[
                             const SizedBox(width: 8),
                             Text(
-                              _formatDate(article.publishedAt!),
+                              formatDate(article.publishedAt!),
                               style: TextStyle(
                                 color: AppColors.fog,
                                 fontSize: AppTypography.caption,
@@ -401,9 +402,5 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         ),
       ),
     );
-  }
-
-  String _formatDate(DateTime date) {
-    return '${date.year}/${date.month.toString().padLeft(2, '0')}/${date.day.toString().padLeft(2, '0')}';
   }
 }

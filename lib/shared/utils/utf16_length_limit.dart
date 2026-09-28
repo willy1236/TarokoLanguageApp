@@ -125,11 +125,13 @@ class Utf16LengthLimitingTextInputFormatter extends TextInputFormatter {
 }
 
 /// 以 UTF-16 單位顯示「目前／上限」的計數器，外觀同 TextField 預設計數器。
-/// TextField 會隨 [controller] 變動重建，計數即時更新。
+/// TextField 會隨 [controller] 變動重建，計數即時更新。深色底的畫面以 [color]
+/// 指定未超過上限時的文字顏色。
 InputCounterWidgetBuilder utf16CounterBuilder(
   TextEditingController controller,
-  int max,
-) {
+  int max, {
+  Color? color,
+}) {
   return (context, {required currentLength, required isFocused, maxLength}) {
     final length = controller.text.length;
     final theme = Theme.of(context);
@@ -138,7 +140,7 @@ InputCounterWidgetBuilder utf16CounterBuilder(
       style: theme.textTheme.bodySmall?.copyWith(
         color: length > max
             ? theme.colorScheme.error
-            : theme.colorScheme.onSurfaceVariant,
+            : color ?? theme.colorScheme.onSurfaceVariant,
       ),
       semanticsLabel: '已輸入 $length 字，上限 $max 字',
     );

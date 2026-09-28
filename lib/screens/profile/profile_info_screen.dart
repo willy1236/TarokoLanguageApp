@@ -200,6 +200,7 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
       builder: (ctx) => ProfileRenameDialog(
         title: '修改姓名',
         label: '中文姓名',
+        maxLength: ProfileFieldLimits.displayName,
         initialValue: _user?.displayName ?? '',
       ),
     );
@@ -225,6 +226,7 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
       builder: (ctx) => ProfileRenameDialog(
         title: '修改族語名字',
         label: '族語名字',
+        maxLength: ProfileFieldLimits.tribalName,
         initialValue: _user?.tribalName ?? '',
       ),
     );
@@ -248,6 +250,7 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
       builder: (ctx) => ProfileRenameDialog(
         title: '修改公開暱稱',
         label: '公開暱稱',
+        maxLength: ProfileFieldLimits.videoNickname,
         initialValue: _user?.videoNickname ?? '',
       ),
     );
@@ -270,6 +273,7 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
       builder: (ctx) => ProfileRenameDialog(
         title: '修改自我介紹',
         label: '自我介紹',
+        maxLength: ProfileFieldLimits.selfIntro,
         initialValue: _user?.selfIntro ?? '',
       ),
     );

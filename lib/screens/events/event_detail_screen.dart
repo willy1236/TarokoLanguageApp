@@ -33,7 +33,7 @@ class EventDetailScreen extends StatefulWidget {
 
   const EventDetailScreen({super.key, required this.eventId});
 
-  /// route 名稱：讓通知導頁能用 popUntil 找回已經開著的那一份。
+  /// route 名稱：讓通知導頁判斷最上層是不是這場活動。
   static String routeNameFor(int eventId) => 'event/detail/$eventId';
 
   /// 所有呼叫端都走這個工廠，settings.name 才會一致。
@@ -45,12 +45,12 @@ class EventDetailScreen extends StatefulWidget {
     builder: (_) => EventDetailScreen(eventId: eventId),
   );
 
-  /// 目前開著的詳情頁：key = eventId，value = 該實例的重載函式。
-  static final Map<int, VoidCallback> _live = {};
+  /// 開著的詳情頁的重載函式，以所在的 route 為 key：同一場活動開了兩份時
+  /// 各自登記，關掉上層那份不影響下層。
+  static final Map<Route<dynamic>, VoidCallback> _live = {};
 
-  static bool isOpen(int eventId) => _live.containsKey(eventId);
-
-  static void refreshIfOpen(int eventId) => _live[eventId]?.call();
+  /// 點提醒通知時人已在 [route] 這份詳情頁：就地重載。
+  static void refreshRoute(Route<dynamic> route) => _live[route]?.call();
 
   @override
   State<EventDetailScreen> createState() => _EventDetailScreenState();
@@ -83,10 +83,22 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   /// 商店目錄（頭像＋頭像框，id → item），渲染發起人頭像用。
   Map<String, ShopItem> _itemCatalogById = const {};
 
+  /// 這份詳情頁所在的 route，通知重載的登記 key。
+  Route<dynamic>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null && _route == null) {
+      _route = route;
+      EventDetailScreen._live[route] = _load;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    EventDetailScreen._live[widget.eventId] = _load;
     _load();
     _loadItemCatalog();
     FcmService.onReminderReceivedForOpenScreen = _onForegroundReminder;
@@ -105,10 +117,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   @override
   void dispose() {
-    // 同一 eventId 若已被新實例接手，不要把它的登記清掉。
-    if (EventDetailScreen._live[widget.eventId] == _load) {
-      EventDetailScreen._live.remove(widget.eventId);
-    }
+    final route = _route;
+    if (route != null) EventDetailScreen._live.remove(route);
     if (identical(
       FcmService.onReminderReceivedForOpenScreen,
       _onForegroundReminder,

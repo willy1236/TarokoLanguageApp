@@ -312,9 +312,11 @@ class _CultureScreenState extends State<CultureScreen> {
     final title = _videoSortOptions.firstWhere((opt) => opt.$1 == _sort).$2;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      // 窄螢幕（精簡模式字級放大後）標題與排序放不下一行時，排序換到下一行。
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.end,
+        alignment: WrapAlignment.spaceBetween,
+        runSpacing: 8,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -347,6 +349,8 @@ class _CultureScreenState extends State<CultureScreen> {
             ],
           ),
           Row(
+            // Wrap 給子元件的寬度是整行，Row 撐滿就會永遠自成一行。
+            mainAxisSize: MainAxisSize.min,
             children: [
               for (final opt in _videoSortOptions) ...[
                 _sortLabel(opt.$1, opt.$3, seniorMode),

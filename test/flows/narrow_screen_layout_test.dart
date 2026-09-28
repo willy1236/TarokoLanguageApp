@@ -14,6 +14,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/main.dart' show navigatorKey;
 import 'package:flutter_application_1/screens/backpack/backpack_screen.dart';
@@ -39,6 +40,8 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   setUp(() async {
+    // 切換精簡模式會寫入 SharedPreferences，測試環境沒有原生實作。
+    SharedPreferences.setMockInitialValues({});
     stubCommonChannels(token: 'test-token');
     resetGlobals();
     await seniorModeController.setEnabled(false);
@@ -120,9 +123,12 @@ void main() {
     );
   }
 
-  Future<void> startApp(WidgetTester tester) async {
+  Future<void> startApp(
+    WidgetTester tester, {
+    Size size = _narrowSurface,
+  }) async {
     installMockClient(routes());
-    usePhoneSurface(tester, size: _narrowSurface);
+    usePhoneSurface(tester, size: size);
     await tester.pumpWidget(buildTestApp(initialRoute: '/home'));
     await pumpFrames(tester, times: 10);
   }
@@ -137,12 +143,26 @@ void main() {
     await pumpFrames(tester);
   }
 
+  // 窄螢幕修正（排序放不下時換行）不能連帶讓一般寬度的頁首變成兩行。
+  testWidgets('一般寬度下影音區頁首的標題與排序維持同一行', (tester) async {
+    await startApp(tester, size: const Size(414, 1000));
+    await tapText(tester, '學習影音', within: find.byType(TrukuBottomTab));
+    await tapText(tester, '影音');
+
+    final title = tester.getRect(find.text('最新影片'));
+    final sort = tester.getRect(find.text('本週熱門'));
+    expect(sort.left, greaterThan(title.right));
+    expect(sort.top, lessThan(title.bottom));
+  });
+
   for (final senior in [false, true]) {
     final mode = senior ? '精簡模式' : '一般模式';
     group(mode, () {
-      // 在 testWidgets 的 FakeAsync 內切換會卡住，改在 setUp 切。      setUp(() => seniorModeController.setEnabled(senior));
+      // 在 testWidgets 的 FakeAsync 內切換會卡住，改在 setUp 切。
+      setUp(() => seniorModeController.setEnabled(senior));
 
       testWidgets('320dp 寬度下廣場的頁首標題完整顯示', (tester) async {
+        expect(seniorModeController.enabled, senior);
         await startApp(tester);
 
         await tapText(tester, '廣場活動', within: find.byType(TrukuBottomTab));
@@ -153,6 +173,7 @@ void main() {
       });
 
       testWidgets('320dp 寬度下五個分頁（含長標題資料）都不 overflow', (tester) async {
+        expect(seniorModeController.enabled, senior);
         await startApp(tester);
 
         for (final label in ['學習影音', '廣場活動', '好友', '我的', '首頁']) {
@@ -161,6 +182,7 @@ void main() {
       });
 
       testWidgets('320dp 寬度下常用子頁面都不 overflow', (tester) async {
+        expect(seniorModeController.enabled, senior);
         await startApp(tester);
 
         // 影片詳情頁不測：better_player 在測試環境解析 HLS 會丟 RangeError。

@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
+import 'package:flutter_application_1/core/utils/date_format.dart';
 import 'package:flutter_application_1/main.dart'
     show navigatorKey, scaffoldMessengerKey;
 import 'package:flutter_application_1/services/account_lock_controller.dart';
@@ -330,7 +331,7 @@ void main() {
             .having(
               (e) => e.message,
               'message',
-              '你目前被禁言，暫時無法發表內容（至 ${formatMuteUntil(until)}）',
+              '你目前被禁言，暫時無法發表內容（至 ${formatDateTime(until)}）',
             ),
       ),
     );
@@ -370,7 +371,7 @@ void main() {
     });
     final until = DateTime.utc(2026, 9, 26, 10).toLocal();
     expect(muted.muteUntil, until);
-    expect(muted.message, '暫停發言 24 小時（至 ${formatMuteUntil(until)}）');
+    expect(muted.message, '暫停發言 24 小時（至 ${formatDateTime(until)}）');
   });
 
   test('410 下架內容不當成帳號已刪除', () {

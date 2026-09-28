@@ -56,7 +56,7 @@ class ForumDetailScreen extends StatefulWidget {
     this.initialImageIndex,
   });
 
-  /// route 名稱：讓通知導頁能用 popUntil 找回已經開著的那一份。
+  /// route 名稱：讓通知導頁判斷最上層是不是這篇貼文。
   static String routeNameFor(int postId) => 'forum/detail/$postId';
 
   /// 所有呼叫端都走這個工廠，settings.name 才會一致。
@@ -73,20 +73,22 @@ class ForumDetailScreen extends StatefulWidget {
     ),
   );
 
-  /// 目前開著的詳情頁：key = postId。
-  static final Map<int, _ForumDetailScreenState> _live = {};
+  /// 開著的詳情頁，以所在的 route 為 key：同一篇貼文開了兩份時各自登記，
+  /// 關掉上層那份不影響下層。
+  static final Map<Route<dynamic>, _ForumDetailScreenState> _live = {};
 
-  /// 該貼文的詳情頁是否已在畫面上。
-  static bool isOpen(int postId) => _live.containsKey(postId);
+  /// 點回覆通知時人已在 [route] 這份詳情頁：就地重載。
+  static void refreshRoute(Route<dynamic> route) => _live[route]?._load();
 
-  /// 開著才重載；沒開就什麼都不做。
-  static void refreshIfOpen(int postId) => _live[postId]?._load();
-
-  /// 有人回覆了這篇貼文或其中的留言（前景推播）。該篇開著時在頁內浮出提示並
-  /// 回傳 true；沒開則回傳 false，由呼叫端照常通知。
-  /// [type] 是推播的 'reply_post' 或 'reply_comment'。
-  static bool notifyNewReply(int postId, String type, int? commentId) {
-    final state = _live[postId];
+  /// 人正停在 [route] 這份詳情頁時有人回覆了貼文或其中的留言（前景推播）：
+  /// 在頁內浮出提示並回傳 true；[route] 已不是開著的詳情頁則回傳 false，由呼叫端
+  /// 照常通知。[type] 是推播的 'reply_post' 或 'reply_comment'。
+  static bool notifyNewReply(
+    Route<dynamic> route,
+    String type,
+    int? commentId,
+  ) {
+    final state = _live[route];
     if (state == null) return false;
     state._onNewReply(type, commentId);
     return true;
@@ -160,10 +162,22 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
   }
 
+  /// 這份詳情頁所在的 route，通知重載與頁內提示的登記 key。
+  Route<dynamic>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null && _route == null) {
+      _route = route;
+      ForumDetailScreen._live[route] = this;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    ForumDetailScreen._live[widget.postId] = this;
     _loadItemCatalog();
     _load();
     BlockRefreshNotifier.revision.addListener(_load);
@@ -171,10 +185,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   @override
   void dispose() {
-    // 同一 postId 若已被新實例接手，不要把它的登記清掉。
-    if (ForumDetailScreen._live[widget.postId] == this) {
-      ForumDetailScreen._live.remove(widget.postId);
-    }
+    final route = _route;
+    if (route != null) ForumDetailScreen._live.remove(route);
     BlockRefreshNotifier.revision.removeListener(_load);
     _inputController.dispose();
     _scrollController.dispose();

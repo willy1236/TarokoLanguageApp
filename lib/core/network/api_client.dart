@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import '../constants/api.dart';
+import '../utils/date_format.dart';
 import '../../main.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/auth_service.dart';
@@ -109,9 +110,7 @@ class ApiException implements Exception {
     final at = DateTime.tryParse(
       errorField('retry_after_at')?.toString() ?? '',
     );
-    return at == null
-        ? message
-        : '對方先前婉拒了你的邀請，${formatMuteUntil(at.toLocal())} 後才能再次邀請';
+    return at == null ? message : '對方先前婉拒了你的邀請，${formatDateTime(at)} 後才能再次邀請';
   }
 
   // 條款（見 Truku_backend 說明文件/API/同意條款.md §2）
@@ -135,12 +134,6 @@ String apiErrorMessage(Object? error, {String fallback = '發生錯誤，請稍�
     error is ApiException && error.message.isNotEmpty
     ? error.message
     : fallback;
-
-/// 禁言到期時間的顯示格式：yyyy/MM/dd HH:mm（本地時間）。
-String formatMuteUntil(DateTime d) {
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${d.year}/${two(d.month)}/${two(d.day)} ${two(d.hour)}:${two(d.minute)}';
-}
 
 class ApiClient {
   /// 傳輸層。正式執行時是預設的 http client；測試可換成 MockClient。
@@ -569,7 +562,7 @@ class ApiClient {
           ? DateTime.tryParse(error?['mute_until'] as String? ?? '')?.toLocal()
           : null;
       if (muteUntil != null) {
-        message = '$message（至 ${formatMuteUntil(muteUntil)}）';
+        message = '$message（至 ${formatDateTime(muteUntil)}）';
       }
       return ApiException(
         statusCode: resp.statusCode,
