@@ -96,3 +96,20 @@ class Conversation {
         : null,
   );
 }
+
+/// 把重連後重抓的最新一頁 [latest] 併進已載入的 [loaded]（兩者皆新到舊）。
+/// 同 id 以 [latest] 為準（已讀狀態可能更新），已載入的舊訊息保留。
+/// 兩者接不起來代表中間有缺口，回 null，由呼叫端改用整頁替換。
+List<FriendMessage>? mergeLatestMessages(
+  List<FriendMessage> loaded,
+  List<FriendMessage> latest,
+) {
+  if (loaded.isEmpty) return List.of(latest);
+  // 最新一頁最舊的一則仍比已載入的最新一則新：兩段之間可能漏了訊息。
+  if (latest.isNotEmpty && latest.last.id > loaded.first.id) return null;
+  final byId = {
+    for (final m in loaded) m.id: m,
+    for (final m in latest) m.id: m,
+  };
+  return byId.values.toList()..sort((a, b) => b.id.compareTo(a.id));
+}

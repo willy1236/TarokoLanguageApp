@@ -56,6 +56,9 @@ class _ChatScreenState extends State<ChatScreen> {
   bool _loading = true;
   bool _sending = false;
   bool _loadingMore = false;
+
+  /// 初次載入還沒回來就連上了：載入的快照可能早於訂閱生效，等載入完再補抓一次。
+  bool _catchUpAfterLoad = false;
   int? _nextCursor;
 
   /// 標題列頭像要查商店目錄才知道 avatarId/frameId 對應的圖。
@@ -101,11 +104,16 @@ class _ChatScreenState extends State<ChatScreen> {
   void _onChatEvent() {
     final event = chatController.lastEvent;
     if (event == null) return;
+    if (event.type == ChatSocketEventType.connected) {
+      _catchUp();
+      return;
+    }
     if (event.type == ChatSocketEventType.message) {
       final m = event.message!;
       if (m.senderUid == widget.partnerUid ||
           m.recipientUid == widget.partnerUid) {
-        if (!mounted) return;
+        // 重連補抓可能已經抓到同一則，依 id 去重。
+        if (!mounted || _messages.any((e) => e.id == m.id)) return;
         setState(() => _messages.insert(0, m));
         if (m.senderUid == widget.partnerUid) _markRead();
       }
@@ -147,6 +155,36 @@ class _ChatScreenState extends State<ChatScreen> {
       if (!mounted) return;
       setState(() => _loading = false);
     }
+    if (_catchUpAfterLoad && mounted) {
+      _catchUpAfterLoad = false;
+      _catchUp();
+    }
+  }
+
+  /// 重連後補抓斷線期間的訊息：重抓最新一頁併進清單，不動往上捲的分頁游標；
+  /// 與已載入的接不起來（離線期間超過一頁）才整頁替換。
+  Future<void> _catchUp() async {
+    if (_loading) {
+      _catchUpAfterLoad = true;
+      return;
+    }
+    try {
+      final page = await FriendService.getMessages(widget.partnerUid);
+      if (!mounted) return;
+      final hadUnread = page.messages.any(
+        (m) => m.senderUid == widget.partnerUid && m.readAt == null,
+      );
+      final merged = mergeLatestMessages(_messages, page.messages);
+      setState(() {
+        _messages
+          ..clear()
+          ..addAll(merged ?? page.messages);
+        if (merged == null) _nextCursor = page.nextCursor;
+      });
+      if (hadUnread) _markRead();
+    } catch (e) {
+      debugPrint('Failed to catch up messages: $e');
+    }
   }
 
   Future<void> _loadMore() async {
@@ -159,6 +197,11 @@ class _ChatScreenState extends State<ChatScreen> {
         cursor: cursor,
       );
       if (!mounted) return;
+      // 等待期間重連補抓整頁替換過清單（游標已換），這一頁接不上，丟棄。
+      if (_nextCursor != cursor) {
+        setState(() => _loadingMore = false);
+        return;
+      }
       setState(() {
         _messages.addAll(page.messages);
         _nextCursor = page.nextCursor;

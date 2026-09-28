@@ -1,33 +1,62 @@
-// 本機完整登出：註銷 FCM token → 清使用者快取 → 登出 Firebase／清 JWT。
+// 登入狀態的收口：啟動時還原（restore）與本機完整登出（signOut）。
+// 登出：關聊天連線 → 註銷／刪除 FCM token → 清使用者快取 → 清 JWT、登出 Firebase。
 // 任一步失敗都不擋後續步驟，否則使用者會卡在已登入狀態且沒有退路。
 
 import 'package:flutter/foundation.dart';
 
 import 'account_lock_controller.dart';
 import 'auth_service.dart';
+import 'chat_socket_service.dart';
 import 'fcm_service.dart';
 import 'notification_summary_service.dart';
 import 'user_service.dart';
 
 class SessionService {
-  /// [unregisterDevice] 為 false 時略過 FCM 註銷：刪除帳號後 token 已被後端撤銷、
-  /// 刪除中帳號的 token 會被狀態閘擋下，這兩種情況打註銷只會觸發全域錯誤導頁
-  /// （後端刪除帳號時已一併清掉推播 token）。
+  // 測試接縫：AuthService／FcmService 都是靜態方法，測試以這些欄位換成假實作。
+  @visibleForTesting
+  static Future<bool> Function() refreshSession = AuthService.refreshSession;
+  @visibleForTesting
+  static Future<void> Function() unregisterDeviceToken =
+      FcmService.unregisterDevice;
+  @visibleForTesting
+  static Future<void> Function() deleteLocalToken = FcmService.deleteLocalToken;
+  @visibleForTesting
+  static Future<void> Function() clearAuth = AuthService.signOut;
+
+  /// 啟動時呼叫：本機 JWT 有效回 true。JWT 已過期時先用仍登入中的 Firebase
+  /// 帳號換新 JWT，成功回 true；換不到才完整登出後回 false，確保這台手機
+  /// 不再收到舊帳號的推播。只在啟動時續期：使用中 API 回 401 照舊強制登出，
+  /// 後端對已撤銷的 token 也回 TOKEN_EXPIRED，續期會讓「登出所有裝置」失效。
+  static Future<bool> restore() async {
+    if (await AuthService.isLoggedIn()) return true;
+    if (await AuthService.currentToken() == null) return false;
+    if (await refreshSession()) return true;
+    await signOut(unregisterDevice: false);
+    return false;
+  }
+
+  /// [unregisterDevice] 為 false 時不打後端註銷、只刪本機 FCM token：JWT 已失效
+  /// （強制登出、啟動時過期）、刪除帳號後 token 已被後端撤銷、刪除中帳號的
+  /// token 會被狀態閘擋下，這些情況打註銷只會失敗或觸發全域錯誤導頁。
+  /// 本機 token 刪掉後，後端留著的舊 token 推播會失敗並自行清除。
   static Future<void> signOut({bool unregisterDevice = true}) async {
+    chatController.disconnect();
     if (unregisterDevice) {
       // 需 JWT，故在 signOut 之前。失敗時最壞情況是這台裝置仍留著 token，
       // 後端推播時會因 token 失效自行清除。
       try {
-        await FcmService.unregisterDevice();
+        await unregisterDeviceToken();
       } catch (e) {
         debugPrint('SessionService: 註銷裝置 FCM token 失敗（忽略）：$e');
       }
+    } else {
+      await deleteLocalToken();
     }
     UserService.clearCache();
     NotificationSummaryService.clear();
     accountLockController.setLocked(false);
     try {
-      await AuthService.signOut();
+      await clearAuth();
     } catch (e) {
       debugPrint('SessionService: signOut 失敗（忽略）：$e');
     }

@@ -46,15 +46,30 @@ class ChatController extends ChangeNotifier {
   bool _refreshedForExpiry = false;
   bool _disposed = false;
 
+  /// 每次 [disconnect] 加一；等待中的 connect／換 token 發現世代變了就放棄，
+  /// 避免登出前發起的連線在登出後才連上。
+  int _generation = 0;
+
   ChatSocketEvent? lastEvent;
 
   bool get isConnected => _channel != null;
 
+  @visibleForTesting
+  int get reconnectAttempts => _reconnectAttempts;
+
+  @visibleForTesting
+  bool get hasPendingReconnect => _reconnectTimer?.isActive ?? false;
+
+  @visibleForTesting
+  void debugSimulateClosed(int? closeCode, String? closeReason) =>
+      _onClosed(closeCode, closeReason);
+
   Future<void> connect() async {
     if (_channel != null) return;
     _reconnectTimer?.cancel();
+    final generation = _generation;
     final token = await AuthService.currentToken();
-    if (token == null) return;
+    if (token == null || generation != _generation || _channel != null) return;
     final wsBase = ApiConfig.baseUrl.replaceFirst(RegExp(r'^https'), 'wss');
     final uri = Uri.parse('$wsBase/ws');
     try {
@@ -74,11 +89,19 @@ class ChatController extends ChangeNotifier {
     }
   }
 
+  /// 關閉連線並回到初始狀態（登出時呼叫，下一位登入者從零開始）。
+  /// 先取消 [_sub]，sink.close() 就不會再進 [_onClosed] 觸發重連。
   void disconnect() {
+    _generation++;
     _reconnectTimer?.cancel();
+    _reconnectTimer = null;
     _sub?.cancel();
+    _sub = null;
     _channel?.sink.close();
     _channel = null;
+    _reconnectAttempts = 0;
+    _refreshedForExpiry = false;
+    lastEvent = null;
   }
 
   void _onData(dynamic raw) {
@@ -142,16 +165,26 @@ class ChatController extends ChangeNotifier {
   /// （交給下一次 REST 呼叫的 401 統一走 ApiClient._forceLogout）。
   /// 每次成功連上前只換一次，避免後端持續踢人時猛打登入端點。
   Future<void> _refreshAndReconnect() async {
+    final generation = _generation;
     final ok = await AuthService.refreshSession();
-    if (!ok || _disposed) return;
+    if (!ok || _disposed || generation != _generation) return;
     await connect();
   }
 
   void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
     _reconnectAttempts++;
-    final seconds = min(30, pow(2, _reconnectAttempts).toInt());
-    _reconnectTimer = Timer(Duration(seconds: seconds), connect);
+    _reconnectTimer = Timer(
+      Duration(seconds: reconnectDelaySeconds(_reconnectAttempts)),
+      connect,
+    );
   }
+
+  /// 第 [attempts] 次重連前等幾秒：2、4、8、16，之後固定 30。
+  /// 先夾住指數再位移：次數很大時 2 的次方會溢位成負數，變成零間隔狂連。
+  @visibleForTesting
+  static int reconnectDelaySeconds(int attempts) =>
+      min(30, 1 << min(attempts, 5));
 
   @override
   void dispose() {

@@ -115,8 +115,13 @@ class AuthService {
   }
 
   /// 拿 Firebase ID token 打後端換系統 JWT 並存入 storage。
-  static Future<LoginResult> _loginWithFirebaseUser(User? user) async {
-    final firebaseToken = await user?.getIdToken();
+  /// [timeout] 給啟動續期用：逾時丟 TimeoutException，回應晚到也不會寫入 token。
+  static Future<LoginResult> _loginWithFirebaseUser(
+    User? user, {
+    Duration? timeout,
+  }) async {
+    Future<T> limit<T>(Future<T> f) => timeout == null ? f : f.timeout(timeout);
+    final firebaseToken = user == null ? null : await limit(user.getIdToken());
     if (firebaseToken == null) {
       throw AuthException('取得 Firebase token 失敗');
     }
@@ -128,10 +133,12 @@ class AuthService {
     // 手機上的 ClientException 維持原樣往外丟）。
     final http.Response resp;
     try {
-      resp = await http.post(
-        Uri.parse(ApiConfig.baseUrl + ApiConfig.authLogin),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'firebase_token': firebaseToken}),
+      resp = await limit(
+        http.post(
+          Uri.parse(ApiConfig.baseUrl + ApiConfig.authLogin),
+          headers: {'Content-Type': 'application/json'},
+          body: jsonEncode({'firebase_token': firebaseToken}),
+        ),
       );
     } on SocketException {
       throw AuthException('無法連線到伺服器，請檢查網路');
@@ -207,13 +214,24 @@ class AuthService {
   static bool _hasProvider(User user, String providerId) =>
       user.providerData.any((p) => p.providerId == providerId);
 
-  /// 完全登出（Firebase + Google + 清本機 token；不撤銷後端 JWT）
+  /// 完全登出（清本機 token + Google + Firebase；不撤銷後端 JWT）
+  /// 先刪 JWT：之後的 Google／Firebase 登出丟例外時，重開 App 仍是登出狀態。
   static Future<void> signOut() async {
-    // Web 沒走 google_sign_in（未 initialize），只需登出 Firebase。
-    if (!kIsWeb) await _googleSignIn.signOut();
-    await _auth.signOut();
     await _storage.delete(key: _tokenKey);
     await _storage.delete(key: _expiresKey);
+    // Web 沒走 google_sign_in（未 initialize），只需登出 Firebase。
+    if (!kIsWeb) {
+      try {
+        await _googleSignIn.signOut();
+      } catch (e) {
+        debugPrint('AuthService: Google 登出失敗（忽略）：$e');
+      }
+    }
+    try {
+      await _auth.signOut();
+    } catch (e) {
+      debugPrint('AuthService: Firebase 登出失敗（忽略）：$e');
+    }
   }
 
   /// 撤銷所有裝置的 JWT（規格書 §2.2 POST /api/auth/logout-all）
@@ -238,11 +256,18 @@ class AuthService {
   /// 系統 JWT 自然過期時，用仍登入中的 Firebase user 重新換一張（後端沒有
   /// refresh 端點，登入端點就是換 token 的唯一途徑）。成功回 true；沒有
   /// Firebase user 或換 token 失敗回 false，不 throw，由呼叫端決定備援。
+  /// 每一步限時 10 秒：啟動畫面在等它，弱網路下不能卡到系統 TCP 逾時。
   static Future<bool> refreshSession() async {
-    final user = _auth.currentUser;
-    if (user == null) return false;
     try {
-      await _loginWithFirebaseUser(user);
+      // Web 啟動時 Firebase 從 IndexedDB 還原登入是非同步的，currentUser 還沒就緒，
+      // 等第一個 auth 狀態再判斷。
+      final user =
+          _auth.currentUser ??
+          await _auth.authStateChanges().first.timeout(
+            const Duration(seconds: 5),
+          );
+      if (user == null) return false;
+      await _loginWithFirebaseUser(user, timeout: const Duration(seconds: 10));
       return true;
     } catch (e) {
       debugPrint('AuthService.refreshSession failed: $e');
@@ -250,6 +275,7 @@ class AuthService {
     }
   }
 
+  /// 本機有未過期的 JWT。純查詢，過期時的清理交給 SessionService.restore。
   static Future<bool> isLoggedIn() async {
     final token = await _storage.read(key: _tokenKey);
     if (token == null) return false;
@@ -257,11 +283,7 @@ class AuthService {
     if (expiresAt == null) return true;
     final expiry = DateTime.tryParse(expiresAt);
     if (expiry == null) return true;
-    if (DateTime.now().isAfter(expiry)) {
-      await signOut();
-      return false;
-    }
-    return true;
+    return !DateTime.now().isAfter(expiry);
   }
 
   static String _parseError(String body) {
