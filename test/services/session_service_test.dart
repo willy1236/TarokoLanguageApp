@@ -42,6 +42,17 @@ void main() {
       .toIso8601String();
   final future = DateTime.now().add(const Duration(days: 1)).toIso8601String();
 
+  final realRefresh = SessionService.refreshSession;
+  final realUnregister = SessionService.unregisterDeviceToken;
+  final realDeleteLocal = SessionService.deleteLocalToken;
+  final realClearAuth = SessionService.clearAuth;
+  tearDown(() {
+    SessionService.refreshSession = realRefresh;
+    SessionService.unregisterDeviceToken = realUnregister;
+    SessionService.deleteLocalToken = realDeleteLocal;
+    SessionService.clearAuth = realClearAuth;
+  });
+
   test('AuthService.signOut：Google／Firebase 登出丟例外時，JWT 仍已刪除', () async {
     final store = stubStatefulSecureStorage({
       'session_token': 'jwt',
@@ -87,6 +98,61 @@ void main() {
       });
 
       expect(await SessionService.restore(), isFalse);
+      expect(store, isEmpty);
+    });
+  });
+
+  test('token 過期但續期成功：回 true，不登出', () async {
+    stubStatefulSecureStorage({
+      'session_token': 'jwt',
+      'session_expires_at': past,
+    });
+    var signedOut = false;
+    SessionService.refreshSession = () async => true;
+    SessionService.clearAuth = () async => signedOut = true;
+    SessionService.deleteLocalToken = () async => signedOut = true;
+
+    expect(await SessionService.restore(), isTrue);
+    expect(signedOut, isFalse);
+  });
+
+  group('SessionService.signOut 順序', () {
+    late Map<String, String> store;
+    late List<String> calls;
+
+    setUp(() {
+      store = stubStatefulSecureStorage({
+        'session_token': 'jwt',
+        'session_expires_at': future,
+      });
+      calls = [];
+      SessionService.unregisterDeviceToken = () async {
+        // 註銷要帶 JWT，此時 token 必須還在。
+        calls.add('unregister:${store['session_token']}');
+      };
+      SessionService.deleteLocalToken = () async => calls.add('deleteLocal');
+      SessionService.clearAuth = () async {
+        calls.add('clearAuth');
+        await realClearAuth();
+      };
+    });
+
+    test('一般登出：先帶 JWT 註銷裝置，再清 JWT', () async {
+      await SessionService.signOut();
+      expect(calls, ['unregister:jwt', 'clearAuth']);
+      expect(store, isEmpty);
+    });
+
+    test('強制登出：只刪本機 FCM token，不打註銷', () async {
+      await SessionService.signOut(unregisterDevice: false);
+      expect(calls, ['deleteLocal', 'clearAuth']);
+      expect(store, isEmpty);
+    });
+
+    test('註銷丟例外仍清掉 JWT', () async {
+      SessionService.unregisterDeviceToken = () async => throw Exception('x');
+      await SessionService.signOut();
+      expect(calls, ['clearAuth']);
       expect(store, isEmpty);
     });
   });

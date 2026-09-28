@@ -12,6 +12,17 @@ import 'notification_summary_service.dart';
 import 'user_service.dart';
 
 class SessionService {
+  // 測試接縫：AuthService／FcmService 都是靜態方法，測試以這些欄位換成假實作。
+  @visibleForTesting
+  static Future<bool> Function() refreshSession = AuthService.refreshSession;
+  @visibleForTesting
+  static Future<void> Function() unregisterDeviceToken =
+      FcmService.unregisterDevice;
+  @visibleForTesting
+  static Future<void> Function() deleteLocalToken = FcmService.deleteLocalToken;
+  @visibleForTesting
+  static Future<void> Function() clearAuth = AuthService.signOut;
+
   /// 啟動時呼叫：本機 JWT 有效回 true。JWT 已過期時先用仍登入中的 Firebase
   /// 帳號換新 JWT，成功回 true；換不到才完整登出後回 false，確保這台手機
   /// 不再收到舊帳號的推播。只在啟動時續期：使用中 API 回 401 照舊強制登出，
@@ -19,7 +30,7 @@ class SessionService {
   static Future<bool> restore() async {
     if (await AuthService.isLoggedIn()) return true;
     if (await AuthService.currentToken() == null) return false;
-    if (await AuthService.refreshSession()) return true;
+    if (await refreshSession()) return true;
     await signOut(unregisterDevice: false);
     return false;
   }
@@ -34,18 +45,18 @@ class SessionService {
       // 需 JWT，故在 signOut 之前。失敗時最壞情況是這台裝置仍留著 token，
       // 後端推播時會因 token 失效自行清除。
       try {
-        await FcmService.unregisterDevice();
+        await unregisterDeviceToken();
       } catch (e) {
         debugPrint('SessionService: 註銷裝置 FCM token 失敗（忽略）：$e');
       }
     } else {
-      await FcmService.deleteLocalToken();
+      await deleteLocalToken();
     }
     UserService.clearCache();
     NotificationSummaryService.clear();
     accountLockController.setLocked(false);
     try {
-      await AuthService.signOut();
+      await clearAuth();
     } catch (e) {
       debugPrint('SessionService: signOut 失敗（忽略）：$e');
     }
