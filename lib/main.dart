@@ -10,6 +10,7 @@ import 'screens/auth/complete_profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/backpack/backpack_screen.dart';
 import 'screens/friends/friends_list_screen.dart';
+import 'screens/friends/friend_push_navigation.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/learn/learn_culture_screen.dart';
 import 'screens/events/event_detail_screen.dart';
@@ -113,6 +114,11 @@ Future<void> main() async {
     navigatorKey.currentState?.push(
       MaterialPageRoute(builder: (_) => IncomingCallScreen(call: call)),
     );
+  };
+  // 點好友相關通知（私訊、邀請、接受、羈絆展示）→ 導到對應畫面。
+  FcmService.onFriendPushTapped = (type, uid) {
+    final nav = navigatorKey.currentState;
+    if (nav != null) openFriendPush(nav, type, uid);
   };
   // FCM 掛載（掛前景/點擊監聽，通知權限延到首頁才問）。失敗不阻斷 App 啟動；token 上傳待登入後。
   try {

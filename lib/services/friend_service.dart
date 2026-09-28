@@ -58,6 +58,15 @@ class FriendService {
     ).map((e) => Friendship.fromJson(e as Map<String, dynamic>)).toList();
   }
 
+  /// 以 uid 找好友（推播 payload 只帶 uid，後端只提供以好友碼查人）。
+  /// 已不是好友回 null。
+  static Future<Friendship?> findFriend(int uid) async {
+    for (final f in await getFriends()) {
+      if (f.uid == uid) return f;
+    }
+    return null;
+  }
+
   /// 解除好友，或取消我送出的邀請（後端同一個端點依現況處理）。
   static Future<void> removeFriend(int uid) async {
     await ApiClient.delete(ApiConfig.friendDetail(uid));
