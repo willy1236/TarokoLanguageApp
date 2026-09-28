@@ -68,11 +68,30 @@ class NotificationSummaryService {
 
   static Future<void>? _inFlight;
 
-  /// 重新取未讀數。同時多處呼叫時共用同一個請求；失敗時保留舊值（紅點拿不到
-  /// 不該干擾主要內容）。
-  static Future<void> refresh() => _inFlight ??= _fetch().whenComplete(() {
-    _inFlight = null;
-  });
+  /// 請求進行中又被要求刷新：那個請求的結果可能早於新事件，完成後要再抓一次。
+  static bool _stale = false;
+
+  /// 重新取未讀數。進行中又被呼叫時不另發請求，完成後再補抓一次（多次呼叫
+  /// 合併成一次）；失敗時保留舊值（紅點拿不到不該干擾主要內容）。
+  static Future<void> refresh() {
+    final inFlight = _inFlight;
+    if (inFlight != null) {
+      _stale = true;
+      return inFlight;
+    }
+    return _inFlight = _fetchUntilFresh();
+  }
+
+  static Future<void> _fetchUntilFresh() async {
+    try {
+      do {
+        _stale = false;
+        await _fetch();
+      } while (_stale);
+    } finally {
+      _inFlight = null;
+    }
+  }
 
   static Future<void> _fetch() async {
     try {

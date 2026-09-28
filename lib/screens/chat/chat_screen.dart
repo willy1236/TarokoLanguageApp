@@ -45,6 +45,35 @@ class ChatScreen extends StatefulWidget {
     this.friendCode,
   });
 
+  static String routeNameFor(int partnerUid) => 'chat/$partnerUid';
+
+  /// 所有呼叫端都走這個工廠，settings.name 才會一致（推播導頁靠它判斷是否已開著）。
+  static Route<T> route<T>({
+    required int partnerUid,
+    String? partnerNickname,
+    String? partnerAvatarUrl,
+    String? avatarId,
+    String? frameId,
+    String? friendCode,
+  }) => MaterialPageRoute<T>(
+    settings: RouteSettings(name: routeNameFor(partnerUid)),
+    builder: (_) => ChatScreen(
+      partnerUid: partnerUid,
+      partnerNickname: partnerNickname,
+      partnerAvatarUrl: partnerAvatarUrl,
+      avatarId: avatarId,
+      frameId: frameId,
+      friendCode: friendCode,
+    ),
+  );
+
+  /// 開著的聊天室的重載函式，以所在的 route 為 key：同一人開了兩個聊天室時
+  /// 各自登記，關掉上層那個不影響下層。
+  static final Map<Route<dynamic>, VoidCallback> _live = {};
+
+  /// 點私訊通知時人已在 [route] 這個聊天室：重抓背景期間漏掉的訊息並標成已讀。
+  static void refreshRoute(Route<dynamic> route) => _live[route]?.call();
+
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
@@ -63,6 +92,19 @@ class _ChatScreenState extends State<ChatScreen> {
 
   /// 標題列頭像要查商店目錄才知道 avatarId/frameId 對應的圖。
   Map<String, ShopItem> _itemCatalogById = const {};
+
+  /// 這個聊天室所在的 route，推播重載的登記 key。
+  Route<dynamic>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null && _route == null) {
+      _route = route;
+      ChatScreen._live[route] = _refreshFromPush;
+    }
+  }
 
   @override
   void initState() {
@@ -88,6 +130,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
+    final route = _route;
+    if (route != null) ChatScreen._live.remove(route);
     chatController.removeListener(_onChatEvent);
     _scrollController.dispose();
     _inputController.dispose();
@@ -136,6 +180,11 @@ class _ChatScreenState extends State<ChatScreen> {
         });
       }
     }
+  }
+
+  void _refreshFromPush() {
+    _load();
+    _markRead();
   }
 
   Future<void> _load() async {

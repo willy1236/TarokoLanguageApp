@@ -136,15 +136,13 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   /// 所以回來一律重載，而不是靠回傳值判斷。
   Future<void> _chatWithFriend(Friendship f) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChatScreen(
-          partnerUid: f.uid,
-          partnerNickname: f.nickname,
-          partnerAvatarUrl: f.avatarUrl,
-          avatarId: f.avatarId,
-          frameId: f.frameId,
-          friendCode: f.friendCode,
-        ),
+      ChatScreen.route(
+        partnerUid: f.uid,
+        partnerNickname: f.nickname,
+        partnerAvatarUrl: f.avatarUrl,
+        avatarId: f.avatarId,
+        frameId: f.frameId,
+        friendCode: f.friendCode,
       ),
     );
     if (mounted) _load();

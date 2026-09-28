@@ -31,6 +31,7 @@ import 'account_lock_controller.dart';
 import 'auth_service.dart';
 import 'directed_call_service.dart';
 import 'event_service.dart';
+import 'notification_summary_service.dart';
 
 /// 背景/App 被系統回收時收到訊息的處理器。必須是頂層函式並標註 vm:entry-point。
 /// 通知列的顯示由系統處理，這裡通常不需額外動作。
@@ -103,6 +104,18 @@ class FcmService {
   /// 由 VideoCallScreen 在好友通話時於 initState/dispose 掛上/清空；沒有訂閱者
   /// 代表使用者不在通話畫面，直接忽略。
   static void Function(int callId)? onFriendCallEnded;
+
+  /// 點擊好友相關通知（私訊、好友邀請、接受邀請、羈絆展示）。由 UI 層設定導頁；
+  /// [uid] 是對方的 uid（payload 的 from_uid 或 uid）。
+  static void Function(String type, int uid)? onFriendPushTapped;
+
+  static const _friendPushTypes = {
+    'friend_message',
+    'friend_request',
+    'friend_accepted',
+    'friend_bond_showcase_requested',
+    'friend_bond_showcase_confirmed',
+  };
 
   /// App 被完全關閉、靠點擊通知冷啟動時拿到的訊息。此時 runApp() 尚未執行，
   /// navigatorKey 還沒掛上 Navigator，不能立即導頁，先暫存；等 SplashScreen
@@ -282,6 +295,18 @@ class FcmService {
     );
   }
 
+  /// 解析好友相關通知，非此類型回傳 null。私訊與邀請帶 from_uid，其餘帶 uid。
+  static ({String type, int? uid})? _parseFriendPush(
+    Map<String, dynamic> data,
+  ) {
+    final type = data['type'];
+    if (!_friendPushTypes.contains(type)) return null;
+    final uid = int.tryParse(
+      (data['from_uid'] ?? data['uid'])?.toString() ?? '',
+    );
+    return (type: type as String, uid: uid);
+  }
+
   /// 解析 friend_call_ended 的 call_id 並交給通話畫面，是此類型回傳 true。
   static bool _dispatchFriendCallEnded(Map<String, dynamic> data) {
     if (data['type'] != 'friend_call_ended') return false;
@@ -335,6 +360,12 @@ class FcmService {
     }
 
     if (_dispatchFriendCallEnded(message.data)) return;
+
+    // 好友相關：App 開著時只更新紅點與未讀數，不彈提示。
+    if (_parseFriendPush(message.data) != null) {
+      NotificationSummaryService.refresh();
+      return;
+    }
 
     final videoParsed = _parseVideoPayload(message.data);
     if (videoParsed != null) {
@@ -523,6 +554,13 @@ class FcmService {
     }
 
     if (_dispatchFriendCallEnded(message.data)) return;
+
+    final friendPush = _parseFriendPush(message.data);
+    if (friendPush != null) {
+      final uid = friendPush.uid;
+      if (uid != null) onFriendPushTapped?.call(friendPush.type, uid);
+      return;
+    }
 
     final videoParsed = _parseVideoPayload(message.data);
     if (videoParsed != null) {

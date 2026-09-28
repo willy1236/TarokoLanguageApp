@@ -185,15 +185,13 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     final profile = _profile;
     if (profile == null) return;
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChatScreen(
-          partnerUid: profile.uid,
-          partnerNickname: profile.nickname,
-          partnerAvatarUrl: profile.avatarUrl,
-          avatarId: profile.avatarId,
-          frameId: profile.frameId,
-          // 已經在公開檔案頁了，聊天室不必再提供回到這裡的入口。
-        ),
+      ChatScreen.route(
+        partnerUid: profile.uid,
+        partnerNickname: profile.nickname,
+        partnerAvatarUrl: profile.avatarUrl,
+        avatarId: profile.avatarId,
+        frameId: profile.frameId,
+        // 已經在公開檔案頁了，聊天室不必再提供回到這裡的入口。
       ),
     );
     if (!mounted) return;
