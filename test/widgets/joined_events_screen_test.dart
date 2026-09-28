@@ -198,6 +198,60 @@ void main() {
     expect(find.text('載入失敗，點此重試'), findsNothing);
   });
 
+  testWidgets('從詳情頁返回、沒有變動：不重載，停在原本的位置', (tester) async {
+    final pages = <String?>[];
+    ApiClient.httpClient = MockClient((r) async {
+      final path = r.url.path;
+      if (path == '/api/events/joined') {
+        final page = r.url.queryParameters['page'];
+        pages.add(page);
+        return jsonResponse({
+          'total': 25,
+          'events': page == '1'
+              ? [for (var i = 1; i <= 20; i++) _event(i)]
+              : [for (var i = 21; i <= 25; i++) _event(i)],
+        });
+      }
+      if (path == '/api/events/25') {
+        return jsonResponse({
+          ..._event(25),
+          'host_uid': 100,
+          'description': '說明',
+          'registration_open': true,
+          'like_count': 0,
+        });
+      }
+      if (path == '/api/events/25/reminders') {
+        return jsonResponse({'reminders': <dynamic>[]});
+      }
+      if (path == '/api/me') {
+        return jsonResponse({'uid': 1, 'created_at': '2026-01-01T00:00:00Z'});
+      }
+      if (path == '/api/shop/items') {
+        return jsonResponse({'items': <dynamic>[]});
+      }
+      fail('沒有準備 $path');
+    });
+
+    await tester.pumpWidget(app());
+    await pumpFrames(tester);
+    await tester.fling(
+      find.byType(ListView).first,
+      const Offset(0, -3000),
+      3000,
+    );
+    await pumpFrames(tester, times: 10);
+    expect(pages, ['1', '2']);
+
+    await tester.tap(find.text('活動 25'));
+    await pumpFrames(tester, times: 10);
+    await tester.binding.handlePopRoute();
+    await pumpFrames(tester, times: 10);
+
+    expect(pages, ['1', '2']);
+    expect(find.text('活動 25'), findsOneWidget);
+  });
+
   testWidgets('結束分頁載入失敗顯示錯誤狀態', (tester) async {
     installMockClient({
       '/api/events/joined': errorResponse('X', status: 500, message: '壞了'),

@@ -156,6 +156,62 @@ void main() {
     expect(find.text('已報名'), findsWidgets);
   });
 
+  group('返回結果', () {
+    Map<String, Object?> routes() => {
+      '/api/events/1': _detail(),
+      '/api/events/1/reminders': {'reminders': <dynamic>[]},
+      '/api/me': _me(),
+      '/api/events/1/join': <String, dynamic>{},
+    };
+
+    /// 從一個空白頁推入詳情頁，回傳返回時的結果。
+    Future<Future<bool?>> openDetail(WidgetTester tester) async {
+      late BuildContext home;
+      await tester.pumpWidget(
+        MaterialApp(
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          home: Builder(
+            builder: (c) {
+              home = c;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      final result = Navigator.push<bool>(
+        home,
+        EventDetailScreen.route<bool>(_eventId),
+      );
+      await tester.pumpAndSettle();
+      return result;
+    }
+
+    testWidgets('沒有變動就返回：結果不是 true，列表不必重載', (tester) async {
+      installMockClient(routes());
+      final result = await openDetail(tester);
+
+      await tester.binding.handlePopRoute(); // Android 返回鍵
+      await tester.pumpAndSettle();
+
+      expect(await result, isNot(true));
+    });
+
+    testWidgets('報名後返回（系統返回鍵）：結果為 true', (tester) async {
+      installMockClient(routes());
+      final result = await openDetail(tester);
+
+      await tester.tap(find.text('我要參加'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('確認報名'));
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(await result, isTrue);
+    });
+  });
+
   testWidgets('報名對話框 Email 格式錯誤時不送出', (tester) async {
     var joined = false;
     installMockClient(

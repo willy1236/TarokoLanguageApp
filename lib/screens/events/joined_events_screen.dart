@@ -212,9 +212,12 @@ class _JoinedEventsTabState extends State<_JoinedEventsTab>
   }
 
   Future<void> _open(EventSummary e) async {
-    await Navigator.push(context, EventDetailScreen.route(e.id));
-    if (!mounted) return;
-    _load(); // 從詳情頁回來可能已退出或被取消，重抓這一頁
+    final changed = await Navigator.push<bool>(
+      context,
+      EventDetailScreen.route<bool>(e.id),
+    );
+    // 在詳情頁退出、取消或編輯過才重載；沒動就留在原本捲到的位置。
+    if (changed == true && mounted) _load();
   }
 
   @override
