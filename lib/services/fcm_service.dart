@@ -99,6 +99,11 @@ class FcmService {
   /// 來電狀態，不要直接用 payload 判斷。
   static void Function(int callId)? onFriendCallCancelled;
 
+  /// 收到 friend_call_ended（好友通話中對方掛斷或封鎖，前景或點擊通知皆會觸發）。
+  /// 由 VideoCallScreen 在好友通話時於 initState/dispose 掛上/清空；沒有訂閱者
+  /// 代表使用者不在通話畫面，直接忽略。
+  static void Function(int callId)? onFriendCallEnded;
+
   /// App 被完全關閉、靠點擊通知冷啟動時拿到的訊息。此時 runApp() 尚未執行，
   /// navigatorKey 還沒掛上 Navigator，不能立即導頁，先暫存；等 SplashScreen
   /// 完成起始路由跳轉後再呼叫 [consumePendingInitialMessage] 處理，
@@ -277,6 +282,14 @@ class FcmService {
     );
   }
 
+  /// 解析 friend_call_ended 的 call_id 並交給通話畫面，是此類型回傳 true。
+  static bool _dispatchFriendCallEnded(Map<String, dynamic> data) {
+    if (data['type'] != 'friend_call_ended') return false;
+    final callId = int.tryParse(data['call_id']?.toString() ?? '');
+    if (callId != null) onFriendCallEnded?.call(callId);
+    return true;
+  }
+
   /// 解析好友定向來電推播的 call_id，非此類型回傳 null。
   static int? _parseFriendCallIncoming(Map<String, dynamic> data) {
     if (data['type'] != 'friend_call_incoming') return null;
@@ -320,6 +333,8 @@ class FcmService {
       if (cancelledId != null) onFriendCallCancelled?.call(cancelledId);
       return;
     }
+
+    if (_dispatchFriendCallEnded(message.data)) return;
 
     final videoParsed = _parseVideoPayload(message.data);
     if (videoParsed != null) {
@@ -506,6 +521,8 @@ class FcmService {
       );
       return;
     }
+
+    if (_dispatchFriendCallEnded(message.data)) return;
 
     final videoParsed = _parseVideoPayload(message.data);
     if (videoParsed != null) {

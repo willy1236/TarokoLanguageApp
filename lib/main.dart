@@ -76,7 +76,7 @@ Future<void> main() async {
   FcmService.onVideoMatchedColdStart = (sessionId, channel) async {
     if (sessionId == null) return;
     try {
-      final session = await VideoCallService.fetchCurrentSession();
+      final session = (await VideoCallService.fetchCurrentSession()).session;
       if (session == null || session.id != sessionId) return;
       final navState = navigatorKey.currentState;
       if (navState == null) {

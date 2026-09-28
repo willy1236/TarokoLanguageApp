@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
+import '../../main.dart' show scaffoldMessengerKey;
+import '../../models/video_call_model.dart';
 import '../../services/fcm_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
@@ -27,6 +30,13 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
   /// 取消處理中：擋住重複點擊與返回鍵重入。
   bool _cancelling = false;
 
+  /// 使用者表示要離開：從按取消到真的離開，或在「無法取消配對」確認框選留下
+  /// 為止。取消失敗、確認框開著時 [_cancelling] 已是 false，這個仍是 true。
+  bool _leaving = false;
+
+  /// 重新排隊被 403 擋下：不再輪詢或重試。
+  bool _stopped = false;
+
   @override
   void initState() {
     super.initState();
@@ -37,6 +47,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
 
     WidgetsBinding.instance.addObserver(this);
     FcmService.onVideoMatchedForeground = (_, _) => _poll();
+    // 輪詢兼作佇列心跳：間隔必須小於 30 秒，否則後端會視為已離開佇列。
     _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) => _poll());
   }
 
@@ -54,25 +65,25 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
     super.dispose();
   }
 
-  /// 查詢目前 active session；配到就取消輪詢並導向通話畫面。單次查詢失敗只記
-  /// log，不中斷輪詢迴圈——佇列狀態在後端維護，前端輪詢只是查詢動作。
+  /// 查詢目前 active session；配到就取消輪詢並導向通話畫面。已被移出佇列
+  /// （切背景超過 30 秒）就重新排隊，被 403 擋下（禁言、未設暱稱等）才停止並離開。
+  /// 其他單次失敗只記 log，不中斷輪詢迴圈。
   Future<void> _poll() async {
-    if (_isPolling || _matched) return;
+    if (_isPolling || _matched || _stopped) return;
     _isPolling = true;
     try {
-      final session = await VideoCallService.fetchCurrentSession();
-      if (session == null || !mounted || _matched) return;
-      _matched = true;
-      _pollTimer?.cancel();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => VideoCallScreen(
-            session: session,
-            credentials: null, // 由 VideoCallScreen 自行 refreshToken 取得
-          ),
-        ),
-      );
+      final current = await VideoCallService.fetchCurrentSession();
+      if (!mounted || _matched) return;
+      final session = current.session;
+      if (session != null && _leaving) {
+        // 使用者已在取消：結束這一房，不帶進通話，也不在確認框上疊頁。
+        await _endUnwanted(session);
+      } else if (session != null) {
+        // 輪詢查到的 session 沒有憑證，由 VideoCallScreen 自行 refreshToken 取得。
+        _enterCall(session, null);
+      } else if (!current.inQueue && !_leaving) {
+        await _rejoinQueue();
+      }
     } catch (e) {
       debugPrint('VideoWaitingScreen: 輪詢失敗，忽略並等下一輪：$e');
     } finally {
@@ -80,11 +91,84 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
     }
   }
 
+  /// 被後端移出佇列時重新排隊。送出後使用者才按取消或已離開畫面：配到就結束
+  /// 那一房、沒配到就再離開佇列一次，不留下沒人接的通話或幽靈排隊者。
+  Future<void> _rejoinQueue() async {
+    final QueueJoinResult result;
+    try {
+      result = await VideoCallService.joinQueue();
+    } on ApiException catch (e) {
+      // 條款、帳號刪除中的 403 已由 ApiClient 導頁，這裡不再介入。
+      if (e.statusCode == 403 &&
+          !e.isConsentRequired &&
+          !e.isAccountPendingDeletion) {
+        _stopForbidden(e);
+      } else {
+        debugPrint('VideoWaitingScreen: 重新排隊失敗，等下一輪：$e');
+      }
+      return;
+    }
+    final session = result.session;
+    if (!mounted || _leaving) {
+      unawaited(
+        session != null
+            ? _endUnwanted(session)
+            : VideoCallService.leaveQueue().catchError((Object e) {
+                debugPrint('VideoWaitingScreen: 取消後離開佇列失敗：$e');
+              }),
+      );
+      return;
+    }
+    if (session != null) _enterCall(session, result.credentials);
+  }
+
+  /// 使用者取消後才配到的房直接結束，對方會收到 video_session_ended。
+  Future<void> _endUnwanted(VideoSession session) async {
+    try {
+      await VideoCallService.endSession(session.id);
+    } catch (e) {
+      debugPrint('VideoWaitingScreen: 結束取消後配到的房失敗：$e');
+    }
+  }
+
+  void _enterCall(VideoSession session, AgoraCallCredentials? credentials) {
+    _matched = true;
+    _pollTimer?.cancel();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            VideoCallScreen(session: session, credentials: credentials),
+      ),
+    );
+  }
+
+  /// 重新排隊被擋下（禁言、未設暱稱等）：不再重試，顯示原因並離開等待畫面。
+  void _stopForbidden(ApiException e) {
+    _stopped = true;
+    _pollTimer?.cancel();
+    if (!mounted) return;
+    scaffoldMessengerKey.currentState
+      ?..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            e.isVideoNicknameRequired ? '視訊配對前需要先在個人資料設定公開暱稱' : e.message,
+          ),
+        ),
+      );
+    // 取消處理中就交給 _cancel 離開，兩邊都 pop 會連下面的頁面一起關掉。
+    // 取消失敗、「無法取消配對」確認框開著時 _cancelling 已是 false，這裡 pop
+    // 掉的是確認框，_cancel 看到 _stopped 後再關等待畫面。
+    if (!_cancelling) Navigator.pop(context);
+  }
+
   /// 取消配對：必須確認後端已離開佇列才返回。fire-and-forget 會留下幽靈
   /// 排隊者——使用者已離開畫面，卻仍可能被配到一通沒人接的通話。
   /// 返回鍵、手勢與取消按鈕三條路徑統一走這裡。
   Future<void> _cancel() async {
     if (_cancelling || _matched) return;
+    _leaving = true;
     setState(() => _cancelling = true);
     try {
       await VideoCallService.leaveQueue().timeout(const Duration(seconds: 5));
@@ -94,14 +178,23 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
       debugPrint('VideoWaitingScreen: 離開佇列失敗：$e');
       if (!mounted) return;
       setState(() => _cancelling = false);
-      final leaveAnyway = await showConfirmDialog(
-        context,
-        title: '無法取消配對',
-        message: '目前無法連上伺服器。仍要離開嗎？若離開，稍後可能仍會收到配對通知。',
-        cancelText: '留在此頁',
-        confirmText: '仍要離開',
-      );
-      if (leaveAnyway == true && mounted) Navigator.pop(context);
+      // 重新排隊已被 403 擋下（_stopped）時本來就不在佇列、也不再輪詢，留在此頁
+      // 沒有意義，直接離開。確認框開著時才被擋下，_stopForbidden 會關掉確認框，
+      // 回到這裡一樣離開。
+      if (!_stopped) {
+        final leaveAnyway = await showConfirmDialog(
+          context,
+          title: '無法取消配對',
+          message: '目前無法連上伺服器。仍要離開嗎？若離開，稍後可能仍會收到配對通知。',
+          cancelText: '留在此頁',
+          confirmText: '仍要離開',
+        );
+        if (leaveAnyway != true && !_stopped) {
+          _leaving = false;
+          return;
+        }
+      }
+      if (mounted) Navigator.pop(context);
     }
   }
 

@@ -49,6 +49,9 @@ class _VideoCallScreenState extends State<VideoCallScreen>
   late final VideoCallController _call;
   late final void Function(int?) _peerEndedHandler;
 
+  /// 好友通話才有：比對 call_id，對方掛斷或封鎖時結束這一通。
+  void Function(int)? _friendCallEndedHandler;
+
   /// 通話固定長度，用來從剩餘時間換算已通話時間。
   static const _callLength = Duration(minutes: 30);
 
@@ -81,6 +84,15 @@ class _VideoCallScreenState extends State<VideoCallScreen>
           ..onLeft = _onLeft;
     _peerEndedHandler = _call.onPeerEnded;
     FcmService.onVideoSessionEnded = _peerEndedHandler;
+    if (directedCallId != null) {
+      // 舊通話的延遲推播 call_id 不同，不影響目前這一通。後端已結束通話，不再打 end。
+      void handler(int callId) {
+        if (callId == directedCallId) _call.leaveEndedByServer();
+      }
+
+      _friendCallEndedHandler = handler;
+      FcmService.onFriendCallEnded = handler;
+    }
     WidgetsBinding.instance.addObserver(this);
     _call.start();
   }
@@ -95,6 +107,10 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     // 只清掉自己註冊的回呼，避免蓋掉下一個通話畫面已經註冊的。
     if (FcmService.onVideoSessionEnded == _peerEndedHandler) {
       FcmService.onVideoSessionEnded = null;
+    }
+    if (_friendCallEndedHandler != null &&
+        FcmService.onFriendCallEnded == _friendCallEndedHandler) {
+      FcmService.onFriendCallEnded = null;
     }
     WidgetsBinding.instance.removeObserver(this);
     _call.dispose();

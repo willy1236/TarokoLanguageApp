@@ -17,12 +17,18 @@ http.Response _json(Object body, [int status = 200]) => http.Response(
 );
 
 /// 依路徑回應：來電狀態取自 [status]()，接聽固定回 500，其餘（商品目錄）回 404。
-MockClient _backend(String Function() status) => MockClient((req) async {
+MockClient _backend(
+  String Function() status, {
+  List<String>? log,
+  Duration acceptDelay = Duration.zero,
+}) => MockClient((req) async {
   final path = req.url.path;
+  log?.add('${req.method} $path');
   if (path == '/api/friends/calls/$_callId') {
     return _json({'call_id': _callId, 'status': status(), 'peer_uid': 2});
   }
   if (path == '/api/friends/calls/$_callId/accept') {
+    await Future<void>.delayed(acceptDelay);
     return _json({
       'error': {'code': 'INTERNAL', 'message': 'boom'},
     }, 500);
@@ -122,5 +128,40 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1500));
     await tester.pumpAndSettle();
     expect(find.byType(IncomingCallScreen), findsNothing);
+  });
+
+  testWidgets('返回鍵等於拒接：送出拒接並關閉畫面', (tester) async {
+    final log = <String>[];
+    ApiClient.httpClient = _backend(() => 'ringing', log: log);
+    await _openScreen(tester);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(log, contains('POST /api/friends/calls/$_callId/decline'));
+    expect(find.byType(IncomingCallScreen), findsNothing);
+  });
+
+  testWidgets('接聽處理中按返回不送拒接，也不關畫面', (tester) async {
+    final log = <String>[];
+    ApiClient.httpClient = _backend(
+      () => 'ringing',
+      log: log,
+      acceptDelay: const Duration(seconds: 2),
+    );
+    await _openScreen(tester);
+
+    await tester.tap(find.text('接聽'));
+    await tester.pump();
+    await tester.binding.handlePopRoute();
+    await tester.pump(const Duration(milliseconds: 500));
+
+    // 接聽請求還沒回來：返回鍵要被擋下，畫面留著等接聽結果。返回鍵沒被擋下
+    // 的話響鈴畫面正在退場，底下的首頁就點得到。
+    expect(log.where((l) => l.endsWith('/decline')), isEmpty);
+    expect(find.text('home').hitTestable(), findsNothing);
+
+    await tester.pump(const Duration(seconds: 2));
+    await tester.pumpWidget(const SizedBox());
   });
 }
