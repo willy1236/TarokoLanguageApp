@@ -467,6 +467,33 @@ void _serviceBusyTests() {
       expect(calls, 2);
     });
 
+    test('依 retry_after 秒數等待（body 或 Retry-After header）', () async {
+      for (final resp in [
+        http.Response(
+          jsonEncode({
+            'error': {'code': 'SERVICE_BUSY', 'message': 'busy'},
+            'retry_after': 3,
+          }),
+          503,
+        ),
+        http.Response(
+          jsonEncode({
+            'error': {'code': 'SERVICE_BUSY', 'message': 'busy'},
+          }),
+          503,
+          headers: {'retry-after': '17'},
+        ),
+      ]) {
+        var calls = 0;
+        ApiClient.httpClient = MockClient((_) async {
+          calls++;
+          return calls == 1 ? resp : http.Response('{}', 200);
+        });
+        await ApiClient.get('/api/levels');
+      }
+      expect(delays, [const Duration(seconds: 3), const Duration(seconds: 17)]);
+    });
+
     test('retry_after 缺少時等 5 秒', () async {
       var calls = 0;
       ApiClient.httpClient = MockClient((_) async {

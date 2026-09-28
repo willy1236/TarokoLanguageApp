@@ -37,7 +37,7 @@ class ApiException implements Exception {
   final String code;
   final String message;
 
-  /// 429 時後端建議的等待秒數（body `retry_after` 或 `Retry-After` header），
+  /// 429 與 503 SERVICE_BUSY 時後端建議的等待秒數（body `retry_after` 或 `Retry-After` header），
   /// 其餘錯誤為 null。畫面可據此顯示「N 秒後可再試」倒數。
   final int? retryAfter;
 
@@ -599,7 +599,7 @@ class ApiClient {
     }
   }
 
-  /// 429 的等待秒數：優先讀 body 的 `retry_after`，沒有再讀 `Retry-After` header。
+  /// 429／503 的等待秒數：優先讀 body 的 `retry_after`，沒有再讀 `Retry-After` header。
   static int? _parseRetryAfter(http.Response resp) {
     try {
       final j = jsonDecode(resp.body);
