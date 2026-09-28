@@ -123,9 +123,12 @@ void main() {
     );
   }
 
-  Future<void> startApp(WidgetTester tester) async {
+  Future<void> startApp(
+    WidgetTester tester, {
+    Size size = _narrowSurface,
+  }) async {
     installMockClient(routes());
-    usePhoneSurface(tester, size: _narrowSurface);
+    usePhoneSurface(tester, size: size);
     await tester.pumpWidget(buildTestApp(initialRoute: '/home'));
     await pumpFrames(tester, times: 10);
   }
@@ -140,11 +143,9 @@ void main() {
     await pumpFrames(tester);
   }
 
+  // 窄螢幕修正（排序放不下時換行）不能連帶讓一般寬度的頁首變成兩行。
   testWidgets('一般寬度下影音區頁首的標題與排序維持同一行', (tester) async {
-    installMockClient(routes());
-    usePhoneSurface(tester);
-    await tester.pumpWidget(buildTestApp(initialRoute: '/home'));
-    await pumpFrames(tester, times: 10);
+    await startApp(tester, size: const Size(414, 1000));
     await tapText(tester, '學習影音', within: find.byType(TrukuBottomTab));
     await tapText(tester, '影音');
 
