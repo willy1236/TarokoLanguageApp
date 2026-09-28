@@ -20,7 +20,10 @@ Map<String, Directory> _packageRoots() {
 }
 
 void main() {
-  final bootstrap = File('web/flutter_bootstrap.js').readAsStringSync();
+  // 去掉註解，避免只寫在註解裡的字串也算數。
+  final bootstrap = File(
+    'web/flutter_bootstrap.js',
+  ).readAsStringSync().replaceAll(RegExp(r'^\s*//.*$', multiLine: true), '');
   final roots = _packageRoots();
 
   test('預先載入的 SDK 版本與 firebase_core_web 支援的版本一致', () {
@@ -37,11 +40,16 @@ void main() {
     expect(preloaded, supported);
   });
 
-  test('每個 firebase_*_web 套件的 SDK 模組都有預先載入', () {
+  test('每個 FlutterFire Web 套件的 SDK 模組都有預先載入', () {
+    // firebase_auth_web → window.firebase_auth；cloud_firestore_web →
+    // window.firebase_firestore（cloud_* 系列同樣向 firebase_core_web 註冊）。
     final services = roots.keys
-        .where((n) => n.startsWith('firebase_') && n.endsWith('_web'))
-        .where((n) => n != 'firebase_core_web')
-        .map((n) => n.substring(0, n.length - '_web'.length));
+        .where((n) => n.endsWith('_web') && n != 'firebase_core_web')
+        .where((n) => n.startsWith('firebase_') || n.startsWith('cloud_'))
+        .map(
+          (n) =>
+              'firebase_${n.replaceFirst(RegExp('^(firebase|cloud)_'), '').replaceFirst(RegExp(r'_web$'), '')}',
+        );
 
     for (final windowVar in services) {
       expect(
