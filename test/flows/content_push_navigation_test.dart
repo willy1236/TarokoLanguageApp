@@ -176,7 +176,7 @@ void main() {
       await start(tester);
       await push(tester, ForumDetailScreen.route(postId: 7));
 
-      expect(showForumReplyInPage(routes, 7, 'reply_post', 2), isTrue);
+      expect(showForumReplyInPage(routes, 7, 'reply_post'), isTrue);
       await pumpFrames(tester);
       expect(chip, findsOneWidget);
     });
@@ -186,7 +186,7 @@ void main() {
       await push(tester, ForumDetailScreen.route(postId: 7));
       await push(tester, callScreen());
 
-      expect(showForumReplyInPage(routes, 7, 'reply_post', 2), isFalse);
+      expect(showForumReplyInPage(routes, 7, 'reply_post'), isFalse);
       await pop(tester);
       expect(chip, findsNothing);
     });
@@ -195,7 +195,7 @@ void main() {
       await start(tester);
       await push(tester, ForumDetailScreen.route(postId: 7));
 
-      expect(showForumReplyInPage(routes, 99, 'reply_post', 5), isFalse);
+      expect(showForumReplyInPage(routes, 99, 'reply_post'), isFalse);
       await pumpFrames(tester);
       expect(chip, findsNothing);
     });

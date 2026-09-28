@@ -86,8 +86,7 @@ class FcmService {
   /// 由 UI 層注入：前景收到論壇回覆推播時先交給該貼文開著的詳情頁，回傳 true
   /// 代表畫面已接手（改在頁內提示），就不彈通知列／SnackBar，避免蓋住留言輸入列。
   /// [type] 是 'reply_post' 或 'reply_comment'。
-  static bool Function(int postId, String type, int? commentId)?
-  onForumReplyWhileOpen;
+  static bool Function(int postId, String type)? onForumReplyWhileOpen;
 
   /// 收到好友定向來電推播時觸發（前景收到、或背景點擊通知開啟時皆會呼叫）。
   /// 由 UI 層設定，導向 IncomingCallScreen。響鈴逾時（60 秒）由後端控管，
@@ -278,7 +277,7 @@ class FcmService {
 
   /// 解析論壇回覆通知的 payload，非論壇類型回傳 null。
   /// 後端送出的 data：{ type: 'reply_post' | 'reply_comment', post_id, comment_id }
-  static ({int postId, String type, int? commentId})? _parseForumPayload(
+  static ({int postId, String type})? _parseForumPayload(
     Map<String, dynamic> data,
   ) {
     final type = data['type'];
@@ -288,11 +287,7 @@ class FcmService {
       debugPrint('FcmService: post_id 缺失或無法解析，忽略：${data['post_id']}');
       return null;
     }
-    return (
-      postId: postId,
-      type: type as String,
-      commentId: int.tryParse(data['comment_id']?.toString() ?? ''),
-    );
+    return (postId: postId, type: type as String);
   }
 
   /// 解析好友相關通知，非此類型回傳 null。私訊與邀請帶 from_uid，其餘帶 uid。
@@ -377,11 +372,7 @@ class FcmService {
     if (forum != null) {
       final forumPostId = forum.postId;
       // 人就在那一頁：改由頁內提示，不再彈通知。
-      final handled = onForumReplyWhileOpen?.call(
-        forumPostId,
-        forum.type,
-        forum.commentId,
-      );
+      final handled = onForumReplyWhileOpen?.call(forumPostId, forum.type);
       if (handled == true) return;
       final title = message.notification?.title ?? '有人回覆你';
       final body = message.notification?.body ?? '';

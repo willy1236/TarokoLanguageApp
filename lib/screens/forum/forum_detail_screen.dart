@@ -84,11 +84,7 @@ class ForumDetailScreen extends StatefulWidget {
   /// 人正停在 [route] 這份詳情頁時有人回覆了貼文或其中的留言（前景推播）：
   /// 在頁內浮出提示並回傳 true；[route] 已不是開著的詳情頁則回傳 false，由呼叫端
   /// 照常通知。[type] 是推播的 'reply_post' 或 'reply_comment'。
-  static bool notifyNewReply(
-    Route<dynamic> route,
-    String type,
-    int? commentId,
-  ) {
+  static bool notifyNewReply(Route<dynamic> route, String type) {
     final state = _live[route];
     if (state == null) return false;
     state._onNewReply(type);

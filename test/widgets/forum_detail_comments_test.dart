@@ -240,17 +240,13 @@ void main() {
 
       forum.roots.addAll([2, 3]);
       expect(
-        ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 2),
+        ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post'),
         isTrue,
       );
       await tester.pumpAndSettle();
       expect(chip(1), findsOneWidget);
       expect(
-        ForumDetailScreen.notifyNewReply(
-          _detailRoute(tester),
-          'reply_comment',
-          3,
-        ),
+        ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_comment'),
         isTrue,
       );
       await tester.pumpAndSettle();
@@ -276,13 +272,13 @@ void main() {
       navKey.currentState!.push(ForumDetailScreen.route(postId: _postId));
       await tester.pumpAndSettle();
       final route = _detailRoute(tester);
-      ForumDetailScreen.notifyNewReply(route, 'reply_post', 2);
+      ForumDetailScreen.notifyNewReply(route, 'reply_post');
       await tester.pumpAndSettle();
       expect(chip(1), findsOneWidget);
 
       navKey.currentState!.pop();
       await tester.pumpAndSettle();
-      expect(ForumDetailScreen.notifyNewReply(route, 'reply_post', 3), isFalse);
+      expect(ForumDetailScreen.notifyNewReply(route, 'reply_post'), isFalse);
 
       navKey.currentState!.push(ForumDetailScreen.route(postId: _postId));
       await tester.pumpAndSettle();
@@ -304,7 +300,7 @@ void main() {
       final comments = forum.commentRequests.length;
 
       forum.roots.add(3);
-      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 3);
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
       await tester.pumpAndSettle();
       await tapChip(tester);
 
@@ -326,7 +322,7 @@ void main() {
       ApiClient.httpClient = forum.client();
       await _openDetail(tester);
 
-      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 3);
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
       await tester.pumpAndSettle();
       expect(find.text('有 1 則新回覆，往下載入就看得到'), findsOneWidget);
 
@@ -347,7 +343,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(_visibleComments(tester), ['留言1', '留言102']);
 
-      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 101);
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
       await tester.pumpAndSettle();
       await tapChip(tester);
       await _scrollToBottom(tester);
@@ -360,7 +356,7 @@ void main() {
       await _openDetail(tester);
       final posts = forum.postRequests;
 
-      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 50);
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
       await tester.pumpAndSettle();
       await tapChip(tester);
       await tester.pumpAndSettle();
@@ -377,12 +373,8 @@ void main() {
 
       forum.roots.add(2);
       forum.replyParent[3] = 1;
-      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 2);
-      ForumDetailScreen.notifyNewReply(
-        _detailRoute(tester),
-        'reply_comment',
-        3,
-      );
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_comment');
       await tester.pumpAndSettle();
       await tapChip(tester);
 
