@@ -1,5 +1,6 @@
 // 測驗紀錄詳解頁「回報問題」輸入框（issue #20）。
 import 'package:flutter/material.dart';
+import '../../shared/utils/utf16_length_limit.dart';
 
 class ReportQuestionDialog extends StatefulWidget {
   const ReportQuestionDialog({super.key});
@@ -25,7 +26,8 @@ class _ReportQuestionDialogState extends State<ReportQuestionDialog> {
         controller: _controller,
         autofocus: true,
         maxLines: 4,
-        maxLength: 1000,
+        inputFormatters: const [Utf16LengthLimitingTextInputFormatter(1000)],
+        buildCounter: utf16CounterBuilder(_controller, 1000),
         decoration: const InputDecoration(
           labelText: '請說明題目或答案的問題',
           alignLabelWithHint: true,
@@ -40,7 +42,11 @@ class _ReportQuestionDialogState extends State<ReportQuestionDialog> {
         TextButton(
           onPressed: _controller.text.trim().isEmpty
               ? null
-              : () => Navigator.pop(context, _controller.text.trim()),
+              : () {
+                  final text = _controller.text.trim();
+                  if (!withinUtf16Limit(context, text, 1000)) return;
+                  Navigator.pop(context, text);
+                },
           child: const Text('送出'),
         ),
       ],

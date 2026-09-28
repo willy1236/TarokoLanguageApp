@@ -10,6 +10,7 @@ import 'forum_toast.dart';
 import '../../../core/network/api_client.dart';
 import '../../../services/forum_service.dart';
 import '../../../services/senior_mode_controller.dart';
+import '../../../shared/utils/utf16_length_limit.dart';
 
 Future<void> showForumReportSheet(
   BuildContext context, {
@@ -114,7 +115,13 @@ class _ReportSheetState extends State<_ReportSheet> {
           TextField(
             controller: _controller,
             maxLines: 4,
-            maxLength: ForumService.reasonMax,
+            inputFormatters: const [
+              Utf16LengthLimitingTextInputFormatter(ForumService.reasonMax),
+            ],
+            buildCounter: utf16CounterBuilder(
+              _controller,
+              ForumService.reasonMax,
+            ),
             onChanged: (_) => setState(() {}),
             style: TextStyle(
               fontSize: seniorMode

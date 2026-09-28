@@ -28,6 +28,7 @@ import 'widgets/forum_new_reply_chip.dart';
 import 'widgets/forum_post_body.dart';
 import 'widgets/forum_toast.dart';
 import 'widgets/forum_report_sheet.dart';
+import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 
@@ -502,7 +503,15 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   Future<void> _send() async {
     final text = _inputController.text.trim();
-    if (text.isEmpty || text.length > ForumService.commentMax) return;
+    if (text.isEmpty) return;
+    if (!withinUtf16Limit(
+      context,
+      text,
+      ForumService.commentMax,
+      label: '留言',
+    )) {
+      return;
+    }
     setState(() => _sending = true);
     try {
       final created = await ForumService.createComment(

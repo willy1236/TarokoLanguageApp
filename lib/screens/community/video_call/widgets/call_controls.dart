@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
+import '../../../../shared/utils/utf16_length_limit.dart';
 
 // ─── Control button ────────────────────────────────────────────────────────────
 
@@ -340,7 +341,8 @@ class _CallReportDialogState extends State<CallReportDialog> {
     content: TextField(
       controller: _controller,
       maxLines: 3,
-      maxLength: 500,
+      inputFormatters: const [Utf16LengthLimitingTextInputFormatter(500)],
+      buildCounter: utf16CounterBuilder(_controller, 500),
       decoration: const InputDecoration(hintText: '請說明檢舉原因'),
     ),
     actions: [
@@ -349,7 +351,10 @@ class _CallReportDialogState extends State<CallReportDialog> {
         child: const Text('取消'),
       ),
       TextButton(
-        onPressed: () => Navigator.of(context).pop(_controller.text),
+        onPressed: () {
+          if (!withinUtf16Limit(context, _controller.text, 500)) return;
+          Navigator.of(context).pop(_controller.text);
+        },
         child: const Text('送出'),
       ),
     ],

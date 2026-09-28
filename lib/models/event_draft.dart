@@ -87,6 +87,13 @@ class EventDraft {
   /// 名額：留空 = 不限（null）；格式錯誤時也回 null，先呼叫 [validate] 擋掉。
   int? get maxParticipants => int.tryParse(maxParticipantsText.trim());
 
+  /// 後端的文字欄位長度上限，以 UTF-16 單位計（與 JS `.length` 一致）。
+  static const titleMax = 100;
+  static const descriptionMax = 2000;
+  static const locationMax = 200;
+  static const addressMax = 200;
+  static const reminderNoteMax = 500;
+
   /// 活動最長時間（後端 INVALID_END_TIME 的上限）。
   static const maxDuration = Duration(days: 30);
 
@@ -98,6 +105,16 @@ class EventDraft {
         location.trim().isEmpty ||
         address.trim().isEmpty) {
       return '請填寫所有必填欄位';
+    }
+    // 輸入框的 formatter 在組字中會先放行，直接送出時可能超過上限。
+    for (final (label, text, max) in [
+      ('活動名稱', title, titleMax),
+      ('活動說明', description, descriptionMax),
+      ('地點', location, locationMax),
+      ('詳細地址', address, addressMax),
+      ('提醒事項', reminderNote, reminderNoteMax),
+    ]) {
+      if (text.trim().length > max) return '$label不能超過 $max 字';
     }
     if (maxParticipantsText.trim().isNotEmpty) {
       final n = maxParticipants;

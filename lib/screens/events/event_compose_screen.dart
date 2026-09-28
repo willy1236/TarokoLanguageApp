@@ -10,6 +10,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/related_tribe_field.dart';
+import '../../shared/utils/utf16_length_limit.dart';
 
 /// 發起／編輯活動表單。
 ///
@@ -364,7 +365,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                   _textField(
                     _title,
                     hint: '例如：青年族語營',
-                    maxLength: 100,
+                    maxLength: EventDraft.titleMax,
                     seniorMode: seniorMode,
                   ),
                   const SizedBox(height: 18),
@@ -427,7 +428,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                   _textField(
                     _address,
                     hint: '例如：花蓮縣秀林鄉…',
-                    maxLength: 200,
+                    maxLength: EventDraft.addressMax,
                     seniorMode: seniorMode,
                   ),
                   const SizedBox(height: 18),
@@ -457,7 +458,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     _desc,
                     hint: '介紹活動內容、流程、注意事項…',
                     maxLines: 6,
-                    maxLength: 2000,
+                    maxLength: EventDraft.descriptionMax,
                     seniorMode: seniorMode,
                   ),
                   const SizedBox(height: 18),
@@ -498,7 +499,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                       _reminderNote,
                       hint: '給參加者的提醒，例如需自備雨具（選填，留空即清除）',
                       maxLines: 3,
-                      maxLength: 500,
+                      maxLength: EventDraft.reminderNoteMax,
                       seniorMode: seniorMode,
                     ),
                   ],
@@ -806,7 +807,9 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           TextField(
             controller: _location,
             focusNode: _locationFocus,
-            maxLength: 200,
+            inputFormatters: const [
+              Utf16LengthLimitingTextInputFormatter(EventDraft.locationMax),
+            ],
             style: TextStyle(
               fontSize: AppTypography.size(
                 AppTypography.bodyLarge,
@@ -994,7 +997,10 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         readOnly: readOnly,
         onChanged: (_) => setState(() {}),
         maxLines: maxLines,
-        maxLength: maxLength,
+        inputFormatters: [
+          if (maxLength != null)
+            Utf16LengthLimitingTextInputFormatter(maxLength),
+        ],
         keyboardType: keyboardType,
         style: TextStyle(
           fontSize: AppTypography.size(

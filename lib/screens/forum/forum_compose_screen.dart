@@ -29,6 +29,7 @@ import 'widgets/forum_compose_images.dart';
 import 'widgets/forum_image_grid.dart' show ForumImageViewer;
 import 'widgets/forum_toast.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/utils/utf16_length_limit.dart';
 
 /// 依後端硬性限制檢查，回傳第一個錯誤訊息；全部通過回 null。
 String? forumComposeError({
@@ -218,6 +219,14 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
   void _addTag() {
     final name = _tagController.text.trim();
     if (name.isEmpty) return;
+    if (!withinUtf16Limit(
+      context,
+      name,
+      ForumService.tagNameMax,
+      label: '標籤',
+    )) {
+      return;
+    }
     if (_tags.contains(name)) {
       _tagController.clear();
       return;
@@ -359,7 +368,13 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           ),
           child: TextField(
             controller: _titleController,
-            maxLength: ForumService.titleMax,
+            inputFormatters: const [
+              Utf16LengthLimitingTextInputFormatter(ForumService.titleMax),
+            ],
+            buildCounter: utf16CounterBuilder(
+              _titleController,
+              ForumService.titleMax,
+            ),
             onChanged: (_) => setState(() {}),
             style: AppTypography.serif(
               fontSize: AppTypography.size(
@@ -386,7 +401,13 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           ),
           child: TextField(
             controller: _bodyController,
-            maxLength: ForumService.bodyMax,
+            inputFormatters: const [
+              Utf16LengthLimitingTextInputFormatter(ForumService.bodyMax),
+            ],
+            buildCounter: utf16CounterBuilder(
+              _bodyController,
+              ForumService.bodyMax,
+            ),
             minLines: 8,
             maxLines: null,
             onChanged: (_) => setState(() {}),
@@ -589,7 +610,9 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           Expanded(
             child: TextField(
               controller: _tagController,
-              maxLength: ForumService.tagNameMax,
+              inputFormatters: const [
+                Utf16LengthLimitingTextInputFormatter(ForumService.tagNameMax),
+              ],
               onSubmitted: (_) => _addTag(),
               style: TextStyle(
                 fontSize: seniorMode

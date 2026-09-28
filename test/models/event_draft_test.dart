@@ -40,6 +40,34 @@ void main() {
       );
     });
 
+    test('文字欄位超過後端長度上限（組字中直接送出）', () {
+      String? check({
+        String title = '走讀',
+        String description = '說明',
+        String location = '部落',
+        String address = '秀林鄉',
+        String reminderNote = '',
+      }) => EventDraft(
+        title: title,
+        description: description,
+        location: location,
+        address: address,
+        reminderNote: reminderNote,
+        startsAt: future,
+      ).validate(creating: false, now: now);
+
+      expect(check(title: 'a' * 100), isNull);
+      expect(check(title: 'a' * 101), '活動名稱不能超過 100 字');
+      // emoji 算 2，與後端 JS `.length` 一致。
+      expect(check(title: '😀' * 51), '活動名稱不能超過 100 字');
+      expect(check(description: 'a' * 2001), '活動說明不能超過 2000 字');
+      expect(check(location: 'a' * 201), '地點不能超過 200 字');
+      expect(check(address: 'a' * 201), '詳細地址不能超過 200 字');
+      expect(check(reminderNote: 'a' * 501), '提醒事項不能超過 500 字');
+      // 後端 trim 後才比長度。
+      expect(check(reminderNote: '${'a' * 500}  '), isNull);
+    });
+
     test('名額需為正整數，留空為不限', () {
       expect(valid(max: '0').validate(creating: true, now: now), isNotNull);
       expect(valid(max: 'abc').validate(creating: true, now: now), isNotNull);
