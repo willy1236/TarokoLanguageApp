@@ -17,20 +17,22 @@ http.Response _json(Object body, [int status = 200]) => http.Response(
 );
 
 /// 依路徑回應：來電狀態取自 [status]()，接聽固定回 500，其餘（商品目錄）回 404。
-MockClient _backend(String Function() status) => MockClient((req) async {
-  final path = req.url.path;
-  if (path == '/api/friends/calls/$_callId') {
-    return _json({'call_id': _callId, 'status': status(), 'peer_uid': 2});
-  }
-  if (path == '/api/friends/calls/$_callId/accept') {
-    return _json({
-      'error': {'code': 'INTERNAL', 'message': 'boom'},
-    }, 500);
-  }
-  return _json({
-    'error': {'code': 'NOT_FOUND', 'message': 'not found'},
-  }, 404);
-});
+MockClient _backend(String Function() status, {List<String>? log}) =>
+    MockClient((req) async {
+      final path = req.url.path;
+      log?.add('${req.method} $path');
+      if (path == '/api/friends/calls/$_callId') {
+        return _json({'call_id': _callId, 'status': status(), 'peer_uid': 2});
+      }
+      if (path == '/api/friends/calls/$_callId/accept') {
+        return _json({
+          'error': {'code': 'INTERNAL', 'message': 'boom'},
+        }, 500);
+      }
+      return _json({
+        'error': {'code': 'NOT_FOUND', 'message': 'not found'},
+      }, 404);
+    });
 
 /// 從首頁 push 出響鈴畫面，才能驗證它有沒有自己 pop 回來。
 Future<void> _openScreen(WidgetTester tester) async {
@@ -122,5 +124,30 @@ void main() {
     await tester.pump(const Duration(milliseconds: 1500));
     await tester.pumpAndSettle();
     expect(find.byType(IncomingCallScreen), findsNothing);
+  });
+
+  testWidgets('返回鍵等於拒接：送出拒接並關閉畫面', (tester) async {
+    final log = <String>[];
+    ApiClient.httpClient = _backend(() => 'ringing', log: log);
+    await _openScreen(tester);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+
+    expect(log, contains('POST /api/friends/calls/$_callId/decline'));
+    expect(find.byType(IncomingCallScreen), findsNothing);
+  });
+
+  testWidgets('接聽處理中按返回不送拒接', (tester) async {
+    final log = <String>[];
+    ApiClient.httpClient = _backend(() => 'ringing', log: log);
+    await _openScreen(tester);
+
+    await tester.tap(find.text('接聽'));
+    await tester.binding.handlePopRoute();
+    await tester.pump();
+
+    expect(log.where((l) => l.endsWith('/decline')), isEmpty);
+    await tester.pumpWidget(const SizedBox());
   });
 }
