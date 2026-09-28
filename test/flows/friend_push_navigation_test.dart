@@ -11,6 +11,7 @@ import 'package:http/testing.dart';
 
 import 'package:flutter_application_1/core/navigation/route_stack.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
+import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/screens/chat/chat_screen.dart';
 import 'package:flutter_application_1/screens/friends/friend_push_navigation.dart';
 import 'package:flutter_application_1/screens/friends/friend_requests_screen.dart';
@@ -54,6 +55,7 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         navigatorKey: navKey,
+        scaffoldMessengerKey: scaffoldMessengerKey,
         navigatorObservers: [routes = RouteStack()],
         home: const Scaffold(body: Text('HOME')),
       ),
@@ -146,6 +148,18 @@ void main() {
     await pumpFrames(tester);
     await open(tester, 'friend_bond_showcase_confirmed', 7);
     expect(find.byType(PublicProfileScreen), findsOneWidget);
+  });
+
+  testWidgets('查詢好友失敗 → 不導頁，提示稍後再試', (tester) async {
+    ApiClient.httpClient = MockClient(
+      (_) async => http.Response('{"error":{"code":"INTERNAL"}}', 500),
+    );
+    await start(tester);
+    await open(tester, 'friend_message', 7);
+
+    expect(find.text('HOME'), findsOneWidget);
+    expect(find.byType(FriendRequestsScreen), findsNothing);
+    expect(find.text('無法開啟，請稍後再試'), findsOneWidget);
   });
 
   testWidgets('uid 已不是好友 → 好友邀請頁，不報錯', (tester) async {
