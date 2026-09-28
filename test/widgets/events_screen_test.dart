@@ -113,7 +113,7 @@ void main() {
     expect(calls, 2);
   });
 
-  testWidgets('切到「近期」會用 scope=upcoming 重打 API', (tester) async {
+  testWidgets('篩選列只有全部與分類，列表請求不帶 scope', (tester) async {
     final scopes = <String?>[];
     installMockClient(
       {
@@ -131,12 +131,12 @@ void main() {
 
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
-    expect(scopes, ['all']);
 
-    await tester.tap(find.text('近期'));
-    await tester.pumpAndSettle();
-
-    expect(scopes, ['all', 'upcoming']);
+    expect(scopes, [null]);
+    expect(find.text('近期'), findsNothing);
+    for (final label in ['全部', '族語', '走讀', '工藝', '線上', '音樂', '其他']) {
+      expect(find.text(label), findsWidgets);
+    }
   });
 
   testWidgets('切分類是前端篩選，不會重打 API', (tester) async {

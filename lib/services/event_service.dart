@@ -33,16 +33,15 @@ import '../models/event_model.dart';
 class EventService {
   // ── 活動 ────────────────────────────────────────────────────
 
-  /// 活動列表。[scope]：'upcoming'（預設，即將到來）或 'all'（全部）。
+  /// 活動列表：只含尚未開始的活動，依開始時間升冪（後端已不分 scope）。
   /// 後端分頁，回傳 events[]（含 participantCount / isJoined / 即時狀態）。
   static Future<List<EventSummary>> fetchEvents({
-    String scope = 'upcoming',
     int page = 1,
     int pageSize = 20,
   }) async {
     final data = await ApiClient.get(
       ApiConfig.events,
-      query: {'scope': scope, 'page': '$page', 'page_size': '$pageSize'},
+      query: {'page': '$page', 'page_size': '$pageSize'},
     );
     final list = data['events'] as List<dynamic>? ?? const [];
     return list

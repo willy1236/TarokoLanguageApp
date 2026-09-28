@@ -87,7 +87,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
 
   Future<void> _loadEvents() async {
     try {
-      final events = await EventService.fetchEvents(scope: 'upcoming');
+      final events = await EventService.fetchEvents();
       if (!mounted) return;
       setState(() {
         _events = events;

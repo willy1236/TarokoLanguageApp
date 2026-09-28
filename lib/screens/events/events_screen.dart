@@ -29,11 +29,10 @@ class EventsScreen extends StatefulWidget {
 }
 
 class _EventsScreenState extends State<EventsScreen> {
-  // 前兩顆對應後端 scope（全部=all、近期=upcoming，會重新打 API）；
-  // 其餘為分類篩選（對應發起活動表單的分類清單），在目前已載入的 scope 資料上做前端篩選。
-  static const _filters = ['全部', '近期', '族語', '走讀', '工藝', '線上', '音樂', '其他'];
+  // 後端列表只回尚未開始的活動、依開始時間升冪（Truku_backend 決策 A22），前端不重排。
+  // 「全部」之外為分類篩選（對應發起活動表單的分類清單），在已載入的資料上做前端篩選。
+  static const _filters = ['全部', '族語', '走讀', '工藝', '線上', '音樂', '其他'];
   int _filterIndex = 0;
-  String _scope = 'all';
 
   bool _loading = true;
   Object? _error;
@@ -77,7 +76,7 @@ class _EventsScreenState extends State<EventsScreen> {
       _error = null;
     });
     try {
-      final events = await EventService.fetchEvents(scope: _scope);
+      final events = await EventService.fetchEvents();
       if (!mounted) return;
       setState(() {
         _events = events;
@@ -92,22 +91,11 @@ class _EventsScreenState extends State<EventsScreen> {
     }
   }
 
-  void _onFilterTap(int i) {
-    final filter = _filters[i];
-    if (filter == '全部' || filter == '近期') {
-      setState(() {
-        _filterIndex = i;
-        _scope = filter == '全部' ? 'all' : 'upcoming';
-      });
-      _load();
-    } else {
-      setState(() => _filterIndex = i);
-    }
-  }
+  void _onFilterTap(int i) => setState(() => _filterIndex = i);
 
   List<EventSummary> get _filteredEvents {
     final filter = _filters[_filterIndex];
-    if (filter == '全部' || filter == '近期') return _events;
+    if (filter == '全部') return _events;
     return _events.where((e) => e.category == filter).toList();
   }
 
