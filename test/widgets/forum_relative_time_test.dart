@@ -6,6 +6,16 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/screens/forum/widgets/forum_post_card.dart';
 
 void main() {
+  setUpAll(() {
+    // UTC 時區下 toLocal() 等於沒轉，下面兩個跨日測試拿掉修正也會過。
+    // CI 以 TZ=Asia/Taipei 執行，這裡擋住在 UTC 環境誤以為有測到的情況。
+    expect(
+      DateTime(2026, 9, 1).timeZoneOffset,
+      isNot(Duration.zero),
+      reason: '這組測試要在非 UTC 時區執行，例如 TZ=Asia/Taipei',
+    );
+  });
+
   test('超過 7 天：以本地日期顯示，UTC 跨日邊界不差一天', () {
     // 本地 9/1 03:00，在 UTC+8 時是 UTC 8/31 19:00。
     final localEarlyMorning = DateTime(2026, 9, 1, 3);

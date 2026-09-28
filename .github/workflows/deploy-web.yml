@@ -40,7 +40,10 @@ jobs:
 
       - run: flutter pub get
       - run: flutter analyze
+      # 固定台灣時區：UTC 環境下 toLocal() 等於沒轉，跨日類的測試抓不到問題
       - run: flutter test
+        env:
+          TZ: Asia/Taipei
       - run: flutter build web --release
 
       - uses: actions/upload-artifact@v4
