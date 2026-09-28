@@ -317,6 +317,31 @@ void main() {
       expect(_visibleComments(tester), ['留言1', '留言2', '留言3']);
     });
 
+    testWidgets('重載後把新的留言數回報給列表頁', (tester) async {
+      final forum = _FakeForum([1]);
+      ApiClient.httpClient = forum.client();
+      final reported = <int>[];
+      tester.view.physicalSize = const Size(800, 4000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        wrapScreen(
+          ForumDetailScreen(
+            postId: _postId,
+            onPostChanged: (p) => reported.add(p.commentCount),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      forum.roots.add(2);
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
+      await tester.pumpAndSettle();
+      await tapChip(tester);
+
+      expect(reported, [2]);
+    });
+
     testWidgets('還沒載完時收到回覆貼文：提示請使用者往下載入', (tester) async {
       final forum = _FakeForum([1, 2, 3]);
       ApiClient.httpClient = forum.client();

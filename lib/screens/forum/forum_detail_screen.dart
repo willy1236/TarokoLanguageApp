@@ -233,7 +233,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 點「有新回覆」提示：整頁重載。游標是後端給的不透明字串，前端不能自己
   /// 組出「某則之後」的游標，只能從第一頁重新載入。
-  void _showNewReplies() => _load();
+  Future<void> _showNewReplies() async {
+    await _load();
+    // 留言數跟著重載變了，回報父層，返回列表時卡片才不會停在舊的留言數。
+    final refreshed = _post;
+    if (mounted && refreshed != null) widget.onPostChanged?.call(refreshed);
+  }
 
   /// 從列表點附圖進來時，等貼文（含圖片網址）到手後才疊上全螢幕檢視。
   void _maybeOpenInitialImage() {
