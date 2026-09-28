@@ -143,6 +143,8 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
         ),
       );
     // 取消處理中就交給 _cancel 離開，兩邊都 pop 會連下面的頁面一起關掉。
+    // 取消失敗、「無法取消配對」確認框開著時 _cancelling 已是 false，這裡 pop
+    // 掉的是確認框，_cancel 看到 _stopped 後再關等待畫面。
     if (!_cancelling) Navigator.pop(context);
   }
 
