@@ -136,6 +136,106 @@ void main() {
     expect(requests.where((r) => r == 'DELETE /api/video/queue').length, 2);
   });
 
+  testWidgets('重新排隊途中按取消、結果直接配到：結束那一房，不進通話畫面', (tester) async {
+    final requests = <String>[];
+    installMockClient(
+      {
+        '/api/video/session/current': {'session': null, 'in_queue': false},
+        '/api/video/queue': {
+          'matched': true,
+          'session': {
+            'id': 7,
+            'channel': 'c7',
+            'peer_uid': 2,
+            'expires_at': '2099-01-01T00:00:00Z',
+          },
+          'token': 't',
+          'app_id': 'a',
+          'uid': 1,
+        },
+        '/api/video/session/7/end': {'ok': true},
+      },
+      onRequest: (r) => requests.add('${r.method} ${r.url.path}'),
+      delayFor: (r) => r.method == 'POST' && r.url.path == '/api/video/queue'
+          ? const Duration(seconds: 2)
+          : Duration.zero,
+    );
+
+    await openAndPoll(tester);
+    await tester.tap(find.text('取消配對'));
+    await pumpFrames(tester, times: 10);
+    await tester.pump(const Duration(seconds: 2));
+    await pumpFrames(tester);
+
+    expect(requests, contains('POST /api/video/session/7/end'));
+    expect(find.byType(VideoWaitingScreen), findsNothing);
+    expect(find.text('OPEN'), findsOneWidget);
+  });
+
+  group('取消中輪詢查到 session：結束那一房，不進通話畫面', () {
+    const session = {
+      'id': 8,
+      'channel': 'c8',
+      'peer_uid': 2,
+      'expires_at': '2099-01-01T00:00:00Z',
+    };
+
+    testWidgets('離開佇列還在等回應', (tester) async {
+      final requests = <String>[];
+      final routes = <String, Object?>{
+        '/api/video/session/current': {'session': null, 'in_queue': true},
+        '/api/video/queue': {'ok': true},
+        '/api/video/session/8/end': {'ok': true},
+      };
+      installMockClient(
+        routes,
+        onRequest: (r) => requests.add('${r.method} ${r.url.path}'),
+        delayFor: (r) => r.method == 'DELETE'
+            ? const Duration(milliseconds: 4500)
+            : Duration.zero,
+      );
+
+      await openAndPoll(tester);
+      await tester.tap(find.text('取消配對'));
+      await pumpFrames(tester);
+      routes['/api/video/session/current'] = {'session': session};
+      await tester.pump(const Duration(seconds: 4));
+      await pumpFrames(tester);
+
+      expect(requests, contains('POST /api/video/session/8/end'));
+
+      await tester.pump(const Duration(seconds: 2));
+      await pumpFrames(tester, times: 10);
+      expect(find.text('OPEN'), findsOneWidget);
+    });
+
+    testWidgets('取消失敗、確認框開著', (tester) async {
+      final requests = <String>[];
+      final routes = <String, Object?>{
+        '/api/video/session/current': {'session': null, 'in_queue': true},
+        '/api/video/queue': errorResponse('INTERNAL', status: 500),
+        '/api/video/session/8/end': {'ok': true},
+      };
+      installMockClient(
+        routes,
+        onRequest: (r) => requests.add('${r.method} ${r.url.path}'),
+      );
+
+      await openAndPoll(tester);
+      await tester.tap(find.text('取消配對'));
+      await pumpFrames(tester, times: 10);
+      expect(find.text('無法取消配對'), findsOneWidget);
+
+      routes['/api/video/session/current'] = {'session': session};
+      await tester.pump(const Duration(seconds: 4));
+      await pumpFrames(tester);
+
+      expect(requests, contains('POST /api/video/session/8/end'));
+      expect(find.text('無法取消配對'), findsOneWidget);
+      expect(find.byType(VideoWaitingScreen), findsOneWidget);
+    });
+  });
+
   group('重新排隊被 403 擋下，同時取消失敗：直接離開，不停在不再輪詢的畫面', () {
     Future<void> run(
       WidgetTester tester, {

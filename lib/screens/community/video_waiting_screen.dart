@@ -30,6 +30,10 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
   /// 取消處理中：擋住重複點擊與返回鍵重入。
   bool _cancelling = false;
 
+  /// 使用者表示要離開：從按取消到真的離開，或在「無法取消配對」確認框選留下
+  /// 為止。取消失敗、確認框開著時 [_cancelling] 已是 false，這個仍是 true。
+  bool _leaving = false;
+
   /// 重新排隊被 403 擋下：不再輪詢或重試。
   bool _stopped = false;
 
@@ -71,10 +75,13 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
       final current = await VideoCallService.fetchCurrentSession();
       if (!mounted || _matched) return;
       final session = current.session;
-      if (session != null) {
+      if (session != null && _leaving) {
+        // 使用者已在取消：結束這一房，不帶進通話，也不在確認框上疊頁。
+        await _endUnwanted(session);
+      } else if (session != null) {
         // 輪詢查到的 session 沒有憑證，由 VideoCallScreen 自行 refreshToken 取得。
         _enterCall(session, null);
-      } else if (!current.inQueue && !_cancelling) {
+      } else if (!current.inQueue && !_leaving) {
         await _rejoinQueue();
       }
     } catch (e) {
@@ -102,18 +109,26 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
       return;
     }
     final session = result.session;
-    if (!mounted || _cancelling) {
+    if (!mounted || _leaving) {
       unawaited(
-        (session != null
-                ? VideoCallService.endSession(session.id)
-                : VideoCallService.leaveQueue())
-            .catchError((Object e) {
-              debugPrint('VideoWaitingScreen: 取消後清理重新排隊失敗：$e');
-            }),
+        session != null
+            ? _endUnwanted(session)
+            : VideoCallService.leaveQueue().catchError((Object e) {
+                debugPrint('VideoWaitingScreen: 取消後離開佇列失敗：$e');
+              }),
       );
       return;
     }
     if (session != null) _enterCall(session, result.credentials);
+  }
+
+  /// 使用者取消後才配到的房直接結束，對方會收到 video_session_ended。
+  Future<void> _endUnwanted(VideoSession session) async {
+    try {
+      await VideoCallService.endSession(session.id);
+    } catch (e) {
+      debugPrint('VideoWaitingScreen: 結束取消後配到的房失敗：$e');
+    }
   }
 
   void _enterCall(VideoSession session, AgoraCallCredentials? credentials) {
@@ -153,6 +168,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
   /// 返回鍵、手勢與取消按鈕三條路徑統一走這裡。
   Future<void> _cancel() async {
     if (_cancelling || _matched) return;
+    _leaving = true;
     setState(() => _cancelling = true);
     try {
       await VideoCallService.leaveQueue().timeout(const Duration(seconds: 5));
@@ -173,7 +189,10 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
           cancelText: '留在此頁',
           confirmText: '仍要離開',
         );
-        if (leaveAnyway != true && !_stopped) return;
+        if (leaveAnyway != true && !_stopped) {
+          _leaving = false;
+          return;
+        }
       }
       if (mounted) Navigator.pop(context);
     }
