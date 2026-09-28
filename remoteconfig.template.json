@@ -1,12 +1,12 @@
 {
   "parameters": {
     "latest_version_android": {
-      "defaultValue": { "value": "1.0.0+8" },
+      "defaultValue": { "value": "1.0.0+10" },
       "description": "Android 最新版本（名稱+build），新版可下載後才更新",
       "valueType": "STRING"
     },
     "latest_version_ios": {
-      "defaultValue": { "value": "1.0.0+8" },
+      "defaultValue": { "value": "1.0.0+10" },
       "description": "iOS 最新版本（名稱+build），TestFlight 處理完成後才更新",
       "valueType": "STRING"
     },
@@ -18,6 +18,16 @@
     "update_url_ios": {
       "defaultValue": { "value": "" },
       "description": "iOS 更新連結：測試期 TestFlight，上架後改 App Store",
+      "valueType": "STRING"
+    },
+    "min_version_android": {
+      "defaultValue": { "value": "1.0.0+10" },
+      "description": "Android 最低版本（名稱+build），低於此版冷啟動強制更新；留空不強制",
+      "valueType": "STRING"
+    },
+    "min_version_ios": {
+      "defaultValue": { "value": "1.0.0+10" },
+      "description": "iOS 最低版本（名稱+build），低於此版冷啟動強制更新；留空不強制",
       "valueType": "STRING"
     }
   }
