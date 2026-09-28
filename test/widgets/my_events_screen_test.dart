@@ -5,12 +5,16 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/testing.dart';
+
+import 'package:flutter_application_1/core/network/api_client.dart';
 
 import 'package:flutter_application_1/screens/events/event_notifications_screen.dart';
 import 'package:flutter_application_1/screens/events/my_events_screen.dart';
 import 'package:flutter_application_1/shared/widgets/async_state_view.dart';
 import 'package:flutter_application_1/shared/widgets/truku_empty_state.dart';
 
+import '../helpers/flow_test_helpers.dart';
 import '../helpers/widget_test_helpers.dart';
 
 Map<String, dynamic> _event({
@@ -98,6 +102,72 @@ void main() {
     });
   });
 
+  group('MyEventsScreen 往下捲分頁', () {
+    /// 第 1 頁 20 場、游標 '20' 取第 2 頁 5 場後到底。
+    Map<String, dynamic> page(String? cursor) => cursor == null
+        ? {
+            'events': [
+              for (var i = 1; i <= 20; i++) _event(id: i, title: '活動 $i'),
+            ],
+            'page_info': {'next_cursor': '20', 'has_more': true},
+          }
+        : {
+            'events': [
+              for (var i = 21; i <= 25; i++) _event(id: i, title: '活動 $i'),
+            ],
+            'page_info': {'next_cursor': null, 'has_more': false},
+          };
+
+    Future<void> scrollToBottom(WidgetTester tester) async {
+      await tester.fling(find.byType(ListView), const Offset(0, -5000), 3000);
+      await pumpFrames(tester, times: 10);
+    }
+
+    testWidgets('超過 20 場時往下捲載入下一頁，到底後不再請求', (tester) async {
+      final cursors = <String?>[];
+      ApiClient.httpClient = MockClient((r) async {
+        final cursor = r.url.queryParameters['cursor'];
+        cursors.add(cursor);
+        return jsonResponse(page(cursor));
+      });
+
+      await tester.pumpWidget(const MaterialApp(home: MyEventsScreen()));
+      await pumpFrames(tester);
+      await scrollToBottom(tester);
+      await scrollToBottom(tester);
+
+      expect(cursors, [null, '20']);
+      expect(find.text('活動 25'), findsOneWidget);
+    });
+
+    testWidgets('載入下一頁失敗：底部顯示重試，點了才重新載入', (tester) async {
+      final cursors = <String?>[];
+      var failNext = true;
+      ApiClient.httpClient = MockClient((r) async {
+        final cursor = r.url.queryParameters['cursor'];
+        cursors.add(cursor);
+        if (cursor != null && failNext) {
+          failNext = false;
+          return errorResponse('X', status: 500, message: '壞了');
+        }
+        return jsonResponse(page(cursor));
+      });
+
+      await tester.pumpWidget(const MaterialApp(home: MyEventsScreen()));
+      await pumpFrames(tester);
+      await scrollToBottom(tester);
+      expect(cursors, [null, '20']);
+
+      await scrollToBottom(tester);
+      expect(cursors, [null, '20']);
+
+      await tester.tap(find.text('載入失敗，點此重試'));
+      await pumpFrames(tester, times: 10);
+      expect(cursors, [null, '20', '20']);
+      expect(find.text('活動 25', skipOffstage: false), findsOneWidget);
+    });
+  });
+
   group('EventNotificationsScreen', () {
     testWidgets('顯示收到的提醒', (tester) async {
       installMockClient({
@@ -107,7 +177,7 @@ void main() {
             _notification(id: 2, message: '集合地點改在活動中心', isRead: true),
           ],
           'unread_count': 1,
-          'next_cursor': null,
+          'page_info': {'next_cursor': null, 'has_more': false},
         },
       });
 
@@ -127,7 +197,7 @@ void main() {
         '/api/events/notifications': {
           'notifications': <dynamic>[],
           'unread_count': 0,
-          'next_cursor': null,
+          'page_info': {'next_cursor': null, 'has_more': false},
         },
       });
 

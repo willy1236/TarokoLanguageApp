@@ -25,7 +25,7 @@ class EventNotificationsScreen extends StatefulWidget {
 class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
   final _scrollController = ScrollController();
   final List<EventNotification> _items = [];
-  int? _nextCursor;
+  String? _nextCursor;
   bool _loading = true;
   bool _loadingMore = false;
   String? _error;
@@ -61,7 +61,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
         _items
           ..clear()
           ..addAll(page.items);
-        _nextCursor = page.nextCursor;
+        _nextCursor = page.pageInfo.nextCursor;
         _loading = false;
       });
     } on ApiException catch (e) {
@@ -82,7 +82,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
       if (!mounted) return;
       setState(() {
         _items.addAll(page.items);
-        _nextCursor = page.nextCursor;
+        _nextCursor = page.pageInfo.nextCursor;
         _loadingMore = false;
       });
     } on ApiException {

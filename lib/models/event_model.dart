@@ -5,6 +5,8 @@
 // 後端回傳為 snake_case，這裡轉成 Dart 慣用的 camelCase。未知欄位（v2 擴充如
 // reminder_note、報名截止…）不解析也不影響，需要時再補欄位即可。
 
+import 'page_info.dart';
+
 /// 後端理論上都回數字，但曾遇過某些環境把 bigint 欄位序列化成字串；
 /// 這裡統一容錯解析，避免整頁因單一欄位型別跳掉而白畫面。
 int? asEventInt(dynamic v) {
@@ -422,12 +424,12 @@ class EventNotification {
 class EventNotificationPage {
   final List<EventNotification> items;
   final int unreadCount;
-  final int? nextCursor;
+  final PageInfo pageInfo;
 
   const EventNotificationPage({
     required this.items,
     required this.unreadCount,
-    required this.nextCursor,
+    required this.pageInfo,
   });
 
   factory EventNotificationPage.fromJson(Map<String, dynamic> json) {
@@ -437,7 +439,7 @@ class EventNotificationPage {
           .map((e) => EventNotification.fromJson(e as Map<String, dynamic>))
           .toList(),
       unreadCount: asEventInt(json['unread_count']) ?? 0,
-      nextCursor: asEventInt(json['next_cursor']),
+      pageInfo: PageInfo.fromResponse(json),
     );
   }
 }

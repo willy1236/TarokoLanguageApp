@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import 'event_detail_screen.dart';
 import 'widgets/event_status_tile.dart';
-import '../../shared/widgets/async_state_view.dart';
+import 'widgets/paged_event_list.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/app_back_button.dart';
@@ -14,44 +13,8 @@ import '../../shared/widgets/app_back_button.dart';
 ///
 /// 後端每筆只回：標題 / 開始時間 / effective_status（active｜ended｜cancelled）/
 /// 參加人數。點進去看完整內容用 [EventDetailScreen]（fetch by id）。
-class MyEventsScreen extends StatefulWidget {
+class MyEventsScreen extends StatelessWidget {
   const MyEventsScreen({super.key});
-
-  @override
-  State<MyEventsScreen> createState() => _MyEventsScreenState();
-}
-
-class _MyEventsScreenState extends State<MyEventsScreen> {
-  bool _loading = true;
-  Object? _error;
-  List<EventSummary> _events = const [];
-
-  @override
-  void initState() {
-    super.initState();
-    _load();
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final list = await EventService.fetchMyEvents();
-      if (!mounted) return;
-      setState(() {
-        _events = list;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e;
-        _loading = false;
-      });
-    }
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,58 +44,26 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
           ),
         ),
       ),
-      body: RefreshIndicator(
-        onRefresh: _load,
-        color: AppColors.primary,
-        child: _buildBody(seniorMode),
-      ),
-    );
-  }
-
-  Widget _buildBody(bool seniorMode) {
-    if (_loading) return const TrukuLoadingView();
-    if (_error != null) {
-      // 包在 ListView 裡才能維持下拉重新整理
-      return ListView(
-        children: [
-          TrukuErrorView(
-            error: _error,
-            onRetry: _load,
-            seniorMode: seniorMode,
-            fallback: '載入活動失敗，請稍後再試',
-            topPadding: 90,
-          ),
-        ],
-      );
-    }
-    if (_events.isEmpty) {
-      // 包在 ListView 裡才能維持下拉重新整理
-      return ListView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.only(top: 60, bottom: 24),
-        children: [
-          TrukuEmptyState(
-            icon: Icons.event_outlined,
-            message: '你還沒發起過活動',
-            subtitle: '下拉重新整理，或到活動頁發起第一場活動。',
-            seniorMode: seniorMode,
-            scrollable: false,
-          ),
-        ],
-      );
-    }
-    return ListView.separated(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
-      itemCount: _events.length,
-      separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => EventStatusTile(
-        event: _events[i],
+      body: PagedEventList(
         seniorMode: seniorMode,
-        onTap: () async {
-          await Navigator.push(context, EventDetailScreen.route(_events[i].id));
-          if (!mounted) return;
-          _load(); // 從詳情頁回來（可能剛取消）刷新
-        },
+        loadPage: (cursor) => EventService.fetchMyEvents(cursor: cursor),
+        emptyState: TrukuEmptyState(
+          icon: Icons.event_outlined,
+          message: '你還沒發起過活動',
+          subtitle: '下拉重新整理，或到活動頁發起第一場活動。',
+          seniorMode: seniorMode,
+          scrollable: false,
+        ),
+        itemBuilder: (event, reload) => Builder(
+          builder: (context) => EventStatusTile(
+            event: event,
+            seniorMode: seniorMode,
+            onTap: () async {
+              await Navigator.push(context, EventDetailScreen.route(event.id));
+              reload(); // 從詳情頁回來（可能剛取消）刷新
+            },
+          ),
+        ),
       ),
     );
   }

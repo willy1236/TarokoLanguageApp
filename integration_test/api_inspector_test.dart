@@ -323,6 +323,47 @@ void main() {
       expectError: true,
     ));
 
+    test('GET /api/events', () => _inspect(
+      'GET',
+      ApiConfig.events,
+      shape: {'events': F.list, 'page_info': F.object},
+      listKey: 'events',
+      itemShape: _eventSummaryShape,
+      itemOptional: _eventSummaryOptional,
+    ));
+    test('GET /api/events/mine', () => _inspect(
+      'GET',
+      ApiConfig.eventsMine,
+      shape: {'events': F.list, 'page_info': F.object},
+      listKey: 'events',
+      itemShape: _eventSummaryShape,
+      itemOptional: _eventSummaryOptional,
+    ));
+    test('GET /api/events/likes', () => _inspect(
+      'GET',
+      ApiConfig.eventLikes,
+      shape: {'events': F.list, 'page_info': F.object},
+      listKey: 'events',
+      itemShape: _eventSummaryShape,
+      itemOptional: _eventSummaryOptional,
+    ));
+    test('GET /api/events/bookmarks', () => _inspect(
+      'GET',
+      ApiConfig.eventBookmarks,
+      shape: {'events': F.list, 'page_info': F.object},
+      listKey: 'events',
+      itemShape: _eventSummaryShape,
+      itemOptional: _eventSummaryOptional,
+    ));
+    test('GET /api/events/notifications', () => _inspect(
+      'GET',
+      ApiConfig.eventNotifications,
+      shape: {
+        'notifications': F.list,
+        'unread_count': F.number,
+        'page_info': F.object,
+      },
+    ));
     test('GET /api/events?scope=all (找已結束的活動)', () => _inspect(
       'GET',
       '${ApiConfig.events}?scope=all',
@@ -357,7 +398,7 @@ void main() {
       test('GET /api/events/joined?tab=$tab', () => _inspect(
         'GET',
         '${ApiConfig.eventsJoined}?tab=$tab',
-        shape: {'total': F.number, 'events': F.list},
+        shape: {'events': F.list, 'page_info': F.object},
         listKey: 'events',
         itemShape: _joinedEventShape,
         itemOptional: _eventSummaryOptional,
@@ -384,7 +425,7 @@ void main() {
     test('GET /api/events/search', () => _inspect(
       'GET',
       '${ApiConfig.eventSearch}?q=a&range=1m',
-      shape: {'events': F.list},
+      shape: {'events': F.list, 'page_info': F.object},
       listKey: 'events',
       itemShape: _eventSummaryShape,
       itemOptional: _eventSummaryOptional,

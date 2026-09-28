@@ -126,7 +126,37 @@ final List<_Contract> _contracts = [
   _Contract(
     'get_api_events_search_q_a_range_1m.json',
     'EventSummary(search)',
-    _each('events', EventSummary.fromJson),
+    _paged(_each('events', EventSummary.fromJson)),
+  ),
+  _Contract(
+    'get_api_events.json',
+    'EventSummary(list)',
+    _paged(_each('events', EventSummary.fromJson)),
+  ),
+  _Contract(
+    'get_api_events_mine.json',
+    'EventSummary(mine)',
+    _paged(_each('events', EventSummary.fromJson)),
+  ),
+  _Contract(
+    'get_api_events_joined_tab_active.json',
+    'EventSummary(joined)',
+    _paged(_each('events', EventSummary.fromJson)),
+  ),
+  _Contract(
+    'get_api_events_likes.json',
+    'EventSummary(likes)',
+    _paged(_each('events', EventSummary.fromJson)),
+  ),
+  _Contract(
+    'get_api_events_bookmarks.json',
+    'EventSummary(bookmarks)',
+    _paged(_each('events', EventSummary.fromJson)),
+  ),
+  _Contract(
+    'get_api_events_notifications.json',
+    'EventNotificationPage',
+    _paged(EventNotificationPage.fromJson),
   ),
   _Contract('get_api_event_detail.json', 'EventDetail', EventDetail.fromJson),
   _Contract(

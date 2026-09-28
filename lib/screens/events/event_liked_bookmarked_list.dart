@@ -7,6 +7,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
+import '../../models/page_info.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/async_state_view.dart';
@@ -25,12 +26,9 @@ class EventLikedBookmarkedList extends StatefulWidget {
 }
 
 class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
-  static const _pageSize = 20;
-
-  final _events = <EventSummary>[];
   final _scrollController = ScrollController();
-  int _page = 1;
-  bool _hasMore = true;
+  List<EventSummary> _events = [];
+  String? _cursor;
   bool _loading = true;
   bool _loadingMore = false;
   Object? _error;
@@ -49,17 +47,17 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
   }
 
   void _onScroll() {
-    if (_loadingMore || !_hasMore) return;
+    if (_loadingMore || _cursor == null) return;
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 300) {
       _loadMore();
     }
   }
 
-  Future<List<EventSummary>> _fetch(int page) {
+  Future<EventPage> _fetch(String? cursor) {
     return widget.mode == EventListMode.liked
-        ? EventService.fetchLikedEvents(page: page, pageSize: _pageSize)
-        : EventService.fetchBookmarkedEvents(page: page, pageSize: _pageSize);
+        ? EventService.fetchLikedEvents(cursor: cursor)
+        : EventService.fetchBookmarkedEvents(cursor: cursor);
   }
 
   Future<void> _load() async {
@@ -68,14 +66,11 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
       _error = null;
     });
     try {
-      final res = await _fetch(1);
+      final res = await _fetch(null);
       if (!mounted) return;
       setState(() {
-        _events
-          ..clear()
-          ..addAll(res);
-        _page = 1;
-        _hasMore = res.length >= _pageSize;
+        _events = res.events;
+        _cursor = res.pageInfo.nextCursor;
         _loading = false;
       });
     } catch (e) {
@@ -90,12 +85,11 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
   Future<void> _loadMore() async {
     setState(() => _loadingMore = true);
     try {
-      final res = await _fetch(_page + 1);
+      final res = await _fetch(_cursor);
       if (!mounted) return;
       setState(() {
-        _events.addAll(res);
-        _page += 1;
-        _hasMore = res.length >= _pageSize;
+        _events = appendUnique(_events, res.events, (e) => e.id);
+        _cursor = res.pageInfo.nextCursor;
       });
     } catch (_) {
       // 翻頁失敗保持原清單，使用者可再滑動觸發重試。
@@ -132,7 +126,7 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
       child: ListView.separated(
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
-        itemCount: _events.length + (_hasMore ? 1 : 0),
+        itemCount: _events.length + (_cursor != null ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           if (index >= _events.length) {
