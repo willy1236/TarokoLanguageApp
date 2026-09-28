@@ -131,11 +131,8 @@ class EventStatusTile extends StatelessWidget {
                       if (showHostBadge)
                         Text(
                           '我發起的',
-                          style: TextStyle(
-                            fontSize: AppTypography.size(
-                              AppTypography.caption,
-                              seniorMode: seniorMode,
-                            ),
+                          style: AppTypography.bodyStyle(
+                            seniorMode: seniorMode,
                             color: AppColors.goldDeep,
                           ),
                         ),
