@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/history_models.dart';
+import '../../models/page_info.dart';
 import '../../services/history_service.dart';
 import '../../services/learn_refresh_notifier.dart';
 import '../learn/lesson_card_screen.dart';
@@ -13,8 +14,6 @@ import '../../shared/widgets/truku_empty_state.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/app_back_button.dart';
 
-const _pageSize = 20;
-
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
 
@@ -25,12 +24,11 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   final _scrollController = ScrollController();
   String? _typeFilter;
-  int _page = 1;
-  int _total = 0;
+  String? _cursor;
   bool _loadingMore = false;
   bool _initialLoading = true;
   Object? _error;
-  final List<HistoryRecord> _records = [];
+  List<HistoryRecord> _records = [];
 
   /// 請求世代：切換篩選會重新載入第一頁，過期回應（含飛行中的分頁）忽略。
   int _reqGen = 0;
@@ -57,7 +55,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
   }
 
   void _onScroll() {
-    if (_loadingMore || _records.length >= _total) return;
+    if (_loadingMore || _cursor == null) return;
     if (_scrollController.position.pixels >
         _scrollController.position.maxScrollExtent - 200) {
       _loadNextPage();
@@ -73,18 +71,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _error = null;
     });
     try {
-      final result = await HistoryService.fetchHistory(
-        type: _typeFilter,
-        page: 1,
-        pageSize: _pageSize,
-      );
+      final result = await HistoryService.fetchHistory(type: _typeFilter);
       if (!mounted || gen != _reqGen) return;
       setState(() {
-        _records
-          ..clear()
-          ..addAll(result.records);
-        _total = result.total;
-        _page = 1;
+        _records = result.records;
+        _cursor = result.pageInfo.nextCursor;
         _initialLoading = false;
       });
     } catch (e) {
@@ -102,14 +93,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
     try {
       final result = await HistoryService.fetchHistory(
         type: _typeFilter,
-        page: _page + 1,
-        pageSize: _pageSize,
+        cursor: _cursor,
       );
       if (!mounted || gen != _reqGen) return;
       setState(() {
-        _records.addAll(result.records);
-        _total = result.total;
-        _page += 1;
+        _records = appendUnique(_records, result.records, (r) => r.key);
+        _cursor = result.pageInfo.nextCursor;
         _loadingMore = false;
       });
     } catch (e) {

@@ -87,8 +87,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
     _levelsFuture = LearnService.fetchLevels();
     _recentListeningFuture = HistoryService.fetchHistory(
       type: 'listening',
-      page: 1,
-      pageSize: 5,
+      limit: 5,
     );
   }
 
