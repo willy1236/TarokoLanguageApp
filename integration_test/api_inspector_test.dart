@@ -285,6 +285,8 @@ void main() {
         '${ApiConfig.eventsJoined}?tab=$tab',
         shape: {'total': F.number, 'events': F.list},
         listKey: 'events',
+        itemShape: _joinedEventShape,
+        itemOptional: _eventSummaryOptional,
       ));
     }
 
@@ -735,8 +737,19 @@ const Map<String, F> _eventDetailShape = {
   'title': F.string,
   'starts_at': F.string,
 };
+/// GET /api/events/joined 的每一筆 → EventSummary.fromJson 的 isHost、joinedAt。
+const Map<String, F> _joinedEventShape = {
+  ..._eventSummaryShape,
+  'is_host': F.boolean,
+  'joined_at': F.string,
+};
+
 const Map<String, F> _eventDetailOptional = {
   ..._eventSummaryOptional,
+  // 未報名時為 null；有值時是 {joined_at, contact_email}（EventRegistration）。
+  'my_registration': F.object,
+  // 只有已取消的活動才有值。
+  'cancel_reason': F.string,
   'description': F.string,
   'address': F.string,
   'contact_email': F.string,
