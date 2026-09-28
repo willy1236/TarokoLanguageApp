@@ -24,7 +24,9 @@ String forumRelativeTime(DateTime time) {
   if (diff.inMinutes < 60) return '${diff.inMinutes} 分鐘前';
   if (diff.inHours < 24) return '${diff.inHours} 小時前';
   if (diff.inDays < 7) return '${diff.inDays} 天前';
-  return '${time.year}/${time.month}/${time.day}';
+  // 後端時間是 UTC，取年月日前要先轉本地，否則台灣凌晨 0～8 點的會差一天。
+  final local = time.toLocal();
+  return '${local.year}/${local.month}/${local.day}';
 }
 
 class ForumPostCard extends StatelessWidget {
