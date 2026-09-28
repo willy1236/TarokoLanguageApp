@@ -278,6 +278,16 @@ void main() {
       );
     });
 
+    // 我參加的活動（T-16）：確認 total、is_host、joined_at 的實際格式。
+    for (final tab in ['active', 'ended']) {
+      test('GET /api/events/joined?tab=$tab', () => _inspect(
+        'GET',
+        '${ApiConfig.eventsJoined}?tab=$tab',
+        shape: {'total': F.number, 'events': F.list},
+        listKey: 'events',
+      ));
+    }
+
     // 影音/文章/活動/論壇搜尋（q/range/tribe_id 皆選填，見 backend/searchQuery.ts）
     test('GET /api/videos/search', () => _inspect(
       'GET',
