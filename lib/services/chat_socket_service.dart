@@ -173,9 +173,17 @@ class ChatController extends ChangeNotifier {
 
   void _scheduleReconnect() {
     _reconnectAttempts++;
-    final seconds = min(30, pow(2, _reconnectAttempts).toInt());
-    _reconnectTimer = Timer(Duration(seconds: seconds), connect);
+    _reconnectTimer = Timer(
+      Duration(seconds: reconnectDelaySeconds(_reconnectAttempts)),
+      connect,
+    );
   }
+
+  /// 第 [attempts] 次重連前等幾秒：2、4、8、16，之後固定 30。
+  /// 先夾住指數再位移：次數很大時 2 的次方會溢位成負數，變成零間隔狂連。
+  @visibleForTesting
+  static int reconnectDelaySeconds(int attempts) =>
+      min(30, 1 << min(attempts, 5));
 
   @override
   void dispose() {

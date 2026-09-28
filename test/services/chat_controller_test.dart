@@ -26,4 +26,17 @@ void main() {
       expect(controller.isConnected, isFalse);
     });
   });
+
+  group('ChatController.reconnectDelaySeconds', () {
+    test('前幾次指數成長', () {
+      expect(ChatController.reconnectDelaySeconds(1), 2);
+      expect(ChatController.reconnectDelaySeconds(4), 16);
+    });
+
+    test('次數 5、63、100 時都是 30 秒，不會溢位成零間隔', () {
+      for (final attempts in [5, 63, 100]) {
+        expect(ChatController.reconnectDelaySeconds(attempts), 30);
+      }
+    });
+  });
 }
