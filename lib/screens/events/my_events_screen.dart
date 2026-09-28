@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import 'event_detail_screen.dart';
+import 'widgets/event_status_tile.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../core/constants/app_typography.dart';
@@ -50,19 +50,6 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
         _error = e;
         _loading = false;
       });
-    }
-  }
-
-  ({String text, Color color}) _statusChip(EventSummary e) {
-    switch (e.displayStatus) {
-      case 'cancelled':
-        return (text: '已取消', color: AppColors.dangerDark);
-      case 'ended':
-        return (text: '已結束', color: AppColors.fog);
-      case 'ongoing':
-        return (text: '進行中', color: AppColors.mossDeep);
-      default:
-        return (text: '即將舉行', color: AppColors.primary);
     }
   }
 
@@ -138,121 +125,14 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 40),
       itemCount: _events.length,
       separatorBuilder: (_, _) => const SizedBox(height: 10),
-      itemBuilder: (_, i) => _buildTile(_events[i], seniorMode),
-    );
-  }
-
-  Widget _buildTile(EventSummary e, bool seniorMode) {
-    final d = e.startsAt.toLocal();
-    final chip = _statusChip(e);
-    String two(int n) => n.toString().padLeft(2, '0');
-    return GestureDetector(
-      onTap: () async {
-        await Navigator.push(context, EventDetailScreen.route(e.id));
-        if (!mounted) return;
-        _load(); // 從詳情頁回來（可能剛取消）刷新
-      },
-      child: Container(
-        padding: EdgeInsets.all(seniorMode ? 18 : 14),
-        decoration: BoxDecoration(
-          color: AppColors.cream,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.creamDeep),
-        ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            SizedBox(
-              width: seniorMode ? 76 : 52,
-              child: Column(
-                children: [
-                  Text(
-                    monthLabel(d),
-                    style: TextStyle(
-                      fontSize: AppTypography.size(
-                        AppTypography.micro,
-                        seniorMode: seniorMode,
-                      ),
-                      color: AppColors.primary,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                  Text(
-                    two(d.day),
-                    style: AppTypography.serif(
-                      fontSize: AppTypography.size(
-                        AppTypography.headline,
-                        seniorMode: seniorMode,
-                      ),
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.ink,
-                      height: 1.1,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    e.title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.titleStyle(
-                      seniorMode: seniorMode,
-                      color: AppColors.ink,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.person_outline,
-                        size: seniorMode ? 18 : 12,
-                        color: AppColors.inkSoft,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${e.participantCount} 人參加',
-                        style: TextStyle(
-                          fontSize: AppTypography.size(
-                            AppTypography.caption,
-                            seniorMode: seniorMode,
-                          ),
-                          color: AppColors.inkSoft,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: seniorMode ? 10 : 8,
-                vertical: seniorMode ? 6 : 4,
-              ),
-              decoration: BoxDecoration(
-                color: chip.color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                chip.text,
-                style: TextStyle(
-                  fontSize: AppTypography.size(
-                    AppTypography.caption,
-                    seniorMode: seniorMode,
-                  ),
-                  color: chip.color,
-                  letterSpacing: 0.5,
-                ),
-              ),
-            ),
-          ],
-        ),
+      itemBuilder: (_, i) => EventStatusTile(
+        event: _events[i],
+        seniorMode: seniorMode,
+        onTap: () async {
+          await Navigator.push(context, EventDetailScreen.route(_events[i].id));
+          if (!mounted) return;
+          _load(); // 從詳情頁回來（可能剛取消）刷新
+        },
       ),
     );
   }
