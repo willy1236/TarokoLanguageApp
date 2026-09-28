@@ -288,4 +288,55 @@ void main() {
     expect(find.byIcon(Icons.favorite_border), findsOneWidget);
     expect(find.text('3'), findsWidgets);
   });
+
+  group('報名資訊與取消理由', () {
+    Future<void> pumpDetail(
+      WidgetTester tester,
+      Map<String, dynamic> extra,
+    ) async {
+      installMockClient({
+        '/api/events/1': {..._detail(), ...extra},
+        '/api/events/1/reminders': {'reminders': <dynamic>[]},
+        '/api/me': _me(),
+      });
+      await tester.pumpWidget(_app());
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('已報名時顯示報名時間', (tester) async {
+      await pumpDetail(tester, {
+        'is_joined': true,
+        'my_registration': {
+          'joined_at': '2026-11-20T02:30:00Z',
+          'contact_email': 'me@example.com',
+        },
+      });
+      expect(find.textContaining('你已於'), findsOneWidget);
+      expect(find.textContaining('報名'), findsWidgets);
+    });
+
+    testWidgets('未報名時不顯示報名時間', (tester) async {
+      await pumpDetail(tester, {'my_registration': null});
+      expect(find.textContaining('你已於'), findsNothing);
+    });
+
+    testWidgets('已取消且有理由：照原樣顯示（含 *）', (tester) async {
+      await pumpDetail(tester, {
+        'status': 'cancelled',
+        'effective_status': 'cancelled',
+        'cancel_reason': '颱風 *停班停課*',
+      });
+      expect(find.text('取消理由：颱風 *停班停課*'), findsOneWidget);
+    });
+
+    testWidgets('已取消但理由為 null：不顯示理由列', (tester) async {
+      await pumpDetail(tester, {
+        'status': 'cancelled',
+        'effective_status': 'cancelled',
+        'cancel_reason': null,
+      });
+      expect(find.textContaining('取消理由'), findsNothing);
+      expect(find.text('已取消'), findsWidgets);
+    });
+  });
 }
