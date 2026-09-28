@@ -123,6 +123,8 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
       if (!mounted) return;
       if (e.isTermsVersionOutdated) {
         _reloadOutdated(e);
+      } else if (e.isVersionRequired) {
+        _showError('請更新 App 到最新版');
       } else {
         _showError(e.message);
       }

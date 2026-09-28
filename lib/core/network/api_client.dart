@@ -116,6 +116,9 @@ class ApiException implements Exception {
   // 條款（見 Truku_backend 說明文件/API/同意條款.md §2）
   bool get isTermsVersionOutdated => code == 'TERMS_VERSION_OUTDATED';
 
+  /// 同意條款沒帶版本號。只有 build 6 以前的舊版會這樣送，新版收到代表 App 過舊。
+  bool get isVersionRequired => statusCode == 400 && code == 'VERSION_REQUIRED';
+
   // 活動（見 Truku_backend 說明文件/API/活動提醒.md）
   bool get isRegistrationNotOpen => code == 'REGISTRATION_NOT_OPEN';
   bool get isBelowCurrentParticipants => code == 'BELOW_CURRENT_PARTICIPANTS';

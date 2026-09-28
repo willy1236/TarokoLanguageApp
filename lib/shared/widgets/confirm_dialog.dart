@@ -11,8 +11,10 @@ import '../../core/constants/app_typography.dart';
 class AppDialog extends StatelessWidget {
   final String? title;
   final String message;
-  final String primaryText;
-  final VoidCallback onPrimary;
+
+  /// 主要按鈕。兩者皆為 null 時不顯示，給沒有可執行動作、只能照訊息處理的情況。
+  final String? primaryText;
+  final VoidCallback? onPrimary;
 
   /// 次要按鈕（文字, 動作），依序由左到右排在主要按鈕下方。
   final List<(String, VoidCallback)> secondary;
@@ -21,8 +23,8 @@ class AppDialog extends StatelessWidget {
     super.key,
     this.title,
     required this.message,
-    required this.primaryText,
-    required this.onPrimary,
+    this.primaryText,
+    this.onPrimary,
     this.secondary = const [],
   });
 
@@ -60,14 +62,15 @@ class AppDialog extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 20),
-                  FilledButton(
-                    onPressed: onPrimary,
-                    style: FilledButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: AppColors.creamLight,
+                  if (primaryText case final text?)
+                    FilledButton(
+                      onPressed: onPrimary,
+                      style: FilledButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.creamLight,
+                      ),
+                      child: Text(text),
                     ),
-                    child: Text(primaryText),
-                  ),
                   if (secondary.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Row(
