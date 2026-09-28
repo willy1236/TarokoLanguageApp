@@ -42,7 +42,9 @@ class TrukuBottomTab extends StatelessWidget {
     final labelStyle = seniorMode
         ? AppTypography.bodyStyle(seniorMode: true)
         : AppTypography.captionStyle();
-    final horizontalPadding = seniorMode ? 8.0 : 4.0;
+    // 精簡模式每格已有 56 的最小寬度當點擊範圍，不再另加左右 padding：320dp
+    // 窄螢幕上兩個四字標籤加 padding 會超出 16。格與格的間距由 spaceAround 分配。
+    final horizontalPadding = seniorMode ? 0.0 : 4.0;
     return ClipRect(
       child: BackdropFilter(
         filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
