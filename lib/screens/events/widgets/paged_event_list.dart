@@ -79,6 +79,8 @@ class _PagedEventListState extends State<PagedEventList>
   }
 
   Future<void> _load() async {
+    // 從詳情頁返回才呼叫的重載，這時清單可能已經被移出畫面。
+    if (!mounted) return;
     final generation = ++_generation;
     setState(() {
       _loading = true;
