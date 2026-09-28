@@ -19,11 +19,37 @@ Map<String, Directory> _packageRoots() {
   };
 }
 
+/// FlutterFire Web 套件向 firebase_core_web 註冊的服務：`registerService` 的
+/// 第一個參數決定 SDK 檔名，`productNameOverride` 決定掛到哪個 window 變數。
+({String file, String windowVar})? _registeredService(Directory packageRoot) {
+  final pattern = RegExp(
+    r"registerService\(\s*'([^']+)'(?:\s*,\s*productNameOverride:\s*'([^']+)')?",
+  );
+  for (final file in Directory(
+    '${packageRoot.path}/lib',
+  ).listSync(recursive: true)) {
+    if (file is! File || !file.path.endsWith('.dart')) continue;
+    final match = pattern.firstMatch(file.readAsStringSync());
+    if (match == null) continue;
+    final name = match.group(1)!;
+    return (
+      // 與 firebase_core_web 的 injectService 相同：Firestore 載的是 pipelines 版。
+      file: name == 'firestore'
+          ? 'firebase-firestore-pipelines.js'
+          : 'firebase-$name.js',
+      windowVar: 'firebase_${match.group(2) ?? name}',
+    );
+  }
+  return null;
+}
+
 void main() {
-  // 去掉整行的註解，避免只寫在註解裡的字串也算數（行尾與區塊註解不處理）。
-  final bootstrap = File(
-    'web/flutter_bootstrap.js',
-  ).readAsStringSync().replaceAll(RegExp(r'^\s*//.*$', multiLine: true), '');
+  // 去掉註解，避免只寫在註解裡的字串也算數。行尾註解只認前面是空白的 //，
+  // 網址裡的 https:// 不受影響。
+  final bootstrap = File('web/flutter_bootstrap.js')
+      .readAsStringSync()
+      .replaceAll(RegExp(r'/\*.*?\*/', dotAll: true), '')
+      .replaceAll(RegExp(r'(^|\s)//.*$', multiLine: true), '');
   final roots = _packageRoots();
 
   test('預先載入的 SDK 版本與 firebase_core_web 支援的版本一致', () {
@@ -40,22 +66,33 @@ void main() {
     expect(preloaded, supported);
   });
 
-  test('每個 FlutterFire Web 套件的 SDK 模組都有預先載入', () {
-    // firebase_auth_web → window.firebase_auth；cloud_firestore_web →
-    // window.firebase_firestore（cloud_* 系列同樣向 firebase_core_web 註冊）。
-    final services = roots.keys
-        .where((n) => n.endsWith('_web') && n != 'firebase_core_web')
-        .where((n) => n.startsWith('firebase_') || n.startsWith('cloud_'))
-        .map(
-          (n) =>
-              'firebase_${n.replaceFirst(RegExp('^(firebase|cloud)_'), '').replaceFirst(RegExp(r'_web$'), '')}',
-        );
+  test('每個 FlutterFire Web 套件的 SDK 模組都以正確檔名預先載入', () {
+    // firebase_auth_web、cloud_firestore_web 這類套件都向 firebase_core_web 註冊。
+    final packages = roots.keys.where(
+      (n) =>
+          n.endsWith('_web') &&
+          n != 'firebase_core_web' &&
+          (n.startsWith('firebase_') || n.startsWith('cloud_')),
+    );
+    expect(packages, isNotEmpty);
 
-    for (final windowVar in services) {
+    for (final package in packages) {
+      final service = _registeredService(roots[package]!);
+      expect(
+        service,
+        isNotNull,
+        reason: '$package 找不到 registerService，FlutterFire 的註冊方式可能改了',
+      );
       expect(
         bootstrap,
-        contains('window.$windowVar ='),
-        reason: '$windowVar 沒有在 web/flutter_bootstrap.js 預先載入',
+        contains('\${base}${service!.file}'),
+        reason: '$package：web/flutter_bootstrap.js 沒有載入 ${service.file}',
+      );
+      expect(
+        bootstrap,
+        contains('window.${service.windowVar} ='),
+        reason:
+            '$package：web/flutter_bootstrap.js 沒有設定 window.${service.windowVar}',
       );
     }
   });
