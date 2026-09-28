@@ -68,6 +68,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       _initialLoading = true;
       // 飛行中的分頁請求已過期，不能再 append 進新篩選的清單。
       _loadingMore = false;
+      _cursor = null;
       _error = null;
     });
     try {

@@ -70,14 +70,22 @@ void main() {
     });
   }
 
-  test('本週精選用 limit 指定筆數，不帶 cursor', () async {
-    respondWith({'videos': <dynamic>[], 'page_info': pageInfo});
+  test('指定 limit 時只帶 limit、不帶 cursor（本週精選用）', () async {
+    respondWith({
+      'videos': <dynamic>[],
+      'articles': <dynamic>[],
+      'page_info': pageInfo,
+    });
 
     await VideoService.fetchVideos(sort: 'weekly_popular', limit: 5);
+    await ArticleService.fetchArticles(sort: 'weekly_popular', limit: 5);
 
-    expect(seen.single.url.queryParameters, {
-      'sort': 'weekly_popular',
-      'limit': '5',
-    });
+    for (final request in seen) {
+      expect(request.url.queryParameters, {
+        'sort': 'weekly_popular',
+        'limit': '5',
+      });
+    }
+    expect(seen, hasLength(2));
   });
 }

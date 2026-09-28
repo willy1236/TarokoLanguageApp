@@ -91,7 +91,7 @@ void main() {
     expect(requests.last, {'type': 'listening', 'limit': '20'});
   });
 
-  test('單字等級頁與聽力模式頁的最近紀錄只抓第一頁指定筆數', () async {
+  test('fetchHistory 指定 limit 時只帶 limit、不帶 cursor（最近紀錄用）', () async {
     final queries = <Map<String, String>>[];
     ApiClient.httpClient = MockClient((r) async {
       queries.add(r.url.queryParameters);

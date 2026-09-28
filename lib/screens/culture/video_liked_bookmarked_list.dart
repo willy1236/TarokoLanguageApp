@@ -4,8 +4,8 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
-import '../../models/video_models.dart';
 import '../../models/page_info.dart';
+import '../../models/video_models.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
 import '../../shared/widgets/async_state_view.dart';
