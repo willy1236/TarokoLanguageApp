@@ -48,6 +48,46 @@ void main() {
       expect(out.selection.baseOffset, 5);
     });
 
+    test('已滿時在中間輸入：內容不變，不吃掉結尾的字', () {
+      final old = TextEditingValue(
+        text: 'abcde',
+        selection: const TextSelection.collapsed(offset: 2),
+      );
+      final typed = TextEditingValue(
+        text: 'abXcde',
+        selection: const TextSelection.collapsed(offset: 3),
+      );
+      final out = formatter.formatEditUpdate(old, typed);
+      expect(out.text, 'abcde');
+      expect(out.selection.baseOffset, 2);
+    });
+
+    test('剩 1 單位時在中間插入 emoji（2 單位）：整顆不收，結尾保留', () {
+      final old = TextEditingValue(
+        text: 'abcd',
+        selection: const TextSelection.collapsed(offset: 1),
+      );
+      final typed = TextEditingValue(
+        text: 'a😀bcd',
+        selection: const TextSelection.collapsed(offset: 3),
+      );
+      expect(formatter.formatEditUpdate(old, typed).text, 'abcd');
+    });
+
+    test('在中間貼上過長文字：只收得下的部分，游標停在貼上內容之後', () {
+      final old = TextEditingValue(
+        text: 'ab',
+        selection: const TextSelection.collapsed(offset: 1),
+      );
+      final typed = TextEditingValue(
+        text: 'a12345b',
+        selection: const TextSelection.collapsed(offset: 6),
+      );
+      final out = formatter.formatEditUpdate(old, typed);
+      expect(out.text, 'a123b');
+      expect(out.selection.baseOffset, 4);
+    });
+
     test('輸入法組字中先不截，組字完成才截', () {
       final composing = _value(
         'abcdㄊㄞ',
