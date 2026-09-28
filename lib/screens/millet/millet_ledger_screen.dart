@@ -33,7 +33,6 @@ class MilletLedgerScreen extends StatefulWidget {
 class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
   final _scrollController = ScrollController();
   String? _cursor;
-  bool _hasMore = true;
   bool _loadingMore = false;
   bool _initialLoading = true;
   Object? _error;
@@ -54,7 +53,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
   }
 
   void _onScroll() {
-    if (_loadingMore || !_hasMore) return;
+    if (_loadingMore || _cursor == null) return;
     if (_scrollController.position.pixels >
         _scrollController.position.maxScrollExtent - 200) {
       _loadNextPage();
@@ -74,7 +73,6 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
           ..clear()
           ..addAll(result.transactions);
         _cursor = result.pageInfo.nextCursor;
-        _hasMore = result.pageInfo.hasMore;
         _initialLoading = false;
       });
     } catch (e) {
@@ -97,7 +95,6 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
       setState(() {
         _transactions.addAll(result.transactions);
         _cursor = result.pageInfo.nextCursor;
-        _hasMore = result.pageInfo.hasMore;
         _loadingMore = false;
       });
     } catch (e) {

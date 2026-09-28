@@ -70,7 +70,8 @@ void main() {
       calls++;
       return jsonResponse({
         'transactions': [for (var i = 20; i > 0; i--) _tx(i)],
-        'page_info': {'next_cursor': null, 'has_more': false},
+        // 帶了游標但 has_more 為 false：要看 has_more，不能只看游標在不在。
+        'page_info': {'next_cursor': '1', 'has_more': false},
       });
     });
 
