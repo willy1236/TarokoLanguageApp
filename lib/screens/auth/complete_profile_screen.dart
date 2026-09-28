@@ -7,8 +7,10 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/tribe_model.dart';
+import '../../models/user_model.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
+import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
 import '../../core/constants/app_typography.dart';
@@ -76,6 +78,27 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       _showError('請輸入公開暱稱');
       return;
     }
+    final tribalName = _tribalNameController.text.trim();
+    if (!withinUtf16Limit(
+          context,
+          displayName,
+          ProfileFieldLimits.displayName,
+          label: '中文姓名',
+        ) ||
+        !withinUtf16Limit(
+          context,
+          videoNickname,
+          ProfileFieldLimits.videoNickname,
+          label: '公開暱稱',
+        ) ||
+        !withinUtf16Limit(
+          context,
+          tribalName,
+          ProfileFieldLimits.tribalName,
+          label: '族語名字',
+        )) {
+      return;
+    }
     if (_isIndigenous && _tribe == null) {
       _showError('請選擇部落');
       return;
@@ -88,9 +111,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
         videoNickname: videoNickname,
         ethnicGroup: _isIndigenous ? _defaultEthnicGroup : null,
         tribeId: _isIndigenous ? _tribe?.id : null,
-        tribalName: _tribalNameController.text.trim().isEmpty
-            ? null
-            : _tribalNameController.text.trim(),
+        tribalName: tribalName.isEmpty ? null : tribalName,
       );
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
@@ -193,6 +214,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             controller: _displayNameController,
                             labelTriku: 'HANGAN · 中文姓名',
                             hint: '請輸入姓名',
+                            maxLength: ProfileFieldLimits.displayName,
                             seniorMode: seniorMode,
                           ),
                           const SizedBox(height: 16),
@@ -200,6 +222,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             controller: _videoNicknameController,
                             labelTriku: 'NGALAN · 公開暱稱',
                             hint: '論壇、視訊、好友都會顯示這個名字',
+                            maxLength: ProfileFieldLimits.videoNickname,
                             seniorMode: seniorMode,
                           ),
                           const SizedBox(height: 16),
@@ -212,6 +235,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                               controller: _tribalNameController,
                               labelTriku: '族語名字（選填）',
                               hint: '例如 Apyang Imiq',
+                              maxLength: ProfileFieldLimits.tribalName,
                               seniorMode: seniorMode,
                             ),
                           ],
@@ -271,6 +295,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     required TextEditingController controller,
     required String labelTriku,
     required String hint,
+    required int maxLength,
     bool seniorMode = false,
   }) {
     return Container(
@@ -297,6 +322,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           const SizedBox(height: 6),
           TextField(
             controller: controller,
+            inputFormatters: [Utf16LengthLimitingTextInputFormatter(maxLength)],
+            buildCounter: utf16CounterBuilder(
+              controller,
+              maxLength,
+              color: AppColors.cream.withValues(alpha: 0.5),
+            ),
             style: TextStyle(
               fontSize: AppTypography.size(
                 AppTypography.bodyLarge,

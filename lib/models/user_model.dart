@@ -7,6 +7,15 @@
 // 此時應 fallback 顯示 avatarUrl（登入帳號頭像）。frame_id 為 null 代表未配戴頭像框，
 // 兩者各自獨立、可同時配戴。
 
+/// 個人資料欄位的長度上限（UTF-16 單位），與後端 `PATCH /api/auth/me`、
+/// 完善資料的檢查一致。個人資料頁與首次完善資料頁共用。
+abstract final class ProfileFieldLimits {
+  static const displayName = 30;
+  static const videoNickname = 20;
+  static const selfIntro = 200;
+  static const tribalName = 50;
+}
+
 class UserModel {
   final int uid;
   final String? displayName;
