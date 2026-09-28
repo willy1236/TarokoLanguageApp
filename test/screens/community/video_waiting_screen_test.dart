@@ -101,4 +101,38 @@ void main() {
     await tester.pump(const Duration(seconds: 8));
     expect(queuePosts, 1);
   });
+
+  testWidgets('查詢本身回 403 不當成重新排隊被擋，仍留在等待畫面', (tester) async {
+    installMockClient({
+      '/api/video/session/current': errorResponse('MUTED', status: 403),
+    });
+
+    await openAndPoll(tester);
+
+    expect(find.byType(VideoWaitingScreen), findsOneWidget);
+  });
+
+  testWidgets('重新排隊途中按取消：離開後再送一次離開佇列，不留幽靈排隊者', (tester) async {
+    final requests = <String>[];
+    installMockClient(
+      {
+        '/api/video/session/current': {'session': null, 'in_queue': false},
+        '/api/video/queue': {'matched': false},
+      },
+      onRequest: (r) => requests.add('${r.method} ${r.url.path}'),
+      delayFor: (r) =>
+          r.method == 'POST' ? const Duration(seconds: 2) : Duration.zero,
+    );
+
+    await openAndPoll(tester);
+    expect(requests, contains('POST /api/video/queue'));
+
+    await tester.tap(find.text('取消配對'));
+    await pumpFrames(tester, times: 10);
+    expect(find.byType(VideoWaitingScreen), findsNothing);
+
+    await tester.pump(const Duration(seconds: 2));
+    await pumpFrames(tester);
+    expect(requests.where((r) => r == 'DELETE /api/video/queue').length, 2);
+  });
 }

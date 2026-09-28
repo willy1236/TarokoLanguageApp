@@ -30,6 +30,9 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
   /// 取消處理中：擋住重複點擊與返回鍵重入。
   bool _cancelling = false;
 
+  /// 重新排隊被 403 擋下：不再輪詢或重試。
+  bool _stopped = false;
+
   @override
   void initState() {
     super.initState();
@@ -62,37 +65,17 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
   /// （切背景超過 30 秒）就重新排隊，被 403 擋下（禁言、未設暱稱等）才停止並離開。
   /// 其他單次失敗只記 log，不中斷輪詢迴圈。
   Future<void> _poll() async {
-    if (_isPolling || _matched) return;
+    if (_isPolling || _matched || _stopped) return;
     _isPolling = true;
     try {
       final current = await VideoCallService.fetchCurrentSession();
       if (!mounted || _matched) return;
-      var session = current.session;
-      AgoraCallCredentials? credentials;
-      if (session == null && !current.inQueue && !_cancelling) {
-        final result = await VideoCallService.joinQueue();
-        if (!mounted || _matched || _cancelling) return;
-        session = result.session;
-        credentials = result.credentials;
-      }
-      if (session == null) return;
-      _matched = true;
-      _pollTimer?.cancel();
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(
-          builder: (_) => VideoCallScreen(
-            session: session!,
-            // 輪詢查到的 session 沒有憑證，由 VideoCallScreen 自行 refreshToken 取得。
-            credentials: credentials,
-          ),
-        ),
-      );
-    } on ApiException catch (e) {
-      if (e.statusCode == 403) {
-        _stopForbidden(e);
-      } else {
-        debugPrint('VideoWaitingScreen: 輪詢失敗，忽略並等下一輪：$e');
+      final session = current.session;
+      if (session != null) {
+        // 輪詢查到的 session 沒有憑證，由 VideoCallScreen 自行 refreshToken 取得。
+        _enterCall(session, null);
+      } else if (!current.inQueue && !_cancelling) {
+        await _rejoinQueue();
       }
     } catch (e) {
       debugPrint('VideoWaitingScreen: 輪詢失敗，忽略並等下一輪：$e');
@@ -101,8 +84,53 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
     }
   }
 
-  /// 重新排隊被擋下：不再重試，顯示原因並離開等待畫面。
+  /// 被後端移出佇列時重新排隊。送出後使用者才按取消或已離開畫面：配到就結束
+  /// 那一房、沒配到就再離開佇列一次，不留下沒人接的通話或幽靈排隊者。
+  Future<void> _rejoinQueue() async {
+    final QueueJoinResult result;
+    try {
+      result = await VideoCallService.joinQueue();
+    } on ApiException catch (e) {
+      // 條款、帳號刪除中的 403 已由 ApiClient 導頁，這裡不再介入。
+      if (e.statusCode == 403 &&
+          !e.isConsentRequired &&
+          !e.isAccountPendingDeletion) {
+        _stopForbidden(e);
+      } else {
+        debugPrint('VideoWaitingScreen: 重新排隊失敗，等下一輪：$e');
+      }
+      return;
+    }
+    final session = result.session;
+    if (!mounted || _cancelling) {
+      unawaited(
+        (session != null
+                ? VideoCallService.endSession(session.id)
+                : VideoCallService.leaveQueue())
+            .catchError((Object e) {
+              debugPrint('VideoWaitingScreen: 取消後清理重新排隊失敗：$e');
+            }),
+      );
+      return;
+    }
+    if (session != null) _enterCall(session, result.credentials);
+  }
+
+  void _enterCall(VideoSession session, AgoraCallCredentials? credentials) {
+    _matched = true;
+    _pollTimer?.cancel();
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) =>
+            VideoCallScreen(session: session, credentials: credentials),
+      ),
+    );
+  }
+
+  /// 重新排隊被擋下（禁言、未設暱稱等）：不再重試，顯示原因並離開等待畫面。
   void _stopForbidden(ApiException e) {
+    _stopped = true;
     _pollTimer?.cancel();
     if (!mounted) return;
     scaffoldMessengerKey.currentState
@@ -114,9 +142,8 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
           ),
         ),
       );
-    // 已不在佇列，直接離開；配對成功才會放行返回，先標記避免 PopScope 攔下。
-    _matched = true;
-    Navigator.pop(context);
+    // 取消處理中就交給 _cancel 離開，兩邊都 pop 會連下面的頁面一起關掉。
+    if (!_cancelling) Navigator.pop(context);
   }
 
   /// 取消配對：必須確認後端已離開佇列才返回。fire-and-forget 會留下幽靈
