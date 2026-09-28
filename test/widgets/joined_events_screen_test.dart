@@ -132,6 +132,72 @@ void main() {
     expect(find.text('活動 25', skipOffstage: false), findsOneWidget);
   });
 
+  testWidgets('第 1 頁填不滿畫面時，不用捲動就載入下一頁', (tester) async {
+    final pages = <String?>[];
+    ApiClient.httpClient = MockClient((r) async {
+      final page = r.url.queryParameters['page'];
+      pages.add(page);
+      return jsonResponse({
+        'total': 25,
+        'events': page == '1'
+            ? [for (var i = 1; i <= 20; i++) _event(i)]
+            : [for (var i = 21; i <= 25; i++) _event(i)],
+      });
+    });
+
+    // 畫面夠高，20 筆全部放得下，不會有捲動事件。
+    usePhoneSurface(tester, size: const Size(414, 4000));
+    await tester.pumpWidget(app());
+    await pumpFrames(tester, times: 10);
+
+    expect(pages, ['1', '2']);
+    expect(find.text('活動 25'), findsOneWidget);
+  });
+
+  testWidgets('載入下一頁失敗：底部顯示重試，點了才重新載入', (tester) async {
+    final pages = <String?>[];
+    var failPage2 = true;
+    ApiClient.httpClient = MockClient((r) async {
+      final page = r.url.queryParameters['page'];
+      pages.add(page);
+      if (page == '2' && failPage2) {
+        failPage2 = false;
+        return errorResponse('X', status: 500, message: '壞了');
+      }
+      return jsonResponse({
+        'total': 25,
+        'events': page == '1'
+            ? [for (var i = 1; i <= 20; i++) _event(i)]
+            : [for (var i = 21; i <= 25; i++) _event(i)],
+      });
+    });
+
+    await tester.pumpWidget(app());
+    await pumpFrames(tester);
+    await tester.fling(
+      find.byType(ListView).first,
+      const Offset(0, -3000),
+      3000,
+    );
+    await pumpFrames(tester, times: 10);
+    expect(pages, ['1', '2']);
+
+    // 失敗後再捲也不會自動重打，避免一直失敗一直打。
+    await tester.fling(
+      find.byType(ListView).first,
+      const Offset(0, -3000),
+      3000,
+    );
+    await pumpFrames(tester, times: 10);
+    expect(pages, ['1', '2']);
+
+    await tester.tap(find.text('載入失敗，點此重試'));
+    await pumpFrames(tester, times: 10);
+    expect(pages, ['1', '2', '2']);
+    expect(find.text('活動 25', skipOffstage: false), findsOneWidget);
+    expect(find.text('載入失敗，點此重試'), findsNothing);
+  });
+
   testWidgets('結束分頁載入失敗顯示錯誤狀態', (tester) async {
     installMockClient({
       '/api/events/joined': errorResponse('X', status: 500, message: '壞了'),

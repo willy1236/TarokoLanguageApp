@@ -104,6 +104,9 @@ class _JoinedEventsTabState extends State<_JoinedEventsTab>
   int _page = 0;
   bool _loading = true;
   bool _loadingMore = false;
+
+  /// 載入下一頁失敗：底部改顯示重試，捲動不再自動重打，等使用者點。
+  bool _loadMoreFailed = false;
   Object? _error;
 
   /// 每次整頁重載加一，較早發出的載入更多回來時就丟棄。
@@ -146,6 +149,7 @@ class _JoinedEventsTabState extends State<_JoinedEventsTab>
       _loading = true;
       // 進行中的載入更多會因世代不同被丟棄，旗標在這裡清掉，否則之後永遠載不了下一頁。
       _loadingMore = false;
+      _loadMoreFailed = false;
       _error = null;
     });
     try {
@@ -173,7 +177,7 @@ class _JoinedEventsTabState extends State<_JoinedEventsTab>
   }
 
   Future<void> _loadMore() async {
-    if (_loading || _loadingMore || !_hasMore) return;
+    if (_loading || _loadingMore || _loadMoreFailed || !_hasMore) return;
     final generation = _generation;
     setState(() => _loadingMore = true);
     try {
@@ -195,8 +199,16 @@ class _JoinedEventsTabState extends State<_JoinedEventsTab>
     } catch (e) {
       debugPrint('JoinedEventsScreen._loadMore failed: $e');
       if (!mounted || generation != _generation) return;
-      setState(() => _loadingMore = false);
+      setState(() {
+        _loadingMore = false;
+        _loadMoreFailed = true;
+      });
     }
+  }
+
+  void _retryLoadMore() {
+    setState(() => _loadMoreFailed = false);
+    _loadMore();
   }
 
   Future<void> _open(EventSummary e) async {
@@ -255,6 +267,20 @@ class _JoinedEventsTabState extends State<_JoinedEventsTab>
       separatorBuilder: (_, _) => const SizedBox(height: 10),
       itemBuilder: (_, i) {
         if (i == _events.length) {
+          if (_loadMoreFailed) {
+            return Center(
+              child: TextButton(
+                onPressed: _retryLoadMore,
+                child: Text(
+                  '載入失敗，點此重試',
+                  style: AppTypography.bodyLargeStyle(
+                    seniorMode: seniorMode,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            );
+          }
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 16),
             child: Center(
