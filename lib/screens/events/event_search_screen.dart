@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/event_model.dart';
+import '../../models/page_info.dart';
 import '../../models/tribe_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -29,8 +30,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
   bool _loading = false;
   bool _loadingMore = false;
   String? _error;
-  int _page = 1;
-  bool _mayHaveMore = true;
+  String? _cursor;
   List<EventSummary> _events = [];
   bool _searched = false;
 
@@ -52,19 +52,18 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
       _loading = true;
       _loadingMore = false; // 飛行中的分頁請求已過期，不能再 append 進新清單
       _error = null;
-      _page = 1;
+      _cursor = null;
     });
     try {
-      final results = await EventService.searchEvents(
+      final result = await EventService.searchEvents(
         q: _q,
         range: _range,
         tribeId: _tribe?.id,
-        page: 1,
       );
       if (!mounted || gen != _reqGen) return;
       setState(() {
-        _events = results;
-        _mayHaveMore = results.isNotEmpty;
+        _events = result.events;
+        _cursor = result.pageInfo.nextCursor;
         _loading = false;
       });
     } catch (e) {
@@ -77,21 +76,21 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
   }
 
   Future<void> _loadMore() async {
-    if (_loadingMore || !_mayHaveMore) return;
+    final cursor = _cursor;
+    if (_loadingMore || cursor == null) return;
     final gen = _reqGen;
     setState(() => _loadingMore = true);
     try {
-      final results = await EventService.searchEvents(
+      final result = await EventService.searchEvents(
         q: _q,
         range: _range,
         tribeId: _tribe?.id,
-        page: _page + 1,
+        cursor: cursor,
       );
       if (!mounted || gen != _reqGen) return;
       setState(() {
-        _events = [..._events, ...results];
-        _page += 1;
-        _mayHaveMore = results.isNotEmpty;
+        _events = appendUnique(_events, result.events, (e) => e.id);
+        _cursor = result.pageInfo.nextCursor;
         _loadingMore = false;
       });
     } catch (_) {
@@ -194,7 +193,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
       },
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
-        itemCount: _events.length + (_mayHaveMore ? 1 : 0),
+        itemCount: _events.length + (_cursor != null ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: 10),
         itemBuilder: (context, i) {
           if (i >= _events.length) {

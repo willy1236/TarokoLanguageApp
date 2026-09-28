@@ -38,7 +38,7 @@ class _MyEventsScreenState extends State<MyEventsScreen> {
       _error = null;
     });
     try {
-      final list = await EventService.fetchMyEvents();
+      final (events: list, pageInfo: _) = await EventService.fetchMyEvents();
       if (!mounted) return;
       setState(() {
         _events = list;

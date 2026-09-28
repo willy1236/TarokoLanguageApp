@@ -30,80 +30,57 @@ import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/event_draft.dart';
 import '../models/event_model.dart';
+import '../models/page_info.dart';
+
+/// 活動列表的一頁。只要第一頁的呼叫端（首頁、廣場）取 [events] 即可。
+typedef EventPage = ({List<EventSummary> events, PageInfo pageInfo});
 
 class EventService {
   // ── 活動 ────────────────────────────────────────────────────
 
   /// 活動列表：只含尚未開始的活動，依開始時間升冪（後端已不分 scope）。
-  /// 後端分頁，回傳 events[]（含 participantCount / isJoined / 即時狀態）。
-  static Future<List<EventSummary>> fetchEvents({
-    int page = 1,
-    int pageSize = 20,
-  }) async {
-    final data = await ApiClient.get(
-      ApiConfig.events,
-      query: {'page': '$page', 'page_size': '$pageSize'},
-    );
-    final list = data['events'] as List<dynamic>? ?? const [];
-    return list
-        .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
+  /// 回傳 events[]（含 participantCount / isJoined / 即時狀態）。
+  static Future<EventPage> fetchEvents({String? cursor, int limit = 20}) =>
+      _fetchPage(ApiConfig.events, cursor: cursor, limit: limit);
 
   /// 關鍵字／時間區間／部落搜尋，三個維度皆選填、可任意組合。range 篩「未來 N 內
   /// 即將舉辦」（跟 videos/articles 篩「最近發布」語意相反，見後端 events.ts）。
-  static Future<List<EventSummary>> searchEvents({
+  static Future<EventPage> searchEvents({
     String? q,
     String? range,
     int? tribeId,
-    int page = 1,
-    int pageSize = 20,
-  }) async {
+    String? cursor,
+    int limit = 20,
+  }) {
     final trimmed = q?.trim();
-    final data = await ApiClient.get(
+    return _fetchPage(
       ApiConfig.eventSearch,
-      query: {
+      cursor: cursor,
+      limit: limit,
+      filters: {
         'q': ?(trimmed != null && trimmed.isNotEmpty ? trimmed : null),
         'range': ?range,
         'tribe_id': ?tribeId?.toString(),
-        'page': '$page',
-        'page_size': '$pageSize',
       },
     );
-    final list = data['events'] as List<dynamic>? ?? const [];
-    return list
-        .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
-        .toList();
   }
 
-  /// 我的活動（我發起的 + 我參加的）。
-  static Future<List<EventSummary>> fetchMyEvents() async {
-    final data = await ApiClient.get(ApiConfig.eventsMine);
-    final list = data['events'] as List<dynamic>? ?? const [];
-    return list
-        .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
+  /// 我發起的活動。
+  static Future<EventPage> fetchMyEvents({String? cursor, int limit = 20}) =>
+      _fetchPage(ApiConfig.eventsMine, cursor: cursor, limit: limit);
 
   /// 我參加的活動（含自己發起的）。[tab]：'active'（即將開始與進行中，開始時間升冪）
-  /// 或 'ended'（已結束與已取消，開始時間降冪）。回傳這一頁與總筆數，供往下捲分頁。
-  static Future<({List<EventSummary> events, int total})> fetchJoinedEvents({
+  /// 或 'ended'（已結束與已取消，開始時間降冪）。
+  static Future<EventPage> fetchJoinedEvents({
     required String tab,
-    int page = 1,
-    int pageSize = 20,
-  }) async {
-    final data = await ApiClient.get(
-      ApiConfig.eventsJoined,
-      query: {'tab': tab, 'page': '$page', 'page_size': '$pageSize'},
-    );
-    final list = data['events'] as List<dynamic>? ?? const [];
-    return (
-      events: list
-          .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      total: asEventInt(data['total']) ?? 0,
-    );
-  }
+    String? cursor,
+    int limit = 20,
+  }) => _fetchPage(
+    ApiConfig.eventsJoined,
+    cursor: cursor,
+    limit: limit,
+    filters: {'tab': tab},
+  );
 
   /// 發起活動。後端（v2）五個必填欄位：title / description / location（地點名稱）/
   /// address（詳細地址）/ startsAt（需未來、1 年內）。contact 為選填。
@@ -194,32 +171,35 @@ class EventService {
     return data['bookmarked'] == true;
   }
 
-  static Future<List<EventSummary>> fetchLikedEvents({
-    int page = 1,
-    int pageSize = 20,
-  }) async {
-    final data = await ApiClient.get(
-      ApiConfig.eventLikes,
-      query: {'page': '$page', 'page_size': '$pageSize'},
-    );
-    final list = data['events'] as List<dynamic>? ?? const [];
-    return list
-        .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
-        .toList();
-  }
+  static Future<EventPage> fetchLikedEvents({String? cursor, int limit = 20}) =>
+      _fetchPage(ApiConfig.eventLikes, cursor: cursor, limit: limit);
 
-  static Future<List<EventSummary>> fetchBookmarkedEvents({
-    int page = 1,
-    int pageSize = 20,
+  static Future<EventPage> fetchBookmarkedEvents({
+    String? cursor,
+    int limit = 20,
+  }) => _fetchPage(ApiConfig.eventBookmarks, cursor: cursor, limit: limit);
+
+  /// 所有活動列表端點共用：帶 cursor／limit 與各自的篩選條件，解析 events 與 page_info。
+  static Future<EventPage> _fetchPage(
+    String path, {
+    required String? cursor,
+    required int limit,
+    Map<String, String> filters = const {},
   }) async {
     final data = await ApiClient.get(
-      ApiConfig.eventBookmarks,
-      query: {'page': '$page', 'page_size': '$pageSize'},
+      path,
+      query: {
+        ...filters,
+        ...PageInfo.query(cursor: cursor, limit: limit),
+      },
     );
     final list = data['events'] as List<dynamic>? ?? const [];
-    return list
-        .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
-        .toList();
+    return (
+      events: list
+          .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      pageInfo: PageInfo.fromResponse(data),
+    );
   }
 
   // ── 提醒 ────────────────────────────────────────────────────
@@ -256,10 +236,10 @@ class EventService {
   // ── 通知 ────────────────────────────────────────────────────
 
   /// 我有報名的活動收到的通知（發起人發出的已送出提醒），比照論壇通知分頁方式。
-  static Future<EventNotificationPage> notifications({int? cursor}) async {
+  static Future<EventNotificationPage> notifications({String? cursor}) async {
     final data = await ApiClient.get(
       ApiConfig.eventNotifications,
-      query: {if (cursor != null) 'cursor': '$cursor'},
+      query: PageInfo.query(cursor: cursor),
     );
     return EventNotificationPage.fromJson(data);
   }

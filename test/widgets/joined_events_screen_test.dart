@@ -1,4 +1,4 @@
-// 我參加的活動：兩個分頁、往下捲分頁到 total 為止、自己發起的標示。
+// 我參加的活動：兩個分頁、往下捲分頁到 has_more 為 false 為止、自己發起的標示。
 
 import 'dart:async';
 
@@ -29,6 +29,18 @@ Map<String, dynamic> _event(
   'is_joined': true,
 };
 
+/// 兩頁的假分頁：第 1 頁 20 筆、游標 '2' 取第 2 頁 5 筆後到底。
+/// 第 2 頁多帶一筆第 1 頁已有的活動 20，模擬翻頁期間有新活動插入。
+Map<String, dynamic> _page(String page) => page == '1'
+    ? {
+        'events': [for (var i = 1; i <= 20; i++) _event(i)],
+        'page_info': {'next_cursor': '2', 'has_more': true},
+      }
+    : {
+        'events': [for (var i = 20; i <= 25; i++) _event(i)],
+        'page_info': {'next_cursor': null, 'has_more': false},
+      };
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -53,18 +65,13 @@ void main() {
     expect(find.text('我發起的'), findsOneWidget); // 只有 is_host 那筆
   });
 
-  testWidgets('超過 20 筆往下捲載入下一頁，到 total 為止不再請求', (tester) async {
+  testWidgets('超過 20 筆往下捲帶游標載入下一頁，has_more 為 false 後不再請求', (tester) async {
     final pages = <String?>[];
-    // installMockClient 依 path 固定回應，分頁要依 page 參數回不同內容，直接換 MockClient。
+    // installMockClient 依 path 固定回應，分頁要依 cursor 參數回不同內容，直接換 MockClient。
     ApiClient.httpClient = MockClient((r) async {
-      final page = r.url.queryParameters['page'];
+      final page = r.url.queryParameters['cursor'] ?? '1';
       pages.add(page);
-      return jsonResponse({
-        'total': 25,
-        'events': page == '1'
-            ? [for (var i = 1; i <= 20; i++) _event(i)]
-            : [for (var i = 21; i <= 25; i++) _event(i)],
-      });
+      return jsonResponse(_page(page));
     });
 
     await tester.pumpWidget(app());
@@ -86,24 +93,21 @@ void main() {
 
     expect(pages, ['1', '2']);
     expect(find.text('活動 25', skipOffstage: false), findsOneWidget);
+    // 第 2 頁重複的活動 20 只出現一次。
+    expect(find.text('活動 20', skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('載入下一頁途中下拉重新整理，之後仍能載入下一頁', (tester) async {
     final pages = <String?>[];
     var slowPage2 = true;
     ApiClient.httpClient = MockClient((r) async {
-      final page = r.url.queryParameters['page'];
+      final page = r.url.queryParameters['cursor'] ?? '1';
       pages.add(page);
       if (page == '2' && slowPage2) {
         slowPage2 = false;
         await Future<void>.delayed(const Duration(seconds: 3));
       }
-      return jsonResponse({
-        'total': 25,
-        'events': page == '1'
-            ? [for (var i = 1; i <= 20; i++) _event(i)]
-            : [for (var i = 21; i <= 25; i++) _event(i)],
-      });
+      return jsonResponse(_page(page));
     });
 
     await tester.pumpWidget(app());
@@ -135,14 +139,9 @@ void main() {
   testWidgets('第 1 頁填不滿畫面時，不用捲動就載入下一頁', (tester) async {
     final pages = <String?>[];
     ApiClient.httpClient = MockClient((r) async {
-      final page = r.url.queryParameters['page'];
+      final page = r.url.queryParameters['cursor'] ?? '1';
       pages.add(page);
-      return jsonResponse({
-        'total': 25,
-        'events': page == '1'
-            ? [for (var i = 1; i <= 20; i++) _event(i)]
-            : [for (var i = 21; i <= 25; i++) _event(i)],
-      });
+      return jsonResponse(_page(page));
     });
 
     // 畫面夠高，20 筆全部放得下，不會有捲動事件。
@@ -158,18 +157,13 @@ void main() {
     final pages = <String?>[];
     var failPage2 = true;
     ApiClient.httpClient = MockClient((r) async {
-      final page = r.url.queryParameters['page'];
+      final page = r.url.queryParameters['cursor'] ?? '1';
       pages.add(page);
       if (page == '2' && failPage2) {
         failPage2 = false;
         return errorResponse('X', status: 500, message: '壞了');
       }
-      return jsonResponse({
-        'total': 25,
-        'events': page == '1'
-            ? [for (var i = 1; i <= 20; i++) _event(i)]
-            : [for (var i = 21; i <= 25; i++) _event(i)],
-      });
+      return jsonResponse(_page(page));
     });
 
     await tester.pumpWidget(app());
@@ -203,14 +197,9 @@ void main() {
     ApiClient.httpClient = MockClient((r) async {
       final path = r.url.path;
       if (path == '/api/events/joined') {
-        final page = r.url.queryParameters['page'];
+        final page = r.url.queryParameters['cursor'] ?? '1';
         pages.add(page);
-        return jsonResponse({
-          'total': 25,
-          'events': page == '1'
-              ? [for (var i = 1; i <= 20; i++) _event(i)]
-              : [for (var i = 21; i <= 25; i++) _event(i)],
-        });
+        return jsonResponse(_page(page));
       }
       if (path == '/api/events/25') {
         return jsonResponse({

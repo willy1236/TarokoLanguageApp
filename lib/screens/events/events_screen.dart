@@ -76,7 +76,7 @@ class _EventsScreenState extends State<EventsScreen> {
       _error = null;
     });
     try {
-      final events = await EventService.fetchEvents();
+      final (:events, pageInfo: _) = await EventService.fetchEvents();
       if (!mounted) return;
       setState(() {
         _events = events;

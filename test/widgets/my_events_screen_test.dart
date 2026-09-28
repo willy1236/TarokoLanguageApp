@@ -107,7 +107,7 @@ void main() {
             _notification(id: 2, message: '集合地點改在活動中心', isRead: true),
           ],
           'unread_count': 1,
-          'next_cursor': null,
+          'page_info': {'next_cursor': null, 'has_more': false},
         },
       });
 
@@ -127,7 +127,7 @@ void main() {
         '/api/events/notifications': {
           'notifications': <dynamic>[],
           'unread_count': 0,
-          'next_cursor': null,
+          'page_info': {'next_cursor': null, 'has_more': false},
         },
       });
 

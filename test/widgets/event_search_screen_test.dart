@@ -6,6 +6,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/testing.dart';
+
+import 'package:flutter_application_1/core/network/api_client.dart';
 
 import 'package:flutter_application_1/screens/events/event_search_screen.dart';
 
@@ -160,5 +163,48 @@ void main() {
     expect(searchCalls, 2);
     expect(find.text('新查詢結果'), findsWidgets);
     expect(find.text('舊查詢結果'), findsNothing);
+  });
+
+  testWidgets('捲到底帶上一頁的游標載入下一頁，重複的活動只出現一次，到底後不再請求', (
+    tester,
+  ) async {
+    final cursors = <String?>[];
+    ApiClient.httpClient = MockClient((r) async {
+      if (r.url.path != '/api/events/search') {
+        return jsonResponse({'history': <dynamic>[], 'popular': <dynamic>[]});
+      }
+      final cursor = r.url.queryParameters['cursor'];
+      cursors.add(cursor);
+      return jsonResponse(
+        cursor == null
+            ? {
+                'events': [
+                  for (var i = 1; i <= 20; i++) _event(id: i, title: '活動$i'),
+                ],
+                'page_info': {'next_cursor': '20', 'has_more': true},
+              }
+            : {
+                'events': [
+                  for (var i = 20; i <= 22; i++) _event(id: i, title: '活動$i'),
+                ],
+                'page_info': {'next_cursor': null, 'has_more': false},
+              },
+      );
+    });
+
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+    await _searchFor(tester, '祭');
+    for (var i = 0; i < 3; i++) {
+      await tester.fling(find.byType(ListView).last, const Offset(0, -5000), 3000);
+      for (var f = 0; f < 10; f++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    expect(cursors, [null, '20']);
+    expect(find.text('活動22'), findsOneWidget);
+    expect(find.text('活動20', skipOffstage: false), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 }
