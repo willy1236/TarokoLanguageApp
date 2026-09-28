@@ -353,6 +353,9 @@ class _MainContainerState extends State<MainContainer>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
     NotificationSummaryService.refresh();
+    // 背景過夜回來要能簽到。每次回前景都查，不在前端判斷跨日：裝置時區與
+    // 後端換日時間不一定一致。
+    _loadCheckinStatus();
     // 推播會把未讀總數設成 App 圖示紅點（iOS aps.badge），回前景時要自己歸零。
     AppBadge.clear();
   }
