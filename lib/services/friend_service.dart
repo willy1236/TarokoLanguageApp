@@ -5,13 +5,16 @@ import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/friend_message_model.dart';
 import '../models/friend_model.dart';
+import '../models/page_info.dart';
 import '../models/public_profile_model.dart';
 import 'block_refresh_notifier.dart';
 import 'notification_summary_service.dart';
 
 class ChatMessagePage {
   final List<FriendMessage> messages;
-  final int? nextCursor;
+
+  /// 往上翻更舊訊息的游標；null 代表已到最早一則。
+  final String? nextCursor;
 
   const ChatMessagePage({required this.messages, this.nextCursor});
 }
@@ -115,15 +118,15 @@ class FriendService {
     ).map((e) => Conversation.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  /// 依 cursor（訊息 id）往舊訊息分頁；cursor 為 null 取最新一頁。
+  /// 依上一頁的 page_info.next_cursor 往舊訊息分頁；cursor 為 null 取最新一頁。
   static Future<ChatMessagePage> getMessages(
     int uid, {
-    int? cursor,
+    String? cursor,
     int limit = 30,
   }) async {
     final data = await ApiClient.get(
       ApiConfig.friendMessages(uid),
-      query: {'limit': '$limit', if (cursor != null) 'cursor': '$cursor'},
+      query: PageInfo.query(cursor: cursor, limit: limit),
     );
     final messages = ApiClient.unwrapList(
       data,
@@ -131,7 +134,7 @@ class FriendService {
     ).map((e) => FriendMessage.fromJson(e as Map<String, dynamic>)).toList();
     return ChatMessagePage(
       messages: messages,
-      nextCursor: (data['next_cursor'] as num?)?.toInt(),
+      nextCursor: PageInfo.fromResponse(data).nextCursor,
     );
   }
 

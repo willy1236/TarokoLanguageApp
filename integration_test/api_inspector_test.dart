@@ -265,6 +265,23 @@ void main() {
       ApiConfig.forumCommentLikes,
       shape: {'comments': F.list, 'page_info': F.object},
     ));
+    test('GET /api/friends/:uid/messages (自動挑第一位好友)', () async {
+      if (_token == null) {
+        markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+        return;
+      }
+      final uid = await _firstFriendUid();
+      if (uid == null) {
+        markTestSkipped('目前沒有好友可測私訊歷史');
+        return;
+      }
+      await _inspect(
+        'GET',
+        '${ApiConfig.friendMessages(uid)}?limit=30',
+        fixtureAs: 'get_api_friend_messages.json',
+        shape: {'messages': F.list, 'page_info': F.object},
+      );
+    });
     test('GET /api/videos', () => _inspect(
       'GET',
       ApiConfig.videos,
@@ -465,6 +482,21 @@ Future<int?> _findMostCommentedPostId() async {
   if (posts.isEmpty) return null;
   final id = posts.first['id'];
   return id is int ? id : int.tryParse('$id');
+}
+
+/// 打 /api/friends 取第一位好友的 uid，給私訊歷史用。
+Future<int?> _firstFriendUid() async {
+  final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.friends}');
+  final response = await http.get(uri, headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $_token',
+  });
+  if (response.statusCode != 200) return null;
+  final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+  final friends = decoded['friends'] as List<dynamic>? ?? const [];
+  if (friends.isEmpty) return null;
+  final uid = (friends.first as Map<String, dynamic>)['uid'];
+  return uid is int ? uid : int.tryParse('$uid');
 }
 
 /// 取 /api/levels 的第一個等級代號，給 quiz／listening 的 start 當合法 level 用。

@@ -1,0 +1,25 @@
+{
+  "partner": {
+    "uid": 35,
+    "nickname": "測試暱稱",
+    "friend_code": "TESTCODE",
+    "avatar_url": "https://example.com/avatar.png",
+    "avatar_id": "avatar_blue_02",
+    "frame_id": null
+  },
+  "messages": [
+    {
+      "id": "15",
+      "sender_uid": 20,
+      "recipient_uid": 35,
+      "body": "測試內文",
+      "created_at": "2026-09-28T07:47:27.622Z",
+      "read_at": null
+    }
+  ],
+  "next_cursor": null,
+  "page_info": {
+    "next_cursor": null,
+    "has_more": false
+  }
+}
