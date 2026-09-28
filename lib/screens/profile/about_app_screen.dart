@@ -13,8 +13,24 @@ import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/app_back_button.dart';
 
+// ── 資料來源與授權 ────────────────────────────────────────────
+// 等後端確認授權書要求、提供標示文字後，換掉 [_dataSources] 的內容並把
+// [_showDataSources] 改成 true 即可上線，不必再動版面。
+const bool _showDataSources = false;
+
+const String _dataSourcesTitle = '資料來源與授權';
+
+/// 每筆一個來源：名稱與授權標示文字。
+const List<({String source, String license})> _dataSources = [
+  (source: '資料來源名稱（待提供）', license: '授權方式與標示文字（待提供）'),
+];
+
 class AboutAppScreen extends StatelessWidget {
-  const AboutAppScreen({super.key});
+  /// 測試用：強制顯示「資料來源與授權」區塊，正式畫面一律依 [_showDataSources]。
+  @visibleForTesting
+  final bool? debugShowDataSources;
+
+  const AboutAppScreen({super.key, this.debugShowDataSources});
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -161,6 +177,47 @@ class AboutAppScreen extends StatelessWidget {
           _sectionLabel('三個入口，一起編織', seniorMode),
           const SizedBox(height: 14),
           _buildPillars(seniorMode),
+          if (debugShowDataSources ?? _showDataSources) ...[
+            const SizedBox(height: 32),
+            _sectionLabel(_dataSourcesTitle, seniorMode),
+            const SizedBox(height: 14),
+            _buildDataSources(seniorMode),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDataSources(bool seniorMode) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.creamDeep),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < _dataSources.length; i++) ...[
+            if (i > 0) const SizedBox(height: 14),
+            Text(
+              _dataSources[i].source,
+              style: AppTypography.titleStyle(
+                seniorMode: seniorMode,
+                color: AppColors.ink,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _dataSources[i].license,
+              style: AppTypography.bodyStyle(
+                seniorMode: seniorMode,
+                color: AppColors.inkSoft,
+              ),
+            ),
+          ],
         ],
       ),
     );
