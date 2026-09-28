@@ -16,7 +16,29 @@ void main() {
       (h) => (h as Map)['key'] == 'Content-Security-Policy',
     ),
   );
-  final pattern = RegExp(securityRule['regex'] as String);
+  final regex = securityRule['regex'] as String;
+  // 部分比對與整串比對都要成立，不依賴 Hosting 用哪一種。
+  bool applies(String path) {
+    final partial = RegExp(regex).hasMatch(path);
+    final whole = RegExp('^(?:$regex)\$').hasMatch(path);
+    expect(partial, whole, reason: '$path 在部分比對與整串比對下結果不同');
+    return partial;
+  }
+
+  test('T-12 的四個安全標頭都在同一條規則，套用範圍一致', () {
+    final keys = (securityRule['headers'] as List)
+        .map((h) => (h as Map)['key'])
+        .toSet();
+    expect(
+      keys,
+      containsAll([
+        'X-Frame-Options',
+        'X-Content-Type-Options',
+        'Referrer-Policy',
+        'Content-Security-Policy',
+      ]),
+    );
+  });
 
   test('一般路徑都套用安全標頭', () {
     for (final path in [
@@ -31,8 +53,10 @@ void main() {
       '/vendor/hls.min.js',
       '/a/__/b',
       '//__/a',
+      '/?a=1',
+      '/__?a=1',
     ]) {
-      expect(pattern.hasMatch(path), isTrue, reason: path);
+      expect(applies(path), isTrue, reason: path);
     }
   });
 
@@ -42,8 +66,9 @@ void main() {
       '/__/auth/iframe',
       '/__/auth/handler',
       '/__/firebase/init.js',
+      '/__/__',
     ]) {
-      expect(pattern.hasMatch(path), isFalse, reason: path);
+      expect(applies(path), isFalse, reason: path);
     }
   });
 }
