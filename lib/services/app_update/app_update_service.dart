@@ -68,14 +68,14 @@ AvailableUpdate? decideUpdate({
   String? url,
 }) {
   if (minimum != null && isUpdateRequired(current: current, minimum: minimum)) {
-    // 最新版本查不到時至少要升到最低版本。
+    // 最新版本查不到、或比最低版本還舊（設定有誤）時，至少要升到最低版本。
     final latest = pickUpdateVersion(
       current: current,
       store: store,
       remote: remote,
     );
     return AvailableUpdate(
-      version: latest ?? minimum,
+      version: latest != null && latest > minimum ? latest : minimum,
       url: url,
       required: true,
     );
@@ -127,10 +127,23 @@ class AppUpdateService {
 
     // 兩個來源各自失敗不影響另一邊。
     final storeFuture = _orNull(_fetchStoreVersion(info.packageName), '商店版本查詢');
-    final remoteFuture = _orNull(_fetchRemoteConfig(), 'Remote Config 讀取');
-    final store = await storeFuture;
-    final remote = await remoteFuture;
+    final remote = await _orNull(_fetchRemoteConfig(), 'Remote Config 讀取');
+    final url = (remote?.url.isNotEmpty ?? false)
+        ? remote!.url
+        : _defaultStoreUrl(info.packageName);
 
+    // 強制更新只看 Remote Config：商店查詢最長要等逾時，不能讓太舊的 App
+    // 趁這段時間走完登入與條款流程。
+    if (isUpdateRequired(current: current, minimum: remote?.minimum)) {
+      return decideUpdate(
+        current: current,
+        remote: remote?.version,
+        minimum: remote?.minimum,
+        url: url,
+      );
+    }
+
+    final store = await storeFuture;
     final prefs = await SharedPreferences.getInstance();
     return decideUpdate(
       current: current,
@@ -138,9 +151,7 @@ class AppUpdateService {
       remote: remote?.version,
       minimum: remote?.minimum,
       skipped: prefs.getString(_skippedKey),
-      url: (remote?.url.isNotEmpty ?? false)
-          ? remote!.url
-          : _defaultStoreUrl(info.packageName),
+      url: url,
     );
   }
 

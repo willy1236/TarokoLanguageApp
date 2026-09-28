@@ -144,6 +144,16 @@ void main() {
       expect(update.version.toString(), '1.0.0+8');
     });
 
+    test('最新版本比最低版本還舊（設定有誤）：版本取最低版本', () {
+      final update = decideUpdate(
+        current: current,
+        store: v('1.0.0+8'),
+        minimum: v('1.0.1'),
+        url: url,
+      );
+      expect(update!.version.toString(), '1.0.1');
+    });
+
     test('低於最低版本但沒有連結（iOS 沒設 update_url_ios）：仍然擋下', () {
       final update = decideUpdate(current: current, minimum: v('1.0.0+8'));
       expect(update!.required, isTrue);
