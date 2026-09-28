@@ -208,10 +208,19 @@ class FcmService {
         // 移除失敗不阻斷登出流程
       }
     }
+    await deleteLocalToken();
+  }
+
+  /// 只刪本機 FCM token，不通知後端。JWT 已失效無法註銷時用：後端留著的
+  /// 舊 token 推播會失敗並自行清除，這台手機不會再收到舊帳號的推播。
+  static Future<void> deleteLocalToken() async {
+    if (!PlatformFeatures.supportsPush) return;
+    _lastToken = null;
     try {
       await _fm.deleteToken();
-    } catch (_) {}
-    _lastToken = null;
+    } catch (e) {
+      debugPrint('FcmService: 刪除本機 token 失敗（忽略）：$e');
+    }
   }
 
   static Future<void> _uploadIfLoggedIn(String token) async {

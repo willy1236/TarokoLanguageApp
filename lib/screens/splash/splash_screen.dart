@@ -4,8 +4,8 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/account_service.dart';
-import '../../services/auth_service.dart';
 import '../../services/fcm_service.dart';
+import '../../services/session_service.dart';
 import '../../services/terms_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
@@ -31,7 +31,7 @@ class _SplashScreenState extends State<SplashScreen> {
     );
     Future.delayed(const Duration(milliseconds: 2500), () async {
       if (!mounted) return;
-      final loggedIn = await AuthService.isLoggedIn();
+      final loggedIn = await SessionService.restore();
       if (!mounted) return;
       if (!loggedIn) {
         Navigator.pushReplacementNamed(context, '/login');
