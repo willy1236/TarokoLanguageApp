@@ -92,7 +92,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   /// 初次載入還沒回來就連上了：載入的快照可能早於訂閱生效，等載入完再補抓一次。
   bool _catchUpAfterLoad = false;
-  int? _nextCursor;
+  String? _nextCursor;
 
   /// 標題列頭像要查商店目錄才知道 avatarId/frameId 對應的圖。
   Map<String, ShopItem> _itemCatalogById = const {};

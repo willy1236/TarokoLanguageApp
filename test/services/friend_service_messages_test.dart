@@ -1,0 +1,63 @@
+// 私訊歷史往上翻：帶上一頁 page_info.next_cursor 的原字串，到最早一則就停。
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+
+import 'package:flutter_application_1/core/network/api_client.dart';
+import 'package:flutter_application_1/services/friend_service.dart';
+
+import '../helpers/widget_test_helpers.dart';
+
+Map<String, dynamic> _message(int id) => {
+  'id': '$id',
+  'sender_uid': 20,
+  'recipient_uid': 35,
+  'body': '訊息 $id',
+  'created_at': '2026-09-28T07:47:27.622Z',
+  'read_at': null,
+};
+
+void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUp(stubCommonChannels);
+  tearDown(restoreHttp);
+
+  late List<http.BaseRequest> seen;
+
+  void respondWith(Map<String, dynamic> body) {
+    seen = [];
+    ApiClient.httpClient = MockClient((r) async {
+      seen.add(r);
+      return jsonResponse(body);
+    });
+  }
+
+  test('最新一頁不帶 cursor，limit 照舊 30，讀 page_info 的字串游標', () async {
+    respondWith({
+      'messages': [_message(15)],
+      'next_cursor': 15,
+      'page_info': {'next_cursor': 'm:15', 'has_more': true},
+    });
+
+    final page = await FriendService.getMessages(35);
+
+    expect(seen.single.url.path, '/api/friends/35/messages');
+    expect(seen.single.url.queryParameters, {'limit': '30'});
+    expect(page.messages.single.body, '訊息 15');
+    expect(page.nextCursor, 'm:15');
+  });
+
+  test('往上翻時原樣帶回游標；has_more 為 false 就沒有下一頁', () async {
+    respondWith({
+      'messages': [_message(3)],
+      'page_info': {'next_cursor': null, 'has_more': false},
+    });
+
+    final page = await FriendService.getMessages(35, cursor: 'm:15');
+
+    expect(seen.single.url.queryParameters, {'cursor': 'm:15', 'limit': '30'});
+    expect(page.nextCursor, isNull);
+  });
+}
