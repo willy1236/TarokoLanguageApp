@@ -25,6 +25,7 @@ import 'widgets/profile_rows.dart';
 import 'widgets/profile_stats.dart';
 import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
+import '../events/joined_events_screen.dart';
 import '../events/my_events_screen.dart';
 import '../shop/shop_screen.dart';
 import '../millet/millet_ledger_screen.dart';
@@ -441,6 +442,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onTap: () => Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const MyEventsScreen())),
+      ),
+      const Divider(height: 1, color: AppColors.creamDeep),
+      profileNavRow(
+        icon: Icons.event_available_outlined,
+        label: '我參加的活動',
+        seniorMode: seniorMode,
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const JoinedEventsScreen())),
       ),
       const Divider(height: 1, color: AppColors.creamDeep),
       profileNavRow(
