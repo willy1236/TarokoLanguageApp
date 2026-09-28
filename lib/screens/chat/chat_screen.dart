@@ -67,11 +67,12 @@ class ChatScreen extends StatefulWidget {
     ),
   );
 
-  /// 開著的聊天室的重載函式：key = partnerUid（同一人開了多個時取最後開的）。
-  static final Map<int, VoidCallback> _live = {};
+  /// 開著的聊天室的重載函式，以所在的 route 為 key：同一人開了兩個聊天室時
+  /// 各自登記，關掉上層那個不影響下層。
+  static final Map<Route<dynamic>, VoidCallback> _live = {};
 
-  /// 點私訊通知時人已在該聊天室：重抓背景期間漏掉的訊息並標成已讀。
-  static void refreshIfOpen(int partnerUid) => _live[partnerUid]?.call();
+  /// 點私訊通知時人已在 [route] 這個聊天室：重抓背景期間漏掉的訊息並標成已讀。
+  static void refreshRoute(Route<dynamic> route) => _live[route]?.call();
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -92,10 +93,22 @@ class _ChatScreenState extends State<ChatScreen> {
   /// 標題列頭像要查商店目錄才知道 avatarId/frameId 對應的圖。
   Map<String, ShopItem> _itemCatalogById = const {};
 
+  /// 這個聊天室所在的 route，推播重載的登記 key。
+  Route<dynamic>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null && _route == null) {
+      _route = route;
+      ChatScreen._live[route] = _refreshFromPush;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    ChatScreen._live[widget.partnerUid] = _refreshFromPush;
     chatController.connect();
     chatController.addListener(_onChatEvent);
     _scrollController.addListener(_onScroll);
@@ -117,9 +130,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    if (ChatScreen._live[widget.partnerUid] == _refreshFromPush) {
-      ChatScreen._live.remove(widget.partnerUid);
-    }
+    final route = _route;
+    if (route != null) ChatScreen._live.remove(route);
     chatController.removeListener(_onChatEvent);
     _scrollController.dispose();
     _inputController.dispose();

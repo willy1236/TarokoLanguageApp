@@ -9,6 +9,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'package:flutter_application_1/core/navigation/route_stack.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/screens/chat/chat_screen.dart';
 import 'package:flutter_application_1/screens/friends/friend_push_navigation.dart';
@@ -22,6 +23,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final navKey = GlobalKey<NavigatorState>();
+  late RouteStack routes;
   var readPosts = 0;
 
   setUp(() {
@@ -52,13 +54,14 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         navigatorKey: navKey,
+        navigatorObservers: [routes = RouteStack()],
         home: const Scaffold(body: Text('HOME')),
       ),
     );
   }
 
   Future<void> open(WidgetTester tester, String type, int uid) async {
-    await openFriendPush(navKey.currentState!, type, uid);
+    await openFriendPush(routes, type, uid);
     await pumpFrames(tester);
   }
 
@@ -93,6 +96,45 @@ void main() {
 
     expect(find.text('CALL', skipOffstage: false), findsOneWidget);
     expect(find.byType(ChatScreen, skipOffstage: false), findsNWidgets(2));
+  });
+
+  testWidgets('聊天室上面只蓋著 dialog：視為已開著，不疊頁也不關 dialog', (tester) async {
+    await start(tester);
+    await open(tester, 'friend_message', 7);
+    showDialog<void>(
+      context: navKey.currentContext!,
+      builder: (_) => const AlertDialog(content: Text('DIALOG')),
+    );
+    await pumpFrames(tester);
+    final readsBefore = readPosts;
+
+    await open(tester, 'friend_message', 7);
+
+    expect(find.text('DIALOG'), findsOneWidget);
+    expect(find.byType(ChatScreen, skipOffstage: false), findsOneWidget);
+    expect(readPosts, readsBefore + 1);
+  });
+
+  testWidgets('同一人開了兩個聊天室，關掉上層後下層仍能被重載', (tester) async {
+    await start(tester);
+    await open(tester, 'friend_message', 7);
+    navKey.currentState!.push(
+      MaterialPageRoute(builder: (_) => const Scaffold(body: Text('CALL'))),
+    );
+    await pumpFrames(tester);
+    await open(tester, 'friend_message', 7);
+    expect(find.byType(ChatScreen, skipOffstage: false), findsNWidgets(2));
+
+    navKey.currentState!
+      ..pop()
+      ..pop();
+    await pumpFrames(tester);
+    final readsBefore = readPosts;
+
+    await open(tester, 'friend_message', 7);
+
+    expect(find.byType(ChatScreen, skipOffstage: false), findsOneWidget);
+    expect(readPosts, readsBefore + 1);
   });
 
   testWidgets('接受邀請與羈絆展示 → 對方公開頁', (tester) async {

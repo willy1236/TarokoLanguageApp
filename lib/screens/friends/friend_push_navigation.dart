@@ -7,18 +7,23 @@
 
 import 'package:flutter/material.dart';
 
+import '../../core/navigation/route_stack.dart';
 import '../../models/friend_model.dart';
 import '../../services/friend_service.dart';
 import '../chat/chat_screen.dart';
 import 'friend_requests_screen.dart';
 import 'public_profile_screen.dart';
 
-Future<void> openFriendPush(NavigatorState nav, String type, int uid) async {
-  // 只有聊天室就在最上層才算「已開著」。它可能被通話、響鈴畫面蓋住，
-  // 那時 pop 回聊天室會拆掉通話，改為照常疊一頁。
+Future<void> openFriendPush(RouteStack routes, String type, int uid) async {
+  final nav = routes.navigator;
+  if (nav == null) return;
+  // 只有聊天室是最上層的整頁才算「已開著」（上面只蓋著 dialog 也算）。它可能
+  // 被通話、響鈴畫面蓋住，那時 pop 回聊天室會拆掉通話，改為照常疊一頁。
+  final top = routes.topPage;
   if (type == 'friend_message' &&
-      _topRouteName(nav) == ChatScreen.routeNameFor(uid)) {
-    ChatScreen.refreshIfOpen(uid);
+      top != null &&
+      top.settings.name == ChatScreen.routeNameFor(uid)) {
+    ChatScreen.refreshRoute(top);
     return;
   }
   if (type == 'friend_request') {
@@ -60,16 +65,6 @@ Future<void> openFriendPush(NavigatorState nav, String type, int uid) async {
       builder: (_) => PublicProfileScreen(friendCode: friendCode),
     ),
   );
-}
-
-/// 最上層 route 的名稱。popUntil 的 predicate 對最上層立刻回 true，不會 pop 任何頁。
-String? _topRouteName(NavigatorState nav) {
-  String? name;
-  nav.popUntil((route) {
-    name = route.settings.name;
-    return true;
-  });
-  return name;
 }
 
 void _openRequests(NavigatorState nav) {
