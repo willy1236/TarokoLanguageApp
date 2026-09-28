@@ -32,6 +32,7 @@ const Map<String, String> kStringMasks = {
   // 契約驗的是「這個欄位是不是非空字串」，不是內容本身，
   // 所以換成固定假文字不影響防線，卻能讓 fixture 不夾帶任何真實發文。
   'title': '測試標題',
+  'post_title': '測試標題',
   'body': '測試內文',
   'content': '測試內文',
   'content_md': '測試內文',

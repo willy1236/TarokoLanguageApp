@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/models/forum_models.dart';
+import 'package:flutter_application_1/models/page_info.dart';
 import 'package:flutter_application_1/screens/forum/forum_board_view.dart';
 
 ForumPost post(int id, {int likeCount = 0, bool isLiked = false}) => ForumPost(
@@ -33,7 +34,7 @@ void main() {
       wrap(
         ForumBoardView(
           loadPage: ({cursor, after}) async =>
-              const ForumPostPage(pinned: [], posts: [], nextCursor: null),
+              const ForumPostPage(pinned: [], posts: [], pageInfo: PageInfo.end),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
           onOpenPost: (_, {imageIndex}) {},
@@ -52,7 +53,7 @@ void main() {
           loadPage: ({cursor, after}) async => ForumPostPage(
             pinned: [post(99)],
             posts: [post(1)],
-            nextCursor: null,
+            pageInfo: PageInfo.end,
           ),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
@@ -86,7 +87,7 @@ void main() {
             return ForumPostPage(
               pinned: const [],
               posts: [post(1)],
-              nextCursor: null,
+              pageInfo: PageInfo.end,
             );
           },
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
@@ -119,7 +120,7 @@ void main() {
           loadPage: ({cursor, after}) async => ForumPostPage(
             pinned: const [],
             posts: [post(1, likeCount: 3)],
-            nextCursor: null,
+            pageInfo: PageInfo.end,
           ),
           // 後端回的計數刻意與樂觀值不同，驗證前端有採用後端的值。
           toggleLike: (_, {required like}) => completer.future,
@@ -149,7 +150,7 @@ void main() {
           loadPage: ({cursor, after}) async => ForumPostPage(
             pinned: const [],
             posts: [post(1, likeCount: 3)],
-            nextCursor: null,
+            pageInfo: PageInfo.end,
           ),
           toggleLike: (_, {required like}) => completer.future,
           toggleBookmark: (_, {required add}) async => add,
@@ -172,7 +173,7 @@ void main() {
   });
 
   testWidgets('捲到底時以 cursor 載入下一頁', (tester) async {
-    final seenCursors = <int?>[];
+    final seenCursors = <String?>[];
     await tester.pumpWidget(
       wrap(
         ForumBoardView(
@@ -182,13 +183,13 @@ void main() {
               return ForumPostPage(
                 pinned: const [],
                 posts: [for (var i = 20; i > 0; i--) post(i)],
-                nextCursor: 1,
+                pageInfo: const PageInfo(nextCursor: 'c1'),
               );
             }
             return ForumPostPage(
               pinned: const [],
               posts: [post(0)],
-              nextCursor: null,
+              pageInfo: PageInfo.end,
             );
           },
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
@@ -202,7 +203,7 @@ void main() {
     await tester.drag(find.byType(ListView), const Offset(0, -4000));
     await tester.pumpAndSettle();
 
-    expect(seenCursors, [null, 1]);
+    expect(seenCursors, [null, 'c1']);
 
     // 用固定距離拖曳只能保證觸發載入下一頁，不保證新那筆剛好落在視野內
     // （卡片高度一改就會失準），所以捲到看見為止再斷言。
@@ -215,12 +216,12 @@ void main() {
   // loadPage 本身。此測試在修正前會失敗（因為 reloadKey 相同時仍會多打一次）。
   testWidgets('reloadKey 不變時，換一個新的 loadPage closure 不會重新載入', (tester) async {
     var calls = 0;
-    Future<ForumPostPage> makeLoadPage({int? cursor, int? after}) async {
+    Future<ForumPostPage> makeLoadPage({String? cursor, int? after}) async {
       calls++;
       return ForumPostPage(
         pinned: const [],
         posts: [post(1)],
-        nextCursor: null,
+        pageInfo: PageInfo.end,
       );
     }
 
@@ -259,12 +260,12 @@ void main() {
 
   testWidgets('reloadKey 改變時會重新載入', (tester) async {
     var calls = 0;
-    Future<ForumPostPage> makeLoadPage({int? cursor, int? after}) async {
+    Future<ForumPostPage> makeLoadPage({String? cursor, int? after}) async {
       calls++;
       return ForumPostPage(
         pinned: const [],
         posts: [post(1)],
-        nextCursor: null,
+        pageInfo: PageInfo.end,
       );
     }
 
@@ -309,7 +310,7 @@ void main() {
           loadPage: ({cursor, after}) async => ForumPostPage(
             pinned: const [],
             posts: [post(1, likeCount: 3)],
-            nextCursor: null,
+            pageInfo: PageInfo.end,
           ),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
@@ -337,7 +338,7 @@ void main() {
           loadPage: ({cursor, after}) async => ForumPostPage(
             pinned: const [],
             posts: [post(1, likeCount: 7)],
-            nextCursor: null,
+            pageInfo: PageInfo.end,
           ),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,
@@ -378,7 +379,7 @@ void main() {
           loadPage: ({cursor, after}) async => ForumPostPage(
             pinned: const [],
             posts: [post(1)],
-            nextCursor: null,
+            pageInfo: PageInfo.end,
           ),
           toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
           toggleBookmark: (_, {required add}) async => add,

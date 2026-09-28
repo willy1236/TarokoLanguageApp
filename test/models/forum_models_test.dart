@@ -173,16 +173,16 @@ void main() {
   });
 
   group('ForumPostPage.fromJson', () {
-    test('置頂與一般貼文分開，next_cursor 為 null 時代表沒有下一頁', () {
+    test('置頂與一般貼文分開，has_more 為 false 時代表沒有下一頁', () {
       final page = ForumPostPage.fromJson({
         'pinned': [_postJson()..['is_pinned'] = true],
         'posts': [_postJson()],
-        'next_cursor': null,
+        'page_info': {'next_cursor': null, 'has_more': false},
       });
 
       expect(page.pinned.single.isPinned, isTrue);
       expect(page.posts, hasLength(1));
-      expect(page.nextCursor, isNull);
+      expect(page.pageInfo.hasMore, isFalse);
     });
   });
 
@@ -202,14 +202,14 @@ void main() {
           },
         ],
         'unread_count': 1,
-        'next_cursor': 3,
+        'page_info': {'next_cursor': '3', 'has_more': true},
       });
 
       expect(page.items.single.type, 'reply_post');
       expect(page.items.single.postId, 1024);
       expect(page.items.single.isRead, isFalse);
       expect(page.unreadCount, 1);
-      expect(page.nextCursor, 3);
+      expect(page.pageInfo.nextCursor, '3');
     });
   });
 

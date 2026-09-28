@@ -5,6 +5,7 @@
 //   - id 與計數一律經 _asInt：pg driver 會把 BIGINT 以字串回傳，v1 為此修過三個 commit。
 //   - 缺欄位一律有安全預設，後端補欄位或前端搶先實作（如 is_bookmarked）都不會炸。
 
+import 'page_info.dart';
 import 'tribe_model.dart';
 
 int _asInt(dynamic value) => int.tryParse(value?.toString() ?? '') ?? 0;
@@ -270,12 +271,12 @@ class ForumComment {
 class ForumPostPage {
   final List<ForumPost> pinned;
   final List<ForumPost> posts;
-  final int? nextCursor;
+  final PageInfo pageInfo;
 
   const ForumPostPage({
     required this.pinned,
     required this.posts,
-    required this.nextCursor,
+    required this.pageInfo,
   });
 
   factory ForumPostPage.fromJson(Map<String, dynamic> j) => ForumPostPage(
@@ -287,19 +288,19 @@ class ForumPostPage {
         .whereType<Map<String, dynamic>>()
         .map(ForumPost.fromJson)
         .toList(),
-    nextCursor: _asIntOrNull(j['next_cursor']),
+    pageInfo: PageInfo.fromResponse(j),
   );
 }
 
 class ForumCommentPage {
   final List<ForumComment> comments;
   final List<ForumComment> replies;
-  final int? nextCursor;
+  final PageInfo pageInfo;
 
   const ForumCommentPage({
     required this.comments,
     required this.replies,
-    required this.nextCursor,
+    required this.pageInfo,
   });
 
   factory ForumCommentPage.fromJson(Map<String, dynamic> j) => ForumCommentPage(
@@ -311,17 +312,17 @@ class ForumCommentPage {
         .whereType<Map<String, dynamic>>()
         .map(ForumComment.fromJson)
         .toList(),
-    nextCursor: _asIntOrNull(j['next_cursor']),
+    pageInfo: PageInfo.fromResponse(j),
   );
 }
 
-/// GET /api/forum/posts/likes —— 我按讚過的貼文。游標是 liked_at 時間戳字串
-/// （非 ForumPostPage 用的貼文 id），故獨立一個分頁型別。
+/// GET /api/forum/posts/likes —— 我按讚過的貼文。依按讚時間排序，
+/// 與 ForumPostPage 不同，沒有置頂區塊，故獨立一個分頁型別。
 class ForumLikedPostPage {
   final List<ForumPost> posts;
-  final String? nextCursor;
+  final PageInfo pageInfo;
 
-  const ForumLikedPostPage({required this.posts, required this.nextCursor});
+  const ForumLikedPostPage({required this.posts, required this.pageInfo});
 
   factory ForumLikedPostPage.fromJson(Map<String, dynamic> j) =>
       ForumLikedPostPage(
@@ -329,7 +330,7 @@ class ForumLikedPostPage {
             .whereType<Map<String, dynamic>>()
             .map(ForumPost.fromJson)
             .toList(),
-        nextCursor: j['next_cursor'] as String?,
+        pageInfo: PageInfo.fromResponse(j),
       );
 }
 
@@ -364,11 +365,11 @@ class ForumLikedComment {
 
 class ForumLikedCommentPage {
   final List<ForumLikedComment> comments;
-  final String? nextCursor;
+  final PageInfo pageInfo;
 
   const ForumLikedCommentPage({
     required this.comments,
-    required this.nextCursor,
+    required this.pageInfo,
   });
 
   factory ForumLikedCommentPage.fromJson(Map<String, dynamic> j) =>
@@ -377,7 +378,7 @@ class ForumLikedCommentPage {
             .whereType<Map<String, dynamic>>()
             .map(ForumLikedComment.fromJson)
             .toList(),
-        nextCursor: j['next_cursor'] as String?,
+        pageInfo: PageInfo.fromResponse(j),
       );
 }
 
@@ -452,12 +453,12 @@ class ForumNotification {
 class ForumNotificationPage {
   final List<ForumNotification> items;
   final int unreadCount;
-  final int? nextCursor;
+  final PageInfo pageInfo;
 
   const ForumNotificationPage({
     required this.items,
     required this.unreadCount,
-    required this.nextCursor,
+    required this.pageInfo,
   });
 
   factory ForumNotificationPage.fromJson(Map<String, dynamic> j) =>
@@ -467,6 +468,6 @@ class ForumNotificationPage {
             .map(ForumNotification.fromJson)
             .toList(),
         unreadCount: _asInt(j['unread_count']),
-        nextCursor: _asIntOrNull(j['next_cursor']),
+        pageInfo: PageInfo.fromResponse(j),
       );
 }

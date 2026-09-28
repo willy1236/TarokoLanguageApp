@@ -1,6 +1,6 @@
 // 貼文詳情的留言列表：本地插入、分頁「載入更多」、整頁重載交錯時，
 // 留言不重複、不亂序，過期的請求結果不會接到新列表上；停在頁內收到回覆推播時，
-// 浮出「有新回覆」提示，點了才載入。
+// 浮出「有新回覆」提示，點了才整頁重載。
 import 'dart:async';
 import 'dart:convert';
 
@@ -43,8 +43,9 @@ Map<String, dynamic> _commentJson(int id, {int? parent}) => {
   'author': {'uid': 9, 'display_name': 'Yudaw', 'avatar_url': null},
 };
 
-/// 照後端規則分頁的假論壇：`id > cursor`、由舊到新、每頁 [pageSize] 則第一層留言，
-/// 回覆跟著所屬的第一層留言同頁回來。
+/// 照後端規則分頁的假論壇：由舊到新、每頁 [pageSize] 則第一層留言，
+/// 回覆跟著所屬的第一層留言同頁回來。游標是不透明字串（`after:<id>`），
+/// App 自己用留言 id 組出來的游標對不上，會被當成第一頁。
 class _FakeForum {
   _FakeForum(this.roots);
 
@@ -60,6 +61,8 @@ class _FakeForum {
   int _inFlight = 0;
   int maxInFlight = 0;
 
+  static String cursorAfter(int id) => 'after:$id';
+
   Map<String, dynamic> page(int? cursor) {
     final sorted = [...roots]..sort();
     final after = sorted.where((id) => cursor == null || id > cursor).toList();
@@ -71,7 +74,10 @@ class _FakeForum {
         for (final e in replyParent.entries)
           if (slice.contains(e.value)) _commentJson(e.key, parent: e.value),
       ],
-      'next_cursor': hasMore ? slice.last : null,
+      'page_info': {
+        'next_cursor': hasMore ? cursorAfter(slice.last) : null,
+        'has_more': hasMore,
+      },
     };
   }
 
@@ -94,7 +100,10 @@ class _FakeForum {
       if (_inFlight > maxInFlight) maxInFlight = _inFlight;
       await holdFor?.call(request.url);
       _inFlight--;
-      final cursor = int.tryParse(request.url.queryParameters['cursor'] ?? '');
+      final raw = request.url.queryParameters['cursor'];
+      final cursor = raw != null && raw.startsWith('after:')
+          ? int.parse(raw.substring('after:'.length))
+          : null;
       return jsonResponse(page(cursor));
     }
     if (path.endsWith('/posts/$_postId')) {
@@ -200,10 +209,10 @@ void main() {
 
     final stale = Completer<void>();
     forum.holdFor = (url) =>
-        url.queryParameters['cursor'] == '2' ? stale.future : null;
+        url.queryParameters['cursor'] == 'after:2' ? stale.future : null;
     _reachBottom(tester);
     await tester.pumpAndSettle();
-    expect(forum.commentRequests.last.queryParameters['cursor'], '2');
+    expect(forum.commentRequests.last.queryParameters['cursor'], 'after:2');
 
     forum.holdFor = null;
     ForumDetailScreen.refreshRoute(_detailRoute(tester));
@@ -216,7 +225,7 @@ void main() {
     expect(_visibleComments(tester), ['留言1', '留言2']);
 
     await _scrollToBottom(tester);
-    expect(forum.commentRequests.last.queryParameters['cursor'], '2');
+    expect(forum.commentRequests.last.queryParameters['cursor'], 'after:2');
     expect(_visibleComments(tester), ['留言1', '留言2', '留言3', '留言4']);
   });
 
@@ -231,17 +240,13 @@ void main() {
 
       forum.roots.addAll([2, 3]);
       expect(
-        ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 2),
+        ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post'),
         isTrue,
       );
       await tester.pumpAndSettle();
       expect(chip(1), findsOneWidget);
       expect(
-        ForumDetailScreen.notifyNewReply(
-          _detailRoute(tester),
-          'reply_comment',
-          3,
-        ),
+        ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_comment'),
         isTrue,
       );
       await tester.pumpAndSettle();
@@ -267,13 +272,13 @@ void main() {
       navKey.currentState!.push(ForumDetailScreen.route(postId: _postId));
       await tester.pumpAndSettle();
       final route = _detailRoute(tester);
-      ForumDetailScreen.notifyNewReply(route, 'reply_post', 2);
+      ForumDetailScreen.notifyNewReply(route, 'reply_post');
       await tester.pumpAndSettle();
       expect(chip(1), findsOneWidget);
 
       navKey.currentState!.pop();
       await tester.pumpAndSettle();
-      expect(ForumDetailScreen.notifyNewReply(route, 'reply_post', 3), isFalse);
+      expect(ForumDetailScreen.notifyNewReply(route, 'reply_post'), isFalse);
 
       navKey.currentState!.push(ForumDetailScreen.route(postId: _postId));
       await tester.pumpAndSettle();
@@ -281,27 +286,60 @@ void main() {
     });
   });
 
-  group('點提示後只抓新留言接在原處', () {
+  group('點提示一律整頁重載', () {
     Future<void> tapChip(WidgetTester tester) async {
       await tester.tap(find.textContaining('則新回覆'));
       await tester.pumpAndSettle();
     }
 
-    testWidgets('已載完時收到回覆貼文：新留言接在最後，不整頁重載', (tester) async {
+    testWidgets('已載完時收到回覆貼文：從第一頁重載，新留言出現在列表中', (tester) async {
       final forum = _FakeForum([1, 2]);
       ApiClient.httpClient = forum.client();
       await _openDetail(tester);
       final posts = forum.postRequests;
+      final comments = forum.commentRequests.length;
 
       forum.roots.add(3);
-      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 3);
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
       await tester.pumpAndSettle();
       await tapChip(tester);
 
-      expect(_visibleComments(tester), ['留言1', '留言2', '留言3']);
-      expect(forum.postRequests, posts);
-      expect(forum.commentRequests.last.queryParameters['cursor'], '2');
+      expect(forum.postRequests, posts + 1);
+      expect(forum.commentRequests, hasLength(comments + 1));
+      expect(
+        forum.commentRequests.last.queryParameters.containsKey('cursor'),
+        isFalse,
+      );
       expect(find.text('留言 3'), findsOneWidget);
+      expect(find.textContaining('則新回覆'), findsNothing);
+
+      await _scrollToBottom(tester);
+      expect(_visibleComments(tester), ['留言1', '留言2', '留言3']);
+    });
+
+    testWidgets('重載後把新的留言數回報給列表頁', (tester) async {
+      final forum = _FakeForum([1]);
+      ApiClient.httpClient = forum.client();
+      final reported = <int>[];
+      tester.view.physicalSize = const Size(800, 4000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        wrapScreen(
+          ForumDetailScreen(
+            postId: _postId,
+            onPostChanged: (p) => reported.add(p.commentCount),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      forum.roots.add(2);
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
+      await tester.pumpAndSettle();
+      await tapChip(tester);
+
+      expect(reported, [2]);
     });
 
     testWidgets('還沒載完時收到回覆貼文：提示請使用者往下載入', (tester) async {
@@ -309,7 +347,7 @@ void main() {
       ApiClient.httpClient = forum.client();
       await _openDetail(tester);
 
-      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 3);
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
       await tester.pumpAndSettle();
       expect(find.text('有 1 則新回覆，往下載入就看得到'), findsOneWidget);
 
@@ -317,7 +355,7 @@ void main() {
       expect(_visibleComments(tester), ['留言1', '留言2', '留言3']);
     });
 
-    testWidgets('自己剛送出的留言比推播來的那則新：兩則都在、各一次', (tester) async {
+    testWidgets('自己剛送出的留言比推播來的那則新：重載後兩則都在、各一次', (tester) async {
       final forum = _FakeForum([1]);
       ApiClient.httpClient = forum.client();
       await _openDetail(tester);
@@ -328,47 +366,25 @@ void main() {
       await tester.pump();
       await tester.tap(find.byIcon(Icons.send));
       await tester.pumpAndSettle();
+      expect(_visibleComments(tester), ['留言1', '留言102']);
 
-      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 101);
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
       await tester.pumpAndSettle();
       await tapChip(tester);
+      await _scrollToBottom(tester);
       expect(_visibleComments(tester), ['留言1', '留言101', '留言102']);
     });
 
-    testWidgets('抓取途中又收到推播：同時只有一個請求，跑完補抓，兩則都在', (tester) async {
-      final forum = _FakeForum([1]);
-      ApiClient.httpClient = forum.client();
-      await _openDetail(tester);
-
-      final first = Completer<void>();
-      forum.holdFor = (url) =>
-          url.queryParameters['cursor'] == '1' ? first.future : null;
-      forum.roots.add(2);
-      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 2);
-      await tester.pumpAndSettle();
-      await tapChip(tester);
-
-      forum.roots.add(3);
-      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 3);
-      await tester.pumpAndSettle();
-      forum.holdFor = null;
-      first.complete();
-      await tester.pumpAndSettle();
-
-      expect(forum.maxInFlight, 1);
-      expect(_visibleComments(tester), ['留言1', '留言2', '留言3']);
-      expect(find.textContaining('則新回覆'), findsNothing);
-    });
-
-    testWidgets('推播帶來的那則已被刪除：退回整頁重載一次，不會一直重試', (tester) async {
+    testWidgets('推播帶來的那則已被刪除：只重載一次，不會一直重試', (tester) async {
       final forum = _FakeForum([1]);
       ApiClient.httpClient = forum.client();
       await _openDetail(tester);
       final posts = forum.postRequests;
 
-      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 50);
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
       await tester.pumpAndSettle();
       await tapChip(tester);
+      await tester.pumpAndSettle();
 
       expect(forum.postRequests, posts + 1);
       expect(_visibleComments(tester), ['留言1']);
@@ -382,12 +398,8 @@ void main() {
 
       forum.roots.add(2);
       forum.replyParent[3] = 1;
-      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post', 2);
-      ForumDetailScreen.notifyNewReply(
-        _detailRoute(tester),
-        'reply_comment',
-        3,
-      );
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_comment');
       await tester.pumpAndSettle();
       await tapChip(tester);
 

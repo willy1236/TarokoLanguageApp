@@ -125,8 +125,43 @@ final List<_Contract> _contracts = [
   _Contract('get_api_event_detail.json', 'EventDetail', EventDetail.fromJson),
   _Contract(
     'get_api_forum_search_q_a_range_1m.json',
+    'ForumPostPage(search)',
+    _paged(ForumPostPage.fromJson),
+  ),
+  _Contract(
+    'get_api_forum_posts.json',
     'ForumPostPage',
-    ForumPostPage.fromJson,
+    _paged(ForumPostPage.fromJson),
+  ),
+  _Contract(
+    'get_api_forum_boards_general_posts.json',
+    'ForumPostPage(board)',
+    _paged(ForumPostPage.fromJson),
+  ),
+  _Contract(
+    'get_api_forum_bookmarks.json',
+    'ForumPostPage(bookmarks)',
+    _paged(ForumPostPage.fromJson),
+  ),
+  _Contract(
+    'get_api_forum_post_comments.json',
+    'ForumCommentPage',
+    _paged(ForumCommentPage.fromJson),
+  ),
+  _Contract(
+    'get_api_forum_notifications.json',
+    'ForumNotificationPage',
+    _paged(ForumNotificationPage.fromJson),
+  ),
+  _Contract(
+    'get_api_forum_posts_likes.json',
+    'ForumLikedPostPage',
+    _paged(ForumLikedPostPage.fromJson),
+  ),
+  _Contract(
+    'get_api_forum_comments_likes.json',
+    'ForumLikedCommentPage',
+    _paged(ForumLikedCommentPage.fromJson),
   ),
   _Contract('get_api_terms.json', 'TermsStatus', TermsStatus.fromJson),
   _Contract(

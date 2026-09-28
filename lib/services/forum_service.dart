@@ -28,6 +28,7 @@
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/forum_models.dart';
+import '../models/page_info.dart';
 
 class ForumService {
   // 後端硬性限制，畫面層據此在送出前擋下必然失敗的請求。
@@ -58,7 +59,7 @@ class ForumService {
   /// 兩者互斥，同時帶會讓後端的條件互相打架。
   static Future<ForumPostPage> posts(
     String slug, {
-    int? cursor,
+    String? cursor,
     int? after,
     int limit = 20,
   }) async {
@@ -66,7 +67,7 @@ class ForumService {
     final data = await ApiClient.get(
       ApiConfig.forumBoardPosts(slug),
       query: {
-        if (cursor != null) 'cursor': '$cursor',
+        'cursor': ?cursor,
         if (after != null) 'after': '$after',
         'limit': '$limit',
       },
@@ -80,7 +81,7 @@ class ForumService {
   /// 自己的事，把所有看板的置頂堆在總覽最上面只會變成雜訊（後端 API 文件 §2.2）。
   /// 因此這裡不需要另外渲染置頂區塊。
   static Future<ForumPostPage> allPosts({
-    int? cursor,
+    String? cursor,
     int? after,
     int limit = 20,
   }) async {
@@ -88,7 +89,7 @@ class ForumService {
     final data = await ApiClient.get(
       ApiConfig.forumPosts,
       query: {
-        if (cursor != null) 'cursor': '$cursor',
+        'cursor': ?cursor,
         if (after != null) 'after': '$after',
         'limit': '$limit',
       },
@@ -165,10 +166,10 @@ class ForumService {
 
   // ── 留言 ──────────────────────────────────────────────────
 
-  static Future<ForumCommentPage> comments(int postId, {int? cursor}) async {
+  static Future<ForumCommentPage> comments(int postId, {String? cursor}) async {
     final data = await ApiClient.get(
       ApiConfig.forumPostComments(postId),
-      query: {if (cursor != null) 'cursor': '$cursor'},
+      query: PageInfo.query(cursor: cursor),
     );
     return ForumCommentPage.fromJson(data);
   }
@@ -215,11 +216,11 @@ class ForumService {
     );
   }
 
-  /// 我按讚過的貼文。[cursor] 為上一頁 next_cursor（liked_at 時間戳字串）。
+  /// 我按讚過的貼文。[cursor] 為上一頁的 page_info.next_cursor。
   static Future<ForumLikedPostPage> likedPosts({String? cursor}) async {
     final data = await ApiClient.get(
       ApiConfig.forumPostLikes,
-      query: {'cursor': ?cursor},
+      query: PageInfo.query(cursor: cursor),
     );
     return ForumLikedPostPage.fromJson(data);
   }
@@ -229,7 +230,7 @@ class ForumService {
   static Future<ForumLikedCommentPage> likedComments({String? cursor}) async {
     final data = await ApiClient.get(
       ApiConfig.forumCommentLikes,
-      query: {'cursor': ?cursor},
+      query: PageInfo.query(cursor: cursor),
     );
     return ForumLikedCommentPage.fromJson(data);
   }
@@ -251,7 +252,7 @@ class ForumService {
     String? board,
     String? range,
     int? tribeId,
-    int? cursor,
+    String? cursor,
   }) async {
     final trimmed = q.trim();
     if (trimmed.length < searchMin || trimmed.length > searchMax) {
@@ -264,7 +265,7 @@ class ForumService {
         if (board != null && board.isNotEmpty) 'board': board,
         'range': ?range,
         if (tribeId != null) 'tribe_id': '$tribeId',
-        if (cursor != null) 'cursor': '$cursor',
+        'cursor': ?cursor,
       },
     );
     return ForumPostPage.fromJson(data);
@@ -285,10 +286,10 @@ class ForumService {
 
   // ── 通知 ──────────────────────────────────────────────────
 
-  static Future<ForumNotificationPage> notifications({int? cursor}) async {
+  static Future<ForumNotificationPage> notifications({String? cursor}) async {
     final data = await ApiClient.get(
       ApiConfig.forumNotifications,
-      query: {if (cursor != null) 'cursor': '$cursor'},
+      query: PageInfo.query(cursor: cursor),
     );
     return ForumNotificationPage.fromJson(data);
   }
@@ -308,10 +309,10 @@ class ForumService {
     return data['bookmarked'] == true;
   }
 
-  static Future<ForumPostPage> bookmarks({int? cursor}) async {
+  static Future<ForumPostPage> bookmarks({String? cursor}) async {
     final data = await ApiClient.get(
       ApiConfig.forumBookmarks,
-      query: {if (cursor != null) 'cursor': '$cursor'},
+      query: PageInfo.query(cursor: cursor),
     );
     return ForumPostPage.fromJson(data);
   }

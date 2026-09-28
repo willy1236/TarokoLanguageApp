@@ -39,7 +39,7 @@ void main() {
         jsonEncode({
           'notifications': [notification(id: 3, isRead: false)],
           'unread_count': 1,
-          'next_cursor': null,
+          'page_info': {'next_cursor': null, 'has_more': false},
         }),
         200,
         headers: {'content-type': 'application/json; charset=utf-8'},
@@ -61,7 +61,7 @@ void main() {
         jsonEncode({
           'notifications': [],
           'unread_count': 0,
-          'next_cursor': null,
+          'page_info': {'next_cursor': null, 'has_more': false},
         }),
         200,
         headers: {'content-type': 'application/json; charset=utf-8'},
@@ -89,7 +89,7 @@ void main() {
         jsonEncode({
           'notifications': [notification(id: 3, isRead: false)],
           'unread_count': 1,
-          'next_cursor': null,
+          'page_info': {'next_cursor': null, 'has_more': false},
         }),
         200,
         headers: {'content-type': 'application/json; charset=utf-8'},

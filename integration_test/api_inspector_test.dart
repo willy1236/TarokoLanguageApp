@@ -214,6 +214,57 @@ void main() {
       ApiConfig.milletTransactions,
       shape: {'transactions': F.list, 'page_info': F.object},
     ));
+    test('GET /api/forum/posts', () => _inspect(
+      'GET',
+      ApiConfig.forumPosts,
+      shape: {'pinned': F.list, 'posts': F.list, 'page_info': F.object},
+    ));
+    test('GET /api/forum/boards/general/posts', () => _inspect(
+      'GET',
+      ApiConfig.forumBoardPosts('general'),
+      shape: {'pinned': F.list, 'posts': F.list, 'page_info': F.object},
+    ));
+    test('GET /api/forum/posts/:id/comments (自動挑留言最多的貼文)', () async {
+      if (_token == null) {
+        markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+        return;
+      }
+      final postId = await _findMostCommentedPostId();
+      if (postId == null) {
+        markTestSkipped('目前沒有任何有留言的貼文可測');
+        return;
+      }
+      await _inspect(
+        'GET',
+        ApiConfig.forumPostComments(postId),
+        fixtureAs: 'get_api_forum_post_comments.json',
+        shape: {'comments': F.list, 'replies': F.list, 'page_info': F.object},
+      );
+    });
+    test('GET /api/forum/bookmarks', () => _inspect(
+      'GET',
+      ApiConfig.forumBookmarks,
+      shape: {'posts': F.list, 'page_info': F.object},
+    ));
+    test('GET /api/forum/notifications', () => _inspect(
+      'GET',
+      ApiConfig.forumNotifications,
+      shape: {
+        'notifications': F.list,
+        'unread_count': F.number,
+        'page_info': F.object,
+      },
+    ));
+    test('GET /api/forum/posts/likes', () => _inspect(
+      'GET',
+      ApiConfig.forumPostLikes,
+      shape: {'posts': F.list, 'page_info': F.object},
+    ));
+    test('GET /api/forum/comments/likes', () => _inspect(
+      'GET',
+      ApiConfig.forumCommentLikes,
+      shape: {'comments': F.list, 'page_info': F.object},
+    ));
     test('GET /api/videos', () => _inspect(
       'GET',
       ApiConfig.videos,
@@ -324,7 +375,7 @@ void main() {
     test('GET /api/forum/search (range/tribe_id)', () => _inspect(
       'GET',
       '${ApiConfig.forumSearch}?q=a&range=1m',
-      shape: {'posts': F.list},
+      shape: {'posts': F.list, 'page_info': F.object},
     ));
 
     // 2026-09 後端更新（見 Truku_backend 說明文件/前端交接/2026-09_更新與待接清單.md）。
@@ -394,6 +445,26 @@ Future<int?> _findEndedEventId() async {
     }
   }
   return null;
+}
+
+/// 打 /api/forum/posts 找留言數最多的貼文 id，讓留言 fixture 盡量有內容。
+Future<int?> _findMostCommentedPostId() async {
+  final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.forumPosts}?limit=50');
+  final response = await http.get(uri, headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $_token',
+  });
+  if (response.statusCode != 200) return null;
+  final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+  final posts = (decoded['posts'] as List<dynamic>? ?? const [])
+      .whereType<Map<String, dynamic>>()
+      .where((p) => ((p['comment_count'] ?? 0) as num) > 0)
+      .toList()
+    ..sort((a, b) =>
+        ((b['comment_count'] as num)).compareTo(a['comment_count'] as num));
+  if (posts.isEmpty) return null;
+  final id = posts.first['id'];
+  return id is int ? id : int.tryParse('$id');
 }
 
 /// 取 /api/levels 的第一個等級代號，給 quiz／listening 的 start 當合法 level 用。

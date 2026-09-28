@@ -44,16 +44,11 @@ void openForumReplyPush(RouteStack routes, int postId) {
 
 /// 前景收到論壇回覆推播：人正看著該貼文（最上層的整頁）時改在頁內提示並回傳
 /// true；貼文被別的頁蓋住或沒開著時回傳 false，由呼叫端照常彈通知。
-bool showForumReplyInPage(
-  RouteStack routes,
-  int postId,
-  String type,
-  int? commentId,
-) {
+bool showForumReplyInPage(RouteStack routes, int postId, String type) {
   final top = routes.topPage;
   if (top == null ||
       top.settings.name != ForumDetailScreen.routeNameFor(postId)) {
     return false;
   }
-  return ForumDetailScreen.notifyNewReply(top, type, commentId);
+  return ForumDetailScreen.notifyNewReply(top, type);
 }

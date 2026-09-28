@@ -15,6 +15,7 @@ import '../../services/shop_service.dart';
 import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
+import '../../models/page_info.dart';
 import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
@@ -83,14 +84,10 @@ class ForumDetailScreen extends StatefulWidget {
   /// 人正停在 [route] 這份詳情頁時有人回覆了貼文或其中的留言（前景推播）：
   /// 在頁內浮出提示並回傳 true；[route] 已不是開著的詳情頁則回傳 false，由呼叫端
   /// 照常通知。[type] 是推播的 'reply_post' 或 'reply_comment'。
-  static bool notifyNewReply(
-    Route<dynamic> route,
-    String type,
-    int? commentId,
-  ) {
+  static bool notifyNewReply(Route<dynamic> route, String type) {
     final state = _live[route];
     if (state == null) return false;
-    state._onNewReply(type, commentId);
+    state._onNewReply(type);
     return true;
   }
 
@@ -105,11 +102,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   ForumPost? _post;
   final List<ForumComment> _comments = [];
   final List<ForumComment> _replies = [];
-  int? _nextCursor;
-
-  /// 伺服器回過的第一層留言裡最大的 id。和 [_nextCursor] 不同：自己送出的
-  /// 留言只在本地插入、沒經過伺服器分頁，所以不推進它。
-  int? _serverCursor;
+  String? _nextCursor;
 
   /// 每次 [_load] 加一；非同步請求回來時對不上就代表列表已被整頁換掉，
   /// 結果直接丟掉，不能接到新列表上。
@@ -130,20 +123,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// 不自動重載：會閃載入畫面並丟掉已載入的留言，交給使用者點提示決定。
   int _pendingReplyCount = 0;
 
-  /// 累積的推播裡有「回覆留言」。推播沒帶那則回覆掛在哪一串，只能整頁重載。
-  bool _pendingNeedsFullLoad = false;
-
-  /// 累積的推播裡最後一則帶來的 comment_id。
-  int? _pendingCommentId;
-
-  /// 增量抓取新留言（只抓 [_serverCursor] 之後的）是否正在跑。
-  bool _fetchingNew = false;
-
-  /// 增量抓取途中又收到「回覆貼文」：跑完要再補抓一次，不能略過。
-  bool _refetchQueued = false;
-
-  /// 增量抓取完該出現的那則；不在結果裡就退回整頁重載一次。
-  int? _awaitedCommentId;
+  /// 累積的推播裡有「回覆留言」。回覆掛在各自的留言串下，不一定排在最後。
+  bool _pendingIncludesCommentReply = false;
 
   /// 正在回覆的第一層留言；null 代表回覆貼文本身。
   ForumComment? _replyTarget;
@@ -201,9 +182,6 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       _loading = true;
       _loadingMore = false;
       _clearPendingReplies();
-      _fetchingNew = false;
-      _refetchQueued = false;
-      _awaitedCommentId = null;
       _error = null;
       if (resetImageRetry) _imageAutoRefreshed = false;
     });
@@ -219,8 +197,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _replies
           ..clear()
           ..addAll(page.replies);
-        _nextCursor = page.nextCursor;
-        _serverCursor = _maxId(page.comments);
+        _nextCursor = page.pageInfo.nextCursor;
         _loading = false;
       });
       _maybeOpenInitialImage();
@@ -237,87 +214,30 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
   }
 
-  void _onNewReply(String type, int? commentId) {
+  void _onNewReply(String type) {
     if (!mounted) return;
-    // 正在增量抓取：跑完補抓一次這則就會進來，不必再提示。
-    if (_fetchingNew && type == 'reply_post') {
-      _refetchQueued = true;
-      _awaitedCommentId = commentId;
-      return;
-    }
     setState(() {
       _pendingReplyCount++;
-      if (type != 'reply_post') _pendingNeedsFullLoad = true;
-      _pendingCommentId = commentId;
+      if (type != 'reply_post') _pendingIncludesCommentReply = true;
     });
   }
 
   void _clearPendingReplies() {
     _pendingReplyCount = 0;
-    _pendingNeedsFullLoad = false;
-    _pendingCommentId = null;
+    _pendingIncludesCommentReply = false;
   }
 
   /// 還有較舊的留言沒載完：新的第一層留言排在最後，要往下載入才看得到。
   bool get _newRepliesBelowUnloaded =>
-      !_pendingNeedsFullLoad && _nextCursor != null;
+      !_pendingIncludesCommentReply && _nextCursor != null;
 
-  /// 點「有新回覆」提示。只有全是「回覆貼文」且留言已載完時，新留言必定接在
-  /// 最後，才能只抓尾巴接上去、保留已載入的留言和捲動位置；其餘整頁重載。
-  void _showNewReplies() {
-    if (_pendingNeedsFullLoad || _nextCursor != null) {
-      _load();
-      return;
-    }
-    _awaitedCommentId = _pendingCommentId;
-    setState(_clearPendingReplies);
-    _fetchNewComments();
-  }
-
-  Future<void> _fetchNewComments() async {
-    if (_fetchingNew) {
-      _refetchQueued = true;
-      return;
-    }
-    final generation = _generation;
-    _fetchingNew = true;
-    try {
-      ForumCommentPage page;
-      var added = 0;
-      do {
-        _refetchQueued = false;
-        page = await ForumService.comments(
-          widget.postId,
-          cursor: _serverCursor,
-        );
-        if (!mounted || generation != _generation) return;
-        setState(() => added += _mergeComments(page, advanceCursors: true));
-      } while (_refetchQueued);
-      _fetchingNew = false;
-
-      final post = _post;
-      if (added > 0 && post != null) {
-        setState(
-          () => _post = post.copyWith(commentCount: post.commentCount + added),
-        );
-        widget.onPostChanged?.call(_post!);
-      }
-
-      // 本頁已到底才驗得了。推播帶來的那則不在結果裡（已被刪除，或作者是
-      // 你封鎖的人而被後端濾掉）時整頁重載一次；_load 會清掉等待，不會一直重試。
-      final awaited = _awaitedCommentId;
-      _awaitedCommentId = null;
-      if (page.nextCursor == null &&
-          awaited != null &&
-          !_comments.any((c) => c.id == awaited)) {
-        _load();
-      }
-    } on ApiException catch (e) {
-      if (!mounted || generation != _generation) return;
-      _fetchingNew = false;
-      _refetchQueued = false;
-      _toast(e.message);
-    }
+  /// 點「有新回覆」提示：整頁重載。游標是後端給的不透明字串，前端不能自己
+  /// 組出「某則之後」的游標，只能從第一頁重新載入。
+  Future<void> _showNewReplies() async {
+    await _load();
+    // 留言數跟著重載變了，回報父層，返回列表時卡片才不會停在舊的留言數。
+    final refreshed = _post;
+    if (mounted && refreshed != null) widget.onPostChanged?.call(refreshed);
   }
 
   /// 從列表點附圖進來時，等貼文（含圖片網址）到手後才疊上全螢幕檢視。
@@ -351,7 +271,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       final page = await ForumService.comments(widget.postId, cursor: cursor);
       if (!mounted || generation != _generation) return;
       setState(() {
-        _mergeComments(page, advanceCursors: true);
+        _mergeComments(page, advanceCursor: true);
         _loadingMore = false;
       });
     } on ApiException catch (e) {
@@ -363,39 +283,23 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 把一批留言併進列表：按 id 去重、按 id 排序（id 越大越新）。
   /// 本地先插入的留言之後可能又從伺服器分頁回來，只靠 append 會重複且亂序。
-  /// [advanceCursors] 只給伺服器分頁結果用，會推進 [_nextCursor] 與 [_serverCursor]。
-  /// 回傳真正新加入的筆數。
-  int _mergeComments(ForumCommentPage page, {bool advanceCursors = false}) {
-    final added =
-        _mergeById(_comments, page.comments) +
-        _mergeById(_replies, page.replies);
-    if (advanceCursors) {
-      _nextCursor = page.nextCursor;
-      final maxId = _maxId(page.comments);
-      final current = _serverCursor;
-      if (maxId != null && (current == null || maxId > current)) {
-        _serverCursor = maxId;
-      }
-    }
-    return added;
+  /// [advanceCursor] 只給伺服器分頁結果用，會推進 [_nextCursor]。
+  void _mergeComments(ForumCommentPage page, {bool advanceCursor = false}) {
+    _mergeById(_comments, page.comments);
+    _mergeById(_replies, page.replies);
+    if (advanceCursor) _nextCursor = page.pageInfo.nextCursor;
   }
 
-  static int _mergeById(List<ForumComment> into, List<ForumComment> incoming) {
-    if (incoming.isEmpty) return 0;
+  static void _mergeById(List<ForumComment> into, List<ForumComment> incoming) {
+    if (incoming.isEmpty) return;
     final byId = {for (final c in into) c.id: c};
-    final before = byId.length;
     for (final c in incoming) {
       byId[c.id] = c;
     }
     into
       ..clear()
       ..addAll(byId.values.toList()..sort((a, b) => a.id.compareTo(b.id)));
-    return byId.length - before;
   }
-
-  static int? _maxId(List<ForumComment> comments) => comments.isEmpty
-      ? null
-      : comments.map((c) => c.id).reduce((a, b) => a > b ? a : b);
 
   /// 圖片簽章網址過期時自動重打貼文 API 拿新網址；用旗標保證每次進頁最多
   /// 自動重試一次，避免多張圖同時過期或重整後仍失敗時無限連環重打。
@@ -538,7 +442,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           ForumCommentPage(
             comments: isRoot ? [created] : const [],
             replies: isRoot ? const [] : [created],
-            nextCursor: null,
+            pageInfo: PageInfo.end,
           ),
         );
         final post = _post;
