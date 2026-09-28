@@ -36,9 +36,10 @@ class _AppUpdatePrompt extends StatelessWidget {
 
   const _AppUpdatePrompt({required this.update});
 
-  Future<void> _openStore() async {
-    AppUpdateService.dismiss();
-    final uri = Uri.tryParse(update.url);
+  Future<void> _openStore(String url) async {
+    // 強制更新時不關掉提示：從商店回來還沒更新的話仍然擋著。
+    if (!update.required) AppUpdateService.dismiss();
+    final uri = Uri.tryParse(url);
     if (uri == null) return;
     try {
       await launchUrl(uri, mode: LaunchMode.externalApplication);
@@ -49,11 +50,22 @@ class _AppUpdatePrompt extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final url = update.url;
+    if (update.required) {
+      return AppDialog(
+        title: '需要更新',
+        message: url == null
+            ? '目前的版本已無法使用，請到 TestFlight 或 App Store 更新到最新版。'
+            : '目前的版本已無法使用，請更新到最新版後再繼續。',
+        primaryText: url == null ? null : '更新',
+        onPrimary: url == null ? null : () => _openStore(url),
+      );
+    }
     return AppDialog(
       title: '有新版本可用',
       message: '建議更新以獲得最佳體驗。',
       primaryText: '更新',
-      onPrimary: _openStore,
+      onPrimary: () => _openStore(url!),
       secondary: [
         ('略過此版本', () => AppUpdateService.skip(update)),
         ('稍後', AppUpdateService.dismiss),
