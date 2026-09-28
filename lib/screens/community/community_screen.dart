@@ -86,15 +86,13 @@ class _CommunityScreenState extends State<CommunityScreen> {
   /// 聊天會改變未讀數與最後訊息，返回後重抓好友列表。
   Future<void> _chatWithFriend(Friendship f) async {
     await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => ChatScreen(
-          partnerUid: f.uid,
-          partnerNickname: f.nickname,
-          partnerAvatarUrl: f.avatarUrl,
-          avatarId: f.avatarId,
-          frameId: f.frameId,
-          friendCode: f.friendCode,
-        ),
+      ChatScreen.route(
+        partnerUid: f.uid,
+        partnerNickname: f.nickname,
+        partnerAvatarUrl: f.avatarUrl,
+        avatarId: f.avatarId,
+        frameId: f.frameId,
+        friendCode: f.friendCode,
       ),
     );
     if (!mounted) return;
