@@ -14,9 +14,8 @@ import 'screens/friends/friends_list_screen.dart';
 import 'screens/friends/friend_push_navigation.dart';
 import 'screens/home/home_screen.dart';
 import 'screens/learn/learn_culture_screen.dart';
-import 'screens/events/event_detail_screen.dart';
 import 'screens/community/video_call_screen.dart';
-import 'screens/forum/forum_detail_screen.dart';
+import 'screens/content_push_navigation.dart';
 import 'screens/friends/incoming_call_screen.dart';
 import 'screens/plaza/plaza_event_screen.dart';
 import 'screens/profile/profile_video_screen.dart';
@@ -53,24 +52,9 @@ Future<void> main() async {
     ),
   );
 
-  // 點提醒/取消通知 → 導到該活動詳情頁（用全域 navigatorKey，不依賴當下 context）。
+  // 點提醒/取消通知 → 導到該活動詳情頁（用全域 routeStack，不依賴當下 context）。
   FcmService.onReminderTapped = (eventId) {
-    if (eventId == null) return;
-    final navState = navigatorKey.currentState;
-    if (navState == null) {
-      debugPrint('FcmService.onReminderTapped: navigatorKey 尚未掛上，導頁被忽略');
-      return;
-    }
-    // 同一場活動已經開著就回到那一份並重載，不再疊第二頁（疊了會在返回時
-    // 看到舊狀態）。
-    if (EventDetailScreen.isOpen(eventId)) {
-      navState.popUntil(
-        (r) => r.settings.name == EventDetailScreen.routeNameFor(eventId),
-      );
-      EventDetailScreen.refreshIfOpen(eventId);
-      return;
-    }
-    navState.push(EventDetailScreen.route(eventId));
+    if (eventId != null) openEventPush(routeStack, eventId);
   };
   // 冷啟動/背景點擊 video_matched 通知 → 查目前 active session 並導到通話畫面。
   // FCM payload 只有 session_id/channel，權威資料一律重新查詢（見 fcm_service.dart
@@ -94,22 +78,12 @@ Future<void> main() async {
       debugPrint('FcmService.onVideoMatchedColdStart: 查詢 session 失敗：$e');
     }
   };
-  // 人已經在該貼文詳情頁時，前景推播不彈通知，改在頁內浮出「有新回覆」提示。
-  FcmService.onForumReplyWhileOpen = ForumDetailScreen.notifyNewReply;
-  // 點論壇回覆通知 → 導到該貼文詳情頁。同一篇已經開著就回到那一份並重載，
-  // 不再疊第二頁（疊了會在返回時看到留言前的舊狀態）。
-  FcmService.onForumReplyTapped = (postId) {
-    final nav = navigatorKey.currentState;
-    if (nav == null) return;
-    if (ForumDetailScreen.isOpen(postId)) {
-      nav.popUntil(
-        (r) => r.settings.name == ForumDetailScreen.routeNameFor(postId),
-      );
-      ForumDetailScreen.refreshIfOpen(postId);
-      return;
-    }
-    nav.push(ForumDetailScreen.route(postId: postId));
-  };
+  // 人正看著該貼文詳情頁時，前景推播不彈通知，改在頁內浮出「有新回覆」提示。
+  FcmService.onForumReplyWhileOpen = (postId, type, commentId) =>
+      showForumReplyInPage(routeStack, postId, type, commentId);
+  // 點論壇回覆通知 → 導到該貼文詳情頁。
+  FcmService.onForumReplyTapped = (postId) =>
+      openForumReplyPush(routeStack, postId);
   // 收到好友定向來電（前景推播、或背景點擊通知開啟）→ 導到響鈴畫面。
   FcmService.onFriendCallIncoming = (call) {
     navigatorKey.currentState?.push(
