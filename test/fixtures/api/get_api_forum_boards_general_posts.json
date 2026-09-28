@@ -1,0 +1,38 @@
+{
+  "pinned": [],
+  "posts": [
+    {
+      "id": 13,
+      "board": {
+        "id": 1,
+        "slug": "general",
+        "name": "綜合"
+      },
+      "title": "測試標題",
+      "body": "測試內文",
+      "like_count": 1,
+      "comment_count": 2,
+      "is_pinned": false,
+      "is_liked": false,
+      "is_bookmarked": false,
+      "images": [],
+      "tags": [],
+      "tribe": null,
+      "created_at": "2026-09-10T15:54:35.612Z",
+      "updated_at": "2026-09-17T13:17:50.226Z",
+      "author": {
+        "uid": 20,
+        "display_name": "測試使用者",
+        "avatar_url": "https://example.com/avatar.png",
+        "avatar_id": "avatar_green_01",
+        "frame_id": "frame_05",
+        "friend_code": "TESTCODE"
+      }
+    }
+  ],
+  "next_cursor": null,
+  "page_info": {
+    "next_cursor": null,
+    "has_more": false
+  }
+}
