@@ -230,6 +230,23 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // 返回等於拒接，撥出方下一次輪詢就知道對方無法接聽，不用空等響鈴逾時。
+    // 接聽／拒接處理中不介入；來電已結束（輪詢已停）只關畫面。
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop || _busy) return;
+        if (_pollTimer == null) {
+          Navigator.of(context).pop();
+          return;
+        }
+        unawaited(_decline());
+      },
+      child: _buildBody(),
+    );
+  }
+
+  Widget _buildBody() {
     final call = widget.call;
     return Scaffold(
       backgroundColor: AppColors.ink,

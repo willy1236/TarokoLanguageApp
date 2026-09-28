@@ -35,6 +35,9 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
   Timer? _pollTimer;
   int? _callId;
   bool _navigated = false;
+
+  /// getCall 回應可能慢於輪詢間隔，上一輪還沒回來就不發下一輪，避免重複導頁。
+  bool _polling = false;
   String? _errorMessage;
 
   @override
@@ -61,7 +64,12 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
   Future<void> _startCall() async {
     try {
       final callId = await DirectedCallService.callFriend(widget.calleeUid);
-      if (!mounted) return;
+      if (!mounted) {
+        // 撥號回應前就離開：dispose 時還沒有 callId 可取消，這裡補取消，
+        // 對方的來電畫面才會收到 friend_call_cancelled 關閉。
+        DirectedCallService.cancelCall(callId).catchError((_) {});
+        return;
+      }
       setState(() => _callId = callId);
       _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => _poll());
     } catch (e) {
@@ -72,7 +80,8 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
 
   Future<void> _poll() async {
     final id = _callId;
-    if (id == null) return;
+    if (id == null || _polling || _navigated) return;
+    _polling = true;
     try {
       final status = await DirectedCallService.getCall(id);
       if (!mounted) return;
@@ -96,6 +105,8 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
       }
     } catch (_) {
       // 輪詢期間的暫時性錯誤忽略，下次輪詢再試。
+    } finally {
+      _polling = false;
     }
   }
 
@@ -104,11 +115,16 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
     int peerUid,
     String? peerNickname,
   ) async {
+    if (_navigated) return;
+    _navigated = true;
     _pollTimer?.cancel();
     try {
       final refreshed = await VideoCallService.refreshToken(sessionId);
-      if (!mounted) return;
-      _navigated = true;
+      if (!mounted) {
+        // 已接通但自己在進通話畫面前離開：結束這通，對方不會獨自留在通話裡。
+        DirectedCallService.endCall(_callId!).catchError((_) {});
+        return;
+      }
       final session = VideoSession(
         id: sessionId,
         channel: refreshed.channel,
