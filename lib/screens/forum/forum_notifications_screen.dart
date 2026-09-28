@@ -28,7 +28,7 @@ class ForumNotificationsScreen extends StatefulWidget {
 class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
   final _scrollController = ScrollController();
   final List<ForumNotification> _items = [];
-  int? _nextCursor;
+  String? _nextCursor;
   bool _loading = true;
   bool _loadingMore = false;
   String? _error;
@@ -64,7 +64,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
         _items
           ..clear()
           ..addAll(page.items);
-        _nextCursor = page.nextCursor;
+        _nextCursor = page.pageInfo.nextCursor;
         _loading = false;
       });
     } on ApiException catch (e) {
@@ -85,7 +85,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
       if (!mounted) return;
       setState(() {
         _items.addAll(page.items);
-        _nextCursor = page.nextCursor;
+        _nextCursor = page.pageInfo.nextCursor;
         _loadingMore = false;
       });
     } on ApiException {

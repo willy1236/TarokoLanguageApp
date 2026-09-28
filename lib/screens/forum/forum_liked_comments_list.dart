@@ -59,7 +59,7 @@ class _ForumLikedCommentsListState extends State<ForumLikedCommentsList> {
         _comments
           ..clear()
           ..addAll(page.comments);
-        _nextCursor = page.nextCursor;
+        _nextCursor = page.pageInfo.nextCursor;
         _loading = false;
       });
     } catch (e) {
@@ -78,7 +78,7 @@ class _ForumLikedCommentsListState extends State<ForumLikedCommentsList> {
       if (!mounted) return;
       setState(() {
         _comments.addAll(page.comments);
-        _nextCursor = page.nextCursor;
+        _nextCursor = page.pageInfo.nextCursor;
       });
     } catch (_) {
       // 翻頁失敗保持原清單，使用者可再滑動觸發重試。

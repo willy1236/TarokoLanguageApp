@@ -19,7 +19,7 @@ import 'widgets/forum_post_card.dart';
 import 'widgets/forum_toast.dart';
 
 typedef ForumPageLoader =
-    Future<ForumPostPage> Function({int? cursor, int? after});
+    Future<ForumPostPage> Function({String? cursor, int? after});
 typedef ForumLikeToggler =
     Future<({bool liked, int likeCount})> Function(
       int postId, {
@@ -78,7 +78,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
   bool _loading = true;
   bool _loadingMore = false;
   String? _error;
-  int? _nextCursor;
+  String? _nextCursor;
   Map<String, ShopItem> _itemCatalogById = const {};
 
   /// 請求世代：_load（切換看板/篩選、下拉刷新）每次遞增，_load/_loadMore
@@ -144,7 +144,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
         _posts
           ..clear()
           ..addAll(page.posts);
-        _nextCursor = page.nextCursor;
+        _nextCursor = page.pageInfo.nextCursor;
         _loading = false;
       });
     } on ApiException catch (e) {
@@ -173,7 +173,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
       if (!mounted || gen != _reqGen) return;
       setState(() {
         _posts.addAll(page.posts);
-        _nextCursor = page.nextCursor;
+        _nextCursor = page.pageInfo.nextCursor;
         _loadingMore = false;
       });
     } on ApiException catch (e) {

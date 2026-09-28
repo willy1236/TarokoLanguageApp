@@ -64,9 +64,9 @@ void main() {
   });
 
   test('posts 帶 cursor 與 limit', () async {
-    respondWith({'pinned': [], 'posts': [], 'next_cursor': null});
+    respondWith({'pinned': [], 'posts': [], 'page_info': {'next_cursor': null, 'has_more': false}});
 
-    await ForumService.posts('culture', cursor: 500);
+    await ForumService.posts('culture', cursor: '500');
 
     expect(seen.single.url.path, '/api/forum/boards/culture/posts');
     expect(seen.single.url.queryParameters['cursor'], '500');
@@ -75,7 +75,7 @@ void main() {
   });
 
   test('posts 帶 after 供下拉刷新，不同時帶 cursor', () async {
-    respondWith({'pinned': [], 'posts': [], 'next_cursor': null});
+    respondWith({'pinned': [], 'posts': [], 'page_info': {'next_cursor': null, 'has_more': false}});
 
     await ForumService.posts('culture', after: 900);
 
@@ -84,9 +84,9 @@ void main() {
   });
 
   test('allPosts 打跨看板端點，不帶 board 參數', () async {
-    respondWith({'pinned': [], 'posts': [], 'next_cursor': null});
+    respondWith({'pinned': [], 'posts': [], 'page_info': {'next_cursor': null, 'has_more': false}});
 
-    await ForumService.allPosts(cursor: 300);
+    await ForumService.allPosts(cursor: '300');
 
     expect(seen.single.method, 'GET');
     expect(seen.single.url.path, '/api/forum/posts');
@@ -232,7 +232,7 @@ void main() {
   });
 
   test('search 去除空白後為空直接丟錯，不發請求', () async {
-    respondWith({'posts': [], 'next_cursor': null});
+    respondWith({'posts': [], 'page_info': {'next_cursor': null, 'has_more': false}});
 
     expect(() => ForumService.search('   '), throwsA(isA<ArgumentError>()));
     expect(seen, isEmpty);

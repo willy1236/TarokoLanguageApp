@@ -39,7 +39,7 @@ void main() {
       final s = suggestions(req);
       if (s != null) return s;
       calls++;
-      return http.Response(jsonEncode({'posts': [], 'next_cursor': null}), 200);
+      return http.Response(jsonEncode({'posts': [], 'page_info': {'next_cursor': null, 'has_more': false}}), 200);
     });
 
     await tester.pumpWidget(const MaterialApp(home: ForumSearchScreen()));
@@ -75,7 +75,7 @@ void main() {
       if (req.url.path == '/api/forum/search') {
         searchedQ = req.url.queryParameters['q'];
       }
-      return http.Response(jsonEncode({'posts': [], 'next_cursor': null}), 200);
+      return http.Response(jsonEncode({'posts': [], 'page_info': {'next_cursor': null, 'has_more': false}}), 200);
     });
 
     await tester.pumpWidget(const MaterialApp(home: ForumSearchScreen()));
@@ -110,7 +110,7 @@ void main() {
               'author': {'uid': 1, 'display_name': 'A', 'avatar_url': null},
             },
           ],
-          'next_cursor': null,
+          'page_info': {'next_cursor': null, 'has_more': false},
         }),
         200,
         headers: {'content-type': 'application/json; charset=utf-8'},

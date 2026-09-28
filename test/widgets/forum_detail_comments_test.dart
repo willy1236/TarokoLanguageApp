@@ -44,7 +44,8 @@ Map<String, dynamic> _commentJson(int id, {int? parent}) => {
 };
 
 /// 照後端規則分頁的假論壇：由舊到新、每頁 [pageSize] 則第一層留言，
-/// 回覆跟著所屬的第一層留言同頁回來。
+/// 回覆跟著所屬的第一層留言同頁回來。游標是不透明字串（`after:<id>`），
+/// App 自己用留言 id 組出來的游標對不上，會被當成第一頁。
 class _FakeForum {
   _FakeForum(this.roots);
 
@@ -60,6 +61,8 @@ class _FakeForum {
   int _inFlight = 0;
   int maxInFlight = 0;
 
+  static String cursorAfter(int id) => 'after:$id';
+
   Map<String, dynamic> page(int? cursor) {
     final sorted = [...roots]..sort();
     final after = sorted.where((id) => cursor == null || id > cursor).toList();
@@ -71,7 +74,10 @@ class _FakeForum {
         for (final e in replyParent.entries)
           if (slice.contains(e.value)) _commentJson(e.key, parent: e.value),
       ],
-      'next_cursor': hasMore ? slice.last : null,
+      'page_info': {
+        'next_cursor': hasMore ? cursorAfter(slice.last) : null,
+        'has_more': hasMore,
+      },
     };
   }
 
@@ -94,7 +100,10 @@ class _FakeForum {
       if (_inFlight > maxInFlight) maxInFlight = _inFlight;
       await holdFor?.call(request.url);
       _inFlight--;
-      final cursor = int.tryParse(request.url.queryParameters['cursor'] ?? '');
+      final raw = request.url.queryParameters['cursor'];
+      final cursor = raw != null && raw.startsWith('after:')
+          ? int.parse(raw.substring('after:'.length))
+          : null;
       return jsonResponse(page(cursor));
     }
     if (path.endsWith('/posts/$_postId')) {
@@ -200,10 +209,10 @@ void main() {
 
     final stale = Completer<void>();
     forum.holdFor = (url) =>
-        url.queryParameters['cursor'] == '2' ? stale.future : null;
+        url.queryParameters['cursor'] == 'after:2' ? stale.future : null;
     _reachBottom(tester);
     await tester.pumpAndSettle();
-    expect(forum.commentRequests.last.queryParameters['cursor'], '2');
+    expect(forum.commentRequests.last.queryParameters['cursor'], 'after:2');
 
     forum.holdFor = null;
     ForumDetailScreen.refreshRoute(_detailRoute(tester));
@@ -216,7 +225,7 @@ void main() {
     expect(_visibleComments(tester), ['留言1', '留言2']);
 
     await _scrollToBottom(tester);
-    expect(forum.commentRequests.last.queryParameters['cursor'], '2');
+    expect(forum.commentRequests.last.queryParameters['cursor'], 'after:2');
     expect(_visibleComments(tester), ['留言1', '留言2', '留言3', '留言4']);
   });
 

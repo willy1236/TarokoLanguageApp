@@ -15,6 +15,7 @@ import '../../services/shop_service.dart';
 import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
+import '../../models/page_info.dart';
 import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
@@ -105,7 +106,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   ForumPost? _post;
   final List<ForumComment> _comments = [];
   final List<ForumComment> _replies = [];
-  int? _nextCursor;
+  String? _nextCursor;
 
   /// 每次 [_load] 加一；非同步請求回來時對不上就代表列表已被整頁換掉，
   /// 結果直接丟掉，不能接到新列表上。
@@ -200,7 +201,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _replies
           ..clear()
           ..addAll(page.replies);
-        _nextCursor = page.nextCursor;
+        _nextCursor = page.pageInfo.nextCursor;
         _loading = false;
       });
       _maybeOpenInitialImage();
@@ -234,7 +235,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   bool get _newRepliesBelowUnloaded =>
       !_pendingIncludesCommentReply && _nextCursor != null;
 
-  /// 點「有新回覆」提示：整頁重載。
+  /// 點「有新回覆」提示：整頁重載。游標是後端給的不透明字串，前端不能自己
+  /// 組出「某則之後」的游標，只能從第一頁重新載入。
   void _showNewReplies() => _load();
 
   /// 從列表點附圖進來時，等貼文（含圖片網址）到手後才疊上全螢幕檢視。
@@ -284,7 +286,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   void _mergeComments(ForumCommentPage page, {bool advanceCursor = false}) {
     _mergeById(_comments, page.comments);
     _mergeById(_replies, page.replies);
-    if (advanceCursor) _nextCursor = page.nextCursor;
+    if (advanceCursor) _nextCursor = page.pageInfo.nextCursor;
   }
 
   static void _mergeById(List<ForumComment> into, List<ForumComment> incoming) {
@@ -439,7 +441,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           ForumCommentPage(
             comments: isRoot ? [created] : const [],
             replies: isRoot ? const [] : [created],
-            nextCursor: null,
+            pageInfo: PageInfo.end,
           ),
         );
         final post = _post;
