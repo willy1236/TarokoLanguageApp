@@ -6,6 +6,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -37,7 +38,7 @@ class ApiException implements Exception {
   final String code;
   final String message;
 
-  /// 429 時後端建議的等待秒數（body `retry_after` 或 `Retry-After` header），
+  /// 429 與 503 SERVICE_BUSY 時後端建議的等待秒數（body `retry_after` 或 `Retry-After` header），
   /// 其餘錯誤為 null。畫面可據此顯示「N 秒後可再試」倒數。
   final int? retryAfter;
 
@@ -79,6 +80,8 @@ class ApiException implements Exception {
   bool get isSessionAlreadyCompleted => code == 'SESSION_ALREADY_COMPLETED';
   bool get isVideoUnavailable =>
       statusCode == 503 && code == 'VIDEO_UNAVAILABLE';
+  // 後端過載（見 Truku_backend backend/errorHandler.ts）：GET 由 ApiClient 自動重試一次。
+  bool get isServiceBusy => statusCode == 503 && code == 'SERVICE_BUSY';
   bool get isVideoNicknameRequired =>
       statusCode == 403 && code == 'VIDEO_NICKNAME_REQUIRED';
   bool get isSessionEnded => code == 'SESSION_ENDED';
@@ -153,11 +156,7 @@ class ApiClient {
     final uri = Uri.parse(
       ApiConfig.baseUrl + path,
     ).replace(queryParameters: query);
-    final resp = await _send(
-      () => httpClient.get(uri, headers: _headers(token)),
-      method: 'GET',
-      url: uri,
-    );
+    final resp = await _sendGet(uri, token);
     return _handle(resp);
   }
 
@@ -166,13 +165,35 @@ class ApiClient {
   static Future<String> getRaw(String path) async {
     final token = await AuthService.currentToken();
     final uri = Uri.parse(ApiConfig.baseUrl + path);
-    final resp = await _send(
+    final resp = await _sendGet(uri, token);
+    if (resp.statusCode < 200 || resp.statusCode >= 300) _throwError(resp);
+    return resp.body;
+  }
+
+  /// 測試可換掉 503 SERVICE_BUSY 重試前的等待，不必真的等秒數。
+  @visibleForTesting
+  static Future<void> Function(Duration) busyRetryDelay = Future.delayed;
+
+  static final _jitter = Random();
+
+  /// GET 遇到 503 SERVICE_BUSY 時依 retry_after（缺少時 5 秒）再加 0–1 秒隨機值
+  /// 等待後重送一次，避免大量裝置在同一秒重送。
+  /// 讀取類重送沒有副作用；寫入類不重送，直接顯示忙碌訊息。
+  static Future<http.Response> _sendGet(Uri uri, String? token) async {
+    Future<http.Response> send() => _send(
       () => httpClient.get(uri, headers: _headers(token)),
       method: 'GET',
       url: uri,
     );
-    if (resp.statusCode < 200 || resp.statusCode >= 300) _throwError(resp);
-    return resp.body;
+    final resp = await send();
+    if (resp.statusCode != 503 || !_parseError(resp).isServiceBusy) return resp;
+    await busyRetryDelay(
+      Duration(
+        seconds: _parseRetryAfter(resp) ?? 5,
+        milliseconds: _jitter.nextInt(1000),
+      ),
+    );
+    return send();
   }
 
   static Future<Map<String, dynamic>> post(
@@ -532,6 +553,15 @@ class ApiClient {
       }
       final code = error?['code'] as String? ?? 'UNKNOWN';
       var message = error?['message'] as String? ?? '發生未知錯誤';
+      if (resp.statusCode == 503 && code == 'SERVICE_BUSY') {
+        return ApiException(
+          statusCode: 503,
+          code: code,
+          message: '伺服器忙碌，請稍後再試',
+          retryAfter: _parseRetryAfter(resp),
+          body: j is Map<String, dynamic> ? j : null,
+        );
+      }
       // 禁言到期時間接在後端訊息後面：MUTED 依 strike 次數為 14／30 天；
       // PROFANITY 只有 24 小時內第 3 次（muted=true）才帶 mute_until。
       final muteUntil =
@@ -578,7 +608,7 @@ class ApiClient {
     }
   }
 
-  /// 429 的等待秒數：優先讀 body 的 `retry_after`，沒有再讀 `Retry-After` header。
+  /// 429／503 的等待秒數：優先讀 body 的 `retry_after`，沒有再讀 `Retry-After` header。
   static int? _parseRetryAfter(http.Response resp) {
     try {
       final j = jsonDecode(resp.body);

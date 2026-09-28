@@ -413,4 +413,226 @@ void main() {
 
     expect(find.text('home'), findsOneWidget);
   });
+
+  _serviceBusyTests();
+}
+
+// 503 SERVICE_BUSY：GET 依 retry_after 自動重送一次，寫入類不重送。
+void _serviceBusyTests() {
+  http.Response busy() => http.Response(
+    jsonEncode({
+      'error': {'code': 'SERVICE_BUSY', 'message': '伺服器忙碌中，請稍後再試'},
+      'retry_after': 5,
+    }),
+    503,
+    headers: _utf8Json,
+  );
+
+  // 重送前等待 = retry_after 秒數 + 0–1 秒隨機值，避免大量裝置同時重送。
+  Matcher waits(int seconds) => allOf(
+    greaterThanOrEqualTo(Duration(seconds: seconds)),
+    lessThan(Duration(seconds: seconds + 1)),
+  );
+
+  group('503 SERVICE_BUSY', () {
+    final delays = <Duration>[];
+    setUp(() {
+      delays.clear();
+      ApiClient.busyRetryDelay = (d) async => delays.add(d);
+    });
+    tearDown(() => ApiClient.busyRetryDelay = Future.delayed);
+
+    test('GET 等 retry_after 秒後重送一次，成功就正常回傳', () async {
+      var calls = 0;
+      ApiClient.httpClient = MockClient((_) async {
+        calls++;
+        return calls == 1 ? busy() : http.Response(jsonEncode({'ok': 1}), 200);
+      });
+
+      expect(await ApiClient.get('/api/levels'), {'ok': 1});
+      expect(calls, 2);
+      expect(delays, [waits(5)]);
+    });
+
+    test('getRaw 同樣重送一次，成功回傳原文', () async {
+      var calls = 0;
+      ApiClient.httpClient = MockClient((_) async {
+        calls++;
+        return calls == 1 ? busy() : http.Response('id,name', 200);
+      });
+
+      expect(await ApiClient.getRaw('/api/account/export'), 'id,name');
+      expect(calls, 2);
+      expect(delays, [waits(5)]);
+    });
+
+    test('getRaw 重送仍 503：顯示忙碌訊息，不再重試', () async {
+      var calls = 0;
+      ApiClient.httpClient = MockClient((_) async {
+        calls++;
+        return busy();
+      });
+
+      await expectLater(
+        ApiClient.getRaw('/api/account/export'),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.isServiceBusy, 'isServiceBusy', isTrue)
+              .having((e) => e.message, 'message', '伺服器忙碌，請稍後再試'),
+        ),
+      );
+      expect(calls, 2);
+    });
+
+    test('GET 重送仍 503：顯示忙碌訊息，不再重試', () async {
+      var calls = 0;
+      ApiClient.httpClient = MockClient((_) async {
+        calls++;
+        return busy();
+      });
+
+      await expectLater(
+        ApiClient.get('/api/levels'),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.isServiceBusy, 'isServiceBusy', isTrue)
+              .having((e) => e.message, 'message', '伺服器忙碌，請稍後再試')
+              .having((e) => e.retryAfter, 'retryAfter', 5),
+        ),
+      );
+      expect(calls, 2);
+    });
+
+    test('依 retry_after 秒數等待（body 或 Retry-After header）', () async {
+      for (final resp in [
+        http.Response(
+          jsonEncode({
+            'error': {'code': 'SERVICE_BUSY', 'message': 'busy'},
+            'retry_after': 3,
+          }),
+          503,
+        ),
+        http.Response(
+          jsonEncode({
+            'error': {'code': 'SERVICE_BUSY', 'message': 'busy'},
+          }),
+          503,
+          headers: {'retry-after': '17'},
+        ),
+      ]) {
+        var calls = 0;
+        ApiClient.httpClient = MockClient((_) async {
+          calls++;
+          return calls == 1 ? resp : http.Response('{}', 200);
+        });
+        await ApiClient.get('/api/levels');
+      }
+      expect(delays, [waits(3), waits(17)]);
+    });
+
+    test('等待秒數加上隨機值，不會每次都剛好整數秒', () async {
+      for (var i = 0; i < 5; i++) {
+        var calls = 0;
+        ApiClient.httpClient = MockClient((_) async {
+          calls++;
+          return calls == 1 ? busy() : http.Response('{}', 200);
+        });
+        await ApiClient.get('/api/levels');
+      }
+      expect(delays, everyElement(waits(5)));
+      expect(delays.any((d) => d > const Duration(seconds: 5)), isTrue);
+    });
+
+    test('retry_after 缺少時等 5 秒', () async {
+      var calls = 0;
+      ApiClient.httpClient = MockClient((_) async {
+        calls++;
+        return calls == 1
+            ? http.Response(
+                jsonEncode({
+                  'error': {'code': 'SERVICE_BUSY', 'message': 'busy'},
+                }),
+                503,
+              )
+            : http.Response('{}', 200);
+      });
+
+      await ApiClient.get('/api/levels');
+      expect(delays, [waits(5)]);
+    });
+
+    for (final method in ['POST', 'PATCH', 'DELETE']) {
+      test('$method 不重送，直接顯示忙碌訊息', () async {
+        var calls = 0;
+        ApiClient.httpClient = MockClient((_) async {
+          calls++;
+          return busy();
+        });
+
+        final future = switch (method) {
+          'POST' => ApiClient.post('/api/thing'),
+          'PATCH' => ApiClient.patch('/api/thing'),
+          _ => ApiClient.delete('/api/thing'),
+        };
+        await expectLater(
+          future,
+          throwsA(
+            isA<ApiException>().having(
+              (e) => e.message,
+              'message',
+              '伺服器忙碌，請稍後再試',
+            ),
+          ),
+        );
+        expect(calls, 1);
+        expect(delays, isEmpty);
+      });
+    }
+
+    test('503 VIDEO_UNAVAILABLE 不重送，行為不變', () async {
+      var calls = 0;
+      ApiClient.httpClient = MockClient((_) async {
+        calls++;
+        return http.Response(
+          jsonEncode({
+            'error': {'code': 'VIDEO_UNAVAILABLE', 'message': '視訊暫停'},
+          }),
+          503,
+          headers: _utf8Json,
+        );
+      });
+
+      await expectLater(
+        ApiClient.get('/api/video/session/current'),
+        throwsA(
+          isA<ApiException>().having((e) => e.isVideoUnavailable, 'v', isTrue),
+        ),
+      );
+      expect(calls, 1);
+    });
+
+    for (final (status, code) in [
+      (413, 'PAYLOAD_TOO_LARGE'),
+      (400, 'INVALID_REQUEST'),
+    ]) {
+      test('$status $code 照一般錯誤顯示 error.message', () async {
+        ApiClient.httpClient = MockClient(
+          (_) async => http.Response(
+            jsonEncode({
+              'error': {'code': code, 'message': '後端訊息'},
+            }),
+            status,
+            headers: _utf8Json,
+          ),
+        );
+
+        await expectLater(
+          ApiClient.post('/api/thing'),
+          throwsA(
+            isA<ApiException>().having((e) => e.message, 'message', '後端訊息'),
+          ),
+        );
+      });
+    }
+  });
 }
