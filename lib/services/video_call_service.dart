@@ -32,11 +32,17 @@ class VideoCallService {
     await ApiClient.delete(ApiConfig.videoQueue);
   }
 
-  /// 查詢我目前 active 且未逾時的房；沒有則回 null。
-  static Future<VideoSession?> fetchCurrentSession() async {
+  /// 查詢我目前 active 且未逾時的房（沒有則 session 為 null），以及尚未配對時
+  /// 是否仍在佇列。App 在背景超過 30 秒會被後端移出佇列，[inQueue] 為 false
+  /// 時要重新排隊。欄位缺少（舊後端）視為仍在佇列，避免誤觸重新排隊。
+  static Future<({VideoSession? session, bool inQueue})>
+  fetchCurrentSession() async {
     final data = await ApiClient.get(ApiConfig.videoSessionCurrent);
     final session = data['session'] as Map<String, dynamic>?;
-    return session == null ? null : VideoSession.fromJson(session);
+    return (
+      session: session == null ? null : VideoSession.fromJson(session),
+      inQueue: data['in_queue'] as bool? ?? true,
+    );
   }
 
   /// （重）取得該房的 Agora token。session 已結束或逾時時，ApiException.code

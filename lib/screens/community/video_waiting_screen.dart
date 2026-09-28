@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/network/api_client.dart';
+import '../../main.dart' show scaffoldMessengerKey;
+import '../../models/video_call_model.dart';
 import '../../services/fcm_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
@@ -37,6 +40,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
 
     WidgetsBinding.instance.addObserver(this);
     FcmService.onVideoMatchedForeground = (_, _) => _poll();
+    // 輪詢兼作佇列心跳：間隔必須小於 30 秒，否則後端會視為已離開佇列。
     _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) => _poll());
   }
 
@@ -54,30 +58,65 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
     super.dispose();
   }
 
-  /// 查詢目前 active session；配到就取消輪詢並導向通話畫面。單次查詢失敗只記
-  /// log，不中斷輪詢迴圈——佇列狀態在後端維護，前端輪詢只是查詢動作。
+  /// 查詢目前 active session；配到就取消輪詢並導向通話畫面。已被移出佇列
+  /// （切背景超過 30 秒）就重新排隊，被 403 擋下（禁言、未設暱稱等）才停止並離開。
+  /// 其他單次失敗只記 log，不中斷輪詢迴圈。
   Future<void> _poll() async {
     if (_isPolling || _matched) return;
     _isPolling = true;
     try {
-      final session = await VideoCallService.fetchCurrentSession();
-      if (session == null || !mounted || _matched) return;
+      final current = await VideoCallService.fetchCurrentSession();
+      if (!mounted || _matched) return;
+      var session = current.session;
+      AgoraCallCredentials? credentials;
+      if (session == null && !current.inQueue && !_cancelling) {
+        final result = await VideoCallService.joinQueue();
+        if (!mounted || _matched || _cancelling) return;
+        session = result.session;
+        credentials = result.credentials;
+      }
+      if (session == null) return;
       _matched = true;
       _pollTimer?.cancel();
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(
           builder: (_) => VideoCallScreen(
-            session: session,
-            credentials: null, // 由 VideoCallScreen 自行 refreshToken 取得
+            session: session!,
+            // 輪詢查到的 session 沒有憑證，由 VideoCallScreen 自行 refreshToken 取得。
+            credentials: credentials,
           ),
         ),
       );
+    } on ApiException catch (e) {
+      if (e.statusCode == 403) {
+        _stopForbidden(e);
+      } else {
+        debugPrint('VideoWaitingScreen: 輪詢失敗，忽略並等下一輪：$e');
+      }
     } catch (e) {
       debugPrint('VideoWaitingScreen: 輪詢失敗，忽略並等下一輪：$e');
     } finally {
       _isPolling = false;
     }
+  }
+
+  /// 重新排隊被擋下：不再重試，顯示原因並離開等待畫面。
+  void _stopForbidden(ApiException e) {
+    _pollTimer?.cancel();
+    if (!mounted) return;
+    scaffoldMessengerKey.currentState
+      ?..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            e.isVideoNicknameRequired ? '視訊配對前需要先在個人資料設定公開暱稱' : e.message,
+          ),
+        ),
+      );
+    // 已不在佇列，直接離開；配對成功才會放行返回，先標記避免 PopScope 攔下。
+    _matched = true;
+    Navigator.pop(context);
   }
 
   /// 取消配對：必須確認後端已離開佇列才返回。fire-and-forget 會留下幽靈
