@@ -428,6 +428,12 @@ void _serviceBusyTests() {
     headers: _utf8Json,
   );
 
+  // 重送前等待 = retry_after 秒數 + 0–1 秒隨機值，避免大量裝置同時重送。
+  Matcher waits(int seconds) => allOf(
+    greaterThanOrEqualTo(Duration(seconds: seconds)),
+    lessThan(Duration(seconds: seconds + 1)),
+  );
+
   group('503 SERVICE_BUSY', () {
     final delays = <Duration>[];
     setUp(() {
@@ -445,7 +451,7 @@ void _serviceBusyTests() {
 
       expect(await ApiClient.get('/api/levels'), {'ok': 1});
       expect(calls, 2);
-      expect(delays, [const Duration(seconds: 5)]);
+      expect(delays, [waits(5)]);
     });
 
     test('GET 重送仍 503：顯示忙碌訊息，不再重試', () async {
@@ -491,7 +497,20 @@ void _serviceBusyTests() {
         });
         await ApiClient.get('/api/levels');
       }
-      expect(delays, [const Duration(seconds: 3), const Duration(seconds: 17)]);
+      expect(delays, [waits(3), waits(17)]);
+    });
+
+    test('等待秒數加上隨機值，不會每次都剛好整數秒', () async {
+      for (var i = 0; i < 5; i++) {
+        var calls = 0;
+        ApiClient.httpClient = MockClient((_) async {
+          calls++;
+          return calls == 1 ? busy() : http.Response('{}', 200);
+        });
+        await ApiClient.get('/api/levels');
+      }
+      expect(delays, everyElement(waits(5)));
+      expect(delays.any((d) => d > const Duration(seconds: 5)), isTrue);
     });
 
     test('retry_after 缺少時等 5 秒', () async {
@@ -509,7 +528,7 @@ void _serviceBusyTests() {
       });
 
       await ApiClient.get('/api/levels');
-      expect(delays, [const Duration(seconds: 5)]);
+      expect(delays, [waits(5)]);
     });
 
     for (final method in ['POST', 'PATCH', 'DELETE']) {

@@ -6,6 +6,7 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -173,7 +174,10 @@ class ApiClient {
   @visibleForTesting
   static Future<void> Function(Duration) busyRetryDelay = Future.delayed;
 
-  /// GET 遇到 503 SERVICE_BUSY 時依 retry_after（缺少時 5 秒）等待後重送一次。
+  static final _jitter = Random();
+
+  /// GET 遇到 503 SERVICE_BUSY 時依 retry_after（缺少時 5 秒）再加 0–1 秒隨機值
+  /// 等待後重送一次，避免大量裝置在同一秒重送。
   /// 讀取類重送沒有副作用；寫入類不重送，直接顯示忙碌訊息。
   static Future<http.Response> _sendGet(Uri uri, String? token) async {
     Future<http.Response> send() => _send(
@@ -183,7 +187,12 @@ class ApiClient {
     );
     final resp = await send();
     if (resp.statusCode != 503 || !_parseError(resp).isServiceBusy) return resp;
-    await busyRetryDelay(Duration(seconds: _parseRetryAfter(resp) ?? 5));
+    await busyRetryDelay(
+      Duration(
+        seconds: _parseRetryAfter(resp) ?? 5,
+        milliseconds: _jitter.nextInt(1000),
+      ),
+    );
     return send();
   }
 
