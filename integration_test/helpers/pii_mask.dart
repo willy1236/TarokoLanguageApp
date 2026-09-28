@@ -14,6 +14,7 @@ const Map<String, String> kStringMasks = {
   'phone': '0900000000',
   'display_name': '測試使用者',
   'video_nickname': '測試暱稱',
+  'nickname': '測試暱稱',
   'tribal_name': '測試族名',
   'tribe_name': '測試部落',
   'ethnic_group': '測試族群',

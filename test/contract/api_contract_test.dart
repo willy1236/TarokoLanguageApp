@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/models/article_models.dart';
 import 'package:flutter_application_1/models/event_model.dart';
+import 'package:flutter_application_1/models/friend_message_model.dart';
 import 'package:flutter_application_1/models/forum_models.dart';
 import 'package:flutter_application_1/models/level_info.dart';
 import 'package:flutter_application_1/models/listening_models.dart';
@@ -85,6 +86,11 @@ final List<_Contract> _contracts = [
     'get_api_millet_transactions.json',
     'MilletTransactionListResult',
     _paged(MilletTransactionListResult.fromJson),
+  ),
+  _Contract(
+    'get_api_friend_messages.json',
+    'FriendMessage',
+    _paged(_each('messages', FriendMessage.fromJson)),
   ),
   _Contract(
     'get_api_videos.json',
