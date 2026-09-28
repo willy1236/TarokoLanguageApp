@@ -25,9 +25,22 @@ async function loadFirebaseSdk() {
   window.firebase_core = core;
 }
 
-const firebaseSdkReady = loadFirebaseSdk().catch((e) => {
-  console.error('Firebase JS SDK 載入失敗', e);
-});
+// 載入失敗時 FlutterFire 會退回注入 inline script，被 CSP 擋下後 main() 在
+// runApp 前就中止、畫面一片空白，所以直接顯示提示、不啟動 App。
+const firebaseSdkReady = loadFirebaseSdk().then(
+  () => true,
+  (e) => {
+    console.error('Firebase JS SDK 載入失敗', e);
+    return false;
+  },
+);
+
+function showLoadError() {
+  const p = document.createElement('p');
+  p.textContent = '載入失敗，請檢查網路後重新整理頁面。';
+  p.style.cssText = 'margin:40vh 16px 0;text-align:center;font:16px system-ui,sans-serif;color:#2b2a28';
+  document.body.appendChild(p);
+}
 
 _flutter.loader.load({
   serviceWorkerSettings: {
@@ -35,7 +48,10 @@ _flutter.loader.load({
   },
   // main.dart.js 照常平行下載，只有執行 Dart main 前等 SDK 就緒。
   onEntrypointLoaded: async (engineInitializer) => {
-    await firebaseSdkReady;
+    if (!(await firebaseSdkReady)) {
+      showLoadError();
+      return;
+    }
     const appRunner = await engineInitializer.initializeEngine();
     await appRunner.runApp();
   },
