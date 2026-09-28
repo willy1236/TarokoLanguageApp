@@ -140,6 +140,20 @@ void main() {
     await pumpFrames(tester);
   }
 
+  testWidgets('一般寬度下影音區頁首的標題與排序維持同一行', (tester) async {
+    installMockClient(routes());
+    usePhoneSurface(tester);
+    await tester.pumpWidget(buildTestApp(initialRoute: '/home'));
+    await pumpFrames(tester, times: 10);
+    await tapText(tester, '學習影音', within: find.byType(TrukuBottomTab));
+    await tapText(tester, '影音');
+
+    final title = tester.getRect(find.text('最新影片'));
+    final sort = tester.getRect(find.text('本週熱門'));
+    expect(sort.left, greaterThan(title.right));
+    expect(sort.top, lessThan(title.bottom));
+  });
+
   for (final senior in [false, true]) {
     final mode = senior ? '精簡模式' : '一般模式';
     group(mode, () {

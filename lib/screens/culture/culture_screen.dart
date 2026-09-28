@@ -349,6 +349,8 @@ class _CultureScreenState extends State<CultureScreen> {
             ],
           ),
           Row(
+            // Wrap 給子元件的寬度是整行，Row 撐滿就會永遠自成一行。
+            mainAxisSize: MainAxisSize.min,
             children: [
               for (final opt in _videoSortOptions) ...[
                 _sortLabel(opt.$1, opt.$3, seniorMode),
