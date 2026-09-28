@@ -200,13 +200,12 @@ class FcmService {
   /// 登出前呼叫：從後端移除本裝置 token，並刪掉本機 token。
   static Future<void> unregisterDevice() async {
     if (!PlatformFeatures.supportsPush) return;
-    final token = _lastToken ?? await _fm.getToken();
-    if (token != null) {
-      try {
-        await EventService.unregisterDevice(token);
-      } catch (_) {
-        // 移除失敗不阻斷登出流程
-      }
+    // 取 token 或向後端註銷失敗都不阻斷登出流程，本機 token 照樣刪除。
+    try {
+      final token = _lastToken ?? await _fm.getToken();
+      if (token != null) await EventService.unregisterDevice(token);
+    } catch (e) {
+      debugPrint('FcmService: 註銷裝置失敗（忽略）：$e');
     }
     await deleteLocalToken();
   }
