@@ -112,7 +112,7 @@ class _CultureScreenState extends State<CultureScreen> {
     try {
       final res = await VideoService.fetchVideos(
         sort: 'weekly_popular',
-        pageSize: _featuredCount,
+        limit: _featuredCount,
       );
       if (mounted) {
         setState(
@@ -129,7 +129,7 @@ class _CultureScreenState extends State<CultureScreen> {
     try {
       final res = await ArticleService.fetchArticles(
         sort: 'weekly_popular',
-        pageSize: _featuredCount,
+        limit: _featuredCount,
       );
       if (mounted) {
         setState(

@@ -1,21 +1,21 @@
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/video_models.dart';
+import '../models/page_info.dart';
 
 class VideoService {
   static Future<VideoListResponse> fetchVideos({
     String? category,
     String sort = 'latest',
-    int page = 1,
-    int pageSize = 20,
+    String? cursor,
+    int limit = 20,
   }) async {
     final json = await ApiClient.get(
       ApiConfig.videos,
       query: {
         'category': ?category,
         'sort': sort,
-        'page': '$page',
-        'page_size': '$pageSize',
+        ...PageInfo.query(cursor: cursor, limit: limit),
       },
     );
     return VideoListResponse.fromJson(json);
@@ -26,8 +26,8 @@ class VideoService {
     String? q,
     String? range,
     int? tribeId,
-    int page = 1,
-    int pageSize = 20,
+    String? cursor,
+    int limit = 20,
   }) async {
     final trimmed = q?.trim();
     final json = await ApiClient.get(
@@ -36,8 +36,7 @@ class VideoService {
         'q': ?(trimmed != null && trimmed.isNotEmpty ? trimmed : null),
         'range': ?range,
         'tribe_id': ?tribeId?.toString(),
-        'page': '$page',
-        'page_size': '$pageSize',
+        ...PageInfo.query(cursor: cursor, limit: limit),
       },
     );
     return VideoListResponse.fromJson(json);
@@ -72,23 +71,23 @@ class VideoService {
   }
 
   static Future<VideoListResponse> fetchVideoBookmarks({
-    int page = 1,
-    int pageSize = 20,
+    String? cursor,
+    int limit = 20,
   }) async {
     final json = await ApiClient.get(
       ApiConfig.videoBookmarks,
-      query: {'page': '$page', 'page_size': '$pageSize'},
+      query: PageInfo.query(cursor: cursor, limit: limit),
     );
     return VideoListResponse.fromJson(json);
   }
 
   static Future<VideoListResponse> fetchLikedVideos({
-    int page = 1,
-    int pageSize = 20,
+    String? cursor,
+    int limit = 20,
   }) async {
     final json = await ApiClient.get(
       ApiConfig.videoLikes,
-      query: {'page': '$page', 'page_size': '$pageSize'},
+      query: PageInfo.query(cursor: cursor, limit: limit),
     );
     return VideoListResponse.fromJson(json);
   }

@@ -18,15 +18,16 @@ class VideoSearchScreen extends StatelessWidget {
       module: SearchModule.videos,
       hint: '搜尋影片',
       emptyText: '找不到符合的影片',
-      fetch: ({q, range, tribeId, required page}) async {
+      fetch: ({q, range, tribeId, cursor}) async {
         final res = await VideoService.searchVideos(
           q: q,
           range: range,
           tribeId: tribeId,
-          page: page,
+          cursor: cursor,
         );
-        return (items: res.videos, total: res.total);
+        return (items: res.videos, pageInfo: res.pageInfo);
       },
+      idOf: (video) => video.id,
       itemBuilder: (video, seniorMode) =>
           _VideoResultTile(video: video, seniorMode: seniorMode),
     );

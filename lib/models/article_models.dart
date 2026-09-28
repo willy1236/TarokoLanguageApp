@@ -1,6 +1,8 @@
 // 對應文章模組 API：GET /api/articles、GET /api/articles/:id
 // 規格：Truku_backend/說明文件/API/文章模組.md
 
+import 'page_info.dart';
+
 class ArticleCategory {
   static const tribalIntro = 'tribal_intro';
   static const cultural = 'cultural';
@@ -148,31 +150,25 @@ class ArticleDetail extends ArticleSummary {
 }
 
 class ArticleListResponse {
-  final int total;
-  final int page;
-  final int pageSize;
   final String sort;
   final List<ArticleSummary> articles;
+  final PageInfo pageInfo;
 
   const ArticleListResponse({
-    required this.total,
-    required this.page,
-    required this.pageSize,
     required this.sort,
     required this.articles,
+    required this.pageInfo,
   });
 
   factory ArticleListResponse.fromJson(Map<String, dynamic> json) {
     final list = json['articles'] as List<dynamic>? ?? [];
     return ArticleListResponse(
-      total: json['total'] as int? ?? 0,
-      page: json['page'] as int? ?? 1,
-      pageSize: json['page_size'] as int? ?? 20,
       sort: json['sort'] as String? ?? 'latest',
       articles: list
           .cast<Map<String, dynamic>>()
           .map(ArticleSummary.fromJson)
           .toList(),
+      pageInfo: PageInfo.fromResponse(json),
     );
   }
 }

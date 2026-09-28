@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/article_models.dart';
+import '../../models/page_info.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/article_cover_placeholder.dart';
@@ -25,12 +26,9 @@ class ArticleLikedBookmarkedList extends StatefulWidget {
 
 class _ArticleLikedBookmarkedListState
     extends State<ArticleLikedBookmarkedList> {
-  static const _pageSize = 20;
-
-  final _articles = <ArticleSummary>[];
+  List<ArticleSummary> _articles = [];
   final _scrollController = ScrollController();
-  int _page = 1;
-  int _total = 0;
+  String? _cursor;
   bool _loading = true;
   bool _loadingMore = false;
   Object? _error;
@@ -49,17 +47,17 @@ class _ArticleLikedBookmarkedListState
   }
 
   void _onScroll() {
-    if (_loadingMore || _articles.length >= _total) return;
+    if (_loadingMore || _cursor == null) return;
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 300) {
       _loadMore();
     }
   }
 
-  Future<ArticleListResponse> _fetch(int page) {
+  Future<ArticleListResponse> _fetch(String? cursor) {
     return widget.mode == ArticleListMode.liked
-        ? ArticleService.fetchLikedArticles(page: page, pageSize: _pageSize)
-        : ArticleService.fetchArticleBookmarks(page: page, pageSize: _pageSize);
+        ? ArticleService.fetchLikedArticles(cursor: cursor)
+        : ArticleService.fetchArticleBookmarks(cursor: cursor);
   }
 
   Future<void> _load() async {
@@ -68,14 +66,11 @@ class _ArticleLikedBookmarkedListState
       _error = null;
     });
     try {
-      final res = await _fetch(1);
+      final res = await _fetch(null);
       if (!mounted) return;
       setState(() {
-        _articles
-          ..clear()
-          ..addAll(res.articles);
-        _page = 1;
-        _total = res.total;
+        _articles = res.articles;
+        _cursor = res.pageInfo.nextCursor;
         _loading = false;
       });
     } catch (e) {
@@ -90,12 +85,11 @@ class _ArticleLikedBookmarkedListState
   Future<void> _loadMore() async {
     setState(() => _loadingMore = true);
     try {
-      final res = await _fetch(_page + 1);
+      final res = await _fetch(_cursor);
       if (!mounted) return;
       setState(() {
-        _articles.addAll(res.articles);
-        _page += 1;
-        _total = res.total;
+        _articles = appendUnique(_articles, res.articles, (e) => e.id);
+        _cursor = res.pageInfo.nextCursor;
       });
     } catch (_) {
       // 翻頁失敗保持原清單，使用者可再滑動觸發重試。
@@ -132,7 +126,7 @@ class _ArticleLikedBookmarkedListState
       child: ListView.separated(
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
-        itemCount: _articles.length + (_articles.length < _total ? 1 : 0),
+        itemCount: _articles.length + (_cursor != null ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
           if (index >= _articles.length) {

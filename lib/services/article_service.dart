@@ -1,21 +1,21 @@
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/article_models.dart';
+import '../models/page_info.dart';
 
 class ArticleService {
   static Future<ArticleListResponse> fetchArticles({
     String? category,
     String sort = 'latest',
-    int page = 1,
-    int pageSize = 20,
+    String? cursor,
+    int limit = 20,
   }) async {
     final json = await ApiClient.get(
       ApiConfig.articles,
       query: {
         'category': ?category,
         'sort': sort,
-        'page': '$page',
-        'page_size': '$pageSize',
+        ...PageInfo.query(cursor: cursor, limit: limit),
       },
     );
     return ArticleListResponse.fromJson(json);
@@ -26,8 +26,8 @@ class ArticleService {
     String? q,
     String? range,
     int? tribeId,
-    int page = 1,
-    int pageSize = 20,
+    String? cursor,
+    int limit = 20,
   }) async {
     final trimmed = q?.trim();
     final json = await ApiClient.get(
@@ -36,8 +36,7 @@ class ArticleService {
         'q': ?(trimmed != null && trimmed.isNotEmpty ? trimmed : null),
         'range': ?range,
         'tribe_id': ?tribeId?.toString(),
-        'page': '$page',
-        'page_size': '$pageSize',
+        ...PageInfo.query(cursor: cursor, limit: limit),
       },
     );
     return ArticleListResponse.fromJson(json);
@@ -72,23 +71,23 @@ class ArticleService {
   }
 
   static Future<ArticleListResponse> fetchArticleBookmarks({
-    int page = 1,
-    int pageSize = 20,
+    String? cursor,
+    int limit = 20,
   }) async {
     final json = await ApiClient.get(
       ApiConfig.articleBookmarks,
-      query: {'page': '$page', 'page_size': '$pageSize'},
+      query: PageInfo.query(cursor: cursor, limit: limit),
     );
     return ArticleListResponse.fromJson(json);
   }
 
   static Future<ArticleListResponse> fetchLikedArticles({
-    int page = 1,
-    int pageSize = 20,
+    String? cursor,
+    int limit = 20,
   }) async {
     final json = await ApiClient.get(
       ApiConfig.articleLikes,
-      query: {'page': '$page', 'page_size': '$pageSize'},
+      query: PageInfo.query(cursor: cursor, limit: limit),
     );
     return ArticleListResponse.fromJson(json);
   }

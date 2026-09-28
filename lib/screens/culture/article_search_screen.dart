@@ -19,15 +19,16 @@ class ArticleSearchScreen extends StatelessWidget {
       module: SearchModule.articles,
       hint: '搜尋文章',
       emptyText: '找不到符合的文章',
-      fetch: ({q, range, tribeId, required page}) async {
+      fetch: ({q, range, tribeId, cursor}) async {
         final res = await ArticleService.searchArticles(
           q: q,
           range: range,
           tribeId: tribeId,
-          page: page,
+          cursor: cursor,
         );
-        return (items: res.articles, total: res.total);
+        return (items: res.articles, pageInfo: res.pageInfo);
       },
+      idOf: (article) => article.id,
       itemBuilder: (article, seniorMode) =>
           _ArticleResultTile(article: article, seniorMode: seniorMode),
     );
