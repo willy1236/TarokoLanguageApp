@@ -1,16 +1,16 @@
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/millet_transaction.dart';
+import '../models/page_info.dart';
 
 class MilletService {
   static Future<MilletTransactionListResult> fetchTransactions({
-    int? before,
+    String? cursor,
     int limit = 20,
   }) async {
-    final beforeStr = before?.toString();
     final json = await ApiClient.get(
       ApiConfig.milletTransactions,
-      query: {'before': ?beforeStr, 'limit': '$limit'},
+      query: PageInfo.query(cursor: cursor, limit: limit),
     );
     return MilletTransactionListResult.fromJson(json);
   }

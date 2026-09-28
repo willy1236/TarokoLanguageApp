@@ -16,6 +16,7 @@ import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/models/forum_models.dart';
 import 'package:flutter_application_1/models/level_info.dart';
 import 'package:flutter_application_1/models/listening_models.dart';
+import 'package:flutter_application_1/models/millet_transaction.dart';
 import 'package:flutter_application_1/models/quiz_models.dart';
 import 'package:flutter_application_1/models/shop_item.dart';
 import 'package:flutter_application_1/models/terms_models.dart';
@@ -49,6 +50,21 @@ void Function(Map<String, dynamic>) _each(
   };
 }
 
+/// 分頁列表：先確認回應真的帶 `page_info`，再解析。
+/// 沒有這層檢查的話，後端拿掉 page_info 時 PageInfo 會默默當成「沒有下一頁」，契約照樣通過。
+void Function(Map<String, dynamic>) _paged(
+  void Function(Map<String, dynamic>) parse,
+) {
+  return (json) {
+    expect(
+      json['page_info'],
+      isA<Map<String, dynamic>>(),
+      reason: '分頁列表應該帶 page_info',
+    );
+    parse(json);
+  };
+}
+
 /// 部分端點包了 {data: {...}} 信封（service 端用 ApiClient.unwrapData 拆）。
 Map<String, dynamic> _unwrap(Map<String, dynamic> json) =>
     (json['data'] as Map<String, dynamic>?) ?? json;
@@ -64,6 +80,11 @@ final List<_Contract> _contracts = [
     'get_api_shop_items.json',
     'ShopItem',
     _each('items', ShopItem.fromJson),
+  ),
+  _Contract(
+    'get_api_millet_transactions.json',
+    'MilletTransactionListResult',
+    _paged(MilletTransactionListResult.fromJson),
   ),
   _Contract(
     'get_api_videos.json',

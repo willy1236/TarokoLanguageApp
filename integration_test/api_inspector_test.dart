@@ -208,6 +208,12 @@ void main() {
       itemShape: _shopItemShape,
       itemOptional: _shopItemOptional,
     ));
+    // 列表分頁統一成 limit＋cursor＋page_info（後端 2026-09-28 加急 API 格式統一 §1）。
+    test('GET /api/millet/transactions', () => _inspect(
+      'GET',
+      ApiConfig.milletTransactions,
+      shape: {'transactions': F.list, 'page_info': F.object},
+    ));
     test('GET /api/videos', () => _inspect(
       'GET',
       ApiConfig.videos,
