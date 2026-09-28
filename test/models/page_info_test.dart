@@ -55,4 +55,19 @@ void main() {
       });
     });
   });
+
+  group('appendUnique', () {
+    test('下一頁重複出現上一頁已有的項目時只留一份，順序不變', () {
+      expect(appendUnique([1, 2, 3], [3, 4, 5], (n) => n), [1, 2, 3, 4, 5]);
+    });
+
+    test('同一頁內重複的 key 也只留第一個', () {
+      final merged = appendUnique(
+        [(id: 1, v: 'a')],
+        [(id: 2, v: 'b'), (id: 2, v: 'c')],
+        (e) => e.id,
+      );
+      expect(merged.map((e) => e.v), ['a', 'b']);
+    });
+  });
 }

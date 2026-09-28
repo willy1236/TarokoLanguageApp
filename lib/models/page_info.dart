@@ -31,3 +31,20 @@ class PageInfo {
     if (limit != null) 'limit': '$limit',
   };
 }
+
+/// 把下一頁接在已載入的清單後面，依 [keyOf] 去重。
+///
+/// 位移式分頁（活動、文章、影音、測驗紀錄）在翻頁期間有新資料插入時，下一頁會
+/// 重複出現上一頁已有的項目；同一個 key 以先出現的為準，不改動已載入的順序。
+List<T> appendUnique<T>(
+  List<T> loaded,
+  Iterable<T> nextPage,
+  Object? Function(T item) keyOf,
+) {
+  final seen = {for (final item in loaded) keyOf(item)};
+  return [
+    ...loaded,
+    for (final item in nextPage)
+      if (seen.add(keyOf(item))) item,
+  ];
+}
