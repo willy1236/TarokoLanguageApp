@@ -6,7 +6,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';
 import '../../../shared/widgets/related_tribe_field.dart';
 import 'forum_image_grid.dart';
-import 'forum_post_card.dart' show forumRelativeTime;
+import '../../../core/utils/date_format.dart';
 
 class ForumPostBody extends StatelessWidget {
   final ForumPost post;
@@ -51,7 +51,7 @@ class ForumPostBody extends StatelessWidget {
       const SizedBox(height: 6),
       Text(
         '${post.author.displayName} · ${post.board.name} · '
-        '${forumRelativeTime(post.createdAt)}',
+        '${formatRelativeTime(post.createdAt)}',
         style: TextStyle(
           fontSize: AppTypography.size(
             AppTypography.caption,

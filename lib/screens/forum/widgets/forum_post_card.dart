@@ -8,6 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_icon_size.dart';
+import '../../../core/utils/date_format.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';
 import '../../../models/shop_item.dart';
@@ -17,17 +18,6 @@ import '../../../shared/widgets/related_tribe_field.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../friends/public_profile_screen.dart';
 import 'forum_image_grid.dart';
-
-String forumRelativeTime(DateTime time) {
-  final diff = DateTime.now().difference(time);
-  if (diff.inMinutes < 1) return '剛剛';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} 分鐘前';
-  if (diff.inHours < 24) return '${diff.inHours} 小時前';
-  if (diff.inDays < 7) return '${diff.inDays} 天前';
-  // 後端時間是 UTC，取年月日前要先轉本地，否則台灣凌晨 0～8 點的會差一天。
-  final local = time.toLocal();
-  return '${local.year}/${local.month}/${local.day}';
-}
 
 class ForumPostCard extends StatelessWidget {
   final ForumPost post;
@@ -226,7 +216,7 @@ class ForumPostCard extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${post.board.name} · ${forumRelativeTime(post.createdAt)}',
+                  '${post.board.name} · ${formatRelativeTime(post.createdAt)}',
                   style: TextStyle(
                     fontSize: AppTypography.size(
                       AppTypography.caption,

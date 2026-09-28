@@ -13,7 +13,7 @@ import '../../../models/shop_item.dart';
 import '../../../services/senior_mode_controller.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../friends/public_profile_screen.dart';
-import 'forum_post_card.dart' show forumRelativeTime;
+import '../../../core/utils/date_format.dart';
 
 class ForumCommentTile extends StatelessWidget {
   final ForumComment comment;
@@ -119,7 +119,7 @@ class ForumCommentTile extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              forumRelativeTime(comment.createdAt),
+              formatRelativeTime(comment.createdAt),
               style: TextStyle(
                 fontSize: AppTypography.size(
                   AppTypography.caption,
