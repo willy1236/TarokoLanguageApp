@@ -22,10 +22,16 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   final navKey = GlobalKey<NavigatorState>();
+  var readPosts = 0;
 
   setUp(() {
     stubCommonChannels();
+    readPosts = 0;
     ApiClient.httpClient = MockClient((request) async {
+      if (request.method == 'POST' &&
+          request.url.path == '/api/friends/7/messages/read') {
+        readPosts++;
+      }
       if (request.url.path == '/api/friends') {
         return http.Response(
           jsonEncode({
@@ -67,8 +73,12 @@ void main() {
     await open(tester, 'friend_message', 7);
     expect(find.byType(ChatScreen), findsOneWidget);
 
+    final readsAfterOpen = readPosts;
+
     await open(tester, 'friend_message', 7);
     expect(find.byType(ChatScreen, skipOffstage: false), findsOneWidget);
+    // 已開著時重抓訊息之外也要標已讀，否則紅點會殘留。
+    expect(readPosts, readsAfterOpen + 1);
   });
 
   testWidgets('聊天室被其他頁（例如通話）蓋住時不拆掉上層，照常疊一頁', (tester) async {
