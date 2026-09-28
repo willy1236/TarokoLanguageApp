@@ -147,6 +147,8 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
         ),
       );
     } catch (e) {
+      // 已接通但拿不到自己的憑證：結束這通，對方不會獨自留在通話裡。
+      DirectedCallService.endCall(_callId!).catchError((_) {});
       if (!mounted) return;
       setState(() => _errorMessage = _describeError(e));
     }
