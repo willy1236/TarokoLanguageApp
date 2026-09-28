@@ -316,6 +316,29 @@ void main() {
       expect(find.text('你已於 ${formatDateTime(local)} 報名'), findsOneWidget);
     });
 
+    testWidgets('發起人看自己的活動不顯示報名時間', (tester) async {
+      await pumpDetail(tester, {
+        'host_uid': _myUid,
+        'is_joined': true,
+        'my_registration': {
+          'joined_at': '2026-11-20T02:30:00Z',
+          'contact_email': 'me@example.com',
+        },
+      });
+      expect(find.text('部落豐年祭'), findsWidgets);
+      expect(find.textContaining('你已於'), findsNothing);
+    });
+
+    testWidgets('報名資訊格式不對時照常顯示活動，只是沒有報名時間', (tester) async {
+      await pumpDetail(tester, {
+        'is_joined': true,
+        'my_registration': {'joined_at': 'not-a-date', 'contact_email': 42},
+      });
+      expect(find.byType(TrukuErrorView), findsNothing);
+      expect(find.text('部落豐年祭'), findsWidgets);
+      expect(find.textContaining('你已於'), findsNothing);
+    });
+
     testWidgets('未報名時不顯示報名時間', (tester) async {
       await pumpDetail(tester, {'my_registration': null});
       expect(find.textContaining('你已於'), findsNothing);

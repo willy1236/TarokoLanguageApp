@@ -104,7 +104,9 @@ class EventDetailBody extends StatelessWidget {
             ),
             const SizedBox(height: 10),
           ],
-          if (e.myRegistration != null) ...[
+          // 後端建立活動時會把發起人自動加成參加者；發起人已有「你發起的」
+          // 標記，不再顯示報名時間。
+          if (e.myRegistration != null && !isHost) ...[
             _notice(
               icon: Icons.how_to_reg_outlined,
               color: AppColors.mossDeep,
