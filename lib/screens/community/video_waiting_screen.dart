@@ -160,14 +160,20 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
       debugPrint('VideoWaitingScreen: 離開佇列失敗：$e');
       if (!mounted) return;
       setState(() => _cancelling = false);
-      final leaveAnyway = await showConfirmDialog(
-        context,
-        title: '無法取消配對',
-        message: '目前無法連上伺服器。仍要離開嗎？若離開，稍後可能仍會收到配對通知。',
-        cancelText: '留在此頁',
-        confirmText: '仍要離開',
-      );
-      if (leaveAnyway == true && mounted) Navigator.pop(context);
+      // 重新排隊已被 403 擋下（_stopped）時本來就不在佇列、也不再輪詢，留在此頁
+      // 沒有意義，直接離開。確認框開著時才被擋下，_stopForbidden 會關掉確認框，
+      // 回到這裡一樣離開。
+      if (!_stopped) {
+        final leaveAnyway = await showConfirmDialog(
+          context,
+          title: '無法取消配對',
+          message: '目前無法連上伺服器。仍要離開嗎？若離開，稍後可能仍會收到配對通知。',
+          cancelText: '留在此頁',
+          confirmText: '仍要離開',
+        );
+        if (leaveAnyway != true && !_stopped) return;
+      }
+      if (mounted) Navigator.pop(context);
     }
   }
 

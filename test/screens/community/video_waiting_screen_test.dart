@@ -135,4 +135,55 @@ void main() {
     await pumpFrames(tester);
     expect(requests.where((r) => r == 'DELETE /api/video/queue').length, 2);
   });
+
+  group('重新排隊被 403 擋下，同時取消失敗：直接離開，不停在不再輪詢的畫面', () {
+    Future<void> run(
+      WidgetTester tester, {
+      required Duration joinDelay,
+      required Duration leaveDelay,
+    }) async {
+      installMockClient(
+        {
+          '/api/video/session/current': {'session': null, 'in_queue': false},
+          // POST（重新排隊）與 DELETE（離開佇列）都回 403。
+          '/api/video/queue': errorResponse(
+            'MUTED',
+            status: 403,
+            message: '你目前被禁言',
+          ),
+        },
+        delayFor: (r) => r.url.path != '/api/video/queue'
+            ? Duration.zero
+            : r.method == 'POST'
+            ? joinDelay
+            : leaveDelay,
+      );
+
+      await openAndPoll(tester);
+      await tester.tap(find.text('取消配對'));
+      await pumpFrames(tester);
+      await tester.pump(const Duration(seconds: 3));
+      await pumpFrames(tester, times: 10);
+
+      expect(find.text('無法取消配對'), findsNothing);
+      expect(find.byType(VideoWaitingScreen), findsNothing);
+      expect(find.text('OPEN'), findsOneWidget);
+    }
+
+    testWidgets('403 先回來、離開佇列才失敗', (tester) async {
+      await run(
+        tester,
+        joinDelay: const Duration(seconds: 1),
+        leaveDelay: const Duration(seconds: 2),
+      );
+    });
+
+    testWidgets('離開佇列先失敗、確認框開著時 403 才回來', (tester) async {
+      await run(
+        tester,
+        joinDelay: const Duration(seconds: 2),
+        leaveDelay: Duration.zero,
+      );
+    });
+  });
 }
