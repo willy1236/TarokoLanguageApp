@@ -1,0 +1,142 @@
+{
+  "total": 10,
+  "page": 1,
+  "page_size": 20,
+  "page_info": {
+    "next_cursor": null,
+    "has_more": false
+  },
+  "sort": "latest",
+  "articles": [
+    {
+      "id": 16,
+      "title": "測試標題",
+      "summary": "測試摘要",
+      "cover_image_url": null,
+      "category": "event",
+      "view_count": 2,
+      "like_count": 0,
+      "weekly_view_count": 1,
+      "published_at": "2026-09-04T05:28:38.406Z",
+      "is_liked": false,
+      "is_bookmarked": false
+    },
+    {
+      "id": 18,
+      "title": "測試標題",
+      "summary": "測試摘要",
+      "cover_image_url": null,
+      "category": "other",
+      "view_count": 1,
+      "like_count": 0,
+      "weekly_view_count": 0,
+      "published_at": "2026-09-04T05:28:38.406Z",
+      "is_liked": false,
+      "is_bookmarked": false
+    },
+    {
+      "id": 17,
+      "title": "測試標題",
+      "summary": "測試摘要",
+      "cover_image_url": null,
+      "category": "event",
+      "view_count": 3,
+      "like_count": 0,
+      "weekly_view_count": 0,
+      "published_at": "2026-09-04T05:28:38.406Z",
+      "is_liked": false,
+      "is_bookmarked": false
+    },
+    {
+      "id": 15,
+      "title": "測試標題",
+      "summary": "測試摘要",
+      "cover_image_url": null,
+      "category": "cultural",
+      "view_count": 0,
+      "like_count": 0,
+      "weekly_view_count": 0,
+      "published_at": "2026-09-04T05:28:38.406Z",
+      "is_liked": false,
+      "is_bookmarked": false
+    },
+    {
+      "id": 14,
+      "title": "測試標題",
+      "summary": "測試摘要",
+      "cover_image_url": null,
+      "category": "cultural",
+      "view_count": 2,
+      "like_count": 1,
+      "weekly_view_count": 1,
+      "published_at": "2026-09-04T05:28:38.406Z",
+      "is_liked": true,
+      "is_bookmarked": true
+    },
+    {
+      "id": 12,
+      "title": "測試標題",
+      "summary": "測試摘要",
+      "cover_image_url": null,
+      "category": "cultural",
+      "view_count": 0,
+      "like_count": 0,
+      "weekly_view_count": 0,
+      "published_at": "2026-09-03T07:57:44.767Z",
+      "is_liked": false,
+      "is_bookmarked": false
+    },
+    {
+      "id": 10,
+      "title": "測試標題",
+      "summary": "測試摘要",
+      "cover_image_url": null,
+      "category": "event",
+      "view_count": 0,
+      "like_count": 0,
+      "weekly_view_count": 0,
+      "published_at": "2026-09-03T07:57:44.767Z",
+      "is_liked": false,
+      "is_bookmarked": false
+    },
+    {
+      "id": 11,
+      "title": "測試標題",
+      "summary": "測試摘要",
+      "cover_image_url": null,
+      "category": "event",
+      "view_count": 0,
+      "like_count": 0,
+      "weekly_view_count": 0,
+      "published_at": "2026-09-03T07:57:44.767Z",
+      "is_liked": false,
+      "is_bookmarked": false
+    },
+    {
+      "id": 9,
+      "title": "測試標題",
+      "summary": "測試摘要",
+      "cover_image_url": "https://storage.googleapis.com/truku-media/articles/9/cover.webp",
+      "category": "cultural",
+      "view_count": 14,
+      "like_count": 2,
+      "weekly_view_count": 1,
+      "published_at": "2026-07-19T21:55:11.963Z",
+      "is_liked": true,
+      "is_bookmarked": true
+    },
+    {
+      "id": 8,
+      "title": "測試標題",
+      "summary": "測試摘要",
+      "cover_image_url": "https://storage.googleapis.com/truku-media/articles/8/cover.png",
+      "category": "other",
+      "view_count": 6,
+      "like_count": 0,
+      "weekly_view_count": 0,
+      "published_at": "2026-07-19T16:16:41.838Z",
+      "is_liked": false,
+      "is_bookmarked": false
+    }
+  ]
+}

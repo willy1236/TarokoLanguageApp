@@ -1,0 +1,35 @@
+{
+  "total": 2,
+  "page": 1,
+  "page_size": 20,
+  "page_info": {
+    "next_cursor": null,
+    "has_more": false
+  },
+  "articles": [
+    {
+      "id": 14,
+      "title": "測試標題",
+      "summary": "測試摘要",
+      "cover_image_url": null,
+      "category": "cultural",
+      "status": "published",
+      "view_count": 2,
+      "like_count": 1,
+      "published_at": "2026-09-04T05:28:38.406Z",
+      "bookmarked_at": "2026-09-17T11:16:38.997Z"
+    },
+    {
+      "id": 9,
+      "title": "測試標題",
+      "summary": "測試摘要",
+      "cover_image_url": "https://storage.googleapis.com/truku-media/articles/9/cover.webp",
+      "category": "cultural",
+      "status": "published",
+      "view_count": 14,
+      "like_count": 2,
+      "published_at": "2026-07-19T21:55:11.963Z",
+      "bookmarked_at": "2026-08-25T11:48:02.595Z"
+    }
+  ]
+}
