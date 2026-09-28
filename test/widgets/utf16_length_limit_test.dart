@@ -128,6 +128,32 @@ void main() {
       expect(out.selection.baseOffset, 3);
     });
 
+    test('組字範圍與游標都對不上時比對頭尾，不從 emoji 中間切開', () {
+      // 😃（D83D DE03）與 😀（D83D DE00）開頭的 surrogate 相同，逐單位比對頭尾
+      // 會落在 emoji 中間，要退到 emoji 邊界。
+      const old = TextEditingValue(
+        text: '😀',
+        selection: TextSelection.collapsed(offset: -1),
+      );
+      final typed = _value('😃😀');
+      final out = const Utf16LengthLimitingTextInputFormatter(
+        3,
+      ).formatEditUpdate(old, typed);
+      expect(out.text, '😃');
+      expect(out.selection.baseOffset, 2);
+    });
+
+    test('插入點以外的文字已超過上限（組字中放行）：整段截斷', () {
+      final composing = TextEditingValue(
+        text: 'abcdefg',
+        selection: const TextSelection.collapsed(offset: 7),
+        composing: const TextRange(start: 6, end: 7),
+      );
+      final out = formatter.formatEditUpdate(composing, _value('abcdefgX'));
+      expect(out.text, 'abcde');
+      expect(out.selection.baseOffset, 5);
+    });
+
     test('輸入法組字中先不截，組字完成才截', () {
       final composing = _value(
         'abcdㄊㄞ',
