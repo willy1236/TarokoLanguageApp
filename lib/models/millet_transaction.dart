@@ -1,7 +1,9 @@
 // 對應 /api/millet/transactions
 // 規格參考：說明文件/API/小米幣帳本.md
 
-// id／next_cursor 對應資料庫 BIGSERIAL，pg driver 會回傳字串以避免精度遺失
+import 'page_info.dart';
+
+// id 對應資料庫 BIGSERIAL，pg driver 會回傳字串以避免精度遺失
 int? _parseId(dynamic value) {
   if (value == null) return null;
   if (value is int) return value;
@@ -42,11 +44,11 @@ class MilletTransaction {
 
 class MilletTransactionListResult {
   final List<MilletTransaction> transactions;
-  final int? nextCursor;
+  final PageInfo pageInfo;
 
   const MilletTransactionListResult({
     required this.transactions,
-    required this.nextCursor,
+    required this.pageInfo,
   });
 
   factory MilletTransactionListResult.fromJson(Map<String, dynamic> json) {
@@ -54,7 +56,7 @@ class MilletTransactionListResult {
       transactions: (json['transactions'] as List<dynamic>? ?? [])
           .map((e) => MilletTransaction.fromJson(e as Map<String, dynamic>))
           .toList(),
-      nextCursor: _parseId(json['next_cursor']),
+      pageInfo: PageInfo.fromResponse(json),
     );
   }
 }
