@@ -317,6 +317,10 @@ class _MainContainerState extends State<MainContainer>
   int _weeklyCheckinCount = 0;
   bool _weeklyBonusEarned = false;
 
+  /// 簽到狀態每次寫入就遞增。狀態查詢回來時如果期間已經寫入過（例如回前景
+  /// 查詢還沒回來就按了簽到），查到的是舊狀態，丟掉不用。
+  int _checkinVersion = 0;
+
   @override
   void initState() {
     super.initState();
@@ -353,6 +357,9 @@ class _MainContainerState extends State<MainContainer>
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state != AppLifecycleState.resumed) return;
     NotificationSummaryService.refresh();
+    // 背景過夜回來要能簽到。每次回前景都查，不在前端判斷跨日：裝置時區與
+    // 後端換日時間不一定一致。
+    _loadCheckinStatus();
     // 推播會把未讀總數設成 App 圖示紅點（iOS aps.badge），回前景時要自己歸零。
     AppBadge.clear();
   }
@@ -425,18 +432,24 @@ class _MainContainerState extends State<MainContainer>
     }
   }
 
+  void _applyCheckinStatus(CheckinStatus status) {
+    _checkinVersion++;
+    _syncCheckinToCache(status);
+    setState(() {
+      _checkedInToday = status.checkedInToday;
+      _checkinStreak = status.checkinStreak;
+      _millet = status.millet;
+      _weeklyCheckinCount = status.weeklyCheckinCount;
+      _weeklyBonusEarned = status.weeklyBonusEarned;
+    });
+  }
+
   Future<void> _loadCheckinStatus() async {
+    final version = _checkinVersion;
     try {
       final status = await CheckinService.fetchStatus();
-      if (!mounted) return;
-      _syncCheckinToCache(status);
-      setState(() {
-        _checkedInToday = status.checkedInToday;
-        _checkinStreak = status.checkinStreak;
-        _millet = status.millet;
-        _weeklyCheckinCount = status.weeklyCheckinCount;
-        _weeklyBonusEarned = status.weeklyBonusEarned;
-      });
+      if (!mounted || version != _checkinVersion) return;
+      _applyCheckinStatus(status);
     } catch (e) {
       // 功能尚未開放或發生錯誤：維持現狀，簽到按鈕保持預設（可點）樣式。
       debugPrint('Failed to load checkin status: $e');
@@ -447,14 +460,7 @@ class _MainContainerState extends State<MainContainer>
     try {
       final status = await CheckinService.checkin();
       if (!mounted) return;
-      _syncCheckinToCache(status);
-      setState(() {
-        _checkedInToday = status.checkedInToday;
-        _checkinStreak = status.checkinStreak;
-        _millet = status.millet;
-        _weeklyCheckinCount = status.weeklyCheckinCount;
-        _weeklyBonusEarned = status.weeklyBonusEarned;
-      });
+      _applyCheckinStatus(status);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
@@ -465,6 +471,7 @@ class _MainContainerState extends State<MainContainer>
     } on ApiException catch (e) {
       if (!mounted) return;
       if (e.code == 'ALREADY_CHECKED_IN') {
+        _checkinVersion++;
         setState(() => _checkedInToday = true);
         ScaffoldMessenger.of(
           context,

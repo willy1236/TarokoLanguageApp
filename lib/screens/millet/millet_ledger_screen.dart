@@ -68,6 +68,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
     });
     try {
       final result = await MilletService.fetchTransactions(limit: _pageSize);
+      if (!mounted) return;
       setState(() {
         _transactions
           ..clear()
@@ -77,6 +78,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
         _initialLoading = false;
       });
     } catch (e) {
+      if (!mounted) return;
       setState(() {
         _error = e;
         _initialLoading = false;
@@ -91,6 +93,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
         before: _cursor,
         limit: _pageSize,
       );
+      if (!mounted) return;
       setState(() {
         _transactions.addAll(result.transactions);
         _cursor = result.nextCursor;
@@ -99,6 +102,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
       });
     } catch (e) {
       debugPrint('MilletLedgerScreen._loadNextPage failed: $e');
+      if (!mounted) return;
       setState(() => _loadingMore = false);
     }
   }

@@ -6,21 +6,13 @@ import '../../shared/widgets/truku_empty_state.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import 'event_detail_screen.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/app_back_button.dart';
-
-String _relativeTime(DateTime time) {
-  final diff = DateTime.now().difference(time);
-  if (diff.inMinutes < 1) return '剛剛';
-  if (diff.inMinutes < 60) return '${diff.inMinutes} 分鐘前';
-  if (diff.inHours < 24) return '${diff.inHours} 小時前';
-  if (diff.inDays < 7) return '${diff.inDays} 天前';
-  return '${time.year}/${time.month}/${time.day}';
-}
 
 class EventNotificationsScreen extends StatefulWidget {
   const EventNotificationsScreen({super.key});
@@ -230,7 +222,7 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
             ),
           ),
           subtitle: Text(
-            '${item.message} · ${_relativeTime(item.sentAt)}',
+            '${item.message} · ${formatRelativeTime(item.sentAt)}',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(

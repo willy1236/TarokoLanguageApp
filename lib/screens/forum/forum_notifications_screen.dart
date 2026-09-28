@@ -14,7 +14,7 @@ import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
 import 'forum_detail_screen.dart';
 import 'widgets/forum_toast.dart';
-import 'widgets/forum_post_card.dart' show forumRelativeTime;
+import '../../core/utils/date_format.dart';
 import '../../shared/widgets/app_back_button.dart';
 
 class ForumNotificationsScreen extends StatefulWidget {
@@ -236,7 +236,7 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
           ),
           subtitle: Text(
             '${item.postTitle ?? '（貼文已刪除）'} · '
-            '${forumRelativeTime(item.createdAt)}',
+            '${formatRelativeTime(item.createdAt)}',
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
