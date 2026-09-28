@@ -71,6 +71,20 @@ void main() {
     expect(find.byType(ChatScreen, skipOffstage: false), findsOneWidget);
   });
 
+  testWidgets('聊天室被其他頁（例如通話）蓋住時不拆掉上層，照常疊一頁', (tester) async {
+    await start(tester);
+    await open(tester, 'friend_message', 7);
+    navKey.currentState!.push(
+      MaterialPageRoute(builder: (_) => const Scaffold(body: Text('CALL'))),
+    );
+    await pumpFrames(tester);
+
+    await open(tester, 'friend_message', 7);
+
+    expect(find.text('CALL', skipOffstage: false), findsOneWidget);
+    expect(find.byType(ChatScreen, skipOffstage: false), findsNWidgets(2));
+  });
+
   testWidgets('接受邀請與羈絆展示 → 對方公開頁', (tester) async {
     await start(tester);
     await open(tester, 'friend_accepted', 7);

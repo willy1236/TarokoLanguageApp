@@ -67,10 +67,11 @@ class ChatScreen extends StatefulWidget {
     ),
   );
 
-  /// 目前開著的聊天室：key = partnerUid，value = 開著的實例數。
-  static final Map<int, int> _open = {};
+  /// 開著的聊天室的重載函式：key = partnerUid（同一人開了多個時取最後開的）。
+  static final Map<int, VoidCallback> _live = {};
 
-  static bool isOpen(int partnerUid) => (_open[partnerUid] ?? 0) > 0;
+  /// 點私訊通知時人已在該聊天室：重抓背景期間漏掉的訊息。
+  static void refreshIfOpen(int partnerUid) => _live[partnerUid]?.call();
 
   @override
   State<ChatScreen> createState() => _ChatScreenState();
@@ -94,7 +95,7 @@ class _ChatScreenState extends State<ChatScreen> {
   @override
   void initState() {
     super.initState();
-    ChatScreen._open.update(widget.partnerUid, (n) => n + 1, ifAbsent: () => 1);
+    ChatScreen._live[widget.partnerUid] = _load;
     chatController.connect();
     chatController.addListener(_onChatEvent);
     _scrollController.addListener(_onScroll);
@@ -116,11 +117,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   @override
   void dispose() {
-    final remaining = (ChatScreen._open[widget.partnerUid] ?? 1) - 1;
-    if (remaining > 0) {
-      ChatScreen._open[widget.partnerUid] = remaining;
-    } else {
-      ChatScreen._open.remove(widget.partnerUid);
+    if (ChatScreen._live[widget.partnerUid] == _load) {
+      ChatScreen._live.remove(widget.partnerUid);
     }
     chatController.removeListener(_onChatEvent);
     _scrollController.dispose();
