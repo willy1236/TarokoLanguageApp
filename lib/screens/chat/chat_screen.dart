@@ -101,6 +101,10 @@ class _ChatScreenState extends State<ChatScreen> {
   void _onChatEvent() {
     final event = chatController.lastEvent;
     if (event == null) return;
+    if (event.type == ChatSocketEventType.connected) {
+      _catchUp();
+      return;
+    }
     if (event.type == ChatSocketEventType.message) {
       final m = event.message!;
       if (m.senderUid == widget.partnerUid ||
@@ -146,6 +150,29 @@ class _ChatScreenState extends State<ChatScreen> {
       debugPrintStack(stackTrace: st);
       if (!mounted) return;
       setState(() => _loading = false);
+    }
+  }
+
+  /// 重連後補抓斷線期間的訊息：重抓最新一頁併進清單，不動往上捲的分頁游標；
+  /// 與已載入的接不起來（離線期間超過一頁）才整頁替換。
+  Future<void> _catchUp() async {
+    if (_loading) return;
+    try {
+      final page = await FriendService.getMessages(widget.partnerUid);
+      if (!mounted) return;
+      final hadUnread = page.messages.any(
+        (m) => m.senderUid == widget.partnerUid && m.readAt == null,
+      );
+      final merged = mergeLatestMessages(_messages, page.messages);
+      setState(() {
+        _messages
+          ..clear()
+          ..addAll(merged ?? page.messages);
+        if (merged == null) _nextCursor = page.nextCursor;
+      });
+      if (hadUnread) _markRead();
+    } catch (e) {
+      debugPrint('Failed to catch up messages: $e');
     }
   }
 

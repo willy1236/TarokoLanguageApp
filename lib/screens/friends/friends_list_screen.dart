@@ -61,7 +61,9 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   void _onChatEvent() {
     final event = chatController.lastEvent;
     if (event == null) return;
-    if (event.type == ChatSocketEventType.message) {
+    // connected：重連後補上斷線期間的最後一則與未讀數。
+    if (event.type == ChatSocketEventType.message ||
+        event.type == ChatSocketEventType.connected) {
       _loadConversations();
       NotificationSummaryService.refresh();
     }
