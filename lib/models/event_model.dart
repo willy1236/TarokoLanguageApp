@@ -305,14 +305,16 @@ class EventRegistration {
 
   const EventRegistration({required this.joinedAt, this.contactEmail});
 
-  /// joined_at 缺少或格式不對時回 null（視為沒有報名資訊），不讓整頁變錯誤畫面。
+  /// joined_at 缺少或格式不對時回 null（視為沒有報名資訊），contact_email 不是
+  /// 字串時當作沒有，都不讓整頁變錯誤畫面。
   static EventRegistration? tryFromJson(Object? json) {
     if (json is! Map<String, dynamic>) return null;
     final joinedAt = _parseTime(json['joined_at']);
     if (joinedAt == null) return null;
+    final email = json['contact_email'];
     return EventRegistration(
       joinedAt: joinedAt,
-      contactEmail: json['contact_email'] as String?,
+      contactEmail: email is String ? email : null,
     );
   }
 }
