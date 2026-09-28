@@ -44,6 +44,38 @@ class EventDetailBody extends StatelessWidget {
   static bool _sameDay(DateTime a, DateTime b) =>
       a.year == b.year && a.month == b.month && a.day == b.day;
 
+  Widget _notice({
+    required IconData icon,
+    required Color color,
+    required String text,
+    required bool seniorMode,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: seniorMode ? 22 : 18, color: color),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              text,
+              style: AppTypography.bodyLargeStyle(
+                seniorMode: seniorMode,
+                color: AppColors.ink,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildBody(EventDetail e, bool seniorMode) {
     final start = e.startsAt.toLocal();
     final end = e.endsAt?.toLocal();
@@ -61,6 +93,29 @@ class EventDetailBody extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // 取消理由只給報名者與發起人；後端文字照原樣顯示（含 *）。沒有理由時
+          // 頂部的「已取消」標示就足夠。
+          if (e.cancelReason != null) ...[
+            _notice(
+              icon: Icons.cancel_outlined,
+              color: AppColors.dangerDark,
+              text: '取消理由：${e.cancelReason}',
+              seniorMode: seniorMode,
+            ),
+            const SizedBox(height: 10),
+          ],
+          // 後端建立活動時會把發起人自動加成參加者；發起人已有「你發起的」
+          // 標記，不再顯示報名時間。
+          if (e.myRegistration != null && !isHost) ...[
+            _notice(
+              icon: Icons.how_to_reg_outlined,
+              color: AppColors.mossDeep,
+              text:
+                  '你已於 ${formatDateTime(e.myRegistration!.joinedAt.toLocal())} 報名',
+              seniorMode: seniorMode,
+            ),
+            const SizedBox(height: 16),
+          ],
           // 發起人
           Row(
             children: [

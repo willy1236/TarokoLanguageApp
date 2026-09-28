@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_application_1/core/utils/date_format.dart';
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/screens/events/event_detail_screen.dart';
 import 'package:flutter_application_1/screens/events/widgets/event_detail_dialogs.dart';
@@ -155,6 +156,62 @@ void main() {
     expect(find.text('已報名'), findsWidgets);
   });
 
+  group('返回結果', () {
+    Map<String, Object?> routes() => {
+      '/api/events/1': _detail(),
+      '/api/events/1/reminders': {'reminders': <dynamic>[]},
+      '/api/me': _me(),
+      '/api/events/1/join': <String, dynamic>{},
+    };
+
+    /// 從一個空白頁推入詳情頁，回傳返回時的結果。
+    Future<Future<bool?>> openDetail(WidgetTester tester) async {
+      late BuildContext home;
+      await tester.pumpWidget(
+        MaterialApp(
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          home: Builder(
+            builder: (c) {
+              home = c;
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      final result = Navigator.push<bool>(
+        home,
+        EventDetailScreen.route<bool>(_eventId),
+      );
+      await tester.pumpAndSettle();
+      return result;
+    }
+
+    testWidgets('沒有變動就返回：結果不是 true，列表不必重載', (tester) async {
+      installMockClient(routes());
+      final result = await openDetail(tester);
+
+      await tester.binding.handlePopRoute(); // Android 返回鍵
+      await tester.pumpAndSettle();
+
+      expect(await result, isNot(true));
+    });
+
+    testWidgets('報名後返回（系統返回鍵）：結果為 true', (tester) async {
+      installMockClient(routes());
+      final result = await openDetail(tester);
+
+      await tester.tap(find.text('我要參加'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('確認報名'));
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(await result, isTrue);
+    });
+  });
+
   testWidgets('報名對話框 Email 格式錯誤時不送出', (tester) async {
     var joined = false;
     installMockClient(
@@ -287,5 +344,79 @@ void main() {
     // 還原後應該回到未按讚的圖示與原本的計數。
     expect(find.byIcon(Icons.favorite_border), findsOneWidget);
     expect(find.text('3'), findsWidgets);
+  });
+
+  group('報名資訊與取消理由', () {
+    Future<void> pumpDetail(
+      WidgetTester tester,
+      Map<String, dynamic> extra,
+    ) async {
+      installMockClient({
+        '/api/events/1': {..._detail(), ...extra},
+        '/api/events/1/reminders': {'reminders': <dynamic>[]},
+        '/api/me': _me(),
+      });
+      await tester.pumpWidget(_app());
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('已報名時顯示報名時間', (tester) async {
+      await pumpDetail(tester, {
+        'is_joined': true,
+        'my_registration': {
+          'joined_at': '2026-11-20T02:30:00Z',
+          'contact_email': 'me@example.com',
+        },
+      });
+      final local = DateTime.utc(2026, 11, 20, 2, 30).toLocal();
+      expect(find.text('你已於 ${formatDateTime(local)} 報名'), findsOneWidget);
+    });
+
+    testWidgets('發起人看自己的活動不顯示報名時間', (tester) async {
+      await pumpDetail(tester, {
+        'host_uid': _myUid,
+        'is_joined': true,
+        'my_registration': {
+          'joined_at': '2026-11-20T02:30:00Z',
+          'contact_email': 'me@example.com',
+        },
+      });
+      expect(find.text('部落豐年祭'), findsWidgets);
+      expect(find.textContaining('你已於'), findsNothing);
+    });
+
+    testWidgets('報名資訊格式不對時照常顯示活動，只是沒有報名時間', (tester) async {
+      await pumpDetail(tester, {
+        'is_joined': true,
+        'my_registration': {'joined_at': 'not-a-date', 'contact_email': 42},
+      });
+      expect(find.byType(TrukuErrorView), findsNothing);
+      expect(find.text('部落豐年祭'), findsWidgets);
+      expect(find.textContaining('你已於'), findsNothing);
+    });
+
+    testWidgets('未報名時不顯示報名時間', (tester) async {
+      await pumpDetail(tester, {'my_registration': null});
+      expect(find.textContaining('你已於'), findsNothing);
+    });
+
+    testWidgets('已取消且有理由：照原樣顯示（含 *）', (tester) async {
+      await pumpDetail(tester, {
+        'status': 'cancelled',
+        'effective_status': 'cancelled',
+        'cancel_reason': '颱風 *停班停課*',
+      });
+      expect(find.text('取消理由：颱風 *停班停課*'), findsOneWidget);
+    });
+
+    testWidgets('已取消但理由為 null：不顯示理由列', (tester) async {
+      await pumpDetail(tester, {
+        'status': 'cancelled',
+        'effective_status': 'cancelled',
+        'cancel_reason': null,
+      });
+      expect(find.textContaining('取消理由'), findsNothing);
+      expect(find.text('已取消'), findsWidgets);
+    });
   });
 }

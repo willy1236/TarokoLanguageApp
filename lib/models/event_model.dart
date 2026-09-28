@@ -50,6 +50,12 @@ class EventDetail {
   final bool isBookmarked;
   final bool isJoined; // 後端直接算好；非發起人的 participants 是空陣列，不能靠它判斷
 
+  /// 我自己的報名資料；未報名為 null。
+  final EventRegistration? myRegistration;
+
+  /// 已取消活動的取消理由，只給報名者與發起人；其他人或未填為 null。
+  final String? cancelReason;
+
   const EventDetail({
     required this.id,
     required this.hostUid,
@@ -79,6 +85,8 @@ class EventDetail {
     this.isLiked = false,
     this.isBookmarked = false,
     this.isJoined = false,
+    this.myRegistration,
+    this.cancelReason,
   });
 
   /// 目前登入者是否為發起人（判斷要不要顯示「發送提醒」「取消活動」）。
@@ -141,6 +149,8 @@ class EventDetail {
       isLiked: json['is_liked'] as bool? ?? false,
       isBookmarked: json['is_bookmarked'] as bool? ?? false,
       isJoined: json['is_joined'] as bool? ?? false,
+      myRegistration: EventRegistration.tryFromJson(json['my_registration']),
+      cancelReason: json['cancel_reason'] as String?,
     );
   }
 
@@ -186,6 +196,8 @@ class EventDetail {
         isLiked: isLiked ?? this.isLiked,
         isBookmarked: isBookmarked ?? this.isBookmarked,
         isJoined: isJoined,
+        myRegistration: myRegistration,
+        cancelReason: cancelReason,
       );
 }
 
@@ -214,6 +226,10 @@ class EventSummary {
   final bool isLiked;
   final bool isBookmarked;
 
+  /// 我參加的活動（GET /api/events/joined）才有：自己是否為發起人、報名時間。
+  final bool isHost;
+  final DateTime? joinedAt;
+
   const EventSummary({
     required this.id,
     this.hostUid,
@@ -235,6 +251,8 @@ class EventSummary {
     this.likeCount = 0,
     this.isLiked = false,
     this.isBookmarked = false,
+    this.isHost = false,
+    this.joinedAt,
   });
 
   bool isHostedBy(int? uid) => uid != null && uid == hostUid;
@@ -274,6 +292,29 @@ class EventSummary {
       likeCount: asEventInt(json['like_count']) ?? 0,
       isLiked: json['is_liked'] as bool? ?? false,
       isBookmarked: json['is_bookmarked'] as bool? ?? false,
+      isHost: json['is_host'] as bool? ?? false,
+      joinedAt: _parseTime(json['joined_at']),
+    );
+  }
+}
+
+/// 活動詳情的 my_registration：我自己的報名時間與當時留的 email。
+class EventRegistration {
+  final DateTime joinedAt;
+  final String? contactEmail;
+
+  const EventRegistration({required this.joinedAt, this.contactEmail});
+
+  /// joined_at 缺少或格式不對時回 null（視為沒有報名資訊），contact_email 不是
+  /// 字串時當作沒有，都不讓整頁變錯誤畫面。
+  static EventRegistration? tryFromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final joinedAt = _parseTime(json['joined_at']);
+    if (joinedAt == null) return null;
+    final email = json['contact_email'];
+    return EventRegistration(
+      joinedAt: joinedAt,
+      contactEmail: email is String ? email : null,
     );
   }
 }

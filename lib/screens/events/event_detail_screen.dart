@@ -37,7 +37,10 @@ class EventDetailScreen extends StatefulWidget {
   static String routeNameFor(int eventId) => 'event/detail/$eventId';
 
   /// 所有呼叫端都走這個工廠，settings.name 才會一致。
-  static Route<T> route<T>(int eventId) => MaterialPageRoute<T>(
+  ///
+  /// 頁面上報名、退出、取消、編輯或刪除過活動時，返回的結果為 true（含返回鍵
+  /// 與滑動返回），列表可以只在有變動時才重載。要拿結果時 [T] 給 bool。
+  static Route<T> route<T>(int eventId) => _EventDetailRoute<T>(
     settings: RouteSettings(name: routeNameFor(eventId)),
     builder: (_) => EventDetailScreen(eventId: eventId),
   );
@@ -51,6 +54,17 @@ class EventDetailScreen extends StatefulWidget {
 
   @override
   State<EventDetailScreen> createState() => _EventDetailScreenState();
+}
+
+class _EventDetailRoute<T> extends MaterialPageRoute<T> {
+  _EventDetailRoute({required super.builder, super.settings});
+
+  bool changed = false;
+
+  // 返回時沒帶結果（返回鍵、滑動返回）就用這個值。
+  @override
+  T? get currentResult =>
+      changed && true is T ? true as T : super.currentResult;
 }
 
 class _EventDetailScreenState extends State<EventDetailScreen> {
@@ -243,6 +257,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
+  /// 活動資料被這頁改動過，返回時通知列表重載。
+  void _markChanged() {
+    final route = ModalRoute.of(context);
+    if (route is _EventDetailRoute) route.changed = true;
+  }
+
   /// 成功後提示 [success] 並重新整理活動資料。
   Future<void> _runAction(
     Future<void> Function() action, {
@@ -251,6 +271,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return _guarded(() async {
       await action();
       if (!mounted) return;
+      _markChanged();
       _snack(success);
       await _silentRefresh();
     });
@@ -280,6 +301,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   /// 403 BLOCKED：與發起人有封鎖關係（畫面還沒重新整理時會發生），重載後詳情會回 404。
   void _handleBlocked() {
+    _markChanged(); // 重載後看不到這個活動，列表也要拿掉
     _snack('無法與此活動互動');
     _load();
   }
@@ -369,7 +391,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       context,
       MaterialPageRoute(builder: (_) => EventComposeScreen(editing: event)),
     );
-    if (updated == true && mounted) await _silentRefresh();
+    if (updated != true || !mounted) return;
+    _markChanged();
+    await _silentRefresh();
   }
 
   /// 匯出報名名單 CSV（僅發起人）：拿到後端組好的 CSV 文字，寫成暫存檔再跳系統

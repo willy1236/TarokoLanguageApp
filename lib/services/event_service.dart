@@ -4,8 +4,9 @@
 // 錯誤解析）。對應後端 Truku_backend backend/routes/events.ts。
 //
 // 端點：
-//   GET    /api/events                    活動列表（scope=upcoming|all）
+//   GET    /api/events                    活動列表（只回尚未開始的活動）
 //   GET    /api/events/mine               我發起的活動
+//   GET    /api/events/joined             我參加的活動（tab=active|ended）
 //   POST   /api/events                    發起活動（限 organizer/admin）
 //   GET    /api/events/:id                活動詳情 + 參加者
 //   PATCH  /api/events/:id                編輯活動（僅發起人）
@@ -33,16 +34,15 @@ import '../models/event_model.dart';
 class EventService {
   // ── 活動 ────────────────────────────────────────────────────
 
-  /// 活動列表。[scope]：'upcoming'（預設，即將到來）或 'all'（全部）。
+  /// 活動列表：只含尚未開始的活動，依開始時間升冪（後端已不分 scope）。
   /// 後端分頁，回傳 events[]（含 participantCount / isJoined / 即時狀態）。
   static Future<List<EventSummary>> fetchEvents({
-    String scope = 'upcoming',
     int page = 1,
     int pageSize = 20,
   }) async {
     final data = await ApiClient.get(
       ApiConfig.events,
-      query: {'scope': scope, 'page': '$page', 'page_size': '$pageSize'},
+      query: {'page': '$page', 'page_size': '$pageSize'},
     );
     final list = data['events'] as List<dynamic>? ?? const [];
     return list
@@ -83,6 +83,26 @@ class EventService {
     return list
         .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  /// 我參加的活動（含自己發起的）。[tab]：'active'（即將開始與進行中，開始時間升冪）
+  /// 或 'ended'（已結束與已取消，開始時間降冪）。回傳這一頁與總筆數，供往下捲分頁。
+  static Future<({List<EventSummary> events, int total})> fetchJoinedEvents({
+    required String tab,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final data = await ApiClient.get(
+      ApiConfig.eventsJoined,
+      query: {'tab': tab, 'page': '$page', 'page_size': '$pageSize'},
+    );
+    final list = data['events'] as List<dynamic>? ?? const [];
+    return (
+      events: list
+          .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      total: asEventInt(data['total']) ?? 0,
+    );
   }
 
   /// 發起活動。後端（v2）五個必填欄位：title / description / location（地點名稱）/

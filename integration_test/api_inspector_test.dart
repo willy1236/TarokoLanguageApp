@@ -278,6 +278,18 @@ void main() {
       );
     });
 
+    // 我參加的活動（T-16）：確認 total、is_host、joined_at 的實際格式。
+    for (final tab in ['active', 'ended']) {
+      test('GET /api/events/joined?tab=$tab', () => _inspect(
+        'GET',
+        '${ApiConfig.eventsJoined}?tab=$tab',
+        shape: {'total': F.number, 'events': F.list},
+        listKey: 'events',
+        itemShape: _joinedEventShape,
+        itemOptional: _eventSummaryOptional,
+      ));
+    }
+
     // 影音/文章/活動/論壇搜尋（q/range/tribe_id 皆選填，見 backend/searchQuery.ts）
     test('GET /api/videos/search', () => _inspect(
       'GET',
@@ -725,8 +737,19 @@ const Map<String, F> _eventDetailShape = {
   'title': F.string,
   'starts_at': F.string,
 };
+/// GET /api/events/joined 的每一筆 → EventSummary.fromJson 的 isHost、joinedAt。
+const Map<String, F> _joinedEventShape = {
+  ..._eventSummaryShape,
+  'is_host': F.boolean,
+  'joined_at': F.string,
+};
+
 const Map<String, F> _eventDetailOptional = {
   ..._eventSummaryOptional,
+  // 未報名時為 null；有值時是 {joined_at, contact_email}（EventRegistration）。
+  'my_registration': F.object,
+  // 只有已取消的活動才有值。
+  'cancel_reason': F.string,
   'description': F.string,
   'address': F.string,
   'contact_email': F.string,
