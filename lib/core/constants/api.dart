@@ -86,6 +86,7 @@ class ApiConfig {
   // 活動 + 提醒 + 裝置推播（見 Truku_backend backend/routes/events.ts）
   static const String events = '/api/events';
   static const String eventsMine = '/api/events/mine';
+  static const String eventsJoined = '/api/events/joined';
   static String eventDetail(int id) => '/api/events/$id';
   static String eventJoin(int id) => '/api/events/$id/join';
   static String eventExport(int id) => '/api/events/$id/export';

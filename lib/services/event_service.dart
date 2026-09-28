@@ -84,6 +84,26 @@ class EventService {
         .toList();
   }
 
+  /// 我參加的活動（含自己發起的）。[tab]：'active'（即將開始與進行中，開始時間升冪）
+  /// 或 'ended'（已結束與已取消，開始時間降冪）。回傳這一頁與總筆數，供往下捲分頁。
+  static Future<({List<EventSummary> events, int total})> fetchJoinedEvents({
+    required String tab,
+    int page = 1,
+    int pageSize = 20,
+  }) async {
+    final data = await ApiClient.get(
+      ApiConfig.eventsJoined,
+      query: {'tab': tab, 'page': '$page', 'page_size': '$pageSize'},
+    );
+    final list = data['events'] as List<dynamic>? ?? const [];
+    return (
+      events: list
+          .map((e) => EventSummary.fromJson(e as Map<String, dynamic>))
+          .toList(),
+      total: asEventInt(data['total']) ?? 0,
+    );
+  }
+
   /// 發起活動。後端（v2）五個必填欄位：title / description / location（地點名稱）/
   /// address（詳細地址）/ startsAt（需未來、1 年內）。contact 為選填。
   /// 回傳新活動的 id。
