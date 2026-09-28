@@ -34,6 +34,8 @@ const Map<String, String> kStringMasks = {
   // 所以換成固定假文字不影響防線，卻能讓 fixture 不夾帶任何真實發文。
   'title': '測試標題',
   'post_title': '測試標題',
+  'event_title': '測試標題',
+  'message': '測試訊息',
   'body': '測試內文',
   'content': '測試內文',
   'content_md': '測試內文',
