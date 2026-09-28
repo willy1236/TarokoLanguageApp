@@ -454,6 +454,36 @@ void _serviceBusyTests() {
       expect(delays, [waits(5)]);
     });
 
+    test('getRaw 同樣重送一次，成功回傳原文', () async {
+      var calls = 0;
+      ApiClient.httpClient = MockClient((_) async {
+        calls++;
+        return calls == 1 ? busy() : http.Response('id,name', 200);
+      });
+
+      expect(await ApiClient.getRaw('/api/account/export'), 'id,name');
+      expect(calls, 2);
+      expect(delays, [waits(5)]);
+    });
+
+    test('getRaw 重送仍 503：顯示忙碌訊息，不再重試', () async {
+      var calls = 0;
+      ApiClient.httpClient = MockClient((_) async {
+        calls++;
+        return busy();
+      });
+
+      await expectLater(
+        ApiClient.getRaw('/api/account/export'),
+        throwsA(
+          isA<ApiException>()
+              .having((e) => e.isServiceBusy, 'isServiceBusy', isTrue)
+              .having((e) => e.message, 'message', '伺服器忙碌，請稍後再試'),
+        ),
+      );
+      expect(calls, 2);
+    });
+
     test('GET 重送仍 503：顯示忙碌訊息，不再重試', () async {
       var calls = 0;
       ApiClient.httpClient = MockClient((_) async {
