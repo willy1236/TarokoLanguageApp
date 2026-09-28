@@ -20,7 +20,7 @@ Map<String, Directory> _packageRoots() {
 }
 
 void main() {
-  // 去掉註解，避免只寫在註解裡的字串也算數。
+  // 去掉整行的註解，避免只寫在註解裡的字串也算數（行尾與區塊註解不處理）。
   final bootstrap = File(
     'web/flutter_bootstrap.js',
   ).readAsStringSync().replaceAll(RegExp(r'^\s*//.*$', multiLine: true), '');
