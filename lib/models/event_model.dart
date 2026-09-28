@@ -149,11 +149,7 @@ class EventDetail {
       isLiked: json['is_liked'] as bool? ?? false,
       isBookmarked: json['is_bookmarked'] as bool? ?? false,
       isJoined: json['is_joined'] as bool? ?? false,
-      myRegistration: json['my_registration'] is Map<String, dynamic>
-          ? EventRegistration.fromJson(
-              json['my_registration'] as Map<String, dynamic>,
-            )
-          : null,
+      myRegistration: EventRegistration.tryFromJson(json['my_registration']),
       cancelReason: json['cancel_reason'] as String?,
     );
   }
@@ -309,11 +305,16 @@ class EventRegistration {
 
   const EventRegistration({required this.joinedAt, this.contactEmail});
 
-  factory EventRegistration.fromJson(Map<String, dynamic> json) =>
-      EventRegistration(
-        joinedAt: DateTime.parse(json['joined_at'] as String),
-        contactEmail: json['contact_email'] as String?,
-      );
+  /// joined_at 缺少或格式不對時回 null（視為沒有報名資訊），不讓整頁變錯誤畫面。
+  static EventRegistration? tryFromJson(Object? json) {
+    if (json is! Map<String, dynamic>) return null;
+    final joinedAt = _parseTime(json['joined_at']);
+    if (joinedAt == null) return null;
+    return EventRegistration(
+      joinedAt: joinedAt,
+      contactEmail: json['contact_email'] as String?,
+    );
+  }
 }
 
 class EventParticipant {

@@ -1,5 +1,7 @@
 // 我參加的活動：兩個分頁、往下捲分頁到 total 為止、自己發起的標示。
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
@@ -48,7 +50,7 @@ void main() {
 
     expect(find.text('即將開始'), findsOneWidget);
     expect(find.text('進行中'), findsWidgets); // 分頁標題＋狀態標籤
-    expect(find.text('我發起的'), findsOneWidget);
+    expect(find.text('我發起的'), findsOneWidget); // 只有 is_host 那筆
   });
 
   testWidgets('超過 20 筆往下捲載入下一頁，到 total 為止不再請求', (tester) async {
@@ -83,6 +85,50 @@ void main() {
     await pumpFrames(tester, times: 10);
 
     expect(pages, ['1', '2']);
+    expect(find.text('活動 25', skipOffstage: false), findsOneWidget);
+  });
+
+  testWidgets('載入下一頁途中下拉重新整理，之後仍能載入下一頁', (tester) async {
+    final pages = <String?>[];
+    var slowPage2 = true;
+    ApiClient.httpClient = MockClient((r) async {
+      final page = r.url.queryParameters['page'];
+      pages.add(page);
+      if (page == '2' && slowPage2) {
+        slowPage2 = false;
+        await Future<void>.delayed(const Duration(seconds: 3));
+      }
+      return jsonResponse({
+        'total': 25,
+        'events': page == '1'
+            ? [for (var i = 1; i <= 20; i++) _event(i)]
+            : [for (var i = 21; i <= 25; i++) _event(i)],
+      });
+    });
+
+    await tester.pumpWidget(app());
+    await pumpFrames(tester);
+    await tester.fling(
+      find.byType(ListView).first,
+      const Offset(0, -3000),
+      3000,
+    );
+    await pumpFrames(tester, times: 10);
+    expect(pages, ['1', '2']); // 第 2 頁還在路上
+
+    // 整頁重載（下拉重新整理或從詳情頁返回都走這裡），讓慢的第 2 頁被丟棄。
+    final state = tester.state(find.byType(RefreshIndicator).first);
+    unawaited((state as RefreshIndicatorState).show());
+    await tester.pump(const Duration(seconds: 4));
+    await pumpFrames(tester, times: 10);
+
+    await tester.fling(
+      find.byType(ListView).first,
+      const Offset(0, -3000),
+      3000,
+    );
+    await pumpFrames(tester, times: 10);
+    expect(pages, ['1', '2', '1', '2']);
     expect(find.text('活動 25', skipOffstage: false), findsOneWidget);
   });
 

@@ -4,8 +4,9 @@
 // 錯誤解析）。對應後端 Truku_backend backend/routes/events.ts。
 //
 // 端點：
-//   GET    /api/events                    活動列表（scope=upcoming|all）
+//   GET    /api/events                    活動列表（只回尚未開始的活動）
 //   GET    /api/events/mine               我發起的活動
+//   GET    /api/events/joined             我參加的活動（tab=active|ended）
 //   POST   /api/events                    發起活動（限 organizer/admin）
 //   GET    /api/events/:id                活動詳情 + 參加者
 //   PATCH  /api/events/:id                編輯活動（僅發起人）

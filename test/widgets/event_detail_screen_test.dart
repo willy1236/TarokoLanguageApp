@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_application_1/core/utils/date_format.dart';
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/screens/events/event_detail_screen.dart';
 import 'package:flutter_application_1/screens/events/widgets/event_detail_dialogs.dart';
@@ -311,8 +312,8 @@ void main() {
           'contact_email': 'me@example.com',
         },
       });
-      expect(find.textContaining('你已於'), findsOneWidget);
-      expect(find.textContaining('報名'), findsWidgets);
+      final local = DateTime.utc(2026, 11, 20, 2, 30).toLocal();
+      expect(find.text('你已於 ${formatDateTime(local)} 報名'), findsOneWidget);
     });
 
     testWidgets('未報名時不顯示報名時間', (tester) async {

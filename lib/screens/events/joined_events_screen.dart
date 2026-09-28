@@ -132,10 +132,20 @@ class _JoinedEventsTabState extends State<_JoinedEventsTab>
     if (position.pixels >= position.maxScrollExtent - 200) _loadMore();
   }
 
+  /// 載入後列表可能已經在底部（重載時捲動位置被還原、或一頁填不滿畫面），
+  /// 不會再有捲動事件，版面排好後自己檢查一次。
+  void _checkNearEnd() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted && _scrollController.hasClients) _onScroll();
+    });
+  }
+
   Future<void> _load() async {
     final generation = ++_generation;
     setState(() {
       _loading = true;
+      // 進行中的載入更多會因世代不同被丟棄，旗標在這裡清掉，否則之後永遠載不了下一頁。
+      _loadingMore = false;
       _error = null;
     });
     try {
@@ -152,6 +162,7 @@ class _JoinedEventsTabState extends State<_JoinedEventsTab>
         _page = 1;
         _loading = false;
       });
+      _checkNearEnd();
     } catch (e) {
       if (!mounted || generation != _generation) return;
       setState(() {
@@ -180,6 +191,7 @@ class _JoinedEventsTabState extends State<_JoinedEventsTab>
         if (result.events.isEmpty) _total = _events.length;
         _loadingMore = false;
       });
+      _checkNearEnd();
     } catch (e) {
       debugPrint('JoinedEventsScreen._loadMore failed: $e');
       if (!mounted || generation != _generation) return;
