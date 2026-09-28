@@ -172,6 +172,7 @@ class ChatController extends ChangeNotifier {
   }
 
   void _scheduleReconnect() {
+    _reconnectTimer?.cancel();
     _reconnectAttempts++;
     _reconnectTimer = Timer(
       Duration(seconds: reconnectDelaySeconds(_reconnectAttempts)),

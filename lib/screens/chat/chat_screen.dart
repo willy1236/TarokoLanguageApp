@@ -109,7 +109,8 @@ class _ChatScreenState extends State<ChatScreen> {
       final m = event.message!;
       if (m.senderUid == widget.partnerUid ||
           m.recipientUid == widget.partnerUid) {
-        if (!mounted) return;
+        // 重連補抓可能已經抓到同一則，依 id 去重。
+        if (!mounted || _messages.any((e) => e.id == m.id)) return;
         setState(() => _messages.insert(0, m));
         if (m.senderUid == widget.partnerUid) _markRead();
       }
@@ -186,6 +187,11 @@ class _ChatScreenState extends State<ChatScreen> {
         cursor: cursor,
       );
       if (!mounted) return;
+      // 等待期間重連補抓整頁替換過清單（游標已換），這一頁接不上，丟棄。
+      if (_nextCursor != cursor) {
+        setState(() => _loadingMore = false);
+        return;
+      }
       setState(() {
         _messages.addAll(page.messages);
         _nextCursor = page.nextCursor;
