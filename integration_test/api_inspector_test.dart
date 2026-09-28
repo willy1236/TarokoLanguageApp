@@ -285,9 +285,8 @@ void main() {
     test('GET /api/videos', () => _inspect(
       'GET',
       ApiConfig.videos,
-      shape: {'videos': F.list},
-      optional: {'total': F.number, 'page': F.number, 'page_size': F.number,
-        'sort': F.string},
+      shape: {'videos': F.list, 'page_info': F.object},
+      optional: {'sort': F.string},
       listKey: 'videos',
       itemShape: _videoSummaryShape,
       itemOptional: _videoSummaryOptional,
@@ -295,10 +294,43 @@ void main() {
     test('GET /api/videos?sort=popular', () => _inspect(
       'GET',
       '${ApiConfig.videos}?sort=popular',
-      shape: {'videos': F.list},
+      shape: {'videos': F.list, 'page_info': F.object},
       listKey: 'videos',
       itemShape: _videoSummaryShape,
       itemOptional: _videoSummaryOptional,
+    ));
+    test('GET /api/videos/bookmarks', () => _inspect(
+      'GET',
+      ApiConfig.videoBookmarks,
+      shape: {'videos': F.list, 'page_info': F.object},
+    ));
+    test('GET /api/videos/likes', () => _inspect(
+      'GET',
+      ApiConfig.videoLikes,
+      shape: {'videos': F.list, 'page_info': F.object},
+    ));
+    test('GET /api/articles', () => _inspect(
+      'GET',
+      ApiConfig.articles,
+      shape: {'articles': F.list, 'page_info': F.object},
+      listKey: 'articles',
+      itemShape: _articleSummaryShape,
+      itemOptional: _articleSummaryOptional,
+    ));
+    test('GET /api/articles/bookmarks', () => _inspect(
+      'GET',
+      ApiConfig.articleBookmarks,
+      shape: {'articles': F.list, 'page_info': F.object},
+    ));
+    test('GET /api/articles/likes', () => _inspect(
+      'GET',
+      ApiConfig.articleLikes,
+      shape: {'articles': F.list, 'page_info': F.object},
+    ));
+    test('GET /api/history', () => _inspect(
+      'GET',
+      ApiConfig.historyList,
+      shape: {'records': F.list, 'page_info': F.object},
     ));
     test('GET /api/videos/1', () => _inspect(
       'GET',
@@ -409,7 +441,7 @@ void main() {
     test('GET /api/videos/search', () => _inspect(
       'GET',
       '${ApiConfig.videoSearch}?q=a&range=1m',
-      shape: {'videos': F.list},
+      shape: {'videos': F.list, 'page_info': F.object},
       listKey: 'videos',
       itemShape: _videoSummaryShape,
       itemOptional: _videoSummaryOptional,
@@ -417,7 +449,7 @@ void main() {
     test('GET /api/articles/search', () => _inspect(
       'GET',
       '${ApiConfig.articleSearch}?q=a&range=1m',
-      shape: {'articles': F.list},
+      shape: {'articles': F.list, 'page_info': F.object},
       listKey: 'articles',
       itemShape: _articleSummaryShape,
       itemOptional: _articleSummaryOptional,

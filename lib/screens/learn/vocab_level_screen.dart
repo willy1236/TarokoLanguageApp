@@ -45,11 +45,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
 
   void _assignFutures() {
     _levelsFuture = LearnService.fetchLevels();
-    _recentQuizzesFuture = HistoryService.fetchHistory(
-      type: 'quiz',
-      page: 1,
-      pageSize: 5,
-    );
+    _recentQuizzesFuture = HistoryService.fetchHistory(type: 'quiz', limit: 5);
   }
 
   /// 重抓整頁。FutureBuilder 只認 Future 物件本身，不重新指派就永遠停在舊資料。

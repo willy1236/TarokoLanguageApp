@@ -6,21 +6,23 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../models/page_info.dart';
 import '../../models/tribe_model.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/search_assist_service.dart';
 import '../../shared/widgets/module_search_bar.dart';
 import '../../shared/widgets/search_suggestions.dart';
 
-/// 一頁搜尋結果：本頁項目與符合條件的總筆數。
-typedef CultureSearchPage<T> = ({List<T> items, int total});
+/// 一頁搜尋結果：本頁項目與下一頁的游標。
+typedef CultureSearchPage<T> = ({List<T> items, PageInfo pageInfo});
 
+/// [cursor] 為 null 代表第一頁。
 typedef CultureSearchFetch<T> =
     Future<CultureSearchPage<T>> Function({
       String? q,
       String? range,
       int? tribeId,
-      required int page,
+      String? cursor,
     });
 
 class CultureSearchScreen<T> extends StatefulWidget {
@@ -30,6 +32,7 @@ class CultureSearchScreen<T> extends StatefulWidget {
     required this.hint,
     required this.emptyText,
     required this.fetch,
+    required this.idOf,
     required this.itemBuilder,
   });
 
@@ -38,6 +41,9 @@ class CultureSearchScreen<T> extends StatefulWidget {
   final String hint;
   final String emptyText;
   final CultureSearchFetch<T> fetch;
+
+  /// 翻頁期間後端插入新資料時，下一頁可能重複上一頁的項目，依此去重。
+  final Object Function(T item) idOf;
   final Widget Function(T item, bool seniorMode) itemBuilder;
 
   @override
@@ -53,8 +59,7 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
   bool _loading = false;
   bool _loadingMore = false;
   String? _error;
-  int _page = 1;
-  int _total = 0;
+  String? _cursor;
   List<T> _items = [];
   bool _searched = false;
 
@@ -62,7 +67,7 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
   /// 較晚送出但先回應的舊查詢不能覆蓋新結果。
   int _reqGen = 0;
 
-  bool get _hasMore => _items.length < _total;
+  bool get _hasMore => _cursor != null;
 
   @override
   void dispose() {
@@ -70,8 +75,8 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
     super.dispose();
   }
 
-  Future<CultureSearchPage<T>> _fetch(int page) =>
-      widget.fetch(q: _q, range: _range, tribeId: _tribe?.id, page: page);
+  Future<CultureSearchPage<T>> _fetch(String? cursor) =>
+      widget.fetch(q: _q, range: _range, tribeId: _tribe?.id, cursor: cursor);
 
   Future<void> _search() async {
     final gen = ++_reqGen;
@@ -81,14 +86,14 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
       _searched = true;
       _loading = true;
       _error = null;
-      _page = 1;
+      _cursor = null;
     });
     try {
-      final res = await _fetch(1);
+      final res = await _fetch(null);
       if (!mounted || gen != _reqGen) return;
       setState(() {
         _items = res.items;
-        _total = res.total;
+        _cursor = res.pageInfo.nextCursor;
         _loading = false;
       });
     } catch (e) {
@@ -105,11 +110,11 @@ class _CultureSearchScreenState<T> extends State<CultureSearchScreen<T>> {
     final gen = _reqGen;
     setState(() => _loadingMore = true);
     try {
-      final res = await _fetch(_page + 1);
+      final res = await _fetch(_cursor);
       if (!mounted || gen != _reqGen) return;
       setState(() {
-        _items = [..._items, ...res.items];
-        _page += 1;
+        _items = appendUnique(_items, res.items, widget.idOf);
+        _cursor = res.pageInfo.nextCursor;
         _loadingMore = false;
       });
     } catch (_) {

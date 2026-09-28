@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/core/network/api_client.dart';
+import 'package:flutter_application_1/models/page_info.dart';
 import 'package:flutter_application_1/screens/culture/culture_search_screen.dart';
 import 'package:flutter_application_1/services/search_assist_service.dart';
 
@@ -29,6 +30,7 @@ Widget _app(CultureSearchFetch<String> fetch) => MaterialApp(
     hint: '搜尋文章',
     emptyText: '找不到符合的文章',
     fetch: fetch,
+    idOf: (item) => item,
     itemBuilder: (item, _) => ListTile(title: Text(item)),
   ),
 );
@@ -54,8 +56,8 @@ void main() {
   testWidgets('搜尋後顯示結果', (tester) async {
     await tester.pumpWidget(
       _app(
-        ({q, range, tribeId, required page}) async =>
-            (items: ['太魯閣族的織布', '獵人的一天'], total: 2),
+        ({q, range, tribeId, cursor}) async =>
+            (items: ['太魯閣族的織布', '獵人的一天'], pageInfo: PageInfo.end),
       ),
     );
     await tester.pumpAndSettle();
@@ -67,27 +69,27 @@ void main() {
 
   testWidgets('關鍵字與篩選條件會傳給 fetch', (tester) async {
     String? gotQ;
-    int gotPage = 0;
+    String? gotCursor = 'unset';
     await tester.pumpWidget(
-      _app(({q, range, tribeId, required page}) async {
+      _app(({q, range, tribeId, cursor}) async {
         gotQ = q;
-        gotPage = page;
-        return (items: <String>[], total: 0);
+        gotCursor = cursor;
+        return (items: <String>[], pageInfo: PageInfo.end);
       }),
     );
     await tester.pumpAndSettle();
     await _searchFor(tester, '  織布  ');
 
-    // 關鍵字要去空白，新查詢一定從第 1 頁開始。
+    // 關鍵字要去空白，新查詢一定從第一頁開始（不帶游標）。
     expect(gotQ, '織布');
-    expect(gotPage, 1);
+    expect(gotCursor, isNull);
   });
 
   testWidgets('沒有結果時顯示自訂空狀態文案', (tester) async {
     await tester.pumpWidget(
       _app(
-        ({q, range, tribeId, required page}) async =>
-            (items: <String>[], total: 0),
+        ({q, range, tribeId, cursor}) async =>
+            (items: <String>[], pageInfo: PageInfo.end),
       ),
     );
     await tester.pumpAndSettle();
@@ -99,7 +101,7 @@ void main() {
   testWidgets('後端錯誤顯示後端訊息', (tester) async {
     await tester.pumpWidget(
       _app(
-        ({q, range, tribeId, required page}) async => throw ApiException(
+        ({q, range, tribeId, cursor}) async => throw ApiException(
           statusCode: 400,
           code: 'INVALID_RANGE',
           message: '時間區間不合法',
@@ -115,7 +117,7 @@ void main() {
   testWidgets('非後端錯誤顯示通用文案，不把例外內容丟給使用者', (tester) async {
     await tester.pumpWidget(
       _app(
-        ({q, range, tribeId, required page}) async =>
+        ({q, range, tribeId, cursor}) async =>
             throw StateError('internal detail'),
       ),
     );
@@ -126,33 +128,49 @@ void main() {
     expect(find.textContaining('internal detail'), findsNothing);
   });
 
-  testWidgets('總數大於已載入時捲到底會續載下一頁', (tester) async {
-    final pages = <int>[];
+  testWidgets('還有下一頁時捲到底帶游標續載，重複的項目只出現一次', (tester) async {
+    final cursors = <String?>[];
     await tester.pumpWidget(
-      _app(({q, range, tribeId, required page}) async {
-        pages.add(page);
-        return (items: List.generate(10, (i) => '第 $page 頁第 $i 筆'), total: 20);
+      _app(({q, range, tribeId, cursor}) async {
+        cursors.add(cursor);
+        return cursor == null
+            ? (
+                items: List.generate(10, (i) => '第 1 頁第 $i 筆'),
+                pageInfo: const PageInfo(nextCursor: '10'),
+              )
+            : (
+                // 翻頁期間有新資料插入，上一頁最後一筆又出現一次。
+                items: [
+                  '第 1 頁第 9 筆',
+                  ...List.generate(9, (i) => '第 2 頁第 $i 筆'),
+                ],
+                pageInfo: PageInfo.end,
+              );
       }),
     );
     await tester.pumpAndSettle();
     await _searchFor(tester, '織布');
 
-    expect(pages, [1]);
+    expect(cursors, [null]);
 
     await tester.drag(_resultList(), const Offset(0, -2000));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(pages, [1, 2]);
+    expect(cursors, [null, '10']);
     expect(find.textContaining('第 2 頁'), findsWidgets);
+    expect(find.text('第 1 頁第 9 筆', skipOffstage: false), findsOneWidget);
   });
 
-  testWidgets('已載入數量等於總數時不再續載', (tester) async {
-    final pages = <int>[];
+  testWidgets('has_more 為 false 時不再續載', (tester) async {
+    final cursors = <String?>[];
     await tester.pumpWidget(
-      _app(({q, range, tribeId, required page}) async {
-        pages.add(page);
-        return (items: List.generate(3, (i) => '第 $i 筆'), total: 3);
+      _app(({q, range, tribeId, cursor}) async {
+        cursors.add(cursor);
+        return (
+          items: List.generate(3, (i) => '第 $i 筆'),
+          pageInfo: PageInfo.end,
+        );
       }),
     );
     await tester.pumpAndSettle();
@@ -162,19 +180,19 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));
 
-    expect(pages, [1]);
+    expect(cursors, [null]);
   });
 
   testWidgets('回應晚到的舊查詢不會覆蓋新查詢的結果', (tester) async {
     var calls = 0;
     await tester.pumpWidget(
-      _app(({q, range, tribeId, required page}) async {
+      _app(({q, range, tribeId, cursor}) async {
         calls++;
         if (calls == 1) {
           await Future<void>.delayed(const Duration(milliseconds: 500));
-          return (items: ['舊查詢結果'], total: 1);
+          return (items: ['舊查詢結果'], pageInfo: PageInfo.end);
         }
-        return (items: ['新查詢結果'], total: 1);
+        return (items: ['新查詢結果'], pageInfo: PageInfo.end);
       }),
     );
     await tester.pumpAndSettle();

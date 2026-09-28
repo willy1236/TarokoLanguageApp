@@ -1,6 +1,8 @@
 // 對應影音模組 API：GET /api/videos、GET /api/videos/:id
 // 規格：API設計/資料交換表_影音模組.md v0.4
 
+import 'page_info.dart';
+
 class VideoCategory {
   static const tribalIntro = 'tribal_intro';
   static const cultural = 'cultural';
@@ -208,31 +210,25 @@ class VideoDetail extends VideoSummary {
 }
 
 class VideoListResponse {
-  final int total;
-  final int page;
-  final int pageSize;
   final String sort;
   final List<VideoSummary> videos;
+  final PageInfo pageInfo;
 
   const VideoListResponse({
-    required this.total,
-    required this.page,
-    required this.pageSize,
     required this.sort,
     required this.videos,
+    required this.pageInfo,
   });
 
   factory VideoListResponse.fromJson(Map<String, dynamic> json) {
     final list = json['videos'] as List<dynamic>? ?? [];
     return VideoListResponse(
-      total: json['total'] as int? ?? 0,
-      page: json['page'] as int? ?? 1,
-      pageSize: json['page_size'] as int? ?? 20,
       sort: json['sort'] as String? ?? 'latest',
       videos: list
           .cast<Map<String, dynamic>>()
           .map(VideoSummary.fromJson)
           .toList(),
+      pageInfo: PageInfo.fromResponse(json),
     );
   }
 }

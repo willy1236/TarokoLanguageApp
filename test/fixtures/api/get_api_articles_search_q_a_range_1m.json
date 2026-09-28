@@ -2,5 +2,9 @@
   "total": 0,
   "page": 1,
   "page_size": 20,
+  "page_info": {
+    "next_cursor": null,
+    "has_more": false
+  },
   "articles": []
 }

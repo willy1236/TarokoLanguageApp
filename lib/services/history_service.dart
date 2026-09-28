@@ -1,16 +1,20 @@
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/history_models.dart';
+import '../models/page_info.dart';
 
 class HistoryService {
   static Future<HistoryListResult> fetchHistory({
     String? type,
-    int page = 1,
-    int pageSize = 20,
+    String? cursor,
+    int limit = 20,
   }) async {
     final json = await ApiClient.get(
       ApiConfig.historyList,
-      query: {'type': ?type, 'page': '$page', 'page_size': '$pageSize'},
+      query: {
+        'type': ?type,
+        ...PageInfo.query(cursor: cursor, limit: limit),
+      },
     );
     return HistoryListResult.fromJson(json);
   }

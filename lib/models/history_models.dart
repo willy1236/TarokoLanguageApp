@@ -1,6 +1,8 @@
 // 對應 /api/history、/api/history/quiz/:session_id、/api/history/listening/:session_id
 // 規格參考：說明文件/API/測驗紀錄.md
 
+import 'page_info.dart';
+
 class HistoryRecord {
   final String type; // 'quiz' | 'listening'
   final String typeLabel;
@@ -37,6 +39,9 @@ class HistoryRecord {
   bool get isCompleted => status == 'completed';
   bool get isListening => type == 'listening';
 
+  /// 紀錄沒有獨立 id；單字與聽力是兩張表，session_id 要連同類型才唯一。
+  (String, String) get key => (type, sessionId);
+
   factory HistoryRecord.fromJson(Map<String, dynamic> json) {
     return HistoryRecord(
       type: json['type'] as String,
@@ -58,26 +63,17 @@ class HistoryRecord {
 }
 
 class HistoryListResult {
-  final int total;
-  final int page;
-  final int pageSize;
   final List<HistoryRecord> records;
+  final PageInfo pageInfo;
 
-  const HistoryListResult({
-    required this.total,
-    required this.page,
-    required this.pageSize,
-    required this.records,
-  });
+  const HistoryListResult({required this.records, required this.pageInfo});
 
   factory HistoryListResult.fromJson(Map<String, dynamic> json) {
     return HistoryListResult(
-      total: json['total'] as int? ?? 0,
-      page: json['page'] as int? ?? 1,
-      pageSize: json['page_size'] as int? ?? 20,
       records: (json['records'] as List<dynamic>? ?? [])
           .map((e) => HistoryRecord.fromJson(e as Map<String, dynamic>))
           .toList(),
+      pageInfo: PageInfo.fromResponse(json),
     );
   }
 }

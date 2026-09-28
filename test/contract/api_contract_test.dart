@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/models/article_models.dart';
 import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/models/friend_message_model.dart';
+import 'package:flutter_application_1/models/history_models.dart';
 import 'package:flutter_application_1/models/forum_models.dart';
 import 'package:flutter_application_1/models/level_info.dart';
 import 'package:flutter_application_1/models/listening_models.dart';
@@ -95,12 +96,12 @@ final List<_Contract> _contracts = [
   _Contract(
     'get_api_videos.json',
     'VideoListResponse',
-    VideoListResponse.fromJson,
+    _paged(VideoListResponse.fromJson),
   ),
   _Contract(
     'get_api_videos_sort_popular.json',
     'VideoListResponse(popular)',
-    VideoListResponse.fromJson,
+    _paged(VideoListResponse.fromJson),
   ),
   _Contract('get_api_video_detail.json', 'VideoDetail', VideoDetail.fromJson),
   _Contract(
@@ -111,12 +112,42 @@ final List<_Contract> _contracts = [
   _Contract(
     'get_api_videos_search_q_a_range_1m.json',
     'VideoListResponse(search)',
-    VideoListResponse.fromJson,
+    _paged(VideoListResponse.fromJson),
+  ),
+  _Contract(
+    'get_api_videos_bookmarks.json',
+    'VideoListResponse(bookmarks)',
+    _paged(VideoListResponse.fromJson),
+  ),
+  _Contract(
+    'get_api_videos_likes.json',
+    'VideoListResponse(likes)',
+    _paged(VideoListResponse.fromJson),
+  ),
+  _Contract(
+    'get_api_articles.json',
+    'ArticleListResponse(list)',
+    _paged(ArticleListResponse.fromJson),
+  ),
+  _Contract(
+    'get_api_articles_bookmarks.json',
+    'ArticleListResponse(bookmarks)',
+    _paged(ArticleListResponse.fromJson),
+  ),
+  _Contract(
+    'get_api_articles_likes.json',
+    'ArticleListResponse(likes)',
+    _paged(ArticleListResponse.fromJson),
+  ),
+  _Contract(
+    'get_api_history.json',
+    'HistoryListResult',
+    _paged(HistoryListResult.fromJson),
   ),
   _Contract(
     'get_api_articles_search_q_a_range_1m.json',
     'ArticleListResponse',
-    ArticleListResponse.fromJson,
+    _paged(ArticleListResponse.fromJson),
   ),
   _Contract(
     'get_api_events_scope_all.json',
