@@ -1,4 +1,4 @@
-// 個人資料頁的出生日期（POL-01）：唯讀顯示 YYYY/MM/DD，舊後端沒有欄位時不顯示。
+// 個人資料頁的出生日期（POL-01）：唯讀顯示 YYYY/MM/DD，沒有資料時顯示尚未填寫。
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -59,9 +59,13 @@ void main() {
     expect(find.text('2001/07/04'), findsOneWidget);
   });
 
-  testWidgets('舊後端沒有 birth_date 時不顯示這一列', (tester) async {
-    await open(tester, loadFixtureMap('get_api_me.json'));
+  testWidgets('沒有 birth_date（舊後端）時仍顯示這一列，值為尚未填寫', (tester) async {
+    await open(
+      tester,
+      loadFixtureMap('get_api_me.json')..['self_intro'] = '哈囉',
+    );
 
-    expect(find.text('出生日期'), findsNothing);
+    expect(find.text('出生日期'), findsOneWidget);
+    expect(find.text('尚未填寫'), findsOneWidget);
   });
 }
