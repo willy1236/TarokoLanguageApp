@@ -35,3 +35,9 @@ List<Map<String, dynamic>> loadFixtureList(String name, String key) {
   final list = json[key] as List<dynamic>? ?? const [];
   return list.cast<Map<String, dynamic>>();
 }
+
+/// 規格文件回應範例的 fixture（test/fixtures/api_spec/）。錄不到的格式才放這裡，
+/// 見該資料夾 README。
+Map<String, dynamic> loadSpecFixtureMap(String name) =>
+    jsonDecode(File('test/fixtures/api_spec/$name').readAsStringSync())
+        as Map<String, dynamic>;

@@ -1,0 +1,31 @@
+{
+  "_source": "Truku_backend 說明文件/API/好友模組.md §2.1（FRIEND_CODE_ENFORCE 開啟後格式）",
+  "friends": [
+    {
+      "nickname": "阿華",
+      "friend_code": "BBBB2345",
+      "avatar_url": "https://example.com/avatar.png",
+      "avatar_id": null,
+      "frame_id": null,
+      "self_intro": null,
+      "bond_points": 0,
+      "bond_level": { "level": 1, "name": "初識" },
+      "accepted_at": "2026-09-29T03:00:00Z",
+      "showcase": { "mine": false, "theirs": false, "mutual": false },
+      "unavailable": false
+    },
+    {
+      "nickname": "暫時無法使用",
+      "friend_code": "CCCC2345",
+      "avatar_url": null,
+      "avatar_id": null,
+      "frame_id": null,
+      "self_intro": null,
+      "bond_points": 12,
+      "bond_level": { "level": 1, "name": "初識" },
+      "accepted_at": "2026-09-20T03:00:00Z",
+      "showcase": { "mine": false, "theirs": false, "mutual": false },
+      "unavailable": true
+    }
+  ]
+}

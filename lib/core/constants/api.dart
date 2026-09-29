@@ -140,12 +140,13 @@ class ApiConfig {
   // 公開個人檔案（見 Truku_backend backend/routes/auth.ts）
   static String publicProfile(String friendCode) => '/api/users/$friendCode';
 
-  // 好友關係與封鎖（見 Truku_backend backend/routes/friends.ts）
+  // 好友關係與封鎖（見 Truku_backend backend/routes/friends.ts）。
+  // 指定其他使用者一律用好友碼，uid 只給後端與管理員後台用。
   static const String friendRequests = '/api/friends/requests';
-  static String friendRequestAccept(int uid) =>
-      '/api/friends/requests/$uid/accept';
-  static String friendRequestDecline(int uid) =>
-      '/api/friends/requests/$uid/decline';
+  static String friendRequestAccept(String friendCode) =>
+      '/api/friends/requests/$friendCode/accept';
+  static String friendRequestDecline(String friendCode) =>
+      '/api/friends/requests/$friendCode/decline';
   static const String friends = '/api/friends';
   static String friendDetail(int uid) => '/api/friends/$uid';
   static const String friendBlocks = '/api/friends/blocks';

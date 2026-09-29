@@ -17,7 +17,9 @@ class BondLevelInfo {
 class FriendUser {
   final int uid;
   final String? nickname;
-  final String? friendCode;
+
+  /// 對方的好友碼，App 指定這個人（邀請、封鎖、聊天、通話）一律用它。
+  final String friendCode;
   final String? avatarUrl;
   final String? avatarId;
   final String? frameId;
@@ -26,7 +28,7 @@ class FriendUser {
   const FriendUser({
     required this.uid,
     this.nickname,
-    this.friendCode,
+    required this.friendCode,
     this.avatarUrl,
     this.avatarId,
     this.frameId,
@@ -36,7 +38,7 @@ class FriendUser {
   factory FriendUser.fromJson(Map<String, dynamic> j) => FriendUser(
     uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
-    friendCode: j['friend_code'] as String?,
+    friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,
@@ -50,7 +52,7 @@ class FriendRequest extends FriendUser {
   const FriendRequest({
     required super.uid,
     super.nickname,
-    super.friendCode,
+    required super.friendCode,
     super.avatarUrl,
     super.avatarId,
     super.frameId,
@@ -61,7 +63,7 @@ class FriendRequest extends FriendUser {
   factory FriendRequest.fromJson(Map<String, dynamic> j) => FriendRequest(
     uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
-    friendCode: j['friend_code'] as String?,
+    friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,
@@ -106,7 +108,7 @@ class Friendship extends FriendUser {
   const Friendship({
     required super.uid,
     super.nickname,
-    super.friendCode,
+    required super.friendCode,
     super.avatarUrl,
     super.avatarId,
     super.frameId,
@@ -121,7 +123,7 @@ class Friendship extends FriendUser {
   factory Friendship.fromJson(Map<String, dynamic> j) => Friendship(
     uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
-    friendCode: j['friend_code'] as String?,
+    friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,
@@ -234,7 +236,7 @@ class BlockedUser extends FriendUser {
   const BlockedUser({
     required super.uid,
     super.nickname,
-    super.friendCode,
+    required super.friendCode,
     super.avatarUrl,
     super.avatarId,
     super.frameId,
@@ -245,7 +247,7 @@ class BlockedUser extends FriendUser {
   factory BlockedUser.fromJson(Map<String, dynamic> j) => BlockedUser(
     uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
-    friendCode: j['friend_code'] as String?,
+    friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,

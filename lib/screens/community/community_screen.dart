@@ -626,7 +626,7 @@ class _FriendTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   NicknameText(
-                    friend.nickname ?? friend.friendCode ?? '未命名好友',
+                    friend.nickname ?? friend.friendCode,
                     // 沒暱稱時已經顯示整組好友碼，不必再附末碼。
                     friendCode: friend.nickname == null
                         ? null

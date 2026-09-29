@@ -62,10 +62,6 @@ Future<void> openFriendPush(RouteStack routes, String type, int uid) async {
     );
     return;
   }
-  if (friendCode == null) {
-    _openRequests(nav);
-    return;
-  }
   nav.push(
     MaterialPageRoute(
       builder: (_) => PublicProfileScreen(friendCode: friendCode),

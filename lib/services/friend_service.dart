@@ -25,12 +25,11 @@ class FriendService {
     return PublicProfile.fromJson(data);
   }
 
-  /// 送出好友邀請。用好友碼（公開檔案「加好友」）或 uid（通話中「加好友」）擇一。
+  /// 以好友碼送出好友邀請。
   /// 回傳後端實際狀態：'pending'（已送出）或 'accepted'（對方先前已邀請我，互相邀請即成立）。
-  static Future<String> sendRequest({String? friendCode, int? uid}) async {
+  static Future<String> sendRequest(String friendCode) async {
     final data = await ApiClient.post(ApiConfig.friendRequests, {
-      'friend_code': ?friendCode,
-      'uid': ?uid,
+      'friend_code': friendCode,
     });
     return data['status'] as String? ?? 'pending';
   }
@@ -43,13 +42,13 @@ class FriendService {
     ).map((e) => FriendRequest.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  static Future<void> acceptRequest(int uid) async {
-    await ApiClient.post(ApiConfig.friendRequestAccept(uid));
+  static Future<void> acceptRequest(String friendCode) async {
+    await ApiClient.post(ApiConfig.friendRequestAccept(friendCode));
     NotificationSummaryService.refresh();
   }
 
-  static Future<void> declineRequest(int uid) async {
-    await ApiClient.post(ApiConfig.friendRequestDecline(uid));
+  static Future<void> declineRequest(String friendCode) async {
+    await ApiClient.post(ApiConfig.friendRequestDecline(friendCode));
     NotificationSummaryService.refresh();
   }
 

@@ -217,7 +217,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     try {
       switch (action) {
         case _ProfileAction.addFriend:
-          final status = await FriendService.sendRequest(uid: profile.uid);
+          final status = await FriendService.sendRequest(profile.friendCode);
           _showMessage(status == 'accepted' ? '你們已成為好友！' : '已送出好友邀請');
           break;
         case _ProfileAction.removeFriend:
