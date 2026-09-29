@@ -7,17 +7,20 @@ import '../../core/platform/platform_features.dart';
 import '../../main.dart';
 import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
+import '../../models/user_model.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/block_refresh_notifier.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
+import '../../services/user_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../chat/chat_screen.dart';
 import '../friends/friends_list_screen.dart';
 import '../profile/profile_screen.dart';
+import 'matching_age_gate.dart';
 import 'video_call_notice_screen.dart';
 import 'video_call_screen.dart';
 import 'video_waiting_screen.dart';
@@ -416,14 +419,19 @@ class _CommunityScreenState extends State<CommunityScreen> {
           ),
         );
       } else {
-        Navigator.push(
+        // 等待畫面重新排隊被年齡限制擋下時，會帶著錯誤離開，回到這裡處理。
+        Navigator.push<ApiException>(
           context,
           MaterialPageRoute(builder: (_) => const VideoWaitingScreen()),
-        );
+        ).then((e) {
+          if (e != null && mounted) handleMatchingAgeError(context, e);
+        });
       }
     } on ApiException catch (e) {
       if (e.isVideoNicknameRequired) {
         _showVideoNicknameRequiredDialog();
+      } else if (mounted && handleMatchingAgeError(context, e)) {
+        return;
       } else {
         _showMessage(e.isVideoUnavailable ? '視訊功能暫時無法使用，請稍後再試' : e.message);
       }
@@ -458,13 +466,30 @@ class _CommunityScreenState extends State<CommunityScreen> {
   }
 
   Widget _buildStartButton(bool seniorMode) {
+    // 依 /api/me 的生日判斷；沒有生日（舊後端或尚未補填）照常可點，由後端判斷。
+    return ValueListenableBuilder<UserModel?>(
+      valueListenable: UserService.userNotifier,
+      builder: (context, user, _) {
+        final underage = user?.isAdult == false;
+        return _buildStartButtonBody(seniorMode, underage: underage);
+      },
+    );
+  }
+
+  Widget _buildStartButtonBody(bool seniorMode, {required bool underage}) {
     return GestureDetector(
-      onTap: _isJoining ? null : _startMatching,
+      onTap: _isJoining
+          ? null
+          : underage
+          ? () => showUnderageSheet(context)
+          : _startMatching,
       child: Container(
         width: double.infinity,
         height: seniorMode ? 64 : 52,
         decoration: BoxDecoration(
-          color: AppColors.gold.withValues(alpha: _isJoining ? 0.6 : 1.0),
+          color: AppColors.gold.withValues(
+            alpha: underage ? 0.35 : (_isJoining ? 0.6 : 1.0),
+          ),
           borderRadius: BorderRadius.circular(30),
         ),
         child: Row(

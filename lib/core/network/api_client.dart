@@ -90,6 +90,9 @@ class ApiException implements Exception {
   bool get isBirthDateRequired =>
       statusCode == 403 && code == 'BIRTH_DATE_REQUIRED';
 
+  /// 未滿 18 歲進隨機配對（POL-01），可以改跟好友視訊。
+  bool get isUnderage => statusCode == 403 && code == 'UNDERAGE';
+
   /// 補填出生日期時已經填過（只能填一次）。
   bool get isBirthDateAlreadySet =>
       statusCode == 409 && code == 'BIRTH_DATE_ALREADY_SET';
