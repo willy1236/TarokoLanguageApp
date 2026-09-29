@@ -230,6 +230,49 @@ void main() {
     expect(button(tester).onPressed, isNull);
   });
 
+  testWidgets('最後一份同意成功但 all_consented 為 false：重新載入剩下的且需重新捲到底', (tester) async {
+    var tosVersion = 1;
+    var privacyConsented = false;
+    ApiClient.httpClient = MockClient((req) async {
+      final type = req.url.pathSegments.last == 'consent'
+          ? req.url.pathSegments[2]
+          : req.url.pathSegments.last;
+      final d = type == 'tos'
+          ? _doc('tos', version: tosVersion, content: _longContent('段落'))
+          : _doc('privacy', consented: privacyConsented);
+      if (req.method == 'POST') {
+        // privacy 送出的同時 tos 剛好出新版。
+        tosVersion = 2;
+        privacyConsented = true;
+        return _withRequest(
+          _ok({
+            'document': _doc('privacy', consented: true),
+            'all_consented': false,
+          }),
+          req,
+        );
+      }
+      return _ok({'document': d, 'all_consented': false});
+    });
+
+    await _pumpScreen(tester);
+    // tos 內容較長，先捲到底才能同意。
+    await tester.drag(
+      find.byType(SingleChildScrollView),
+      const Offset(0, -20000),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('同意《服務條款》'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('同意《隱私權政策》'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('HOME'), findsNothing);
+    expect(find.text('第 1 份／共 1 份'), findsOneWidget);
+    expect(find.text('第 2 版'), findsOneWidget);
+    expect(button(tester).onPressed, isNull);
+  });
+
   testWidgets('同意畫面送出被回 403 CONSENT_REQUIRED 不會再導去同意畫面', (tester) async {
     ApiClient.httpClient = _server({
       'tos': _doc('tos'),

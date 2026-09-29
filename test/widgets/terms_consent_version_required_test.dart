@@ -17,18 +17,19 @@ void main() {
   testWidgets('送出收到 400 VERSION_REQUIRED 時提示更新 App', (tester) async {
     ApiClient.httpClient = MockClient((req) async {
       if (req.method == 'GET') {
+        if (req.url.path != '/api/terms/tos') {
+          return errorResponse('TERMS_NOT_FOUND', status: 404);
+        }
         return jsonResponse({
-          'documents': [
-            {
-              'doc_type': 'tos',
-              'version': 1,
-              'title': '服務條款',
-              'content_md': '內容',
-              'published_at': '2026-09-01T00:00:00.000Z',
-              'consented': false,
-              'consented_version': null,
-            },
-          ],
+          'document': {
+            'doc_type': 'tos',
+            'version': 1,
+            'title': '服務條款',
+            'content_md': '內容',
+            'published_at': '2026-09-01T00:00:00.000Z',
+            'consented': false,
+            'consented_version': null,
+          },
           'all_consented': false,
         });
       }
@@ -37,9 +38,7 @@ void main() {
 
     await tester.pumpWidget(wrapScreen(const TermsConsentScreen()));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('我已閱讀並同意《服務條款》'));
-    await tester.pump();
-    await tester.tap(find.text('同意並繼續'));
+    await tester.tap(find.text('同意《服務條款》'));
     await tester.pumpAndSettle();
 
     expect(find.text('請更新 App 到最新版'), findsOneWidget);
