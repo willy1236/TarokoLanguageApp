@@ -11,8 +11,7 @@ import '../helpers/widget_test_helpers.dart';
 
 Map<String, dynamic> _message(int id) => {
   'id': '$id',
-  'sender_uid': 20,
-  'recipient_uid': 35,
+  'mine': false,
   'body': '訊息 $id',
   'created_at': '2026-09-28T07:47:27.622Z',
   'read_at': null,
@@ -41,9 +40,9 @@ void main() {
       'page_info': {'next_cursor': 'm:15', 'has_more': true},
     });
 
-    final page = await FriendService.getMessages(35);
+    final page = await FriendService.getMessages('BBBB2345');
 
-    expect(seen.single.url.path, '/api/friends/35/messages');
+    expect(seen.single.url.path, '/api/friends/BBBB2345/messages');
     expect(seen.single.url.queryParameters, {'limit': '30'});
     expect(page.messages.single.body, '訊息 15');
     expect(page.nextCursor, 'm:15');
@@ -55,7 +54,7 @@ void main() {
       'page_info': {'next_cursor': null, 'has_more': false},
     });
 
-    final page = await FriendService.getMessages(35, cursor: 'm:15');
+    final page = await FriendService.getMessages('BBBB2345', cursor: 'm:15');
 
     expect(seen.single.url.queryParameters, {'cursor': 'm:15', 'limit': '30'});
     expect(page.nextCursor, isNull);

@@ -70,10 +70,10 @@ class FramedUserAvatar extends StatelessWidget {
   final Color fallbackIconColor;
   final Widget? fallback;
 
-  /// 這個頭像屬於誰。等於目前登入者時改以 UserService 的快取為準並隨之更新：
-  /// 貼文、留言、參加者名單的作者欄是「當下的快照」，換頭像後不會自己變。
-  /// 傳 null 或別人的 uid 時行為完全不變。
-  final int? userUid;
+  /// 這個頭像屬於誰（好友碼）。是目前登入者時改以 UserService 的快取為準並隨之
+  /// 更新：貼文、留言、參加者名單的作者欄是「當下的快照」，換頭像後不會自己變。
+  /// 傳 null 或別人的好友碼時行為完全不變。
+  final String? userFriendCode;
 
   const FramedUserAvatar({
     super.key,
@@ -84,19 +84,22 @@ class FramedUserAvatar extends StatelessWidget {
     required this.size,
     required this.fallbackIconColor,
     this.fallback,
-    this.userUid,
+    this.userFriendCode,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (userUid != null && userUid == UserService.currentUid) {
+    if (UserService.isMe(userFriendCode)) {
       return ValueListenableBuilder<UserModel?>(
         valueListenable: UserService.userNotifier,
-        builder: (context, me, _) => _build(
-          me?.uid == userUid ? me!.avatarId : avatarId,
-          me?.uid == userUid ? me!.avatarUrl : avatarUrl,
-          me?.uid == userUid ? me!.frameId : frameId,
-        ),
+        builder: (context, me, _) {
+          final mine = UserService.isMe(userFriendCode);
+          return _build(
+            mine ? me!.avatarId : avatarId,
+            mine ? me!.avatarUrl : avatarUrl,
+            mine ? me!.frameId : frameId,
+          );
+        },
       );
     }
     return _build(avatarId, avatarUrl, frameId);

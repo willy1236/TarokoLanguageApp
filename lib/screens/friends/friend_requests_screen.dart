@@ -25,7 +25,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
   List<FriendRequest>? _requests;
   bool _loading = true;
   bool _changed = false;
-  final Set<int> _busyUids = {};
+  final Set<String> _busyCodes = {};
 
   @override
   void initState() {
@@ -55,47 +55,51 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
 
   Future<void> _accept(FriendRequest r) async {
     if (blockIfReadOnly()) return;
-    setState(() => _busyUids.add(r.uid));
+    setState(() => _busyCodes.add(r.friendCode));
     try {
-      await FriendService.acceptRequest(r.uid);
+      await FriendService.acceptRequest(r.friendCode);
       _changed = true;
       if (!mounted) return;
       setState(() {
-        _requests?.removeWhere((e) => e.uid == r.uid);
-        _busyUids.remove(r.uid);
+        _requests?.removeWhere(
+          (e) => sameFriendCode(e.friendCode, r.friendCode),
+        );
+        _busyCodes.remove(r.friendCode);
       });
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _busyUids.remove(r.uid));
+      setState(() => _busyCodes.remove(r.friendCode));
       _showError(e.message);
     } catch (e, st) {
       debugPrint('Failed to accept friend request: $e');
       debugPrintStack(stackTrace: st);
       if (!mounted) return;
-      setState(() => _busyUids.remove(r.uid));
+      setState(() => _busyCodes.remove(r.friendCode));
       _showError('操作失敗，請稍後再試');
     }
   }
 
   Future<void> _decline(FriendRequest r) async {
-    setState(() => _busyUids.add(r.uid));
+    setState(() => _busyCodes.add(r.friendCode));
     try {
-      await FriendService.declineRequest(r.uid);
+      await FriendService.declineRequest(r.friendCode);
       _changed = true;
       if (!mounted) return;
       setState(() {
-        _requests?.removeWhere((e) => e.uid == r.uid);
-        _busyUids.remove(r.uid);
+        _requests?.removeWhere(
+          (e) => sameFriendCode(e.friendCode, r.friendCode),
+        );
+        _busyCodes.remove(r.friendCode);
       });
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _busyUids.remove(r.uid));
+      setState(() => _busyCodes.remove(r.friendCode));
       _showError(e.message);
     } catch (e, st) {
       debugPrint('Failed to decline friend request: $e');
       debugPrintStack(stackTrace: st);
       if (!mounted) return;
-      setState(() => _busyUids.remove(r.uid));
+      setState(() => _busyCodes.remove(r.friendCode));
       _showError('操作失敗，請稍後再試');
     }
   }
@@ -173,7 +177,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
   }
 
   Widget _requestCard(FriendRequest r, bool seniorMode) {
-    final busy = _busyUids.contains(r.uid);
+    final busy = _busyCodes.contains(r.friendCode);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(

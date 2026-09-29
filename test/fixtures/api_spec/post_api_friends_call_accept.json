@@ -1,0 +1,18 @@
+{
+  "_source": "Truku_backend 說明文件/API/好友模組.md §4.4（FRIEND_CODE_ENFORCE 開啟後格式）",
+  "call_id": 123,
+  "session": {
+    "id": 12,
+    "channel": "vs_00000000-0000-0000-0000-000000000000",
+    "peer_friend_code": "BBBB2345",
+    "peer_nickname": "阿華",
+    "peer_avatar_url": "https://example.com/avatar.png",
+    "peer_avatar_id": null,
+    "peer_frame_id": null,
+    "expires_at": "2026-09-29T03:30:00Z"
+  },
+  "token": "<agora-rtc-token>",
+  "app_id": "<agora-app-id>",
+  "uid": 2,
+  "agora_uid": 2
+}

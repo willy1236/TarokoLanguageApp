@@ -19,7 +19,6 @@ void main() {
 
   EventDetail detail() => EventDetail(
     id: 1,
-    hostUid: 9,
     title: '走讀',
     description: '說明',
     startsAt: future,
@@ -198,7 +197,6 @@ void main() {
     test('編輯清除部落送 tribe_id: null', () {
       final e = EventDetail(
         id: 1,
-        hostUid: 9,
         title: 't',
         description: 'd',
         startsAt: future,

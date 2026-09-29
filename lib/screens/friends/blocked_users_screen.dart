@@ -22,7 +22,7 @@ class BlockedUsersScreen extends StatefulWidget {
 class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
   List<BlockedUser>? _blocked;
   bool _loading = true;
-  final Set<int> _busyUids = {};
+  final Set<String> _busyCodes = {};
 
   @override
   void initState() {
@@ -51,23 +51,25 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
   }
 
   Future<void> _unblock(BlockedUser u) async {
-    setState(() => _busyUids.add(u.uid));
+    setState(() => _busyCodes.add(u.friendCode));
     try {
-      await FriendService.unblockUser(u.uid);
+      await FriendService.unblockUser(u.friendCode);
       if (!mounted) return;
       setState(() {
-        _blocked?.removeWhere((e) => e.uid == u.uid);
-        _busyUids.remove(u.uid);
+        _blocked?.removeWhere(
+          (e) => sameFriendCode(e.friendCode, u.friendCode),
+        );
+        _busyCodes.remove(u.friendCode);
       });
     } on ApiException catch (e) {
       if (!mounted) return;
-      setState(() => _busyUids.remove(u.uid));
+      setState(() => _busyCodes.remove(u.friendCode));
       _showError(e.message);
     } catch (e, st) {
       debugPrint('Failed to unblock user: $e');
       debugPrintStack(stackTrace: st);
       if (!mounted) return;
-      setState(() => _busyUids.remove(u.uid));
+      setState(() => _busyCodes.remove(u.friendCode));
       _showError('操作失敗，請稍後再試');
     }
   }
@@ -138,7 +140,7 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
   }
 
   Widget _blockedCard(BlockedUser u, bool seniorMode) {
-    final busy = _busyUids.contains(u.uid);
+    final busy = _busyCodes.contains(u.friendCode);
     return Container(
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(

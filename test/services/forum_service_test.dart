@@ -260,6 +260,19 @@ void main() {
     expect(body, {'target_type': 'comment', 'target_id': 11, 'reason': '廣告'});
   });
 
+  test('檢舉個人檔案以好友碼當 target_id', () async {
+    respondWith({'ok': true}, status: 201);
+
+    await ForumService.report(
+      targetType: 'profile',
+      targetId: 'BBBB2345',
+      reason: '不當暱稱',
+    );
+
+    final body = jsonDecode((seen.single as http.Request).body);
+    expect(body['target_id'], 'BBBB2345');
+  });
+
   test('bookmarkPost add=false 走 DELETE', () async {
     respondWith({'bookmarked': false});
 

@@ -16,7 +16,7 @@ ForumComment comment({
   isLiked: isLiked,
   isDeleted: isDeleted,
   createdAt: DateTime.now(),
-  author: const ForumAuthor(uid: 7, displayName: 'Pisaw'),
+  author: const ForumAuthor(displayName: 'Pisaw'),
 );
 
 Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));

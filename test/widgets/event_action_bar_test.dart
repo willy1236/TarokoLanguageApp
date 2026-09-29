@@ -15,9 +15,6 @@ import 'package:flutter_application_1/services/account_lock_controller.dart';
 
 import '../helpers/widget_test_helpers.dart';
 
-const int _hostUid = 100;
-const int _strangerUid = 200;
-
 EventDetail _event({
   String status = 'active',
   String? effectiveStatus = 'active',
@@ -25,9 +22,10 @@ EventDetail _event({
   int? maxParticipants,
   int participantCount = 0,
   bool isJoined = false,
+  bool isHost = false,
 }) => EventDetail(
   id: 1,
-  hostUid: _hostUid,
+  isHost: isHost,
   title: '部落豐年祭',
   startsAt: DateTime(2026, 12, 1),
   status: status,
@@ -45,23 +43,18 @@ Widget _app(Widget child) => MaterialApp(
   home: Scaffold(body: child),
 );
 
-Widget _bar(
-  EventDetail event, {
-  int? uid,
-  bool acting = false,
-  VoidCallback? onJoin,
-}) => EventActionBar(
-  event: event,
-  uid: uid,
-  acting: acting,
-  seniorMode: false,
-  onJoin: onJoin ?? () {},
-  onLeave: () {},
-  onCancel: () {},
-  onEdit: () {},
-  onExport: () {},
-  onDelete: () {},
-);
+Widget _bar(EventDetail event, {bool acting = false, VoidCallback? onJoin}) =>
+    EventActionBar(
+      event: event,
+      acting: acting,
+      seniorMode: false,
+      onJoin: onJoin ?? () {},
+      onLeave: () {},
+      onCancel: () {},
+      onEdit: () {},
+      onExport: () {},
+      onDelete: () {},
+    );
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -74,19 +67,14 @@ void main() {
   tearDown(() => accountLockController.setLocked(false));
 
   testWidgets('一般使用者在可報名的活動看到「我要參加」', (tester) async {
-    await tester.pumpWidget(_app(_bar(_event(), uid: _strangerUid)));
+    await tester.pumpWidget(_app(_bar(_event())));
 
     expect(find.text('我要參加'), findsOneWidget);
   });
 
   testWidgets('名額已滿時顯示「名額已滿」而不是報名鈕', (tester) async {
     await tester.pumpWidget(
-      _app(
-        _bar(
-          _event(maxParticipants: 10, participantCount: 10),
-          uid: _strangerUid,
-        ),
-      ),
+      _app(_bar(_event(maxParticipants: 10, participantCount: 10))),
     );
 
     expect(find.text('名額已滿'), findsOneWidget);
@@ -94,24 +82,23 @@ void main() {
   });
 
   testWidgets('報名已截止時顯示截止提示', (tester) async {
-    await tester.pumpWidget(
-      _app(_bar(_event(registrationOpen: false), uid: _strangerUid)),
-    );
+    await tester.pumpWidget(_app(_bar(_event(registrationOpen: false))));
 
     expect(find.text('報名已截止'), findsOneWidget);
   });
 
   testWidgets('活動已結束／已取消時蓋過其他狀態', (tester) async {
-    await tester.pumpWidget(
-      _app(_bar(_event(effectiveStatus: 'ended'), uid: _strangerUid)),
-    );
+    await tester.pumpWidget(_app(_bar(_event(effectiveStatus: 'ended'))));
     expect(find.text('活動已結束'), findsOneWidget);
 
     await tester.pumpWidget(
       _app(
         _bar(
-          _event(status: 'cancelled', effectiveStatus: 'cancelled'),
-          uid: _hostUid,
+          _event(
+            status: 'cancelled',
+            effectiveStatus: 'cancelled',
+            isHost: true,
+          ),
         ),
       ),
     );
@@ -121,7 +108,7 @@ void main() {
   });
 
   testWidgets('發起人看到發送提醒', (tester) async {
-    await tester.pumpWidget(_app(_bar(_event(), uid: _hostUid)));
+    await tester.pumpWidget(_app(_bar(_event(isHost: true))));
 
     expect(find.text('發送提醒'), findsOneWidget);
     expect(find.text('我要參加'), findsNothing);
@@ -130,14 +117,7 @@ void main() {
   testWidgets('操作進行中時顯示轉圈並吃掉重複點擊', (tester) async {
     var joined = false;
     await tester.pumpWidget(
-      _app(
-        _bar(
-          _event(),
-          uid: _strangerUid,
-          acting: true,
-          onJoin: () => joined = true,
-        ),
-      ),
+      _app(_bar(_event(), acting: true, onJoin: () => joined = true)),
     );
 
     // 進行中時按鈕文字換成轉圈，避免使用者以為沒反應而連按。
@@ -156,7 +136,7 @@ void main() {
   testWidgets('唯讀模式下發起人按發送提醒會被擋下並顯示提示', (tester) async {
     accountLockController.setLocked(true);
 
-    await tester.pumpWidget(_app(_bar(_event(), uid: _hostUid)));
+    await tester.pumpWidget(_app(_bar(_event(isHost: true))));
     await tester.tap(find.text('發送提醒'));
     await tester.pump();
 
@@ -166,7 +146,7 @@ void main() {
   });
 
   testWidgets('非唯讀時發送提醒可正常進入撰寫畫面', (tester) async {
-    await tester.pumpWidget(_app(_bar(_event(), uid: _hostUid)));
+    await tester.pumpWidget(_app(_bar(_event(isHost: true))));
     await tester.tap(find.text('發送提醒'));
     await tester.pumpAndSettle();
 
@@ -189,8 +169,7 @@ void main() {
         await tester.pumpWidget(
           _app(
             EventActionBar(
-              event: _event(),
-              uid: _hostUid,
+              event: _event(isHost: true),
               acting: false,
               seniorMode: seniorMode,
               onJoin: () {},

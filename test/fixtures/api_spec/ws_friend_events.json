@@ -1,0 +1,9 @@
+{
+  "_source": "Truku_backend 說明文件/API/即時連線.md「伺服器 → 用戶端 事件」（FRIEND_CODE_ENFORCE 開啟後格式）",
+  "message": {
+    "type": "message",
+    "message": { "id": 17, "body": "晚安", "created_at": "2026-09-29T03:02:00Z", "read_at": null, "mine": false },
+    "from_friend_code": "BBBB2345"
+  },
+  "read": { "type": "read", "by_friend_code": "BBBB2345", "count": 2 }
+}

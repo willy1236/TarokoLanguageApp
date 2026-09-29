@@ -1,0 +1,15 @@
+{
+  "_source": "Truku_backend 說明文件/API/好友模組.md §5.2（FRIEND_CODE_ENFORCE 開啟後格式）",
+  "conversations": [
+    {
+      "nickname": "阿華",
+      "friend_code": "BBBB2345",
+      "avatar_url": "https://example.com/avatar.png",
+      "avatar_id": null,
+      "frame_id": null,
+      "unread_count": 2,
+      "last_message": { "body": "在嗎", "created_at": "2026-09-29T03:00:00Z", "mine": false }
+    }
+  ],
+  "page_info": { "next_cursor": null, "has_more": false }
+}

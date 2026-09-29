@@ -41,4 +41,23 @@ void main() {
     expect(UserService.cachedUser, isNull);
     expect(UserService.currentUid, isNull);
   });
+
+  test('isMe 以好友碼比對目前登入者，大小寫不拘', () {
+    expect(UserService.isMe('ABCD2345'), isFalse, reason: '尚未取得自己的資料');
+
+    UserService.currentUid = 1;
+    UserService.cacheUser(
+      UserModel(
+        uid: 1,
+        email: '',
+        createdAt: DateTime(2026),
+        friendCode: 'ABCD2345',
+      ),
+    );
+
+    expect(UserService.isMe('ABCD2345'), isTrue);
+    expect(UserService.isMe('abcd2345'), isTrue);
+    expect(UserService.isMe('WXYZ6789'), isFalse);
+    expect(UserService.isMe(null), isFalse);
+  });
 }

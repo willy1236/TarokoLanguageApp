@@ -10,11 +10,11 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
 import '../../models/friend_message_model.dart';
+import '../../models/friend_model.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
-import '../../services/user_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../models/shop_item.dart';
 import '../../services/shop_service.dart';
@@ -26,7 +26,8 @@ import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/nickname_text.dart';
 
 class ChatScreen extends StatefulWidget {
-  final int partnerUid;
+  /// 對方的好友碼：辨識聊天室、打聊天 API、標題列末碼與點進公開檔案都用它。
+  final String friendCode;
   final String? partnerNickname;
   final String? partnerAvatarUrl;
 
@@ -34,43 +35,38 @@ class ChatScreen extends StatefulWidget {
   final String? avatarId;
   final String? frameId;
 
-  /// 標題列暱稱旁的末碼來源，也是點暱稱進對方公開檔案的入口；沒有就不給點。
-  final String? friendCode;
-
   /// 從對方公開檔案進來時為 false：已經在檔案頁了，不必再提供回去的入口。
   final bool linkToProfile;
 
   const ChatScreen({
     super.key,
-    required this.partnerUid,
+    required this.friendCode,
     this.partnerNickname,
     this.partnerAvatarUrl,
     this.avatarId,
     this.frameId,
-    this.friendCode,
     this.linkToProfile = true,
   });
 
-  static String routeNameFor(int partnerUid) => 'chat/$partnerUid';
+  static String routeNameFor(String friendCode) =>
+      'chat/${friendCode.toUpperCase()}';
 
   /// 所有呼叫端都走這個工廠，settings.name 才會一致（推播導頁靠它判斷是否已開著）。
   static Route<T> route<T>({
-    required int partnerUid,
+    required String friendCode,
     String? partnerNickname,
     String? partnerAvatarUrl,
     String? avatarId,
     String? frameId,
-    String? friendCode,
     bool linkToProfile = true,
   }) => MaterialPageRoute<T>(
-    settings: RouteSettings(name: routeNameFor(partnerUid)),
+    settings: RouteSettings(name: routeNameFor(friendCode)),
     builder: (_) => ChatScreen(
-      partnerUid: partnerUid,
+      friendCode: friendCode,
       partnerNickname: partnerNickname,
       partnerAvatarUrl: partnerAvatarUrl,
       avatarId: avatarId,
       frameId: frameId,
-      friendCode: friendCode,
       linkToProfile: linkToProfile,
     ),
   );
@@ -163,33 +159,21 @@ class _ChatScreenState extends State<ChatScreen> {
       _catchUp();
       return;
     }
+    if (!sameFriendCode(event.friendCode, widget.friendCode)) return;
     if (event.type == ChatSocketEventType.message) {
       final m = event.message!;
-      if (m.senderUid == widget.partnerUid ||
-          m.recipientUid == widget.partnerUid) {
-        // 重連補抓可能已經抓到同一則，依 id 去重。
-        if (!mounted || _messages.any((e) => e.id == m.id)) return;
-        setState(() => _messages.insert(0, m));
-        if (m.senderUid == widget.partnerUid) _markRead();
-      }
-    } else if (event.type == ChatSocketEventType.read) {
-      if (event.byUid == widget.partnerUid && mounted) {
-        setState(() {
-          for (var i = 0; i < _messages.length; i++) {
-            final m = _messages[i];
-            if (m.senderUid == UserService.currentUid && m.readAt == null) {
-              _messages[i] = FriendMessage(
-                id: m.id,
-                senderUid: m.senderUid,
-                recipientUid: m.recipientUid,
-                body: m.body,
-                createdAt: m.createdAt,
-                readAt: DateTime.now(),
-              );
-            }
-          }
-        });
-      }
+      // 重連補抓可能已經抓到同一則，依 id 去重。
+      if (!mounted || _messages.any((e) => e.id == m.id)) return;
+      setState(() => _messages.insert(0, m));
+      _markRead();
+    } else if (event.type == ChatSocketEventType.read && mounted) {
+      final now = DateTime.now();
+      setState(() {
+        for (var i = 0; i < _messages.length; i++) {
+          final m = _messages[i];
+          if (m.mine && m.readAt == null) _messages[i] = m.markedRead(now);
+        }
+      });
     }
   }
 
@@ -200,7 +184,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _load() async {
     try {
-      final page = await FriendService.getMessages(widget.partnerUid);
+      final page = await FriendService.getMessages(widget.friendCode);
       if (!mounted) return;
       setState(() {
         _messages
@@ -229,11 +213,9 @@ class _ChatScreenState extends State<ChatScreen> {
       return;
     }
     try {
-      final page = await FriendService.getMessages(widget.partnerUid);
+      final page = await FriendService.getMessages(widget.friendCode);
       if (!mounted) return;
-      final hadUnread = page.messages.any(
-        (m) => m.senderUid == widget.partnerUid && m.readAt == null,
-      );
+      final hadUnread = page.messages.any((m) => !m.mine && m.readAt == null);
       final merged = mergeLatestMessages(_messages, page.messages);
       setState(() {
         _messages
@@ -253,7 +235,7 @@ class _ChatScreenState extends State<ChatScreen> {
     setState(() => _loadingMore = true);
     try {
       final page = await FriendService.getMessages(
-        widget.partnerUid,
+        widget.friendCode,
         cursor: cursor,
       );
       if (!mounted) return;
@@ -276,7 +258,7 @@ class _ChatScreenState extends State<ChatScreen> {
 
   Future<void> _markRead() async {
     try {
-      await FriendService.markRead(widget.partnerUid);
+      await FriendService.markRead(widget.friendCode);
     } catch (e) {
       debugPrint('Failed to mark read: $e');
     }
@@ -288,7 +270,7 @@ class _ChatScreenState extends State<ChatScreen> {
     if (!withinUtf16Limit(context, body, _messageMax, label: '訊息')) return;
     setState(() => _sending = true);
     try {
-      final message = await FriendService.sendMessage(widget.partnerUid, body);
+      final message = await FriendService.sendMessage(widget.friendCode, body);
       if (!mounted) return;
       setState(() {
         _messages.insert(0, message);
@@ -349,7 +331,7 @@ class _ChatScreenState extends State<ChatScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => DirectedCallWaitingScreen(
-          calleeUid: widget.partnerUid,
+          calleeFriendCode: widget.friendCode,
           calleeNickname: widget.partnerNickname,
         ),
       ),
@@ -385,10 +367,10 @@ class _ChatScreenState extends State<ChatScreen> {
   );
 
   Future<void> _openPartnerProfile() async {
-    final code = widget.friendCode;
-    if (code == null) return;
     await Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => PublicProfileScreen(friendCode: code)),
+      MaterialPageRoute(
+        builder: (_) => PublicProfileScreen(friendCode: widget.friendCode),
+      ),
     );
   }
 
@@ -402,9 +384,7 @@ class _ChatScreenState extends State<ChatScreen> {
         Expanded(
           child: GestureDetector(
             // 頭像旁的暱稱是對方公開檔案的入口（好友列表已不再直接進檔案頁）。
-            onTap: widget.friendCode == null || !widget.linkToProfile
-                ? null
-                : _openPartnerProfile,
+            onTap: widget.linkToProfile ? _openPartnerProfile : null,
             behavior: HitTestBehavior.opaque,
             child: NicknameText(
               widget.partnerNickname?.isNotEmpty == true
@@ -463,16 +443,14 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           );
         }
-        final isLastMine =
-            i ==
-            _messages.indexWhere((m) => m.senderUid == UserService.currentUid);
+        final isLastMine = i == _messages.indexWhere((m) => m.mine);
         return _bubble(_messages[i], seniorMode, showStatus: isLastMine);
       },
     );
   }
 
   Widget _bubble(FriendMessage m, bool seniorMode, {required bool showStatus}) {
-    final mine = m.senderUid == UserService.currentUid;
+    final mine = m.mine;
     return Align(
       alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
       child: GestureDetector(

@@ -88,12 +88,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Future<void> _chatWithFriend(Friendship f) async {
     await Navigator.of(context).push(
       ChatScreen.route(
-        partnerUid: f.uid,
+        friendCode: f.friendCode,
         partnerNickname: f.nickname,
         partnerAvatarUrl: f.avatarUrl,
         avatarId: f.avatarId,
         frameId: f.frameId,
-        friendCode: f.friendCode,
       ),
     );
     if (!mounted) return;
@@ -626,7 +625,7 @@ class _FriendTile extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   NicknameText(
-                    friend.nickname ?? friend.friendCode ?? '未命名好友',
+                    friend.nickname ?? friend.friendCode,
                     // 沒暱稱時已經顯示整組好友碼，不必再附末碼。
                     friendCode: friend.nickname == null
                         ? null

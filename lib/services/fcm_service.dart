@@ -8,7 +8,7 @@
 //     { type: 'video_matched', session_id, channel }
 //     { type: 'video_session_ended', session_id }
 //     注意：video_matched payload 只有 session_id/channel，沒有
-//     peer_uid/expires_at，不足以組出完整 VideoSession —— 收到後一律當「觸發
+//     peer_friend_code/expires_at，不足以組出完整 VideoSession —— 收到後一律當「觸發
 //     訊號」，由畫面端另外呼叫 VideoService.fetchCurrentSession() 取得權威資料，
 //     不要直接拿 payload 欄位組物件（避免輪詢與 FCM 兩條路徑組出不一致的結果）。
 //
@@ -106,8 +106,8 @@ class FcmService {
   static void Function(int callId)? onFriendCallEnded;
 
   /// 點擊好友相關通知（私訊、好友邀請、接受邀請、羈絆展示）。由 UI 層設定導頁；
-  /// [uid] 是對方的 uid（payload 的 from_uid 或 uid）。
-  static void Function(String type, int uid)? onFriendPushTapped;
+  /// [friendCode] 是對方的好友碼。
+  static void Function(String type, String friendCode)? onFriendPushTapped;
 
   static const _friendPushTypes = {
     'friend_message',
@@ -291,16 +291,19 @@ class FcmService {
     return (postId: postId, type: type as String);
   }
 
-  /// 解析好友相關通知，非此類型回傳 null。私訊與邀請帶 from_uid，其餘帶 uid。
-  static ({String type, int? uid})? _parseFriendPush(
+  /// 解析好友相關通知，非此類型回傳 null。私訊與邀請的對方在 from_friend_code，
+  /// 邀請被接受與羈絆展示在 friend_code；缺少時 friendCode 為 null。
+  @visibleForTesting
+  static ({String type, String? friendCode})? parseFriendPush(
     Map<String, dynamic> data,
   ) {
     final type = data['type'];
     if (!_friendPushTypes.contains(type)) return null;
-    final uid = int.tryParse(
-      (data['from_uid'] ?? data['uid'])?.toString() ?? '',
+    final code = data['from_friend_code'] ?? data['friend_code'];
+    return (
+      type: type as String,
+      friendCode: code is String && code.isNotEmpty ? code : null,
     );
-    return (type: type as String, uid: uid);
   }
 
   /// 解析 friend_call_ended 的 call_id 並交給通話畫面，是此類型回傳 true。
@@ -358,7 +361,7 @@ class FcmService {
     if (_dispatchFriendCallEnded(message.data)) return;
 
     // 好友相關：App 開著時只更新紅點與未讀數，不彈提示。
-    if (_parseFriendPush(message.data) != null) {
+    if (parseFriendPush(message.data) != null) {
       NotificationSummaryService.refresh();
       return;
     }
@@ -553,10 +556,10 @@ class FcmService {
 
     if (_dispatchFriendCallEnded(message.data)) return;
 
-    final friendPush = _parseFriendPush(message.data);
+    final friendPush = parseFriendPush(message.data);
     if (friendPush != null) {
-      final uid = friendPush.uid;
-      if (uid != null) onFriendPushTapped?.call(friendPush.type, uid);
+      final code = friendPush.friendCode;
+      if (code != null) onFriendPushTapped?.call(friendPush.type, code);
       return;
     }
 

@@ -18,6 +18,8 @@ import 'video_call/widgets/call_controls.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 
+enum _CallMenuAction { addFriend, block }
+
 /// 通話畫面。狀態機在 [VideoCallController]；這裡只負責畫面、導頁、檢舉
 /// 對話框與 FCM 回呼註冊。
 ///
@@ -159,7 +161,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     if (confirmed != true || !mounted || _call.leaving) return;
     _blockInFlight = true;
     try {
-      await FriendService.blockUser(widget.session.peerUid);
+      await FriendService.blockUser(widget.session.peerFriendCode);
     } catch (e) {
       // 通話可能已在等待期間結束、本頁已關，改用全域 messenger 提示。
       scaffoldMessengerKey.currentState?.showSnackBar(
@@ -177,6 +179,32 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       await _call.leaveEndedByServer();
     }
     // 其餘情況：離開流程進行中，_onLeft 會看到 _blockedPeer 自行提示。
+  }
+
+  /// 隨機配對中以對方好友碼送出好友邀請，通話照常進行。
+  Future<void> _addPeerAsFriend() async {
+    if (blockIfReadOnly()) return;
+    String message;
+    try {
+      final status = await FriendService.sendRequest(
+        widget.session.peerFriendCode,
+      );
+      message = status == 'accepted' ? '你們已成為好友！' : '已送出好友邀請';
+    } on ApiException catch (e) {
+      message = e.isAlreadyFriends
+          ? '你們已經是好友'
+          : e.isRequestAlreadySent
+          ? '已送出邀請，等待對方回覆'
+          : e.isRequestCooldown
+          ? e.requestCooldownMessage
+          : apiErrorMessage(e, fallback: '送出邀請失敗，請稍後再試');
+    } catch (_) {
+      message = '送出邀請失敗，請稍後再試';
+    }
+    // 通話可能已在等待期間結束、本頁已關，改用全域 messenger 提示。
+    scaffoldMessengerKey.currentState
+      ?..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(message)));
   }
 
   void _showBlockedNotice() {
@@ -454,12 +482,25 @@ class _VideoCallScreenState extends State<VideoCallScreen>
               ],
             ),
           ),
-          PopupMenuButton<String>(
+          PopupMenuButton<_CallMenuAction>(
             tooltip: '更多',
             enabled: !_call.leaving,
-            onSelected: (_) => _blockPeer(),
-            itemBuilder: (context) => const [
-              PopupMenuItem(value: 'block', child: Text('封鎖對方')),
+            onSelected: (action) => switch (action) {
+              _CallMenuAction.addFriend => _addPeerAsFriend(),
+              _CallMenuAction.block => _blockPeer(),
+            },
+            itemBuilder: (context) => [
+              // 好友通話的對方本來就是好友，只有隨機配對才需要加好友。
+              if (widget.directedCallId == null &&
+                  widget.session.peerFriendCode.isNotEmpty)
+                const PopupMenuItem(
+                  value: _CallMenuAction.addFriend,
+                  child: Text('加好友'),
+                ),
+              const PopupMenuItem(
+                value: _CallMenuAction.block,
+                child: Text('封鎖對方'),
+              ),
             ],
             child: Container(
               width: 40,

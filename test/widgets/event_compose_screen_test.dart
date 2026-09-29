@@ -16,7 +16,6 @@ import '../helpers/widget_test_helpers.dart';
 /// 編輯模式會用既有活動預填表單，省去在測試裡操作日期／時間選擇器。
 EventDetail _editing() => EventDetail(
   id: 1,
-  hostUid: 100,
   title: '部落豐年祭',
   description: '一起來跳舞',
   startsAt: DateTime.now().add(const Duration(days: 30)),

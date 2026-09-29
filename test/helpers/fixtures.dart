@@ -35,3 +35,23 @@ List<Map<String, dynamic>> loadFixtureList(String name, String key) {
   final list = json[key] as List<dynamic>? ?? const [];
   return list.cast<Map<String, dynamic>>();
 }
+
+/// 規格文件回應範例的 fixture（test/fixtures/api_spec/）。錄不到的格式才放這裡，
+/// 見該資料夾 README。
+Map<String, dynamic> loadSpecFixtureMap(String name) =>
+    jsonDecode(File('test/fixtures/api_spec/$name').readAsStringSync())
+        as Map<String, dynamic>;
+
+/// 開關開啟後回應裡不會再出現的「他人 uid」欄位（規格 00_核心與認證.md §0）。
+const removedUidKeys = {
+  'uid',
+  'peer_uid',
+  'caller_uid',
+  'callee_uid',
+  'partner_uid',
+  'sender_uid',
+  'recipient_uid',
+  'host_uid',
+  'from_uid',
+  'by_uid',
+};
