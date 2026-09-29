@@ -1,0 +1,79 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §8.6，形狀對照 backend/routes/admin.ts GET /admin/moderation/cases。違規區錄不到全部類型，其餘照規格手寫。",
+  "cases": [
+    {
+      "id": 7, "target_type": "post", "target_id": 100,
+      "offender_uid": 3, "offender_nickname": "作者", "offender_status": "active",
+      "source": "admin_delete", "report_id": null,
+      "reason": "廣告洗版", "content_removed": true,
+      "opened_by": 1, "opened_by_nickname": "管理員甲", "opened_at": "2026-09-26T08:00:00Z",
+      "status": "pending", "reviewed_by": null, "reviewed_by_nickname": null, "reviewed_at": null,
+      "review_note": null, "strike_number": null, "snapshot": null,
+      "preview": { "title": "違規標題", "body": "違規內文" }
+    },
+    {
+      "id": 8, "target_type": "comment", "target_id": 55,
+      "offender_uid": 3, "offender_nickname": "作者", "offender_status": "active",
+      "source": "user_report", "report_id": 501,
+      "reason": "人身攻擊", "content_removed": true,
+      "opened_by": 1, "opened_by_nickname": "管理員甲", "opened_at": "2026-09-26T09:00:00Z",
+      "status": "pending", "reviewed_by": null, "reviewed_by_nickname": null, "reviewed_at": null,
+      "review_note": null, "strike_number": null, "snapshot": null,
+      "preview": { "body": "違規留言", "post_id": 100 }
+    },
+    {
+      "id": 9, "target_type": "message", "target_id": 77,
+      "offender_uid": 4, "offender_nickname": "傳訊者", "offender_status": "locked",
+      "source": "user_report", "report_id": 502,
+      "reason": "騷擾", "content_removed": false,
+      "opened_by": 1, "opened_by_nickname": "管理員甲", "opened_at": "2026-09-26T10:00:00Z",
+      "status": "confirmed", "reviewed_by": 2, "reviewed_by_nickname": "管理員乙", "reviewed_at": "2026-09-27T10:00:00Z",
+      "review_note": "確認", "strike_number": 3, "snapshot": null,
+      "preview": { "body": "私訊內文", "sent_at": "2026-09-26T07:00:00Z" }
+    },
+    {
+      "id": 10, "target_type": "call", "target_id": 8,
+      "offender_uid": 4, "offender_nickname": "通話者", "offender_status": "active",
+      "source": "user_report", "report_id": 503,
+      "reason": "騷擾", "content_removed": false,
+      "opened_by": 1, "opened_by_nickname": "管理員甲", "opened_at": "2026-09-26T11:00:00Z",
+      "status": "pending", "reviewed_by": null, "reviewed_by_nickname": null, "reviewed_at": null,
+      "review_note": null, "strike_number": null, "snapshot": null,
+      "preview": { "caller_uid": 6, "callee_uid": 4, "started_at": "2026-09-26T10:50:00Z" }
+    },
+    {
+      "id": 11, "target_type": "event", "target_id": 20,
+      "offender_uid": 5, "offender_nickname": "發起人", "offender_status": "active",
+      "source": "admin_delete", "report_id": null,
+      "reason": "不實活動", "content_removed": true,
+      "opened_by": 1, "opened_by_nickname": "管理員甲", "opened_at": "2026-09-26T12:00:00Z",
+      "status": "pending", "reviewed_by": null, "reviewed_by_nickname": null, "reviewed_at": null,
+      "review_note": null, "strike_number": null, "snapshot": null,
+      "preview": { "title": "活動標題", "description": "活動說明", "starts_at": "2026-10-01T02:00:00Z" }
+    },
+    {
+      "id": 12, "target_type": "mute", "target_id": 31,
+      "offender_uid": 6, "offender_nickname": "被禁言者", "offender_status": "active",
+      "source": "auto_reports", "report_id": null,
+      "reason": "檢舉滿門檻", "content_removed": false,
+      "opened_by": null, "opened_by_nickname": null, "opened_at": "2026-09-26T13:00:00Z",
+      "status": "pending", "reviewed_by": null, "reviewed_by_nickname": null, "reviewed_at": null,
+      "review_note": null, "strike_number": null, "snapshot": null,
+      "preview": { "scope": "all", "mute_until": "2026-09-30T13:00:00Z", "lifted_at": null }
+    },
+    {
+      "id": 13, "target_type": "profile", "target_id": 9,
+      "offender_uid": 9, "offender_nickname": "使用者9", "offender_status": "active",
+      "source": "admin_delete", "report_id": null,
+      "reason": "暱稱含歧視字眼", "content_removed": false,
+      "opened_by": 1, "opened_by_nickname": "管理員甲", "opened_at": "2026-09-26T14:00:00Z",
+      "status": "pending", "reviewed_by": null, "reviewed_by_nickname": null, "reviewed_at": null,
+      "review_note": null, "strike_number": null,
+      "snapshot": { "video_nickname": "不雅暱稱", "avatar_url": "https://example.com/a.webp" },
+      "preview": {
+        "before": { "video_nickname": "不雅暱稱", "avatar_url": "https://example.com/a.webp" },
+        "current": { "nickname": "使用者9", "self_intro": "自介", "avatar_url": null, "avatar_id": null }
+      }
+    }
+  ]
+}

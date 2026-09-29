@@ -57,6 +57,80 @@ void main() {
     });
   });
 
+  group('AdminCase', () {
+    final cases = [
+      for (final c
+          in loadSpecFixtureMap('get_api_admin_moderation_cases.json')['cases']
+              as List)
+        AdminCase.fromJson(c as Map<String, dynamic>),
+    ];
+
+    test('七種類型的預覽各自解析成對應子型別', () {
+      expect(cases.map((c) => c.preview.runtimeType).toList(), [
+        PostCasePreview,
+        CommentCasePreview,
+        MessageCasePreview,
+        CallCasePreview,
+        EventCasePreview,
+        MuteCasePreview,
+        ProfileCasePreview,
+      ]);
+      expect((cases[0].preview as PostCasePreview).title, '違規標題');
+      expect((cases[1].preview as CommentCasePreview).postId, 100);
+      expect((cases[2].preview as MessageCasePreview).sentAt, isNotNull);
+      expect((cases[3].preview as CallCasePreview).call.calleeUid, 4);
+      expect((cases[4].preview as EventCasePreview).startsAt, isNotNull);
+      expect((cases[5].preview as MuteCasePreview).scope, 'all');
+    });
+
+    test('個人檔案案件：重設前與目前並列，snapshot 保留', () {
+      final c = cases[6];
+      final p = c.preview as ProfileCasePreview;
+      expect(p.before['video_nickname'], '不雅暱稱');
+      expect(p.current.nickname, '使用者9');
+      expect(c.snapshot?['avatar_url'], 'https://example.com/a.webp');
+    });
+
+    test('自動禁言案件由系統開案；已審案件帶審核資訊', () {
+      expect(cases[5].openedBy, isNull);
+      expect(cases[5].openedByNickname, isNull);
+      expect(cases[2].isPending, isFalse);
+      expect(cases[2].reviewedByNickname, '管理員乙');
+      expect(cases[2].strikeNumber, 3);
+      expect(cases[2].offenderStatus, 'locked');
+    });
+  });
+
+  test('AdminReviewResult：strike 用 camelCase，連帶取消活動數取清單長度', () {
+    final result = AdminReviewResult.fromJson(
+      loadSpecFixtureMap('post_api_admin_case_review_confirm.json'),
+    );
+    expect(result.reviewedCase.status, 'confirmed');
+    expect(result.strike?.strikeNumber, 3);
+    expect(result.strike?.locked, isTrue);
+    expect(result.strike?.cancelledEventCount, 2);
+    expect(result.autoLiftedMuteId, isNull);
+  });
+
+  test('AdminResolveResult：判定成立帶案件與連帶結案的檢舉', () {
+    final result = AdminResolveResult.fromJson(
+      loadSpecFixtureMap('post_api_admin_report_resolve_action.json'),
+    );
+    expect(result.status, 'actioned');
+    expect(result.openedCase?.id, 7);
+    expect(result.autoClosedReportIds, [501, 502]);
+
+    final dismissed = AdminResolveResult.fromJson({
+      'ok': true,
+      'status': 'dismissed',
+      'case': null,
+      'auto_closed_report_ids': [],
+      'auto_lifted_mute_id': 4,
+    });
+    expect(dismissed.openedCase, isNull);
+    expect(dismissed.autoLiftedMuteId, 4);
+  });
+
   test('UserModel.isAdmin 只有 admin 為 true', () {
     UserModel user(String? role) =>
         UserModel(uid: 1, email: '', createdAt: DateTime(2026), role: role);

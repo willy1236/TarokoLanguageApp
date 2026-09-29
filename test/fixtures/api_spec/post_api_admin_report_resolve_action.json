@@ -1,0 +1,14 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §8.2 Response 200（判定成立）。",
+  "ok": true,
+  "status": "actioned",
+  "case": {
+    "id": 7, "target_type": "post", "target_id": 12,
+    "offender_uid": 3, "source": "user_report", "report_id": 1,
+    "reason": "廣告內容", "content_removed": true,
+    "opened_by": 1, "opened_at": "2026-09-26T08:00:00Z",
+    "status": "pending", "reviewed_by": null, "reviewed_at": null,
+    "review_note": null, "strike_number": null, "snapshot": null
+  },
+  "auto_closed_report_ids": [501, 502]
+}

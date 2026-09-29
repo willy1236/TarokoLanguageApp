@@ -1,5 +1,7 @@
 // 後台 service：端點、query、body 與回應解析。
 
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
@@ -38,6 +40,53 @@ void main() {
     expect(query['cursor'], 'c1');
     expect(page.items, hasLength(4));
     expect(page.pageInfo.nextCursor, 'c2');
+  });
+
+  test('resolveReport：個人檔案判定成立帶 reset_fields，駁回不帶', () async {
+    final bodies = <Map<String, dynamic>>[];
+    installMockClient(
+      {
+        '/api/admin/forum/reports/9/resolve': {
+          'ok': true,
+          'status': 'dismissed',
+        },
+      },
+      onRequest: (r) => bodies.add(jsonDecode(r.body) as Map<String, dynamic>),
+    );
+
+    await AdminService.resolveReport(
+      9,
+      'action',
+      resetFields: ['video_nickname', 'avatar'],
+    );
+    await AdminService.resolveReport(9, 'dismiss');
+
+    expect(bodies[0], {
+      'action': 'action',
+      'reset_fields': ['video_nickname', 'avatar'],
+    });
+    expect(bodies[1], {'action': 'dismiss'});
+  });
+
+  test('fetchCases 帶狀態；reviewCase 備註去空白、空備註不送', () async {
+    final requests = <http.Request>[];
+    installMockClient({
+      '/api/admin/moderation/cases': loadSpecFixtureMap(
+        'get_api_admin_moderation_cases.json',
+      ),
+      '/api/admin/moderation/cases/7/review': loadSpecFixtureMap(
+        'post_api_admin_case_review_confirm.json',
+      ),
+    }, onRequest: requests.add);
+
+    final page = await AdminService.fetchCases(status: 'confirmed');
+    await AdminService.reviewCase(7, 'confirm', note: '  同意  ');
+    await AdminService.reviewCase(7, 'overturn', note: '   ');
+
+    expect(requests[0].url.queryParameters['status'], 'confirmed');
+    expect(page.items, hasLength(7));
+    expect(jsonDecode(requests[1].body), {'decision': 'confirm', 'note': '同意'});
+    expect(jsonDecode(requests[2].body), {'decision': 'overturn'});
   });
 
   test('後端沒有 page_info 時視為沒有下一頁', () async {

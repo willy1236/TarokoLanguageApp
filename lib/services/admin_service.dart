@@ -30,11 +30,62 @@ class AdminService {
   }) async {
     final json = await ApiClient.get(
       ApiConfig.adminForumReports,
-      query: {'status': status, ...PageInfo.query(cursor: cursor)},
+      query: {
+        'status': status,
+        ...PageInfo.query(cursor: cursor),
+      },
     );
     return (
       items: _list(json, 'reports', AdminReport.fromJson),
       pageInfo: PageInfo.fromResponse(json),
     );
+  }
+
+  /// 檢舉一審。[action] 為 `dismiss`（駁回）或 `action`（判定成立）；
+  /// 個人檔案檢舉判定成立時可帶 [resetFields]（不帶＝後端預設三項全部）。
+  static Future<AdminResolveResult> resolveReport(
+    int id,
+    String action, {
+    List<String>? resetFields,
+  }) async {
+    final json = await ApiClient.post(ApiConfig.adminForumReportResolve(id), {
+      'action': action,
+      'reset_fields': ?resetFields,
+    });
+    return AdminResolveResult.fromJson(json);
+  }
+
+  // ── 違規區（內部管理.md §8.6～§8.7）──────────────────────────
+
+  static Future<AdminPage<AdminCase>> fetchCases({
+    String status = 'pending',
+    String? cursor,
+  }) async {
+    final json = await ApiClient.get(
+      ApiConfig.adminModerationCases,
+      query: {
+        'status': status,
+        ...PageInfo.query(cursor: cursor),
+      },
+    );
+    return (
+      items: _list(json, 'cases', AdminCase.fromJson),
+      pageInfo: PageInfo.fromResponse(json),
+    );
+  }
+
+  /// 二次審核。[decision] 為 `confirm`（確認違規）或 `overturn`（撤銷）；
+  /// [note] 選填、500 字內。須由開案以外的另一位管理員操作。
+  static Future<AdminReviewResult> reviewCase(
+    int id,
+    String decision, {
+    String? note,
+  }) async {
+    final trimmed = note?.trim();
+    final json = await ApiClient.post(ApiConfig.adminModerationCaseReview(id), {
+      'decision': decision,
+      if (trimmed != null && trimmed.isNotEmpty) 'note': trimmed,
+    });
+    return AdminReviewResult.fromJson(json);
   }
 }

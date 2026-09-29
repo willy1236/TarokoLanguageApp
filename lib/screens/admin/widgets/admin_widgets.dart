@@ -10,6 +10,7 @@ import '../../../services/admin_service.dart';
 import '../../../services/senior_mode_controller.dart';
 import '../../../shared/widgets/app_back_button.dart';
 import '../../../shared/widgets/async_state_view.dart';
+import '../../../shared/widgets/confirm_dialog.dart';
 import '../../../shared/widgets/truku_empty_state.dart';
 import '../admin_error.dart';
 
@@ -388,6 +389,21 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
     );
   }
 }
+
+/// 只有一顆「知道了」的結果對話框（審核結果、處置說明）。
+Future<void> showAdminInfoDialog(
+  BuildContext context, {
+  required String title,
+  required String message,
+}) => showDialog<void>(
+  context: context,
+  builder: (ctx) => AppDialog(
+    title: title,
+    message: message,
+    primaryText: '知道了',
+    onPrimary: () => Navigator.pop(ctx),
+  ),
+);
 
 /// 兩顆並排的操作按鈕列（畫面底部）。
 class AdminActionBar extends StatelessWidget {

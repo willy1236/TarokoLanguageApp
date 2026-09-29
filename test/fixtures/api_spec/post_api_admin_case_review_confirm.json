@@ -1,0 +1,20 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §8.7 Response 200；strike 為 backend/moderation.ts StrikeOutcome（camelCase）。",
+  "case": {
+    "id": 7, "target_type": "post", "target_id": 100,
+    "offender_uid": 3, "source": "admin_delete", "report_id": null,
+    "reason": "廣告洗版", "content_removed": true,
+    "opened_by": 1, "opened_at": "2026-09-26T08:00:00Z",
+    "status": "confirmed", "reviewed_by": 2, "reviewed_at": "2026-09-27T10:00:00Z",
+    "review_note": "確認", "strike_number": 3, "snapshot": null
+  },
+  "auto_lifted_mute_id": null,
+  "strike": {
+    "strikeNumber": 3, "locked": true, "muteUntil": null,
+    "identityHash": "abc",
+    "cancelledEvents": [
+      { "eventId": 20, "title": "活動", "participantUids": [1, 2] },
+      { "eventId": 21, "title": "活動二", "participantUids": [] }
+    ]
+  }
+}

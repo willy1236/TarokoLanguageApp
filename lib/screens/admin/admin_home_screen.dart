@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../profile/widgets/profile_rows.dart';
+import 'admin_cases_screen.dart';
 import 'admin_error.dart';
 import 'admin_reports_screen.dart';
 import 'widgets/admin_widgets.dart';
@@ -16,13 +17,19 @@ class AdminHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) => AdminScaffold(
     title: '管理後台',
     body: (context, senior) {
-      final entries = <({IconData icon, String label, Widget Function() screen})>[
-        (
-          icon: Icons.flag_outlined,
-          label: '檢舉佇列',
-          screen: () => const AdminReportsScreen(),
-        ),
-      ];
+      final entries =
+          <({IconData icon, String label, Widget Function() screen})>[
+            (
+              icon: Icons.flag_outlined,
+              label: '檢舉佇列',
+              screen: () => const AdminReportsScreen(),
+            ),
+            (
+              icon: Icons.gavel_outlined,
+              label: '違規區',
+              screen: () => const AdminCasesScreen(),
+            ),
+          ];
       return ListView(
         children: [
           profileSection('管理 · 功能', [

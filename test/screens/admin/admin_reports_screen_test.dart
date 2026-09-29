@@ -52,19 +52,24 @@ void main() {
     expect(find.text('被檢舉貼文的標題'), findsOneWidget);
     expect(find.text('被檢舉的留言'), findsOneWidget);
     expect(find.text('內容已刪除'), findsOneWidget);
-    expect(find.textContaining('6 → 7', findRichText: true), findsOneWidget, reason: '通話用 target_call');
-    expect(find.textContaining('不雅暱稱', findRichText: true), findsOneWidget, reason: '個人檔案用 target_profile');
+    expect(
+      find.textContaining('6 → 7', findRichText: true),
+      findsOneWidget,
+      reason: '通話用 target_call',
+    );
+    expect(
+      find.textContaining('不雅暱稱', findRichText: true),
+      findsOneWidget,
+      reason: '個人檔案用 target_profile',
+    );
     expect(find.textContaining('小明', findRichText: true), findsWidgets);
   });
 
   testWidgets('切換狀態會以新狀態重抓', (tester) async {
     final statuses = <String?>[];
-    installMockClient(
-      {
-        '/api/admin/forum/reports': {'reports': []},
-      },
-      onRequest: (r) => statuses.add(r.url.queryParameters['status']),
-    );
+    installMockClient({
+      '/api/admin/forum/reports': {'reports': []},
+    }, onRequest: (r) => statuses.add(r.url.queryParameters['status']));
 
     await tester.pumpWidget(_app(const AdminReportsScreen()));
     await tester.pumpAndSettle();

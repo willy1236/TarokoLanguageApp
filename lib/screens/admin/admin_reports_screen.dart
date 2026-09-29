@@ -7,6 +7,8 @@ import '../../core/constants/app_typography.dart';
 import '../../core/utils/date_format.dart';
 import '../../models/admin_models.dart';
 import '../../services/admin_service.dart';
+import 'admin_error.dart';
+import 'admin_report_detail_screen.dart';
 import 'widgets/admin_widgets.dart';
 
 const _statuses = <AdminStatusOption>[
@@ -34,8 +36,17 @@ class AdminReportsScreen extends StatelessWidget {
     emptyMessage: '這個狀態目前沒有檢舉',
     fetch: (status, cursor) =>
         AdminService.fetchReports(status: status, cursor: cursor),
-    itemBuilder: (context, report, senior, reload) =>
-        AdminReportCard(report: report, seniorMode: senior),
+    itemBuilder: (context, report, senior, reload) => AdminReportCard(
+      report: report,
+      seniorMode: senior,
+      onTap: () async {
+        final changed = await pushAdmin<bool>(
+          context,
+          AdminReportDetailScreen(report: report),
+        );
+        if (changed ?? false) await reload();
+      },
+    ),
   );
 }
 

@@ -18,7 +18,9 @@ const String _adminRoutePrefix = 'admin/';
 Future<T?> pushAdmin<T>(BuildContext context, Widget screen) =>
     Navigator.of(context).push<T>(
       MaterialPageRoute(
-        settings: RouteSettings(name: '$_adminRoutePrefix${screen.runtimeType}'),
+        settings: RouteSettings(
+          name: '$_adminRoutePrefix${screen.runtimeType}',
+        ),
         builder: (_) => screen,
       ),
     );
