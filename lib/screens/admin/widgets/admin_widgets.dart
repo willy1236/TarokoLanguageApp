@@ -79,6 +79,9 @@ ThemeData _lightTheme(ThemeData base) {
   );
   return base.copyWith(
     colorScheme: scheme,
+    // 下拉選單、彈出選單的底色取自 canvasColor／cardColor，copyWith 不會跟著 scheme 變。
+    canvasColor: AppColors.creamLight,
+    cardColor: AppColors.creamLight,
     textTheme: base.textTheme.apply(
       bodyColor: AppColors.ink,
       displayColor: AppColors.ink,
