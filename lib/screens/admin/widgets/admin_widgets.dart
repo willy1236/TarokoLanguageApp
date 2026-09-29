@@ -34,26 +34,84 @@ class AdminScaffold extends StatelessWidget {
     listenable: seniorModeController,
     builder: (context, _) {
       final senior = seniorModeController.enabled;
-      return Scaffold(
-        backgroundColor: AppColors.creamLight,
-        appBar: AppBar(
-          leading: const AppBackButton(),
+      return Theme(
+        data: _lightTheme(Theme.of(context)),
+        child: Scaffold(
           backgroundColor: AppColors.creamLight,
-          elevation: 0,
-          foregroundColor: AppColors.ink,
-          title: Text(
-            title,
-            style: AppTypography.titleStyle(
-              seniorMode: senior,
-              color: AppColors.ink,
+          appBar: AppBar(
+            leading: const AppBackButton(),
+            backgroundColor: AppColors.creamLight,
+            elevation: 0,
+            foregroundColor: AppColors.ink,
+            title: Text(
+              title,
+              style: AppTypography.titleStyle(
+                seniorMode: senior,
+                color: AppColors.ink,
+              ),
             ),
+            actions: actions,
           ),
-          actions: actions,
+          body: body(context, senior),
+          bottomNavigationBar: bottom?.call(context, senior),
         ),
-        body: body(context, senior),
-        bottomNavigationBar: bottom?.call(context, senior),
       );
     },
+  );
+}
+
+/// 後台畫面底色是淺色，但 App 全域主題是深色：輸入框、Chip、分段按鈕的預設文字與
+/// 邊框會變成淺色（白字疊米白底）。這裡在後台範圍內換成淺色配色。
+ThemeData _lightTheme(ThemeData base) {
+  final scheme = ColorScheme.light(
+    primary: AppColors.primary,
+    onPrimary: AppColors.creamLight,
+    surface: AppColors.creamLight,
+    onSurface: AppColors.ink,
+  );
+  final border = OutlineInputBorder(
+    borderSide: BorderSide(color: AppColors.ink.withValues(alpha: 0.35)),
+  );
+  return base.copyWith(
+    colorScheme: scheme,
+    textTheme: base.textTheme.apply(
+      bodyColor: AppColors.ink,
+      displayColor: AppColors.ink,
+    ),
+    inputDecorationTheme: InputDecorationTheme(
+      border: border,
+      enabledBorder: border,
+      focusedBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: AppColors.primary, width: 1.5),
+      ),
+      labelStyle: TextStyle(color: AppColors.ink.withValues(alpha: 0.7)),
+      hintStyle: TextStyle(color: AppColors.ink.withValues(alpha: 0.45)),
+      helperStyle: TextStyle(color: AppColors.ink.withValues(alpha: 0.6)),
+      prefixIconColor: AppColors.ink.withValues(alpha: 0.6),
+      suffixIconColor: AppColors.primary,
+    ),
+    chipTheme: ChipThemeData(
+      backgroundColor: AppColors.creamLight,
+      side: BorderSide(color: AppColors.ink.withValues(alpha: 0.3)),
+      checkmarkColor: AppColors.creamLight,
+    ),
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        foregroundColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? AppColors.creamLight
+              : AppColors.ink,
+        ),
+        backgroundColor: WidgetStateProperty.resolveWith(
+          (s) => s.contains(WidgetState.selected)
+              ? AppColors.primary
+              : AppColors.creamLight,
+        ),
+        side: WidgetStatePropertyAll(
+          BorderSide(color: AppColors.ink.withValues(alpha: 0.3)),
+        ),
+      ),
+    ),
   );
 }
 
