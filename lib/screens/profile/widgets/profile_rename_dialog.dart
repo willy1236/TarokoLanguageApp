@@ -61,7 +61,12 @@ class _RenameDialogState extends State<ProfileRenameDialog> {
       _saving = true;
       _error = null;
     });
-    final error = await onSave(text);
+    String? error;
+    try {
+      error = await onSave(text);
+    } catch (_) {
+      error = '更新失敗，請稍後再試';
+    }
     if (!mounted) return;
     if (error == null) {
       Navigator.pop(context, text);
@@ -75,7 +80,8 @@ class _RenameDialogState extends State<ProfileRenameDialog> {
 
   @override
   Widget build(BuildContext context) {
-    // 送出中不給關：關掉後被擋的原因就沒地方顯示，使用者會以為已經改好。
+    // 送出中不給誤觸背景或返回鍵關掉：關掉後被擋的原因就沒地方顯示，使用者會以為
+    // 已經改好。請求卡住時仍可按「取消」主動離開。
     return PopScope(canPop: !_saving, child: _buildDialog());
   }
 
@@ -100,7 +106,7 @@ class _RenameDialogState extends State<ProfileRenameDialog> {
       ),
       actions: [
         TextButton(
-          onPressed: _saving ? null : () => Navigator.pop(context),
+          onPressed: () => Navigator.pop(context),
           child: const Text('取消'),
         ),
         TextButton(
