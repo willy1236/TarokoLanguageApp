@@ -1,0 +1,96 @@
+name: Remote Config CD
+
+# 範本合進 master 後先比對線上差異，有差異才排隊等核准發布。
+# 版本參數要等商店新版可下載後才能生效（min_version 會強制更新），所以發布前一律人工核准。
+on:
+  push:
+    branches: [master]
+    paths:
+      - remoteconfig.template.json
+      - .github/workflows/deploy-remote-config.yml
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-remote-config
+  cancel-in-progress: false
+
+env:
+  PROJECT_ID: extreme-quasar-494406-v7
+  FIREBASE_TOOLS: firebase-tools@15
+
+jobs:
+  diff:
+    name: 比對線上 Remote Config
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 寫入 service account
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_EXTREME_QUASAR_494406_V7 }}
+        run: |
+          printf '%s' "$SA_JSON" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+
+      - name: 下載線上範本並比對
+        id: diff
+        run: |
+          npx -y "$FIREBASE_TOOLS" remoteconfig:get -o live.json --project "$PROJECT_ID"
+
+          # 只比對參數內容，忽略 etag、版本資訊等線上才有的欄位
+          normalize='.parameters // {} | map_values({defaultValue, conditionalValues, description, valueType})'
+          jq -S "$normalize" live.json > live.norm.json
+          jq -S "$normalize" remoteconfig.template.json > repo.norm.json
+
+          {
+            echo "## Remote Config 差異（線上 → repo）"
+            echo
+            echo "| 參數 | 線上 | repo |"
+            echo "|---|---|---|"
+            jq -r --slurpfile live live.norm.json --slurpfile repo repo.norm.json -n '
+              ($live[0] | keys) + ($repo[0] | keys) | unique[] as $k
+              | select($live[0][$k] != $repo[0][$k])
+              | "| `\($k)` | \($live[0][$k].defaultValue.value // "（無）") | \($repo[0][$k].defaultValue.value // "（刪除）") |"'
+          } > summary.md
+
+          if diff -q live.norm.json repo.norm.json > /dev/null; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "## Remote Config 與線上一致，不需發布" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            cat summary.md >> "$GITHUB_STEP_SUMMARY"
+            # 值相同但描述等欄位不同時表格可能為空，附上完整 diff
+            echo -e '\n```diff' >> "$GITHUB_STEP_SUMMARY"
+            diff -u live.norm.json repo.norm.json >> "$GITHUB_STEP_SUMMARY" || true
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  deploy:
+    name: 發布 Remote Config
+    needs: diff
+    if: needs.diff.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    # 需在 repo Settings → Environments 設定 required reviewers，才會停下來等核准
+    environment: remote-config
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: 寫入 service account
+        env:
+          SA_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_EXTREME_QUASAR_494406_V7 }}
+        run: |
+          printf '%s' "$SA_JSON" > "$RUNNER_TEMP/sa.json"
+          echo "GOOGLE_APPLICATION_CREDENTIALS=$RUNNER_TEMP/sa.json" >> "$GITHUB_ENV"
+
+      - name: 發布
+        run: npx -y "$FIREBASE_TOOLS" deploy --only remoteconfig --project "$PROJECT_ID" --non-interactive
