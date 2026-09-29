@@ -36,7 +36,7 @@ void main() {
 
     expect(find.text('出生日期'), findsOneWidget);
     expect(find.text('2001/07/04'), findsOneWidget);
-    expect(find.text('如需更正請聯繫我們'), findsOneWidget);
+    expect(find.text('如需更正請聯繫管理員'), findsOneWidget);
 
     await tester.tap(find.text('2001/07/04'));
     await tester.pumpAndSettle();

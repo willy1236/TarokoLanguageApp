@@ -163,7 +163,7 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
             ? '尚未填寫'
             : formatDisplayDate(_user!.birthDate!),
         editable: false,
-        hint: '如需更正請聯繫我們',
+        hint: '如需更正請聯繫管理員',
         seniorMode: seniorMode,
       ),
       profileSwitchRow(
