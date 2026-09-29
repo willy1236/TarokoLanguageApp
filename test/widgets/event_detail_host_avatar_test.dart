@@ -16,14 +16,15 @@ import 'package:flutter_application_1/screens/events/widgets/event_detail_body.d
 import 'package:flutter_application_1/services/user_service.dart';
 import 'package:flutter_application_1/shared/widgets/user_avatar.dart';
 
-const int _hostUid = 100;
+const int _hostUid = 100; // 發起人本人的帳號 uid，只有自己的資料才有
 const _snapshotUrl = 'https://example.com/host-old.webp';
 const _currentUrl = 'https://example.com/host-new.webp';
 
+/// [participants] 只有發起人本人看得到，所以有名單就等於我是發起人。
 EventDetail _event({List<EventParticipant> participants = const []}) =>
     EventDetail(
       id: 1,
-      hostUid: _hostUid,
+      isHost: participants.isNotEmpty,
       title: '部落豐年祭',
       startsAt: DateTime(2026, 12, 1),
       status: 'active',
@@ -32,14 +33,13 @@ EventDetail _event({List<EventParticipant> participants = const []}) =>
     );
 
 EventParticipant _host({String? avatarUrl = _snapshotUrl}) =>
-    EventParticipant(uid: _hostUid, displayName: '織語者', avatarUrl: avatarUrl);
+    EventParticipant(isHost: true, displayName: '織語者', avatarUrl: avatarUrl);
 
-Widget _app(EventDetail event, {int? uid}) => MaterialApp(
+Widget _app(EventDetail event) => MaterialApp(
   home: Scaffold(
     body: SingleChildScrollView(
       child: EventDetailBody(
         event: event,
-        uid: uid,
         reminders: const [],
         seniorMode: false,
         onToggleLike: () {},
@@ -53,9 +53,7 @@ void main() {
   tearDown(UserService.clearCache);
 
   testWidgets('發起人視角顯示發起人的真實頭像與名字', (tester) async {
-    await tester.pumpWidget(
-      _app(_event(participants: [_host()]), uid: _hostUid),
-    );
+    await tester.pumpWidget(_app(_event(participants: [_host()])));
 
     expect(
       tester.widget<UserAvatar>(find.byType(UserAvatar)).avatarUrl,
@@ -73,9 +71,7 @@ void main() {
       avatarUrl: _currentUrl,
     );
 
-    await tester.pumpWidget(
-      _app(_event(participants: [_host()]), uid: _hostUid),
-    );
+    await tester.pumpWidget(_app(_event(participants: [_host()])));
 
     expect(
       tester.widget<UserAvatar>(find.byType(UserAvatar)).avatarUrl,
@@ -84,7 +80,7 @@ void main() {
   });
 
   testWidgets('非發起人視角拿不到 participants，退回預設圖示不會壞版', (tester) async {
-    await tester.pumpWidget(_app(_event(), uid: 999));
+    await tester.pumpWidget(_app(_event()));
 
     expect(find.byIcon(Icons.person), findsOneWidget);
     expect(find.text('發起人'), findsNWidgets(2));

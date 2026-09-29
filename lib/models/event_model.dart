@@ -21,7 +21,9 @@ DateTime? _parseTime(dynamic v) => v is String ? DateTime.tryParse(v) : null;
 
 class EventDetail {
   final int id;
-  final int hostUid;
+
+  /// 我是不是這場的發起人（後端算好，不再帶 host_uid）。
+  final bool isHost;
   final String title;
   final String? description;
   final DateTime startsAt;
@@ -50,7 +52,7 @@ class EventDetail {
   final int likeCount; // 即時 COUNT，非反正規化欄位
   final bool isLiked;
   final bool isBookmarked;
-  final bool isJoined; // 後端直接算好；非發起人的 participants 是空陣列，不能靠它判斷
+  final bool isJoined; // 後端直接算好；非發起人的 participants 是空陣列
 
   /// 我自己的報名資料；未報名為 null。
   final EventRegistration? myRegistration;
@@ -60,7 +62,7 @@ class EventDetail {
 
   const EventDetail({
     required this.id,
-    required this.hostUid,
+    this.isHost = false,
     required this.title,
     this.description,
     required this.startsAt,
@@ -91,17 +93,9 @@ class EventDetail {
     this.cancelReason,
   });
 
-  /// 目前登入者是否為發起人（判斷要不要顯示「發送提醒」「取消活動」）。
-  bool isHostedBy(int? uid) => uid != null && uid == hostUid;
-
   /// 優先用後端算好的計數；只有在後端沒帶這個欄位時才 fallback 用陣列長度
   /// （這種情況只在拿得到完整 participants 時才準）。
   int get participantCount => participantCountRaw ?? participants.length;
-
-  /// 目前登入者是否已報名。優先用後端算好的 isJoined；participants 只有發起人
-  /// 拿得到完整名單，當 fallback 用。
-  bool isJoinedBy(int? uid) =>
-      isJoined || (uid != null && participants.any((p) => p.uid == uid));
 
   /// 名額是否已滿（不限名額時永遠 false）；優先用後端的 is_full。
   bool get isFull =>
@@ -118,7 +112,7 @@ class EventDetail {
     final rawParts = json['participants'] as List<dynamic>? ?? const [];
     return EventDetail(
       id: asEventInt(json['id'])!,
-      hostUid: asEventInt(json['host_uid'])!,
+      isHost: json['is_host'] as bool? ?? false,
       title: json['title'] as String,
       description: json['description'] as String?,
       startsAt: DateTime.parse(json['starts_at'] as String),
@@ -171,7 +165,7 @@ class EventDetail {
   EventDetail _copyWith({int? likeCount, bool? isLiked, bool? isBookmarked}) =>
       EventDetail(
         id: id,
-        hostUid: hostUid,
+        isHost: isHost,
         title: title,
         description: description,
         startsAt: startsAt,
@@ -207,7 +201,6 @@ class EventDetail {
 /// 但多了 participantCount / isJoined / 即時算出的狀態）。
 class EventSummary {
   final int id;
-  final int? hostUid; // GET /api/events 有；GET /api/events/mine 不回傳
   final String title;
   final DateTime startsAt;
   final String? location;
@@ -228,13 +221,14 @@ class EventSummary {
   final bool isLiked;
   final bool isBookmarked;
 
-  /// 我參加的活動（GET /api/events/joined）才有：自己是否為發起人、報名時間。
+  /// 我是不是發起人（各列表都有）。
   final bool isHost;
+
+  /// 報名時間，只有我參加的活動（GET /api/events/joined）才有。
   final DateTime? joinedAt;
 
   const EventSummary({
     required this.id,
-    this.hostUid,
     required this.title,
     required this.startsAt,
     this.location,
@@ -257,8 +251,6 @@ class EventSummary {
     this.joinedAt,
   });
 
-  bool isHostedBy(int? uid) => uid != null && uid == hostUid;
-
   /// 名額是否已滿（不限名額時永遠 false）；優先用後端的 is_full。
   bool get isFull =>
       isFullRaw ??
@@ -273,7 +265,6 @@ class EventSummary {
   factory EventSummary.fromJson(Map<String, dynamic> json) {
     return EventSummary(
       id: asEventInt(json['id'])!,
-      hostUid: asEventInt(json['host_uid']),
       title: json['title'] as String,
       startsAt: DateTime.parse(json['starts_at'] as String),
       location: json['location'] as String?,
@@ -322,7 +313,8 @@ class EventRegistration {
 }
 
 class EventParticipant {
-  final int uid;
+  /// 這筆是不是發起人（名單包含發起人本人）。
+  final bool isHost;
   final String? displayName;
   final String? avatarUrl;
   final String? avatarId;
@@ -332,7 +324,7 @@ class EventParticipant {
   final DateTime? joinedAt;
 
   const EventParticipant({
-    required this.uid,
+    this.isHost = false,
     this.displayName,
     this.avatarUrl,
     this.avatarId,
@@ -343,7 +335,7 @@ class EventParticipant {
 
   factory EventParticipant.fromJson(Map<String, dynamic> json) {
     return EventParticipant(
-      uid: asEventInt(json['uid'])!,
+      isHost: json['is_host'] as bool? ?? false,
       displayName: json['display_name'] as String?,
       avatarUrl: json['avatar_url'] as String?,
       avatarId: json['avatar_id'] as String?,

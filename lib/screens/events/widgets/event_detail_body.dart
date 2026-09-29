@@ -6,14 +6,12 @@ import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
 import '../../../models/shop_item.dart';
 import '../../../shared/widgets/engagement_icon_button.dart';
+import '../../../services/user_service.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../core/constants/app_typography.dart';
 
 class EventDetailBody extends StatelessWidget {
   final EventDetail event;
-
-  /// 目前登入者 uid（判斷是否為發起人）。
-  final int? uid;
   final List<EventReminder> reminders;
   final bool seniorMode;
   final VoidCallback onToggleLike;
@@ -29,7 +27,6 @@ class EventDetailBody extends StatelessWidget {
   const EventDetailBody({
     super.key,
     required this.event,
-    required this.uid,
     required this.reminders,
     required this.seniorMode,
     required this.onToggleLike,
@@ -82,11 +79,11 @@ class EventDetailBody extends StatelessWidget {
     final timeText = end == null
         ? formatDateTime(start)
         : '${formatDateTime(start)} ～ ${_sameDay(start, end) ? formatTime(end) : formatDateTime(end)}';
-    final host = e.participants.where((p) => p.uid == e.hostUid).firstOrNull;
+    final host = e.participants.where((p) => p.isHost).firstOrNull;
     final hostName = (host?.displayName?.isNotEmpty ?? false)
         ? host!.displayName!
         : '發起人';
-    final isHost = e.isHostedBy(uid);
+    final isHost = e.isHost;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 22, 20, 0),
@@ -128,7 +125,7 @@ class EventDetailBody extends StatelessWidget {
                 fallbackIconColor: AppColors.primary,
                 // 發起人就是自己時，換頭像後不必重載活動就跟著換（貼文／活動的
                 // 作者欄都是當下的快照，見 FramedUserAvatar.userUid）。
-                userUid: e.hostUid,
+                userUid: isHost ? UserService.currentUid : null,
                 fallback: Container(
                   color: AppColors.primary.withValues(alpha: 0.12),
                   alignment: Alignment.center,

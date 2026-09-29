@@ -1,0 +1,26 @@
+{
+  "_source": "Truku_backend 說明文件/API/活動提醒.md §1.1 範例（FRIEND_CODE_ENFORCE 開啟後格式）",
+  "events": [{
+    "id": 12, "title": "部落豐年祭準備會議",
+    "starts_at": "2026-07-25T10:00:00Z",
+    "location": "部落活動中心",
+    "ends_at": "2026-07-25T13:00:00Z",
+    "registration_starts_at": "2026-07-10T00:00:00Z",
+    "registration_deadline": "2026-07-25T08:00:00Z",
+    "status": "active",
+    "effective_status": "active",
+    "registration_status": "open",
+    "registration_open": true,
+    "is_full": false,
+    "is_host": false,
+    "max_participants": 30,
+    "category": "族語",
+    "tribe_id": 30,
+    "participant_count": 14,
+    "is_joined": true,
+    "like_count": 3,
+    "is_liked": false,
+    "is_bookmarked": true
+  }],
+  "page_info": { "next_cursor": null, "has_more": false }
+}

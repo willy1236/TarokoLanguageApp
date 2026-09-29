@@ -11,9 +11,6 @@ import '../../../core/constants/app_typography.dart';
 class EventActionBar extends StatelessWidget {
   final EventDetail event;
 
-  /// 目前登入者 uid（判斷是否為發起人／已報名）。
-  final int? uid;
-
   /// 參加／退出／取消等操作進行中：按鈕停用並顯示轉圈。
   final bool acting;
   final bool seniorMode;
@@ -31,7 +28,6 @@ class EventActionBar extends StatelessWidget {
   const EventActionBar({
     super.key,
     required this.event,
-    required this.uid,
     required this.acting,
     required this.seniorMode,
     required this.onJoin,
@@ -48,8 +44,8 @@ class EventActionBar extends StatelessWidget {
       _buildActionBar(context, event, seniorMode);
 
   Widget _buildActionBar(BuildContext context, EventDetail e, bool seniorMode) {
-    final isHost = e.isHostedBy(uid);
-    final isJoined = e.isJoinedBy(uid);
+    final isHost = e.isHost;
+    final isJoined = e.isJoined;
     final status = e.displayStatus;
 
     Widget content;

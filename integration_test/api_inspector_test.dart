@@ -876,7 +876,7 @@ const Map<String, F> _eventSummaryShape = {
   'starts_at': F.string,
 };
 const Map<String, F> _eventSummaryOptional = {
-  'host_uid': F.any,
+  'is_host': F.boolean,
   'location': F.string,
   'max_participants': F.any,
   'category': F.string,
@@ -916,10 +916,8 @@ const Map<String, F> _listeningSessionShape = {
 };
 
 /// GET /api/events/:id → lib/models/event_model.dart EventDetail.fromJson
-/// 比 summary 多一個硬性 host_uid（`asEventInt(...)!`）。
 const Map<String, F> _eventDetailShape = {
   'id': F.any,
-  'host_uid': F.any,
   'title': F.string,
   'starts_at': F.string,
 };

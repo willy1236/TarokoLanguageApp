@@ -5,6 +5,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/models/friend_message_model.dart';
 import 'package:flutter_application_1/models/friend_model.dart';
 import 'package:flutter_application_1/models/video_call_model.dart';
@@ -162,5 +163,24 @@ void main() {
     expect(read.type, ChatSocketEventType.read);
     expect(read.friendCode, 'BBBB2345');
     expect(read.count, 2);
+  });
+
+  test('活動列表：沒有 host_uid 也能解析，以 is_host 判斷發起人', () {
+    final json = loadSpecFixtureMap('get_api_events.json');
+    expectNoOthersUid(json);
+
+    final events = _items(json, 'events').map(EventSummary.fromJson).toList();
+
+    expect(events.single.isHost, isFalse);
+  });
+
+  test('活動詳情（發起人視角）：活動與名單都以 is_host 標出發起人', () {
+    final json = loadSpecFixtureMap('get_api_event_detail_host.json');
+    expectNoOthersUid(json);
+
+    final event = EventDetail.fromJson(json);
+
+    expect(event.isHost, isTrue);
+    expect(event.participants.map((p) => p.isHost), [true, false]);
   });
 }
