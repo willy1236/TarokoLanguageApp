@@ -22,6 +22,7 @@ import 'video_call_notice_screen.dart';
 import 'video_call_screen.dart';
 import 'video_waiting_screen.dart';
 import '../../shared/widgets/confirm_dialog.dart';
+import '../../shared/widgets/nickname_text.dart';
 
 class CommunityScreen extends StatefulWidget {
   /// 由外層（合併分頁的膠囊切換）注入，顯示在頁面最上方。
@@ -624,8 +625,12 @@ class _FriendTile extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  NicknameText(
                     friend.nickname ?? friend.friendCode ?? '未命名好友',
+                    // 沒暱稱時已經顯示整組好友碼，不必再附末碼。
+                    friendCode: friend.nickname == null
+                        ? null
+                        : friend.friendCode,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.serif(

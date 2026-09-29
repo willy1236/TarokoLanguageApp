@@ -26,6 +26,7 @@ import 'widgets/bond_level_badge.dart';
 import 'widgets/showcase_chip.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/confirm_dialog.dart';
+import '../../shared/widgets/nickname_text.dart';
 
 class FriendsListScreen extends StatefulWidget {
   /// 作為底部導航分頁時傳 false：沒有上一頁可回，不顯示返回鍵。
@@ -322,8 +323,9 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
+                  NicknameText(
                     f.nickname?.isNotEmpty == true ? f.nickname! : '未命名旅人',
+                    friendCode: f.friendCode,
                     style: AppTypography.bodyLargeStyle(
                       seniorMode: seniorMode,
                       color: AppColors.ink,

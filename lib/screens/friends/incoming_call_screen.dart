@@ -21,6 +21,7 @@ import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/user_avatar.dart';
 import '../community/video_call_screen.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/nickname_text.dart';
 
 class IncomingCallScreen extends StatefulWidget {
   final IncomingCall call;
@@ -282,10 +283,11 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
                     children: [
                       _avatar(),
                       const SizedBox(height: 24),
-                      Text(
+                      NicknameText(
                         call.callerNickname?.isNotEmpty == true
                             ? call.callerNickname!
                             : '未命名旅人',
+                        friendCode: call.callerFriendCode,
                         style: AppTypography.serif(
                           fontSize: AppTypography.display24,
                           fontWeight: FontWeight.w600,

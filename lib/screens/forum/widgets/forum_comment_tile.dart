@@ -14,6 +14,8 @@ import '../../../services/senior_mode_controller.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../friends/public_profile_screen.dart';
 import '../../../core/utils/date_format.dart';
+import '../../../shared/widgets/nickname_text.dart';
+import '../forum_author_code.dart';
 
 class ForumCommentTile extends StatelessWidget {
   final ForumComment comment;
@@ -99,8 +101,10 @@ class ForumCommentTile extends StatelessWidget {
                       ),
                       const SizedBox(width: 8),
                       Flexible(
-                        child: Text(
+                        child: NicknameText(
                           comment.author?.displayName ?? '匿名使用者',
+                          friendCode: comment.author?.othersFriendCode,
+                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.serif(
                             fontSize: AppTypography.size(

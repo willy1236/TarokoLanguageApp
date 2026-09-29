@@ -12,6 +12,7 @@ import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/nickname_text.dart';
 
 class FriendRequestsScreen extends StatefulWidget {
   const FriendRequestsScreen({super.key});
@@ -186,8 +187,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                NicknameText(
                   r.nickname?.isNotEmpty == true ? r.nickname! : '未命名旅人',
+                  friendCode: r.friendCode,
                   style: AppTypography.bodyLargeStyle(
                     seniorMode: seniorMode,
                     color: AppColors.ink,

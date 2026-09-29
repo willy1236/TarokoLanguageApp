@@ -191,7 +191,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         partnerAvatarUrl: profile.avatarUrl,
         avatarId: profile.avatarId,
         frameId: profile.frameId,
+        friendCode: profile.friendCode,
         // 已經在公開檔案頁了，聊天室不必再提供回到這裡的入口。
+        linkToProfile: false,
       ),
     );
     if (!mounted) return;
