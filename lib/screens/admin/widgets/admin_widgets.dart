@@ -66,6 +66,11 @@ ThemeData _lightTheme(ThemeData base) {
   final scheme = ColorScheme.light(
     primary: AppColors.primary,
     onPrimary: AppColors.creamLight,
+    // light() 預設的 secondary 是青色，Chip 切換動畫會閃過。
+    secondary: AppColors.primary,
+    onSecondary: AppColors.creamLight,
+    secondaryContainer: AppColors.primary,
+    onSecondaryContainer: AppColors.creamLight,
     surface: AppColors.creamLight,
     onSurface: AppColors.ink,
   );
@@ -92,6 +97,8 @@ ThemeData _lightTheme(ThemeData base) {
     ),
     chipTheme: ChipThemeData(
       backgroundColor: AppColors.creamLight,
+      selectedColor: AppColors.primary,
+      surfaceTintColor: Colors.transparent,
       side: BorderSide(color: AppColors.ink.withValues(alpha: 0.3)),
       checkmarkColor: AppColors.creamLight,
     ),
