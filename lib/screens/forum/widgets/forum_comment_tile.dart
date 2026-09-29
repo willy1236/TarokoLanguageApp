@@ -104,7 +104,6 @@ class ForumCommentTile extends StatelessWidget {
                         child: NicknameText(
                           comment.author?.displayName ?? '匿名使用者',
                           friendCode: comment.author?.othersFriendCode,
-                          maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.serif(
                             fontSize: AppTypography.size(

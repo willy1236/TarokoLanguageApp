@@ -22,20 +22,21 @@ TextSpan nicknameSpan(String nickname, String? friendCode, {TextStyle? style}) {
     text: nickname,
     style: style,
     children: [
-      if (tag != null)
-        TextSpan(
-          text: ' $tag',
-          style: TextStyle(
-            color: style?.color?.withValues(alpha: 0.55) ?? AppColors.fog,
-            fontWeight: FontWeight.w400,
-            letterSpacing: 0.4,
-          ),
-        ),
+      if (tag != null) TextSpan(text: ' $tag', style: _tagStyle(style)),
     ],
   );
 }
 
+TextStyle _tagStyle(TextStyle? style) => TextStyle(
+  color: style?.color?.withValues(alpha: 0.55) ?? AppColors.fog,
+  fontWeight: FontWeight.w400,
+  letterSpacing: 0.4,
+);
+
 /// 單獨顯示暱稱的 [Text]，用法同 `Text(nickname, style: ...)`，多一個 [friendCode]。
+///
+/// 末碼獨立排版、不參與截斷：暱稱過長時只截暱稱，否則故意取長名字就能把末碼
+/// 擠出畫面，失去防冒充的作用。
 class NicknameText extends StatelessWidget {
   final String nickname;
   final String? friendCode;
@@ -54,11 +55,28 @@ class NicknameText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final resolved = DefaultTextStyle.of(context).style.merge(style);
-    return Text.rich(
-      nicknameSpan(nickname, friendCode, style: resolved),
+    final name = Text(
+      nickname,
+      style: style,
       maxLines: maxLines,
       overflow: overflow,
+    );
+    final tag = friendCodeTag(friendCode);
+    if (tag == null) return name;
+    final resolved = DefaultTextStyle.of(context).style.merge(style);
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Flexible(child: name),
+        Text(
+          ' $tag',
+          style: resolved.merge(_tagStyle(resolved)),
+          maxLines: 1,
+          softWrap: false,
+        ),
+      ],
     );
   }
 }

@@ -1,6 +1,7 @@
 // 別人的暱稱旁附好友碼末 4 碼：同名的人靠末碼區分。
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/shared/widgets/nickname_text.dart';
@@ -32,15 +33,41 @@ void main() {
         wrap(const NicknameText('阿華', friendCode: 'AB12K7Q2', style: style)),
       );
 
-      expect(find.text('阿華 #K7Q2', findRichText: true), findsOneWidget);
-      TextSpan? tag;
-      tester.widget<RichText>(find.byType(RichText)).text.visitChildren((s) {
-        if (s is TextSpan && s.text == ' #K7Q2') tag = s;
-        return true;
-      });
-      expect(tag, isNotNull);
-      expect(tag!.style?.fontSize, isNull, reason: '沿用暱稱的字級（含精簡模式）');
-      expect(tag!.style?.color, style.color!.withValues(alpha: 0.55));
+      expect(find.text('阿華'), findsOneWidget);
+      final tag = tester.widget<Text>(find.text(' #K7Q2'));
+      expect(tag.style?.fontSize, 16, reason: '沿用暱稱的字級（含精簡模式）');
+      expect(tag.style?.color, style.color!.withValues(alpha: 0.55));
+    });
+
+    testWidgets('暱稱過長時只截暱稱，末碼完整顯示', (tester) async {
+      await tester.pumpWidget(
+        wrap(
+          const Center(
+            child: SizedBox(
+              width: 140,
+              child: NicknameText(
+                '官方客服小編官方客服小編官方客服小編',
+                friendCode: 'AB12K7Q2',
+                style: style,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final name = tester.renderObject<RenderParagraph>(
+        find.text('官方客服小編官方客服小編官方客服小編'),
+      );
+      final tag = tester.renderObject<RenderParagraph>(find.text(' #K7Q2'));
+      expect(name.didExceedMaxLines, isTrue);
+      expect(tag.didExceedMaxLines, isFalse);
+      expect(
+        tester.getTopRight(find.text(' #K7Q2')).dx,
+        lessThanOrEqualTo(tester.getTopRight(find.byType(SizedBox).first).dx),
+      );
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('沒有好友碼時只顯示暱稱', (tester) async {
@@ -48,8 +75,8 @@ void main() {
         wrap(const NicknameText('阿華', friendCode: null, style: style)),
       );
 
-      expect(find.text('阿華', findRichText: true), findsOneWidget);
-      expect(find.textContaining('#', findRichText: true), findsNothing);
+      expect(find.text('阿華'), findsOneWidget);
+      expect(find.textContaining('#'), findsNothing);
     });
   });
 }

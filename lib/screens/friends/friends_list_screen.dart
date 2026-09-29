@@ -401,6 +401,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  // 對方帳號已無法使用，暱稱是後端的替代文字，不附末碼。
                   Text(
                     f.nickname?.isNotEmpty == true ? f.nickname! : '暫時無法使用',
                     style: AppTypography.bodyLargeStyle(
