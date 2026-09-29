@@ -6,12 +6,11 @@
 // - 唯讀檢視（readOnly=true）：profile_screen 的「服務條款與隱私權政策」項目
 //   點進來，單純查看目前條款內容，不強制同意、可正常返回。
 //
-// 兩種用途都是同一支 /api/terms 一次拿回全部文件；當文件數 > 1 時用 TabBar
-// 在同一頁內分頁顯示，而不是各自開一個新畫面。
-//
-// 強制同意時每份文件各自同意：勾選框固定在底部列（對應目前分頁的文件），
-// 但要把該份文件捲到底才解鎖；全部勾完「同意並繼續」才能按。後端 POST /api/terms/consent 一次同意全部 doc_type，
-// 所以分開同意只在前端把關，送出仍是同一支。
+// 讀取都走單份端點 GET /api/terms/:doc_type（tos、privacy 並行抓；尚未發布的
+// 404 TERMS_NOT_FOUND 略過）。
+// - 唯讀：兩份以 TabBar 在同一頁分頁顯示。
+// - 強制同意：只留尚未同意最新版的文件，一次顯示一份（第 N 份／共 M 份），
+//   捲到底解鎖「同意《…》」，按下即送 POST /api/terms/:doc_type/consent，成功才進下一份。
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
@@ -36,15 +35,19 @@ class TermsConsentScreen extends StatefulWidget {
 }
 
 class _TermsConsentScreenState extends State<TermsConsentScreen> {
-  TermsStatus? _status;
+  static const _docTypes = ['tos', 'privacy'];
+
+  /// 唯讀模式為全部已發布文件；強制模式只含尚未同意最新版的文件。
+  List<TermsDocument> _documents = const [];
+
+  /// 強制模式目前在第幾份（從 0 起算）。
+  int _step = 0;
+
   String? _error;
   bool _loading = true;
   bool _submitting = false;
 
-  /// 已勾選同意的 doc_type。
-  final Set<String> _agreed = {};
-
-  /// 已捲到底、可以勾選同意的 doc_type。
+  /// 已捲到底、可以同意的 doc_type。
   final Set<String> _readToEnd = {};
 
   /// 捲動到距底部這個距離內就算讀完，避免差幾 px 卡住。
@@ -75,16 +78,39 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     _load();
   }
 
+  Future<TermsDocumentStatus?> _fetchDocument(String docType) async {
+    try {
+      return await TermsService.fetchDocument(docType);
+    } on ApiException catch (e) {
+      if (e.isTermsNotFound) return null;
+      rethrow;
+    }
+  }
+
   Future<void> _load() async {
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final status = await TermsService.fetchStatus();
+      final results = await Future.wait(_docTypes.map(_fetchDocument));
+      final fetched = [
+        for (final r in results)
+          if (r != null) r.document,
+      ];
+      final pending = widget.readOnly
+          ? fetched
+          : fetched.where((d) => !d.consented).toList();
+      // 全都已同意（例如中途離開再回來）就不必停在這個畫面。
+      if (!widget.readOnly && fetched.isNotEmpty && pending.isEmpty) {
+        await _finish();
+        return;
+      }
       if (!mounted) return;
       setState(() {
-        _status = status;
+        _documents = pending;
+        _readToEnd.clear();
+        _step = 0;
         _loading = false;
       });
     } on ApiException catch (e) {
@@ -106,19 +132,17 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     if (_submitting) return;
     setState(() => _submitting = true);
     try {
-      await TermsService.consent(_status?.documents ?? const []);
-      // 新帳號會先被擋在同意條款，同意後要接續完善資料；查不到就照舊進首頁。
-      UserModel? user;
-      try {
-        user = await UserService.fetchMe();
-      } catch (e) {
-        debugPrint('TermsConsentScreen: fetchMe 失敗，略過完善資料檢查：$e');
+      final result = await TermsService.consentDocument(_documents[_step]);
+      if (_step < _documents.length - 1) {
+        if (!mounted) return;
+        setState(() => _step++);
+      } else if (result.allConsented) {
+        await _finish();
+      } else {
+        // 送出期間另一份又出了新版，重新載入剩下要同意的。
+        if (!mounted) return;
+        await _load();
       }
-      if (!mounted) return;
-      final route = entryRouteFor(user, allConsented: true);
-      Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false);
-      // 冷啟動被條款擋下時，splash 沒處理通知深連結，同意進首頁後補上。
-      if (route == '/home') FcmService.consumePendingInitialMessage();
     } on ApiException catch (e) {
       if (!mounted) return;
       if (e.isTermsVersionOutdated) {
@@ -136,7 +160,23 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     }
   }
 
-  /// 閱讀期間後台發布了新版：換成回應附的最新條款，版本有變的文件要重新閱讀、同意。
+  /// 全部同意完成：進首頁；新帳號會先被擋在同意條款，同意後要接續完善資料，
+  /// 查不到就照舊進首頁。
+  Future<void> _finish() async {
+    UserModel? user;
+    try {
+      user = await UserService.fetchMe();
+    } catch (e) {
+      debugPrint('TermsConsentScreen: fetchMe 失敗，略過完善資料檢查：$e');
+    }
+    if (!mounted) return;
+    final route = entryRouteFor(user, allConsented: true);
+    Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false);
+    // 冷啟動被條款擋下時，splash 沒處理通知深連結，同意進首頁後補上。
+    if (route == '/home') FcmService.consumePendingInitialMessage();
+  }
+
+  /// 閱讀期間後台發布了新版：目前這份換成回應附的最新條款，需重新捲到底才能同意。
   void _reloadOutdated(ApiException e) {
     final body = e.body;
     if (body == null || body['documents'] is! List) {
@@ -144,19 +184,18 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
       _load();
       return;
     }
-    final latest = TermsStatus.fromJson(body);
-    final oldVersions = {
-      for (final d in _status?.documents ?? const <TermsDocument>[])
-        d.docType: d.version,
-    };
+    final current = _documents[_step];
+    final latest = TermsStatus.fromJson(
+      body,
+    ).documents.where((d) => d.docType == current.docType).firstOrNull;
+    if (latest == null || latest.consented) {
+      _showError(e.message);
+      _load();
+      return;
+    }
     setState(() {
-      _status = latest;
-      for (final d in latest.documents) {
-        if (oldVersions[d.docType] != d.version) {
-          _agreed.remove(d.docType);
-          _readToEnd.remove(d.docType);
-        }
-      }
+      _documents = [..._documents]..[_step] = latest;
+      _readToEnd.remove(current.docType);
     });
     _showError(e.message);
   }
@@ -209,8 +248,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         ),
       );
     }
-    final documents = _status?.documents ?? [];
-    if (documents.isEmpty) {
+    if (_documents.isEmpty) {
       return Center(
         child: Text(
           '目前沒有條款內容',
@@ -218,20 +256,12 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         ),
       );
     }
+    if (!readOnly) return _buildStep();
+    final documents = _documents;
     if (documents.length == 1) {
-      return Column(
-        children: [
-          Expanded(
-            child: _trackScroll(
-              documents.first,
-              SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                child: _buildDocument(documents.first),
-              ),
-            ),
-          ),
-          if (!readOnly) _buildAgreeBar(documents, documents.first),
-        ],
+      return SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+        child: _buildDocument(documents.first),
       );
     }
     return DefaultTabController(
@@ -246,55 +276,52 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
               fontSize: AppTypography.body,
               fontWeight: FontWeight.w600,
             ),
-            tabs: documents
-                .map(
-                  (doc) => Tab(
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        if (!readOnly && _agreed.contains(doc.docType)) ...[
-                          const Icon(
-                            Icons.check_circle,
-                            size: 16,
-                            color: AppColors.moss,
-                          ),
-                          const SizedBox(width: 6),
-                        ],
-                        Text(doc.title),
-                      ],
-                    ),
-                  ),
-                )
-                .toList(),
+            tabs: documents.map((doc) => Tab(text: doc.title)).toList(),
           ),
           Expanded(
             child: TabBarView(
               children: documents
                   .map(
-                    (doc) => _trackScroll(
-                      doc,
-                      SingleChildScrollView(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
-                        child: _buildDocument(doc, showTitle: false),
-                      ),
+                    (doc) => SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
+                      child: _buildDocument(doc, showTitle: false),
                     ),
                   )
                   .toList(),
             ),
           ),
-          if (!readOnly)
-            Builder(
-              builder: (context) {
-                final controller = DefaultTabController.of(context);
-                return ListenableBuilder(
-                  listenable: controller,
-                  builder: (context, _) =>
-                      _buildAgreeBar(documents, documents[controller.index]),
-                );
-              },
-            ),
         ],
       ),
+    );
+  }
+
+  /// 強制同意：一次一份，上方顯示進度，底部按鈕捲到底才解鎖。
+  Widget _buildStep() {
+    final doc = _documents[_step];
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Text(
+              '第 ${_step + 1} 份／共 ${_documents.length} 份',
+              style: AppTypography.captionStyle(color: AppColors.fog),
+            ),
+          ),
+        ),
+        Expanded(
+          child: _trackScroll(
+            doc,
+            SingleChildScrollView(
+              key: ValueKey('${doc.docType}_${doc.version}'),
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: _buildDocument(doc),
+            ),
+          ),
+        ),
+        _buildAgreeBar(doc),
+      ],
     );
   }
 
@@ -375,61 +402,8 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     );
   }
 
-  /// 底部列的單份同意勾選；該份文件捲到底之前鎖住。
-  Widget _buildDocCheck(TermsDocument doc) {
-    final agreed = _agreed.contains(doc.docType);
+  Widget _buildAgreeBar(TermsDocument doc) {
     final unlocked = _readToEnd.contains(doc.docType);
-    return Material(
-      color: agreed
-          ? AppColors.moss.withValues(alpha: 0.1)
-          : AppColors.creamLight,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: BorderSide(color: agreed ? AppColors.moss : AppColors.creamDeep),
-      ),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: unlocked
-            ? () => setState(() {
-                if (agreed) {
-                  _agreed.remove(doc.docType);
-                } else {
-                  _agreed.add(doc.docType);
-                }
-              })
-            : null,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(8, 10, 14, 10),
-          child: Row(
-            children: [
-              IgnorePointer(
-                child: Checkbox(
-                  value: agreed,
-                  onChanged: (_) {},
-                  activeColor: AppColors.moss,
-                  side: const BorderSide(color: AppColors.fog, width: 1.5),
-                ),
-              ),
-              Expanded(
-                child: Text(
-                  unlocked ? '我已閱讀並同意《${doc.title}》' : '請先閱讀至《${doc.title}》最下方',
-                  style: AppTypography.bodyStyle(
-                    color: unlocked ? AppColors.ink : AppColors.fog,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAgreeBar(List<TermsDocument> documents, TermsDocument current) {
-    final remaining = documents
-        .where((doc) => !_agreed.contains(doc.docType))
-        .length;
-    final ready = remaining == 0;
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
       decoration: BoxDecoration(
@@ -441,11 +415,9 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            _buildDocCheck(current),
-            const SizedBox(height: 8),
-            if (!ready && documents.length > 1) ...[
+            if (!unlocked) ...[
               Text(
-                '每份文件都需個別同意（尚餘 $remaining 份）',
+                '請先閱讀至《${doc.title}》最下方',
                 textAlign: TextAlign.center,
                 style: AppTypography.captionStyle(color: AppColors.fog),
               ),
@@ -455,7 +427,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
               width: double.infinity,
               height: 52,
               child: ElevatedButton(
-                onPressed: (_submitting || !ready) ? null : _agree,
+                onPressed: (_submitting || !unlocked) ? null : _agree,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.gold,
                   foregroundColor: AppColors.ink,
@@ -473,9 +445,9 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
                         child: CircularProgressIndicator(strokeWidth: 2),
                       )
                     : Text(
-                        '同意並繼續',
+                        '同意《${doc.title}》',
                         style: AppTypography.titleStyle(
-                          color: ready ? AppColors.ink : AppColors.fog,
+                          color: unlocked ? AppColors.ink : AppColors.fog,
                         ),
                       ),
               ),
