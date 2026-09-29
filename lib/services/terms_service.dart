@@ -12,12 +12,18 @@ class TermsService {
     return TermsStatus.fromJson(json);
   }
 
-  /// 同意 [documents]（使用者畫面上看到的版本）。後端若已發布更新版本，
-  /// 丟 409 TERMS_VERSION_OUTDATED，`body` 附最新狀態，可用 [TermsStatus.fromJson] 重新顯示。
-  static Future<TermsStatus> consent(List<TermsDocument> documents) async {
-    final json = await ApiClient.post(ApiConfig.termsConsent, {
-      'versions': {for (final d in documents) d.docType: d.version},
+  /// 只查單份條款。該類型尚未發布時後端回 404 TERMS_NOT_FOUND。
+  static Future<TermsDocumentStatus> fetchDocument(String docType) async {
+    final json = await ApiClient.get(ApiConfig.termsDoc(docType));
+    return TermsDocumentStatus.fromJson(json);
+  }
+
+  /// 只同意 [doc]（使用者畫面上看到的版本）。後端若已發布更新版本，
+  /// 丟 409 TERMS_VERSION_OUTDATED，`body` 附合併版形狀的最新狀態，可用 [TermsStatus.fromJson] 重新顯示。
+  static Future<TermsDocumentStatus> consentDocument(TermsDocument doc) async {
+    final json = await ApiClient.post(ApiConfig.termsDocConsent(doc.docType), {
+      'version': doc.version,
     });
-    return TermsStatus.fromJson(json);
+    return TermsDocumentStatus.fromJson(json);
   }
 }

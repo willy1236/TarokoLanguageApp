@@ -136,6 +136,9 @@ class ApiConfig {
   // 同意條款（見 Truku_backend backend/routes/terms.ts）
   static const String terms = '/api/terms';
   static const String termsConsent = '/api/terms/consent';
+  static String termsDoc(String docType) => '/api/terms/$docType';
+  static String termsDocConsent(String docType) =>
+      '/api/terms/$docType/consent';
 
   // 公開個人檔案（見 Truku_backend backend/routes/auth.ts）
   static String publicProfile(String friendCode) => '/api/users/$friendCode';

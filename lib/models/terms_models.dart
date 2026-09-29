@@ -31,6 +31,26 @@ class TermsDocument {
   );
 }
 
+/// GET /api/terms/:doc_type、POST /api/terms/:doc_type/consent 的回應。
+/// [allConsented] 仍是兩份都同意才為 true。
+class TermsDocumentStatus {
+  final TermsDocument document;
+  final bool allConsented;
+
+  const TermsDocumentStatus({
+    required this.document,
+    required this.allConsented,
+  });
+
+  factory TermsDocumentStatus.fromJson(Map<String, dynamic> json) =>
+      TermsDocumentStatus(
+        document: TermsDocument.fromJson(
+          json['document'] as Map<String, dynamic>,
+        ),
+        allConsented: json['all_consented'] as bool? ?? true,
+      );
+}
+
 class TermsStatus {
   final List<TermsDocument> documents;
   final bool allConsented;

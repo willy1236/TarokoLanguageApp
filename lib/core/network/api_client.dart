@@ -116,6 +116,9 @@ class ApiException implements Exception {
   // 條款（見 Truku_backend 說明文件/API/同意條款.md §2）
   bool get isTermsVersionOutdated => code == 'TERMS_VERSION_OUTDATED';
 
+  /// 單份端點查不到：該類型尚未發布任何版本（§4）。
+  bool get isTermsNotFound => code == 'TERMS_NOT_FOUND';
+
   /// 同意條款沒帶版本號。只有 build 6 以前的舊版會這樣送，新版收到代表 App 過舊。
   bool get isVersionRequired => statusCode == 400 && code == 'VERSION_REQUIRED';
 
@@ -461,7 +464,7 @@ class ApiClient {
       _forceLogout();
     } else if (error.isConsentRequired &&
         path != '/api/terms' &&
-        path != '/api/terms/consent') {
+        !path.startsWith('/api/terms/')) {
       _forceConsent();
     }
     throw error;
