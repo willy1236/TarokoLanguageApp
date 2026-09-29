@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../services/event_service.dart';
+import '../../services/fcm_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/truku_empty_state.dart';
@@ -14,8 +15,37 @@ import 'widgets/paged_event_list.dart';
 /// 列表裡，使用者從這裡找回自己報名的活動。
 ///   進行中：即將開始與進行中，開始時間升冪
 ///   結束：已結束與已取消，開始時間降冪
-class JoinedEventsScreen extends StatelessWidget {
+class JoinedEventsScreen extends StatefulWidget {
   const JoinedEventsScreen({super.key});
+
+  @override
+  State<JoinedEventsScreen> createState() => _JoinedEventsScreenState();
+}
+
+class _ReloadSignal extends ChangeNotifier {
+  void fire() => notifyListeners();
+}
+
+class _JoinedEventsScreenState extends State<JoinedEventsScreen> {
+  final _reloadSignal = _ReloadSignal();
+
+  @override
+  void initState() {
+    super.initState();
+    FcmService.addEventDeletedListener(_onEventDeleted);
+  }
+
+  @override
+  void dispose() {
+    FcmService.removeEventDeletedListener(_onEventDeleted);
+    _reloadSignal.dispose();
+    super.dispose();
+  }
+
+  /// 報名的活動被發起人刪除：兩個分頁都重載，該活動就會消失。
+  void _onEventDeleted(int? eventId) {
+    if (mounted) _reloadSignal.fire();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,11 +95,13 @@ class JoinedEventsScreen extends StatelessWidget {
               tab: 'active',
               seniorMode: seniorMode,
               emptyMessage: '目前沒有即將開始或進行中的活動',
+              reloadSignal: _reloadSignal,
             ),
             _JoinedEventsTab(
               tab: 'ended',
               seniorMode: seniorMode,
               emptyMessage: '還沒有已結束的活動',
+              reloadSignal: _reloadSignal,
             ),
           ],
         ),
@@ -82,17 +114,20 @@ class _JoinedEventsTab extends StatelessWidget {
   final String tab;
   final bool seniorMode;
   final String emptyMessage;
+  final Listenable reloadSignal;
 
   const _JoinedEventsTab({
     required this.tab,
     required this.seniorMode,
     required this.emptyMessage,
+    required this.reloadSignal,
   });
 
   @override
   Widget build(BuildContext context) {
     return PagedEventList(
       seniorMode: seniorMode,
+      reloadSignal: reloadSignal,
       loadPage: (cursor) =>
           EventService.fetchJoinedEvents(tab: tab, cursor: cursor),
       emptyState: TrukuEmptyState(

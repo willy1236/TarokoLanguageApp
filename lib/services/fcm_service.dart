@@ -4,6 +4,9 @@
 //   - 登入後把 token 上傳 POST /api/devices（req 需帶 JWT，故必須登入後才呼叫）
 //   - 登出前 DELETE /api/devices 移除
 //   - 提醒推播的 data payload：{ type: 'event_reminder', event_id, reminder_id }
+//   - 活動被刪除：{ type: 'event_deleted', event_id }，說明文字在 notification
+//     的 title／body（「您參加的{活動名稱}已被發起人刪除」）；活動已不存在，
+//     點擊不導頁，只跳提示（見 onEventDeletedTapped）。
 //   - 視訊配對推播的 data payload（issue #10，見 backend/routes/video.ts）：
 //     { type: 'video_matched', session_id, channel }
 //     { type: 'video_session_ended', session_id }
@@ -33,6 +36,9 @@ import 'directed_call_service.dart';
 import 'event_service.dart';
 import 'notification_summary_service.dart';
 import 'user_service.dart';
+
+/// 活動被發起人刪除的推播內容。[title]／[body] 是後端寫好的通知文字，缺少時為預設值。
+typedef EventDeletedNotice = ({int? eventId, String title, String body});
 
 /// 背景/App 被系統回收時收到訊息的處理器。必須是頂層函式並標註 vm:entry-point。
 /// 通知列的顯示由系統處理，這裡通常不需額外動作。
@@ -64,6 +70,34 @@ class FcmService {
   /// 前景收到「目前正開著的活動」的新提醒推播時觸發，讓該頁即時刷新提醒紀錄。
   /// 由 EventDetailScreen 在 initState/dispose 掛上/清空。
   static void Function(int? eventId)? onReminderReceivedForOpenScreen;
+
+  /// 點擊「活動已被刪除」通知（背景、冷啟動、前景本機通知）。不導頁，由 UI 層
+  /// （main.dart）跳提示，參數是要顯示的說明文字。
+  static void Function(String message)? onEventDeletedTapped;
+
+  static const String _eventDeletedPayloadPrefix = 'event_deleted:';
+  static const String _eventDeletedFallbackMessage = '您參加的活動已被發起人刪除';
+
+  static final List<void Function(int? eventId)> _eventDeletedListeners = [];
+
+  /// 前景收到活動被刪除的推播時通知開著的畫面（我參加的活動、該活動詳情頁）。
+  /// 多個畫面可同時登記，各自在 dispose 時 [removeEventDeletedListener]。
+  static void addEventDeletedListener(void Function(int? eventId) listener) {
+    _eventDeletedListeners.add(listener);
+  }
+
+  static void removeEventDeletedListener(
+    void Function(int? eventId) listener,
+  ) {
+    _eventDeletedListeners.remove(listener);
+  }
+
+  @visibleForTesting
+  static void dispatchEventDeleted(int? eventId) {
+    for (final listener in List.of(_eventDeletedListeners)) {
+      listener(eventId);
+    }
+  }
 
   /// 冷啟動／背景點擊通知時收到 video_matched。全域註冊一次（main.dart），
   /// 用 navigatorKey 直接導頁到通話等待/通話畫面。
@@ -180,6 +214,13 @@ class FcmService {
           if (postId != null) onForumReplyTapped?.call(postId);
           return;
         }
+        if (payload.startsWith(_eventDeletedPayloadPrefix)) {
+          final text = payload.substring(_eventDeletedPayloadPrefix.length);
+          onEventDeletedTapped?.call(
+            text.isNotEmpty ? text : _eventDeletedFallbackMessage,
+          );
+          return;
+        }
         onReminderTapped?.call(int.tryParse(payload));
       },
     );
@@ -263,6 +304,25 @@ class FcmService {
     return (type as String, eventId);
   }
 
+  /// 解析活動被刪除通知，非此類型回傳 null。後端送出的 data：
+  /// { type: 'event_deleted', event_id }，說明文字在 notification 的 title／body。
+  @visibleForTesting
+  static EventDeletedNotice? parseEventDeleted(
+    Map<String, dynamic> data, {
+    String? title,
+    String? body,
+  }) {
+    if (data['type'] != 'event_deleted') return null;
+    return (
+      eventId: int.tryParse(data['event_id']?.toString() ?? ''),
+      title: title ?? '活動已刪除',
+      body: body ?? '',
+    );
+  }
+
+  static String _eventDeletedText(EventDeletedNotice notice) =>
+      notice.body.isNotEmpty ? notice.body : _eventDeletedFallbackMessage;
+
   /// 解析視訊配對相關通知的 payload，非視訊類型回傳 null。
   static (String type, int? sessionId, String? channel)? _parseVideoPayload(
     Map<String, dynamic> data,
@@ -333,6 +393,14 @@ class FcmService {
     }
     return null;
   }
+
+  @visibleForTesting
+  static void handleForegroundMessage(RemoteMessage message) =>
+      _onForegroundMessage(message);
+
+  @visibleForTesting
+  static void handleOpenedMessage(RemoteMessage message) =>
+      _handleOpened(message);
 
   static void _onForegroundMessage(RemoteMessage message) {
     if (message.data['type'] == 'moderation') {
@@ -406,6 +474,16 @@ class FcmService {
       return;
     }
 
+    final deleted = parseEventDeleted(
+      message.data,
+      title: message.notification?.title,
+      body: message.notification?.body,
+    );
+    if (deleted != null) {
+      _onForegroundEventDeleted(message.hashCode, deleted);
+      return;
+    }
+
     final parsed = _parseReminderPayload(message.data);
     if (parsed == null) return;
     final (_, eventId) = parsed;
@@ -440,6 +518,30 @@ class FcmService {
       );
 
     onReminderReceivedForOpenScreen?.call(eventId);
+  }
+
+  /// 前景收到活動被刪除：彈本機通知與 SnackBar（沒有「查看」，活動已不存在），
+  /// 再交給開著的畫面各自處理。
+  static void _onForegroundEventDeleted(
+    int notificationId,
+    EventDeletedNotice notice,
+  ) {
+    final text = _eventDeletedText(notice);
+    unawaited(
+      _localNotifications.show(
+        id: notificationId,
+        title: notice.title,
+        body: text,
+        notificationDetails: const NotificationDetails(
+          android: _reminderAndroidDetails,
+        ),
+        payload: '$_eventDeletedPayloadPrefix$text',
+      ),
+    );
+    scaffoldMessengerKey.currentState
+      ?..clearSnackBars()
+      ..showSnackBar(SnackBar(content: Text(text)));
+    dispatchEventDeleted(notice.eventId);
   }
 
   /// 處置通知（內容被隱藏、個人檔案被重設、確認違規、禁言／解除禁言）。
@@ -577,6 +679,15 @@ class FcmService {
     final forum = _parseForumPayload(message.data);
     if (forum != null) {
       onForumReplyTapped?.call(forum.postId);
+      return;
+    }
+    final deleted = parseEventDeleted(
+      message.data,
+      title: message.notification?.title,
+      body: message.notification?.body,
+    );
+    if (deleted != null) {
+      onEventDeletedTapped?.call(_eventDeletedText(deleted));
       return;
     }
     final parsed = _parseReminderPayload(message.data);

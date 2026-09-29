@@ -23,11 +23,54 @@ class VideoDetailScreen extends StatefulWidget {
   State<VideoDetailScreen> createState() => _VideoDetailScreenState();
 }
 
+/// 播放器外框：寬度撐滿，高度跟著影片比例。直式影片（比例小於 1）高度不超過
+/// [maxHeight]，才不會把標題擠出第一屏，超過時左右留黑邊置中；橫式影片不設上限，
+/// 手機橫放時也維持全寬。
+class VideoPlayerFrame extends StatelessWidget {
+  final double aspectRatio;
+  final double maxHeight;
+  final Widget child;
+
+  const VideoPlayerFrame({
+    super.key,
+    required this.aspectRatio,
+    required this.maxHeight,
+    required this.child,
+  });
+
+  /// 影片比例不可用（未載入、0、NaN、無限大）時回傳 null。
+  static double? validRatio(double? ratio) {
+    if (ratio == null || ratio.isNaN || ratio.isInfinite || ratio <= 0) {
+      return null;
+    }
+    return ratio;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: Colors.black,
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxHeight: aspectRatio < 1 ? maxHeight : double.infinity,
+          ),
+          child: AspectRatio(aspectRatio: aspectRatio, child: child),
+        ),
+      ),
+    );
+  }
+}
+
 class _VideoDetailScreenState extends State<VideoDetailScreen> {
   late Future<void> _future;
   VideoDetail? _video;
   Object? _error;
   BetterPlayerController? _playerController;
+
+  /// 載入前用 16:9 佔位，影片初始化後換成實際比例。
+  double _videoAspectRatio = 16 / 9;
 
   /// YouTube 影片且可嵌入時的官方播放器；依 YouTube 條款不可遮蓋其標誌或廣告。
   YoutubePlayerController? _youtubeController;
@@ -70,6 +113,9 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
           aspectRatio: 16 / 9,
           autoPlay: true,
           fit: BoxFit.contain,
+          // 全螢幕依影片實際比例與方向顯示，直式影片才不會被橫向鎖住。
+          autoDetectFullscreenAspectRatio: true,
+          autoDetectFullscreenDeviceOrientation: true,
         ),
         betterPlayerDataSource: BetterPlayerDataSource(
           BetterPlayerDataSourceType.network,
@@ -77,14 +123,29 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
           videoFormat: BetterPlayerVideoFormat.hls,
         ),
       );
+      _playerController!.addEventsListener(_onPlayerEvent);
       _video = detail;
     } catch (e) {
       _error = e;
     }
   }
 
+  void _onPlayerEvent(BetterPlayerEvent event) {
+    if (event.betterPlayerEventType != BetterPlayerEventType.initialized) {
+      return;
+    }
+    final controller = _playerController;
+    final ratio = VideoPlayerFrame.validRatio(
+      controller?.videoPlayerController?.value.aspectRatio,
+    );
+    if (controller == null || ratio == null || !mounted) return;
+    controller.setOverriddenAspectRatio(ratio);
+    setState(() => _videoAspectRatio = ratio);
+  }
+
   @override
   void dispose() {
+    _playerController?.removeEventsListener(_onPlayerEvent);
     _playerController?.dispose();
     _youtubeController?.close();
     super.dispose();
@@ -305,15 +366,29 @@ class _VideoDetailScreenState extends State<VideoDetailScreen> {
     );
   }
 
+  /// 手機 HLS 播放器的外框依影片比例；YouTube、Web 與外開連結維持 16:9。
+  Widget _buildPlayerFrame(
+    BuildContext context,
+    VideoDetail video,
+    bool seniorMode,
+  ) {
+    final player = _buildPlayer(video, seniorMode);
+    if (video.isYoutube || _playerController == null) {
+      return AspectRatio(aspectRatio: 16 / 9, child: player);
+    }
+    return VideoPlayerFrame(
+      aspectRatio: _videoAspectRatio,
+      maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+      child: player,
+    );
+  }
+
   Widget _buildContent(VideoDetail video, bool seniorMode) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          AspectRatio(
-            aspectRatio: 16 / 9,
-            child: _buildPlayer(video, seniorMode),
-          ),
+          _buildPlayerFrame(context, video, seniorMode),
           Padding(
             padding: EdgeInsets.all(seniorMode ? AppSpacing.lg : 20),
             child: Column(

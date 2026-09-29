@@ -147,8 +147,10 @@ class EventService {
   }
 
   /// 軟刪除活動（僅發起人；後端限未開始的活動才可刪除）。
-  static Future<void> deleteEvent(int eventId) async {
-    await ApiClient.delete(ApiConfig.eventDetail(eventId));
+  /// 回傳後端推播通知了幾位報名者（`notified`）；欄位缺少時視為 0。
+  static Future<int> deleteEvent(int eventId) async {
+    final data = await ApiClient.delete(ApiConfig.eventDetail(eventId));
+    return int.tryParse(data['notified']?.toString() ?? '') ?? 0;
   }
 
   // ── 按讚／收藏 ──────────────────────────────────────────────
