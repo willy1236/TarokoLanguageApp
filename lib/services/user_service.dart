@@ -7,6 +7,7 @@ import '../core/network/api_client.dart';
 import '../models/friend_model.dart';
 import '../models/user_model.dart';
 import '../models/tribe_model.dart';
+import '../shared/utils/birth_date.dart';
 
 class UserService {
   /// 目前登入者的 uid，登入後由 [fetchMe] 快取，供各處（如活動 isHost/isJoined
@@ -136,10 +137,12 @@ class UserService {
   }
 
   /// 首次登入完善資料（issue #43），成功後 profile_completed 轉為 true。
+  /// [birthDate] 只取年月日；舊後端不認得 birth_date 會直接忽略。
   static Future<UserModel> completeProfile({
     required String displayName,
     required bool isIndigenous,
     required String videoNickname,
+    required DateTime birthDate,
     String? ethnicGroup,
     int? tribeId,
     String? tribalName,
@@ -149,6 +152,7 @@ class UserService {
       'display_name': displayName,
       'is_indigenous': isIndigenous,
       'video_nickname': videoNickname,
+      'birth_date': formatApiDate(birthDate),
       'ethnic_group': ?ethnicGroup,
       'tribe_id': ?tribeId,
       'tribal_name': ?tribalName,
@@ -156,6 +160,18 @@ class UserService {
     };
     final gen = _sessionGen;
     final data = await ApiClient.post(ApiConfig.completeProfile, body);
+    final user = UserModel.fromJson(data);
+    if (gen == _sessionGen) _setCached(user);
+    return user;
+  }
+
+  /// 舊使用者補填出生日期（POL-01），只能填一次，填過再送回 409
+  /// BIRTH_DATE_ALREADY_SET。回傳完整 user 並更新快取。
+  static Future<UserModel> submitBirthDate(DateTime birthDate) async {
+    final gen = _sessionGen;
+    final data = await ApiClient.post(ApiConfig.meBirthDate, {
+      'birth_date': formatApiDate(birthDate),
+    });
     final user = UserModel.fromJson(data);
     if (gen == _sessionGen) _setCached(user);
     return user;

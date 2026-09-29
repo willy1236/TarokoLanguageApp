@@ -14,6 +14,7 @@ import '../../models/tribe_model.dart';
 import '../../models/user_model.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
+import '../../shared/utils/birth_date.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
 import 'notification_email_screen.dart';
 import 'widgets/profile_rename_dialog.dart';
@@ -153,6 +154,16 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
         editable: _user?.friendCode != null,
         copyable: true,
         onTap: _copyFriendCode,
+        seniorMode: seniorMode,
+      ),
+      // 出生日期只能填一次、不公開，這裡唯讀；沒有資料（舊後端）時顯示尚未填寫。
+      profileSettingRow(
+        '出生日期',
+        _user?.birthDate == null
+            ? '尚未填寫'
+            : formatDisplayDate(_user!.birthDate!),
+        editable: false,
+        hint: '如需更正請聯繫管理員',
         seniorMode: seniorMode,
       ),
       profileSwitchRow(

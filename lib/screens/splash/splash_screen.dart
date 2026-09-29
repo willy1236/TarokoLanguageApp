@@ -2,12 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
+import '../../models/user_model.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/account_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/session_service.dart';
 import '../../services/terms_service.dart';
 import '../../services/user_service.dart';
+import '../auth/entry_route.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../../core/constants/app_typography.dart';
@@ -44,11 +46,10 @@ class _SplashScreenState extends State<SplashScreen> {
           .catchError((Object e) {
             debugPrint('SplashScreen: 帳號狀態查詢失敗，略過唯讀檢查：$e');
           });
-      // 離線等原因查不到 profile_completed 時，不擋既有使用者進首頁。
-      var profileCompleted = true;
+      // 離線等原因查不到使用者資料時，不擋既有使用者進首頁。
+      UserModel? user;
       try {
-        final user = await UserService.fetchMe();
-        profileCompleted = user.profileCompleted;
+        user = await UserService.fetchMe();
       } on ApiException catch (e) {
         // 刪除中／已刪除帳號：ApiClient 已導去重新啟用畫面或登入頁，這裡不可再導頁蓋掉。
         // 未同意條款：ApiClient 已導去同意畫面，同意後由該畫面接續導頁，這裡再導會疊兩層。
@@ -71,15 +72,12 @@ class _SplashScreenState extends State<SplashScreen> {
       }
       await lockCheck;
       if (!mounted) return;
-      Navigator.pushReplacementNamed(
-        context,
-        !profileCompleted
-            ? '/complete-profile'
-            : (!allConsented ? '/terms-consent' : '/home'),
-      );
+      final route = entryRouteFor(user, allConsented: allConsented);
+      Navigator.pushReplacementNamed(context, route);
       // 冷啟動由通知帶出的深連結導頁必須排在這裡之後，
       // 否則會被上面這行 pushReplacementNamed 蓋掉（見 fcm_service.dart）。
-      FcmService.consumePendingInitialMessage();
+      // 補填出生日期不能跳過，深連結等補填完進首頁時由該頁接續。
+      if (route != '/birth-date') FcmService.consumePendingInitialMessage();
     });
   }
 

@@ -16,6 +16,7 @@ import '../../services/account_lock_controller.dart';
 import '../../services/account_service.dart';
 import '../../services/session_service.dart';
 import '../../services/user_service.dart';
+import '../auth/entry_route.dart';
 
 class AccountPendingScreen extends StatefulWidget {
   /// 登入回應帶來的永久刪除時間；null 時進畫面後向後端查。
@@ -66,8 +67,9 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
       UserService.clearCache();
       final user = await UserService.fetchMe(forceRefresh: true);
       if (!mounted) return;
+      // 條款未同意由 ApiClient 的 CONSENT_REQUIRED 全域處理，這裡不另查。
       Navigator.of(context).pushNamedAndRemoveUntil(
-        user.profileCompleted ? '/home' : '/complete-profile',
+        entryRouteFor(user, allConsented: true),
         (_) => false,
       );
       ScaffoldMessenger.of(context).showSnackBar(

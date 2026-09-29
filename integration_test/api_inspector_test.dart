@@ -787,6 +787,8 @@ const Map<String, F> _meOptional = {
   'is_indigenous': F.boolean,
   'tribal_name': F.string,
   'profile_completed': F.boolean,
+  'birth_date': F.string,
+  'needs_birth_date': F.boolean,
   'self_intro': F.string,
   'friend_code': F.string,
   'quiz_suggested_level': F.string,

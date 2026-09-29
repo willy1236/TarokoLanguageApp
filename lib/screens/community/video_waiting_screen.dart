@@ -37,6 +37,12 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
   /// 重新排隊被 403 擋下：不再輪詢或重試。
   bool _stopped = false;
 
+  /// 被 403 擋下的原因，離開時帶回配對入口（年齡限制由入口接手處理）。
+  ApiException? _stopError;
+
+  /// 「無法取消配對」確認框開著：此時 pop 關的是確認框，不能帶回傳值。
+  bool _confirmOpen = false;
+
   @override
   void initState() {
     super.initState();
@@ -143,24 +149,28 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
     );
   }
 
-  /// 重新排隊被擋下（禁言、未設暱稱等）：不再重試，顯示原因並離開等待畫面。
+  /// 重新排隊被擋下（禁言、未設暱稱、年齡限制等）：不再重試，離開等待畫面。
+  /// 年齡限制帶回配對入口顯示說明或導去補填生日，其他原因在這裡提示。
   void _stopForbidden(ApiException e) {
     _stopped = true;
+    _stopError = e;
     _pollTimer?.cancel();
     if (!mounted) return;
-    scaffoldMessengerKey.currentState
-      ?..clearSnackBars()
-      ..showSnackBar(
-        SnackBar(
-          content: Text(
-            e.isVideoNicknameRequired ? '視訊配對前需要先在個人資料設定公開暱稱' : e.message,
+    if (!e.isUnderage && !e.isBirthDateRequired) {
+      scaffoldMessengerKey.currentState
+        ?..clearSnackBars()
+        ..showSnackBar(
+          SnackBar(
+            content: Text(
+              e.isVideoNicknameRequired ? '視訊配對前需要先在個人資料設定公開暱稱' : e.message,
+            ),
           ),
-        ),
-      );
+        );
+    }
     // 取消處理中就交給 _cancel 離開，兩邊都 pop 會連下面的頁面一起關掉。
     // 取消失敗、「無法取消配對」確認框開著時 _cancelling 已是 false，這裡 pop
     // 掉的是確認框，_cancel 看到 _stopped 後再關等待畫面。
-    if (!_cancelling) Navigator.pop(context);
+    if (!_cancelling) Navigator.pop(context, _confirmOpen ? null : e);
   }
 
   /// 取消配對：必須確認後端已離開佇列才返回。fire-and-forget 會留下幽靈
@@ -173,7 +183,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
     try {
       await VideoCallService.leaveQueue().timeout(const Duration(seconds: 5));
       if (!mounted) return;
-      Navigator.pop(context);
+      Navigator.pop(context, _stopError);
     } catch (e) {
       debugPrint('VideoWaitingScreen: 離開佇列失敗：$e');
       if (!mounted) return;
@@ -182,6 +192,7 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
       // 沒有意義，直接離開。確認框開著時才被擋下，_stopForbidden 會關掉確認框，
       // 回到這裡一樣離開。
       if (!_stopped) {
+        _confirmOpen = true;
         final leaveAnyway = await showConfirmDialog(
           context,
           title: '無法取消配對',
@@ -189,12 +200,13 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
           cancelText: '留在此頁',
           confirmText: '仍要離開',
         );
+        _confirmOpen = false;
         if (leaveAnyway != true && !_stopped) {
           _leaving = false;
           return;
         }
       }
-      if (mounted) Navigator.pop(context);
+      if (mounted) Navigator.pop(context, _stopError);
     }
   }
 

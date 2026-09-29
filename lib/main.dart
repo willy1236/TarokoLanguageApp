@@ -9,6 +9,7 @@ import 'core/constants/app_typography.dart';
 import 'firebase_options.dart';
 import 'screens/account/account_pending_screen.dart';
 import 'core/navigation/route_stack.dart';
+import 'screens/auth/birth_date_screen.dart';
 import 'screens/auth/complete_profile_screen.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/backpack/backpack_screen.dart';
@@ -202,6 +203,7 @@ class KariTrukuApp extends StatelessWidget {
         '/splash': (_) => const SplashScreen(),
         '/login': (_) => const LoginScreen(),
         '/complete-profile': (_) => const CompleteProfileScreen(),
+        '/birth-date': (_) => const BirthDateScreen(),
         '/terms-consent': (_) => const TermsConsentScreen(),
         '/account-pending': (context) => AccountPendingScreen(
           purgeAt: ModalRoute.of(context)?.settings.arguments as DateTime?,
