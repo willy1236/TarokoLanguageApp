@@ -59,7 +59,9 @@ void main() {
       tester.widget<Switch>(find.byType(Switch));
 
   testWidgets('進頁面不查推播設定，打開底板才 GET 並反映後端值', (tester) async {
-    install({'GET': {'tribe_events': false}});
+    install({
+      'GET': {'tribe_events': false},
+    });
     await tester.pumpWidget(wrapScreen(const EventNotificationsScreen()));
     await tester.pumpAndSettle();
 
