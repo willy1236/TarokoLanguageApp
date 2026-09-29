@@ -18,15 +18,6 @@ import 'public_profile_screen.dart';
 Future<void> openFriendPush(RouteStack routes, String type, int uid) async {
   final nav = routes.navigator;
   if (nav == null) return;
-  // 只有聊天室是最上層的整頁才算「已開著」（上面只蓋著 dialog 也算）。它可能
-  // 被通話、響鈴畫面蓋住，那時 pop 回聊天室會拆掉通話，改為照常疊一頁。
-  final top = routes.topPage;
-  if (type == 'friend_message' &&
-      top != null &&
-      top.settings.name == ChatScreen.routeNameFor(uid)) {
-    ChatScreen.refreshRoute(top);
-    return;
-  }
   if (type == 'friend_request') {
     _openRequests(nav);
     return;
@@ -50,14 +41,21 @@ Future<void> openFriendPush(RouteStack routes, String type, int uid) async {
   }
   final friendCode = friend.friendCode;
   if (type == 'friend_message') {
+    // 只有聊天室是最上層的整頁才算「已開著」（上面只蓋著 dialog 也算）。它可能
+    // 被通話、響鈴畫面蓋住，那時 pop 回聊天室會拆掉通話，改為照常疊一頁。
+    final top = routes.topPage;
+    if (top != null &&
+        top.settings.name == ChatScreen.routeNameFor(friendCode)) {
+      ChatScreen.refreshRoute(top);
+      return;
+    }
     nav.push(
       ChatScreen.route(
-        partnerUid: friend.uid,
+        friendCode: friendCode,
         partnerNickname: friend.nickname,
         partnerAvatarUrl: friend.avatarUrl,
         avatarId: friend.avatarId,
         frameId: friend.frameId,
-        friendCode: friendCode,
       ),
     );
     return;

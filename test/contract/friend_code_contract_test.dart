@@ -5,8 +5,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_application_1/models/friend_message_model.dart';
 import 'package:flutter_application_1/models/friend_model.dart';
 import 'package:flutter_application_1/models/video_call_model.dart';
+import 'package:flutter_application_1/services/chat_socket_service.dart';
 
 import '../helpers/fixtures.dart';
 
@@ -116,5 +118,49 @@ void main() {
 
     expect(session.peerFriendCode, 'BBBB2345');
     expect(credentials.uid, 2);
+  });
+
+  test('對話列表：以好友碼辨識對象', () {
+    final json = loadSpecFixtureMap('get_api_friends_messages.json');
+    expectNoOthersUid(json);
+
+    final conversations = _items(
+      json,
+      'conversations',
+    ).map(Conversation.fromJson).toList();
+
+    expect(conversations.single.friendCode, 'BBBB2345');
+    expect(conversations.single.lastMessage!.mine, isFalse);
+  });
+
+  test('私訊歷史：訊息方向讀 mine', () {
+    final json = loadSpecFixtureMap('get_api_friend_messages.json');
+    expectNoOthersUid(json);
+
+    final messages = _items(
+      json,
+      'messages',
+    ).map(FriendMessage.fromJson).toList();
+
+    expect(messages.map((m) => m.mine), [true, false]);
+  });
+
+  test('即時連線：message 以 from_friend_code、read 以 by_friend_code 辨識聊天室', () {
+    final json = loadSpecFixtureMap('ws_friend_events.json');
+    expectNoOthersUid(json);
+
+    final message = ChatSocketEvent.fromJson(
+      json['message'] as Map<String, dynamic>,
+    )!;
+    final read = ChatSocketEvent.fromJson(
+      json['read'] as Map<String, dynamic>,
+    )!;
+
+    expect(message.type, ChatSocketEventType.message);
+    expect(message.friendCode, 'BBBB2345');
+    expect(message.message!.mine, isFalse);
+    expect(read.type, ChatSocketEventType.read);
+    expect(read.friendCode, 'BBBB2345');
+    expect(read.count, 2);
   });
 }

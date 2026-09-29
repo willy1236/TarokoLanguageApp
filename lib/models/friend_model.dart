@@ -13,6 +13,10 @@ class BondLevelInfo {
   );
 }
 
+/// 兩個好友碼是不是同一人。後端回的一律大寫，但規格允許大小寫不拘，比對時不分大小寫。
+bool sameFriendCode(String? a, String? b) =>
+    a != null && b != null && a.toUpperCase() == b.toUpperCase();
+
 /// 好友列表／邀請列表／封鎖名單共用的公開使用者欄位。
 class FriendUser {
   final int uid;

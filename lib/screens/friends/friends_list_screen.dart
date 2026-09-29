@@ -42,7 +42,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   List<Friendship>? _friends;
   bool _loading = true;
   Map<String, ShopItem> _itemCatalogById = const {};
-  Map<int, Conversation> _conversationsByUid = const {};
+  Map<String, Conversation> _conversationsByCode = const {};
 
   @override
   void initState() {
@@ -75,7 +75,9 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       final conversations = await FriendService.getConversations();
       if (!mounted) return;
       setState(() {
-        _conversationsByUid = {for (final c in conversations) c.partnerUid: c};
+        _conversationsByCode = {
+          for (final c in conversations) c.friendCode.toUpperCase(): c,
+        };
       });
     } catch (e) {
       debugPrint('Failed to fetch conversations: $e');
@@ -138,12 +140,11 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   Future<void> _chatWithFriend(Friendship f) async {
     await Navigator.of(context).push(
       ChatScreen.route(
-        partnerUid: f.uid,
+        friendCode: f.friendCode,
         partnerNickname: f.nickname,
         partnerAvatarUrl: f.avatarUrl,
         avatarId: f.avatarId,
         frameId: f.frameId,
-        friendCode: f.friendCode,
       ),
     );
     if (mounted) _load();
@@ -303,7 +304,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
   Widget _friendCard(Friendship f, bool seniorMode) {
     if (f.unavailable) return _unavailableFriendCard(f, seniorMode);
-    final conversation = _conversationsByUid[f.uid];
+    final conversation = _conversationsByCode[f.friendCode.toUpperCase()];
     // 整列點擊直接進聊天室（原本是進公開檔案，另有一顆聊天鈕，兩者重複且
     // 小按鈕在實機容易誤觸）。要看公開檔案改從聊天室標題列的暱稱進入。
     return GestureDetector(

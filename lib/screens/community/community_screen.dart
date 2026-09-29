@@ -88,12 +88,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
   Future<void> _chatWithFriend(Friendship f) async {
     await Navigator.of(context).push(
       ChatScreen.route(
-        partnerUid: f.uid,
+        friendCode: f.friendCode,
         partnerNickname: f.nickname,
         partnerAvatarUrl: f.avatarUrl,
         avatarId: f.avatarId,
         frameId: f.frameId,
-        friendCode: f.friendCode,
       ),
     );
     if (!mounted) return;

@@ -23,19 +23,39 @@ enum ChatSocketEventType { connected, message, read }
 class ChatSocketEvent {
   final ChatSocketEventType type;
   final FriendMessage? message;
-  final int? byUid;
+
+  /// 事件來自哪位對象：message 是傳訊者、read 是讀了我訊息的人，用來判斷
+  /// 屬於哪個聊天室。
+  final String? friendCode;
   final int? count;
 
-  const ChatSocketEvent._(this.type, {this.message, this.byUid, this.count});
+  const ChatSocketEvent._(
+    this.type, {
+    this.message,
+    this.friendCode,
+    this.count,
+  });
 
   factory ChatSocketEvent.connected() =>
       const ChatSocketEvent._(ChatSocketEventType.connected);
 
-  factory ChatSocketEvent.message(FriendMessage message) =>
-      ChatSocketEvent._(ChatSocketEventType.message, message: message);
+  factory ChatSocketEvent.message(
+    FriendMessage message, {
+    required String fromFriendCode,
+  }) => ChatSocketEvent._(
+    ChatSocketEventType.message,
+    message: message,
+    friendCode: fromFriendCode,
+  );
 
-  factory ChatSocketEvent.read({required int byUid, required int count}) =>
-      ChatSocketEvent._(ChatSocketEventType.read, byUid: byUid, count: count);
+  factory ChatSocketEvent.read({
+    required String byFriendCode,
+    required int count,
+  }) => ChatSocketEvent._(
+    ChatSocketEventType.read,
+    friendCode: byFriendCode,
+    count: count,
+  );
 
   /// 伺服器推來的一則事件；不認得的類型或格式不對回 null。
   static ChatSocketEvent? fromJson(Map<String, dynamic> json) {
@@ -45,11 +65,14 @@ class ChatSocketEvent {
       case 'message':
         final m = json['message'];
         return m is Map<String, dynamic>
-            ? ChatSocketEvent.message(FriendMessage.fromJson(m))
+            ? ChatSocketEvent.message(
+                FriendMessage.fromJson(m),
+                fromFriendCode: json['from_friend_code'] as String? ?? '',
+              )
             : null;
       case 'read':
         return ChatSocketEvent.read(
-          byUid: (json['by_uid'] as num?)?.toInt() ?? 0,
+          byFriendCode: json['by_friend_code'] as String? ?? '',
           count: (json['count'] as num?)?.toInt() ?? 0,
         );
     }

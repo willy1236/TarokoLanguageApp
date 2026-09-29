@@ -102,8 +102,11 @@ class FriendService {
     await ApiClient.delete(ApiConfig.friendShowcase(friendCode));
   }
 
-  static Future<FriendMessage> sendMessage(int uid, String body) async {
-    final data = await ApiClient.post(ApiConfig.friendMessagesSend(uid), {
+  static Future<FriendMessage> sendMessage(
+    String friendCode,
+    String body,
+  ) async {
+    final data = await ApiClient.post(ApiConfig.friendMessages(friendCode), {
       'body': body,
     });
     return FriendMessage.fromJson(data['message'] as Map<String, dynamic>);
@@ -119,12 +122,12 @@ class FriendService {
 
   /// 依上一頁的 page_info.next_cursor 往舊訊息分頁；cursor 為 null 取最新一頁。
   static Future<ChatMessagePage> getMessages(
-    int uid, {
+    String friendCode, {
     String? cursor,
     int limit = 30,
   }) async {
     final data = await ApiClient.get(
-      ApiConfig.friendMessages(uid),
+      ApiConfig.friendMessages(friendCode),
       query: PageInfo.query(cursor: cursor, limit: limit),
     );
     final messages = ApiClient.unwrapList(
@@ -137,8 +140,8 @@ class FriendService {
     );
   }
 
-  static Future<int> markRead(int uid) async {
-    final data = await ApiClient.post(ApiConfig.friendMessagesRead(uid));
+  static Future<int> markRead(String friendCode) async {
+    final data = await ApiClient.post(ApiConfig.friendMessagesRead(friendCode));
     final marked = (data['marked'] as num?)?.toInt() ?? 0;
     if (marked > 0) NotificationSummaryService.refresh();
     return marked;

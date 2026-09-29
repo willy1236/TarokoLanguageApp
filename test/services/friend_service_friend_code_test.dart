@@ -96,6 +96,30 @@ void main() {
     expect(seen.single.url.path, '/api/friends/BBBB2345/call');
   });
 
+  test('私訊送出、已讀打好友碼路徑，回應以 mine 表示我傳的', () async {
+    respond({
+      '/api/friends/BBBB2345/messages': jsonResponse({
+        'message': {
+          'id': 18,
+          'body': '嗨',
+          'created_at': '2026-09-29T03:03:00Z',
+          'read_at': null,
+          'mine': true,
+        },
+      }, status: 201),
+      '/api/friends/BBBB2345/messages/read': {'ok': true, 'marked': 0},
+    });
+
+    final message = await FriendService.sendMessage('BBBB2345', '嗨');
+    await FriendService.markRead('BBBB2345');
+
+    expect(message.mine, isTrue);
+    expect(seen.map((r) => r.url.path), [
+      '/api/friends/BBBB2345/messages',
+      '/api/friends/BBBB2345/messages/read',
+    ]);
+  });
+
   test('400 FRIEND_CODE_REQUIRED 帶出後端 message', () async {
     respond({
       '/api/friends/requests': errorResponse(

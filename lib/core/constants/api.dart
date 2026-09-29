@@ -167,11 +167,11 @@ class ApiConfig {
   static String friendCallReport(int id) => '/api/friends/calls/$id/report';
 
   // 一對一聊天（見 Truku_backend backend/routes/friendMessages.ts）
-  static String friendMessagesSend(int uid) => '/api/friends/$uid/messages';
   static const String friendConversations = '/api/friends/messages';
-  static String friendMessages(int uid) => '/api/friends/$uid/messages';
-  static String friendMessagesRead(int uid) =>
-      '/api/friends/$uid/messages/read';
+  static String friendMessages(String friendCode) =>
+      '/api/friends/$friendCode/messages';
+  static String friendMessagesRead(String friendCode) =>
+      '/api/friends/$friendCode/messages/read';
   static String friendMessageReport(int id) =>
       '/api/friends/messages/$id/report';
 }

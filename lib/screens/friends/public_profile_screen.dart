@@ -188,12 +188,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     if (profile == null) return;
     await Navigator.of(context).push(
       ChatScreen.route(
-        partnerUid: profile.uid,
+        friendCode: profile.friendCode,
         partnerNickname: profile.nickname,
         partnerAvatarUrl: profile.avatarUrl,
         avatarId: profile.avatarId,
         frameId: profile.frameId,
-        friendCode: profile.friendCode,
         // 已經在公開檔案頁了，聊天室不必再提供回到這裡的入口。
         linkToProfile: false,
       ),

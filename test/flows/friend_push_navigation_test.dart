@@ -32,7 +32,7 @@ void main() {
     readPosts = 0;
     ApiClient.httpClient = MockClient((request) async {
       if (request.method == 'POST' &&
-          request.url.path == '/api/friends/7/messages/read') {
+          request.url.path == '/api/friends/AMI7/messages/read') {
         readPosts++;
       }
       if (request.url.path == '/api/friends') {
