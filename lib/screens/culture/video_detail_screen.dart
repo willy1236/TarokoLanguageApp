@@ -23,8 +23,9 @@ class VideoDetailScreen extends StatefulWidget {
   State<VideoDetailScreen> createState() => _VideoDetailScreenState();
 }
 
-/// 播放器外框：寬度撐滿，高度跟著影片比例，但不超過 [maxHeight]，
-/// 直式影片才不會把標題擠出第一屏。超過上限時左右留黑邊置中。
+/// 播放器外框：寬度撐滿，高度跟著影片比例。直式影片（比例小於 1）高度不超過
+/// [maxHeight]，才不會把標題擠出第一屏，超過時左右留黑邊置中；橫式影片不設上限，
+/// 手機橫放時也維持全寬。
 class VideoPlayerFrame extends StatelessWidget {
   final double aspectRatio;
   final double maxHeight;
@@ -52,7 +53,9 @@ class VideoPlayerFrame extends StatelessWidget {
       color: Colors.black,
       child: Center(
         child: ConstrainedBox(
-          constraints: BoxConstraints(maxHeight: maxHeight),
+          constraints: BoxConstraints(
+            maxHeight: aspectRatio < 1 ? maxHeight : double.infinity,
+          ),
           child: AspectRatio(aspectRatio: aspectRatio, child: child),
         ),
       ),

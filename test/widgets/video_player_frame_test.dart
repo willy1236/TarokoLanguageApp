@@ -63,6 +63,13 @@ void main() {
     );
   });
 
+  testWidgets('橫式影片不受最大高度限制（手機橫放仍全寬）', (tester) async {
+    usePhoneSurface(tester, size: const Size(800, 600));
+    await tester.pumpWidget(_frame(16 / 9, maxHeight: 220));
+
+    expect(tester.getSize(find.byKey(_key)), const Size(800, 450));
+  });
+
   group('validRatio', () {
     test('正常比例原樣回傳', () {
       expect(VideoPlayerFrame.validRatio(0.5625), 0.5625);
