@@ -9,6 +9,7 @@ import '../../services/terms_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
+import 'entry_route.dart';
 import '../../core/constants/app_typography.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -58,9 +59,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       final user = await UserService.fetchMe();
       if (!mounted) return;
-      final profileCompleted = user.profileCompleted;
       var allConsented = true;
-      if (profileCompleted) {
+      if (user.profileCompleted) {
         try {
           final status = await TermsService.fetchStatus();
           allConsented = status.allConsented;
@@ -71,9 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       Navigator.pushReplacementNamed(
         context,
-        !profileCompleted
-            ? '/complete-profile'
-            : (!allConsented ? '/terms-consent' : '/home'),
+        entryRouteFor(user, allConsented: allConsented),
       );
     } on ApiException catch (e) {
       // 未同意條款：ApiClient 已導去同意畫面，同意後由該畫面接續導頁，這裡不再報錯。
