@@ -423,6 +423,8 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
       onRefresh: _reload,
       child: _items.isEmpty
           ? ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: const EdgeInsets.only(top: AppSpacing.xl),
               children: [
                 TrukuEmptyState(
                   icon: Icons.inbox_outlined,
