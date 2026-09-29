@@ -18,14 +18,14 @@ import 'video_call/widgets/call_controls.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 
+enum _CallMenuAction { addFriend, block }
+
 /// 通話畫面。狀態機在 [VideoCallController]；這裡只負責畫面、導頁、檢舉
 /// 對話框與 FCM 回呼註冊。
 ///
 /// [credentials] 可為 null（例如從 VideoWaitingScreen 輪詢配到時，
 /// GET /session/current 只回 session、沒有 token）——此時 controller 會自行
 /// 呼叫 VideoCallService.refreshToken 取得 Agora 憑證。
-enum _CallMenuAction { addFriend, block }
-
 class VideoCallScreen extends StatefulWidget {
   final VideoSession session;
   final AgoraCallCredentials? credentials;

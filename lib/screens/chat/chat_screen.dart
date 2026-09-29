@@ -15,7 +15,6 @@ import '../../services/account_lock_controller.dart';
 import '../../services/chat_socket_service.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
-
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../models/shop_item.dart';
 import '../../services/shop_service.dart';
