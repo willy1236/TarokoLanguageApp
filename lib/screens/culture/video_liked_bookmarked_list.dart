@@ -158,11 +158,16 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
     final message = widget.mode == VideoListMode.liked
         ? '還沒有按讚任何影片'
         : '還沒有收藏任何影片';
-    return TrukuEmptyState(
-      icon: Icons.video_library_outlined,
-      message: message,
-      subtitle: '下拉重新整理，看看有沒有新影片。',
-      seniorMode: seniorMode,
+    return TrukuRefreshableEmpty(
+      onRefresh: _load,
+      color: AppColors.gold,
+      emptyState: TrukuEmptyState(
+        icon: Icons.video_library_outlined,
+        message: message,
+        subtitle: '下拉重新整理，看看有沒有新影片。',
+        seniorMode: seniorMode,
+        scrollable: false,
+      ),
     );
   }
 }

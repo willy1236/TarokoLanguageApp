@@ -98,3 +98,36 @@ class TrukuEmptyState extends StatelessWidget {
     );
   }
 }
+
+/// 空清單的下拉刷新容器：[TrukuEmptyState] 在剩餘空間垂直置中、底部留 100 給導覽列，
+/// 版面與論壇看板（ForumBoardView）的空狀態一致；空清單也能下拉重試。
+class TrukuRefreshableEmpty extends StatelessWidget {
+  final Future<void> Function() onRefresh;
+  final Color color;
+  final TrukuEmptyState emptyState;
+
+  const TrukuRefreshableEmpty({
+    super.key,
+    required this.onRefresh,
+    required this.color,
+    required this.emptyState,
+  });
+
+  @override
+  Widget build(BuildContext context) => RefreshIndicator(
+    onRefresh: onRefresh,
+    color: color,
+    child: CustomScrollView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      slivers: [
+        SliverFillRemaining(
+          hasScrollBody: false,
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 100),
+            child: Center(child: emptyState),
+          ),
+        ),
+      ],
+    ),
+  );
+}

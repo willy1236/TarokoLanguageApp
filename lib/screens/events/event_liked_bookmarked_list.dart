@@ -160,11 +160,16 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
     final message = widget.mode == EventListMode.liked
         ? '還沒有按讚任何活動'
         : '還沒有收藏任何活動';
-    return TrukuEmptyState(
-      icon: Icons.event_outlined,
-      message: message,
-      subtitle: '下拉重新整理，看看有沒有新活動。',
-      seniorMode: seniorMode,
+    return TrukuRefreshableEmpty(
+      onRefresh: _load,
+      color: AppColors.primary,
+      emptyState: TrukuEmptyState(
+        icon: Icons.event_outlined,
+        message: message,
+        subtitle: '下拉重新整理，看看有沒有新活動。',
+        seniorMode: seniorMode,
+        scrollable: false,
+      ),
     );
   }
 }
