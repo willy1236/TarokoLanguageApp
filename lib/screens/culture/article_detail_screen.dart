@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../../core/utils/date_format.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
@@ -11,6 +10,7 @@ import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/engagement_icon_button.dart';
 import '../../shared/widgets/app_back_button.dart';
+import 'widgets/article_markdown.dart';
 
 class ArticleDetailScreen extends StatefulWidget {
   final int articleId;
@@ -325,52 +325,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                         ],
                       ),
                 const SizedBox(height: 20),
-                MarkdownBody(
+                ArticleMarkdown(
                   data: article.contentMd,
-                  styleSheet: MarkdownStyleSheet(
-                    p: TextStyle(
-                      color: AppColors.mist,
-                      fontSize: AppTypography.size(
-                        AppTypography.body,
-                        seniorMode: seniorMode,
-                      ),
-                      height: 1.6,
-                    ),
-                    h1: TextStyle(
-                      color: AppColors.creamLight,
-                      fontSize: AppTypography.size(
-                        AppTypography.title,
-                        seniorMode: seniorMode,
-                      ),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    h2: TextStyle(
-                      color: AppColors.creamLight,
-                      fontSize: AppTypography.size(
-                        AppTypography.subtitle,
-                        seniorMode: seniorMode,
-                      ),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    h3: TextStyle(
-                      color: AppColors.creamLight,
-                      fontSize: AppTypography.size(
-                        AppTypography.bodyLarge,
-                        seniorMode: seniorMode,
-                      ),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    strong: TextStyle(
-                      color: AppColors.creamLight,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    a: TextStyle(color: AppColors.gold),
-                    blockquote: TextStyle(color: AppColors.fog),
-                    blockquoteDecoration: BoxDecoration(
-                      color: AppColors.midnightSoft,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+                  seniorMode: seniorMode,
                 ),
               ],
             ),
