@@ -14,10 +14,14 @@ import 'package:flutter_application_1/services/user_service.dart';
 import '../helpers/widget_test_helpers.dart';
 
 /// /api/me 的最小合法回應：UserModel.fromJson 只硬性要求 uid 與 created_at。
-Map<String, dynamic> _me({bool profileCompleted = true}) => {
+Map<String, dynamic> _me({
+  bool profileCompleted = true,
+  bool needsBirthDate = false,
+}) => {
   'uid': 1,
   'created_at': '2026-01-01T00:00:00Z',
   'profile_completed': profileCompleted,
+  'needs_birth_date': needsBirthDate,
 };
 
 /// 把畫面放進帶命名路由的 App，才能驗證 pushNamedAndRemoveUntil 導去哪裡。
@@ -27,6 +31,7 @@ Widget _app(Widget screen) => MaterialApp(
     '/home': (_) => const Scaffold(body: Text('HOME')),
     '/login': (_) => const Scaffold(body: Text('LOGIN')),
     '/complete-profile': (_) => const Scaffold(body: Text('COMPLETE')),
+    '/birth-date': (_) => const Scaffold(body: Text('BIRTH_DATE')),
   },
 );
 
@@ -116,6 +121,22 @@ void main() {
     expect(find.text('HOME'), findsOneWidget);
     expect(accountLockController.locked, isFalse);
     expect(find.text('帳號已重新啟用，歡迎回來'), findsOneWidget);
+  });
+
+  testWidgets('重新啟用後要補填出生日期 → 導向補填頁', (tester) async {
+    installMockClient({
+      '/api/account/status': {'status': 'pending_deletion'},
+      '/api/account/reactivate': {'status': 'active'},
+      '/api/me': _me(needsBirthDate: true),
+    });
+
+    await tester.pumpWidget(_app(const AccountPendingScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('重新啟用帳號'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('BIRTH_DATE'), findsOneWidget);
   });
 
   testWidgets('重新啟用後資料尚未完善 → 導向完善資料', (tester) async {

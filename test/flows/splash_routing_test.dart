@@ -31,6 +31,7 @@ void main() {
     overrides: {
       '/login': (_) => fakeRoute('LOGIN'),
       '/complete-profile': (_) => fakeRoute('COMPLETE_PROFILE'),
+      '/birth-date': (_) => fakeRoute('BIRTH_DATE'),
       '/terms-consent': (_) => fakeRoute('TERMS'),
       '/home': (_) => fakeRoute('HOME'),
     },
@@ -84,6 +85,25 @@ void main() {
     await pumpPastSplashDelay(tester);
 
     expect(find.text('TERMS'), findsOneWidget);
+  });
+
+  testWidgets('舊使用者要補填出生日期時導向補填頁，先於條款', (tester) async {
+    stubCommonChannels(token: 'test-token');
+    final me = loadFixtureMap('get_api_me.json')
+      ..['birth_date'] = null
+      ..['needs_birth_date'] = true;
+    final terms = loadFixtureMap('get_api_terms.json')
+      ..['all_consented'] = false;
+    installMockClient({
+      '/api/account/status': loadFixtureMap('get_api_account_status.json'),
+      '/api/me': me,
+      '/api/terms': terms,
+    });
+
+    await tester.pumpWidget(app());
+    await pumpPastSplashDelay(tester);
+
+    expect(find.text('BIRTH_DATE'), findsOneWidget);
   });
 
   testWidgets('狀態都正常時導向首頁', (tester) async {

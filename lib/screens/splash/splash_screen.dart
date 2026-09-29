@@ -72,13 +72,12 @@ class _SplashScreenState extends State<SplashScreen> {
       }
       await lockCheck;
       if (!mounted) return;
-      Navigator.pushReplacementNamed(
-        context,
-        entryRouteFor(user, allConsented: allConsented),
-      );
+      final route = entryRouteFor(user, allConsented: allConsented);
+      Navigator.pushReplacementNamed(context, route);
       // 冷啟動由通知帶出的深連結導頁必須排在這裡之後，
       // 否則會被上面這行 pushReplacementNamed 蓋掉（見 fcm_service.dart）。
-      FcmService.consumePendingInitialMessage();
+      // 補填出生日期不能跳過，深連結等補填完進首頁時由該頁接續。
+      if (route != '/birth-date') FcmService.consumePendingInitialMessage();
     });
   }
 

@@ -158,6 +158,18 @@ class UserService {
     return user;
   }
 
+  /// 舊使用者補填出生日期（POL-01），只能填一次，填過再送回 409
+  /// BIRTH_DATE_ALREADY_SET。回傳完整 user 並更新快取。
+  static Future<UserModel> submitBirthDate(DateTime birthDate) async {
+    final gen = _sessionGen;
+    final data = await ApiClient.post(ApiConfig.meBirthDate, {
+      'birth_date': formatApiDate(birthDate),
+    });
+    final user = UserModel.fromJson(data);
+    if (gen == _sessionGen) _setCached(user);
+    return user;
+  }
+
   static Future<List<EthnicGroup>> fetchEthnicGroups() async {
     final data = await ApiClient.get(ApiConfig.ethnicGroups);
     return ApiClient.unwrapList(

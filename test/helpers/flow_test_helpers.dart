@@ -13,6 +13,7 @@ import 'package:flutter_application_1/main.dart'
     show navigatorKey, scaffoldMessengerKey, MainContainer;
 import 'package:flutter_application_1/core/constants/app_colors.dart';
 import 'package:flutter_application_1/screens/account/account_pending_screen.dart';
+import 'package:flutter_application_1/screens/auth/birth_date_screen.dart';
 import 'package:flutter_application_1/screens/auth/complete_profile_screen.dart';
 import 'package:flutter_application_1/screens/auth/login_screen.dart';
 import 'package:flutter_application_1/screens/backpack/backpack_screen.dart';
@@ -59,6 +60,7 @@ Widget buildTestApp({
       '/splash': (_) => const SplashScreen(),
       '/login': (_) => const LoginScreen(),
       '/complete-profile': (_) => const CompleteProfileScreen(),
+      '/birth-date': (_) => const BirthDateScreen(),
       '/terms-consent': (_) => const TermsConsentScreen(),
       '/account-pending': (context) => AccountPendingScreen(
         purgeAt: ModalRoute.of(context)?.settings.arguments as DateTime?,
