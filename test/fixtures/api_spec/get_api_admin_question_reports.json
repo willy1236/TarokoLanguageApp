@@ -1,0 +1,25 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §7.1；檢舉人欄位依 backend/routes/admin.ts（SCAN-S24 起只給 reporter_nickname／reporter_friend_code，不給 email）。",
+  "total": 2, "page": 1, "page_size": 20,
+  "reports": [
+    {
+      "id": 1, "question_type": "quiz",
+      "session_id": "s1", "question_id": "q1",
+      "word_id": 42, "sentence_id": null,
+      "message": "這題答案好像標錯了",
+      "status": "pending", "created_at": "2026-08-16T09:00:00Z",
+      "reporter_uid": 5, "reporter_nickname": "小明", "reporter_friend_code": "AB3K9MPQ",
+      "content_truku": "Bsuring", "content_zh": "秀林"
+    },
+    {
+      "id": 2, "question_type": "listening",
+      "session_id": "s2", "question_id": "q2",
+      "word_id": null, "sentence_id": 9,
+      "message": "音檔不清楚",
+      "status": "reviewed", "created_at": "2026-08-15T09:00:00Z",
+      "reporter_uid": 6, "reporter_nickname": "小華", "reporter_friend_code": "CD4L8NRS",
+      "content_truku": null, "content_zh": null
+    }
+  ],
+  "page_info": { "next_cursor": null, "has_more": false }
+}

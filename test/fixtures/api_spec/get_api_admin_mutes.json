@@ -1,0 +1,8 @@
+{
+  "_source": "Truku_backend backend/routes/admin.ts GET /admin/mutes（欄位規格文件沒寫，取自實作的 SELECT）。",
+  "mutes": [
+    { "id": 31, "uid": 6, "nickname": "被禁言者", "reason": "reports", "scope": "all", "mute_until": "2026-09-30T13:00:00Z", "created_at": "2026-09-26T13:00:00Z" },
+    { "id": 32, "uid": 7, "nickname": "另一位", "reason": "strike", "scope": "all", "mute_until": "2026-10-10T13:00:00Z", "created_at": "2026-09-26T14:00:00Z" },
+    { "id": 33, "uid": 8, "nickname": "髒話者", "reason": "profanity", "scope": "text", "mute_until": "2026-09-29T13:00:00Z", "created_at": "2026-09-28T14:00:00Z" }
+  ]
+}

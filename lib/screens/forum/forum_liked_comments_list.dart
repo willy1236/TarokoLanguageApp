@@ -145,11 +145,16 @@ class _ForumLikedCommentsListState extends State<ForumLikedCommentsList> {
   }
 
   Widget _buildEmpty(bool seniorMode) {
-    return TrukuEmptyState(
-      icon: Icons.favorite_border,
-      message: '還沒有按讚過任何留言',
-      subtitle: '下拉重新整理，看看有沒有新留言。',
-      seniorMode: seniorMode,
+    return TrukuRefreshableEmpty(
+      onRefresh: _load,
+      color: AppColors.primary,
+      emptyState: TrukuEmptyState(
+        icon: Icons.favorite_border,
+        message: '還沒有按讚過任何留言',
+        subtitle: '下拉重新整理，看看有沒有新留言。',
+        seniorMode: seniorMode,
+        scrollable: false,
+      ),
     );
   }
 }

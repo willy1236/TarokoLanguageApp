@@ -46,6 +46,17 @@ const Map<String, String> kStringMasks = {
   'comment': '測試留言',
   'location': '測試地點',
   'address': '測試地址',
+  // 管理員後台回應（檢舉佇列、違規區、詞庫）裡的他人資料與審核文字。
+  'reporter_nickname': '測試暱稱',
+  'reporter_name': '測試暱稱',
+  'reporter_friend_code': 'TESTCODE',
+  'offender_nickname': '測試暱稱',
+  'opened_by_nickname': '測試暱稱',
+  'reviewed_by_nickname': '測試暱稱',
+  'target_preview': '測試內文',
+  'self_intro': '測試自介',
+  'review_note': '測試備註',
+  'word': '測試詞',
 };
 
 /// 自由文字裡也可能夾著 email 或電話，那些不會落在上面的欄位名單裡。

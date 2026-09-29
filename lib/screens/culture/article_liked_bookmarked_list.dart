@@ -160,11 +160,16 @@ class _ArticleLikedBookmarkedListState
     final message = widget.mode == ArticleListMode.liked
         ? '還沒有按讚任何文章'
         : '還沒有收藏任何文章';
-    return TrukuEmptyState(
-      icon: Icons.article_outlined,
-      message: message,
-      subtitle: '下拉重新整理，看看有沒有新文章。',
-      seniorMode: seniorMode,
+    return TrukuRefreshableEmpty(
+      onRefresh: _load,
+      color: AppColors.gold,
+      emptyState: TrukuEmptyState(
+        icon: Icons.article_outlined,
+        message: message,
+        subtitle: '下拉重新整理，看看有沒有新文章。',
+        seniorMode: seniorMode,
+        scrollable: false,
+      ),
     );
   }
 }

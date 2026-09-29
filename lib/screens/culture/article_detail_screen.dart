@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../../core/utils/date_format.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
@@ -7,10 +6,17 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/article_models.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/admin_service.dart';
+import '../../services/article_refresh_notifier.dart';
 import '../../services/article_service.dart';
+import '../../services/user_service.dart';
+import '../../shared/widgets/confirm_dialog.dart';
+import '../admin/admin_article_form_screen.dart';
+import '../admin/admin_error.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/engagement_icon_button.dart';
 import '../../shared/widgets/app_back_button.dart';
+import 'widgets/article_markdown.dart';
 
 class ArticleDetailScreen extends StatefulWidget {
   final int articleId;
@@ -39,6 +45,62 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     } catch (e) {
       _error = e;
     }
+    // AppBar 的管理員選單要等文章載入完才決定顯示，FutureBuilder 只會重畫內文。
+    if (mounted) setState(() {});
+  }
+
+  bool get _isAdmin => UserService.cachedUser?.isAdmin ?? false;
+
+  /// 管理員編輯這篇文章：存好後重新載入詳情，文化頁列表一併重抓。
+  Future<void> _adminEdit() async {
+    final article = _article;
+    if (article == null) return;
+    final saved = await pushAdmin<bool>(
+      context,
+      AdminArticleFormScreen(editing: article),
+    );
+    if (saved != true || !mounted) return;
+    ArticleRefreshNotifier.bump();
+    setState(() {
+      _error = null;
+      _future = _load();
+    });
+  }
+
+  /// 管理員下架這篇文章。下架後 App 內找不回來，所以給一次「復原」的機會（重新發布）。
+  Future<void> _adminArchive() async {
+    final article = _article;
+    if (article == null) return;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '下架「${article.title}」？',
+      message: '下架後使用者看不到這篇文章，也無法在 App 內找回。',
+      confirmText: '下架',
+    );
+    if (!confirmed || !mounted) return;
+    try {
+      await AdminService.archiveArticle(article.id);
+    } catch (e) {
+      if (mounted) handleAdminError(context, e);
+      return;
+    }
+    ArticleRefreshNotifier.bump();
+    showAdminMessage(
+      '已下架',
+      action: (
+        label: '復原',
+        onPressed: () async {
+          try {
+            await AdminService.publishArticle(article.id);
+            ArticleRefreshNotifier.bump();
+            showAdminMessage('已重新發布');
+          } catch (e) {
+            showAdminMessage(apiErrorMessage(e));
+          }
+        },
+      ),
+    );
+    if (mounted) Navigator.of(context).pop(true);
   }
 
   /// 樂觀更新，API 回傳真實計數後校正；失敗則還原。
@@ -107,6 +169,19 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         backgroundColor: AppColors.midnight,
         foregroundColor: AppColors.cream,
         elevation: 0,
+        actions: [
+          if (_isAdmin && _article != null)
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'edit') _adminEdit();
+                if (value == 'archive') _adminArchive();
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'edit', child: Text('編輯')),
+                PopupMenuItem(value: 'archive', child: Text('下架')),
+              ],
+            ),
+        ],
       ),
       body: FutureBuilder<void>(
         future: _future,
@@ -325,52 +400,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
                         ],
                       ),
                 const SizedBox(height: 20),
-                MarkdownBody(
+                ArticleMarkdown(
                   data: article.contentMd,
-                  styleSheet: MarkdownStyleSheet(
-                    p: TextStyle(
-                      color: AppColors.mist,
-                      fontSize: AppTypography.size(
-                        AppTypography.body,
-                        seniorMode: seniorMode,
-                      ),
-                      height: 1.6,
-                    ),
-                    h1: TextStyle(
-                      color: AppColors.creamLight,
-                      fontSize: AppTypography.size(
-                        AppTypography.title,
-                        seniorMode: seniorMode,
-                      ),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    h2: TextStyle(
-                      color: AppColors.creamLight,
-                      fontSize: AppTypography.size(
-                        AppTypography.subtitle,
-                        seniorMode: seniorMode,
-                      ),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    h3: TextStyle(
-                      color: AppColors.creamLight,
-                      fontSize: AppTypography.size(
-                        AppTypography.bodyLarge,
-                        seniorMode: seniorMode,
-                      ),
-                      fontWeight: FontWeight.w600,
-                    ),
-                    strong: TextStyle(
-                      color: AppColors.creamLight,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    a: TextStyle(color: AppColors.gold),
-                    blockquote: TextStyle(color: AppColors.fog),
-                    blockquoteDecoration: BoxDecoration(
-                      color: AppColors.midnightSoft,
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
+                  seniorMode: seniorMode,
                 ),
               ],
             ),

@@ -520,6 +520,78 @@ void main() {
       shape: {'popular': F.list},
     ));
   });
+
+  // 管理員後台（唯讀 GET）。要用 role == 'admin' 的帳號錄，否則整組略過。
+  // 只錄讀取：PATCH／POST 會真的改角色、發文章、發條款，回應依規格手寫。
+  group('API Inspector — 管理員後台（需 admin 帳號）', () {
+    void adminTest(String name, Future<void> Function(int myUid) body) {
+      test(name, () async {
+        if (_token == null) {
+          markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+          return;
+        }
+        final me = await _fetchMe();
+        if (me?['role'] != 'admin') {
+          markTestSkipped('這個帳號不是 admin，略過後台端點');
+          return;
+        }
+        await body(me!['uid'] as int);
+      });
+    }
+
+    adminTest('GET /api/admin/forum/reports', (_) => _inspect(
+      'GET',
+      ApiConfig.adminForumReports,
+      shape: {'reports': F.list},
+    ));
+    adminTest('GET /api/admin/moderation/cases', (_) => _inspect(
+      'GET',
+      ApiConfig.adminModerationCases,
+      shape: {'cases': F.list},
+    ));
+    adminTest('GET /api/admin/users/roles', (_) => _inspect(
+      'GET',
+      ApiConfig.adminUsersRoles,
+      shape: {'users': F.list},
+    ));
+    adminTest('GET /api/admin/mutes', (_) => _inspect(
+      'GET',
+      ApiConfig.adminMutes,
+      shape: {'mutes': F.list},
+    ));
+    adminTest('GET /api/admin/banned-words', (_) => _inspect(
+      'GET',
+      ApiConfig.adminBannedWords,
+      shape: {'words': F.list},
+    ));
+    adminTest('GET /api/admin/question-reports', (_) => _inspect(
+      'GET',
+      ApiConfig.adminQuestionReports,
+      shape: {'reports': F.list},
+    ));
+    adminTest('GET /api/admin/millet/transactions (查自己)', (uid) => _inspect(
+      'GET',
+      '${ApiConfig.adminMilletTransactions}?uid=$uid',
+      shape: {'transactions': F.list, 'page_info': F.object},
+      fixtureAs: 'get_api_admin_millet_transactions.json',
+    ));
+    adminTest('GET /api/admin/millet/reconcile (查自己)', (uid) => _inspect(
+      'GET',
+      '${ApiConfig.adminMilletReconcile}?uid=$uid',
+      shape: {'ledger_sum': F.number, 'user_millet': F.number, 'ok': F.boolean},
+      fixtureAs: 'get_api_admin_millet_reconcile.json',
+    ));
+  });
+}
+
+Future<Map<String, dynamic>?> _fetchMe() async {
+  final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.me}');
+  final response = await http.get(uri, headers: {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $_token',
+  });
+  if (response.statusCode != 200) return null;
+  return jsonDecode(response.body) as Map<String, dynamic>;
 }
 
 /// 打 /api/events?scope=all 找第一筆 effective_status == 'ended' 的活動 id。

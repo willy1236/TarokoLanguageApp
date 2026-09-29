@@ -7,11 +7,14 @@ import '../../models/event_model.dart';
 import '../../models/shop_item.dart';
 import '../../shared/share_text_file.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/admin_service.dart';
 import '../../services/event_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
+import '../admin/admin_error.dart';
+import '../admin/widgets/admin_reason_dialog.dart';
 import '../forum/widgets/forum_report_sheet.dart';
 import 'event_compose_screen.dart';
 import 'widgets/event_action_bar.dart';
@@ -336,6 +339,25 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
+  /// 管理員直接下架他人的活動：活動隱藏並送進違規區等另一位管理員二審。
+  Future<void> _adminRemove() async {
+    final input = await promptAdminReason(
+      context,
+      title: '管理員下架活動',
+      description: '活動會立刻隱藏、未送出的提醒一併取消，並送進違規區等另一位管理員二審。',
+      confirmMessage: '確定下架這個活動？',
+      confirmText: '下架',
+    );
+    if (input == null || !mounted) return;
+    try {
+      await AdminService.removeEvent(widget.eventId, input.reason);
+      showAdminMessage('已下架，等待其他管理員二審');
+      if (mounted) Navigator.pop(context, true); // 通知活動列表刷新
+    } catch (e) {
+      if (mounted) handleAdminError(context, e);
+    }
+  }
+
   void _snack(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(
@@ -517,6 +539,19 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                     icon: const Icon(Icons.flag_outlined, size: 18),
                     label: const Text('檢舉此活動'),
                     style: TextButton.styleFrom(foregroundColor: AppColors.fog),
+                  ),
+                ),
+              ),
+            if (!e.isHost && (UserService.cachedUser?.isAdmin ?? false))
+              SliverToBoxAdapter(
+                child: Center(
+                  child: TextButton.icon(
+                    onPressed: _adminRemove,
+                    icon: const Icon(Icons.gavel_outlined, size: 18),
+                    label: const Text('管理員下架'),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.dangerDark,
+                    ),
                   ),
                 ),
               ),

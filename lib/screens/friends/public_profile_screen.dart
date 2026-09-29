@@ -16,19 +16,29 @@ import '../../models/friend_model.dart';
 import '../../models/public_profile_model.dart';
 import '../../models/shop_item.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/admin_service.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../shared/widgets/user_avatar.dart';
+import '../admin/admin_error.dart';
+import '../admin/widgets/admin_reason_dialog.dart';
 import '../chat/chat_screen.dart';
 import '../forum/widgets/forum_report_sheet.dart';
 import 'widgets/bond_level_badge.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 
-enum _ProfileAction { addFriend, removeFriend, block, unblock, report }
+enum _ProfileAction {
+  addFriend,
+  removeFriend,
+  block,
+  unblock,
+  report,
+  adminReset,
+}
 
 enum _Relationship { friend, blocked, stranger }
 
@@ -153,7 +163,16 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             iconSize: AppIconSize.action(seniorModeController.enabled),
             icon: const Icon(Icons.more_vert, color: AppColors.ink),
             onSelected: _handleAction,
-            itemBuilder: (context) => _menuItemsFor(_relationship!),
+            itemBuilder: (context) => [
+              ..._menuItemsFor(_relationship!),
+              // 後台端點只收 uid；開關開啟後一般帳號拿不到 uid，這時不提供。
+              if ((UserService.cachedUser?.isAdmin ?? false) &&
+                  _profile?.uid != null)
+                const PopupMenuItem(
+                  value: _ProfileAction.adminReset,
+                  child: Text('重設個人檔案'),
+                ),
+            ],
           ),
       ],
     ),
@@ -217,6 +236,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       );
       return;
     }
+    if (action == _ProfileAction.adminReset) return _adminResetProfile();
     if (action == _ProfileAction.block && !await _confirmBlock()) return;
     try {
       switch (action) {
@@ -233,6 +253,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           _showMessage('已封鎖此使用者');
           break;
         case _ProfileAction.report:
+        case _ProfileAction.adminReset:
           break;
         case _ProfileAction.unblock:
           await FriendService.unblockUser(profile.friendCode);
@@ -246,6 +267,28 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       debugPrint('Failed to $action on public profile: $e');
       debugPrintStack(stackTrace: st);
       _showMessage('操作失敗，請稍後再試');
+    }
+  }
+
+  /// 管理員直接重設他人個人檔案：指定欄位立即改回預設值，並送進違規區等二審。
+  Future<void> _adminResetProfile() async {
+    final uid = _profile?.uid;
+    if (uid == null) return;
+    final input = await promptAdminReason(
+      context,
+      title: '重設個人檔案',
+      description: '勾選的欄位會立刻改回預設值，並送進違規區等另一位管理員二審；撤銷時會自動還原。',
+      confirmMessage: '確定重設這位使用者的個人檔案？',
+      confirmText: '重設',
+      profileFields: true,
+    );
+    if (input == null || !mounted) return;
+    try {
+      await AdminService.resetProfile(uid, input.reason, fields: input.fields);
+      showAdminMessage('已重設，等待其他管理員二審');
+      if (mounted) await _load();
+    } catch (e) {
+      if (mounted) handleAdminError(context, e);
     }
   }
 

@@ -181,6 +181,9 @@ class UserModel {
 
   bool get canCreateEvent => role == 'organizer' || role == 'admin';
 
+  /// 管理員：App 內才會出現後台入口與「管理員下架」等操作。
+  bool get isAdmin => role == 'admin';
+
   /// 以台灣時間今天判斷是否滿 18 歲（可否隨機配對）；沒有生日回 null，交給後端判斷。
   bool? get isAdult =>
       birthDate == null ? null : isAdultOn(birthDate!, taiwanToday());

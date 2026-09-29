@@ -178,4 +178,43 @@ class ApiConfig {
       '/api/friends/$friendCode/messages/read';
   static String friendMessageReport(int id) =>
       '/api/friends/messages/$id/report';
+
+  // 管理員後台（見 Truku_backend 說明文件/API/內部管理.md §4～§8.9、安全防護.md「後台端點」）。
+  // 一律以 uid 指定使用者，只有 role == 'admin' 的帳號呼叫得動。
+  static const String adminForumReports = '/api/admin/forum/reports';
+  static String adminForumReportResolve(int id) =>
+      '/api/admin/forum/reports/$id/resolve';
+  static const String adminModerationCases = '/api/admin/moderation/cases';
+  static String adminModerationCaseReview(int id) =>
+      '/api/admin/moderation/cases/$id/review';
+  static const String adminUsersRoles = '/api/admin/users/roles';
+  static String adminUserRole(int uid) => '/api/admin/users/$uid/role';
+  static String adminUserUnlock(int uid) => '/api/admin/users/$uid/unlock';
+  static String adminUserProfileReset(int uid) =>
+      '/api/admin/users/$uid/profile/reset';
+  static String adminUserBirthDate(int uid) =>
+      '/api/admin/users/$uid/birth-date';
+  static String adminForumPostRemove(int id) =>
+      '/api/admin/forum/posts/$id/remove';
+  static String adminForumPostPin(int id) => '/api/admin/forum/posts/$id/pin';
+  static String adminForumCommentRemove(int id) =>
+      '/api/admin/forum/comments/$id/remove';
+  static String adminEventRemove(int id) => '/api/admin/events/$id/remove';
+  static const String adminMutes = '/api/admin/mutes';
+  static String adminMuteLift(int id) => '/api/admin/mutes/$id/lift';
+  static const String adminBannedWords = '/api/admin/banned-words';
+  static String adminBannedWord(int id) => '/api/admin/banned-words/$id';
+  static const String adminQuestionReports = '/api/admin/question-reports';
+  static String adminQuestionReport(int id) =>
+      '/api/admin/question-reports/$id';
+  static const String adminMilletTransactions =
+      '/api/admin/millet/transactions';
+  static const String adminMilletReconcile = '/api/admin/millet/reconcile';
+  static const String adminArticles = '/api/admin/articles';
+  static String adminArticle(int id) => '/api/admin/articles/$id';
+  static String adminArticlePublish(int id) =>
+      '/api/admin/articles/$id/publish';
+  static String adminArticleArchive(int id) =>
+      '/api/admin/articles/$id/archive';
+  static const String adminTerms = '/api/admin/terms';
 }
