@@ -203,6 +203,7 @@ void main() {
         _host(() => const AdminArticleFormScreen(), result),
       );
       await _open(tester);
+      final revision = ArticleRefreshNotifier.revision.value;
 
       await tester.enterText(find.widgetWithText(TextField, '標題（必填）'), '新文章');
       await tester.enterText(
@@ -212,6 +213,7 @@ void main() {
       await tester.tap(find.text('發布'));
       await tester.pumpAndSettle();
 
+      expect(ArticleRefreshNotifier.revision.value, revision + 1);
       expect(sent?['status'], 'published');
       expect(sent?['category'], 'tribal_intro');
       expect(find.text('已發布'), findsOneWidget);

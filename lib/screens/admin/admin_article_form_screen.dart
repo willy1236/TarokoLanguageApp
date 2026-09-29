@@ -12,6 +12,7 @@ import '../../core/constants/app_typography.dart';
 import '../../models/article_models.dart';
 import '../../models/tribe_model.dart';
 import '../../services/admin_service.dart';
+import '../../services/article_refresh_notifier.dart';
 import '../../services/user_service.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/confirm_dialog.dart';
@@ -112,6 +113,8 @@ class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
         tribeId: _tribeId,
         publish: publish,
       );
+      // 文化頁活在 IndexedStack 內不會自己重抓，發布的文章要通知它刷新。
+      if (publish) ArticleRefreshNotifier.bump();
       showAdminMessage(publish ? '已發布' : '草稿已儲存');
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
