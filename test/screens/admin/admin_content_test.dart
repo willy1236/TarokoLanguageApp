@@ -437,8 +437,9 @@ void main() {
           '/api/admin/terms': {'id': 1, 'doc_type': 'tos', 'version': 5},
         },
         onRequest: (r) {
-          if (r.method == 'POST')
+          if (r.method == 'POST') {
             sent = jsonDecode(r.body) as Map<String, dynamic>;
+          }
         },
       );
       final result = <Object?>[];
