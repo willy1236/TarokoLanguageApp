@@ -518,7 +518,7 @@ void main() {
   group('發起人刪除活動', () {
     Future<void> deleteAs(WidgetTester tester, Object? deleteBody) async {
       final farFuture = {
-        ..._detail(hostUid: _myUid),
+        ..._detail(isHost: true),
         'starts_at': '2099-12-01T10:00:00Z',
       };
       ApiClient.httpClient = MockClient((request) async {
