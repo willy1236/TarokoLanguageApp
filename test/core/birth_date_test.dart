@@ -30,6 +30,7 @@ void main() {
       expect(parseApiDate(null), isNull);
       expect(parseApiDate('1995-03-15T00:00:00Z'), isNull);
       expect(parseApiDate(19950315), isNull);
+      expect(parseApiDate('2026-02-30'), isNull);
     });
   });
 

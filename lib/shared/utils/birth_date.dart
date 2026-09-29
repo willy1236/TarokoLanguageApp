@@ -23,12 +23,14 @@ String formatApiDate(DateTime d) =>
 String formatDisplayDate(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}/${_two(d.month)}/${_two(d.day)}';
 
-/// 解析後端的 `YYYY-MM-DD`，格式不符回 null。
+/// 解析後端的 `YYYY-MM-DD`，格式不符或日期不存在（如 2/30）回 null。
 DateTime? parseApiDate(Object? value) {
   if (value is! String) return null;
   final m = RegExp(r'^(\d{4})-(\d{2})-(\d{2})$').firstMatch(value);
   if (m == null) return null;
-  return DateTime(int.parse(m[1]!), int.parse(m[2]!), int.parse(m[3]!));
+  final date = DateTime(int.parse(m[1]!), int.parse(m[2]!), int.parse(m[3]!));
+  // DateTime 會把 2/30 進位成 3/2，轉回字串不一致就是不存在的日期。
+  return formatApiDate(date) == value ? date : null;
 }
 
 /// [today] 當天是否已滿 18 歲；生日當天算滿，2/29 出生者非閏年 3/1 起算。
