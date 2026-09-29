@@ -41,3 +41,17 @@ List<Map<String, dynamic>> loadFixtureList(String name, String key) {
 Map<String, dynamic> loadSpecFixtureMap(String name) =>
     jsonDecode(File('test/fixtures/api_spec/$name').readAsStringSync())
         as Map<String, dynamic>;
+
+/// 開關開啟後回應裡不會再出現的「他人 uid」欄位（規格 00_核心與認證.md §0）。
+const removedUidKeys = {
+  'uid',
+  'peer_uid',
+  'caller_uid',
+  'callee_uid',
+  'partner_uid',
+  'sender_uid',
+  'recipient_uid',
+  'host_uid',
+  'from_uid',
+  'by_uid',
+};

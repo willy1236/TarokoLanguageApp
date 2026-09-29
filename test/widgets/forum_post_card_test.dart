@@ -25,7 +25,7 @@ ForumPost buildPost({
   tags: tags,
   createdAt: DateTime.now().subtract(const Duration(hours: 3)),
   updatedAt: DateTime.now(),
-  author: const ForumAuthor(uid: 7, displayName: 'Sayun'),
+  author: const ForumAuthor(displayName: 'Sayun'),
 );
 
 Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));

@@ -124,8 +124,11 @@ class EventDetailBody extends StatelessWidget {
                 size: seniorMode ? 40 : 30,
                 fallbackIconColor: AppColors.primary,
                 // 發起人就是自己時，換頭像後不必重載活動就跟著換（貼文／活動的
-                // 作者欄都是當下的快照，見 FramedUserAvatar.userUid）。
-                userUid: isHost ? UserService.currentUid : null,
+                // 作者欄都是當下的快照，見 FramedUserAvatar.userFriendCode）。
+                // 名單不帶好友碼，但只有發起人看得到名單，是自己就用自己的。
+                userFriendCode: isHost
+                    ? UserService.cachedUser?.friendCode
+                    : null,
                 fallback: Container(
                   color: AppColors.primary.withValues(alpha: 0.12),
                   alignment: Alignment.center,

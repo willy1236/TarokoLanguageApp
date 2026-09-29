@@ -8,31 +8,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/models/friend_message_model.dart';
 import 'package:flutter_application_1/models/friend_model.dart';
+import 'package:flutter_application_1/models/public_profile_model.dart';
 import 'package:flutter_application_1/models/video_call_model.dart';
 import 'package:flutter_application_1/services/chat_socket_service.dart';
 
 import '../helpers/fixtures.dart';
-
-/// 開關開啟後回應裡不會再出現的「他人 uid」欄位（規格 00_核心與認證.md §0）。
-const _removedUidKeys = {
-  'uid',
-  'peer_uid',
-  'caller_uid',
-  'callee_uid',
-  'partner_uid',
-  'sender_uid',
-  'recipient_uid',
-  'host_uid',
-  'from_uid',
-  'by_uid',
-};
 
 /// fixture 本身不能含他人 uid，否則測不出 App 是否還依賴它。
 void expectNoOthersUid(Object? json) {
   if (json is Map) {
     for (final entry in json.entries) {
       expect(
-        _removedUidKeys.contains(entry.key),
+        removedUidKeys.contains(entry.key),
         isFalse,
         reason: 'fixture 不該帶 ${entry.key}',
       );
@@ -182,5 +169,16 @@ void main() {
 
     expect(event.isHost, isTrue);
     expect(event.participants.map((p) => p.isHost), [true, false]);
+  });
+
+  test('公開個人頁：以好友碼識別，精選好友沒有識別碼也能顯示', () {
+    final json = loadSpecFixtureMap('get_api_users_friend_code.json');
+    expectNoOthersUid(json);
+
+    final profile = PublicProfile.fromJson(json);
+
+    expect(profile.friendCode, 'A3K9XM7P');
+    expect(profile.uid, isNull);
+    expect(profile.bondShowcase.single.nickname, '阿華');
   });
 }

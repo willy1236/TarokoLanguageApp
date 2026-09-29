@@ -15,7 +15,7 @@ import '../../../shared/utils/utf16_length_limit.dart';
 Future<void> showForumReportSheet(
   BuildContext context, {
   required String targetType,
-  required int targetId,
+  required Object targetId,
 }) => showModalBottomSheet<void>(
   context: context,
   isScrollControlled: true,
@@ -31,7 +31,7 @@ Future<void> showForumReportSheet(
 
 class _ReportSheet extends StatefulWidget {
   final String targetType;
-  final int targetId;
+  final Object targetId;
 
   const _ReportSheet({required this.targetType, required this.targetId});
 

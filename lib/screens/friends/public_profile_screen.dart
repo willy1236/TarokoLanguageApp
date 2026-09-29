@@ -210,7 +210,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       await showForumReportSheet(
         context,
         targetType: 'profile',
-        targetId: profile.uid,
+        targetId: profile.friendCode,
       );
       return;
     }

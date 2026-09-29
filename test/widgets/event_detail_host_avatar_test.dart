@@ -66,6 +66,7 @@ void main() {
     UserService.currentUid = _hostUid;
     UserService.userNotifier.value = UserModel(
       uid: _hostUid,
+      friendCode: 'HOST2345',
       email: 'host@example.com',
       createdAt: DateTime(2026),
       avatarUrl: _currentUrl,

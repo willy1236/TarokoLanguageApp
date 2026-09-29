@@ -223,7 +223,7 @@ void main() {
       isLiked: false,
       isDeleted: false,
       createdAt: DateTime.parse('2026-08-01T11:00:00.000Z'),
-      author: const ForumAuthor(uid: 1, displayName: 'A'),
+      author: const ForumAuthor(displayName: 'A'),
     );
 
     test('回覆掛到所屬的第一層留言底下', () {

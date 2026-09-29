@@ -14,10 +14,9 @@ class BondLevel {
 }
 
 /// 雙方皆同意展示的一位羈絆好友（bond_showcase 陣列中的一筆，最多 4 筆）。
-/// 後端刻意不回 friend_code，不能從這裡跳到對方公開頁；清單會依檢視者的
+/// 後端刻意不回任何識別碼，不能從這裡跳到對方公開頁；清單會依檢視者的
 /// 封鎖關係過濾，不可當成跨使用者共用的快取。
 class BondShowcaseItem {
-  final int uid;
   final String? nickname;
   final String? avatarUrl;
   final String? avatarId;
@@ -25,7 +24,6 @@ class BondShowcaseItem {
   final BondLevel bondLevel;
 
   const BondShowcaseItem({
-    required this.uid,
     this.nickname,
     this.avatarUrl,
     this.avatarId,
@@ -34,7 +32,6 @@ class BondShowcaseItem {
   });
 
   factory BondShowcaseItem.fromJson(Map<String, dynamic> j) => BondShowcaseItem(
-    uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
     avatarUrl: j['avatar_url'] as String?,
     avatarId: j['avatar_id'] as String?,
@@ -46,7 +43,9 @@ class BondShowcaseItem {
 }
 
 class PublicProfile {
-  final int uid;
+  /// 只給管理員後台重設個人檔案用，一般畫面以 [friendCode] 識別；後端開關
+  /// FRIEND_CODE_ENFORCE 開啟後一般使用者拿不到，為 null。
+  final int? uid;
   final String? nickname;
   final String friendCode;
   final String? selfIntro;
@@ -57,7 +56,7 @@ class PublicProfile {
   final List<BondShowcaseItem> bondShowcase;
 
   const PublicProfile({
-    required this.uid,
+    this.uid,
     this.nickname,
     required this.friendCode,
     this.selfIntro,
@@ -69,7 +68,7 @@ class PublicProfile {
   });
 
   factory PublicProfile.fromJson(Map<String, dynamic> j) => PublicProfile(
-    uid: (j['uid'] as num?)?.toInt() ?? 0,
+    uid: (j['uid'] as num?)?.toInt(),
     nickname: j['nickname'] as String?,
     friendCode: j['friend_code'] as String? ?? '',
     selfIntro: j['self_intro'] as String?,

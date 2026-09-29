@@ -131,7 +131,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   Map<String, ShopItem> _itemCatalogById = const {};
 
-  bool get _isMine => _post?.author.uid == UserService.currentUid;
+  bool get _isMine => UserService.isMe(_post?.author.friendCode);
 
   Future<void> _loadItemCatalog() async {
     try {
@@ -718,7 +718,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
             ForumCommentTile(
               comment: thread.root,
               isReply: false,
-              isMine: thread.root.author?.uid == UserService.currentUid,
+              isMine: UserService.isMe(thread.root.author?.friendCode),
               onLike: () => _likeComment(thread.root),
               onReply: locked
                   ? null
@@ -737,7 +737,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               ForumCommentTile(
                 comment: reply,
                 isReply: true,
-                isMine: reply.author?.uid == UserService.currentUid,
+                isMine: UserService.isMe(reply.author?.friendCode),
                 onLike: () => _likeComment(reply),
                 // 論壇只有兩層：回覆「回覆」時，parent 仍是第一層那則。
                 onReply: locked

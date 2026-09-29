@@ -21,7 +21,7 @@ ForumPost post(int id, {int likeCount = 0, bool isLiked = false}) => ForumPost(
   tags: const [],
   createdAt: DateTime.now(),
   updatedAt: DateTime.now(),
-  author: const ForumAuthor(uid: 7, displayName: 'Sayun'),
+  author: const ForumAuthor(displayName: 'Sayun'),
 );
 
 Widget wrap(Widget child) => MaterialApp(
