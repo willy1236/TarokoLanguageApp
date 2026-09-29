@@ -56,4 +56,22 @@ void main() {
     expect(seen.where((r) => r.method == 'DELETE'), isEmpty);
     expect(find.text('暫時無法使用'), findsOneWidget);
   });
+
+  testWidgets('沒有好友碼就不顯示刪除鈕', (tester) async {
+    final json = loadSpecFixtureMap('get_api_friends.json');
+    for (final f in (json['friends'] as List).cast<Map<String, dynamic>>()) {
+      if (f['unavailable'] == true) f['friend_code'] = null;
+    }
+    installMockClient({
+      '/api/friends': json,
+      '/api/friends/messages': {'conversations': []},
+      '/api/shop/items': {'items': []},
+    });
+
+    await tester.pumpWidget(wrapScreen(const FriendsListScreen()));
+    await pumpFrames(tester);
+
+    expect(find.text('暫時無法使用'), findsOneWidget);
+    expect(find.byTooltip('刪除好友'), findsNothing);
+  });
 }

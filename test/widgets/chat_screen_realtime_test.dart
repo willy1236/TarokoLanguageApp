@@ -77,7 +77,7 @@ void main() {
     expect(find.text('別人的訊息'), findsNothing);
   });
 
-  testWidgets('這位對象的已讀把我傳的標成已讀；訊息接到最下面', (tester) async {
+  testWidgets('這位對象的已讀讓我最後一則顯示已讀；訊息接到最下面', (tester) async {
     await open(tester);
 
     emit({'type': 'read', 'by_friend_code': 'bbbb2345', 'count': 1});
