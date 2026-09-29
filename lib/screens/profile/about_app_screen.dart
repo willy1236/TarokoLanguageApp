@@ -45,7 +45,10 @@ class AboutAppScreen extends StatelessWidget {
       body: CustomScrollView(
         slivers: [
           SliverToBoxAdapter(child: _buildHero(context, seniorMode)),
-          SliverToBoxAdapter(child: _buildBody(seniorMode)),
+          SliverSafeArea(
+            top: false,
+            sliver: SliverToBoxAdapter(child: _buildBody(seniorMode)),
+          ),
         ],
       ),
     );
