@@ -1,0 +1,15 @@
+{
+  "_source": "Truku_backend 說明文件/API/用戶視訊.md §1（FRIEND_CODE_ENFORCE 開啟後格式）",
+  "matched": true,
+  "session": {
+    "id": 12,
+    "channel": "vs_00000000-0000-0000-0000-000000000000",
+    "peer_friend_code": "CCCC2345",
+    "peer_nickname": "獵人阿明",
+    "expires_at": "2026-07-31T10:30:00Z"
+  },
+  "token": "<agora-rtc-token>",
+  "app_id": "<agora-app-id>",
+  "uid": 1,
+  "agora_uid": 1
+}

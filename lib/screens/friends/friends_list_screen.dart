@@ -42,7 +42,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   List<Friendship>? _friends;
   bool _loading = true;
   Map<String, ShopItem> _itemCatalogById = const {};
-  Map<int, Conversation> _conversationsByUid = const {};
+  Map<String, Conversation> _conversationsByCode = const {};
 
   @override
   void initState() {
@@ -75,7 +75,9 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       final conversations = await FriendService.getConversations();
       if (!mounted) return;
       setState(() {
-        _conversationsByUid = {for (final c in conversations) c.partnerUid: c};
+        _conversationsByCode = {
+          for (final c in conversations) c.friendCode.toUpperCase(): c,
+        };
       });
     } catch (e) {
       debugPrint('Failed to fetch conversations: $e');
@@ -138,12 +140,11 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   Future<void> _chatWithFriend(Friendship f) async {
     await Navigator.of(context).push(
       ChatScreen.route(
-        partnerUid: f.uid,
+        friendCode: f.friendCode,
         partnerNickname: f.nickname,
         partnerAvatarUrl: f.avatarUrl,
         avatarId: f.avatarId,
         frameId: f.frameId,
-        friendCode: f.friendCode,
       ),
     );
     if (mounted) _load();
@@ -176,18 +177,20 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     });
     try {
       if (requesting) {
-        final result = await FriendService.setShowcase(f.uid);
+        final result = await FriendService.setShowcase(f.friendCode);
         if (!mounted) return;
         setState(() {
           final current = _friends;
           if (current == null) return;
-          final i = current.indexWhere((e) => e.uid == f.uid);
+          final i = current.indexWhere(
+            (e) => sameFriendCode(e.friendCode, f.friendCode),
+          );
           if (i == -1) return;
           _friends = List<Friendship>.from(current)
             ..[i] = current[i].copyWith(showcase: result);
         });
       } else {
-        await FriendService.unsetShowcase(f.uid);
+        await FriendService.unsetShowcase(f.friendCode);
       }
     } on ApiException catch (e) {
       if (!mounted) return;
@@ -198,6 +201,33 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
       debugPrintStack(stackTrace: st);
       if (!mounted) return;
       setState(() => _friends = previous);
+      _showError('操作失敗，請稍後再試');
+    }
+  }
+
+  /// 帳號暫時無法使用的好友進不了公開檔案，解除好友只能從列表這裡做。
+  Future<void> _removeUnavailableFriend(Friendship f) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '刪除這位好友？',
+      message: '對方帳號目前無法使用。刪除後若要再當好友，需要重新送出邀請。',
+      cancelText: '取消',
+      confirmText: '刪除',
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await FriendService.removeFriend(f.friendCode);
+      if (!mounted) return;
+      setState(() {
+        _friends = _friends
+            ?.where((e) => !sameFriendCode(e.friendCode, f.friendCode))
+            .toList();
+      });
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (e, st) {
+      debugPrint('Failed to remove unavailable friend: $e');
+      debugPrintStack(stackTrace: st);
       _showError('操作失敗，請稍後再試');
     }
   }
@@ -303,7 +333,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
   Widget _friendCard(Friendship f, bool seniorMode) {
     if (f.unavailable) return _unavailableFriendCard(f, seniorMode);
-    final conversation = _conversationsByUid[f.uid];
+    final conversation = _conversationsByCode[f.friendCode.toUpperCase()];
     // 整列點擊直接進聊天室（原本是進公開檔案，另有一顆聊天鈕，兩者重複且
     // 小按鈕在實機容易誤觸）。要看公開檔案改從聊天室標題列的暱稱進入。
     return GestureDetector(
@@ -420,6 +450,17 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                 ],
               ),
             ),
+            // 沒有好友碼就無從指定對象，不給按（後端 2026-09-29 起都會給）。
+            if (f.friendCode.isNotEmpty)
+              IconButton(
+                tooltip: '刪除好友',
+                onPressed: () => _removeUnavailableFriend(f),
+                iconSize: AppIconSize.action(seniorMode),
+                icon: const Icon(
+                  Icons.person_remove_outlined,
+                  color: AppColors.ink,
+                ),
+              ),
           ],
         ),
       ),

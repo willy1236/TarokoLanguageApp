@@ -71,7 +71,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
       _error = null;
     });
     try {
-      final status = await FriendService.sendRequest(friendCode: code);
+      final status = await FriendService.sendRequest(code);
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(status == 'accepted' ? '你們已成為好友！' : '已送出好友邀請')),

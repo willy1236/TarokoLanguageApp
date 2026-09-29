@@ -15,12 +15,12 @@ import '../community/video_call_screen.dart';
 import '../../core/constants/app_typography.dart';
 
 class DirectedCallWaitingScreen extends StatefulWidget {
-  final int calleeUid;
+  final String calleeFriendCode;
   final String? calleeNickname;
 
   const DirectedCallWaitingScreen({
     super.key,
-    required this.calleeUid,
+    required this.calleeFriendCode,
     this.calleeNickname,
   });
 
@@ -63,7 +63,9 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
 
   Future<void> _startCall() async {
     try {
-      final callId = await DirectedCallService.callFriend(widget.calleeUid);
+      final callId = await DirectedCallService.callFriend(
+        widget.calleeFriendCode,
+      );
       if (!mounted) {
         // 撥號回應前就離開：dispose 時還沒有 callId 可取消，這裡補取消，
         // 對方的來電畫面才會收到 friend_call_cancelled 關閉。
@@ -89,7 +91,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
         case 'accepted':
           await _navigateToCall(
             status.sessionId!,
-            status.peerUid,
+            status.peerFriendCode,
             status.peerNickname,
           );
           break;
@@ -112,7 +114,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
 
   Future<void> _navigateToCall(
     int sessionId,
-    int peerUid,
+    String peerFriendCode,
     String? peerNickname,
   ) async {
     if (_navigated) return;
@@ -128,7 +130,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
       final session = VideoSession(
         id: sessionId,
         channel: refreshed.channel,
-        peerUid: peerUid,
+        peerFriendCode: peerFriendCode,
         peerNickname: peerNickname,
         expiresAt: refreshed.expiresAt,
       );

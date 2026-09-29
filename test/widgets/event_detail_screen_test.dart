@@ -24,18 +24,17 @@ import 'package:flutter_application_1/shared/widgets/async_state_view.dart';
 import '../helpers/widget_test_helpers.dart';
 
 const int _eventId = 1;
-const int _hostUid = 100;
 const int _myUid = 1;
 
 Map<String, dynamic> _detail({
-  int hostUid = _hostUid,
+  bool isHost = false,
   bool isJoined = false,
   bool isLiked = false,
   int likeCount = 3,
   String effectiveStatus = 'active',
 }) => {
   'id': _eventId,
-  'host_uid': hostUid,
+  'is_host': isHost,
   'title': '部落豐年祭',
   'description': '一起來跳舞',
   'starts_at': '2026-12-01T10:00:00Z',
@@ -380,7 +379,7 @@ void main() {
 
     testWidgets('發起人看自己的活動不顯示報名時間', (tester) async {
       await pumpDetail(tester, {
-        'host_uid': _myUid,
+        'is_host': true,
         'is_joined': true,
         'my_registration': {
           'joined_at': '2026-11-20T02:30:00Z',

@@ -23,19 +23,61 @@ enum ChatSocketEventType { connected, message, read }
 class ChatSocketEvent {
   final ChatSocketEventType type;
   final FriendMessage? message;
-  final int? byUid;
+
+  /// 事件來自哪位對象：message 是傳訊者、read 是讀了我訊息的人，用來判斷
+  /// 屬於哪個聊天室。
+  final String? friendCode;
   final int? count;
 
-  const ChatSocketEvent._(this.type, {this.message, this.byUid, this.count});
+  const ChatSocketEvent._(
+    this.type, {
+    this.message,
+    this.friendCode,
+    this.count,
+  });
 
   factory ChatSocketEvent.connected() =>
       const ChatSocketEvent._(ChatSocketEventType.connected);
 
-  factory ChatSocketEvent.message(FriendMessage message) =>
-      ChatSocketEvent._(ChatSocketEventType.message, message: message);
+  factory ChatSocketEvent.message(
+    FriendMessage message, {
+    required String fromFriendCode,
+  }) => ChatSocketEvent._(
+    ChatSocketEventType.message,
+    message: message,
+    friendCode: fromFriendCode,
+  );
 
-  factory ChatSocketEvent.read({required int byUid, required int count}) =>
-      ChatSocketEvent._(ChatSocketEventType.read, byUid: byUid, count: count);
+  factory ChatSocketEvent.read({
+    required String byFriendCode,
+    required int count,
+  }) => ChatSocketEvent._(
+    ChatSocketEventType.read,
+    friendCode: byFriendCode,
+    count: count,
+  );
+
+  /// 伺服器推來的一則事件；不認得的類型或格式不對回 null。
+  static ChatSocketEvent? fromJson(Map<String, dynamic> json) {
+    switch (json['type']) {
+      case 'connected':
+        return ChatSocketEvent.connected();
+      case 'message':
+        final m = json['message'];
+        return m is Map<String, dynamic>
+            ? ChatSocketEvent.message(
+                FriendMessage.fromJson(m),
+                fromFriendCode: json['from_friend_code'] as String? ?? '',
+              )
+            : null;
+      case 'read':
+        return ChatSocketEvent.read(
+          byFriendCode: json['by_friend_code'] as String? ?? '',
+          count: (json['count'] as num?)?.toInt() ?? 0,
+        );
+    }
+    return null;
+  }
 }
 
 class ChatController extends ChangeNotifier {
@@ -63,6 +105,10 @@ class ChatController extends ChangeNotifier {
   @visibleForTesting
   void debugSimulateClosed(int? closeCode, String? closeReason) =>
       _onClosed(closeCode, closeReason);
+
+  /// 模擬伺服器推來一則事件（原始 JSON 字串），不必真的連 WebSocket。
+  @visibleForTesting
+  void debugSimulateData(String raw) => _onData(raw);
 
   Future<void> connect() async {
     if (_channel != null) return;
@@ -112,28 +158,14 @@ class ChatController extends ChangeNotifier {
       debugPrint('ChatController: 無法解析 WS 訊息：$raw');
       return;
     }
-    switch (json['type']) {
-      case 'connected':
-        _reconnectAttempts = 0;
-        _refreshedForExpiry = false;
-        lastEvent = ChatSocketEvent.connected();
-        notifyListeners();
-        break;
-      case 'message':
-        final m = json['message'];
-        if (m is Map<String, dynamic>) {
-          lastEvent = ChatSocketEvent.message(FriendMessage.fromJson(m));
-          notifyListeners();
-        }
-        break;
-      case 'read':
-        lastEvent = ChatSocketEvent.read(
-          byUid: (json['by_uid'] as num?)?.toInt() ?? 0,
-          count: (json['count'] as num?)?.toInt() ?? 0,
-        );
-        notifyListeners();
-        break;
+    final event = ChatSocketEvent.fromJson(json);
+    if (event == null) return;
+    if (event.type == ChatSocketEventType.connected) {
+      _reconnectAttempts = 0;
+      _refreshedForExpiry = false;
     }
+    lastEvent = event;
+    notifyListeners();
   }
 
   void _onClosed(int? closeCode, String? closeReason) {

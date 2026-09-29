@@ -6,8 +6,7 @@ import 'package:flutter_application_1/models/friend_message_model.dart';
 
 FriendMessage msg(int id, {DateTime? readAt}) => FriendMessage(
   id: id,
-  senderUid: 1,
-  recipientUid: 2,
+  mine: true,
   body: 'm$id',
   createdAt: DateTime(2026, 9, 28),
   readAt: readAt,

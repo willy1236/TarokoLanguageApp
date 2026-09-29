@@ -1,0 +1,13 @@
+{
+  "_source": "Truku_backend 說明文件/API/00_核心與認證.md §2.3a（FRIEND_CODE_ENFORCE 開啟後格式）",
+  "nickname": "小明",
+  "friend_code": "A3K9XM7P",
+  "self_intro": "我在學太魯閣族語",
+  "avatar_url": "https://example.com/avatar.png",
+  "avatar_id": null,
+  "frame_id": null,
+  "joined_at": "2026-05-01T08:00:00Z",
+  "bond_showcase": [
+    { "nickname": "阿華", "avatar_url": "https://example.com/avatar.png", "avatar_id": null, "frame_id": null, "bond_level": { "level": 3, "name": "語伴" } }
+  ]
+}

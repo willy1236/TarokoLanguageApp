@@ -259,7 +259,37 @@ final List<_Contract> _contracts = [
   ),
 ];
 
+/// 回應裡是自己的 uid，開關開啟後照舊保留，不能剝掉。
+const _ownUidFixtures = {'get_api_me.json', 'patch_api_me.json'};
+
+/// 模擬後端開關 FRIEND_CODE_ENFORCE 開啟：拿掉所有「他人 uid」欄位。
+Object? _withoutOthersUid(Object? json) => switch (json) {
+  Map() => <String, dynamic>{
+    for (final e in json.entries)
+      if (!removedUidKeys.contains(e.key))
+        e.key as String: _withoutOthersUid(e.value),
+  },
+  List() => <dynamic>[for (final e in json) _withoutOthersUid(e)],
+  _ => json,
+};
+
 void main() {
+  group('開關 FRIEND_CODE_ENFORCE 開啟後（錄製回應拿掉他人 uid 再回放）', () {
+    for (final c in _contracts.where(
+      (c) => !_ownUidFixtures.contains(c.fixture),
+    )) {
+      test('${c.fixture} → ${c.model}', () {
+        if (!hasFixture(c.fixture)) {
+          markTestSkipped('尚未錄製 ${c.fixture}');
+          return;
+        }
+        c.parse(
+          _withoutOthersUid(loadFixtureMap(c.fixture)) as Map<String, dynamic>,
+        );
+      });
+    }
+  });
+
   group('後端回應契約（離線回放錄製的真實回應）', () {
     for (final c in _contracts) {
       test('${c.fixture} → ${c.model}', () {

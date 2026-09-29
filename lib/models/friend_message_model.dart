@@ -2,22 +2,30 @@
 
 class FriendMessage {
   final int id;
-  final int senderUid;
-  final int recipientUid;
+
+  /// 是不是我傳的（後端算好，不再帶雙方 uid）。
+  final bool mine;
   final String body;
   final DateTime createdAt;
   final DateTime? readAt;
 
   const FriendMessage({
     required this.id,
-    required this.senderUid,
-    required this.recipientUid,
+    required this.mine,
     required this.body,
     required this.createdAt,
     this.readAt,
   });
 
   bool get isRead => readAt != null;
+
+  FriendMessage markedRead(DateTime at) => FriendMessage(
+    id: id,
+    mine: mine,
+    body: body,
+    createdAt: createdAt,
+    readAt: at,
+  );
 
   static int _toInt(dynamic v) => switch (v) {
     num n => n.toInt(),
@@ -27,8 +35,7 @@ class FriendMessage {
 
   factory FriendMessage.fromJson(Map<String, dynamic> j) => FriendMessage(
     id: _toInt(j['id']),
-    senderUid: (j['sender_uid'] as num?)?.toInt() ?? 0,
-    recipientUid: (j['recipient_uid'] as num?)?.toInt() ?? 0,
+    mine: j['mine'] as bool? ?? false,
     body: j['body'] as String? ?? '',
     createdAt:
         DateTime.tryParse(j['created_at']?.toString() ?? '') ?? DateTime.now(),
@@ -61,9 +68,10 @@ class ConversationPreview {
 }
 
 class Conversation {
-  final int partnerUid;
   final String? nickname;
-  final String? friendCode;
+
+  /// 對話對象的好友碼，開聊天室用。
+  final String friendCode;
   final String? avatarUrl;
   final String? avatarId;
   final String? frameId;
@@ -71,9 +79,8 @@ class Conversation {
   final ConversationPreview? lastMessage;
 
   const Conversation({
-    required this.partnerUid,
     this.nickname,
-    this.friendCode,
+    required this.friendCode,
     this.avatarUrl,
     this.avatarId,
     this.frameId,
@@ -82,9 +89,8 @@ class Conversation {
   });
 
   factory Conversation.fromJson(Map<String, dynamic> j) => Conversation(
-    partnerUid: (j['partner_uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
-    friendCode: j['friend_code'] as String?,
+    friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,

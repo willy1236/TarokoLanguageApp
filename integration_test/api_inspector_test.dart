@@ -265,19 +265,19 @@ void main() {
       ApiConfig.forumCommentLikes,
       shape: {'comments': F.list, 'page_info': F.object},
     ));
-    test('GET /api/friends/:uid/messages (自動挑第一位好友)', () async {
+    test('GET /api/friends/:friend_code/messages (自動挑第一位好友)', () async {
       if (_token == null) {
         markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
         return;
       }
-      final uid = await _firstFriendUid();
-      if (uid == null) {
+      final friendCode = await _firstFriendCode();
+      if (friendCode == null) {
         markTestSkipped('目前沒有好友可測私訊歷史');
         return;
       }
       await _inspect(
         'GET',
-        '${ApiConfig.friendMessages(uid)}?limit=30',
+        '${ApiConfig.friendMessages(friendCode)}?limit=30',
         fixtureAs: 'get_api_friend_messages.json',
         shape: {'messages': F.list, 'page_info': F.object},
       );
@@ -562,8 +562,8 @@ Future<int?> _findMostCommentedPostId() async {
   return id is int ? id : int.tryParse('$id');
 }
 
-/// 打 /api/friends 取第一位好友的 uid，給私訊歷史用。
-Future<int?> _firstFriendUid() async {
+/// 打 /api/friends 取第一位好友的好友碼，給私訊歷史用。
+Future<String?> _firstFriendCode() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.friends}');
   final response = await http.get(uri, headers: {
     'Content-Type': 'application/json',
@@ -573,8 +573,7 @@ Future<int?> _firstFriendUid() async {
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   final friends = decoded['friends'] as List<dynamic>? ?? const [];
   if (friends.isEmpty) return null;
-  final uid = (friends.first as Map<String, dynamic>)['uid'];
-  return uid is int ? uid : int.tryParse('$uid');
+  return (friends.first as Map<String, dynamic>)['friend_code'] as String?;
 }
 
 /// 取 /api/levels 的第一個等級代號，給 quiz／listening 的 start 當合法 level 用。
@@ -877,7 +876,7 @@ const Map<String, F> _eventSummaryShape = {
   'starts_at': F.string,
 };
 const Map<String, F> _eventSummaryOptional = {
-  'host_uid': F.any,
+  'is_host': F.boolean,
   'location': F.string,
   'max_participants': F.any,
   'category': F.string,
@@ -917,10 +916,8 @@ const Map<String, F> _listeningSessionShape = {
 };
 
 /// GET /api/events/:id → lib/models/event_model.dart EventDetail.fromJson
-/// 比 summary 多一個硬性 host_uid（`asEventInt(...)!`）。
 const Map<String, F> _eventDetailShape = {
   'id': F.any,
-  'host_uid': F.any,
   'title': F.string,
   'starts_at': F.string,
 };

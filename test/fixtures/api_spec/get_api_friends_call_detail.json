@@ -1,0 +1,15 @@
+{
+  "_source": "Truku_backend 說明文件/API/好友模組.md §4.3（FRIEND_CODE_ENFORCE 開啟後格式）",
+  "call_id": 123,
+  "status": "accepted",
+  "is_caller": true,
+  "session_id": 12,
+  "peer_friend_code": "BBBB2345",
+  "peer_nickname": "阿華",
+  "peer_avatar_url": "https://example.com/avatar.png",
+  "peer_avatar_id": null,
+  "peer_frame_id": null,
+  "created_at": "2026-09-29T03:00:00Z",
+  "answered_at": "2026-09-29T03:00:10Z",
+  "ended_at": null
+}

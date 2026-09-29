@@ -103,8 +103,8 @@ Future<void> main() async {
     );
   };
   // 點好友相關通知（私訊、邀請、接受、羈絆展示）→ 導到對應畫面。
-  FcmService.onFriendPushTapped = (type, uid) =>
-      openFriendPush(routeStack, type, uid);
+  FcmService.onFriendPushTapped = (type, friendCode) =>
+      openFriendPush(routeStack, type, friendCode);
   // FCM 掛載（掛前景/點擊監聽，通知權限延到首頁才問）。失敗不阻斷 App 啟動；token 上傳待登入後。
   try {
     await FcmService.init();

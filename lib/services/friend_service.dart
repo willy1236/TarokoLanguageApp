@@ -25,12 +25,11 @@ class FriendService {
     return PublicProfile.fromJson(data);
   }
 
-  /// 送出好友邀請。用好友碼（公開檔案「加好友」）或 uid（通話中「加好友」）擇一。
+  /// 以好友碼送出好友邀請。
   /// 回傳後端實際狀態：'pending'（已送出）或 'accepted'（對方先前已邀請我，互相邀請即成立）。
-  static Future<String> sendRequest({String? friendCode, int? uid}) async {
+  static Future<String> sendRequest(String friendCode) async {
     final data = await ApiClient.post(ApiConfig.friendRequests, {
-      'friend_code': ?friendCode,
-      'uid': ?uid,
+      'friend_code': friendCode,
     });
     return data['status'] as String? ?? 'pending';
   }
@@ -43,13 +42,13 @@ class FriendService {
     ).map((e) => FriendRequest.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  static Future<void> acceptRequest(int uid) async {
-    await ApiClient.post(ApiConfig.friendRequestAccept(uid));
+  static Future<void> acceptRequest(String friendCode) async {
+    await ApiClient.post(ApiConfig.friendRequestAccept(friendCode));
     NotificationSummaryService.refresh();
   }
 
-  static Future<void> declineRequest(int uid) async {
-    await ApiClient.post(ApiConfig.friendRequestDecline(uid));
+  static Future<void> declineRequest(String friendCode) async {
+    await ApiClient.post(ApiConfig.friendRequestDecline(friendCode));
     NotificationSummaryService.refresh();
   }
 
@@ -61,27 +60,27 @@ class FriendService {
     ).map((e) => Friendship.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  /// 以 uid 找好友（推播 payload 只帶 uid，後端只提供以好友碼查人）。
+  /// 以好友碼從好友列表找人（推播只帶好友碼，聊天室要的暱稱、頭像由這裡補）。
   /// 已不是好友回 null。
-  static Future<Friendship?> findFriend(int uid) async {
+  static Future<Friendship?> findFriend(String friendCode) async {
     for (final f in await getFriends()) {
-      if (f.uid == uid) return f;
+      if (sameFriendCode(f.friendCode, friendCode)) return f;
     }
     return null;
   }
 
   /// 解除好友，或取消我送出的邀請（後端同一個端點依現況處理）。
-  static Future<void> removeFriend(int uid) async {
-    await ApiClient.delete(ApiConfig.friendDetail(uid));
+  static Future<void> removeFriend(String friendCode) async {
+    await ApiClient.delete(ApiConfig.friendDetail(friendCode));
   }
 
-  static Future<void> blockUser(int uid) async {
-    await ApiClient.post(ApiConfig.friendBlocks, {'uid': uid});
+  static Future<void> blockUser(String friendCode) async {
+    await ApiClient.post(ApiConfig.friendBlocks, {'friend_code': friendCode});
     BlockRefreshNotifier.bump();
   }
 
-  static Future<void> unblockUser(int uid) async {
-    await ApiClient.delete(ApiConfig.friendBlockDetail(uid));
+  static Future<void> unblockUser(String friendCode) async {
+    await ApiClient.delete(ApiConfig.friendBlockDetail(friendCode));
   }
 
   static Future<List<BlockedUser>> getBlockedUsers() async {
@@ -93,18 +92,21 @@ class FriendService {
   }
 
   /// 同意展示與此好友的羈絆（雙方皆同意才會出現在雙方公開檔案上）。
-  static Future<Showcase> setShowcase(int uid) async {
-    final data = await ApiClient.post(ApiConfig.friendShowcase(uid));
+  static Future<Showcase> setShowcase(String friendCode) async {
+    final data = await ApiClient.post(ApiConfig.friendShowcase(friendCode));
     return Showcase.fromJson(data);
   }
 
   /// 單方撤回展示同意，不需對方確認。
-  static Future<void> unsetShowcase(int uid) async {
-    await ApiClient.delete(ApiConfig.friendShowcase(uid));
+  static Future<void> unsetShowcase(String friendCode) async {
+    await ApiClient.delete(ApiConfig.friendShowcase(friendCode));
   }
 
-  static Future<FriendMessage> sendMessage(int uid, String body) async {
-    final data = await ApiClient.post(ApiConfig.friendMessagesSend(uid), {
+  static Future<FriendMessage> sendMessage(
+    String friendCode,
+    String body,
+  ) async {
+    final data = await ApiClient.post(ApiConfig.friendMessages(friendCode), {
       'body': body,
     });
     return FriendMessage.fromJson(data['message'] as Map<String, dynamic>);
@@ -120,12 +122,12 @@ class FriendService {
 
   /// 依上一頁的 page_info.next_cursor 往舊訊息分頁；cursor 為 null 取最新一頁。
   static Future<ChatMessagePage> getMessages(
-    int uid, {
+    String friendCode, {
     String? cursor,
     int limit = 30,
   }) async {
     final data = await ApiClient.get(
-      ApiConfig.friendMessages(uid),
+      ApiConfig.friendMessages(friendCode),
       query: PageInfo.query(cursor: cursor, limit: limit),
     );
     final messages = ApiClient.unwrapList(
@@ -138,8 +140,8 @@ class FriendService {
     );
   }
 
-  static Future<int> markRead(int uid) async {
-    final data = await ApiClient.post(ApiConfig.friendMessagesRead(uid));
+  static Future<int> markRead(String friendCode) async {
+    final data = await ApiClient.post(ApiConfig.friendMessagesRead(friendCode));
     final marked = (data['marked'] as num?)?.toInt() ?? 0;
     if (marked > 0) NotificationSummaryService.refresh();
     return marked;

@@ -140,20 +140,24 @@ class ApiConfig {
   // 公開個人檔案（見 Truku_backend backend/routes/auth.ts）
   static String publicProfile(String friendCode) => '/api/users/$friendCode';
 
-  // 好友關係與封鎖（見 Truku_backend backend/routes/friends.ts）
+  // 好友關係與封鎖（見 Truku_backend backend/routes/friends.ts）。
+  // 指定其他使用者一律用好友碼，uid 只給後端與管理員後台用。
   static const String friendRequests = '/api/friends/requests';
-  static String friendRequestAccept(int uid) =>
-      '/api/friends/requests/$uid/accept';
-  static String friendRequestDecline(int uid) =>
-      '/api/friends/requests/$uid/decline';
+  static String friendRequestAccept(String friendCode) =>
+      '/api/friends/requests/$friendCode/accept';
+  static String friendRequestDecline(String friendCode) =>
+      '/api/friends/requests/$friendCode/decline';
   static const String friends = '/api/friends';
-  static String friendDetail(int uid) => '/api/friends/$uid';
+  static String friendDetail(String friendCode) => '/api/friends/$friendCode';
   static const String friendBlocks = '/api/friends/blocks';
-  static String friendBlockDetail(int uid) => '/api/friends/blocks/$uid';
-  static String friendShowcase(int uid) => '/api/friends/$uid/showcase';
+  static String friendBlockDetail(String friendCode) =>
+      '/api/friends/blocks/$friendCode';
+  static String friendShowcase(String friendCode) =>
+      '/api/friends/$friendCode/showcase';
 
   // 定向通話（見 Truku_backend backend/routes/friendCalls.ts）
-  static String friendCall(int uid) => '/api/friends/$uid/call';
+  static String friendCall(String friendCode) =>
+      '/api/friends/$friendCode/call';
   static const String friendCallsIncoming = '/api/friends/calls/incoming';
   static String friendCallDetail(int id) => '/api/friends/calls/$id';
   static String friendCallAccept(int id) => '/api/friends/calls/$id/accept';
@@ -163,11 +167,11 @@ class ApiConfig {
   static String friendCallReport(int id) => '/api/friends/calls/$id/report';
 
   // 一對一聊天（見 Truku_backend backend/routes/friendMessages.ts）
-  static String friendMessagesSend(int uid) => '/api/friends/$uid/messages';
   static const String friendConversations = '/api/friends/messages';
-  static String friendMessages(int uid) => '/api/friends/$uid/messages';
-  static String friendMessagesRead(int uid) =>
-      '/api/friends/$uid/messages/read';
+  static String friendMessages(String friendCode) =>
+      '/api/friends/$friendCode/messages';
+  static String friendMessagesRead(String friendCode) =>
+      '/api/friends/$friendCode/messages/read';
   static String friendMessageReport(int id) =>
       '/api/friends/messages/$id/report';
 }

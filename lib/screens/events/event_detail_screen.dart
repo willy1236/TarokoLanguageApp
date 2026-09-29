@@ -23,8 +23,7 @@ import '../../shared/widgets/confirm_dialog.dart';
 
 /// 活動詳情頁 — 進頁後以 [eventId] 打 GET /api/events/:id 取真資料。
 ///
-/// isHost 由「登入者 uid == host_uid」即時判斷（uid 取自 UserService 快取，
-/// 沒有就補打 /api/me）。底部行動列依身分與狀態切換：
+/// 是不是發起人看後端算好的 is_host。底部行動列依身分與狀態切換：
 ///   發起人 → 發送提醒 / 取消活動
 ///   參加者 → 已報名（可退出）
 ///   其他   → 我要參加（報名開放且未額滿時）／已截止／已額滿
@@ -72,7 +71,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   /// 活動只回 tribe_id，名稱另外對照；查不到就不顯示相關部落列。
   String? _tribeName;
-  int? _uid;
+
   List<EventReminder> _reminders = [];
   bool _loading = true;
   Object? _error;
@@ -183,17 +182,15 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       _error = null;
     });
     try {
-      // 詳情、目前 uid、提醒紀錄併行取得（uid 已快取就不重打）。
+      // 詳情與提醒紀錄併行取得。
       final results = await Future.wait([
         EventService.fetchEventDetail(widget.eventId),
-        _ensureUid(),
         _fetchRemindersSafe(),
       ]);
       if (!mounted) return;
       setState(() {
         _event = results[0] as EventDetail;
-        _uid = results[1] as int?;
-        _reminders = results[2] as List<EventReminder>;
+        _reminders = results[1] as List<EventReminder>;
         _loading = false;
       });
       _loadTribeName(_event?.tribeId);
@@ -218,16 +215,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
-  Future<int?> _ensureUid() async {
-    if (UserService.currentUid != null) return UserService.currentUid;
-    try {
-      final me = await UserService.fetchMe();
-      return me.uid;
-    } catch (_) {
-      return null; // 拿不到 uid 就當非發起人處理，不阻斷看活動
-    }
-  }
-
   Future<void> _refresh() => _load();
 
   /// 動作（參加/退出/取消）成功後的刷新：只更新資料本身，不設 `_loading = true`，
@@ -236,14 +223,12 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     try {
       final results = await Future.wait([
         EventService.fetchEventDetail(widget.eventId),
-        _ensureUid(),
         _fetchRemindersSafe(),
       ]);
       if (!mounted) return;
       setState(() {
         _event = results[0] as EventDetail;
-        _uid = results[1] as int?;
-        _reminders = results[2] as List<EventReminder>;
+        _reminders = results[1] as List<EventReminder>;
       });
     } catch (e, st) {
       debugPrint('[EventDetailScreen] _silentRefresh 失敗：$e');
@@ -515,7 +500,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
             SliverToBoxAdapter(
               child: EventDetailBody(
                 event: e,
-                uid: _uid,
                 reminders: _reminders,
                 seniorMode: seniorMode,
                 onToggleLike: _toggleLike,
@@ -525,7 +509,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
               ),
             ),
             // 發起人自己的活動不顯示檢舉。
-            if (!e.isHostedBy(_uid))
+            if (!e.isHost)
               SliverToBoxAdapter(
                 child: Center(
                   child: TextButton.icon(
@@ -542,7 +526,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       ),
       bottomNavigationBar: EventActionBar(
         event: e,
-        uid: _uid,
         acting: _acting,
         seniorMode: seniorMode,
         onJoin: _join,

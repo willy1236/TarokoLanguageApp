@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
+import '../models/friend_model.dart';
 import '../models/user_model.dart';
 import '../models/tribe_model.dart';
 
@@ -24,6 +25,12 @@ class UserService {
   /// 登出時，晚 resolve 的舊回應不能把前一個帳號寫回快取——否則下一位登入者
   /// 會在論壇/活動頁看到錯誤的「這是我的貼文／我是主辦人」判斷。
   static int _sessionGen = 0;
+
+  /// [friendCode] 是不是目前登入者的好友碼（大小寫不拘，後端一律轉大寫）。
+  /// 回應裡不再帶別人的 uid，判斷「是不是我」沒有旗標可用時就靠這個；尚未
+  /// 取得自己的資料時一律當成別人。
+  static bool isMe(String? friendCode) =>
+      sameFriendCode(friendCode, cachedUser?.friendCode);
 
   static Future<UserModel> fetchMe({bool forceRefresh = false}) async {
     if (!forceRefresh && cachedUser != null) return cachedUser!;

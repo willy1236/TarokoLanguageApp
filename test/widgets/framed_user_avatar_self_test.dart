@@ -12,26 +12,28 @@ import 'package:flutter_application_1/services/user_service.dart';
 import 'package:flutter_application_1/shared/widgets/user_avatar.dart';
 
 const int _myUid = 100;
-const int _otherUid = 200;
+const _myCode = 'MINE2345';
+const _otherCode = 'OTHR2345';
 
 const _snapshotUrl = 'https://example.com/old.webp';
 const _currentUrl = 'https://example.com/new.webp';
 
 UserModel _me({String? avatarUrl = _currentUrl, String? avatarId}) => UserModel(
   uid: _myUid,
+  friendCode: _myCode,
   email: 'me@example.com',
   createdAt: DateTime(2026),
   avatarUrl: avatarUrl,
   avatarId: avatarId,
 );
 
-Widget _app(int? userUid) => MaterialApp(
+Widget _app(String? userFriendCode) => MaterialApp(
   home: Scaffold(
     body: FramedUserAvatar(
       avatarUrl: _snapshotUrl,
       size: 40,
       fallbackIconColor: Colors.grey,
-      userUid: userUid,
+      userFriendCode: userFriendCode,
     ),
   ),
 );
@@ -46,7 +48,7 @@ void main() {
     UserService.currentUid = _myUid;
     UserService.userNotifier.value = _me();
 
-    await tester.pumpWidget(_app(_myUid));
+    await tester.pumpWidget(_app(_myCode));
 
     expect(_renderedUrl(tester), _currentUrl);
   });
@@ -55,7 +57,7 @@ void main() {
     UserService.currentUid = _myUid;
     UserService.userNotifier.value = _me(avatarUrl: _snapshotUrl);
 
-    await tester.pumpWidget(_app(_myUid));
+    await tester.pumpWidget(_app(_myCode));
     expect(_renderedUrl(tester), _snapshotUrl);
 
     UserService.userNotifier.value = _me(avatarUrl: _currentUrl);
@@ -68,12 +70,21 @@ void main() {
     UserService.currentUid = _myUid;
     UserService.userNotifier.value = _me();
 
-    await tester.pumpWidget(_app(_otherUid));
+    await tester.pumpWidget(_app(_otherCode));
 
     expect(_renderedUrl(tester), _snapshotUrl);
   });
 
-  testWidgets('沒有傳 userUid 時行為不變', (tester) async {
+  testWidgets('好友碼大小寫不同也認得是自己', (tester) async {
+    UserService.currentUid = _myUid;
+    UserService.userNotifier.value = _me();
+
+    await tester.pumpWidget(_app(_myCode.toLowerCase()));
+
+    expect(_renderedUrl(tester), _currentUrl);
+  });
+
+  testWidgets('沒有傳 userFriendCode 時行為不變', (tester) async {
     UserService.currentUid = _myUid;
     UserService.userNotifier.value = _me();
 

@@ -273,10 +273,11 @@ class ForumService {
 
   // ── 檢舉 ──────────────────────────────────────────────────
 
-  /// [targetType] 為 'post'、'comment'、'profile'（target 為 uid）或 'event'。同一人重複檢舉後端不視為錯誤。
+  /// [targetType] 為 'post'、'comment'、'event'（[targetId] 為 int id）或
+  /// 'profile'（[targetId] 為對方好友碼）。同一人重複檢舉後端不視為錯誤。
   static Future<void> report({
     required String targetType,
-    required int targetId,
+    required Object targetId,
     required String reason,
   }) => ApiClient.post(ApiConfig.forumReports, {
     'target_type': targetType,

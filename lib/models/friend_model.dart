@@ -13,20 +13,24 @@ class BondLevelInfo {
   );
 }
 
+/// 兩個好友碼是不是同一人。後端回的一律大寫，但規格允許大小寫不拘，比對時不分大小寫。
+bool sameFriendCode(String? a, String? b) =>
+    a != null && b != null && a.toUpperCase() == b.toUpperCase();
+
 /// 好友列表／邀請列表／封鎖名單共用的公開使用者欄位。
 class FriendUser {
-  final int uid;
   final String? nickname;
-  final String? friendCode;
+
+  /// 對方的好友碼，App 指定這個人（邀請、封鎖、聊天、通話）一律用它。
+  final String friendCode;
   final String? avatarUrl;
   final String? avatarId;
   final String? frameId;
   final String? selfIntro;
 
   const FriendUser({
-    required this.uid,
     this.nickname,
-    this.friendCode,
+    required this.friendCode,
     this.avatarUrl,
     this.avatarId,
     this.frameId,
@@ -34,9 +38,8 @@ class FriendUser {
   });
 
   factory FriendUser.fromJson(Map<String, dynamic> j) => FriendUser(
-    uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
-    friendCode: j['friend_code'] as String?,
+    friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,
@@ -48,9 +51,8 @@ class FriendRequest extends FriendUser {
   final DateTime createdAt;
 
   const FriendRequest({
-    required super.uid,
     super.nickname,
-    super.friendCode,
+    required super.friendCode,
     super.avatarUrl,
     super.avatarId,
     super.frameId,
@@ -59,9 +61,8 @@ class FriendRequest extends FriendUser {
   });
 
   factory FriendRequest.fromJson(Map<String, dynamic> j) => FriendRequest(
-    uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
-    friendCode: j['friend_code'] as String?,
+    friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,
@@ -71,7 +72,7 @@ class FriendRequest extends FriendUser {
   );
 }
 
-/// 羈絆展示同意狀態（POST/DELETE /api/friends/:uid/showcase、GET /api/friends）。
+/// 羈絆展示同意狀態（POST/DELETE /api/friends/{好友碼}/showcase、GET /api/friends）。
 /// mine=我是否已同意展示；theirs=對方是否已同意；mutual=雙方皆同意（僅此時對外公開檔案可見）。
 class Showcase {
   final bool mine;
@@ -104,9 +105,8 @@ class Friendship extends FriendUser {
   final bool unavailable;
 
   const Friendship({
-    required super.uid,
     super.nickname,
-    super.friendCode,
+    required super.friendCode,
     super.avatarUrl,
     super.avatarId,
     super.frameId,
@@ -119,9 +119,8 @@ class Friendship extends FriendUser {
   });
 
   factory Friendship.fromJson(Map<String, dynamic> j) => Friendship(
-    uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
-    friendCode: j['friend_code'] as String?,
+    friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,
@@ -151,7 +150,6 @@ class Friendship extends FriendUser {
     DateTime? acceptedAt,
     Showcase? showcase,
   }) => Friendship(
-    uid: uid,
     nickname: nickname ?? this.nickname,
     friendCode: friendCode ?? this.friendCode,
     avatarUrl: avatarUrl ?? this.avatarUrl,
@@ -169,7 +167,6 @@ class Friendship extends FriendUser {
 /// 撥給我、還在響的來電（GET /api/friends/calls/incoming，也是推播漏接的 fallback）。
 class IncomingCall {
   final int callId;
-  final int callerUid;
   final String? callerNickname;
   final String? callerFriendCode;
   final String? callerAvatarUrl;
@@ -179,7 +176,6 @@ class IncomingCall {
 
   const IncomingCall({
     required this.callId,
-    required this.callerUid,
     this.callerNickname,
     this.callerFriendCode,
     this.callerAvatarUrl,
@@ -190,7 +186,6 @@ class IncomingCall {
 
   factory IncomingCall.fromJson(Map<String, dynamic> j) => IncomingCall(
     callId: int.tryParse(j['call_id']?.toString() ?? '') ?? 0,
-    callerUid: int.tryParse(j['caller_uid']?.toString() ?? '') ?? 0,
     callerNickname: j['caller_nickname'] as String?,
     callerFriendCode: j['caller_friend_code'] as String?,
     callerAvatarUrl: j['caller_avatar_url'] as String?,
@@ -207,14 +202,18 @@ class DirectedCallStatus {
   final String
   status; // ringing / accepted / declined / cancelled / missed / ended
   final int? sessionId;
-  final int peerUid;
+
+  /// 我是不是撥出方。
+  final bool isCaller;
+  final String peerFriendCode;
   final String? peerNickname;
 
   const DirectedCallStatus({
     required this.callId,
     required this.status,
     this.sessionId,
-    required this.peerUid,
+    required this.isCaller,
+    required this.peerFriendCode,
     this.peerNickname,
   });
 
@@ -223,7 +222,8 @@ class DirectedCallStatus {
         callId: int.tryParse(j['call_id']?.toString() ?? '') ?? 0,
         status: j['status'] as String? ?? '',
         sessionId: int.tryParse(j['session_id']?.toString() ?? ''),
-        peerUid: int.tryParse(j['peer_uid']?.toString() ?? '') ?? 0,
+        isCaller: j['is_caller'] as bool? ?? false,
+        peerFriendCode: j['peer_friend_code'] as String? ?? '',
         peerNickname: j['peer_nickname'] as String?,
       );
 }
@@ -232,9 +232,8 @@ class BlockedUser extends FriendUser {
   final DateTime createdAt;
 
   const BlockedUser({
-    required super.uid,
     super.nickname,
-    super.friendCode,
+    required super.friendCode,
     super.avatarUrl,
     super.avatarId,
     super.frameId,
@@ -243,9 +242,8 @@ class BlockedUser extends FriendUser {
   });
 
   factory BlockedUser.fromJson(Map<String, dynamic> j) => BlockedUser(
-    uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
-    friendCode: j['friend_code'] as String?,
+    friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,
     avatarId: j['avatar_id'] as String?,
     frameId: j['frame_id'] as String?,
