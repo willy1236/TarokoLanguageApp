@@ -19,7 +19,6 @@ bool sameFriendCode(String? a, String? b) =>
 
 /// 好友列表／邀請列表／封鎖名單共用的公開使用者欄位。
 class FriendUser {
-  final int uid;
   final String? nickname;
 
   /// 對方的好友碼，App 指定這個人（邀請、封鎖、聊天、通話）一律用它。
@@ -30,7 +29,6 @@ class FriendUser {
   final String? selfIntro;
 
   const FriendUser({
-    required this.uid,
     this.nickname,
     required this.friendCode,
     this.avatarUrl,
@@ -40,7 +38,6 @@ class FriendUser {
   });
 
   factory FriendUser.fromJson(Map<String, dynamic> j) => FriendUser(
-    uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
     friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,
@@ -54,7 +51,6 @@ class FriendRequest extends FriendUser {
   final DateTime createdAt;
 
   const FriendRequest({
-    required super.uid,
     super.nickname,
     required super.friendCode,
     super.avatarUrl,
@@ -65,7 +61,6 @@ class FriendRequest extends FriendUser {
   });
 
   factory FriendRequest.fromJson(Map<String, dynamic> j) => FriendRequest(
-    uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
     friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,
@@ -110,7 +105,6 @@ class Friendship extends FriendUser {
   final bool unavailable;
 
   const Friendship({
-    required super.uid,
     super.nickname,
     required super.friendCode,
     super.avatarUrl,
@@ -125,7 +119,6 @@ class Friendship extends FriendUser {
   });
 
   factory Friendship.fromJson(Map<String, dynamic> j) => Friendship(
-    uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
     friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,
@@ -157,7 +150,6 @@ class Friendship extends FriendUser {
     DateTime? acceptedAt,
     Showcase? showcase,
   }) => Friendship(
-    uid: uid,
     nickname: nickname ?? this.nickname,
     friendCode: friendCode ?? this.friendCode,
     avatarUrl: avatarUrl ?? this.avatarUrl,
@@ -240,7 +232,6 @@ class BlockedUser extends FriendUser {
   final DateTime createdAt;
 
   const BlockedUser({
-    required super.uid,
     super.nickname,
     required super.friendCode,
     super.avatarUrl,
@@ -251,7 +242,6 @@ class BlockedUser extends FriendUser {
   });
 
   factory BlockedUser.fromJson(Map<String, dynamic> j) => BlockedUser(
-    uid: (j['uid'] as num?)?.toInt() ?? 0,
     nickname: j['nickname'] as String?,
     friendCode: j['friend_code'] as String? ?? '',
     avatarUrl: j['avatar_url'] as String?,

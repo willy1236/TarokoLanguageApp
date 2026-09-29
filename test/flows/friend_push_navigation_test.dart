@@ -32,14 +32,14 @@ void main() {
     readPosts = 0;
     ApiClient.httpClient = MockClient((request) async {
       if (request.method == 'POST' &&
-          request.url.path == '/api/friends/AMI7/messages/read') {
+          request.url.path == '/api/friends/AMIA2345/messages/read') {
         readPosts++;
       }
       if (request.url.path == '/api/friends') {
         return http.Response(
           jsonEncode({
             'friends': [
-              {'uid': 7, 'nickname': '阿美', 'friend_code': 'AMI7'},
+              {'nickname': '阿美', 'friend_code': 'AMIA2345'},
             ],
           }),
           200,
@@ -62,25 +62,25 @@ void main() {
     );
   }
 
-  Future<void> open(WidgetTester tester, String type, int uid) async {
-    await openFriendPush(routes, type, uid);
+  Future<void> open(WidgetTester tester, String type, String friendCode) async {
+    await openFriendPush(routes, type, friendCode);
     await pumpFrames(tester);
   }
 
   testWidgets('好友邀請 → 好友邀請頁', (tester) async {
     await start(tester);
-    await open(tester, 'friend_request', 99);
+    await open(tester, 'friend_request', 'NEWB2345');
     expect(find.byType(FriendRequestsScreen), findsOneWidget);
   });
 
   testWidgets('私訊 → 與對方的聊天室；已開著就不重複疊頁', (tester) async {
     await start(tester);
-    await open(tester, 'friend_message', 7);
+    await open(tester, 'friend_message', 'AMIA2345');
     expect(find.byType(ChatScreen), findsOneWidget);
 
     final readsAfterOpen = readPosts;
 
-    await open(tester, 'friend_message', 7);
+    await open(tester, 'friend_message', 'AMIA2345');
     expect(find.byType(ChatScreen, skipOffstage: false), findsOneWidget);
     // 已開著時重抓訊息之外也要標已讀，否則紅點會殘留。
     expect(readPosts, readsAfterOpen + 1);
@@ -88,13 +88,13 @@ void main() {
 
   testWidgets('聊天室被其他頁（例如通話）蓋住時不拆掉上層，照常疊一頁', (tester) async {
     await start(tester);
-    await open(tester, 'friend_message', 7);
+    await open(tester, 'friend_message', 'AMIA2345');
     navKey.currentState!.push(
       MaterialPageRoute(builder: (_) => const Scaffold(body: Text('CALL'))),
     );
     await pumpFrames(tester);
 
-    await open(tester, 'friend_message', 7);
+    await open(tester, 'friend_message', 'AMIA2345');
 
     expect(find.text('CALL', skipOffstage: false), findsOneWidget);
     expect(find.byType(ChatScreen, skipOffstage: false), findsNWidgets(2));
@@ -102,7 +102,7 @@ void main() {
 
   testWidgets('聊天室上面只蓋著 dialog：視為已開著，不疊頁也不關 dialog', (tester) async {
     await start(tester);
-    await open(tester, 'friend_message', 7);
+    await open(tester, 'friend_message', 'AMIA2345');
     showDialog<void>(
       context: navKey.currentContext!,
       builder: (_) => const AlertDialog(content: Text('DIALOG')),
@@ -110,7 +110,7 @@ void main() {
     await pumpFrames(tester);
     final readsBefore = readPosts;
 
-    await open(tester, 'friend_message', 7);
+    await open(tester, 'friend_message', 'AMIA2345');
 
     expect(find.text('DIALOG'), findsOneWidget);
     expect(find.byType(ChatScreen, skipOffstage: false), findsOneWidget);
@@ -119,12 +119,12 @@ void main() {
 
   testWidgets('同一人開了兩個聊天室，關掉上層後下層仍能被重載', (tester) async {
     await start(tester);
-    await open(tester, 'friend_message', 7);
+    await open(tester, 'friend_message', 'AMIA2345');
     navKey.currentState!.push(
       MaterialPageRoute(builder: (_) => const Scaffold(body: Text('CALL'))),
     );
     await pumpFrames(tester);
-    await open(tester, 'friend_message', 7);
+    await open(tester, 'friend_message', 'AMIA2345');
     expect(find.byType(ChatScreen, skipOffstage: false), findsNWidgets(2));
 
     navKey.currentState!
@@ -133,7 +133,7 @@ void main() {
     await pumpFrames(tester);
     final readsBefore = readPosts;
 
-    await open(tester, 'friend_message', 7);
+    await open(tester, 'friend_message', 'AMIA2345');
 
     expect(find.byType(ChatScreen, skipOffstage: false), findsOneWidget);
     expect(readPosts, readsBefore + 1);
@@ -141,12 +141,12 @@ void main() {
 
   testWidgets('接受邀請與羈絆展示 → 對方公開頁', (tester) async {
     await start(tester);
-    await open(tester, 'friend_accepted', 7);
+    await open(tester, 'friend_accepted', 'AMIA2345');
     expect(find.byType(PublicProfileScreen), findsOneWidget);
 
     navKey.currentState!.pop();
     await pumpFrames(tester);
-    await open(tester, 'friend_bond_showcase_confirmed', 7);
+    await open(tester, 'friend_bond_showcase_confirmed', 'AMIA2345');
     expect(find.byType(PublicProfileScreen), findsOneWidget);
   });
 
@@ -155,16 +155,16 @@ void main() {
       (_) async => http.Response('{"error":{"code":"INTERNAL"}}', 500),
     );
     await start(tester);
-    await open(tester, 'friend_message', 7);
+    await open(tester, 'friend_message', 'AMIA2345');
 
     expect(find.text('HOME'), findsOneWidget);
     expect(find.byType(FriendRequestsScreen), findsNothing);
     expect(find.text('無法開啟，請稍後再試'), findsOneWidget);
   });
 
-  testWidgets('uid 已不是好友 → 好友邀請頁，不報錯', (tester) async {
+  testWidgets('好友碼已不是好友 → 好友邀請頁，不報錯', (tester) async {
     await start(tester);
-    await open(tester, 'friend_accepted', 404);
+    await open(tester, 'friend_accepted', 'GONE2345');
     expect(find.byType(FriendRequestsScreen), findsOneWidget);
   });
 }

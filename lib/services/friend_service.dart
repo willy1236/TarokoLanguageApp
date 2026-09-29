@@ -60,11 +60,11 @@ class FriendService {
     ).map((e) => Friendship.fromJson(e as Map<String, dynamic>)).toList();
   }
 
-  /// 以 uid 找好友（推播 payload 只帶 uid，後端只提供以好友碼查人）。
+  /// 以好友碼從好友列表找人（推播只帶好友碼，聊天室要的暱稱、頭像由這裡補）。
   /// 已不是好友回 null。
-  static Future<Friendship?> findFriend(int uid) async {
+  static Future<Friendship?> findFriend(String friendCode) async {
     for (final f in await getFriends()) {
-      if (f.uid == uid) return f;
+      if (sameFriendCode(f.friendCode, friendCode)) return f;
     }
     return null;
   }
