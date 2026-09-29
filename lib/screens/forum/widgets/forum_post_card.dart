@@ -18,6 +18,8 @@ import '../../../shared/widgets/related_tribe_field.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../friends/public_profile_screen.dart';
 import 'forum_image_grid.dart';
+import '../../../shared/widgets/nickname_text.dart';
+import '../forum_author_code.dart';
 
 class ForumPostCard extends StatelessWidget {
   final ForumPost post;
@@ -203,8 +205,9 @@ class ForumPostCard extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                NicknameText(
                   post.author.displayName,
+                  friendCode: post.author.othersFriendCode,
                   style: AppTypography.serif(
                     fontSize: AppTypography.size(
                       AppTypography.body,

@@ -16,6 +16,8 @@ import 'forum_detail_screen.dart';
 import 'widgets/forum_toast.dart';
 import '../../core/utils/date_format.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/nickname_text.dart';
+import 'forum_author_code.dart';
 
 class ForumNotificationsScreen extends StatefulWidget {
   const ForumNotificationsScreen({super.key});
@@ -223,15 +225,24 @@ class _ForumNotificationsScreenState extends State<ForumNotificationsScreen> {
                 )
               : null,
           onTap: () => _open(item),
-          title: Text(
-            '${item.actor.displayName} $action',
-            style: AppTypography.serif(
-              fontSize: AppTypography.size(
-                AppTypography.body,
-                seniorMode: seniorMode,
+          title: Text.rich(
+            TextSpan(
+              style: AppTypography.serif(
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
+                fontWeight: FontWeight.w600,
+                color: AppColors.ink,
               ),
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
+              children: [
+                nicknameSpan(
+                  item.actor.displayName,
+                  item.actor.othersFriendCode,
+                  style: const TextStyle(color: AppColors.ink),
+                ),
+                TextSpan(text: ' $action'),
+              ],
             ),
           ),
           subtitle: Text(

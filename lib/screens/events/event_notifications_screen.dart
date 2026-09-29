@@ -11,6 +11,7 @@ import '../../models/event_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import 'event_detail_screen.dart';
+import 'widgets/tribe_event_push_sheet.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/app_back_button.dart';
 
@@ -157,6 +158,12 @@ class _EventNotificationsScreenState extends State<EventNotificationsScreen> {
                   : null,
             ),
           ),
+        ),
+        IconButton(
+          tooltip: '推播設定',
+          icon: const Icon(Icons.settings_outlined),
+          iconSize: seniorMode ? 28 : 24,
+          onPressed: () => showTribeEventPushSheet(context),
         ),
       ],
     ),

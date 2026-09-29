@@ -12,12 +12,17 @@ class ProfileRenameDialog extends StatefulWidget {
   /// 後端的長度上限（UTF-16 單位），見 ProfileFieldLimits。
   final int maxLength;
 
+  /// 給了就由對話框自己送出：回傳 null 代表成功並關閉，回傳字串則留在對話框、
+  /// 顯示在欄位下方。沒給時維持把輸入內容 pop 回呼叫端。
+  final Future<String?> Function(String value)? onSave;
+
   const ProfileRenameDialog({
     super.key,
     required this.title,
     required this.label,
     required this.initialValue,
     required this.maxLength,
+    this.onSave,
   });
 
   @override
@@ -28,6 +33,8 @@ class _RenameDialogState extends State<ProfileRenameDialog> {
   late final TextEditingController _controller = TextEditingController(
     text: widget.initialValue,
   );
+  bool _saving = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -35,7 +42,7 @@ class _RenameDialogState extends State<ProfileRenameDialog> {
     super.dispose();
   }
 
-  void _save() {
+  Future<void> _save() async {
     final text = _controller.text.trim();
     if (!withinUtf16Limit(
       context,
@@ -45,11 +52,40 @@ class _RenameDialogState extends State<ProfileRenameDialog> {
     )) {
       return;
     }
-    Navigator.pop(context, text);
+    final onSave = widget.onSave;
+    if (onSave == null) {
+      Navigator.pop(context, text);
+      return;
+    }
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    String? error;
+    try {
+      error = await onSave(text);
+    } catch (_) {
+      error = '更新失敗，請稍後再試';
+    }
+    if (!mounted) return;
+    if (error == null) {
+      Navigator.pop(context, text);
+    } else {
+      setState(() {
+        _saving = false;
+        _error = error;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // 送出中不給誤觸背景或返回鍵關掉：關掉後被擋的原因就沒地方顯示，使用者會以為
+    // 已經改好。請求卡住時仍可按「取消」主動離開。
+    return PopScope(canPop: !_saving, child: _buildDialog());
+  }
+
+  Widget _buildDialog() {
     return AlertDialog(
       title: Text(widget.title),
       content: TextField(
@@ -59,14 +95,30 @@ class _RenameDialogState extends State<ProfileRenameDialog> {
           Utf16LengthLimitingTextInputFormatter(widget.maxLength),
         ],
         buildCounter: utf16CounterBuilder(_controller, widget.maxLength),
-        decoration: InputDecoration(labelText: widget.label),
+        onChanged: (_) {
+          if (_error != null) setState(() => _error = null);
+        },
+        decoration: InputDecoration(
+          labelText: widget.label,
+          errorText: _error,
+          errorMaxLines: 3,
+        ),
       ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
           child: const Text('取消'),
         ),
-        TextButton(onPressed: _save, child: const Text('儲存')),
+        TextButton(
+          onPressed: _saving ? null : _save,
+          child: _saving
+              ? const SizedBox(
+                  width: 18,
+                  height: 18,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('儲存'),
+        ),
       ],
     );
   }

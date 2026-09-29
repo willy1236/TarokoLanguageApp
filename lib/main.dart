@@ -336,6 +336,8 @@ class _MainContainerState extends State<MainContainer>
     _loadCheckinStatus();
     // 推播會把未讀總數設成 App 圖示紅點（iOS aps.badge），回前景時要自己歸零。
     AppBadge.clear();
+    // 解鎖推播在背景收到卻沒點開時，唯讀狀態靠這裡恢復。
+    accountLockController.refreshIfLocked();
   }
 
   void _onSummaryChanged() {

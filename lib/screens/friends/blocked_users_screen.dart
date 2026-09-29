@@ -10,6 +10,7 @@ import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/nickname_text.dart';
 
 class BlockedUsersScreen extends StatefulWidget {
   const BlockedUsersScreen({super.key});
@@ -148,8 +149,9 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
       child: Row(
         children: [
           Expanded(
-            child: Text(
+            child: NicknameText(
               u.nickname?.isNotEmpty == true ? u.nickname! : '未命名旅人',
+              friendCode: u.friendCode,
               style: AppTypography.bodyLargeStyle(
                 seniorMode: seniorMode,
                 color: AppColors.ink,

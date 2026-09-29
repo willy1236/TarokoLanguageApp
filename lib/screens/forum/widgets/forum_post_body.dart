@@ -7,6 +7,8 @@ import '../../../models/forum_models.dart';
 import '../../../shared/widgets/related_tribe_field.dart';
 import 'forum_image_grid.dart';
 import '../../../core/utils/date_format.dart';
+import '../../../shared/widgets/nickname_text.dart';
+import '../forum_author_code.dart';
 
 class ForumPostBody extends StatelessWidget {
   final ForumPost post;
@@ -49,15 +51,27 @@ class ForumPostBody extends StatelessWidget {
         ),
       ),
       const SizedBox(height: 6),
-      Text(
-        '${post.author.displayName} · ${post.board.name} · '
-        '${formatRelativeTime(post.createdAt)}',
-        style: TextStyle(
-          fontSize: AppTypography.size(
-            AppTypography.caption,
-            seniorMode: seniorMode,
+      Text.rich(
+        TextSpan(
+          style: TextStyle(
+            fontSize: AppTypography.size(
+              AppTypography.caption,
+              seniorMode: seniorMode,
+            ),
+            color: AppColors.fog,
           ),
-          color: AppColors.fog,
+          children: [
+            nicknameSpan(
+              post.author.displayName,
+              post.author.othersFriendCode,
+              style: const TextStyle(color: AppColors.fog),
+            ),
+            TextSpan(
+              text:
+                  ' · ${post.board.name} · '
+                  '${formatRelativeTime(post.createdAt)}',
+            ),
+          ],
         ),
       ),
       const SizedBox(height: 14),

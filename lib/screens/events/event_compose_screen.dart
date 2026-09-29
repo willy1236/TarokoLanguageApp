@@ -302,14 +302,22 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
 
     setState(() => _submitting = true);
     try {
+      var tribeNotifyLimited = false;
       if (editing == null) {
-        await EventService.createEvent(draft);
+        final created = await EventService.createEvent(draft);
+        tribeNotifyLimited = draft.notifyTribe && created.tribeNotifyLimited;
       } else {
         await EventService.updateEvent(editing.id, draft, editing);
       }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(editing == null ? '活動已發起' : '活動已更新')),
+        tribeNotifyLimited
+            // 發起人以為部落成員都收到了，這則要停久一點讓人讀完。
+            ? const SnackBar(
+                content: Text('活動已建立；今天的部落推播次數已用完，這次沒有通知部落成員'),
+                duration: Duration(seconds: 8),
+              )
+            : SnackBar(content: Text(editing == null ? '活動已發起' : '活動已更新')),
       );
       Navigator.pop(context, true); // 通知列表/詳情頁刷新
     } catch (e) {

@@ -23,6 +23,7 @@ import '../friends/directed_call_waiting_screen.dart';
 import '../friends/public_profile_screen.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/utils/utf16_length_limit.dart';
+import '../../shared/widgets/nickname_text.dart';
 
 class ChatScreen extends StatefulWidget {
   final int partnerUid;
@@ -33,8 +34,11 @@ class ChatScreen extends StatefulWidget {
   final String? avatarId;
   final String? frameId;
 
-  /// 有好友碼才能從標題列的暱稱進對方的公開檔案；沒有就不給點。
+  /// 標題列暱稱旁的末碼來源，也是點暱稱進對方公開檔案的入口；沒有就不給點。
   final String? friendCode;
+
+  /// 從對方公開檔案進來時為 false：已經在檔案頁了，不必再提供回去的入口。
+  final bool linkToProfile;
 
   const ChatScreen({
     super.key,
@@ -44,6 +48,7 @@ class ChatScreen extends StatefulWidget {
     this.avatarId,
     this.frameId,
     this.friendCode,
+    this.linkToProfile = true,
   });
 
   static String routeNameFor(int partnerUid) => 'chat/$partnerUid';
@@ -56,6 +61,7 @@ class ChatScreen extends StatefulWidget {
     String? avatarId,
     String? frameId,
     String? friendCode,
+    bool linkToProfile = true,
   }) => MaterialPageRoute<T>(
     settings: RouteSettings(name: routeNameFor(partnerUid)),
     builder: (_) => ChatScreen(
@@ -65,6 +71,7 @@ class ChatScreen extends StatefulWidget {
       avatarId: avatarId,
       frameId: frameId,
       friendCode: friendCode,
+      linkToProfile: linkToProfile,
     ),
   );
 
@@ -395,12 +402,15 @@ class _ChatScreenState extends State<ChatScreen> {
         Expanded(
           child: GestureDetector(
             // 頭像旁的暱稱是對方公開檔案的入口（好友列表已不再直接進檔案頁）。
-            onTap: widget.friendCode == null ? null : _openPartnerProfile,
+            onTap: widget.friendCode == null || !widget.linkToProfile
+                ? null
+                : _openPartnerProfile,
             behavior: HitTestBehavior.opaque,
-            child: Text(
+            child: NicknameText(
               widget.partnerNickname?.isNotEmpty == true
                   ? widget.partnerNickname!
                   : '未命名旅人',
+              friendCode: widget.friendCode,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.titleStyle(

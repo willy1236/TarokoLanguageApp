@@ -10,6 +10,9 @@ class ApiConfig {
   static const String completeProfile = '/api/me/complete-profile';
   static const String logoutAll = '/api/auth/logout-all';
 
+  // 推播設定（見 Truku_backend 說明文件/API/00_核心與認證.md §2.4d）
+  static const String meNotificationSettings = '/api/me/notification-settings';
+
   // 通知信箱驗證（見 Truku_backend 說明文件/前端交接/帳號刪除串接指南.md §7）
   static const String meEmail = '/api/me/email';
   static const String meEmailVerify = '/api/me/email/verify';
