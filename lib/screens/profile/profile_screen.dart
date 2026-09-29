@@ -17,6 +17,8 @@ import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
 import '../../shared/share_text_file.dart';
 import '../account/account_delete_screen.dart';
+import '../admin/admin_error.dart';
+import '../admin/admin_home_screen.dart';
 import 'about_app_screen.dart';
 import 'profile_info_screen.dart';
 import 'widgets/profile_hero.dart';
@@ -427,6 +429,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // ── 更多（活動／按讚）────────────────────────────────────────────────────
 
   Widget _buildMoreSection({required bool seniorMode}) {
+    // 監聽快取的使用者：角色被調整（推播、重抓 /api/me）後入口即時出現或消失。
+    return ValueListenableBuilder<UserModel?>(
+      valueListenable: UserService.userNotifier,
+      builder: (context, user, _) =>
+          _moreSection(seniorMode: seniorMode, isAdmin: user?.isAdmin ?? false),
+    );
+  }
+
+  Widget _moreSection({required bool seniorMode, required bool isAdmin}) {
     return profileSection('SMRATUC · 更多', [
       profileNavRow(
         icon: Icons.person_outline,
@@ -461,6 +472,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
           context,
         ).push(MaterialPageRoute(builder: (_) => const MyLikesScreen())),
       ),
+      if (isAdmin) ...[
+        const Divider(height: 1, color: AppColors.creamDeep),
+        profileNavRow(
+          icon: Icons.admin_panel_settings_outlined,
+          label: '管理後台',
+          seniorMode: seniorMode,
+          onTap: () => pushAdmin(context, const AdminHomeScreen()),
+        ),
+      ],
     ], seniorMode: seniorMode);
   }
 
