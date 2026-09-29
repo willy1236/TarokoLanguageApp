@@ -6,7 +6,13 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/article_models.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/admin_service.dart';
+import '../../services/article_refresh_notifier.dart';
 import '../../services/article_service.dart';
+import '../../services/user_service.dart';
+import '../../shared/widgets/confirm_dialog.dart';
+import '../admin/admin_article_form_screen.dart';
+import '../admin/admin_error.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/engagement_icon_button.dart';
 import '../../shared/widgets/app_back_button.dart';
@@ -39,6 +45,62 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
     } catch (e) {
       _error = e;
     }
+    // AppBar 的管理員選單要等文章載入完才決定顯示，FutureBuilder 只會重畫內文。
+    if (mounted) setState(() {});
+  }
+
+  bool get _isAdmin => UserService.cachedUser?.isAdmin ?? false;
+
+  /// 管理員編輯這篇文章：存好後重新載入詳情，文化頁列表一併重抓。
+  Future<void> _adminEdit() async {
+    final article = _article;
+    if (article == null) return;
+    final saved = await pushAdmin<bool>(
+      context,
+      AdminArticleFormScreen(editing: article),
+    );
+    if (saved != true || !mounted) return;
+    ArticleRefreshNotifier.bump();
+    setState(() {
+      _error = null;
+      _future = _load();
+    });
+  }
+
+  /// 管理員下架這篇文章。下架後 App 內找不回來，所以給一次「復原」的機會（重新發布）。
+  Future<void> _adminArchive() async {
+    final article = _article;
+    if (article == null) return;
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '下架「${article.title}」？',
+      message: '下架後使用者看不到這篇文章，也無法在 App 內找回。',
+      confirmText: '下架',
+    );
+    if (!confirmed || !mounted) return;
+    try {
+      await AdminService.archiveArticle(article.id);
+    } catch (e) {
+      if (mounted) handleAdminError(context, e);
+      return;
+    }
+    ArticleRefreshNotifier.bump();
+    showAdminMessage(
+      '已下架',
+      action: (
+        label: '復原',
+        onPressed: () async {
+          try {
+            await AdminService.publishArticle(article.id);
+            ArticleRefreshNotifier.bump();
+            showAdminMessage('已重新發布');
+          } catch (e) {
+            showAdminMessage(apiErrorMessage(e));
+          }
+        },
+      ),
+    );
+    if (mounted) Navigator.of(context).pop(true);
   }
 
   /// 樂觀更新，API 回傳真實計數後校正；失敗則還原。
@@ -107,6 +169,19 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         backgroundColor: AppColors.midnight,
         foregroundColor: AppColors.cream,
         elevation: 0,
+        actions: [
+          if (_isAdmin && _article != null)
+            PopupMenuButton<String>(
+              onSelected: (value) {
+                if (value == 'edit') _adminEdit();
+                if (value == 'archive') _adminArchive();
+              },
+              itemBuilder: (_) => const [
+                PopupMenuItem(value: 'edit', child: Text('編輯')),
+                PopupMenuItem(value: 'archive', child: Text('下架')),
+              ],
+            ),
+        ],
       ),
       body: FutureBuilder<void>(
         future: _future,

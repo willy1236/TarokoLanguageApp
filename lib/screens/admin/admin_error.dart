@@ -30,10 +30,21 @@ bool isAdminOnlyError(Object? error) =>
     error is ApiException && error.code == 'ADMIN_ONLY';
 
 /// 顯示一則訊息。走全域 messenger：呼叫端畫面接著被 pop 時提示也不會消失。
-void showAdminMessage(String message) {
+/// [action] 給「復原」這類短時間內可反悔的操作。
+void showAdminMessage(
+  String message, {
+  ({String label, VoidCallback onPressed})? action,
+}) {
   scaffoldMessengerKey.currentState
     ?..clearSnackBars()
-    ..showSnackBar(SnackBar(content: Text(message)));
+    ..showSnackBar(
+      SnackBar(
+        content: Text(message),
+        action: action == null
+            ? null
+            : SnackBarAction(label: action.label, onPressed: action.onPressed),
+      ),
+    );
 }
 
 /// 後台請求失敗的統一出口，回傳 true 代表已離開後台（呼叫端不要再動畫面）。

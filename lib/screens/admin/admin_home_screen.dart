@@ -5,12 +5,14 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../profile/widgets/profile_rows.dart';
+import 'admin_article_form_screen.dart';
 import 'admin_banned_words_screen.dart';
 import 'admin_cases_screen.dart';
 import 'admin_error.dart';
 import 'admin_mutes_screen.dart';
 import 'admin_question_reports_screen.dart';
 import 'admin_reports_screen.dart';
+import 'admin_terms_publish_screen.dart';
 import 'widgets/admin_widgets.dart';
 
 typedef _Entry = ({IconData icon, String label, Widget Function() screen});
@@ -41,6 +43,16 @@ final List<_Entry> _entries = [
     icon: Icons.help_outline,
     label: '題目回報',
     screen: () => const AdminQuestionReportsScreen(),
+  ),
+  (
+    icon: Icons.post_add_outlined,
+    label: '新增文章',
+    screen: () => const AdminArticleFormScreen(),
+  ),
+  (
+    icon: Icons.description_outlined,
+    label: '發布條款',
+    screen: () => const AdminTermsPublishScreen(),
   ),
 ];
 

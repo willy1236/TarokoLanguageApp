@@ -4,6 +4,7 @@ import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/article_models.dart';
 import '../../models/video_models.dart';
+import '../../services/article_refresh_notifier.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
@@ -67,6 +68,7 @@ class _CultureScreenState extends State<CultureScreen> {
     _loadFeaturedVideos();
     _loadFeaturedArticles();
     widget.reselectSignal?.addListener(_onReselect);
+    ArticleRefreshNotifier.revision.addListener(_onArticlesChanged);
   }
 
   @override
@@ -86,8 +88,15 @@ class _CultureScreenState extends State<CultureScreen> {
   @override
   void dispose() {
     widget.reselectSignal?.removeListener(_onReselect);
+    ArticleRefreshNotifier.revision.removeListener(_onArticlesChanged);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  /// 管理員在 App 內編輯或下架了文章：精選輪播與文章分頁一起重抓。
+  void _onArticlesChanged() {
+    _loadFeaturedArticles();
+    _articleSectionKey.currentState?.reload();
   }
 
   void _onReselect() {

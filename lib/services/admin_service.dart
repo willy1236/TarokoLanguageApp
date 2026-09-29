@@ -12,6 +12,8 @@ import '../models/page_info.dart';
 
 typedef AdminPage<T> = ({List<T> items, PageInfo pageInfo});
 
+int? _int(Object? v) => v is num ? v.toInt() : int.tryParse('$v');
+
 class AdminService {
   static List<T> _list<T>(
     Map<String, dynamic> json,
@@ -179,6 +181,69 @@ class AdminService {
     await ApiClient.patch(ApiConfig.adminQuestionReport(id), {
       'status': status,
     });
+  }
+
+  // ── 文章（文章模組.md §5）─────────────────────────────────────
+  //
+  // 後端沒有列出草稿／已下架文章的端點，App 內只找得到已發布的文章。
+  // 封面圖只收已在雲端儲存的 HTTPS 網址，沒有上傳。
+
+  /// 建立文章，回傳新文章 id。[publish] 為 true 時一次建立並發布
+  /// （`status: published`），不會留下發布失敗的孤兒草稿；false 存為草稿。
+  static Future<int> createArticle({
+    required String title,
+    required String category,
+    required String contentMd,
+    String? summary,
+    String? coverImageUrl,
+    String? author,
+    int? tribeId,
+    required bool publish,
+  }) async {
+    String? blankToNull(String? v) =>
+        v == null || v.trim().isEmpty ? null : v.trim();
+    final json = await ApiClient.post(ApiConfig.adminArticles, {
+      'title': title.trim(),
+      'category': category,
+      'content_md': contentMd,
+      'summary': ?blankToNull(summary),
+      'cover_image_url': ?blankToNull(coverImageUrl),
+      'author': ?blankToNull(author),
+      'tribe_id': ?tribeId,
+      'status': publish ? 'published' : 'draft',
+    });
+    return _int(json['id']) ?? 0;
+  }
+
+  /// 編輯文章：只送有改的欄位（`title`／`summary`／`content_md`／
+  /// `cover_image_url`／`category`／`tribe_id`），清空封面或摘要請傳 null 值。
+  static Future<void> updateArticle(int id, Map<String, Object?> fields) async {
+    await ApiClient.patch(ApiConfig.adminArticle(id), fields);
+  }
+
+  /// `draft`／`archived` → `published`（冪等）。
+  static Future<void> publishArticle(int id) async {
+    await ApiClient.post(ApiConfig.adminArticlePublish(id));
+  }
+
+  static Future<void> archiveArticle(int id) async {
+    await ApiClient.post(ApiConfig.adminArticleArchive(id));
+  }
+
+  // ── 條款（同意條款.md §3）─────────────────────────────────────
+
+  /// 發布新版條款，回傳後端自動遞增後的版本號。發布後所有使用者下次都要重新同意。
+  static Future<int> publishTerms(
+    String docType,
+    String title,
+    String contentMd,
+  ) async {
+    final json = await ApiClient.post(ApiConfig.adminTerms, {
+      'doc_type': docType,
+      'title': title.trim(),
+      'content_md': contentMd.trim(),
+    });
+    return _int(json['version']) ?? 0;
   }
 
   /// 二次審核。[decision] 為 `confirm`（確認違規）或 `overturn`（撤銷）；
