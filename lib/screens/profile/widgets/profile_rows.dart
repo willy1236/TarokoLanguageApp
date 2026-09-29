@@ -192,6 +192,7 @@ Widget profileSettingRow(
   VoidCallback? onTap,
   bool seniorMode = false,
   Widget? badge,
+  String? hint,
 }) {
   return Column(
     children: [
@@ -243,6 +244,16 @@ Widget profileSettingRow(
                       if (badge != null) ...[const SizedBox(width: 8), badge],
                     ],
                   ),
+                  if (hint != null) ...[
+                    const SizedBox(height: 2),
+                    Text(
+                      hint,
+                      style: AppTypography.captionStyle(
+                        seniorMode: seniorMode,
+                        color: AppColors.fog,
+                      ),
+                    ),
+                  ],
                 ],
               ),
               if (copyable)

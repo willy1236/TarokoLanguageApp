@@ -14,6 +14,7 @@ import '../../models/tribe_model.dart';
 import '../../models/user_model.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
+import '../../shared/utils/birth_date.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
 import 'notification_email_screen.dart';
 import 'widgets/profile_rename_dialog.dart';
@@ -155,6 +156,15 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
         onTap: _copyFriendCode,
         seniorMode: seniorMode,
       ),
+      // 出生日期只能填一次、不公開；舊後端沒有這個欄位時不顯示。
+      if (_user?.birthDate != null)
+        profileSettingRow(
+          '出生日期',
+          formatDisplayDate(_user!.birthDate!),
+          editable: false,
+          hint: '如需更正請聯繫我們',
+          seniorMode: seniorMode,
+        ),
       profileSwitchRow(
         '是否為原住民',
         _user?.isIndigenous ?? false,
