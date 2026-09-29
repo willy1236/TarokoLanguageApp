@@ -106,6 +106,10 @@ class ChatController extends ChangeNotifier {
   void debugSimulateClosed(int? closeCode, String? closeReason) =>
       _onClosed(closeCode, closeReason);
 
+  /// 模擬伺服器推來一則事件（原始 JSON 字串），不必真的連 WebSocket。
+  @visibleForTesting
+  void debugSimulateData(String raw) => _onData(raw);
+
   Future<void> connect() async {
     if (_channel != null) return;
     _reconnectTimer?.cancel();
