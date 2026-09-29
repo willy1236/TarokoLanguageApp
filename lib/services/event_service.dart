@@ -84,13 +84,19 @@ class EventService {
 
   /// 發起活動。後端（v2）五個必填欄位：title / description / location（地點名稱）/
   /// address（詳細地址）/ startsAt（需未來、1 年內）。contact 為選填。
-  /// 回傳新活動的 id。
+  /// 回傳新活動的 id，與這次部落推播是否因 24 小時內已推滿 3 次而沒送出
+  /// （`tribe_notify_limited`，回應沒有此欄位時視為 false）。
   ///
   /// 注意：後端限定 organizer / admin 角色才能發起，一般 user 會收到 403
   /// FORBIDDEN「需要活動主辦權限」。
-  static Future<int> createEvent(EventDraft draft) async {
+  static Future<({int id, bool tribeNotifyLimited})> createEvent(
+    EventDraft draft,
+  ) async {
     final data = await ApiClient.post(ApiConfig.events, draft.toCreateBody());
-    return asEventInt(data['id'])!;
+    return (
+      id: asEventInt(data['id'])!,
+      tribeNotifyLimited: data['tribe_notify_limited'] == true,
+    );
   }
 
   /// 活動詳情（含參加者清單）。
