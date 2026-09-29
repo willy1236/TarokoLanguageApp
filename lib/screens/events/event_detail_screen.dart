@@ -460,8 +460,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
     if (confirmed != true) return;
     await _guarded(failurePrefix: '刪除失敗', () async {
-      await EventService.deleteEvent(widget.eventId);
+      final notified = await EventService.deleteEvent(widget.eventId);
       if (!mounted) return;
+      _snack(notified > 0 ? '活動已刪除，已通知 $notified 位報名者' : '活動已刪除');
       Navigator.pop(context, true); // 通知活動列表刷新
     });
   }
