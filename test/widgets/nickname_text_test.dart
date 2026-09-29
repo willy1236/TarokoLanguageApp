@@ -30,7 +30,14 @@ void main() {
 
     testWidgets('顯示成「暱稱 #末4碼」，末碼字級一致、顏色較淡', (tester) async {
       await tester.pumpWidget(
-        wrap(const NicknameText('阿華', friendCode: 'AB12K7Q2', style: style)),
+        wrap(
+          const NicknameText(
+            '阿華',
+            friendCode: 'AB12K7Q2',
+            style: style,
+            maxLines: 1,
+          ),
+        ),
       );
 
       expect(find.text('阿華'), findsOneWidget);
@@ -39,11 +46,20 @@ void main() {
       expect(tag.style?.color, style.color!.withValues(alpha: 0.55));
     });
 
+    testWidgets('可換行時末碼接在暱稱最後一個字後面', (tester) async {
+      await tester.pumpWidget(
+        wrap(const NicknameText('阿華', friendCode: 'AB12K7Q2', style: style)),
+      );
+
+      expect(find.text('阿華 #K7Q2', findRichText: true), findsOneWidget);
+    });
+
     testWidgets('暱稱過長時只截暱稱，末碼完整顯示', (tester) async {
       await tester.pumpWidget(
         wrap(
           const Center(
             child: SizedBox(
+              key: ValueKey('box'),
               width: 140,
               child: NicknameText(
                 '官方客服小編官方客服小編官方客服小編',
@@ -65,7 +81,9 @@ void main() {
       expect(tag.didExceedMaxLines, isFalse);
       expect(
         tester.getTopRight(find.text(' #K7Q2')).dx,
-        lessThanOrEqualTo(tester.getTopRight(find.byType(SizedBox).first).dx),
+        lessThanOrEqualTo(
+          tester.getTopRight(find.byKey(const ValueKey('box'))).dx,
+        ),
       );
       expect(tester.takeException(), isNull);
     });
