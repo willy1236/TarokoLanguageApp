@@ -102,6 +102,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     _load();
     _loadItemCatalog();
     FcmService.onReminderReceivedForOpenScreen = _onForegroundReminder;
+    FcmService.addEventDeletedListener(_onEventDeleted);
   }
 
   Future<void> _loadItemCatalog() async {
@@ -119,6 +120,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   void dispose() {
     final route = _route;
     if (route != null) EventDetailScreen._live.remove(route);
+    FcmService.removeEventDeletedListener(_onEventDeleted);
     if (identical(
       FcmService.onReminderReceivedForOpenScreen,
       _onForegroundReminder,
@@ -135,6 +137,30 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       if (!mounted) return;
       setState(() => _reminders = reminders);
     });
+  }
+
+  bool _deletedNoticeShown = false;
+
+  /// 前景收到本活動被發起人刪除的推播：說明後關閉這一頁（重載只會得到 404）。
+  Future<void> _onEventDeleted(int? eventId) async {
+    if (eventId != widget.eventId || !mounted || _deletedNoticeShown) return;
+    _deletedNoticeShown = true;
+    final title = _event?.title;
+    await showEventDeletedDialog(
+      context,
+      title == null ? '此活動已被發起人刪除。' : '您參加的$title已被發起人刪除。',
+    );
+    if (!mounted) return;
+    _markChanged();
+    final route = _route;
+    if (route == null || !route.isActive) return;
+    final navigator = Navigator.of(context);
+    // 詳情頁上面還蓋著別的頁面時，只移除這一頁，不動到上面的頁面。
+    if (route.isCurrent) {
+      navigator.pop();
+    } else {
+      navigator.removeRoute(route);
+    }
   }
 
   Future<void> _loadTribeName(int? tribeId) async {

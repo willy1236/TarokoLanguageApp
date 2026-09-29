@@ -4,6 +4,8 @@
 // 按讚的樂觀更新在後端失敗時會不會還原、唯讀帳號按讚有沒有被擋。
 // 報名／退出人工重測一次就要清一次報名狀態，很容易把測試資料弄髒。
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -12,6 +14,7 @@ import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/screens/events/event_detail_screen.dart';
 import 'package:flutter_application_1/screens/events/widgets/event_detail_dialogs.dart';
 import 'package:flutter_application_1/services/account_lock_controller.dart';
+import 'package:flutter_application_1/services/fcm_service.dart';
 import 'package:flutter_application_1/services/user_service.dart';
 import 'package:flutter_application_1/shared/widgets/async_state_view.dart';
 
@@ -417,6 +420,96 @@ void main() {
       });
       expect(find.textContaining('取消理由'), findsNothing);
       expect(find.text('已取消'), findsWidgets);
+    });
+  });
+
+  group('前景收到活動被刪除的推播', () {
+    Future<void> pumpOpenedDetail(WidgetTester tester) async {
+      installMockClient({
+        '/api/events/1': _detail(isJoined: true),
+        '/api/events/1/reminders': {'reminders': <dynamic>[]},
+        '/api/me': _me(),
+      });
+      await tester.pumpWidget(
+        MaterialApp(
+          scaffoldMessengerKey: scaffoldMessengerKey,
+          home: Builder(
+            builder: (context) => Scaffold(
+              body: TextButton(
+                onPressed: () => Navigator.push<bool>(
+                  context,
+                  EventDetailScreen.route<bool>(_eventId),
+                ),
+                child: const Text('開詳情'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('開詳情'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('就是這場活動：跳對話框說明，按確定後關閉詳情頁', (tester) async {
+      await pumpOpenedDetail(tester);
+      expect(find.text('我要參加'), findsNothing);
+      expect(find.text('部落豐年祭'), findsWidgets);
+
+      FcmService.dispatchEventDeleted(_eventId);
+      await tester.pumpAndSettle();
+
+      expect(find.text('活動已刪除'), findsOneWidget);
+      expect(find.text('您參加的部落豐年祭已被發起人刪除。'), findsOneWidget);
+
+      await tester.tap(find.text('確定'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('開詳情'), findsOneWidget);
+      expect(find.text('部落豐年祭'), findsNothing);
+    });
+
+    testWidgets('別場活動被刪除：詳情頁不受影響', (tester) async {
+      await pumpOpenedDetail(tester);
+
+      FcmService.dispatchEventDeleted(_eventId + 1);
+      await tester.pumpAndSettle();
+
+      expect(find.text('活動已刪除'), findsNothing);
+      expect(find.text('部落豐年祭'), findsWidgets);
+    });
+
+    testWidgets('同一則推播重複送達只跳一次對話框', (tester) async {
+      await pumpOpenedDetail(tester);
+
+      FcmService.dispatchEventDeleted(_eventId);
+      FcmService.dispatchEventDeleted(_eventId);
+      await tester.pumpAndSettle();
+
+      expect(find.text('活動已刪除'), findsOneWidget);
+    });
+
+    testWidgets('詳情頁上面還蓋著別的頁面：只移除詳情頁，上面的頁面留著', (tester) async {
+      await pumpOpenedDetail(tester);
+      final navigator = tester.state<NavigatorState>(find.byType(Navigator));
+      unawaited(
+        navigator.push(
+          MaterialPageRoute<void>(
+            builder: (_) => const Scaffold(body: Text('上層頁面')),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      FcmService.dispatchEventDeleted(_eventId);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('確定'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('上層頁面'), findsOneWidget);
+      navigator.pop();
+      await tester.pumpAndSettle();
+      expect(find.text('開詳情'), findsOneWidget);
+      expect(find.text('部落豐年祭'), findsNothing);
     });
   });
 }

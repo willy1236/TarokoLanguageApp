@@ -21,12 +21,16 @@ class PagedEventList extends StatefulWidget {
   final Widget emptyState;
   final bool seniorMode;
 
+  /// 通知時整頁重載（例如收到活動被刪除的推播）。
+  final Listenable? reloadSignal;
+
   const PagedEventList({
     super.key,
     required this.loadPage,
     required this.itemBuilder,
     required this.emptyState,
     required this.seniorMode,
+    this.reloadSignal,
   });
 
   @override
@@ -56,13 +60,27 @@ class _PagedEventListState extends State<PagedEventList>
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
+    widget.reloadSignal?.addListener(_onReloadSignal);
     _load();
   }
 
   @override
+  void didUpdateWidget(PagedEventList oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.reloadSignal == widget.reloadSignal) return;
+    oldWidget.reloadSignal?.removeListener(_onReloadSignal);
+    widget.reloadSignal?.addListener(_onReloadSignal);
+  }
+
+  @override
   void dispose() {
+    widget.reloadSignal?.removeListener(_onReloadSignal);
     _scrollController.dispose();
     super.dispose();
+  }
+
+  void _onReloadSignal() {
+    _load();
   }
 
   void _onScroll() {

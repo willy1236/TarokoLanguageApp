@@ -8,6 +8,7 @@ import 'package:http/testing.dart';
 
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/screens/events/joined_events_screen.dart';
+import 'package:flutter_application_1/services/fcm_service.dart';
 import 'package:flutter_application_1/shared/widgets/async_state_view.dart';
 
 import '../helpers/flow_test_helpers.dart';
@@ -252,5 +253,48 @@ void main() {
     await pumpFrames(tester, times: 10);
 
     expect(find.byType(TrukuErrorView), findsOneWidget);
+  });
+
+  testWidgets('前景收到活動被刪除的推播：兩個分頁自動重新整理，該活動消失', (tester) async {
+    var deleted = false;
+    final tabsRequested = <String?>[];
+    ApiClient.httpClient = MockClient((r) async {
+      tabsRequested.add(r.url.queryParameters['tab']);
+      return jsonResponse({
+        'total': 2,
+        'events': [_event(1), if (!deleted) _event(2)],
+      });
+    });
+
+    await tester.pumpWidget(app());
+    await pumpFrames(tester);
+    expect(find.text('活動 2'), findsOneWidget);
+    expect(tabsRequested, ['active']);
+
+    deleted = true;
+    FcmService.dispatchEventDeleted(2);
+    await pumpFrames(tester, times: 10);
+
+    expect(find.text('活動 2'), findsNothing);
+    expect(find.text('活動 1'), findsOneWidget);
+    // 分頁保持存活，「結束」分頁也一併重載。
+    expect(tabsRequested, ['active', 'active']);
+  });
+
+  testWidgets('離開畫面後不再回應刪除推播', (tester) async {
+    var requests = 0;
+    ApiClient.httpClient = MockClient((r) async {
+      requests++;
+      return jsonResponse({'total': 0, 'events': <dynamic>[]});
+    });
+    await tester.pumpWidget(app());
+    await pumpFrames(tester);
+    expect(requests, 1);
+
+    await tester.pumpWidget(const MaterialApp(home: SizedBox()));
+    FcmService.dispatchEventDeleted(2);
+    await pumpFrames(tester);
+
+    expect(requests, 1);
   });
 }

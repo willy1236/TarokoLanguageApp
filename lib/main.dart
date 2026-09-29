@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -16,6 +18,7 @@ import 'screens/home/home_screen.dart';
 import 'screens/learn/learn_culture_screen.dart';
 import 'screens/community/video_call_screen.dart';
 import 'screens/content_push_navigation.dart';
+import 'screens/events/widgets/event_detail_dialogs.dart';
 import 'screens/friends/incoming_call_screen.dart';
 import 'screens/plaza/plaza_event_screen.dart';
 import 'screens/profile/profile_video_screen.dart';
@@ -55,6 +58,15 @@ Future<void> main() async {
   // 點提醒/取消通知 → 導到該活動詳情頁（用全域 routeStack，不依賴當下 context）。
   FcmService.onReminderTapped = (eventId) {
     if (eventId != null) openEventPush(routeStack, eventId);
+  };
+  // 點「活動已被刪除」通知 → 活動已不存在，不導頁，只跳提示說明。
+  FcmService.onEventDeletedTapped = (message) {
+    final context = navigatorKey.currentContext;
+    if (context == null) {
+      debugPrint('FcmService.onEventDeletedTapped: navigatorKey 尚未掛上，提示被忽略');
+      return;
+    }
+    unawaited(showEventDeletedDialog(context, message));
   };
   // 冷啟動/背景點擊 video_matched 通知 → 查目前 active session 並導到通話畫面。
   // FCM payload 只有 session_id/channel，權威資料一律重新查詢（見 fcm_service.dart

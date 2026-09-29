@@ -173,3 +173,27 @@ class _CancelReasonDialogState extends State<CancelReasonDialog> {
     );
   }
 }
+
+/// 告知使用者報名的活動已被發起人刪除（前景在詳情頁、或點擊刪除通知時用）。
+Future<void> showEventDeletedDialog(BuildContext context, String message) {
+  return showDialog<void>(
+    context: context,
+    builder: (ctx) => AlertDialog(
+      backgroundColor: AppColors.creamLight,
+      title: Text(
+        '活動已刪除',
+        style: AppTypography.serif(
+          fontWeight: FontWeight.w700,
+          color: AppColors.ink,
+        ),
+      ),
+      content: Text(message),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(ctx),
+          child: const Text('確定'),
+        ),
+      ],
+    ),
+  );
+}
