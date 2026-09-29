@@ -348,6 +348,89 @@ void main() {
       expect(result, [true]);
     });
 
+    testWidgets('解鎖帳號：只有 locked 才有按鈕；成功後狀態改為正常', (tester) async {
+      installMockClient({
+        '/api/admin/users/3/unlock': {'ok': true, 'status': 'active'},
+      });
+      final locked = AdminCase.fromJson({
+        'id': 7,
+        'target_type': 'post',
+        'target_id': 1,
+        'offender_uid': 3,
+        'offender_nickname': '作者',
+        'offender_status': 'locked',
+        'source': 'admin_delete',
+        'reason': '理由',
+        'status': 'confirmed',
+        'preview': {'title': '標題', 'body': '內文'},
+      });
+      await tester.pumpWidget(
+        _host(() => AdminCaseDetailScreen(adminCase: locked), <Object?>[]),
+      );
+      await _open(tester);
+      expect(
+        find.textContaining('作者（locked）', findRichText: true),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('解鎖帳號'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('下一步'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('解鎖').last);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.textContaining('作者（active）', findRichText: true),
+        findsOneWidget,
+      );
+      expect(find.text('解鎖帳號'), findsNothing, reason: '已不是鎖定狀態');
+    });
+
+    testWidgets('未鎖定的案件不顯示解鎖帳號', (tester) async {
+      await tester.pumpWidget(
+        _host(() => AdminCaseDetailScreen(adminCase: _case()), <Object?>[]),
+      );
+      await _open(tester);
+      expect(find.text('解鎖帳號'), findsNothing);
+    });
+
+    testWidgets('NOT_LOCKED：顯示訊息並回列表重抓', (tester) async {
+      final result = <Object?>[];
+      installMockClient({
+        '/api/admin/users/3/unlock': errorResponse(
+          'NOT_LOCKED',
+          status: 404,
+          message: '該帳號未被鎖定',
+        ),
+      });
+      final locked = AdminCase.fromJson({
+        'id': 7,
+        'target_type': 'post',
+        'target_id': 1,
+        'offender_uid': 3,
+        'offender_nickname': '作者',
+        'offender_status': 'locked',
+        'source': 'admin_delete',
+        'reason': '理由',
+        'status': 'confirmed',
+      });
+      await tester.pumpWidget(
+        _host(() => AdminCaseDetailScreen(adminCase: locked), result),
+      );
+      await _open(tester);
+
+      await tester.tap(find.text('解鎖帳號'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('下一步'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('解鎖').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('該帳號未被鎖定'), findsOneWidget);
+      expect(result, [true]);
+    });
+
     testWidgets('備註超過 500 字：不送出', (tester) async {
       var requests = 0;
       installMockClient({

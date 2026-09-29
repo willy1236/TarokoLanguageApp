@@ -89,6 +89,52 @@ void main() {
     expect(jsonDecode(requests[2].body), {'decision': 'overturn'});
   });
 
+  test('下架貼文／留言／活動與置頂、解鎖：端點與 body', () async {
+    final calls = <String, Map<String, dynamic>>{};
+    installMockClient({
+      '/api/admin/forum/posts/1/remove': {'case': null},
+      '/api/admin/forum/comments/2/remove': {'case': null},
+      '/api/admin/events/3/remove': {'case': null},
+      '/api/admin/forum/posts/1/pin': {'id': 1, 'is_pinned': true},
+      '/api/admin/users/9/unlock': {'ok': true, 'status': 'active'},
+    }, onRequest: (r) => calls[r.url.path] = jsonDecode(r.body));
+
+    await AdminService.removePost(1, '  廣告  ');
+    await AdminService.removeComment(2, '洗版');
+    await AdminService.removeEvent(3, '不實');
+    final pinned = await AdminService.pinPost(1, pinned: true);
+    await AdminService.unlockUser(9, note: '誤判');
+
+    expect(calls['/api/admin/forum/posts/1/remove'], {'reason': '廣告'});
+    expect(calls['/api/admin/forum/comments/2/remove'], {'reason': '洗版'});
+    expect(calls['/api/admin/events/3/remove'], {'reason': '不實'});
+    expect(calls['/api/admin/forum/posts/1/pin'], {'pinned': true});
+    expect(pinned, isTrue);
+    expect(calls['/api/admin/users/9/unlock'], {'admin_note': '誤判'});
+  });
+
+  test('resetProfile：勾選欄位才送 fields，空集合交給後端預設；unlock 空備註不送', () async {
+    final bodies = <Map<String, dynamic>>[];
+    installMockClient(
+      {
+        '/api/admin/users/9/profile/reset': {'case': null},
+        '/api/admin/users/9/unlock': {'ok': true},
+      },
+      onRequest: (r) => bodies.add(jsonDecode(r.body) as Map<String, dynamic>),
+    );
+
+    await AdminService.resetProfile(9, '不雅', fields: {'video_nickname'});
+    await AdminService.resetProfile(9, '不雅');
+    await AdminService.unlockUser(9, note: '  ');
+
+    expect(bodies[0], {
+      'reason': '不雅',
+      'fields': ['video_nickname'],
+    });
+    expect(bodies[1], {'reason': '不雅'});
+    expect(bodies[2], isEmpty);
+  });
+
   test('後端沒有 page_info 時視為沒有下一頁', () async {
     respond('/api/admin/forum/reports', {'reports': []});
     final page = await AdminService.fetchReports();

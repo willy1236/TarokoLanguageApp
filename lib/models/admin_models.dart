@@ -321,6 +321,31 @@ class AdminCase {
   }
 
   bool get isPending => status == 'pending';
+
+  /// 解鎖帳號後畫面就地更新被處置者狀態。
+  AdminCase withOffenderStatus(String status) => AdminCase(
+    id: id,
+    targetType: targetType,
+    targetId: targetId,
+    offenderUid: offenderUid,
+    offenderNickname: offenderNickname,
+    offenderStatus: status,
+    source: source,
+    reportId: reportId,
+    reason: reason,
+    contentRemoved: contentRemoved,
+    openedBy: openedBy,
+    openedByNickname: openedByNickname,
+    openedAt: openedAt,
+    status: this.status,
+    reviewedBy: reviewedBy,
+    reviewedByNickname: reviewedByNickname,
+    reviewedAt: reviewedAt,
+    reviewNote: reviewNote,
+    strikeNumber: strikeNumber,
+    snapshot: snapshot,
+    preview: preview,
+  );
 }
 
 String adminCaseSourceLabel(String source) => switch (source) {

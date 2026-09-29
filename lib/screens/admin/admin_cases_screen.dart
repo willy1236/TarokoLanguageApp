@@ -31,11 +31,12 @@ class AdminCasesScreen extends StatelessWidget {
       adminCase: adminCase,
       seniorMode: senior,
       onTap: () async {
-        final changed = await pushAdmin<bool>(
+        // 二審、解鎖都可能改動案件，返回一律重抓。
+        await pushAdmin<bool>(
           context,
           AdminCaseDetailScreen(adminCase: adminCase),
         );
-        if (changed ?? false) await reload();
+        await reload();
       },
     ),
   );

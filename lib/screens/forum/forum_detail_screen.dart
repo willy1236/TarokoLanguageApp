@@ -17,8 +17,11 @@ import '../../core/network/api_client.dart';
 import '../../models/forum_models.dart';
 import '../../models/page_info.dart';
 import '../../services/forum_service.dart';
+import '../../services/admin_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
+import '../admin/admin_error.dart';
+import '../admin/widgets/admin_reason_dialog.dart';
 import 'forum_compose_screen.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 
@@ -132,6 +135,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   Map<String, ShopItem> _itemCatalogById = const {};
 
   bool get _isMine => UserService.isMe(_post?.author.friendCode);
+
+  /// 管理員：選單多出「管理員下架」「置頂」。
+  bool get _isAdmin => UserService.cachedUser?.isAdmin ?? false;
 
   Future<void> _loadItemCatalog() async {
     try {
@@ -494,20 +500,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     try {
       await ForumService.deleteComment(comment.id);
       if (!mounted) return;
-      setState(() {
-        _applyCommentDeleted(comment);
-        // 佔位不計入 comment_count，後端也是這樣算的。
-        final post = _post;
-        if (post != null) {
-          _post = post.copyWith(
-            commentCount: (post.commentCount - 1).clamp(0, 1 << 31),
-          );
-        }
-        // 正在回覆的就是被刪的那則時，取消回覆對象。
-        if (_replyTarget?.id == comment.id) _replyTarget = null;
-      });
-      final updated = _post;
-      if (updated != null) widget.onPostChanged?.call(updated);
+      _onCommentRemoved(comment);
     } on ApiException catch (e) {
       if (e.code == 'COMMENT_NOT_FOUND') {
         if (!mounted) return;
@@ -518,6 +511,82 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         return;
       }
       _toast(e.message);
+    }
+  }
+
+  /// 留言已被刪除（自刪或管理員下架）：換成佔位、扣留言數、通知父層。
+  void _onCommentRemoved(ForumComment comment) {
+    setState(() {
+      _applyCommentDeleted(comment);
+      // 佔位不計入 comment_count，後端也是這樣算的。
+      final post = _post;
+      if (post != null) {
+        _post = post.copyWith(
+          commentCount: (post.commentCount - 1).clamp(0, 1 << 31),
+        );
+      }
+      // 正在回覆的就是被刪的那則時，取消回覆對象。
+      if (_replyTarget?.id == comment.id) _replyTarget = null;
+    });
+    final updated = _post;
+    if (updated != null) widget.onPostChanged?.call(updated);
+  }
+
+  Future<void> _adminRemovePost() async {
+    final post = _post;
+    if (post == null) return;
+    final input = await promptAdminReason(
+      context,
+      title: '管理員下架貼文',
+      description: '貼文會立刻隱藏，並送進違規區等另一位管理員二審。',
+      confirmMessage: '確定下架「${post.title}」？',
+      confirmText: '下架',
+    );
+    if (input == null || !mounted) return;
+    try {
+      await AdminService.removePost(post.id, input.reason);
+      showAdminMessage('已下架，等待其他管理員二審');
+      if (mounted) {
+        Navigator.pop(context, const ForumDetailResult(deleted: true));
+      }
+    } catch (e) {
+      if (mounted) handleAdminError(context, e);
+    }
+  }
+
+  Future<void> _adminRemoveComment(ForumComment comment) async {
+    final input = await promptAdminReason(
+      context,
+      title: '管理員下架留言',
+      description: '留言會顯示為「留言已被刪除」，並送進違規區等另一位管理員二審。',
+      confirmMessage: '確定下架這則留言？',
+      confirmText: '下架',
+    );
+    if (input == null || !mounted) return;
+    try {
+      await AdminService.removeComment(comment.id, input.reason);
+      if (!mounted) return;
+      _onCommentRemoved(comment);
+      showAdminMessage('已下架，等待其他管理員二審');
+    } catch (e) {
+      if (mounted) handleAdminError(context, e);
+    }
+  }
+
+  Future<void> _adminTogglePin() async {
+    final post = _post;
+    if (post == null) return;
+    try {
+      final pinned = await AdminService.pinPost(
+        post.id,
+        pinned: !post.isPinned,
+      );
+      if (!mounted) return;
+      setState(() => _post = post.copyWith(isPinned: pinned));
+      widget.onPostChanged?.call(_post!);
+      showAdminMessage(pinned ? '已置頂' : '已取消置頂');
+    } catch (e) {
+      if (mounted) handleAdminError(context, e);
     }
   }
 
@@ -559,6 +628,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       listenable: Listenable.merge([
         seniorModeController,
         accountLockController,
+        UserService.userNotifier,
       ]),
       builder: (context, _) =>
           _buildScaffold(context, seniorModeController.enabled),
@@ -584,7 +654,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           ),
         ),
         actions: [
-          if (post != null && (_isMine || !locked))
+          if (post != null && (_isMine || !locked || _isAdmin))
             PopupMenuButton<String>(
               iconSize: seniorMode ? 30 : 24,
               onSelected: (value) {
@@ -597,14 +667,28 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     targetId: post.id,
                   );
                 }
+                if (value == 'admin_remove') _adminRemovePost();
+                if (value == 'admin_pin') _adminTogglePin();
               },
-              itemBuilder: (_) => _isMine
-                  ? [
-                      if (!locked)
-                        const PopupMenuItem(value: 'edit', child: Text('編輯')),
-                      const PopupMenuItem(value: 'delete', child: Text('刪除')),
-                    ]
-                  : const [PopupMenuItem(value: 'report', child: Text('檢舉'))],
+              itemBuilder: (_) => [
+                if (_isMine) ...[
+                  if (!locked)
+                    const PopupMenuItem(value: 'edit', child: Text('編輯')),
+                  const PopupMenuItem(value: 'delete', child: Text('刪除')),
+                ] else if (!locked)
+                  const PopupMenuItem(value: 'report', child: Text('檢舉')),
+                if (_isAdmin) ...[
+                  PopupMenuItem(
+                    value: 'admin_pin',
+                    child: Text(post.isPinned ? '取消置頂' : '置頂'),
+                  ),
+                  if (!_isMine)
+                    const PopupMenuItem(
+                      value: 'admin_remove',
+                      child: Text('管理員下架'),
+                    ),
+                ],
+              ],
             ),
         ],
       ),
@@ -724,6 +808,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                   ? null
                   : () => setState(() => _replyTarget = thread.root),
               onDelete: () => _deleteComment(thread.root),
+              onAdminRemove: _isAdmin
+                  ? () => _adminRemoveComment(thread.root)
+                  : null,
               onReport: locked
                   ? null
                   : () => showForumReportSheet(
@@ -744,6 +831,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     ? null
                     : () => setState(() => _replyTarget = thread.root),
                 onDelete: () => _deleteComment(reply),
+                onAdminRemove: _isAdmin
+                    ? () => _adminRemoveComment(reply)
+                    : null,
                 itemCatalogById: _itemCatalogById,
                 onReport: locked
                     ? null

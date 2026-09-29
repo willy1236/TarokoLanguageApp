@@ -15,6 +15,7 @@ import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import 'admin_cases_screen.dart';
 import 'admin_error.dart';
+import 'widgets/admin_reason_dialog.dart';
 import 'widgets/admin_widgets.dart';
 
 const _noteMax = 500;
@@ -32,7 +33,7 @@ class _AdminCaseDetailScreenState extends State<AdminCaseDetailScreen> {
   final _note = TextEditingController();
   bool _busy = false;
 
-  AdminCase get _case => widget.adminCase;
+  late AdminCase _case = widget.adminCase;
 
   @override
   void dispose() {
@@ -71,6 +72,37 @@ class _AdminCaseDetailScreenState extends State<AdminCaseDetailScreen> {
       setState(() => _busy = false);
       if (handleAdminError(context, e)) return;
       if (e is ApiException && e.code == 'CASE_ALREADY_REVIEWED') {
+        Navigator.of(context).pop(true);
+      }
+    }
+  }
+
+  /// 被處置者已被鎖帳號時，誤判救援：解鎖並推播通知當事人。
+  Future<void> _unlock() async {
+    final input = await promptAdminReason(
+      context,
+      title: '解鎖帳號',
+      description: '解除鎖定後，對方會收到「帳號已恢復」的通知；違規次數退回門檻以下，再犯即重鎖。',
+      confirmMessage: '確定解鎖「${_case.offenderNickname}」的帳號？',
+      confirmText: '解鎖',
+      required: false,
+    );
+    if (input == null || !mounted) return;
+    setState(() => _busy = true);
+    try {
+      await AdminService.unlockUser(_case.offenderUid, note: input.reason);
+      if (!mounted) return;
+      setState(() {
+        _busy = false;
+        _case = _case.withOffenderStatus('active');
+      });
+      showAdminMessage('已解鎖帳號');
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (handleAdminError(context, e)) return;
+      // 已不是鎖定狀態（別人先解了）：回列表以最新狀態為準。
+      if (e is ApiException && e.code == 'NOT_LOCKED') {
         Navigator.of(context).pop(true);
       }
     }
@@ -117,6 +149,20 @@ class _AdminCaseDetailScreenState extends State<AdminCaseDetailScreen> {
       padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
       children: [
         AdminCaseCard(adminCase: _case, seniorMode: senior),
+        if (_case.offenderStatus == 'locked')
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.md,
+              AppSpacing.md,
+              AppSpacing.md,
+              0,
+            ),
+            child: OutlinedButton.icon(
+              onPressed: _busy ? null : _unlock,
+              icon: const Icon(Icons.lock_open_outlined),
+              label: const Text('解鎖帳號'),
+            ),
+          ),
         if (_case.isPending)
           Padding(
             padding: const EdgeInsets.all(AppSpacing.md),

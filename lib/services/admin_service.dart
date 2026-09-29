@@ -74,6 +74,54 @@ class AdminService {
     );
   }
 
+  // ── 直接處置（內部管理.md §8.3、§8.5、§8.5.1）──────────────────────
+  //
+  // 下架與重設都不當下記違規：內容隱藏並開案進違規區，等另一位管理員二審。
+  // 理由必填（去空白後 1～500 字），這裡只去空白，長度由畫面先擋。
+
+  static Future<AdminResolveResult> _removal(String path, String reason) async {
+    final json = await ApiClient.post(path, {'reason': reason.trim()});
+    return AdminResolveResult.fromJson(json);
+  }
+
+  static Future<AdminResolveResult> removePost(int id, String reason) =>
+      _removal(ApiConfig.adminForumPostRemove(id), reason);
+
+  static Future<AdminResolveResult> removeComment(int id, String reason) =>
+      _removal(ApiConfig.adminForumCommentRemove(id), reason);
+
+  static Future<AdminResolveResult> removeEvent(int id, String reason) =>
+      _removal(ApiConfig.adminEventRemove(id), reason);
+
+  /// 重設他人個人檔案。[fields] 為 [adminProfileFields] 的鍵；空集合＝後端預設三項全部。
+  static Future<AdminResolveResult> resetProfile(
+    int uid,
+    String reason, {
+    Set<String> fields = const {},
+  }) async {
+    final json = await ApiClient.post(ApiConfig.adminUserProfileReset(uid), {
+      'reason': reason.trim(),
+      if (fields.isNotEmpty) 'fields': fields.toList(),
+    });
+    return AdminResolveResult.fromJson(json);
+  }
+
+  /// 置頂／取消置頂論壇貼文，回傳更新後的 `is_pinned`。
+  static Future<bool> pinPost(int id, {required bool pinned}) async {
+    final json = await ApiClient.post(ApiConfig.adminForumPostPin(id), {
+      'pinned': pinned,
+    });
+    return json['is_pinned'] == true;
+  }
+
+  /// 解鎖被鎖的帳號（誤判救援），[note] 選填。
+  static Future<void> unlockUser(int uid, {String? note}) async {
+    final trimmed = note?.trim();
+    await ApiClient.post(ApiConfig.adminUserUnlock(uid), {
+      if (trimmed != null && trimmed.isNotEmpty) 'admin_note': trimmed,
+    });
+  }
+
   /// 二次審核。[decision] 為 `confirm`（確認違規）或 `overturn`（撤銷）；
   /// [note] 選填、500 字內。須由開案以外的另一位管理員操作。
   static Future<AdminReviewResult> reviewCase(

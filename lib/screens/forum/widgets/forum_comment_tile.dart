@@ -27,6 +27,9 @@ class ForumCommentTile extends StatelessWidget {
   final VoidCallback? onReply;
   final VoidCallback onDelete;
   final VoidCallback? onReport;
+
+  /// 管理員才給：顯示「管理員下架」。自己的留言不顯示（自己走刪除）。
+  final VoidCallback? onAdminRemove;
   final Map<String, ShopItem> itemCatalogById;
 
   const ForumCommentTile({
@@ -38,6 +41,7 @@ class ForumCommentTile extends StatelessWidget {
     this.onReply,
     required this.onDelete,
     this.onReport,
+    this.onAdminRemove,
     this.itemCatalogById = const {},
   });
 
@@ -189,6 +193,8 @@ class ForumCommentTile extends StatelessWidget {
                 _action('刪除', onDelete, seniorMode)
               else if (onReport case final onReport?)
                 _action('檢舉', onReport, seniorMode),
+              if (!isMine && onAdminRemove != null)
+                _action('管理員下架', onAdminRemove!, seniorMode),
             ],
           ),
         ),
