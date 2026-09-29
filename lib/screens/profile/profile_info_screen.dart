@@ -244,26 +244,32 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
   }
 
   // 視訊配對前必填；空字串視為清空，後端規則相同。
+  // 暱稱被擋（INVALID_NICKNAME）時要留在對話框改字，所以交給對話框自己送出。
   Future<void> _editVideoNickname() async {
-    final newName = await showDialog<String>(
+    await showDialog<String>(
       context: context,
       builder: (ctx) => ProfileRenameDialog(
         title: '修改公開暱稱',
         label: '公開暱稱',
         maxLength: ProfileFieldLimits.videoNickname,
         initialValue: _user?.videoNickname ?? '',
+        onSave: _saveVideoNickname,
       ),
     );
-    if (newName == null || newName == _user?.videoNickname) return;
+  }
+
+  Future<String?> _saveVideoNickname(String newName) async {
+    if (newName == _user?.videoNickname) return null;
     try {
       final updated = await UserService.updateMe(videoNickname: newName);
       if (mounted) setState(() => _user = updated);
+      return null;
     } on ApiException catch (e) {
-      _showError(e.message);
+      return e.code == 'INVALID_NICKNAME' ? e.message : '更新失敗，請稍後再試';
     } catch (e, st) {
       debugPrint('Failed to update video nickname: $e');
       debugPrintStack(stackTrace: st);
-      _showError('更新失敗，請稍後再試');
+      return '更新失敗，請稍後再試';
     }
   }
 

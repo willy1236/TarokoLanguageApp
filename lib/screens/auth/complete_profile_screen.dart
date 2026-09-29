@@ -19,8 +19,17 @@ import '../../core/constants/app_typography.dart';
 // profile_screen.dart 的 _defaultEthnicGroup 同款規則。
 const String _defaultEthnicGroup = '太魯閣族';
 
+String? _firebaseDisplayName() =>
+    FirebaseAuth.instance.currentUser?.displayName;
+
 class CompleteProfileScreen extends StatefulWidget {
-  const CompleteProfileScreen({super.key});
+  /// 預填姓名的來源，預設讀 Google 帳號名稱；widget test 沒有 Firebase，換成假的。
+  final String? Function() readGoogleName;
+
+  const CompleteProfileScreen({
+    super.key,
+    this.readGoogleName = _firebaseDisplayName,
+  });
 
   @override
   State<CompleteProfileScreen> createState() => _CompleteProfileScreenState();
@@ -33,12 +42,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   bool _isIndigenous = false;
   Tribe? _tribe;
   bool _submitting = false;
+  // 後端 INVALID_NICKNAME 的說明，顯示在公開暱稱欄位下方，一改字就清掉。
+  String? _nicknameError;
 
   @override
   void initState() {
     super.initState();
     // 預填 Google 帳號名稱，讓使用者可直接確認或修改，不用從空白開始打。
-    final googleName = FirebaseAuth.instance.currentUser?.displayName;
+    final googleName = widget.readGoogleName();
     if (googleName != null && googleName.isNotEmpty) {
       _displayNameController.text = googleName;
     }
@@ -116,7 +127,11 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/home');
     } on ApiException catch (e) {
-      _showError(e.message);
+      if (e.code == 'INVALID_NICKNAME') {
+        if (mounted) setState(() => _nicknameError = e.message);
+      } else {
+        _showError(e.message);
+      }
     } catch (e) {
       _showError('送出失敗，請稍後再試：$e');
     } finally {
@@ -224,6 +239,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                             hint: '論壇、視訊、好友都會顯示這個名字',
                             maxLength: ProfileFieldLimits.videoNickname,
                             seniorMode: seniorMode,
+                            errorText: _nicknameError,
+                            onChanged: (_) {
+                              if (_nicknameError != null) {
+                                setState(() => _nicknameError = null);
+                              }
+                            },
                           ),
                           const SizedBox(height: 16),
                           _buildSwitchRow(seniorMode),
@@ -297,6 +318,8 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
     required String hint,
     required int maxLength,
     bool seniorMode = false,
+    String? errorText,
+    ValueChanged<String>? onChanged,
   }) {
     return Container(
       decoration: BoxDecoration(
@@ -322,6 +345,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
           const SizedBox(height: 6),
           TextField(
             controller: controller,
+            onChanged: onChanged,
             inputFormatters: [Utf16LengthLimitingTextInputFormatter(maxLength)],
             buildCounter: utf16CounterBuilder(
               controller,
@@ -340,6 +364,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               isDense: true,
               contentPadding: EdgeInsets.zero,
               border: InputBorder.none,
+              errorText: errorText,
+              errorMaxLines: 3,
+              errorStyle: AppTypography.captionStyle(
+                seniorMode: seniorMode,
+                color: AppColors.rose,
+              ),
               hintText: hint,
               hintStyle: TextStyle(
                 color: AppColors.cream.withValues(alpha: 0.35),
