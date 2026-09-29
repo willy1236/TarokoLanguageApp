@@ -15,6 +15,7 @@ import 'package:flutter_application_1/screens/auth/complete_profile_screen.dart'
 import 'package:flutter_application_1/screens/profile/profile_info_screen.dart';
 import 'package:flutter_application_1/services/user_service.dart';
 
+import '../helpers/birth_date_test_helpers.dart';
 import '../helpers/fixtures.dart';
 import '../helpers/widget_test_helpers.dart';
 
@@ -41,6 +42,7 @@ void main() {
         find.widgetWithText(TextField, '論壇、視訊、好友都會顯示這個名字'),
         nickname,
       );
+      await pickBirthDate(tester);
       await tester.tap(find.text('完　成'));
       await tester.pumpAndSettle();
     }

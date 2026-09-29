@@ -180,4 +180,48 @@ void main() {
       expect(copy.millet, base.millet);
     });
   });
+
+  group('出生日期（POL-01）', () {
+    // 後端 POL-01 尚未部署、錄不到新欄位，依規格 00_核心與認證.md §2.3 手寫；
+    // 上線後以 inspector 重錄 get_api_me.json 核對。
+    Map<String, dynamic> me() => {
+      'uid': 5,
+      'email': 'a@example.com',
+      'created_at': '2026-05-01T08:00:00Z',
+      'profile_completed': true,
+    };
+
+    test('解析 birth_date 與 needs_birth_date', () {
+      final user = UserModel.fromJson(
+        me()
+          ..['birth_date'] = '1995-03-15'
+          ..['needs_birth_date'] = false,
+      );
+      expect(user.birthDate, DateTime(1995, 3, 15));
+      expect(user.needsBirthDate, isFalse);
+    });
+
+    test('舊使用者尚未補填：birth_date 為 null、needs_birth_date 為 true', () {
+      final user = UserModel.fromJson(
+        me()
+          ..['birth_date'] = null
+          ..['needs_birth_date'] = true,
+      );
+      expect(user.birthDate, isNull);
+      expect(user.needsBirthDate, isTrue);
+    });
+
+    test('舊後端沒有這兩個欄位時不擋人', () {
+      final user = UserModel.fromJson(me());
+      expect(user.birthDate, isNull);
+      expect(user.needsBirthDate, isFalse);
+    });
+
+    test('toJson 寫回同樣格式', () {
+      final user = UserModel.fromJson(me()..['birth_date'] = '2001-07-04');
+      final json = UserModel.fromJson(user.toJson()).toJson();
+      expect(json['birth_date'], '2001-07-04');
+      expect(json['needs_birth_date'], isFalse);
+    });
+  });
 }

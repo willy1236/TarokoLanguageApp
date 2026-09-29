@@ -7,6 +7,8 @@
 // 此時應 fallback 顯示 avatarUrl（登入帳號頭像）。frame_id 為 null 代表未配戴頭像框，
 // 兩者各自獨立、可同時配戴。
 
+import '../shared/utils/birth_date.dart';
+
 /// 個人資料欄位的長度上限（UTF-16 單位），與後端 `PATCH /api/auth/me`、
 /// 完善資料的檢查一致。個人資料頁與首次完善資料頁共用。
 abstract final class ProfileFieldLimits {
@@ -38,6 +40,8 @@ class UserModel {
   final bool? isIndigenous; // 是否原住民；ethnicGroup 一經設定即永久鎖定
   final String? tribalName; // 本人族語名，不受 ethnicGroup 鎖定限制，可隨時修改
   final bool profileCompleted; // 首次登入完善資料是否已完成，見 issue #43
+  final DateTime? birthDate; // 出生日期（只有年月日），不公開；舊後端或尚未補填為 null
+  final bool needsBirthDate; // 舊使用者尚未補填生日，要擋住畫面補填；舊後端沒有此欄位視為 false
   final String? selfIntro; // 自我介紹，公開檔案顯示；未填為 null
   final String? friendCode; // 8 碼公開識別碼，唯讀，供他人加好友用
   final String? quizSuggestedLevel; // 分級測驗建議的單字起始等級；null=尚未分級
@@ -72,6 +76,8 @@ class UserModel {
     this.isIndigenous,
     this.tribalName,
     this.profileCompleted = false,
+    this.birthDate,
+    this.needsBirthDate = false,
     this.selfIntro,
     this.friendCode,
     this.quizSuggestedLevel,
@@ -112,6 +118,8 @@ class UserModel {
       isIndigenous: json['is_indigenous'] as bool?,
       tribalName: json['tribal_name'] as String?,
       profileCompleted: json['profile_completed'] as bool? ?? false,
+      birthDate: parseApiDate(json['birth_date']),
+      needsBirthDate: json['needs_birth_date'] as bool? ?? false,
       selfIntro: json['self_intro'] as String?,
       friendCode: json['friend_code'] as String?,
       quizSuggestedLevel: json['quiz_suggested_level'] as String?,
@@ -154,6 +162,8 @@ class UserModel {
     'is_indigenous': isIndigenous,
     'tribal_name': tribalName,
     'profile_completed': profileCompleted,
+    'birth_date': birthDate == null ? null : formatApiDate(birthDate!),
+    'needs_birth_date': needsBirthDate,
     'self_intro': selfIntro,
     'friend_code': friendCode,
     'quiz_suggested_level': quizSuggestedLevel,
@@ -193,6 +203,8 @@ class UserModel {
     bool? isIndigenous,
     String? tribalName,
     bool? profileCompleted,
+    DateTime? birthDate,
+    bool? needsBirthDate,
     String? selfIntro,
     String? friendCode,
     String? quizSuggestedLevel,
@@ -227,6 +239,8 @@ class UserModel {
       isIndigenous: isIndigenous ?? this.isIndigenous,
       tribalName: tribalName ?? this.tribalName,
       profileCompleted: profileCompleted ?? this.profileCompleted,
+      birthDate: birthDate ?? this.birthDate,
+      needsBirthDate: needsBirthDate ?? this.needsBirthDate,
       selfIntro: selfIntro ?? this.selfIntro,
       friendCode: friendCode ?? this.friendCode,
       quizSuggestedLevel: quizSuggestedLevel ?? this.quizSuggestedLevel,

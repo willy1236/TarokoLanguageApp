@@ -11,6 +11,7 @@ import '../../models/user_model.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import '../../shared/utils/utf16_length_limit.dart';
+import '../../shared/widgets/birth_date_field.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
 import '../../core/constants/app_typography.dart';
@@ -41,6 +42,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   final _tribalNameController = TextEditingController();
   bool _isIndigenous = false;
   Tribe? _tribe;
+  DateTime? _birthDate;
   bool _submitting = false;
   // 後端 INVALID_NICKNAME 的說明，顯示在公開暱稱欄位下方，一改字就清掉。
   String? _nicknameError;
@@ -114,12 +116,18 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       _showError('請選擇部落');
       return;
     }
+    final birthDate = _birthDate;
+    if (birthDate == null) {
+      _showError('請選擇出生日期');
+      return;
+    }
     setState(() => _submitting = true);
     try {
       await UserService.completeProfile(
         displayName: displayName,
         isIndigenous: _isIndigenous,
         videoNickname: videoNickname,
+        birthDate: birthDate,
         ethnicGroup: _isIndigenous ? _defaultEthnicGroup : null,
         tribeId: _isIndigenous ? _tribe?.id : null,
         tribalName: tribalName.isEmpty ? null : tribalName,
@@ -245,6 +253,12 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
                                 setState(() => _nicknameError = null);
                               }
                             },
+                          ),
+                          const SizedBox(height: 16),
+                          BirthDateField(
+                            value: _birthDate,
+                            onChanged: (d) => setState(() => _birthDate = d),
+                            seniorMode: seniorMode,
                           ),
                           const SizedBox(height: 16),
                           _buildSwitchRow(seniorMode),
