@@ -11,6 +11,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/services/account_lock_controller.dart';
 
+import '../helpers/widget_test_helpers.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
@@ -37,6 +39,57 @@ void main() {
 
       accountLockController.setLocked(false);
       expect(notified, 2);
+    });
+  });
+
+  group('refreshIfLocked', () {
+    late int requests;
+
+    setUp(() {
+      stubCommonChannels();
+      requests = 0;
+    });
+    tearDown(restoreHttp);
+
+    void respondWith(Object? route) => installMockClient({
+      '/api/account/status': route,
+    }, onRequest: (_) => requests++);
+
+    test('非唯讀時不打請求', () async {
+      respondWith({'status': 'active'});
+
+      await accountLockController.refreshIfLocked();
+
+      expect(requests, 0);
+      expect(accountLockController.locked, isFalse);
+    });
+
+    test('唯讀中查到 active 就解除唯讀', () async {
+      accountLockController.setLocked(true);
+      respondWith({'status': 'active'});
+
+      await accountLockController.refreshIfLocked();
+
+      expect(requests, 1);
+      expect(accountLockController.locked, isFalse);
+    });
+
+    test('仍是 locked 維持唯讀', () async {
+      accountLockController.setLocked(true);
+      respondWith({'status': 'locked'});
+
+      await accountLockController.refreshIfLocked();
+
+      expect(accountLockController.locked, isTrue);
+    });
+
+    test('查詢失敗維持唯讀、不丟例外', () async {
+      accountLockController.setLocked(true);
+      respondWith(errorResponse('INTERNAL_ERROR', status: 500));
+
+      await accountLockController.refreshIfLocked();
+
+      expect(accountLockController.locked, isTrue);
     });
   });
 

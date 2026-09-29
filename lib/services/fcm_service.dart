@@ -32,6 +32,7 @@ import 'auth_service.dart';
 import 'directed_call_service.dart';
 import 'event_service.dart';
 import 'notification_summary_service.dart';
+import 'user_service.dart';
 
 /// 背景/App 被系統回收時收到訊息的處理器。必須是頂層函式並標註 vm:entry-point。
 /// 通知列的顯示由系統處理，這裡通常不需額外動作。
@@ -445,6 +446,16 @@ class FcmService {
     final data = message.data;
     if (data['locked']?.toString() == 'true') {
       accountLockController.setLocked(true);
+    }
+    if (data['action'] == 'account_unlocked') {
+      accountLockController.setLocked(false);
+      // 讓個人頁等畫面拿到解鎖後的最新資料。
+      unawaited(
+        UserService.fetchMe(forceRefresh: true).then<void>(
+          (_) {},
+          onError: (Object e) => debugPrint('解鎖後重抓 /api/me 失敗：$e'),
+        ),
+      );
     }
     final context = navigatorKey.currentContext;
     if (context == null) return;
