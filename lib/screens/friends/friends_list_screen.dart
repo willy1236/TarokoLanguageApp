@@ -182,7 +182,9 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         setState(() {
           final current = _friends;
           if (current == null) return;
-          final i = current.indexWhere((e) => e.friendCode == f.friendCode);
+          final i = current.indexWhere(
+            (e) => sameFriendCode(e.friendCode, f.friendCode),
+          );
           if (i == -1) return;
           _friends = List<Friendship>.from(current)
             ..[i] = current[i].copyWith(showcase: result);
@@ -448,15 +450,17 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                 ],
               ),
             ),
-            IconButton(
-              tooltip: '刪除好友',
-              onPressed: () => _removeUnavailableFriend(f),
-              iconSize: AppIconSize.action(seniorMode),
-              icon: const Icon(
-                Icons.person_remove_outlined,
-                color: AppColors.ink,
+            // 沒有好友碼就無從指定對象，不給按（後端 2026-09-29 起都會給）。
+            if (f.friendCode.isNotEmpty)
+              IconButton(
+                tooltip: '刪除好友',
+                onPressed: () => _removeUnavailableFriend(f),
+                iconSize: AppIconSize.action(seniorMode),
+                icon: const Icon(
+                  Icons.person_remove_outlined,
+                  color: AppColors.ink,
+                ),
               ),
-            ),
           ],
         ),
       ),
