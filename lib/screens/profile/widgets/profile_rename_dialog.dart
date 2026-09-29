@@ -75,6 +75,11 @@ class _RenameDialogState extends State<ProfileRenameDialog> {
 
   @override
   Widget build(BuildContext context) {
+    // 送出中不給關：關掉後被擋的原因就沒地方顯示，使用者會以為已經改好。
+    return PopScope(canPop: !_saving, child: _buildDialog());
+  }
+
+  Widget _buildDialog() {
     return AlertDialog(
       title: Text(widget.title),
       content: TextField(

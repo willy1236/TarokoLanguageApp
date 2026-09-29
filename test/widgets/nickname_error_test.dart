@@ -1,6 +1,7 @@
 // 暱稱含「管理員」「官方」等字樣時，後端回 400 INVALID_NICKNAME，message 要顯示在
 // 暱稱欄位下方讓使用者直接改，一改字就消失；其他錯誤維持原本的提示方式。
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -131,6 +132,30 @@ void main() {
 
       expect(find.byType(AlertDialog), findsOneWidget);
       expect(find.text('更新失敗，請稍後再試'), findsOneWidget);
+    });
+
+    testWidgets('送出中點背景不會關閉對話框，被擋的原因仍看得到', (tester) async {
+      final pending = Completer<http.Response>();
+      patches = [];
+      final me = loadFixtureMap('get_api_me.json');
+      ApiClient.httpClient = MockClient((request) async {
+        if (request.method == 'PATCH') {
+          patches.add(request);
+          return pending.future;
+        }
+        return jsonResponse(me);
+      });
+      await openDialog(tester);
+
+      await tester.tap(find.text('儲存'));
+      await tester.pump();
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pump();
+      expect(find.byType(AlertDialog), findsOneWidget);
+
+      pending.complete(errorResponse('INVALID_NICKNAME', message: _blocked));
+      await tester.pumpAndSettle();
+      expect(find.text(_blocked), findsOneWidget);
     });
 
     testWidgets('成功才關閉並更新畫面', (tester) async {
