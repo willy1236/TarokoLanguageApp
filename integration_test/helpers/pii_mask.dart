@@ -19,6 +19,8 @@ const Map<String, String> kStringMasks = {
   'tribe_name': '測試部落',
   'ethnic_group': '測試族群',
   'friend_code': 'TESTCODE',
+  // 出生日期不公開；替代值要維持 YYYY-MM-DD，UserModel.fromJson 才解析得了。
+  'birth_date': '2000-01-01',
   'avatar_url': 'https://example.com/avatar.png',
   'token': 'REDACTED',
   'id_token': 'REDACTED',

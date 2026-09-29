@@ -4,6 +4,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/screens/community/video_waiting_screen.dart';
 
@@ -234,6 +235,49 @@ void main() {
       expect(find.text('無法取消配對'), findsOneWidget);
       expect(find.byType(VideoWaitingScreen), findsOneWidget);
     });
+  });
+
+  testWidgets('重新排隊遇到年齡限制：停止輪詢、帶著錯誤離開，不在這裡提示', (tester) async {
+    Object? result;
+    var queuePosts = 0;
+    installMockClient(
+      {
+        '/api/video/session/current': {'session': null, 'in_queue': false},
+        '/api/video/queue': errorResponse('UNDERAGE', status: 403),
+      },
+      onRequest: (r) {
+        if (r.method == 'POST') queuePosts++;
+      },
+    );
+    await tester.pumpWidget(
+      MaterialApp(
+        scaffoldMessengerKey: scaffoldMessengerKey,
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => TextButton(
+              onPressed: () async {
+                result = await Navigator.of(context).push(
+                  MaterialPageRoute(builder: (_) => const VideoWaitingScreen()),
+                );
+              },
+              child: const Text('OPEN'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('OPEN'));
+    await pumpFrames(tester);
+    await tester.pump(const Duration(seconds: 4));
+    await pumpFrames(tester, times: 10);
+
+    expect(find.byType(VideoWaitingScreen), findsNothing);
+    expect(result, isA<ApiException>());
+    expect((result! as ApiException).isUnderage, isTrue);
+    expect(find.byType(SnackBar), findsNothing);
+
+    await tester.pump(const Duration(seconds: 8));
+    expect(queuePosts, 1);
   });
 
   group('重新排隊被 403 擋下，同時取消失敗：直接離開，不停在不再輪詢的畫面', () {

@@ -85,6 +85,17 @@ class ApiException implements Exception {
   bool get isServiceBusy => statusCode == 503 && code == 'SERVICE_BUSY';
   bool get isVideoNicknameRequired =>
       statusCode == 403 && code == 'VIDEO_NICKNAME_REQUIRED';
+
+  /// 沒填出生日期的人進隨機配對（POL-01），前端導去補填頁。
+  bool get isBirthDateRequired =>
+      statusCode == 403 && code == 'BIRTH_DATE_REQUIRED';
+
+  /// 未滿 18 歲進隨機配對（POL-01），可以改跟好友視訊。
+  bool get isUnderage => statusCode == 403 && code == 'UNDERAGE';
+
+  /// 補填出生日期時已經填過（只能填一次）。
+  bool get isBirthDateAlreadySet =>
+      statusCode == 409 && code == 'BIRTH_DATE_ALREADY_SET';
   bool get isSessionEnded => code == 'SESSION_ENDED';
   bool get isIdentityLocked => code == 'IDENTITY_LOCKED';
   bool get isFileTooLarge => code == 'FILE_TOO_LARGE';

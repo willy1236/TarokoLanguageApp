@@ -8,6 +8,7 @@ class ApiConfig {
   static const String me = '/api/me';
   static const String meAvatar = '/api/me/avatar';
   static const String completeProfile = '/api/me/complete-profile';
+  static const String meBirthDate = '/api/me/birth-date';
   static const String logoutAll = '/api/auth/logout-all';
 
   // 推播設定（見 Truku_backend 說明文件/API/00_核心與認證.md §2.4d）

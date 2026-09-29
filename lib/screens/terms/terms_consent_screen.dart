@@ -17,11 +17,13 @@ import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/terms_models.dart';
+import '../../models/user_model.dart';
 import '../../services/fcm_service.dart';
 import '../../services/terms_service.dart';
 import '../../services/user_service.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../auth/entry_route.dart';
 
 class TermsConsentScreen extends StatefulWidget {
   final bool readOnly;
@@ -161,19 +163,17 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
   /// 全部同意完成：進首頁；新帳號會先被擋在同意條款，同意後要接續完善資料，
   /// 查不到就照舊進首頁。
   Future<void> _finish() async {
-    var profileCompleted = true;
+    UserModel? user;
     try {
-      profileCompleted = (await UserService.fetchMe()).profileCompleted;
+      user = await UserService.fetchMe();
     } catch (e) {
       debugPrint('TermsConsentScreen: fetchMe 失敗，略過完善資料檢查：$e');
     }
     if (!mounted) return;
-    Navigator.of(context).pushNamedAndRemoveUntil(
-      profileCompleted ? '/home' : '/complete-profile',
-      (route) => false,
-    );
+    final route = entryRouteFor(user, allConsented: true);
+    Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false);
     // 冷啟動被條款擋下時，splash 沒處理通知深連結，同意進首頁後補上。
-    if (profileCompleted) FcmService.consumePendingInitialMessage();
+    if (route == '/home') FcmService.consumePendingInitialMessage();
   }
 
   /// 閱讀期間後台發布了新版：目前這份換成回應附的最新條款，需重新捲到底才能同意。
