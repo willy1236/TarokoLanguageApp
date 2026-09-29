@@ -61,7 +61,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
       _changed = true;
       if (!mounted) return;
       setState(() {
-        _requests?.removeWhere((e) => e.friendCode == r.friendCode);
+        _requests?.removeWhere(
+          (e) => sameFriendCode(e.friendCode, r.friendCode),
+        );
         _busyCodes.remove(r.friendCode);
       });
     } on ApiException catch (e) {
@@ -84,7 +86,9 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
       _changed = true;
       if (!mounted) return;
       setState(() {
-        _requests?.removeWhere((e) => e.friendCode == r.friendCode);
+        _requests?.removeWhere(
+          (e) => sameFriendCode(e.friendCode, r.friendCode),
+        );
         _busyCodes.remove(r.friendCode);
       });
     } on ApiException catch (e) {

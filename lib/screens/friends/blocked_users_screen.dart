@@ -56,7 +56,9 @@ class _BlockedUsersScreenState extends State<BlockedUsersScreen> {
       await FriendService.unblockUser(u.friendCode);
       if (!mounted) return;
       setState(() {
-        _blocked?.removeWhere((e) => e.friendCode == u.friendCode);
+        _blocked?.removeWhere(
+          (e) => sameFriendCode(e.friendCode, u.friendCode),
+        );
         _busyCodes.remove(u.friendCode);
       });
     } on ApiException catch (e) {

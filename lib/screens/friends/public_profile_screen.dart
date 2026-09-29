@@ -12,6 +12,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../models/friend_model.dart';
 import '../../models/public_profile_model.dart';
 import '../../models/shop_item.dart';
 import '../../services/account_lock_controller.dart';
@@ -64,9 +65,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       final friends = results[0];
       final blocked = results[1];
       setState(() {
-        if (blocked.any((b) => b.friendCode == friendCode)) {
+        if (blocked.any((b) => sameFriendCode(b.friendCode, friendCode))) {
           _relationship = _Relationship.blocked;
-        } else if (friends.any((f) => f.friendCode == friendCode)) {
+        } else if (friends.any(
+          (f) => sameFriendCode(f.friendCode, friendCode),
+        )) {
           _relationship = _Relationship.friend;
         } else {
           _relationship = _Relationship.stranger;
