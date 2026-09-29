@@ -13,7 +13,6 @@ import 'event_model.dart' show asEventInt;
 class VideoSession {
   final int id;
   final String channel;
-  final int peerUid;
 
   /// 對方好友碼，通話中封鎖、加好友用。
   final String peerFriendCode;
@@ -23,7 +22,6 @@ class VideoSession {
   const VideoSession({
     required this.id,
     required this.channel,
-    required this.peerUid,
     required this.peerFriendCode,
     this.peerNickname,
     required this.expiresAt,
@@ -35,13 +33,17 @@ class VideoSession {
     return VideoSession(
       id: asEventInt(json['id'])!,
       channel: json['channel'] as String,
-      peerUid: asEventInt(json['peer_uid'])!,
       peerFriendCode: json['peer_friend_code'] as String? ?? '',
       peerNickname: json['peer_nickname'] as String?,
       expiresAt: DateTime.parse(json['expires_at'] as String),
     );
   }
 }
+
+/// 加入 Agora 頻道用的編號：一律用 API 回的 `uid`（或同值的 `agora_uid`），
+/// 不是帳號 uid——後端開關 FRIEND_CODE_ENFORCE 開啟後它是這通通話內的 1／2。
+int _agoraUid(Map<String, dynamic> json) =>
+    asEventInt(json['uid'] ?? json['agora_uid'])!;
 
 /// POST /api/video/queue 配對成功時，平鋪於回應外層的 Agora 加入房間憑證。
 class AgoraCallCredentials {
@@ -59,7 +61,7 @@ class AgoraCallCredentials {
     return AgoraCallCredentials(
       token: json['token'] as String,
       appId: json['app_id'] as String,
-      uid: asEventInt(json['uid'])!,
+      uid: _agoraUid(json),
     );
   }
 }
@@ -110,7 +112,7 @@ class RefreshedTokenResult {
       token: json['token'] as String,
       appId: json['app_id'] as String,
       channel: json['channel'] as String,
-      uid: asEventInt(json['uid'])!,
+      uid: _agoraUid(json),
       expiresAt: DateTime.parse(json['expires_at'] as String),
     );
   }

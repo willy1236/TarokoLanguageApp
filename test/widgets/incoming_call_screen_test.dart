@@ -25,7 +25,12 @@ MockClient _backend(
   final path = req.url.path;
   log?.add('${req.method} $path');
   if (path == '/api/friends/calls/$_callId') {
-    return _json({'call_id': _callId, 'status': status(), 'peer_uid': 2});
+    return _json({
+      'call_id': _callId,
+      'status': status(),
+      'is_caller': false,
+      'peer_friend_code': 'BBBB2345',
+    });
   }
   if (path == '/api/friends/calls/$_callId/accept') {
     await Future<void>.delayed(acceptDelay);
@@ -49,7 +54,7 @@ Future<void> _openScreen(WidgetTester tester) async {
               builder: (_) => IncomingCallScreen(
                 call: IncomingCall(
                   callId: _callId,
-                  callerUid: 2,
+                  callerFriendCode: 'BBBB2345',
                   callerNickname: '阿美',
                   createdAt: DateTime(2026),
                 ),

@@ -8,7 +8,7 @@
 //     { type: 'video_matched', session_id, channel }
 //     { type: 'video_session_ended', session_id }
 //     注意：video_matched payload 只有 session_id/channel，沒有
-//     peer_uid/expires_at，不足以組出完整 VideoSession —— 收到後一律當「觸發
+//     peer_friend_code/expires_at，不足以組出完整 VideoSession —— 收到後一律當「觸發
 //     訊號」，由畫面端另外呼叫 VideoService.fetchCurrentSession() 取得權威資料，
 //     不要直接拿 payload 欄位組物件（避免輪詢與 FCM 兩條路徑組出不一致的結果）。
 //

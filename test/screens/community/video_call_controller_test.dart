@@ -81,7 +81,6 @@ class _Harness {
             session: VideoSession(
               id: 1,
               channel: 'ch',
-              peerUid: 2,
               peerFriendCode: 'BBBB2345',
               expiresAt: _t0.add(callLength),
             ),

@@ -6,6 +6,7 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/models/friend_model.dart';
+import 'package:flutter_application_1/models/video_call_model.dart';
 
 import '../helpers/fixtures.dart';
 
@@ -72,5 +73,48 @@ void main() {
     final blocks = _items(json, 'blocks').map(BlockedUser.fromJson).toList();
 
     expect(blocks.single.friendCode, 'BBBB2345');
+  });
+
+  test('隨機配對：session 不帶 peer_uid 也能解析，Agora 用回應的 uid', () {
+    final json = loadSpecFixtureMap('post_api_video_queue_matched.json');
+    expectNoOthersUid(json['session']);
+
+    final result = QueueJoinResult.fromJson(json);
+
+    expect(result.session!.peerFriendCode, 'CCCC2345');
+    expect(result.credentials!.uid, 1);
+  });
+
+  test('好友通話狀態：以 is_caller 與 peer_friend_code 辨識', () {
+    final json = loadSpecFixtureMap('get_api_friends_call_detail.json');
+    expectNoOthersUid(json);
+
+    final status = DirectedCallStatus.fromJson(json);
+
+    expect(status.isCaller, isTrue);
+    expect(status.peerFriendCode, 'BBBB2345');
+    expect(status.sessionId, 12);
+  });
+
+  test('來電列表：以 caller_friend_code 辨識來電者', () {
+    final json = loadSpecFixtureMap('get_api_friends_calls_incoming.json');
+    expectNoOthersUid(json);
+
+    final calls = _items(json, 'incoming').map(IncomingCall.fromJson).toList();
+
+    expect(calls.single.callerFriendCode, 'BBBB2345');
+  });
+
+  test('接聽好友來電：session 以好友碼表示對方，Agora 用回應的 uid', () {
+    final json = loadSpecFixtureMap('post_api_friends_call_accept.json');
+    expectNoOthersUid(json['session']);
+
+    final session = VideoSession.fromJson(
+      json['session'] as Map<String, dynamic>,
+    );
+    final credentials = AgoraCallCredentials.fromJson(json);
+
+    expect(session.peerFriendCode, 'BBBB2345');
+    expect(credentials.uid, 2);
   });
 }

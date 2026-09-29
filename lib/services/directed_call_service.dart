@@ -9,8 +9,8 @@ import '../models/video_call_model.dart';
 
 class DirectedCallService {
   /// 撥號給好友，回傳新建（或既有響鈴中同一通）的 call id。
-  static Future<int> callFriend(int uid) async {
-    final data = await ApiClient.post(ApiConfig.friendCall(uid));
+  static Future<int> callFriend(String friendCode) async {
+    final data = await ApiClient.post(ApiConfig.friendCall(friendCode));
     return int.parse(data['call_id'].toString());
   }
 

@@ -171,7 +171,6 @@ class Friendship extends FriendUser {
 /// 撥給我、還在響的來電（GET /api/friends/calls/incoming，也是推播漏接的 fallback）。
 class IncomingCall {
   final int callId;
-  final int callerUid;
   final String? callerNickname;
   final String? callerFriendCode;
   final String? callerAvatarUrl;
@@ -181,7 +180,6 @@ class IncomingCall {
 
   const IncomingCall({
     required this.callId,
-    required this.callerUid,
     this.callerNickname,
     this.callerFriendCode,
     this.callerAvatarUrl,
@@ -192,7 +190,6 @@ class IncomingCall {
 
   factory IncomingCall.fromJson(Map<String, dynamic> j) => IncomingCall(
     callId: int.tryParse(j['call_id']?.toString() ?? '') ?? 0,
-    callerUid: int.tryParse(j['caller_uid']?.toString() ?? '') ?? 0,
     callerNickname: j['caller_nickname'] as String?,
     callerFriendCode: j['caller_friend_code'] as String?,
     callerAvatarUrl: j['caller_avatar_url'] as String?,
@@ -209,7 +206,9 @@ class DirectedCallStatus {
   final String
   status; // ringing / accepted / declined / cancelled / missed / ended
   final int? sessionId;
-  final int peerUid;
+
+  /// 我是不是撥出方。
+  final bool isCaller;
   final String peerFriendCode;
   final String? peerNickname;
 
@@ -217,7 +216,7 @@ class DirectedCallStatus {
     required this.callId,
     required this.status,
     this.sessionId,
-    required this.peerUid,
+    required this.isCaller,
     required this.peerFriendCode,
     this.peerNickname,
   });
@@ -227,7 +226,7 @@ class DirectedCallStatus {
         callId: int.tryParse(j['call_id']?.toString() ?? '') ?? 0,
         status: j['status'] as String? ?? '',
         sessionId: int.tryParse(j['session_id']?.toString() ?? ''),
-        peerUid: int.tryParse(j['peer_uid']?.toString() ?? '') ?? 0,
+        isCaller: j['is_caller'] as bool? ?? false,
         peerFriendCode: j['peer_friend_code'] as String? ?? '',
         peerNickname: j['peer_nickname'] as String?,
       );

@@ -156,7 +156,8 @@ class ApiConfig {
       '/api/friends/$friendCode/showcase';
 
   // 定向通話（見 Truku_backend backend/routes/friendCalls.ts）
-  static String friendCall(int uid) => '/api/friends/$uid/call';
+  static String friendCall(String friendCode) =>
+      '/api/friends/$friendCode/call';
   static const String friendCallsIncoming = '/api/friends/calls/incoming';
   static String friendCallDetail(int id) => '/api/friends/calls/$id';
   static String friendCallAccept(int id) => '/api/friends/calls/$id/accept';

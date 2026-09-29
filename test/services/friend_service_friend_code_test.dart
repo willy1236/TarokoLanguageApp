@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
 import 'package:flutter_application_1/core/network/api_client.dart';
+import 'package:flutter_application_1/services/directed_call_service.dart';
 import 'package:flutter_application_1/services/friend_service.dart';
 
 import '../helpers/widget_test_helpers.dart';
@@ -79,6 +80,20 @@ void main() {
       'DELETE /api/friends/BBBB2345/showcase',
     ]);
     expect(jsonDecode(seen[1].body), {'friend_code': 'BBBB2345'});
+  });
+
+  test('撥給好友打好友碼路徑', () async {
+    respond({
+      '/api/friends/BBBB2345/call': jsonResponse({
+        'call_id': 123,
+        'status': 'ringing',
+      }, status: 201),
+    });
+
+    final callId = await DirectedCallService.callFriend('BBBB2345');
+
+    expect(callId, 123);
+    expect(seen.single.url.path, '/api/friends/BBBB2345/call');
   });
 
   test('400 FRIEND_CODE_REQUIRED 帶出後端 message', () async {

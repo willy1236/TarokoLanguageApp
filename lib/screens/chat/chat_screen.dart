@@ -341,7 +341,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   void _startVideoCall() {
-    if (blockIfReadOnly()) return;
+    final code = widget.friendCode;
+    if (code == null || blockIfReadOnly()) return;
     if (!PlatformFeatures.supportsVideoCall) {
       _showMessage(PlatformFeatures.videoCallUnsupportedMessage);
       return;
@@ -349,7 +350,7 @@ class _ChatScreenState extends State<ChatScreen> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (_) => DirectedCallWaitingScreen(
-          calleeUid: widget.partnerUid,
+          calleeFriendCode: code,
           calleeNickname: widget.partnerNickname,
         ),
       ),
