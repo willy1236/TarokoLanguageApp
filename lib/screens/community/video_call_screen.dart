@@ -159,7 +159,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     if (confirmed != true || !mounted || _call.leaving) return;
     _blockInFlight = true;
     try {
-      await FriendService.blockUser(widget.session.peerUid);
+      await FriendService.blockUser(widget.session.peerFriendCode);
     } catch (e) {
       // 通話可能已在等待期間結束、本頁已關，改用全域 messenger 提示。
       scaffoldMessengerKey.currentState?.showSnackBar(

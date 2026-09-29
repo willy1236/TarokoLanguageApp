@@ -64,4 +64,13 @@ void main() {
 
     expect(requests.single.friendCode, 'AAAA2345');
   });
+
+  test('封鎖名單：以好友碼辨識被封鎖的人', () {
+    final json = loadSpecFixtureMap('get_api_friends_blocks.json');
+    expectNoOthersUid(json);
+
+    final blocks = _items(json, 'blocks').map(BlockedUser.fromJson).toList();
+
+    expect(blocks.single.friendCode, 'BBBB2345');
+  });
 }

@@ -54,7 +54,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     _loadItemCatalog();
   }
 
-  Future<void> _loadRelationship(int uid) async {
+  Future<void> _loadRelationship(String friendCode) async {
     try {
       final results = await Future.wait([
         FriendService.getFriends(),
@@ -64,9 +64,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
       final friends = results[0];
       final blocked = results[1];
       setState(() {
-        if (blocked.any((b) => b.uid == uid)) {
+        if (blocked.any((b) => b.friendCode == friendCode)) {
           _relationship = _Relationship.blocked;
-        } else if (friends.any((f) => f.uid == uid)) {
+        } else if (friends.any((f) => f.friendCode == friendCode)) {
           _relationship = _Relationship.friend;
         } else {
           _relationship = _Relationship.stranger;
@@ -99,7 +99,9 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         _profile = profile;
         _loading = false;
       });
-      if (profile.uid != UserService.currentUid) _loadRelationship(profile.uid);
+      if (!UserService.isMe(profile.friendCode)) {
+        _loadRelationship(profile.friendCode);
+      }
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -142,7 +144,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         const AppBackButton(),
         const Spacer(),
         if (_profile != null &&
-            _profile!.uid != UserService.currentUid &&
+            !UserService.isMe(_profile!.friendCode) &&
             _relationship != null)
           PopupMenuButton<_ProfileAction>(
             iconSize: AppIconSize.action(seniorModeController.enabled),
@@ -221,21 +223,21 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
           _showMessage(status == 'accepted' ? '你們已成為好友！' : '已送出好友邀請');
           break;
         case _ProfileAction.removeFriend:
-          await FriendService.removeFriend(profile.uid);
+          await FriendService.removeFriend(profile.friendCode);
           _showMessage('已刪除好友');
           break;
         case _ProfileAction.block:
-          await FriendService.blockUser(profile.uid);
+          await FriendService.blockUser(profile.friendCode);
           _showMessage('已封鎖此使用者');
           break;
         case _ProfileAction.report:
           break;
         case _ProfileAction.unblock:
-          await FriendService.unblockUser(profile.uid);
+          await FriendService.unblockUser(profile.friendCode);
           _showMessage('已解除封鎖');
           break;
       }
-      _loadRelationship(profile.uid);
+      _loadRelationship(profile.friendCode);
     } on ApiException catch (e) {
       _showMessage(_friendlyErrorMessage(e));
     } catch (e, st) {

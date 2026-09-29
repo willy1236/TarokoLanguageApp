@@ -14,6 +14,9 @@ class VideoSession {
   final int id;
   final String channel;
   final int peerUid;
+
+  /// 對方好友碼，通話中封鎖、加好友用。
+  final String peerFriendCode;
   final String? peerNickname;
   final DateTime expiresAt; // 通話硬上限（token 效期即為此時間）
 
@@ -21,6 +24,7 @@ class VideoSession {
     required this.id,
     required this.channel,
     required this.peerUid,
+    required this.peerFriendCode,
     this.peerNickname,
     required this.expiresAt,
   });
@@ -32,6 +36,7 @@ class VideoSession {
       id: asEventInt(json['id'])!,
       channel: json['channel'] as String,
       peerUid: asEventInt(json['peer_uid'])!,
+      peerFriendCode: json['peer_friend_code'] as String? ?? '',
       peerNickname: json['peer_nickname'] as String?,
       expiresAt: DateTime.parse(json['expires_at'] as String),
     );

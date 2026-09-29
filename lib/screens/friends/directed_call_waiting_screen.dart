@@ -90,6 +90,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
           await _navigateToCall(
             status.sessionId!,
             status.peerUid,
+            status.peerFriendCode,
             status.peerNickname,
           );
           break;
@@ -113,6 +114,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
   Future<void> _navigateToCall(
     int sessionId,
     int peerUid,
+    String peerFriendCode,
     String? peerNickname,
   ) async {
     if (_navigated) return;
@@ -129,6 +131,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
         id: sessionId,
         channel: refreshed.channel,
         peerUid: peerUid,
+        peerFriendCode: peerFriendCode,
         peerNickname: peerNickname,
         expiresAt: refreshed.expiresAt,
       );

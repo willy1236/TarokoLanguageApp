@@ -73,7 +73,7 @@ class FriendRequest extends FriendUser {
   );
 }
 
-/// 羈絆展示同意狀態（POST/DELETE /api/friends/:uid/showcase、GET /api/friends）。
+/// 羈絆展示同意狀態（POST/DELETE /api/friends/{好友碼}/showcase、GET /api/friends）。
 /// mine=我是否已同意展示；theirs=對方是否已同意；mutual=雙方皆同意（僅此時對外公開檔案可見）。
 class Showcase {
   final bool mine;
@@ -210,6 +210,7 @@ class DirectedCallStatus {
   status; // ringing / accepted / declined / cancelled / missed / ended
   final int? sessionId;
   final int peerUid;
+  final String peerFriendCode;
   final String? peerNickname;
 
   const DirectedCallStatus({
@@ -217,6 +218,7 @@ class DirectedCallStatus {
     required this.status,
     this.sessionId,
     required this.peerUid,
+    required this.peerFriendCode,
     this.peerNickname,
   });
 
@@ -226,6 +228,7 @@ class DirectedCallStatus {
         status: j['status'] as String? ?? '',
         sessionId: int.tryParse(j['session_id']?.toString() ?? ''),
         peerUid: int.tryParse(j['peer_uid']?.toString() ?? '') ?? 0,
+        peerFriendCode: j['peer_friend_code'] as String? ?? '',
         peerNickname: j['peer_nickname'] as String?,
       );
 }

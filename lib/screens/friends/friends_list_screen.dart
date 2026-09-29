@@ -176,18 +176,18 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     });
     try {
       if (requesting) {
-        final result = await FriendService.setShowcase(f.uid);
+        final result = await FriendService.setShowcase(f.friendCode);
         if (!mounted) return;
         setState(() {
           final current = _friends;
           if (current == null) return;
-          final i = current.indexWhere((e) => e.uid == f.uid);
+          final i = current.indexWhere((e) => e.friendCode == f.friendCode);
           if (i == -1) return;
           _friends = List<Friendship>.from(current)
             ..[i] = current[i].copyWith(showcase: result);
         });
       } else {
-        await FriendService.unsetShowcase(f.uid);
+        await FriendService.unsetShowcase(f.friendCode);
       }
     } on ApiException catch (e) {
       if (!mounted) return;

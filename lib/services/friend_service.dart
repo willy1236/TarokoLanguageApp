@@ -70,17 +70,17 @@ class FriendService {
   }
 
   /// 解除好友，或取消我送出的邀請（後端同一個端點依現況處理）。
-  static Future<void> removeFriend(int uid) async {
-    await ApiClient.delete(ApiConfig.friendDetail(uid));
+  static Future<void> removeFriend(String friendCode) async {
+    await ApiClient.delete(ApiConfig.friendDetail(friendCode));
   }
 
-  static Future<void> blockUser(int uid) async {
-    await ApiClient.post(ApiConfig.friendBlocks, {'uid': uid});
+  static Future<void> blockUser(String friendCode) async {
+    await ApiClient.post(ApiConfig.friendBlocks, {'friend_code': friendCode});
     BlockRefreshNotifier.bump();
   }
 
-  static Future<void> unblockUser(int uid) async {
-    await ApiClient.delete(ApiConfig.friendBlockDetail(uid));
+  static Future<void> unblockUser(String friendCode) async {
+    await ApiClient.delete(ApiConfig.friendBlockDetail(friendCode));
   }
 
   static Future<List<BlockedUser>> getBlockedUsers() async {
@@ -92,14 +92,14 @@ class FriendService {
   }
 
   /// 同意展示與此好友的羈絆（雙方皆同意才會出現在雙方公開檔案上）。
-  static Future<Showcase> setShowcase(int uid) async {
-    final data = await ApiClient.post(ApiConfig.friendShowcase(uid));
+  static Future<Showcase> setShowcase(String friendCode) async {
+    final data = await ApiClient.post(ApiConfig.friendShowcase(friendCode));
     return Showcase.fromJson(data);
   }
 
   /// 單方撤回展示同意，不需對方確認。
-  static Future<void> unsetShowcase(int uid) async {
-    await ApiClient.delete(ApiConfig.friendShowcase(uid));
+  static Future<void> unsetShowcase(String friendCode) async {
+    await ApiClient.delete(ApiConfig.friendShowcase(friendCode));
   }
 
   static Future<FriendMessage> sendMessage(int uid, String body) async {

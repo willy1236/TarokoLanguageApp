@@ -53,6 +53,34 @@ void main() {
     );
   });
 
+  test('解除好友、封鎖、解除封鎖、羈絆展示都以好友碼指定', () async {
+    respond({
+      '/api/friends/BBBB2345': {'ok': true},
+      '/api/friends/blocks': jsonResponse({'blocked': true}, status: 201),
+      '/api/friends/blocks/BBBB2345': {'ok': true},
+      '/api/friends/BBBB2345/showcase': {
+        'mine': true,
+        'theirs': false,
+        'mutual': false,
+      },
+    });
+
+    await FriendService.removeFriend('BBBB2345');
+    await FriendService.blockUser('BBBB2345');
+    await FriendService.unblockUser('BBBB2345');
+    await FriendService.setShowcase('BBBB2345');
+    await FriendService.unsetShowcase('BBBB2345');
+
+    expect(seen.map((r) => '${r.method} ${r.url.path}'), [
+      'DELETE /api/friends/BBBB2345',
+      'POST /api/friends/blocks',
+      'DELETE /api/friends/blocks/BBBB2345',
+      'POST /api/friends/BBBB2345/showcase',
+      'DELETE /api/friends/BBBB2345/showcase',
+    ]);
+    expect(jsonDecode(seen[1].body), {'friend_code': 'BBBB2345'});
+  });
+
   test('400 FRIEND_CODE_REQUIRED 帶出後端 message', () async {
     respond({
       '/api/friends/requests': errorResponse(
