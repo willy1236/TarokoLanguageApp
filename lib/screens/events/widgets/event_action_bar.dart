@@ -97,8 +97,11 @@ class EventActionBar extends StatelessWidget {
         final sent = await Navigator.push<bool>(
           context,
           MaterialPageRoute(
-            builder: (_) =>
-                ReminderComposeScreen(eventId: e.id, eventTitle: e.title),
+            builder: (_) => ReminderComposeScreen(
+              eventId: e.id,
+              eventTitle: e.title,
+              eventEndsAt: e.endsAt,
+            ),
           ),
         );
         if (sent == true) await onReminderSent?.call();

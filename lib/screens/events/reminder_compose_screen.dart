@@ -15,11 +15,26 @@ class ReminderComposeScreen extends StatefulWidget {
   final int eventId;
   final String eventTitle;
 
+  /// 活動結束時間；有值時發送時間不能晚於它（舊資料可能沒有）。
+  final DateTime? eventEndsAt;
+
   const ReminderComposeScreen({
     super.key,
     required this.eventId,
     required this.eventTitle,
+    this.eventEndsAt,
   });
+
+  /// 排定的發送時間晚於活動結束時回傳說明文字，否則 null。
+  static String? sendTimeAfterEndError(DateTime scheduledAt, DateTime? endsAt) {
+    if (endsAt == null || !scheduledAt.isAfter(endsAt)) return null;
+    return '發送時間不能晚於活動結束（${_formatDateTime(endsAt)}）';
+  }
+
+  static String _formatDateTime(DateTime dt) {
+    String two(int n) => n.toString().padLeft(2, '0');
+    return '${dt.year}/${two(dt.month)}/${two(dt.day)}  ${two(dt.hour)}:${two(dt.minute)}';
+  }
 
   @override
   State<ReminderComposeScreen> createState() => _ReminderComposeScreenState();
@@ -49,11 +64,25 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
 
   Future<void> _pickDateTime() async {
     final now = DateTime.now();
+    final endsAt = widget.eventEndsAt?.toLocal();
+    final yearLater = now.add(const Duration(days: 365));
+    final lastDate = endsAt != null && endsAt.isBefore(yearLater)
+        ? endsAt
+        : yearLater;
+    if (lastDate.isBefore(now)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('活動已結束，無法排定發送時間')));
+      return;
+    }
+    var initialDate = _scheduledAt ?? now.add(const Duration(hours: 1));
+    if (initialDate.isBefore(now)) initialDate = now;
+    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
     final date = await showDatePicker(
       context: context,
-      initialDate: _scheduledAt ?? now.add(const Duration(hours: 1)),
+      initialDate: initialDate,
       firstDate: now,
-      lastDate: now.add(const Duration(days: 365)),
+      lastDate: lastDate,
       helpText: '選擇發送日期',
     );
     if (date == null || !mounted) return;
@@ -65,22 +94,22 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
       helpText: '選擇發送時間',
     );
     if (t == null || !mounted) return;
+    final picked = DateTime(date.year, date.month, date.day, t.hour, t.minute);
+    final error = ReminderComposeScreen.sendTimeAfterEndError(picked, endsAt);
+    if (error != null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error)));
+      return;
+    }
     setState(() {
-      _scheduledAt = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        t.hour,
-        t.minute,
-      );
+      _scheduledAt = picked;
       _sendNow = false;
     });
   }
 
-  String _formatDateTime(DateTime dt) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${dt.year}/${two(dt.month)}/${two(dt.day)}  ${two(dt.hour)}:${two(dt.minute)}';
-  }
+  String _formatDateTime(DateTime dt) =>
+      ReminderComposeScreen._formatDateTime(dt);
 
   Future<void> _submit() async {
     if (_submitting) return;
@@ -105,6 +134,18 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
         context,
       ).showSnackBar(const SnackBar(content: Text('發送時間不能早於現在')));
       return;
+    }
+    if (!_sendNow && _scheduledAt != null) {
+      final error = ReminderComposeScreen.sendTimeAfterEndError(
+        _scheduledAt!,
+        widget.eventEndsAt?.toLocal(),
+      );
+      if (error != null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(error)));
+        return;
+      }
     }
 
     setState(() => _submitting = true);
