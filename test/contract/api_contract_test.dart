@@ -236,6 +236,12 @@ final List<_Contract> _contracts = [
     'AccountStatus',
     AccountStatus.fromJson,
   ),
+  // service 在欄位缺少時當作開啟，改名會默默變成「永遠開」，所以這裡直接檢查型別。
+  _Contract(
+    'get_api_me_notification_settings.json',
+    'NotificationSettingsService',
+    (json) => expect(json['tribe_events'], isA<bool>()),
+  ),
   _Contract(
     'get_api_notifications_summary.json',
     'NotificationSummary',

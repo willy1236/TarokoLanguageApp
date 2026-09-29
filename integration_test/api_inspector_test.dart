@@ -486,6 +486,11 @@ void main() {
       shape: {'status': F.string},
       optional: {'purge_at': F.string},
     ));
+    test('GET /api/me/notification-settings', () => _inspect(
+      'GET',
+      ApiConfig.meNotificationSettings,
+      shape: {'tribe_events': F.boolean},
+    ));
     // NotificationSummary 每個欄位都有 ?? 0，缺欄位不會壞，但全缺代表端點掛了，
     // 所以這裡把五個計數都列必要、允許為 null。
     test('GET /api/notifications/summary', () => _inspect(
