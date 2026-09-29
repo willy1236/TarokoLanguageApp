@@ -24,6 +24,21 @@ class AccountLockController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 依處置推播（`type: moderation`）的 data 更新唯讀狀態，回傳變成的狀態；
+  /// 這則推播與帳號鎖定無關時回 null。
+  bool? applyModerationPush(Map<String, dynamic> data) {
+    final bool locked;
+    if (data['action'] == 'account_unlocked') {
+      locked = false;
+    } else if (data['locked']?.toString() == 'true') {
+      locked = true;
+    } else {
+      return null;
+    }
+    setLocked(locked);
+    return locked;
+  }
+
   /// 唯讀中才查一次帳號狀態，給回前景用：解鎖推播沒被點開時靠這裡恢復。
   /// 查詢失敗維持唯讀、不打擾使用者，下次回前景再查。
   Future<void> refreshIfLocked() async {

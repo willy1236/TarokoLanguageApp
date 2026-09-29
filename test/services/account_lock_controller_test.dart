@@ -42,6 +42,43 @@ void main() {
     });
   });
 
+  group('applyModerationPush', () {
+    test('account_unlocked 解除唯讀', () {
+      accountLockController.setLocked(true);
+
+      final result = accountLockController.applyModerationPush({
+        'type': 'moderation',
+        'action': 'account_unlocked',
+      });
+
+      expect(result, isFalse);
+      expect(accountLockController.locked, isFalse);
+    });
+
+    test('locked: "true" 設為唯讀', () {
+      final result = accountLockController.applyModerationPush({
+        'type': 'moderation',
+        'action': 'case_confirmed',
+        'locked': 'true',
+      });
+
+      expect(result, isTrue);
+      expect(accountLockController.locked, isTrue);
+    });
+
+    test('mute_lifted 等其他處置不動唯讀狀態', () {
+      accountLockController.setLocked(true);
+
+      final result = accountLockController.applyModerationPush({
+        'type': 'moderation',
+        'action': 'mute_lifted',
+      });
+
+      expect(result, isNull);
+      expect(accountLockController.locked, isTrue);
+    });
+  });
+
   group('refreshIfLocked', () {
     late int requests;
 

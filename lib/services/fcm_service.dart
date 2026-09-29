@@ -444,11 +444,7 @@ class FcmService {
   /// 不走 SnackBar——理由較長，且當事人需要確實看到。
   static void _showModerationNotice(RemoteMessage message) {
     final data = message.data;
-    if (data['locked']?.toString() == 'true') {
-      accountLockController.setLocked(true);
-    }
-    if (data['action'] == 'account_unlocked') {
-      accountLockController.setLocked(false);
+    if (accountLockController.applyModerationPush(data) == false) {
       // 讓個人頁等畫面拿到解鎖後的最新資料。
       unawaited(
         UserService.fetchMe(forceRefresh: true).then<void>(
