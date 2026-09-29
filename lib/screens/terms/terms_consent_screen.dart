@@ -13,7 +13,6 @@
 //   捲到底解鎖「同意《…》」，按下即送 POST /api/terms/:doc_type/consent，成功才進下一份。
 
 import 'package:flutter/material.dart';
-import 'package:flutter_markdown_plus/flutter_markdown_plus.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/terms_models.dart';
@@ -24,6 +23,7 @@ import '../../services/user_service.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../auth/entry_route.dart';
+import 'widgets/terms_document_view.dart';
 
 class TermsConsentScreen extends StatefulWidget {
   final bool readOnly;
@@ -325,80 +325,12 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     );
   }
 
-  /// doc.title 已在 Tab 標籤或上方顯示過一次，若 contentMd 開頭是重複的同名
-  /// 標題行則去掉，避免畫面看到兩次「織語者 服務條款」。
-  String _stripLeadingTitle(String contentMd, String title) {
-    final lines = contentMd.split('\n');
-    if (lines.isEmpty) return contentMd;
-    final firstLine = lines.first.replaceFirst(RegExp(r'^#+\s*'), '').trim();
-    if (firstLine != title.trim()) return contentMd;
-    return lines.skip(1).join('\n').trimLeft();
-  }
-
   Widget _buildDocument(TermsDocument doc, {bool showTitle = true}) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (showTitle) ...[
-          Text(
-            doc.title,
-            style: AppTypography.serif(
-              fontSize: AppTypography.subtitle,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-            ),
-          ),
-          const SizedBox(height: 4),
-        ],
-        Text(
-          '第 ${doc.version} 版',
-          style: TextStyle(
-            fontSize: AppTypography.caption,
-            color: AppColors.fog,
-          ),
-        ),
-        const SizedBox(height: 12),
-        MarkdownBody(
-          data: _stripLeadingTitle(doc.contentMd, doc.title),
-          styleSheet: MarkdownStyleSheet(
-            p: TextStyle(
-              fontSize: AppTypography.body,
-              height: 1.6,
-              color: AppColors.ink.withValues(alpha: 0.85),
-            ),
-            h1: AppTypography.serif(
-              fontSize: AppTypography.subtitle,
-              fontWeight: FontWeight.w600,
-              color: AppColors.ink,
-            ),
-            h1Padding: const EdgeInsets.only(top: 16, bottom: 4),
-            h2: AppTypography.titleStyle(color: AppColors.ink),
-            h2Padding: const EdgeInsets.only(top: 16, bottom: 4),
-            h3: AppTypography.titleStyle(color: AppColors.ink),
-            strong: TextStyle(
-              fontWeight: FontWeight.w700,
-              color: AppColors.ink,
-            ),
-            // 預設 blockquote 底色跟著 dark theme 變深，粗體的 ink 字會看不到。
-            blockquote: TextStyle(
-              fontSize: AppTypography.body,
-              height: 1.6,
-              color: AppColors.ink.withValues(alpha: 0.85),
-            ),
-            blockquotePadding: const EdgeInsets.fromLTRB(14, 10, 12, 10),
-            blockquoteDecoration: BoxDecoration(
-              color: AppColors.creamDeep,
-              border: const Border(
-                left: BorderSide(color: AppColors.gold, width: 4),
-              ),
-            ),
-            listBullet: TextStyle(
-              fontSize: AppTypography.body,
-              color: AppColors.ink.withValues(alpha: 0.85),
-            ),
-          ),
-        ),
-      ],
+    return TermsDocumentView(
+      title: doc.title,
+      version: doc.version,
+      contentMd: doc.contentMd,
+      showTitle: showTitle,
     );
   }
 
