@@ -203,6 +203,33 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     }
   }
 
+  /// 帳號暫時無法使用的好友進不了公開檔案，解除好友只能從列表這裡做。
+  Future<void> _removeUnavailableFriend(Friendship f) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '刪除這位好友？',
+      message: '對方帳號目前無法使用。刪除後若要再當好友，需要重新送出邀請。',
+      cancelText: '取消',
+      confirmText: '刪除',
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await FriendService.removeFriend(f.friendCode);
+      if (!mounted) return;
+      setState(() {
+        _friends = _friends
+            ?.where((e) => !sameFriendCode(e.friendCode, f.friendCode))
+            .toList();
+      });
+    } on ApiException catch (e) {
+      _showError(e.message);
+    } catch (e, st) {
+      debugPrint('Failed to remove unavailable friend: $e');
+      debugPrintStack(stackTrace: st);
+      _showError('操作失敗，請稍後再試');
+    }
+  }
+
   void _showError(String message) {
     if (!mounted) return;
     ScaffoldMessenger.of(context)
@@ -419,6 +446,15 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                     ),
                   ),
                 ],
+              ),
+            ),
+            IconButton(
+              tooltip: '刪除好友',
+              onPressed: () => _removeUnavailableFriend(f),
+              iconSize: AppIconSize.action(seniorMode),
+              icon: const Icon(
+                Icons.person_remove_outlined,
+                color: AppColors.ink,
               ),
             ),
           ],
