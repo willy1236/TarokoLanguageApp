@@ -41,7 +41,6 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
   /// 強制模式目前在第幾份（從 0 起算）。
   int _step = 0;
 
-  bool _noneAvailable = false;
   String? _error;
   bool _loading = true;
   bool _submitting = false;
@@ -108,7 +107,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
       if (!mounted) return;
       setState(() {
         _documents = pending;
-        _noneAvailable = fetched.isEmpty;
+        _readToEnd.clear();
         _step = 0;
         _loading = false;
       });
@@ -139,6 +138,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         await _finish();
       } else {
         // 送出期間另一份又出了新版，重新載入剩下要同意的。
+        if (!mounted) return;
         await _load();
       }
     } on ApiException catch (e) {
@@ -248,7 +248,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         ),
       );
     }
-    if (_noneAvailable || _documents.isEmpty) {
+    if (_documents.isEmpty) {
       return Center(
         child: Text(
           '目前沒有條款內容',
