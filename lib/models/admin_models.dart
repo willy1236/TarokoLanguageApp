@@ -440,6 +440,125 @@ class AdminResolveResult {
       );
 }
 
+// ── 禁言、詞庫、題目回報（安全防護.md「後台端點」、內部管理.md §7）────────
+
+/// 目前有效的禁言（GET /api/admin/mutes）。
+class AdminMute {
+  final int id;
+  final int uid;
+  final String nickname;
+
+  /// strike（違規累計）／reports（檢舉滿門檻）／profanity（髒話漸進處置）。
+  final String reason;
+
+  /// all（全部）／text（只擋文字類）。
+  final String scope;
+  final DateTime? muteUntil;
+  final DateTime? createdAt;
+
+  const AdminMute({
+    required this.id,
+    required this.uid,
+    this.nickname = '',
+    required this.reason,
+    required this.scope,
+    this.muteUntil,
+    this.createdAt,
+  });
+
+  factory AdminMute.fromJson(Map<String, dynamic> j) => AdminMute(
+    id: _int(j['id']) ?? 0,
+    uid: _int(j['uid']) ?? 0,
+    nickname: j['nickname'] as String? ?? '',
+    reason: j['reason'] as String? ?? '',
+    scope: j['scope'] as String? ?? '',
+    muteUntil: _date(j['mute_until']),
+    createdAt: _date(j['created_at']),
+  );
+}
+
+String adminMuteReasonLabel(String reason) => switch (reason) {
+  'strike' => '違規累計',
+  'reports' => '檢舉滿門檻',
+  'profanity' => '髒話',
+  _ => reason,
+};
+
+String adminMuteScopeLabel(String scope) => switch (scope) {
+  'all' => '全部功能',
+  'text' => '文字類',
+  _ => scope,
+};
+
+class AdminBannedWord {
+  final int id;
+  final String word;
+
+  const AdminBannedWord({required this.id, required this.word});
+
+  factory AdminBannedWord.fromJson(Map<String, dynamic> j) =>
+      AdminBannedWord(id: _int(j['id']) ?? 0, word: j['word'] as String? ?? '');
+}
+
+/// 使用者於測驗詳解回報的題目錯誤（GET /api/admin/question-reports）。
+class AdminQuestionReport {
+  final int id;
+
+  /// quiz／listening 等題型。
+  final String questionType;
+  final String message;
+
+  /// pending／reviewed／resolved。
+  final String status;
+  final DateTime? createdAt;
+  final int? reporterUid;
+  final String? reporterNickname;
+
+  /// 正確答案指向的族語與中文（單字或句子），後台不必再自己 join。
+  final String? contentTruku;
+  final String? contentZh;
+
+  const AdminQuestionReport({
+    required this.id,
+    required this.questionType,
+    required this.message,
+    required this.status,
+    this.createdAt,
+    this.reporterUid,
+    this.reporterNickname,
+    this.contentTruku,
+    this.contentZh,
+  });
+
+  factory AdminQuestionReport.fromJson(Map<String, dynamic> j) =>
+      AdminQuestionReport(
+        id: _int(j['id']) ?? 0,
+        questionType: j['question_type'] as String? ?? '',
+        message: j['message'] as String? ?? '',
+        status: j['status'] as String? ?? 'pending',
+        createdAt: _date(j['created_at']),
+        reporterUid: _int(j['reporter_uid']),
+        // 規格文件寫 reporter_name，實際後端（SCAN-S24 起）只給暱稱。
+        reporterNickname:
+            (j['reporter_nickname'] ?? j['reporter_name']) as String?,
+        contentTruku: j['content_truku'] as String?,
+        contentZh: j['content_zh'] as String?,
+      );
+}
+
+String adminQuestionTypeLabel(String type) => switch (type) {
+  'quiz' => '單字測驗',
+  'listening' => '聽力測驗',
+  _ => type,
+};
+
+String adminQuestionReportStatusLabel(String status) => switch (status) {
+  'pending' => '待處理',
+  'reviewed' => '已查看',
+  'resolved' => '已解決',
+  _ => status,
+};
+
 /// 個人檔案可重設的欄位（後端 `reset_fields`／`fields` 的值與畫面標籤）。
 const adminProfileFields = <({String key, String label})>[
   (key: 'video_nickname', label: '暱稱'),

@@ -310,7 +310,8 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
     title: widget.title,
     body: (context, senior) => Column(
       children: [
-        _statusBar(senior),
+        // 只有一種狀態（例如禁言列表）就不必顯示切換列。
+        if (widget.statuses.length > 1) _statusBar(senior),
         Expanded(child: _content(senior)),
       ],
     ),

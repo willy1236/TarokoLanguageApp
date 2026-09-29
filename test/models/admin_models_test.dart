@@ -131,6 +131,37 @@ void main() {
     expect(dismissed.autoLiftedMuteId, 4);
   });
 
+  test('AdminMute／AdminBannedWord／AdminQuestionReport 解析規格範例', () {
+    final mutes = [
+      for (final m
+          in loadSpecFixtureMap('get_api_admin_mutes.json')['mutes'] as List)
+        AdminMute.fromJson(m as Map<String, dynamic>),
+    ];
+    expect(mutes.map((m) => adminMuteReasonLabel(m.reason)), [
+      '檢舉滿門檻',
+      '違規累計',
+      '髒話',
+    ]);
+    expect(mutes[2].scope, 'text');
+    expect(mutes[0].muteUntil, isNotNull);
+
+    final words = AdminBannedWord.fromJson({'id': 1, 'word': 'x'});
+    expect((words.id, words.word), (1, 'x'));
+
+    final reports = [
+      for (final r
+          in loadSpecFixtureMap(
+                'get_api_admin_question_reports.json',
+              )['reports']
+              as List)
+        AdminQuestionReport.fromJson(r as Map<String, dynamic>),
+    ];
+    expect(reports[0].contentTruku, 'Bsuring');
+    expect(reports[0].reporterNickname, '小明');
+    expect(reports[1].contentTruku, isNull, reason: '沒有對應單字或句子時為 null');
+    expect(adminQuestionReportStatusLabel(reports[1].status), '已查看');
+  });
+
   test('UserModel.isAdmin 只有 admin 為 true', () {
     UserModel user(String? role) =>
         UserModel(uid: 1, email: '', createdAt: DateTime(2026), role: role);

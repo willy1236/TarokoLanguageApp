@@ -5,10 +5,44 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../profile/widgets/profile_rows.dart';
+import 'admin_banned_words_screen.dart';
 import 'admin_cases_screen.dart';
 import 'admin_error.dart';
+import 'admin_mutes_screen.dart';
+import 'admin_question_reports_screen.dart';
 import 'admin_reports_screen.dart';
 import 'widgets/admin_widgets.dart';
+
+typedef _Entry = ({IconData icon, String label, Widget Function() screen});
+
+/// 後台功能入口，依顯示順序排列。
+final List<_Entry> _entries = [
+  (
+    icon: Icons.flag_outlined,
+    label: '檢舉佇列',
+    screen: () => const AdminReportsScreen(),
+  ),
+  (
+    icon: Icons.gavel_outlined,
+    label: '違規區',
+    screen: () => const AdminCasesScreen(),
+  ),
+  (
+    icon: Icons.volume_off_outlined,
+    label: '禁言',
+    screen: () => const AdminMutesScreen(),
+  ),
+  (
+    icon: Icons.block_outlined,
+    label: '髒話詞庫',
+    screen: () => const AdminBannedWordsScreen(),
+  ),
+  (
+    icon: Icons.help_outline,
+    label: '題目回報',
+    screen: () => const AdminQuestionReportsScreen(),
+  ),
+];
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -16,45 +50,30 @@ class AdminHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) => AdminScaffold(
     title: '管理後台',
-    body: (context, senior) {
-      final entries =
-          <({IconData icon, String label, Widget Function() screen})>[
-            (
-              icon: Icons.flag_outlined,
-              label: '檢舉佇列',
-              screen: () => const AdminReportsScreen(),
+    body: (context, senior) => ListView(
+      children: [
+        profileSection('管理 · 功能', [
+          for (var i = 0; i < _entries.length; i++) ...[
+            if (i > 0) const Divider(height: 1, color: AppColors.creamDeep),
+            profileNavRow(
+              icon: _entries[i].icon,
+              label: _entries[i].label,
+              seniorMode: senior,
+              onTap: () => pushAdmin(context, _entries[i].screen()),
             ),
-            (
-              icon: Icons.gavel_outlined,
-              label: '違規區',
-              screen: () => const AdminCasesScreen(),
-            ),
-          ];
-      return ListView(
-        children: [
-          profileSection('管理 · 功能', [
-            for (var i = 0; i < entries.length; i++) ...[
-              if (i > 0) const Divider(height: 1, color: AppColors.creamDeep),
-              profileNavRow(
-                icon: entries[i].icon,
-                label: entries[i].label,
-                seniorMode: senior,
-                onTap: () => pushAdmin(context, entries[i].screen()),
-              ),
-            ],
-          ], seniorMode: senior),
-          Padding(
-            padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-            child: Text(
-              '操作會記錄是哪一位管理員做的。',
-              style: AppTypography.captionStyle(
-                seniorMode: senior,
-                color: AppColors.fog,
-              ),
+          ],
+        ], seniorMode: senior),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          child: Text(
+            '操作會記錄是哪一位管理員做的。',
+            style: AppTypography.captionStyle(
+              seniorMode: senior,
+              color: AppColors.fog,
             ),
           ),
-        ],
-      );
-    },
+        ),
+      ],
+    ),
   );
 }

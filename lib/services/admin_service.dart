@@ -122,6 +122,65 @@ class AdminService {
     });
   }
 
+  // ── 禁言（安全防護.md「後台端點」）────────────────────────────
+
+  /// 目前有效（未翻案、未到期）的禁言。
+  static Future<List<AdminMute>> fetchMutes() async {
+    final json = await ApiClient.get(ApiConfig.adminMutes);
+    return _list(json, 'mutes', AdminMute.fromJson);
+  }
+
+  /// 提前解除禁言；禁言尚未到期時後端會推播通知當事人。
+  static Future<void> liftMute(int id) async {
+    await ApiClient.post(ApiConfig.adminMuteLift(id));
+  }
+
+  // ── 髒話詞庫 ──────────────────────────────────────────────────
+
+  static Future<List<AdminBannedWord>> fetchBannedWords() async {
+    final json = await ApiClient.get(ApiConfig.adminBannedWords);
+    return _list(json, 'words', AdminBannedWord.fromJson);
+  }
+
+  /// 新增一個詞（後端轉小寫、正規化）。回傳 `created`：false 代表詞庫已有，沒有變動。
+  static Future<bool> addBannedWord(String word) async {
+    final json = await ApiClient.post(ApiConfig.adminBannedWords, {
+      'word': word.trim(),
+    });
+    return json['created'] != false;
+  }
+
+  static Future<void> deleteBannedWord(int id) async {
+    await ApiClient.delete(ApiConfig.adminBannedWord(id));
+  }
+
+  // ── 題目錯誤回報（內部管理.md §7）──────────────────────────────
+
+  /// [status] 為空字串或 null 代表全部；後端排序待處理優先、其次新到舊。
+  static Future<AdminPage<AdminQuestionReport>> fetchQuestionReports({
+    String? status,
+    String? cursor,
+  }) async {
+    final json = await ApiClient.get(
+      ApiConfig.adminQuestionReports,
+      query: {
+        if (status != null && status.isNotEmpty) 'status': status,
+        ...PageInfo.query(cursor: cursor),
+      },
+    );
+    return (
+      items: _list(json, 'reports', AdminQuestionReport.fromJson),
+      pageInfo: PageInfo.fromResponse(json),
+    );
+  }
+
+  /// 標記處理進度：`pending`／`reviewed`／`resolved`。
+  static Future<void> updateQuestionReport(int id, String status) async {
+    await ApiClient.patch(ApiConfig.adminQuestionReport(id), {
+      'status': status,
+    });
+  }
+
   /// 二次審核。[decision] 為 `confirm`（確認違規）或 `overturn`（撤銷）；
   /// [note] 選填、500 字內。須由開案以外的另一位管理員操作。
   static Future<AdminReviewResult> reviewCase(
