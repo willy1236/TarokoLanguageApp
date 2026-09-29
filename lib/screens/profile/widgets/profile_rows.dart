@@ -206,56 +206,64 @@ Widget profileSettingRow(
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    label,
-                    style: AppTypography.serif(
-                      fontSize: AppTypography.size(
-                        AppTypography.caption,
-                        seniorMode: seniorMode,
-                      ),
-                      color: AppColors.fog,
-                      letterSpacing: 1,
-                    ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      Text(
-                        value,
-                        style:
-                            (truku
-                                    ? AppTypography.latin(
-                                        fontStyle: FontStyle.italic,
-                                      )
-                                    : AppTypography.serif())
-                                .copyWith(
-                                  fontSize: AppTypography.size(
-                                    AppTypography.body,
-                                    seniorMode: seniorMode,
-                                  ),
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.ink,
-                                  letterSpacing: 0.5,
-                                ),
-                      ),
-                      if (badge != null) ...[const SizedBox(width: 8), badge],
-                    ],
-                  ),
-                  if (hint != null) ...[
-                    const SizedBox(height: 2),
+              // 值太長（通知信箱加徽章、自我介紹）時截斷，不撐破窄螢幕。
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
                     Text(
-                      hint,
-                      style: AppTypography.captionStyle(
-                        seniorMode: seniorMode,
+                      label,
+                      style: AppTypography.serif(
+                        fontSize: AppTypography.size(
+                          AppTypography.caption,
+                          seniorMode: seniorMode,
+                        ),
                         color: AppColors.fog,
+                        letterSpacing: 1,
                       ),
                     ),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            value,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style:
+                                (truku
+                                        ? AppTypography.latin(
+                                            fontStyle: FontStyle.italic,
+                                          )
+                                        : AppTypography.serif())
+                                    .copyWith(
+                                      fontSize: AppTypography.size(
+                                        AppTypography.body,
+                                        seniorMode: seniorMode,
+                                      ),
+                                      fontWeight: FontWeight.w600,
+                                      color: AppColors.ink,
+                                      letterSpacing: 0.5,
+                                    ),
+                          ),
+                        ),
+                        if (badge != null) ...[const SizedBox(width: 8), badge],
+                      ],
+                    ),
+                    if (hint != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        hint,
+                        style: AppTypography.captionStyle(
+                          seniorMode: seniorMode,
+                          color: AppColors.fog,
+                        ),
+                      ),
+                    ],
                   ],
-                ],
+                ),
               ),
+              if (copyable || editable) const SizedBox(width: 12),
               if (copyable)
                 Icon(
                   Icons.copy_rounded,

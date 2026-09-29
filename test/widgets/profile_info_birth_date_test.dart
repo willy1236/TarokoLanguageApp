@@ -44,6 +44,21 @@ void main() {
     expect(find.byType(DatePickerDialog), findsNothing);
   });
 
+  testWidgets('360dp 寬度下長內容（通知信箱加徽章）不 overflow', (tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await open(
+      tester,
+      loadFixtureMap('get_api_me.json')
+        ..['birth_date'] = '2001-07-04'
+        ..['self_intro'] = '我在學太魯閣族語，' * 10,
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('2001/07/04'), findsOneWidget);
+  });
+
   testWidgets('舊後端沒有 birth_date 時不顯示這一列', (tester) async {
     await open(tester, loadFixtureMap('get_api_me.json'));
 
