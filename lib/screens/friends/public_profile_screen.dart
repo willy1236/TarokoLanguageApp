@@ -165,9 +165,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             onSelected: _handleAction,
             itemBuilder: (context) => [
               ..._menuItemsFor(_relationship!),
-              // 後台端點只收 uid；開關開啟後一般帳號拿不到 uid，這時不提供。
-              if ((UserService.cachedUser?.isAdmin ?? false) &&
-                  _profile?.uid != null)
+              if (UserService.cachedUser?.isAdmin ?? false)
                 const PopupMenuItem(
                   value: _ProfileAction.adminReset,
                   child: Text('重設個人檔案'),
@@ -271,9 +269,18 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   }
 
   /// 管理員直接重設他人個人檔案：指定欄位立即改回預設值，並送進違規區等二審。
+  /// 公開個人頁不回 uid，後台端點又只收 uid，先用好友碼查到對方 uid。
   Future<void> _adminResetProfile() async {
-    final uid = _profile?.uid;
-    if (uid == null) return;
+    final friendCode = _profile?.friendCode;
+    if (friendCode == null) return;
+    final int uid;
+    try {
+      uid = (await AdminService.lookupUser(friendCode)).uid;
+    } catch (e) {
+      if (mounted) handleAdminError(context, e);
+      return;
+    }
+    if (!mounted) return;
     final input = await promptAdminReason(
       context,
       title: '重設個人檔案',
