@@ -217,6 +217,12 @@ void main() {
     await tester.tap(find.text('查詢'));
     await tester.pump();
     await tester.enterText(find.byType(TextField), 'OTHER234');
+    await tester.pump();
+    expect(
+      tester.widget<FilledButton>(find.byType(FilledButton)).onPressed,
+      isNotNull,
+      reason: '改輸入後查詢鈕立刻恢復，不必等舊請求',
+    );
     pending.complete(
       jsonResponse(loadFixtureMap('get_api_admin_users_lookup.json')),
     );

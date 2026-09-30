@@ -95,6 +95,7 @@ void main() {
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
 
+    expect(find.text('小明'), findsWidgets, reason: '頁面確實載入了');
     expect(find.byIcon(Icons.more_vert), findsNothing);
   });
 
