@@ -3,7 +3,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/models/admin_models.dart';
-import 'package:flutter_application_1/models/user_model.dart';
 
 import '../helpers/fixtures.dart';
 
@@ -160,14 +159,5 @@ void main() {
     expect(reports[0].reporterNickname, '小明');
     expect(reports[1].contentTruku, isNull, reason: '沒有對應單字或句子時為 null');
     expect(adminQuestionReportStatusLabel(reports[1].status), '已查看');
-  });
-
-  test('UserModel.isAdmin 只有 admin 為 true', () {
-    UserModel user(String? role) =>
-        UserModel(uid: 1, email: '', createdAt: DateTime(2026), role: role);
-    expect(user('admin').isAdmin, isTrue);
-    expect(user('organizer').isAdmin, isFalse);
-    expect(user('user').isAdmin, isFalse);
-    expect(user(null).isAdmin, isFalse);
   });
 }

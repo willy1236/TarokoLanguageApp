@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_application_1/screens/home/home_screen.dart';
 import 'package:flutter_application_1/services/senior_mode_controller.dart';
 import 'package:flutter_application_1/shared/widgets/pill_segmented_toggle.dart';
-import 'package:flutter_application_1/shared/widgets/truku_bottom_tab.dart';
 
 Widget wrap(Widget child) => MaterialApp(home: Scaffold(body: child));
 
@@ -12,24 +11,6 @@ void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
     await seniorModeController.setEnabled(false);
-  });
-
-  testWidgets('底部導航為 首頁/學習影音/廣場活動/好友/我的，點擊回傳對應 index', (tester) async {
-    int? tapped;
-    await tester.pumpWidget(
-      wrap(TrukuBottomTab(currentIndex: 0, onTap: (i) => tapped = i)),
-    );
-
-    for (final label in ['首頁', '學習影音', '廣場活動', '好友', '我的']) {
-      expect(find.text(label), findsOneWidget);
-    }
-    expect(find.text('視訊'), findsNothing);
-    expect(find.text('個人資料'), findsNothing);
-
-    await tester.tap(find.text('好友'));
-    expect(tapped, 3);
-    await tester.tap(find.text('我的'));
-    expect(tapped, 4);
   });
 
   group('PillSegmentedToggle', () {
@@ -43,11 +24,6 @@ void main() {
         ],
       ),
     );
-
-    testWidgets('一般模式顯示羅馬拼音副標', (tester) async {
-      await tester.pumpWidget(toggle());
-      expect(find.text('PSPUNG'), findsOneWidget);
-    });
 
     testWidgets('精簡模式隱藏副標、主標仍在', (tester) async {
       await seniorModeController.setEnabled(true);

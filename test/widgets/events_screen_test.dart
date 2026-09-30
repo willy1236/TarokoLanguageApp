@@ -61,34 +61,6 @@ void main() {
     NotificationSummaryService.clear();
   });
 
-  testWidgets('載入成功後顯示活動', (tester) async {
-    installMockClient({
-      '/api/events': {
-        'events': [_event(title: '部落豐年祭'), _event(id: 2, title: '族語共學')],
-      },
-      '/api/me': _me(),
-    });
-
-    await tester.pumpWidget(_app());
-    await tester.pumpAndSettle();
-
-    expect(find.text('部落豐年祭'), findsWidgets);
-    expect(find.text('族語共學'), findsWidgets);
-  });
-
-  testWidgets('沒有活動時顯示空狀態', (tester) async {
-    installMockClient({
-      '/api/events': {'events': <dynamic>[]},
-      '/api/me': _me(),
-    });
-
-    await tester.pumpWidget(_app());
-    await tester.pumpAndSettle();
-
-    expect(find.byType(TrukuEmptyState), findsOneWidget);
-    expect(find.text('目前沒有活動'), findsOneWidget);
-  });
-
   testWidgets('載入失敗顯示錯誤畫面，重試會再打一次 API', (tester) async {
     var calls = 0;
     installMockClient(

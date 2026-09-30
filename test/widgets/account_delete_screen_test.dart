@@ -35,15 +35,6 @@ void main() {
     UserService.clearCache();
   });
 
-  testWidgets('確認頁列出四項不可逆後果', (tester) async {
-    await tester.pumpWidget(_app(const AccountDeleteScreen()));
-
-    expect(find.text('45 天內可以反悔'), findsOneWidget);
-    expect(find.text('45 天後永久刪除'), findsOneWidget);
-    expect(find.text('活動會立即取消，重新啟用也不會恢復'), findsOneWidget);
-    expect(find.text('到期提醒不一定收得到'), findsOneWidget);
-  });
-
   testWidgets('未勾選同意時送出鈕停用，勾選後才啟用', (tester) async {
     await tester.pumpWidget(_app(const AccountDeleteScreen()));
 

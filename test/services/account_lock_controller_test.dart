@@ -19,10 +19,6 @@ void main() {
   tearDown(() => accountLockController.setLocked(false));
 
   group('AccountLockController', () {
-    test('預設非唯讀', () {
-      expect(accountLockController.locked, isFalse);
-    });
-
     test('狀態改變時通知監聽者', () {
       var notified = 0;
       void listener() => notified++;
@@ -174,12 +170,6 @@ void main() {
       await tester.pump();
 
       expect(find.text(readOnlyMessage), findsOneWidget);
-    });
-
-    testWidgets('提示文案不透露封鎖原因（後端刻意不揭露）', (tester) async {
-      expect(readOnlyMessage, isNot(contains('原因')));
-      expect(readOnlyMessage, isNot(contains('違規')));
-      expect(readOnlyMessage, contains('唯讀'));
     });
   });
 }

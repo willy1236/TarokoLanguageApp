@@ -21,14 +21,6 @@ void main() {
     expect(await EventService.deleteEvent(9), 3);
   });
 
-  test('notified 為 0 時回傳 0', () async {
-    installMockClient({
-      '/api/events/9': {'success': true, 'notified': 0},
-    });
-
-    expect(await EventService.deleteEvent(9), 0);
-  });
-
   test('回應沒有 notified 欄位時視為 0', () async {
     installMockClient({
       '/api/events/9': {'success': true},

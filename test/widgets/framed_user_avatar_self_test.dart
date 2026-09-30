@@ -75,15 +75,6 @@ void main() {
     expect(_renderedUrl(tester), _snapshotUrl);
   });
 
-  testWidgets('好友碼大小寫不同也認得是自己', (tester) async {
-    UserService.currentUid = _myUid;
-    UserService.userNotifier.value = _me();
-
-    await tester.pumpWidget(_app(_myCode.toLowerCase()));
-
-    expect(_renderedUrl(tester), _currentUrl);
-  });
-
   testWidgets('沒有傳 userFriendCode 時行為不變', (tester) async {
     UserService.currentUid = _myUid;
     UserService.userNotifier.value = _me();

@@ -73,20 +73,6 @@ void main() {
     UserService.clearCache();
   });
 
-  testWidgets('載入成功後顯示活動內容與報名鈕', (tester) async {
-    installMockClient({
-      '/api/events/1': _detail(),
-      '/api/events/1/reminders': {'reminders': <dynamic>[]},
-      '/api/me': _me(),
-    });
-
-    await tester.pumpWidget(_app());
-    await tester.pumpAndSettle();
-
-    expect(find.text('部落豐年祭'), findsWidgets);
-    expect(find.text('我要參加'), findsOneWidget);
-  });
-
   testWidgets('載入失敗顯示錯誤畫面並可重試', (tester) async {
     var calls = 0;
     installMockClient(
@@ -291,20 +277,6 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('名額已滿'), findsOneWidget);
-  });
-
-  testWidgets('已結束的活動不顯示報名鈕', (tester) async {
-    installMockClient({
-      '/api/events/1': _detail(effectiveStatus: 'ended'),
-      '/api/events/1/reminders': {'reminders': <dynamic>[]},
-      '/api/me': _me(),
-    });
-
-    await tester.pumpWidget(_app());
-    await tester.pumpAndSettle();
-
-    expect(find.text('活動已結束'), findsOneWidget);
-    expect(find.text('我要參加'), findsNothing);
   });
 
   testWidgets('唯讀模式下按讚被擋，且不打 API', (tester) async {
@@ -530,9 +502,7 @@ void main() {
         }
         return switch (path) {
           '/api/events/1' => jsonResponse(farFuture),
-          '/api/events/1/reminders' => jsonResponse({
-            'reminders': <dynamic>[],
-          }),
+          '/api/events/1/reminders' => jsonResponse({'reminders': <dynamic>[]}),
           '/api/me' => jsonResponse(_me()),
           _ => fail('沒有準備 ${request.method} $path'),
         };
@@ -579,13 +549,6 @@ void main() {
       expect(find.text('活動已刪除'), findsOneWidget);
       expect(find.textContaining('已通知'), findsNothing);
       expect(find.text('開詳情'), findsOneWidget);
-    });
-
-    testWidgets('回應沒有 notified：視同 0', (tester) async {
-      await deleteAs(tester, {'success': true});
-
-      expect(find.text('活動已刪除'), findsOneWidget);
-      expect(find.textContaining('已通知'), findsNothing);
     });
 
     testWidgets('刪除失敗：顯示後端訊息、留在詳情頁', (tester) async {

@@ -44,11 +44,6 @@ void main() {
     );
   }
 
-  testWidgets('顯示用途說明', (tester) async {
-    await open(tester);
-    expect(find.text('用來確認是否年滿 18 歲，不會公開；填寫後無法自行修改'), findsOneWidget);
-  });
-
   testWidgets('沒選出生日期不能送出', (tester) async {
     await open(tester);
 

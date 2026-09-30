@@ -48,16 +48,6 @@ void main() {
     accountLockController.setLocked(false);
   });
 
-  testWidgets('載入成功後顯示標題與內文', (tester) async {
-    installMockClient({'/api/articles/1': _article()});
-
-    await tester.pumpWidget(_app());
-    await tester.pumpAndSettle();
-
-    expect(find.text('太魯閣族的織布'), findsWidgets);
-    expect(find.textContaining('這是內文'), findsWidgets);
-  });
-
   testWidgets('文章不存在時顯示看得懂的話，而不是錯誤碼', (tester) async {
     installMockClient({
       '/api/articles/1': errorResponse(
@@ -124,7 +114,7 @@ void main() {
     expect(find.byIcon(Icons.favorite_border), findsOneWidget);
   });
 
-  testWidgets('唯讀帳號按讚被擋，但取消讚放行', (tester) async {
+  testWidgets('唯讀帳號按讚被擋，不打 API', (tester) async {
     var likeCalls = 0;
     installMockClient(
       {

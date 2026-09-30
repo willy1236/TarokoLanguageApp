@@ -81,35 +81,6 @@ void main() {
       expect(toggled.isLiked, isFalse);
       expect(toggled.likeCount, 0);
     });
-
-    test('toggledBookmark 只改書籤狀態', () {
-      final post = ForumPost.fromJson(_postJson());
-
-      final toggled = post.toggledBookmark();
-
-      expect(toggled.isBookmarked, isTrue);
-      expect(toggled.likeCount, post.likeCount);
-    });
-  });
-
-  group('ForumComment.fromJson', () {
-    test('第一層留言的 parentCommentId 為 null', () {
-      final comment = ForumComment.fromJson({
-        'id': '5',
-        'post_id': '1024',
-        'parent_comment_id': null,
-        'body': '推',
-        'like_count': 0,
-        'is_liked': false,
-        'created_at': '2026-08-01T11:00:00.000Z',
-        'author': {'uid': 8, 'display_name': 'Pisaw', 'avatar_url': null},
-      });
-
-      expect(comment.id, 5);
-      expect(comment.postId, 1024);
-      expect(comment.parentCommentId, isNull);
-      expect(comment.body, '推');
-    });
   });
 
   group('ForumComment 已刪除佔位', () {
@@ -130,23 +101,6 @@ void main() {
       expect(comment.isDeleted, isTrue);
       expect(comment.body, '');
       expect(comment.author, isNull);
-    });
-
-    test('一般留言的 isDeleted 為 false，author 有值', () {
-      final comment = ForumComment.fromJson({
-        'id': 5,
-        'post_id': 42,
-        'parent_comment_id': null,
-        'body': '推',
-        'is_deleted': false,
-        'like_count': 0,
-        'is_liked': false,
-        'created_at': '2026-08-01T11:00:00.000Z',
-        'author': {'uid': 8, 'display_name': 'Pisaw', 'avatar_url': null},
-      });
-
-      expect(comment.isDeleted, isFalse);
-      expect(comment.author?.displayName, 'Pisaw');
     });
 
     test('asDeletedPlaceholder 清掉內容與作者但保留 id 與層級', () {

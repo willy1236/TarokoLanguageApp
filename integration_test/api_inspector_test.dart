@@ -48,7 +48,9 @@ void main() {
     print('  API INSPECTOR');
     print('  Base URL: ${ApiConfig.baseUrl}');
     if (_token != null) {
-      print('  Token: ${_token!.substring(0, 20)}... (${_token!.length} chars)');
+      print(
+        '  Token: ${_token!.substring(0, 20)}... (${_token!.length} chars)',
+      );
     } else {
       print('  Token: ✗ 自動登入失敗 — 請先在此裝置開 app 用 Google 登入一次');
     }
@@ -57,12 +59,11 @@ void main() {
 
   group('API Inspector', () {
     test('GET /api/health', () => _inspect('GET', ApiConfig.health));
-    test('GET /api/me', () => _inspect(
-      'GET',
-      ApiConfig.me,
-      shape: _meShape,
-      optional: _meOptional,
-    ));
+    test(
+      'GET /api/me',
+      () =>
+          _inspect('GET', ApiConfig.me, shape: _meShape, optional: _meOptional),
+    );
     test('PATCH /api/me (display_name 回傳格式測試，測完自動還原)', () async {
       if (_token == null) {
         markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
@@ -78,8 +79,7 @@ void main() {
         await _inspect('PATCH', ApiConfig.me, body: {'display_name': original});
       }
     });
-    test('PATCH /api/me (is_indigenous/tribal_name 回傳格式測試，測完自動還原)',
-        () async {
+    test('PATCH /api/me (is_indigenous/tribal_name 回傳格式測試，測完自動還原)', () async {
       if (_token == null) {
         markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
         return;
@@ -107,14 +107,16 @@ void main() {
         );
       }
     });
-    test('POST /api/me/avatar (multipart 上傳格式測試)', () => _inspectAvatarUpload());
+    test(
+      'POST /api/me/avatar (multipart 上傳格式測試)',
+      () => _inspectAvatarUpload(),
+    );
     // levels 的每一筆只要有 code/label/level 其一即可（LevelInfo.fromJson 三擇一），
     // 不是單一必要欄位，因此這裡只驗外層是清單。
-    test('GET /api/levels', () => _inspect(
-      'GET',
-      ApiConfig.levels,
-      shape: {'levels': F.list},
-    ));
+    test(
+      'GET /api/levels',
+      () => _inspect('GET', ApiConfig.levels, shape: {'levels': F.list}),
+    );
     // level 必須是 /api/levels 實際回傳的值（目前是「初級/中級/中高級/高級」），
     // 寫死英文代號會被後端擋成 400 INVALID_REQUEST。
     test('POST /api/quiz/start', () async {
@@ -131,29 +133,38 @@ void main() {
         unwrap: true,
       );
     });
-    test('POST /api/quiz/submit (空資料測格式)', () => _inspect(
-      'POST',
-      ApiConfig.quizSubmit,
-      body: {'session_id': '__test__', 'answers': []},
-    ));
-    test('POST /api/quiz/placement/start', () => _inspect(
-      'POST',
-      ApiConfig.quizPlacementStart,
-    ));
-    test('PATCH /api/quiz/placement/answer (空資料測格式)', () => _inspect(
-      'PATCH',
-      ApiConfig.quizPlacementAnswer,
-      body: {
-        'session_id': '__test__',
-        'question_id': '__test__',
-        'selected_option_id': 0,
-      },
-    ));
-    test('POST /api/quiz/placement/submit (空資料測格式)', () => _inspect(
-      'POST',
-      ApiConfig.quizPlacementSubmit,
-      body: {'session_id': '__test__', 'answers': []},
-    ));
+    test(
+      'POST /api/quiz/submit (空資料測格式)',
+      () => _inspect(
+        'POST',
+        ApiConfig.quizSubmit,
+        body: {'session_id': '__test__', 'answers': []},
+      ),
+    );
+    test(
+      'POST /api/quiz/placement/start',
+      () => _inspect('POST', ApiConfig.quizPlacementStart),
+    );
+    test(
+      'PATCH /api/quiz/placement/answer (空資料測格式)',
+      () => _inspect(
+        'PATCH',
+        ApiConfig.quizPlacementAnswer,
+        body: {
+          'session_id': '__test__',
+          'question_id': '__test__',
+          'selected_option_id': 0,
+        },
+      ),
+    );
+    test(
+      'POST /api/quiz/placement/submit (空資料測格式)',
+      () => _inspect(
+        'POST',
+        ApiConfig.quizPlacementSubmit,
+        body: {'session_id': '__test__', 'answers': []},
+      ),
+    );
     test('POST /api/listening/start', () async {
       final level = await _firstLevel();
       if (level == null) {
@@ -168,62 +179,86 @@ void main() {
         unwrap: true,
       );
     });
-    test('PATCH /api/listening/answer (空資料測格式)', () => _inspect(
-      'PATCH',
-      ApiConfig.listeningAnswer,
-      body: {
-        'session_id': '__test__',
-        'question_id': '__test__',
-        'selected_option_id': 0,
-      },
-    ));
-    test('POST /api/listening/submit (空資料測格式)', () => _inspect(
-      'POST',
-      ApiConfig.listeningSubmit,
-      body: {'session_id': '__test__', 'answers': []},
-    ));
-    test('POST /api/listening/placement/start', () => _inspect(
-      'POST',
-      ApiConfig.listeningPlacementStart,
-    ));
-    test('PATCH /api/listening/placement/answer (空資料測格式)', () => _inspect(
-      'PATCH',
-      ApiConfig.listeningPlacementAnswer,
-      body: {
-        'session_id': '__test__',
-        'question_id': '__test__',
-        'selected_option_id': 0,
-      },
-    ));
-    test('POST /api/listening/placement/submit (空資料測格式)', () => _inspect(
-      'POST',
-      ApiConfig.listeningPlacementSubmit,
-      body: {'session_id': '__test__', 'answers': []},
-    ));
-    test('GET /api/shop/items', () => _inspect(
-      'GET',
-      ApiConfig.shopItems,
-      shape: {'items': F.list},
-      listKey: 'items',
-      itemShape: _shopItemShape,
-      itemOptional: _shopItemOptional,
-    ));
+    test(
+      'PATCH /api/listening/answer (空資料測格式)',
+      () => _inspect(
+        'PATCH',
+        ApiConfig.listeningAnswer,
+        body: {
+          'session_id': '__test__',
+          'question_id': '__test__',
+          'selected_option_id': 0,
+        },
+      ),
+    );
+    test(
+      'POST /api/listening/submit (空資料測格式)',
+      () => _inspect(
+        'POST',
+        ApiConfig.listeningSubmit,
+        body: {'session_id': '__test__', 'answers': []},
+      ),
+    );
+    test(
+      'POST /api/listening/placement/start',
+      () => _inspect('POST', ApiConfig.listeningPlacementStart),
+    );
+    test(
+      'PATCH /api/listening/placement/answer (空資料測格式)',
+      () => _inspect(
+        'PATCH',
+        ApiConfig.listeningPlacementAnswer,
+        body: {
+          'session_id': '__test__',
+          'question_id': '__test__',
+          'selected_option_id': 0,
+        },
+      ),
+    );
+    test(
+      'POST /api/listening/placement/submit (空資料測格式)',
+      () => _inspect(
+        'POST',
+        ApiConfig.listeningPlacementSubmit,
+        body: {'session_id': '__test__', 'answers': []},
+      ),
+    );
+    test(
+      'GET /api/shop/items',
+      () => _inspect(
+        'GET',
+        ApiConfig.shopItems,
+        shape: {'items': F.list},
+        listKey: 'items',
+        itemShape: _shopItemShape,
+        itemOptional: _shopItemOptional,
+      ),
+    );
     // 列表分頁統一成 limit＋cursor＋page_info（後端 2026-09-28 加急 API 格式統一 §1）。
-    test('GET /api/millet/transactions', () => _inspect(
-      'GET',
-      ApiConfig.milletTransactions,
-      shape: {'transactions': F.list, 'page_info': F.object},
-    ));
-    test('GET /api/forum/posts', () => _inspect(
-      'GET',
-      ApiConfig.forumPosts,
-      shape: {'pinned': F.list, 'posts': F.list, 'page_info': F.object},
-    ));
-    test('GET /api/forum/boards/general/posts', () => _inspect(
-      'GET',
-      ApiConfig.forumBoardPosts('general'),
-      shape: {'pinned': F.list, 'posts': F.list, 'page_info': F.object},
-    ));
+    test(
+      'GET /api/millet/transactions',
+      () => _inspect(
+        'GET',
+        ApiConfig.milletTransactions,
+        shape: {'transactions': F.list, 'page_info': F.object},
+      ),
+    );
+    test(
+      'GET /api/forum/posts',
+      () => _inspect(
+        'GET',
+        ApiConfig.forumPosts,
+        shape: {'pinned': F.list, 'posts': F.list, 'page_info': F.object},
+      ),
+    );
+    test(
+      'GET /api/forum/boards/general/posts',
+      () => _inspect(
+        'GET',
+        ApiConfig.forumBoardPosts('general'),
+        shape: {'pinned': F.list, 'posts': F.list, 'page_info': F.object},
+      ),
+    );
     test('GET /api/forum/posts/:id/comments (自動挑留言最多的貼文)', () async {
       if (_token == null) {
         markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
@@ -241,30 +276,42 @@ void main() {
         shape: {'comments': F.list, 'replies': F.list, 'page_info': F.object},
       );
     });
-    test('GET /api/forum/bookmarks', () => _inspect(
-      'GET',
-      ApiConfig.forumBookmarks,
-      shape: {'posts': F.list, 'page_info': F.object},
-    ));
-    test('GET /api/forum/notifications', () => _inspect(
-      'GET',
-      ApiConfig.forumNotifications,
-      shape: {
-        'notifications': F.list,
-        'unread_count': F.number,
-        'page_info': F.object,
-      },
-    ));
-    test('GET /api/forum/posts/likes', () => _inspect(
-      'GET',
-      ApiConfig.forumPostLikes,
-      shape: {'posts': F.list, 'page_info': F.object},
-    ));
-    test('GET /api/forum/comments/likes', () => _inspect(
-      'GET',
-      ApiConfig.forumCommentLikes,
-      shape: {'comments': F.list, 'page_info': F.object},
-    ));
+    test(
+      'GET /api/forum/bookmarks',
+      () => _inspect(
+        'GET',
+        ApiConfig.forumBookmarks,
+        shape: {'posts': F.list, 'page_info': F.object},
+      ),
+    );
+    test(
+      'GET /api/forum/notifications',
+      () => _inspect(
+        'GET',
+        ApiConfig.forumNotifications,
+        shape: {
+          'notifications': F.list,
+          'unread_count': F.number,
+          'page_info': F.object,
+        },
+      ),
+    );
+    test(
+      'GET /api/forum/posts/likes',
+      () => _inspect(
+        'GET',
+        ApiConfig.forumPostLikes,
+        shape: {'posts': F.list, 'page_info': F.object},
+      ),
+    );
+    test(
+      'GET /api/forum/comments/likes',
+      () => _inspect(
+        'GET',
+        ApiConfig.forumCommentLikes,
+        shape: {'comments': F.list, 'page_info': F.object},
+      ),
+    );
     test('GET /api/friends/:friend_code/messages (自動挑第一位好友)', () async {
       if (_token == null) {
         markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
@@ -282,243 +329,329 @@ void main() {
         shape: {'messages': F.list, 'page_info': F.object},
       );
     });
-    test('GET /api/videos', () => _inspect(
-      'GET',
-      ApiConfig.videos,
-      shape: {'videos': F.list, 'page_info': F.object},
-      optional: {'sort': F.string},
-      listKey: 'videos',
-      itemShape: _videoSummaryShape,
-      itemOptional: _videoSummaryOptional,
-    ));
-    test('GET /api/videos?sort=popular', () => _inspect(
-      'GET',
-      '${ApiConfig.videos}?sort=popular',
-      shape: {'videos': F.list, 'page_info': F.object},
-      listKey: 'videos',
-      itemShape: _videoSummaryShape,
-      itemOptional: _videoSummaryOptional,
-    ));
-    test('GET /api/videos/bookmarks', () => _inspect(
-      'GET',
-      ApiConfig.videoBookmarks,
-      shape: {'videos': F.list, 'page_info': F.object},
-    ));
-    test('GET /api/videos/likes', () => _inspect(
-      'GET',
-      ApiConfig.videoLikes,
-      shape: {'videos': F.list, 'page_info': F.object},
-    ));
-    test('GET /api/articles', () => _inspect(
-      'GET',
-      ApiConfig.articles,
-      shape: {'articles': F.list, 'page_info': F.object},
-      listKey: 'articles',
-      itemShape: _articleSummaryShape,
-      itemOptional: _articleSummaryOptional,
-    ));
-    test('GET /api/articles/bookmarks', () => _inspect(
-      'GET',
-      ApiConfig.articleBookmarks,
-      shape: {'articles': F.list, 'page_info': F.object},
-    ));
-    test('GET /api/articles/likes', () => _inspect(
-      'GET',
-      ApiConfig.articleLikes,
-      shape: {'articles': F.list, 'page_info': F.object},
-    ));
-    test('GET /api/history', () => _inspect(
-      'GET',
-      ApiConfig.historyList,
-      shape: {'records': F.list, 'page_info': F.object},
-    ));
-    test('GET /api/videos/1', () => _inspect(
-      'GET',
-      ApiConfig.videoDetail(1),
-      fixtureAs: 'get_api_video_detail.json',
-      shape: _videoDetailShape,
-      optional: _videoSummaryOptional,
-    ));
-    // video 5 是第一支上架的 YouTube 影片（後端 2026-09-25 前端待辦 A1）。
-    test('GET /api/videos/5 (YouTube 影片)', () => _inspect(
-      'GET',
-      ApiConfig.videoDetail(5),
-      fixtureAs: 'get_api_video_detail_youtube.json',
-      shape: _youtubeVideoDetailShape,
-      nullable: const {'hls_url', 'duration_sec'},
-      optional: _videoSummaryOptional,
-    ));
-    test('GET /api/videos/999999 (測 404 格式)', () => _inspect(
-      'GET',
-      ApiConfig.videoDetail(999999),
-      expectStatus: 404,
-      expectError: true,
-    ));
-
-    test('GET /api/events', () => _inspect(
-      'GET',
-      ApiConfig.events,
-      shape: {'events': F.list, 'page_info': F.object},
-      listKey: 'events',
-      itemShape: _eventSummaryShape,
-      itemOptional: _eventSummaryOptional,
-    ));
-    test('GET /api/events/mine', () => _inspect(
-      'GET',
-      ApiConfig.eventsMine,
-      shape: {'events': F.list, 'page_info': F.object},
-      listKey: 'events',
-      itemShape: _eventSummaryShape,
-      itemOptional: _eventSummaryOptional,
-    ));
-    test('GET /api/events/likes', () => _inspect(
-      'GET',
-      ApiConfig.eventLikes,
-      shape: {'events': F.list, 'page_info': F.object},
-      listKey: 'events',
-      itemShape: _eventSummaryShape,
-      itemOptional: _eventSummaryOptional,
-    ));
-    test('GET /api/events/bookmarks', () => _inspect(
-      'GET',
-      ApiConfig.eventBookmarks,
-      shape: {'events': F.list, 'page_info': F.object},
-      listKey: 'events',
-      itemShape: _eventSummaryShape,
-      itemOptional: _eventSummaryOptional,
-    ));
-    test('GET /api/events/notifications', () => _inspect(
-      'GET',
-      ApiConfig.eventNotifications,
-      shape: {
-        'notifications': F.list,
-        'unread_count': F.number,
-        'page_info': F.object,
-      },
-    ));
-    test('GET /api/events?scope=all (找已結束的活動)', () => _inspect(
-      'GET',
-      '${ApiConfig.events}?scope=all',
-      shape: {'events': F.list},
-      listKey: 'events',
-      itemShape: _eventSummaryShape,
-      itemOptional: _eventSummaryOptional,
-    ));
-    test('GET /api/events/:id (自動挑第一個 effective_status=ended 的活動測詳情)',
-        () async {
-      if (_token == null) {
-        markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
-        return;
-      }
-      final endedId = await _findEndedEventId();
-      if (endedId == null) {
-        markTestSkipped('目前沒有任何 effective_status=ended 的活動可測');
-        return;
-      }
-      print('（挑到已結束活動 id=$endedId）');
-      await _inspect(
+    test(
+      'GET /api/videos',
+      () => _inspect(
         'GET',
-        ApiConfig.eventDetail(endedId),
-        fixtureAs: 'get_api_event_detail.json',
-        shape: _eventDetailShape,
-        optional: _eventDetailOptional,
-      );
-    });
+        ApiConfig.videos,
+        shape: {'videos': F.list, 'page_info': F.object},
+        optional: {'sort': F.string},
+        listKey: 'videos',
+        itemShape: _videoSummaryShape,
+        itemOptional: _videoSummaryOptional,
+      ),
+    );
+    test(
+      'GET /api/videos?sort=popular',
+      () => _inspect(
+        'GET',
+        '${ApiConfig.videos}?sort=popular',
+        shape: {'videos': F.list, 'page_info': F.object},
+        listKey: 'videos',
+        itemShape: _videoSummaryShape,
+        itemOptional: _videoSummaryOptional,
+      ),
+    );
+    test(
+      'GET /api/videos/bookmarks',
+      () => _inspect(
+        'GET',
+        ApiConfig.videoBookmarks,
+        shape: {'videos': F.list, 'page_info': F.object},
+      ),
+    );
+    test(
+      'GET /api/videos/likes',
+      () => _inspect(
+        'GET',
+        ApiConfig.videoLikes,
+        shape: {'videos': F.list, 'page_info': F.object},
+      ),
+    );
+    test(
+      'GET /api/articles',
+      () => _inspect(
+        'GET',
+        ApiConfig.articles,
+        shape: {'articles': F.list, 'page_info': F.object},
+        listKey: 'articles',
+        itemShape: _articleSummaryShape,
+        itemOptional: _articleSummaryOptional,
+      ),
+    );
+    test(
+      'GET /api/articles/bookmarks',
+      () => _inspect(
+        'GET',
+        ApiConfig.articleBookmarks,
+        shape: {'articles': F.list, 'page_info': F.object},
+      ),
+    );
+    test(
+      'GET /api/articles/likes',
+      () => _inspect(
+        'GET',
+        ApiConfig.articleLikes,
+        shape: {'articles': F.list, 'page_info': F.object},
+      ),
+    );
+    test(
+      'GET /api/history',
+      () => _inspect(
+        'GET',
+        ApiConfig.historyList,
+        shape: {'records': F.list, 'page_info': F.object},
+      ),
+    );
+    test(
+      'GET /api/videos/1',
+      () => _inspect(
+        'GET',
+        ApiConfig.videoDetail(1),
+        fixtureAs: 'get_api_video_detail.json',
+        shape: _videoDetailShape,
+        optional: _videoSummaryOptional,
+      ),
+    );
+    // video 5 是第一支上架的 YouTube 影片（後端 2026-09-25 前端待辦 A1）。
+    test(
+      'GET /api/videos/5 (YouTube 影片)',
+      () => _inspect(
+        'GET',
+        ApiConfig.videoDetail(5),
+        fixtureAs: 'get_api_video_detail_youtube.json',
+        shape: _youtubeVideoDetailShape,
+        nullable: const {'hls_url', 'duration_sec'},
+        optional: _videoSummaryOptional,
+      ),
+    );
+    test(
+      'GET /api/videos/999999 (測 404 格式)',
+      () => _inspect(
+        'GET',
+        ApiConfig.videoDetail(999999),
+        expectStatus: 404,
+        expectError: true,
+      ),
+    );
+
+    test(
+      'GET /api/events',
+      () => _inspect(
+        'GET',
+        ApiConfig.events,
+        shape: {'events': F.list, 'page_info': F.object},
+        listKey: 'events',
+        itemShape: _eventSummaryShape,
+        itemOptional: _eventSummaryOptional,
+      ),
+    );
+    test(
+      'GET /api/events/mine',
+      () => _inspect(
+        'GET',
+        ApiConfig.eventsMine,
+        shape: {'events': F.list, 'page_info': F.object},
+        listKey: 'events',
+        itemShape: _eventSummaryShape,
+        itemOptional: _eventSummaryOptional,
+      ),
+    );
+    test(
+      'GET /api/events/likes',
+      () => _inspect(
+        'GET',
+        ApiConfig.eventLikes,
+        shape: {'events': F.list, 'page_info': F.object},
+        listKey: 'events',
+        itemShape: _eventSummaryShape,
+        itemOptional: _eventSummaryOptional,
+      ),
+    );
+    test(
+      'GET /api/events/bookmarks',
+      () => _inspect(
+        'GET',
+        ApiConfig.eventBookmarks,
+        shape: {'events': F.list, 'page_info': F.object},
+        listKey: 'events',
+        itemShape: _eventSummaryShape,
+        itemOptional: _eventSummaryOptional,
+      ),
+    );
+    test(
+      'GET /api/events/notifications',
+      () => _inspect(
+        'GET',
+        ApiConfig.eventNotifications,
+        shape: {
+          'notifications': F.list,
+          'unread_count': F.number,
+          'page_info': F.object,
+        },
+      ),
+    );
+    test(
+      'GET /api/events?scope=all (找已結束的活動)',
+      () => _inspect(
+        'GET',
+        '${ApiConfig.events}?scope=all',
+        shape: {'events': F.list},
+        listKey: 'events',
+        itemShape: _eventSummaryShape,
+        itemOptional: _eventSummaryOptional,
+      ),
+    );
+    test(
+      'GET /api/events/:id (自動挑第一個 effective_status=ended 的活動測詳情)',
+      () async {
+        if (_token == null) {
+          markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+          return;
+        }
+        final endedId = await _findEndedEventId();
+        if (endedId == null) {
+          markTestSkipped('目前沒有任何 effective_status=ended 的活動可測');
+          return;
+        }
+        print('（挑到已結束活動 id=$endedId）');
+        await _inspect(
+          'GET',
+          ApiConfig.eventDetail(endedId),
+          fixtureAs: 'get_api_event_detail.json',
+          shape: _eventDetailShape,
+          optional: _eventDetailOptional,
+        );
+      },
+    );
 
     // 我參加的活動（T-16）：確認 total、is_host、joined_at 的實際格式。
     for (final tab in ['active', 'ended']) {
-      test('GET /api/events/joined?tab=$tab', () => _inspect(
-        'GET',
-        '${ApiConfig.eventsJoined}?tab=$tab',
-        shape: {'events': F.list, 'page_info': F.object},
-        listKey: 'events',
-        itemShape: _joinedEventShape,
-        itemOptional: _eventSummaryOptional,
-      ));
+      test(
+        'GET /api/events/joined?tab=$tab',
+        () => _inspect(
+          'GET',
+          '${ApiConfig.eventsJoined}?tab=$tab',
+          shape: {'events': F.list, 'page_info': F.object},
+          listKey: 'events',
+          itemShape: _joinedEventShape,
+          itemOptional: _eventSummaryOptional,
+        ),
+      );
     }
 
     // 影音/文章/活動/論壇搜尋（q/range/tribe_id 皆選填，見 backend/searchQuery.ts）
-    test('GET /api/videos/search', () => _inspect(
-      'GET',
-      '${ApiConfig.videoSearch}?q=a&range=1m',
-      shape: {'videos': F.list, 'page_info': F.object},
-      listKey: 'videos',
-      itemShape: _videoSummaryShape,
-      itemOptional: _videoSummaryOptional,
-    ));
-    test('GET /api/articles/search', () => _inspect(
-      'GET',
-      '${ApiConfig.articleSearch}?q=a&range=1m',
-      shape: {'articles': F.list, 'page_info': F.object},
-      listKey: 'articles',
-      itemShape: _articleSummaryShape,
-      itemOptional: _articleSummaryOptional,
-    ));
-    test('GET /api/events/search', () => _inspect(
-      'GET',
-      '${ApiConfig.eventSearch}?q=a&range=1m',
-      shape: {'events': F.list, 'page_info': F.object},
-      listKey: 'events',
-      itemShape: _eventSummaryShape,
-      itemOptional: _eventSummaryOptional,
-    ));
-    test('GET /api/forum/search (range/tribe_id)', () => _inspect(
-      'GET',
-      '${ApiConfig.forumSearch}?q=a&range=1m',
-      shape: {'posts': F.list, 'page_info': F.object},
-    ));
+    test(
+      'GET /api/videos/search',
+      () => _inspect(
+        'GET',
+        '${ApiConfig.videoSearch}?q=a&range=1m',
+        shape: {'videos': F.list, 'page_info': F.object},
+        listKey: 'videos',
+        itemShape: _videoSummaryShape,
+        itemOptional: _videoSummaryOptional,
+      ),
+    );
+    test(
+      'GET /api/articles/search',
+      () => _inspect(
+        'GET',
+        '${ApiConfig.articleSearch}?q=a&range=1m',
+        shape: {'articles': F.list, 'page_info': F.object},
+        listKey: 'articles',
+        itemShape: _articleSummaryShape,
+        itemOptional: _articleSummaryOptional,
+      ),
+    );
+    test(
+      'GET /api/events/search',
+      () => _inspect(
+        'GET',
+        '${ApiConfig.eventSearch}?q=a&range=1m',
+        shape: {'events': F.list, 'page_info': F.object},
+        listKey: 'events',
+        itemShape: _eventSummaryShape,
+        itemOptional: _eventSummaryOptional,
+      ),
+    );
+    test(
+      'GET /api/forum/search (range/tribe_id)',
+      () => _inspect(
+        'GET',
+        '${ApiConfig.forumSearch}?q=a&range=1m',
+        shape: {'posts': F.list, 'page_info': F.object},
+      ),
+    );
 
     // 2026-09 後端更新（見 Truku_backend 說明文件/前端交接/2026-09_更新與待接清單.md）。
     // 刪除帳號、匯出資料、寄驗證信屬於有副作用或受每分鐘 5 次限流的端點，不在此自動打。
-    test('GET /api/terms (確認 tos v5 / privacy v10 已發布)', () => _inspect(
-      'GET',
-      ApiConfig.terms,
-      shape: {'documents': F.list},
-      optional: {'all_consented': F.boolean},
-      listKey: 'documents',
-      itemShape: _termsDocShape,
-      itemNullable: {'consented_version'},
-      itemOptional: {'consented_version': F.number},
-    ));
-    test('GET /api/account/status', () => _inspect(
-      'GET',
-      ApiConfig.accountStatus,
-      shape: {'status': F.string},
-      optional: {'purge_at': F.string},
-    ));
-    test('GET /api/me/notification-settings', () => _inspect(
-      'GET',
-      ApiConfig.meNotificationSettings,
-      shape: {'tribe_events': F.boolean},
-    ));
+    test(
+      'GET /api/terms (確認 tos v5 / privacy v10 已發布)',
+      () => _inspect(
+        'GET',
+        ApiConfig.terms,
+        shape: {'documents': F.list},
+        optional: {'all_consented': F.boolean},
+        listKey: 'documents',
+        itemShape: _termsDocShape,
+        itemNullable: {'consented_version'},
+        itemOptional: {'consented_version': F.number},
+      ),
+    );
+    test(
+      'GET /api/account/status',
+      () => _inspect(
+        'GET',
+        ApiConfig.accountStatus,
+        shape: {'status': F.string},
+        optional: {'purge_at': F.string},
+      ),
+    );
+    test(
+      'GET /api/me/notification-settings',
+      () => _inspect(
+        'GET',
+        ApiConfig.meNotificationSettings,
+        shape: {'tribe_events': F.boolean},
+      ),
+    );
     // NotificationSummary 每個欄位都有 ?? 0，缺欄位不會壞，但全缺代表端點掛了，
     // 所以這裡把五個計數都列必要、允許為 null。
-    test('GET /api/notifications/summary', () => _inspect(
-      'GET',
-      ApiConfig.notificationsSummary,
-      shape: {
-        'forum': F.number,
-        'events': F.number,
-        'messages': F.number,
-        'friend_requests': F.number,
-        'total': F.number,
-      },
-      nullable: {'forum', 'events', 'messages', 'friend_requests', 'total'},
-    ));
-    test('GET /api/search/history?module=forum', () => _inspect(
-      'GET',
-      '${ApiConfig.searchHistory}?module=forum',
-      shape: {'history': F.list},
-      listKey: 'history',
-      itemShape: {'q': F.string},
-    ));
+    test(
+      'GET /api/notifications/summary',
+      () => _inspect(
+        'GET',
+        ApiConfig.notificationsSummary,
+        shape: {
+          'forum': F.number,
+          'events': F.number,
+          'messages': F.number,
+          'friend_requests': F.number,
+          'total': F.number,
+        },
+        nullable: {'forum', 'events', 'messages', 'friend_requests', 'total'},
+      ),
+    );
+    test(
+      'GET /api/search/history?module=forum',
+      () => _inspect(
+        'GET',
+        '${ApiConfig.searchHistory}?module=forum',
+        shape: {'history': F.list},
+        listKey: 'history',
+        itemShape: {'q': F.string},
+      ),
+    );
     // popular 的每一筆可能是 {q: ...} 也可能是純字串（SearchAssistService 兩者都收），
     // 因此只驗外層是清單。
-    test('GET /api/search/popular?module=forum', () => _inspect(
-      'GET',
-      '${ApiConfig.searchPopular}?module=forum',
-      shape: {'popular': F.list},
-    ));
+    test(
+      'GET /api/search/popular?module=forum',
+      () => _inspect(
+        'GET',
+        '${ApiConfig.searchPopular}?module=forum',
+        shape: {'popular': F.list},
+      ),
+    );
   });
 
   // 管理員後台（唯讀 GET）。要用 role == 'admin' 的帳號錄，否則整組略過。
@@ -539,57 +672,78 @@ void main() {
       });
     }
 
-    adminTest('GET /api/admin/forum/reports', (_) => _inspect(
-      'GET',
-      ApiConfig.adminForumReports,
-      shape: {'reports': F.list},
-    ));
-    adminTest('GET /api/admin/moderation/cases', (_) => _inspect(
-      'GET',
-      ApiConfig.adminModerationCases,
-      shape: {'cases': F.list},
-    ));
-    adminTest('GET /api/admin/users/roles', (_) => _inspect(
-      'GET',
-      ApiConfig.adminUsersRoles,
-      shape: {'users': F.list},
-    ));
-    adminTest('GET /api/admin/mutes', (_) => _inspect(
-      'GET',
-      ApiConfig.adminMutes,
-      shape: {'mutes': F.list},
-    ));
-    adminTest('GET /api/admin/banned-words', (_) => _inspect(
-      'GET',
-      ApiConfig.adminBannedWords,
-      shape: {'words': F.list},
-    ));
-    adminTest('GET /api/admin/question-reports', (_) => _inspect(
-      'GET',
-      ApiConfig.adminQuestionReports,
-      shape: {'reports': F.list},
-    ));
-    adminTest('GET /api/admin/millet/transactions (查自己)', (uid) => _inspect(
-      'GET',
-      '${ApiConfig.adminMilletTransactions}?uid=$uid',
-      shape: {'transactions': F.list, 'page_info': F.object},
-      fixtureAs: 'get_api_admin_millet_transactions.json',
-    ));
-    adminTest('GET /api/admin/millet/reconcile (查自己)', (uid) => _inspect(
-      'GET',
-      '${ApiConfig.adminMilletReconcile}?uid=$uid',
-      shape: {'ledger_sum': F.number, 'user_millet': F.number, 'ok': F.boolean},
-      fixtureAs: 'get_api_admin_millet_reconcile.json',
-    ));
+    adminTest(
+      'GET /api/admin/forum/reports',
+      (_) => _inspect(
+        'GET',
+        ApiConfig.adminForumReports,
+        shape: {'reports': F.list},
+      ),
+    );
+    adminTest(
+      'GET /api/admin/moderation/cases',
+      (_) => _inspect(
+        'GET',
+        ApiConfig.adminModerationCases,
+        shape: {'cases': F.list},
+      ),
+    );
+    adminTest(
+      'GET /api/admin/users/roles',
+      (_) =>
+          _inspect('GET', ApiConfig.adminUsersRoles, shape: {'users': F.list}),
+    );
+    adminTest(
+      'GET /api/admin/mutes',
+      (_) => _inspect('GET', ApiConfig.adminMutes, shape: {'mutes': F.list}),
+    );
+    adminTest(
+      'GET /api/admin/banned-words',
+      (_) =>
+          _inspect('GET', ApiConfig.adminBannedWords, shape: {'words': F.list}),
+    );
+    adminTest(
+      'GET /api/admin/question-reports',
+      (_) => _inspect(
+        'GET',
+        ApiConfig.adminQuestionReports,
+        shape: {'reports': F.list},
+      ),
+    );
+    adminTest(
+      'GET /api/admin/millet/transactions (查自己)',
+      (uid) => _inspect(
+        'GET',
+        '${ApiConfig.adminMilletTransactions}?uid=$uid',
+        shape: {'transactions': F.list, 'page_info': F.object},
+        fixtureAs: 'get_api_admin_millet_transactions.json',
+      ),
+    );
+    adminTest(
+      'GET /api/admin/millet/reconcile (查自己)',
+      (uid) => _inspect(
+        'GET',
+        '${ApiConfig.adminMilletReconcile}?uid=$uid',
+        shape: {
+          'ledger_sum': F.number,
+          'user_millet': F.number,
+          'ok': F.boolean,
+        },
+        fixtureAs: 'get_api_admin_millet_reconcile.json',
+      ),
+    );
   });
 }
 
 Future<Map<String, dynamic>?> _fetchMe() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.me}');
-  final response = await http.get(uri, headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $_token',
-  });
+  final response = await http.get(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_token',
+    },
+  );
   if (response.statusCode != 200) return null;
   return jsonDecode(response.body) as Map<String, dynamic>;
 }
@@ -597,10 +751,13 @@ Future<Map<String, dynamic>?> _fetchMe() async {
 /// 打 /api/events?scope=all 找第一筆 effective_status == 'ended' 的活動 id。
 Future<int?> _findEndedEventId() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.events}?scope=all');
-  final response = await http.get(uri, headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $_token',
-  });
+  final response = await http.get(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_token',
+    },
+  );
   if (response.statusCode != 200) return null;
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   final events = decoded['events'] as List<dynamic>? ?? [];
@@ -617,18 +774,25 @@ Future<int?> _findEndedEventId() async {
 /// 打 /api/forum/posts 找留言數最多的貼文 id，讓留言 fixture 盡量有內容。
 Future<int?> _findMostCommentedPostId() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.forumPosts}?limit=50');
-  final response = await http.get(uri, headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $_token',
-  });
+  final response = await http.get(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_token',
+    },
+  );
   if (response.statusCode != 200) return null;
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
-  final posts = (decoded['posts'] as List<dynamic>? ?? const [])
-      .whereType<Map<String, dynamic>>()
-      .where((p) => ((p['comment_count'] ?? 0) as num) > 0)
-      .toList()
-    ..sort((a, b) =>
-        ((b['comment_count'] as num)).compareTo(a['comment_count'] as num));
+  final posts =
+      (decoded['posts'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()
+          .where((p) => ((p['comment_count'] ?? 0) as num) > 0)
+          .toList()
+        ..sort(
+          (a, b) => ((b['comment_count'] as num)).compareTo(
+            a['comment_count'] as num,
+          ),
+        );
   if (posts.isEmpty) return null;
   final id = posts.first['id'];
   return id is int ? id : int.tryParse('$id');
@@ -637,10 +801,13 @@ Future<int?> _findMostCommentedPostId() async {
 /// 打 /api/friends 取第一位好友的好友碼，給私訊歷史用。
 Future<String?> _firstFriendCode() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.friends}');
-  final response = await http.get(uri, headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $_token',
-  });
+  final response = await http.get(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_token',
+    },
+  );
   if (response.statusCode != 200) return null;
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   final friends = decoded['friends'] as List<dynamic>? ?? const [];
@@ -653,10 +820,13 @@ Future<String?> _firstFriendCode() async {
 Future<String?> _firstLevel() async {
   if (_token == null) return null;
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.levels}');
-  final response = await http.get(uri, headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $_token',
-  });
+  final response = await http.get(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_token',
+    },
+  );
   if (response.statusCode != 200) return null;
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   final levels = decoded['levels'] as List<dynamic>? ?? const [];
@@ -667,10 +837,13 @@ Future<String?> _firstLevel() async {
 
 Future<String?> _fetchDisplayName() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.me}');
-  final response = await http.get(uri, headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $_token',
-  });
+  final response = await http.get(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_token',
+    },
+  );
   if (response.statusCode != 200) return null;
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   return decoded['display_name'] as String?;
@@ -678,10 +851,13 @@ Future<String?> _fetchDisplayName() async {
 
 Future<Map<String, dynamic>?> _fetchIdentityFields() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.me}');
-  final response = await http.get(uri, headers: {
-    'Content-Type': 'application/json',
-    'Authorization': 'Bearer $_token',
-  });
+  final response = await http.get(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_token',
+    },
+  );
   if (response.statusCode != 200) return null;
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   return {
@@ -706,11 +882,13 @@ Future<void> _inspectAvatarUpload() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.meAvatar}');
   final request = http.MultipartRequest('POST', uri)
     ..headers['Authorization'] = 'Bearer $_token'
-    ..files.add(http.MultipartFile.fromBytes(
-      'avatar',
-      pngBytes,
-      filename: 'inspector_test.png',
-    ));
+    ..files.add(
+      http.MultipartFile.fromBytes(
+        'avatar',
+        pngBytes,
+        filename: 'inspector_test.png',
+      ),
+    );
 
   final streamed = await request.send();
   final response = await http.Response.fromStream(streamed);
@@ -746,6 +924,7 @@ Future<void> _inspect(
   Set<String> itemNullable = const {},
   Map<String, F> itemOptional = const {},
   int expectStatus = 200,
+
   /// 指定 fixture 檔名。路徑含動態 id（例如 /api/events/123）時必須給，
   /// 否則每次錄製都會產生不同檔名，離線測試對不上。
   String? fixtureAs,
@@ -800,8 +979,11 @@ Future<void> _inspect(
   // 沒給契約就只當偵察用，維持原行為。
   if (shape == null && !expectError) return;
 
-  expect(response.statusCode, expectStatus,
-      reason: '$method $path 狀態碼不符\n${response.body}');
+  expect(
+    response.statusCode,
+    expectStatus,
+    reason: '$method $path 狀態碼不符\n${response.body}',
+  );
 
   if (expectError) {
     expectErrorShape(response, code: errorCode);
@@ -813,14 +995,22 @@ Future<void> _inspect(
   if (unwrap && decoded is Map<String, dynamic> && decoded['data'] != null) {
     decoded = decoded['data'];
   }
-  expectShape(decoded, shape!,
-      nullable: nullable, optional: optional, label: '$method $path');
+  expectShape(
+    decoded,
+    shape!,
+    nullable: nullable,
+    optional: optional,
+    label: '$method $path',
+  );
 
   if (listKey != null && itemShape != null) {
-    expectEachShape((decoded as Map<String, dynamic>)[listKey], itemShape,
-        nullable: itemNullable,
-        optional: itemOptional,
-        label: '$method $path.$listKey');
+    expectEachShape(
+      (decoded as Map<String, dynamic>)[listKey],
+      itemShape,
+      nullable: itemNullable,
+      optional: itemOptional,
+      label: '$method $path.$listKey',
+    );
   }
 }
 
@@ -835,10 +1025,7 @@ Future<void> _inspect(
 
 /// GET /api/me → lib/models/user_model.dart UserModel.fromJson
 /// 只有 uid / created_at 是硬性（`as int` / `DateTime.parse`），其餘皆有預設值。
-const Map<String, F> _meShape = {
-  'uid': F.number,
-  'created_at': F.string,
-};
+const Map<String, F> _meShape = {'uid': F.number, 'created_at': F.string};
 const Map<String, F> _meOptional = {
   'display_name': F.string,
   'avatar_url': F.string,
@@ -995,6 +1182,7 @@ const Map<String, F> _eventDetailShape = {
   'title': F.string,
   'starts_at': F.string,
 };
+
 /// GET /api/events/joined 的每一筆 → EventSummary.fromJson 的 isHost、joinedAt。
 const Map<String, F> _joinedEventShape = {
   ..._eventSummaryShape,

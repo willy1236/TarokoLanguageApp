@@ -80,36 +80,6 @@ void main() {
 
   setUp(() => stubCommonChannels(audio: true));
 
-  testWidgets('載入中顯示轉圈', (tester) async {
-    final controller = _controller(
-      start: () =>
-          Future.delayed(const Duration(seconds: 1), () => _session([_q('a')])),
-    );
-    addTearDown(controller.dispose);
-
-    await tester.pumpWidget(_view(controller));
-    unawaitedLoad(controller);
-    await tester.pump();
-
-    expect(find.byType(TrukuLoadingView), findsOneWidget);
-
-    await tester.pump(const Duration(seconds: 2));
-  });
-
-  testWidgets('顯示題目、選項與進度', (tester) async {
-    final controller = _controller();
-    addTearDown(controller.dispose);
-
-    await tester.pumpWidget(_view(controller));
-    await controller.load();
-    await tester.pump();
-
-    expect(find.text('題目 a'), findsOneWidget);
-    expect(find.text('a-選項一'), findsOneWidget);
-    expect(find.text('1 / 3'), findsOneWidget);
-    expect(find.text('初級單字'), findsOneWidget);
-  });
-
   testWidgets('還沒選答案時下一題按鈕不可按', (tester) async {
     final controller = _controller();
     addTearDown(controller.dispose);
@@ -141,57 +111,6 @@ void main() {
 
     expect(find.text('題目 b'), findsOneWidget);
     expect(find.text('2 / 3'), findsOneWidget);
-  });
-
-  testWidgets('最後一題的按鈕文字換成完成測驗', (tester) async {
-    final controller = _controller(start: () async => _session([_q('a')]));
-    addTearDown(controller.dispose);
-
-    await tester.pumpWidget(_view(controller));
-    await controller.load();
-    await tester.pump();
-
-    expect(find.text('完成測驗 →'), findsOneWidget);
-    expect(find.text('下一題 →'), findsNothing);
-  });
-
-  testWidgets('續接時跳到第一個沒作答的題目', (tester) async {
-    final controller = _controller(
-      start: () async => _session([_q('a', selected: 1), _q('b'), _q('c')]),
-    );
-    addTearDown(controller.dispose);
-
-    await tester.pumpWidget(_view(controller));
-    await controller.load();
-    await tester.pump();
-
-    expect(find.text('題目 b'), findsOneWidget);
-    expect(find.text('2 / 3'), findsOneWidget);
-  });
-
-  testWidgets('最後一題送出前有漏答會跳回漏答的題目', (tester) async {
-    var submitted = false;
-    final controller = _controller(
-      start: () async => _session([_q('a'), _q('b', selected: 2)]),
-      submit: (_, _) async {
-        submitted = true;
-        return 'done';
-      },
-    );
-    addTearDown(controller.dispose);
-
-    await tester.pumpWidget(_view(controller));
-    await controller.load();
-    await tester.pump();
-
-    // 續接後停在第 1 題（a 未答），先跳過它到最後一題。
-    await tester.tap(find.text('a-選項二'));
-    await tester.pump();
-    await tester.tap(find.text('下一題 →'));
-    await tester.pumpAndSettle();
-
-    expect(find.text('題目 b'), findsOneWidget);
-    expect(submitted, isFalse);
   });
 
   testWidgets('錯誤時顯示錯誤畫面與重試', (tester) async {

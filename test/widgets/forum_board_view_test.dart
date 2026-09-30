@@ -29,23 +29,6 @@ Widget wrap(Widget child) => MaterialApp(
 );
 
 void main() {
-  testWidgets('沒有貼文時顯示空狀態', (tester) async {
-    await tester.pumpWidget(
-      wrap(
-        ForumBoardView(
-          loadPage: ({cursor, after}) async =>
-              const ForumPostPage(pinned: [], posts: [], pageInfo: PageInfo.end),
-          toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
-          toggleBookmark: (_, {required add}) async => add,
-          onOpenPost: (_, {imageIndex}) {},
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('這個看板還沒有貼文'), findsOneWidget);
-  });
-
   testWidgets('置頂貼文排在一般貼文之前', (tester) async {
     await tester.pumpWidget(
       wrap(

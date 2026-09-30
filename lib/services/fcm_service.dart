@@ -86,9 +86,7 @@ class FcmService {
     _eventDeletedListeners.add(listener);
   }
 
-  static void removeEventDeletedListener(
-    void Function(int? eventId) listener,
-  ) {
+  static void removeEventDeletedListener(void Function(int? eventId) listener) {
     _eventDeletedListeners.remove(listener);
   }
 

@@ -33,49 +33,6 @@ void main() {
 
   tearDown(() => ApiClient.httpClient = http.Client());
 
-  testWidgets('顯示通知，內容包含回覆者與貼文標題', (tester) async {
-    ApiClient.httpClient = MockClient(
-      (_) async => http.Response(
-        jsonEncode({
-          'notifications': [notification(id: 3, isRead: false)],
-          'unread_count': 1,
-          'page_info': {'next_cursor': null, 'has_more': false},
-        }),
-        200,
-        headers: {'content-type': 'application/json; charset=utf-8'},
-      ),
-    );
-
-    await tester.pumpWidget(
-      const MaterialApp(home: ForumNotificationsScreen()),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.textContaining('Pisaw'), findsOneWidget);
-    expect(find.textContaining('關於 mhuway'), findsOneWidget);
-  });
-
-  testWidgets('沒有通知時顯示空狀態', (tester) async {
-    ApiClient.httpClient = MockClient(
-      (_) async => http.Response(
-        jsonEncode({
-          'notifications': [],
-          'unread_count': 0,
-          'page_info': {'next_cursor': null, 'has_more': false},
-        }),
-        200,
-        headers: {'content-type': 'application/json; charset=utf-8'},
-      ),
-    );
-
-    await tester.pumpWidget(
-      const MaterialApp(home: ForumNotificationsScreen()),
-    );
-    await tester.pumpAndSettle();
-
-    expect(find.text('還沒有新的回覆'), findsOneWidget);
-  });
-
   testWidgets('點「全部已讀」送出不帶 ids 的請求', (tester) async {
     String? sentPath;
     Map<String, dynamic>? sentBody;

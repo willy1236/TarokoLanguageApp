@@ -59,7 +59,10 @@ void main() {
     await scrollToBottom(tester);
 
     expect(requests, hasLength(2));
-    expect(requests.last.url.queryParameters, {'cursor': 'c-21', 'limit': '20'});
+    expect(requests.last.url.queryParameters, {
+      'cursor': 'c-21',
+      'limit': '20',
+    });
     expect(find.textContaining('紀錄 16 ·', skipOffstage: false), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
