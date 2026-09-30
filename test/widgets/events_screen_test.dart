@@ -195,6 +195,27 @@ void main() {
     );
   });
 
+  testWidgets('角色被改掉（userNotifier 更新）時發起鈕不重開頁面就跟著變', (tester) async {
+    installMockClient({
+      '/api/events': {
+        'events': [_event()],
+      },
+      '/api/me': _me(role: 'organizer'),
+    });
+
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+    bool enabled() => tester
+        .widget<ModuleComposeButton>(find.byType(ModuleComposeButton))
+        .enabled;
+    expect(enabled(), isTrue);
+
+    installMockClient({'/api/me': _me(role: 'user')});
+    await UserService.fetchMe(forceRefresh: true);
+    await tester.pump();
+    expect(enabled(), isFalse);
+  });
+
   testWidgets('查不到身分時保守擋下發起（不能因為 API 失敗就放行）', (tester) async {
     installMockClient({
       '/api/events': {
