@@ -1,0 +1,11 @@
+{
+  "_source": "Truku_backend 說明文件/API/收件匣與申訴.md §3.2",
+  "appeal": {
+    "id": 7,
+    "status": "pending",
+    "reason": "這是部落活動的公告，不是廣告",
+    "reply": null,
+    "created_at": "2026-09-30T10:00:00Z",
+    "handled_at": null
+  }
+}

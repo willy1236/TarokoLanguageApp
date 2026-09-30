@@ -33,6 +33,7 @@ import '../events/widgets/tribe_event_push_sheet.dart';
 import '../forum/forum_author_code.dart';
 import '../forum/forum_detail_screen.dart';
 import '../forum/forum_theme.dart';
+import '../moderation/moderation_case_screen.dart';
 import 'announcement_detail_screen.dart';
 
 /// 分頁順序；category 為 null 是「全部」。
@@ -310,8 +311,8 @@ class _InboxTabState extends State<_InboxTab> {
         );
       case InboxGone(:final message):
         _toast(message);
-      case InboxOpenCase():
-        await _showBody(item);
+      case InboxOpenCase(:final caseId):
+        await Navigator.push(context, ModerationCaseScreen.route(caseId));
       case InboxShowBody(:final refreshMe):
         if (refreshMe) {
           UserService.fetchMe(forceRefresh: true).then<void>(

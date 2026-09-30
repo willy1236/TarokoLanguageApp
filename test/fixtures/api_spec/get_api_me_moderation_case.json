@@ -1,0 +1,19 @@
+{
+  "_source": "Truku_backend 說明文件/API/收件匣與申訴.md §3.1",
+  "case": {
+    "id": 31,
+    "target_type": "post",
+    "target_id": 120,
+    "status": "confirmed",
+    "source": "admin_delete",
+    "reason": "廣告洗版",
+    "content_removed": true,
+    "opened_at": "2026-09-30T08:00:00Z",
+    "reviewed_at": "2026-09-30T09:00:00Z",
+    "penalty": { "strike_number": 1, "mute_until": "2026-10-14T08:00:00Z", "mute_lifted": false, "locked": false },
+    "preview": { "title": "違規標題", "body": "違規內文" }
+  },
+  "appeal": null,
+  "can_appeal": true,
+  "appeal_deadline": "2026-10-30T08:00:00Z"
+}

@@ -12,6 +12,7 @@ import 'package:flutter_application_1/screens/events/event_detail_screen.dart';
 import 'package:flutter_application_1/screens/forum/forum_detail_screen.dart';
 import 'package:flutter_application_1/screens/inbox/announcement_detail_screen.dart';
 import 'package:flutter_application_1/screens/inbox/inbox_screen.dart';
+import 'package:flutter_application_1/screens/moderation/moderation_case_screen.dart';
 import 'package:flutter_application_1/services/notification_summary_service.dart';
 import 'package:flutter_application_1/services/user_service.dart';
 
@@ -233,6 +234,29 @@ void main() {
 
     expect(find.text('知道了'), findsOneWidget);
     expect(requests('/api/me'), hasLength(1));
+  });
+
+  testWidgets('審核通知有 case_id：開處置詳情頁', (tester) async {
+    items = [
+      _item(
+        6,
+        category: 'moderation',
+        kind: 'case_confirmed',
+        title: '違規已確認',
+        caseId: 31,
+      ),
+    ];
+    await open(tester, category: 'moderation');
+
+    await tester.tap(find.text('違規已確認'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<ModerationCaseScreen>(find.byType(ModerationCaseScreen))
+          .caseId,
+      31,
+    );
   });
 
   testWidgets('全部已讀只清當前分類；「全部」分頁清全部', (tester) async {
