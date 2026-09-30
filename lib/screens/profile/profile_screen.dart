@@ -35,7 +35,6 @@ import '../millet/millet_ledger_screen.dart';
 import 'my_bookmarks_screen.dart';
 import 'my_likes_screen.dart';
 import '../terms/terms_consent_screen.dart';
-import '../friends/friends_list_screen.dart';
 
 // 頭像檔案限制（後端規則：≤8MB，僅接受 JPEG/PNG/WebP/GIF），前端先擋掉明顯無效
 // 的檔案以減少無效上傳，實際裁切壓縮一律由後端處理。
@@ -353,15 +352,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUser();
   }
 
-  /// 好友頁可設定/取消展示好友，回本頁要重抓才看得到變動。
-  Future<void> _openFriends() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const FriendsListScreen()));
-    if (!mounted) return;
-    _loadUser();
-  }
-
   Future<void> _openBookmarks() async {
     await Navigator.of(
       context,
@@ -370,14 +360,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUser();
   }
 
-  // ── 快速入口（好友／背包／商店／收藏）─────────────────────────────────────
+  // ── 快速入口（收件匣／背包／商店／收藏）───────────────────────────────────
+  // 好友在底部導覽列已有分頁，這裡不重複放。
 
   Widget _buildQuickLinksGrid({required bool seniorMode}) {
     final links = [
       ProfileQuickLink(
-        icon: Icons.people_outline,
-        label: '好友',
-        onTap: _openFriends,
+        icon: Icons.inbox_outlined,
+        label: '收件匣',
+        onTap: _openInbox,
       ),
       ProfileQuickLink(
         icon: Icons.inventory_2_outlined,
@@ -402,7 +393,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             children: [
               Expanded(
-                child: profileQuickLinkCard(links[0], seniorMode: seniorMode),
+                child: ValueListenableBuilder<NotificationSummary>(
+                  valueListenable: NotificationSummaryService.notifier,
+                  builder: (context, summary, _) => profileQuickLinkCard(
+                    links[0],
+                    seniorMode: seniorMode,
+                    badgeCount: summary.inbox.total,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -440,17 +438,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _moreSection({required bool seniorMode, required bool isAdmin}) {
     return profileSection('SMRATUC · 更多', [
-      ValueListenableBuilder<NotificationSummary>(
-        valueListenable: NotificationSummaryService.notifier,
-        builder: (context, summary, _) => profileNavRow(
-          icon: Icons.inbox_outlined,
-          label: '收件匣',
-          seniorMode: seniorMode,
-          badgeCount: summary.inbox.total,
-          onTap: _openInbox,
-        ),
-      ),
-      const Divider(height: 1, color: AppColors.creamDeep),
       profileNavRow(
         icon: Icons.person_outline,
         label: '個人資料設定',
