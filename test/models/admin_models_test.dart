@@ -161,7 +161,7 @@ void main() {
       final c = cases[6];
       final p = c.preview as ProfileCasePreview;
       expect(p.before['video_nickname'], '不雅暱稱');
-      expect(p.current.nickname, '使用者9');
+      expect(p.current!.nickname, '使用者9');
       expect(c.snapshot?['avatar_url'], 'https://example.com/a.webp');
     });
 

@@ -249,7 +249,7 @@ sealed class AdminCasePreview {
             ? AdminProfileSnapshot.fromJson(
                 j['current'] as Map<String, dynamic>,
               )
-            : const AdminProfileSnapshot(),
+            : null,
       ),
       // call，以及日後新增而這版不認得的類型：照通話欄位盡量解析。
       _ => CallCasePreview(AdminCallInfo.fromJson(j)),
@@ -295,11 +295,11 @@ class MuteCasePreview extends AdminCasePreview {
 }
 
 /// 個人檔案案件：[before] 是重設前的值（只含被重設的欄位，鍵為後端欄位名），
-/// [current] 是目前的公開欄位。
+/// [current] 是目前的公開欄位；申訴列表的案件只給 before，這時為 null。
 class ProfileCasePreview extends AdminCasePreview {
   final Map<String, dynamic> before;
-  final AdminProfileSnapshot current;
-  const ProfileCasePreview({required this.before, required this.current});
+  final AdminProfileSnapshot? current;
+  const ProfileCasePreview({required this.before, this.current});
 }
 
 class AdminCase {

@@ -135,27 +135,31 @@ class AdminCasePreviewView extends StatelessWidget {
               '${entry.value ?? '（空）'}',
               seniorMode: seniorMode,
             ),
-        Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: Text(
-            '目前',
-            style: AppTypography.subtitleStyle(
-              seniorMode: seniorMode,
-              color: AppColors.ink,
+        if (current != null) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 8),
+            child: Text(
+              '目前',
+              style: AppTypography.subtitleStyle(
+                seniorMode: seniorMode,
+                color: AppColors.ink,
+              ),
             ),
           ),
-        ),
-        AdminInfoRow('暱稱', current.nickname ?? '（無）', seniorMode: seniorMode),
-        AdminInfoRow(
-          '自我介紹',
-          (current.selfIntro?.isNotEmpty ?? false) ? current.selfIntro! : '（無）',
-          seniorMode: seniorMode,
-        ),
-        AdminInfoRow(
-          '頭像',
-          current.avatarUrl ?? current.avatarId ?? '（預設）',
-          seniorMode: seniorMode,
-        ),
+          AdminInfoRow('暱稱', current.nickname ?? '（無）', seniorMode: seniorMode),
+          AdminInfoRow(
+            '自我介紹',
+            (current.selfIntro?.isNotEmpty ?? false)
+                ? current.selfIntro!
+                : '（無）',
+            seniorMode: seniorMode,
+          ),
+          AdminInfoRow(
+            '頭像',
+            current.avatarUrl ?? current.avatarId ?? '（預設）',
+            seniorMode: seniorMode,
+          ),
+        ],
       ],
     };
     return Column(

@@ -194,6 +194,21 @@ void main() {
     expect(find.text('這是部落活動的公告，不是廣告'), findsOneWidget);
   });
 
+  testWidgets('個人檔案案件只有重設前的值：不顯示空的「目前」', (tester) async {
+    all[0]['case'] = {
+      ...all[0]['case'] as Map<String, dynamic>,
+      'target_type': 'profile',
+      'preview': {
+        'before': {'video_nickname': '不雅暱稱'},
+      },
+    };
+    install();
+    await open(tester);
+
+    expect(find.textContaining('不雅暱稱', findRichText: true), findsOneWidget);
+    expect(find.text('目前'), findsNothing);
+  });
+
   testWidgets('駁回：送 reject 與回覆', (tester) async {
     install(
       resolve: (_) => jsonResponse({
