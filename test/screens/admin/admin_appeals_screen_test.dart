@@ -72,10 +72,12 @@ void main() {
     String reply,
   ) async {
     await tester.tap(
-      find.widgetWithText(
-        button == '接受' ? FilledButton : OutlinedButton,
-        button,
-      ),
+      find
+          .widgetWithText(
+            button == '接受' ? FilledButton : OutlinedButton,
+            button,
+          )
+          .first,
     );
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), reply);
@@ -146,6 +148,50 @@ void main() {
     await tester.tap(find.text('知道了'));
     await tester.pumpAndSettle();
     expect(find.text('這是部落活動的公告，不是廣告'), findsNothing);
+  });
+
+  testWidgets('處理完一筆後，補上來的下一筆仍可處理', (tester) async {
+    all.add({
+      ...all[0],
+      'id': 9,
+      'reason': '第二筆待處理的申訴',
+      'offender': {...all[0]['offender'] as Map<String, dynamic>},
+    });
+    install();
+    await open(tester);
+
+    await fillReply(tester, '接受', '回覆');
+    await tester.tap(find.widgetWithText(FilledButton, '接受').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('知道了'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('第二筆待處理的申訴'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '接受'))
+          .onPressed,
+      isNotNull,
+    );
+    expect(
+      tester
+          .widget<OutlinedButton>(find.widgetWithText(OutlinedButton, '駁回'))
+          .onPressed,
+      isNotNull,
+    );
+  });
+
+  testWidgets('通話、自動禁言案件沒有內容預覽：不顯示空的預覽列', (tester) async {
+    all[0]['case'] = {
+      ...all[0]['case'] as Map<String, dynamic>,
+      'target_type': 'call',
+      'preview': null,
+    };
+    install();
+    await open(tester);
+
+    expect(find.textContaining('通話雙方', findRichText: true), findsNothing);
+    expect(find.text('這是部落活動的公告，不是廣告'), findsOneWidget);
   });
 
   testWidgets('駁回：送 reject 與回覆', (tester) async {

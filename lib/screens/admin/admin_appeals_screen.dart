@@ -45,8 +45,13 @@ class AdminAppealsScreen extends StatelessWidget {
       items: await AdminService.fetchAppeals(status: status),
       pageInfo: PageInfo.end,
     ),
-    itemBuilder: (context, appeal, senior, reload) =>
-        _AppealCard(appeal: appeal, seniorMode: senior, reload: reload),
+    // 以申訴 id 當 key：處理完一筆、下一筆補到同一個位置時不沿用上一筆的狀態。
+    itemBuilder: (context, appeal, senior, reload) => _AppealCard(
+      key: ValueKey(appeal.id),
+      appeal: appeal,
+      seniorMode: senior,
+      reload: reload,
+    ),
   );
 }
 
@@ -56,6 +61,7 @@ class _AppealCard extends StatefulWidget {
   final Future<void> Function() reload;
 
   const _AppealCard({
+    super.key,
     required this.appeal,
     required this.seniorMode,
     required this.reload,
@@ -109,6 +115,7 @@ class _AppealCardState extends State<_AppealCard> {
         showAdminMessage('已駁回申訴');
       }
       await widget.reload();
+      if (mounted) setState(() => _busy = false);
     } catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
@@ -176,7 +183,9 @@ class _AppealCardState extends State<_AppealCard> {
             seniorMode: senior,
           ),
           AdminInfoRow('案件原始理由', c.reason, seniorMode: senior),
-          AdminCasePreviewView(adminCase: c, seniorMode: senior),
+          // 通話、自動禁言案件後端不給內容預覽。
+          if (a.hasPreview)
+            AdminCasePreviewView(adminCase: c, seniorMode: senior),
           if (a.status == 'pending')
             Padding(
               padding: const EdgeInsets.only(top: 8),

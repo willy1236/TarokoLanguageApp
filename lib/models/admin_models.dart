@@ -873,6 +873,9 @@ class AdminAppeal {
   /// 這裡已把 [offender] 併進去，可以直接交給違規區的預覽元件。
   final AdminCase appealCase;
 
+  /// 案件有沒有內容預覽；通話、自動禁言案件後端回 null。
+  final bool hasPreview;
+
   const AdminAppeal({
     required this.id,
     required this.status,
@@ -884,6 +887,7 @@ class AdminAppeal {
     this.handledByNickname,
     required this.offender,
     required this.appealCase,
+    this.hasPreview = true,
   });
 
   factory AdminAppeal.fromJson(Map<String, dynamic> j) {
@@ -906,6 +910,7 @@ class AdminAppeal {
         'offender_friend_code': offender.friendCode,
         'offender_status': offender.status,
       }),
+      hasPreview: rawCase is Map<String, dynamic> && rawCase['preview'] is Map,
     );
   }
 }
