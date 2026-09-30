@@ -37,7 +37,7 @@ class _EventsScreenState extends State<EventsScreen> {
   bool _loading = true;
   Object? _error;
   List<EventSummary> _events = [];
-  int get _unread => NotificationSummaryService.notifier.value.events;
+  int get _unread => NotificationSummaryService.notifier.value.inbox.event;
 
   // 是否可發起活動（organizer/admin）。跟著 userNotifier 走：角色被管理員改掉時
   // （account_role 推播會重抓 /api/me）按鈕即時跟著變；還沒取得身分前保守擋下。

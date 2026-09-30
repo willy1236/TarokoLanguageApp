@@ -167,8 +167,8 @@ class _BirthDateWheelSheetState extends State<_BirthDateWheelSheet> {
     final initial = widget.initial.isAfter(widget.last)
         ? widget.last
         : widget.initial.isBefore(widget.first)
-            ? widget.first
-            : widget.initial;
+        ? widget.first
+        : widget.initial;
     _year = initial.year;
     _month = initial.month;
     _day = initial.day;

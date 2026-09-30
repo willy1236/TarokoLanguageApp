@@ -1,18 +1,45 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/services/notification_summary_service.dart';
 
+import '../helpers/fixtures.dart';
+
 void main() {
   test('解析 summary 並依分頁加總', () {
     final s = NotificationSummary.fromJson({
-      'forum': 3,
-      'events': 2,
+      // 舊版 App 用的計數，這版不讀。
+      'forum': 9,
+      'events': 9,
       'messages': 5,
       'friend_requests': 1,
-      'total': 11,
+      'inbox': {
+        'forum': 3,
+        'event': 2,
+        'moderation': 1,
+        'announcement': 4,
+        'total': 10,
+      },
+      'total': 16,
     });
     expect(s.plaza, 5);
     expect(s.friends, 6);
-    expect(s.total, 11);
+    expect(s.inbox.moderation, 1);
+    expect(s.inbox.announcement, 4);
+    expect(s.inbox.total, 10);
+    expect(s.total, 16);
+  });
+
+  test('錄製的 summary 帶 inbox 各分類未讀', () {
+    final json = loadFixtureMap('get_api_notifications_summary.json');
+    expect(json['inbox'], isA<Map<String, dynamic>>());
+    for (final key in [
+      'forum',
+      'event',
+      'moderation',
+      'announcement',
+      'total',
+    ]) {
+      expect((json['inbox'] as Map)[key], isA<num>(), reason: key);
+    }
   });
 
   test('缺欄位視為 0', () {

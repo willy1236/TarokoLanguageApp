@@ -16,6 +16,7 @@ import 'package:flutter_application_1/models/article_models.dart';
 import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/models/friend_message_model.dart';
 import 'package:flutter_application_1/models/history_models.dart';
+import 'package:flutter_application_1/models/inbox_models.dart';
 import 'package:flutter_application_1/models/forum_models.dart';
 import 'package:flutter_application_1/models/level_info.dart';
 import 'package:flutter_application_1/models/listening_models.dart';
@@ -254,6 +255,7 @@ final List<_Contract> _contracts = [
     'NotificationSummary',
     NotificationSummary.fromJson,
   ),
+  _Contract('get_api_inbox.json', 'InboxPage', _paged(InboxPage.fromJson)),
   _Contract(
     'post_api_quiz_start.json',
     'QuizSession',

@@ -2,26 +2,30 @@
 // （見 Truku_backend 說明文件/前端交接/總覽.md §4.3）。
 //
 // App 開啟、回前景、看完通知／私訊／好友邀請後呼叫 [refresh]，
-// 各畫面監聽 [notifier] 畫徽章，不再各自打論壇／活動通知清單取未讀數。
+// 各畫面監聽 [notifier] 畫徽章。
+//
+// 論壇回覆、活動、審核、官方公告的未讀都在 `inbox`（站內收件匣）。後端另外回的
+// `forum`、`events` 是留給舊版 App 的通知頁用的，這版不讀。
 
 import 'package:flutter/foundation.dart';
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
+import '../models/inbox_models.dart';
 
 class NotificationSummary {
   /// 各項皆由後端封頂 100；等於 [cap] 時顯示「99+」。
   static const int cap = 100;
 
-  final int forum;
-  final int events;
+  final InboxUnread inbox;
   final int messages;
   final int friendRequests;
+
+  /// 收件匣＋私訊＋好友邀請。
   final int total;
 
   const NotificationSummary({
-    this.forum = 0,
-    this.events = 0,
+    this.inbox = InboxUnread.empty,
     this.messages = 0,
     this.friendRequests = 0,
     this.total = 0,
@@ -31,15 +35,14 @@ class NotificationSummary {
 
   factory NotificationSummary.fromJson(Map<String, dynamic> json) =>
       NotificationSummary(
-        forum: (json['forum'] as num?)?.toInt() ?? 0,
-        events: (json['events'] as num?)?.toInt() ?? 0,
+        inbox: InboxUnread.fromJson(json['inbox']),
         messages: (json['messages'] as num?)?.toInt() ?? 0,
         friendRequests: (json['friend_requests'] as num?)?.toInt() ?? 0,
         total: (json['total'] as num?)?.toInt() ?? 0,
       );
 
-  /// 廣場活動分頁（論壇＋活動通知）。
-  int get plaza => forum + events;
+  /// 廣場活動分頁（收件匣的論壇＋活動類）。
+  int get plaza => inbox.forum + inbox.event;
 
   /// 好友分頁（私訊＋待回覆的好友邀請）。
   int get friends => messages + friendRequests;
@@ -47,15 +50,13 @@ class NotificationSummary {
   @override
   bool operator ==(Object other) =>
       other is NotificationSummary &&
-      other.forum == forum &&
-      other.events == events &&
+      other.inbox == inbox &&
       other.messages == messages &&
       other.friendRequests == friendRequests &&
       other.total == total;
 
   @override
-  int get hashCode =>
-      Object.hash(forum, events, messages, friendRequests, total);
+  int get hashCode => Object.hash(inbox, messages, friendRequests, total);
 }
 
 /// 徽章文字：超過 99（含後端封頂的 100）顯示「99+」。

@@ -49,7 +49,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
 
   /// 發文畫面開啟中：擋住連點疊出第二個 ForumComposeScreen。
   bool _composing = false;
-  int get _unread => NotificationSummaryService.notifier.value.forum;
+  int get _unread => NotificationSummaryService.notifier.value.inbox.forum;
   final _boardViewKey = GlobalKey<ForumBoardViewState>();
 
   @override
