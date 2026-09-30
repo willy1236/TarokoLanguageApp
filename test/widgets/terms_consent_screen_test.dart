@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/main.dart' show navigatorKey;
+import 'package:flutter_application_1/screens/account/account_delete_screen.dart';
 import 'package:flutter_application_1/screens/terms/terms_consent_screen.dart';
 
 const _jsonHeaders = {'content-type': 'application/json; charset=utf-8'};
@@ -316,6 +317,48 @@ void main() {
 
     expect(find.text('服務條款'), findsOneWidget);
     expect(find.textContaining('最後更新日期'), findsOneWidget);
+  });
+
+  testWidgets('沒捲到底也能按「不同意，刪除帳號」，開刪除帳號確認頁', (tester) async {
+    ApiClient.httpClient = _server({
+      'tos': _doc('tos', content: _longContent('段落')),
+    });
+
+    await _pumpScreen(tester);
+    expect(button(tester).onPressed, isNull);
+
+    await tester.tap(find.text('不同意，刪除帳號'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AccountDeleteScreen), findsOneWidget);
+  });
+
+  testWidgets('沒同意也能按「下載我的資料」，匯出後留在同意畫面', (tester) async {
+    final log = <String>[];
+    ApiClient.httpClient = MockClient((req) async {
+      log.add('${req.method} ${req.url.path}');
+      if (req.url.path == '/api/account/export') {
+        return _withRequest(_ok({'user': {}}), req);
+      }
+      return _ok({'document': _doc('tos'), 'all_consented': false});
+    });
+
+    await _pumpScreen(tester);
+    await tester.tap(find.text('下載我的資料'));
+    await tester.pumpAndSettle();
+
+    expect(log, contains('GET /api/account/export'));
+    expect(find.text('LOOP'), findsNothing);
+    expect(find.text('同意《服務條款》'), findsOneWidget);
+  });
+
+  testWidgets('唯讀檢視沒有刪除帳號與下載資料的入口', (tester) async {
+    ApiClient.httpClient = _server({'tos': _doc('tos', consented: true)});
+
+    await _pumpScreen(tester, readOnly: true);
+
+    expect(find.text('不同意，刪除帳號'), findsNothing);
+    expect(find.text('下載我的資料'), findsNothing);
   });
 
   testWidgets('端點失敗時顯示錯誤與重試', (tester) async {
