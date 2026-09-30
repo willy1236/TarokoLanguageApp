@@ -26,6 +26,9 @@ class _AdminRolesScreenState extends State<AdminRolesScreen> {
   Object? _error;
   AdminUserLookup? _found;
 
+  /// 設定完角色後換 key 重建查人元件，清掉顯示舊角色的對象卡與輸入。
+  int _lookupKey = 0;
+
   @override
   void initState() {
     super.initState();
@@ -67,7 +70,12 @@ class _AdminRolesScreenState extends State<AdminRolesScreen> {
         result.changed ? '已將$name設為${adminRoleLabel(result.role)}' : '角色未變更',
       );
       if (!mounted) return;
-      if (_found?.uid == uid) setState(() => _found = null);
+      if (_found?.uid == uid) {
+        setState(() {
+          _found = null;
+          _lookupKey++;
+        });
+      }
       await _reload();
     } catch (e) {
       if (mounted) handleAdminError(context, e);
@@ -121,6 +129,7 @@ class _AdminRolesScreenState extends State<AdminRolesScreen> {
         children: [
           _sectionTitle('指定新對象', senior),
           AdminUserLookupPanel(
+            key: ValueKey(_lookupKey),
             seniorMode: senior,
             onChanged: (user) => setState(() => _found = user),
           ),

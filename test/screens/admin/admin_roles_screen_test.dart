@@ -1,5 +1,6 @@
 // 角色管理：清單、以好友碼查人、選角色＋理由＋確認後送出，錯誤直接顯示後端 message。
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -120,6 +121,7 @@ void main() {
       hasLength(2),
     );
     expect(find.text('設定角色'), findsNothing, reason: '設定完清掉查到的對象');
+    expect(find.text('測試暱稱'), findsNothing, reason: '不留顯示舊角色的對象卡');
   });
 
   testWidgets('查無此人：顯示後端 message，不進入設定', (tester) async {
@@ -168,18 +170,59 @@ void main() {
     expect(find.text('角色未變更'), findsOneWidget);
   });
 
-  testWidgets('SELF_ROLE_CHANGE 直接顯示後端 message', (tester) async {
+  for (final (code, status, message) in [
+    ('SELF_ROLE_CHANGE', 403, '不能變更自己的角色'),
+    ('USER_UNAVAILABLE', 409, '對方帳號目前無法變更角色'),
+    ('USER_NOT_FOUND', 404, '找不到這位使用者'),
+  ]) {
+    testWidgets('$code 直接顯示後端 message', (tester) async {
+      install(
+        patch: (_) => errorResponse(code, status: status, message: message),
+      );
+      await tester.pumpWidget(_app());
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('改角色').first);
+      await tester.pumpAndSettle();
+      await pickRoleAndConfirm(tester, '一般使用者');
+
+      expect(find.text(message), findsOneWidget);
+    });
+  }
+
+  testWidgets('INVALID_REQUEST（好友碼格式錯）：顯示後端 message，不進入設定', (tester) async {
     install(
-      patch: (_) =>
-          errorResponse('SELF_ROLE_CHANGE', status: 403, message: '不能變更自己的角色'),
+      lookup: (_) =>
+          errorResponse('INVALID_REQUEST', status: 400, message: '好友碼格式不正確'),
     );
     await tester.pumpWidget(_app());
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('改角色').first);
-    await tester.pumpAndSettle();
-    await pickRoleAndConfirm(tester, '一般使用者');
+    await lookUp(tester, 'AB');
 
-    expect(find.text('不能變更自己的角色'), findsOneWidget);
+    expect(find.text('好友碼格式不正確'), findsOneWidget);
+    expect(find.text('設定角色'), findsNothing);
+  });
+
+  testWidgets('查詢途中改了輸入：晚回來的結果丟掉', (tester) async {
+    final pending = Completer<http.Response>();
+    ApiClient.httpClient = MockClient((r) async {
+      if (r.url.path == '/api/admin/users/lookup') return pending.future;
+      return jsonResponse(_roles);
+    });
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField), 'TESTCODE');
+    await tester.tap(find.text('查詢'));
+    await tester.pump();
+    await tester.enterText(find.byType(TextField), 'OTHER234');
+    pending.complete(
+      jsonResponse(loadFixtureMap('get_api_admin_users_lookup.json')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('測試暱稱'), findsNothing);
+    expect(find.text('設定角色'), findsNothing);
   });
 }

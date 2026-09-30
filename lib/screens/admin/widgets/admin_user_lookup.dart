@@ -35,6 +35,9 @@ class _AdminUserLookupPanelState extends State<AdminUserLookupPanel> {
   AdminUserLookup? _user;
   bool _loading = false;
 
+  /// 每次查詢或改輸入加一：查詢途中改了輸入，晚回來的結果直接丟掉。
+  int _generation = 0;
+
   @override
   void dispose() {
     _controller.dispose();
@@ -47,6 +50,8 @@ class _AdminUserLookupPanelState extends State<AdminUserLookupPanel> {
   }
 
   void _onInputChanged(String _) {
+    _generation++;
+    if (_loading) setState(() => _loading = false);
     if (_user != null) _setUser(null);
   }
 
@@ -54,15 +59,16 @@ class _AdminUserLookupPanelState extends State<AdminUserLookupPanel> {
     final code = _controller.text.trim();
     if (code.isEmpty || _loading) return;
     FocusScope.of(context).unfocus();
+    final generation = ++_generation;
     _setUser(null);
     setState(() => _loading = true);
     try {
       final user = await AdminService.lookupUser(code);
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() => _loading = false);
       _setUser(user);
     } catch (e) {
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() => _loading = false);
       handleAdminError(context, e);
     }
