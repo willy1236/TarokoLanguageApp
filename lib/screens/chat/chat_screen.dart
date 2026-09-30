@@ -342,6 +342,10 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _startVideoCall() {
     if (blockIfReadOnly()) return;
+    if (_partnerUnavailable) {
+      _showMessage('對方暫時無法使用，無法通話');
+      return;
+    }
     if (!PlatformFeatures.supportsVideoCall) {
       _showMessage(PlatformFeatures.videoCallUnsupportedMessage);
       return;
@@ -435,7 +439,7 @@ class _ChatScreenState extends State<ChatScreen> {
           iconSize: AppIconSize.action(seniorMode),
           icon: Icon(
             Icons.videocam_outlined,
-            color: accountLockController.locked
+            color: accountLockController.locked || _partnerUnavailable
                 ? AppColors.fog
                 : AppColors.primary,
           ),

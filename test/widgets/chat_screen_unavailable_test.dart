@@ -49,6 +49,11 @@ void main() {
     expect(tester.widget<TextField>(find.byType(TextField)).enabled, isFalse);
     expect(find.text('對方暫時無法使用，無法傳送訊息'), findsOneWidget);
     expect(sendButton(tester).onPressed, isNull);
+
+    // 視訊也撥不通：只提示，不開撥號等待畫面。
+    await tester.tap(find.byTooltip('視訊通話'));
+    await tester.pump();
+    expect(find.text('對方暫時無法使用，無法通話'), findsOneWidget);
   });
 
   testWidgets('對象正常：輸入框可用', (tester) async {
