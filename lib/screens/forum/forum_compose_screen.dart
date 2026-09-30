@@ -7,14 +7,12 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import 'forum_theme.dart';
 import '../../core/network/api_client.dart';
-import '../../core/platform/platform_features.dart';
 import '../../models/forum_models.dart';
 import '../../models/shop_item.dart';
 import '../../models/tribe_model.dart';
@@ -23,6 +21,7 @@ import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
+import '../../shared/utils/upload_image.dart';
 import '../../shared/widgets/related_tribe_field.dart';
 import '../../shared/widgets/user_avatar.dart';
 import 'widgets/forum_compose_images.dart';
@@ -164,22 +163,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
 
     for (final file in picked) {
       // 後端不做伺服器端壓縮，且限制單張 5 MB，所以壓縮必須在這裡完成。
-      // Web 沒有檔案路徑，compressWithFile 不可用，改走 bytes 版本。
-      final compressed = PlatformFeatures.hasFileSystem
-          ? await FlutterImageCompress.compressWithFile(
-              file.path,
-              minWidth: 1920,
-              minHeight: 1920,
-              quality: 85,
-              format: CompressFormat.jpeg,
-            )
-          : await FlutterImageCompress.compressWithList(
-              await file.readAsBytes(),
-              minWidth: 1920,
-              minHeight: 1920,
-              quality: 85,
-              format: CompressFormat.jpeg,
-            );
+      final compressed = await compressImageForUpload(file);
       if (compressed == null) {
         _toast('無法處理 ${file.name}，請換一張');
         continue;
