@@ -80,6 +80,24 @@ void main() {
     expect(find.text('重設個人檔案'), findsNothing);
   });
 
+  testWidgets('管理員看自己的公開個人頁沒有選單，也就沒有重設', (tester) async {
+    UserService.currentUid = 1;
+    UserService.cacheUser(
+      UserModel(
+        uid: 1,
+        email: '',
+        createdAt: DateTime(2026),
+        friendCode: 'A3K9XM7P',
+        role: 'admin',
+      ),
+    );
+    _mock();
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    expect(find.byIcon(Icons.more_vert), findsNothing);
+  });
+
   testWidgets('管理員：公開個人頁沒有 uid 也看得到，先查 uid 再重設', (tester) async {
     _login('admin');
     final requests = _mock();
