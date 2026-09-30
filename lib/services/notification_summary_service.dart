@@ -44,6 +44,9 @@ class NotificationSummary {
   /// 廣場活動分頁（收件匣的論壇＋活動類）。
   int get plaza => inbox.forum + inbox.event;
 
+  /// 個人分頁（收件匣的審核＋公告類，入口在個人頁的「收件匣」）。
+  int get profile => inbox.moderation + inbox.announcement;
+
   /// 好友分頁（私訊＋待回覆的好友邀請）。
   int get friends => messages + friendRequests;
 

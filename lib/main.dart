@@ -579,6 +579,8 @@ class _MainContainerState extends State<MainContainer>
                     NotificationSummaryService.notifier.value.plaza,
                 _friendsIndex:
                     NotificationSummaryService.notifier.value.friends,
+                _profileVideoIndex:
+                    NotificationSummaryService.notifier.value.profile,
               },
             ),
           ),

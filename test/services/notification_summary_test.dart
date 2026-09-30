@@ -22,6 +22,7 @@ void main() {
     });
     expect(s.plaza, 5);
     expect(s.friends, 6);
+    expect(s.profile, 5);
     expect(s.inbox.moderation, 1);
     expect(s.inbox.announcement, 4);
     expect(s.inbox.total, 10);
