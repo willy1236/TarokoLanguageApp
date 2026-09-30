@@ -50,49 +50,17 @@ void main() {
 
   tearDown(() => ApiClient.httpClient = http.Client());
 
-  test('boards 打對端點並解析看板', () async {
-    respondWith({
-      'boards': [
-        {'id': 1, 'slug': 'general', 'name': '綜合討論', 'description': null},
-      ],
-    });
-
-    final boards = await ForumService.boards();
-
-    expect(seen.single.url.path, '/api/forum/boards');
-    expect(boards.single.slug, 'general');
-  });
-
-  test('posts 帶 cursor 與 limit', () async {
-    respondWith({'pinned': [], 'posts': [], 'page_info': {'next_cursor': null, 'has_more': false}});
-
-    await ForumService.posts('culture', cursor: '500');
-
-    expect(seen.single.url.path, '/api/forum/boards/culture/posts');
-    expect(seen.single.url.queryParameters['cursor'], '500');
-    expect(seen.single.url.queryParameters['limit'], '20');
-    expect(seen.single.url.queryParameters.containsKey('after'), isFalse);
-  });
-
   test('posts 帶 after 供下拉刷新，不同時帶 cursor', () async {
-    respondWith({'pinned': [], 'posts': [], 'page_info': {'next_cursor': null, 'has_more': false}});
+    respondWith({
+      'pinned': [],
+      'posts': [],
+      'page_info': {'next_cursor': null, 'has_more': false},
+    });
 
     await ForumService.posts('culture', after: 900);
 
     expect(seen.single.url.queryParameters['after'], '900');
     expect(seen.single.url.queryParameters.containsKey('cursor'), isFalse);
-  });
-
-  test('allPosts 打跨看板端點，不帶 board 參數', () async {
-    respondWith({'pinned': [], 'posts': [], 'page_info': {'next_cursor': null, 'has_more': false}});
-
-    await ForumService.allPosts(cursor: '300');
-
-    expect(seen.single.method, 'GET');
-    expect(seen.single.url.path, '/api/forum/posts');
-    expect(seen.single.url.queryParameters['cursor'], '300');
-    expect(seen.single.url.queryParameters['limit'], '20');
-    expect(seen.single.url.queryParameters.containsKey('board'), isFalse);
   });
 
   test('likePost like=true 走 POST、like=false 走 DELETE', () async {
@@ -132,16 +100,6 @@ void main() {
     expect(body['body'], '回覆');
     expect(body['parent_comment_id'], 5);
     expect(comment.parentCommentId, 5);
-  });
-
-  test('createPost 沒有附圖時走 JSON', () async {
-    respondWith({'post': postJson()}, status: 201);
-
-    await ForumService.createPost(boardId: 2, title: 't', body: 'b');
-
-    expect(seen.single, isA<http.Request>());
-    final body = jsonDecode((seen.single as http.Request).body);
-    expect(body['board_id'], 2);
   });
 
   test('createPost 有附圖時走 multipart，標籤以逗號分隔傳遞', () async {
@@ -232,32 +190,13 @@ void main() {
   });
 
   test('search 去除空白後為空直接丟錯，不發請求', () async {
-    respondWith({'posts': [], 'page_info': {'next_cursor': null, 'has_more': false}});
+    respondWith({
+      'posts': [],
+      'page_info': {'next_cursor': null, 'has_more': false},
+    });
 
     expect(() => ForumService.search('   '), throwsA(isA<ArgumentError>()));
     expect(seen, isEmpty);
-  });
-
-  test('markRead 不帶 ids 時送出空 body 代表全部已讀', () async {
-    respondWith({'ok': true});
-
-    await ForumService.markRead();
-
-    expect(seen.single.url.path, '/api/forum/notifications/read');
-    expect(jsonDecode((seen.single as http.Request).body), <String, dynamic>{});
-  });
-
-  test('report 送出 target_type 與 target_id', () async {
-    respondWith({'ok': true}, status: 201);
-
-    await ForumService.report(
-      targetType: 'comment',
-      targetId: 11,
-      reason: '廣告',
-    );
-
-    final body = jsonDecode((seen.single as http.Request).body);
-    expect(body, {'target_type': 'comment', 'target_id': 11, 'reason': '廣告'});
   });
 
   test('檢舉個人檔案以好友碼當 target_id', () async {

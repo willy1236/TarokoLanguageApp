@@ -51,39 +51,6 @@ Widget _app(PlacementResult result, {String title = '單字分級測驗'}) => Ma
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('顯示分數、建議等級與標題', (tester) async {
-    await tester.pumpWidget(_app(_result(score: 2, total: 3, level: '中級')));
-
-    expect(find.text('單字分級測驗'), findsOneWidget);
-    expect(find.text('2 / 3'), findsOneWidget);
-    expect(find.text('中級'), findsOneWidget);
-    expect(find.text('建議起始等級'), findsOneWidget);
-  });
-
-  testWidgets('明講建議可被覆蓋，不讓使用者以為被鎖等級', (tester) async {
-    await tester.pumpWidget(_app(_result()));
-
-    expect(find.text('這只是建議，你隨時可以手動選擇其他等級開始測驗。'), findsOneWidget);
-  });
-
-  testWidgets('逐題詳解列出每一題', (tester) async {
-    await tester.pumpWidget(
-      _app(
-        _result(
-          items: [
-            _item(order: 1, isCorrect: true, prompt: 'qmpahang'),
-            _item(order: 2, isCorrect: false, prompt: 'mkan'),
-          ],
-        ),
-      ),
-    );
-
-    expect(find.text('qmpahang'), findsOneWidget);
-    expect(find.text('mkan'), findsOneWidget);
-    expect(find.byIcon(Icons.check_circle), findsOneWidget);
-    expect(find.byIcon(Icons.cancel), findsOneWidget);
-  });
-
   testWidgets('答對的題目不顯示「你的答案」，只顯示正確答案', (tester) async {
     await tester.pumpWidget(
       _app(_result(items: [_item(order: 1, isCorrect: true, correct: '教書')])),

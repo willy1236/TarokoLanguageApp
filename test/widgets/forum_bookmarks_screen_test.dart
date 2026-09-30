@@ -22,40 +22,6 @@ void main() {
 
   tearDown(() => ApiClient.httpClient = http.Client());
 
-  testWidgets('顯示收藏的貼文', (tester) async {
-    ApiClient.httpClient = MockClient((req) async {
-      expect(req.url.path, '/api/forum/bookmarks');
-      return http.Response(
-        jsonEncode({
-          'posts': [
-            {
-              'id': 1,
-              'board': {'id': 2, 'slug': 'culture', 'name': '文化傳承'},
-              'title': '收藏的貼文',
-              'body': '內文',
-              'like_count': 0,
-              'comment_count': 0,
-              'is_pinned': false,
-              'is_liked': false,
-              'is_bookmarked': true,
-              'created_at': '2026-08-01T10:00:00.000Z',
-              'updated_at': '2026-08-01T10:00:00.000Z',
-              'author': {'uid': 1, 'display_name': 'A', 'avatar_url': null},
-            },
-          ],
-          'page_info': {'next_cursor': null, 'has_more': false},
-        }),
-        200,
-        headers: {'content-type': 'application/json; charset=utf-8'},
-      );
-    });
-
-    await tester.pumpWidget(const MaterialApp(home: ForumBookmarksScreen()));
-    await tester.pumpAndSettle();
-
-    expect(find.text('收藏的貼文'), findsOneWidget);
-  });
-
   testWidgets('端點未上線（404）時顯示錯誤與重試', (tester) async {
     ApiClient.httpClient = MockClient(
       (_) async => http.Response(

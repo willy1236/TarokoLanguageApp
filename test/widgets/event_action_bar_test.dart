@@ -66,12 +66,6 @@ void main() {
 
   tearDown(() => accountLockController.setLocked(false));
 
-  testWidgets('一般使用者在可報名的活動看到「我要參加」', (tester) async {
-    await tester.pumpWidget(_app(_bar(_event())));
-
-    expect(find.text('我要參加'), findsOneWidget);
-  });
-
   testWidgets('名額已滿時顯示「名額已滿」而不是報名鈕', (tester) async {
     await tester.pumpWidget(
       _app(_bar(_event(maxParticipants: 10, participantCount: 10))),

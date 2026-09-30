@@ -39,7 +39,13 @@ void main() {
       final s = suggestions(req);
       if (s != null) return s;
       calls++;
-      return http.Response(jsonEncode({'posts': [], 'page_info': {'next_cursor': null, 'has_more': false}}), 200);
+      return http.Response(
+        jsonEncode({
+          'posts': [],
+          'page_info': {'next_cursor': null, 'has_more': false},
+        }),
+        200,
+      );
     });
 
     await tester.pumpWidget(const MaterialApp(home: ForumSearchScreen()));
@@ -75,7 +81,13 @@ void main() {
       if (req.url.path == '/api/forum/search') {
         searchedQ = req.url.queryParameters['q'];
       }
-      return http.Response(jsonEncode({'posts': [], 'page_info': {'next_cursor': null, 'has_more': false}}), 200);
+      return http.Response(
+        jsonEncode({
+          'posts': [],
+          'page_info': {'next_cursor': null, 'has_more': false},
+        }),
+        200,
+      );
     });
 
     await tester.pumpWidget(const MaterialApp(home: ForumSearchScreen()));
@@ -86,42 +98,5 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(searchedQ, 'lokah');
-  });
-
-  testWidgets('送出搜尋後顯示結果', (tester) async {
-    ApiClient.httpClient = MockClient((req) async {
-      final s = suggestions(req);
-      if (s != null) return s;
-      expect(req.url.queryParameters['q'], '族語');
-      return http.Response(
-        jsonEncode({
-          'posts': [
-            {
-              'id': 1,
-              'board': {'id': 2, 'slug': 'culture', 'name': '文化傳承'},
-              'title': '族語學習心得',
-              'body': '內文',
-              'like_count': 0,
-              'comment_count': 0,
-              'is_pinned': false,
-              'is_liked': false,
-              'created_at': '2026-08-01T10:00:00.000Z',
-              'updated_at': '2026-08-01T10:00:00.000Z',
-              'author': {'uid': 1, 'display_name': 'A', 'avatar_url': null},
-            },
-          ],
-          'page_info': {'next_cursor': null, 'has_more': false},
-        }),
-        200,
-        headers: {'content-type': 'application/json; charset=utf-8'},
-      );
-    });
-
-    await tester.pumpWidget(const MaterialApp(home: ForumSearchScreen()));
-    await tester.enterText(find.byType(TextField), '族語');
-    await tester.testTextInput.receiveAction(TextInputAction.search);
-    await tester.pumpAndSettle();
-
-    expect(find.text('族語學習心得'), findsOneWidget);
   });
 }

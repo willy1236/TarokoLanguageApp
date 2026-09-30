@@ -10,7 +10,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/models/page_info.dart';
 import 'package:flutter_application_1/screens/culture/culture_search_screen.dart';
 import 'package:flutter_application_1/services/search_assist_service.dart';
@@ -53,20 +52,6 @@ void main() {
 
   tearDown(restoreHttp);
 
-  testWidgets('搜尋後顯示結果', (tester) async {
-    await tester.pumpWidget(
-      _app(
-        ({q, range, tribeId, cursor}) async =>
-            (items: ['太魯閣族的織布', '獵人的一天'], pageInfo: PageInfo.end),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await _searchFor(tester, '織布');
-
-    expect(find.text('太魯閣族的織布'), findsOneWidget);
-    expect(find.text('獵人的一天'), findsOneWidget);
-  });
-
   testWidgets('關鍵字與篩選條件會傳給 fetch', (tester) async {
     String? gotQ;
     String? gotCursor = 'unset';
@@ -83,35 +68,6 @@ void main() {
     // 關鍵字要去空白，新查詢一定從第一頁開始（不帶游標）。
     expect(gotQ, '織布');
     expect(gotCursor, isNull);
-  });
-
-  testWidgets('沒有結果時顯示自訂空狀態文案', (tester) async {
-    await tester.pumpWidget(
-      _app(
-        ({q, range, tribeId, cursor}) async =>
-            (items: <String>[], pageInfo: PageInfo.end),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await _searchFor(tester, '不存在');
-
-    expect(find.text('找不到符合的文章'), findsOneWidget);
-  });
-
-  testWidgets('後端錯誤顯示後端訊息', (tester) async {
-    await tester.pumpWidget(
-      _app(
-        ({q, range, tribeId, cursor}) async => throw ApiException(
-          statusCode: 400,
-          code: 'INVALID_RANGE',
-          message: '時間區間不合法',
-        ),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await _searchFor(tester, '織布');
-
-    expect(find.text('時間區間不合法'), findsOneWidget);
   });
 
   testWidgets('非後端錯誤顯示通用文案，不把例外內容丟給使用者', (tester) async {

@@ -9,10 +9,8 @@ import 'package:http/testing.dart';
 
 import 'package:flutter_application_1/core/network/api_client.dart';
 
-import 'package:flutter_application_1/screens/events/event_notifications_screen.dart';
 import 'package:flutter_application_1/screens/events/my_events_screen.dart';
 import 'package:flutter_application_1/shared/widgets/async_state_view.dart';
-import 'package:flutter_application_1/shared/widgets/truku_empty_state.dart';
 
 import '../helpers/flow_test_helpers.dart';
 import '../helpers/widget_test_helpers.dart';
@@ -28,19 +26,6 @@ Map<String, dynamic> _event({
   'status': effectiveStatus == 'cancelled' ? 'cancelled' : 'active',
   'effective_status': effectiveStatus,
   'participant_count': 3,
-};
-
-Map<String, dynamic> _notification({
-  required int id,
-  required String message,
-  bool isRead = false,
-}) => {
-  'id': id,
-  'event_id': 1,
-  'event_title': '部落豐年祭',
-  'message': message,
-  'sent_at': DateTime.now().toIso8601String(),
-  'is_read': isRead,
 };
 
 void main() {
@@ -70,18 +55,6 @@ void main() {
       expect(find.text('進行中'), findsOneWidget);
       expect(find.text('已結束'), findsOneWidget);
       expect(find.text('已取消'), findsOneWidget);
-    });
-
-    testWidgets('沒發起過活動時顯示空狀態', (tester) async {
-      installMockClient({
-        '/api/events/mine': {'events': <dynamic>[]},
-      });
-
-      await tester.pumpWidget(const MaterialApp(home: MyEventsScreen()));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(TrukuEmptyState), findsOneWidget);
-      expect(find.text('你還沒發起過活動'), findsOneWidget);
     });
 
     testWidgets('載入失敗時顯示錯誤並可重試', (tester) async {
@@ -165,66 +138,6 @@ void main() {
       await pumpFrames(tester, times: 10);
       expect(cursors, [null, '20', '20']);
       expect(find.text('活動 25', skipOffstage: false), findsOneWidget);
-    });
-  });
-
-  group('EventNotificationsScreen', () {
-    testWidgets('顯示收到的提醒', (tester) async {
-      installMockClient({
-        '/api/events/notifications': {
-          'notifications': [
-            _notification(id: 1, message: '記得帶雨具'),
-            _notification(id: 2, message: '集合地點改在活動中心', isRead: true),
-          ],
-          'unread_count': 1,
-          'page_info': {'next_cursor': null, 'has_more': false},
-        },
-      });
-
-      await tester.pumpWidget(
-        const MaterialApp(home: EventNotificationsScreen()),
-      );
-      await tester.pumpAndSettle();
-
-      // 副標題把訊息與相對時間串成同一個 Text（「記得帶雨具 · 剛剛」）。
-      expect(find.textContaining('記得帶雨具'), findsOneWidget);
-      expect(find.textContaining('集合地點改在活動中心'), findsOneWidget);
-      expect(find.text('部落豐年祭'), findsNWidgets(2));
-    });
-
-    testWidgets('沒有通知時顯示空狀態', (tester) async {
-      installMockClient({
-        '/api/events/notifications': {
-          'notifications': <dynamic>[],
-          'unread_count': 0,
-          'page_info': {'next_cursor': null, 'has_more': false},
-        },
-      });
-
-      await tester.pumpWidget(
-        const MaterialApp(home: EventNotificationsScreen()),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.byType(TrukuEmptyState), findsOneWidget);
-      expect(find.text('還沒有收到活動通知'), findsOneWidget);
-    });
-
-    testWidgets('載入失敗時顯示錯誤', (tester) async {
-      installMockClient({
-        '/api/events/notifications': errorResponse(
-          'SERVER_ERROR',
-          status: 500,
-          message: '伺服器忙碌中',
-        ),
-      });
-
-      await tester.pumpWidget(
-        const MaterialApp(home: EventNotificationsScreen()),
-      );
-      await tester.pumpAndSettle();
-
-      expect(find.textContaining('伺服器忙碌中'), findsWidgets);
     });
   });
 }

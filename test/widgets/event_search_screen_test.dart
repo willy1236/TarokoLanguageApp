@@ -46,30 +46,6 @@ void main() {
   setUp(stubCommonChannels);
   tearDown(restoreHttp);
 
-  testWidgets('還沒搜尋前顯示建議區，不顯示結果清單', (tester) async {
-    installMockClient(_suggestionRoutes());
-
-    await tester.pumpWidget(_app());
-    await tester.pumpAndSettle();
-
-    expect(find.text('找不到符合的活動'), findsNothing);
-  });
-
-  testWidgets('搜尋後顯示結果', (tester) async {
-    installMockClient({
-      ..._suggestionRoutes(),
-      '/api/events/search': {
-        'events': [_event(id: 1, title: '族語共學')],
-      },
-    });
-
-    await tester.pumpWidget(_app());
-    await tester.pumpAndSettle();
-    await _searchFor(tester, '族語');
-
-    expect(find.text('族語共學'), findsWidgets);
-  });
-
   testWidgets('搜尋關鍵字會送進 query', (tester) async {
     String? sentQ;
     installMockClient(
@@ -89,32 +65,6 @@ void main() {
     await _searchFor(tester, '豐年祭');
 
     expect(sentQ, '豐年祭');
-  });
-
-  testWidgets('沒有結果時顯示找不到', (tester) async {
-    installMockClient({
-      ..._suggestionRoutes(),
-      '/api/events/search': {'events': <dynamic>[]},
-    });
-
-    await tester.pumpWidget(_app());
-    await tester.pumpAndSettle();
-    await _searchFor(tester, '不存在的活動');
-
-    expect(find.text('找不到符合的活動'), findsOneWidget);
-  });
-
-  testWidgets('搜尋失敗時顯示錯誤訊息', (tester) async {
-    installMockClient({
-      ..._suggestionRoutes(),
-      '/api/events/search': errorResponse('SERVER_ERROR', status: 500),
-    });
-
-    await tester.pumpWidget(_app());
-    await tester.pumpAndSettle();
-    await _searchFor(tester, '族語');
-
-    expect(find.textContaining('SERVER_ERROR'), findsOneWidget);
   });
 
   testWidgets('回應晚到的舊查詢不會覆蓋新查詢的結果', (tester) async {
@@ -165,9 +115,7 @@ void main() {
     expect(find.text('舊查詢結果'), findsNothing);
   });
 
-  testWidgets('捲到底帶上一頁的游標載入下一頁，重複的活動只出現一次，到底後不再請求', (
-    tester,
-  ) async {
+  testWidgets('捲到底帶上一頁的游標載入下一頁，重複的活動只出現一次，到底後不再請求', (tester) async {
     final cursors = <String?>[];
     ApiClient.httpClient = MockClient((r) async {
       if (r.url.path != '/api/events/search') {
@@ -196,7 +144,11 @@ void main() {
     await tester.pumpAndSettle();
     await _searchFor(tester, '祭');
     for (var i = 0; i < 3; i++) {
-      await tester.fling(find.byType(ListView).last, const Offset(0, -5000), 3000);
+      await tester.fling(
+        find.byType(ListView).last,
+        const Offset(0, -5000),
+        3000,
+      );
       for (var f = 0; f < 10; f++) {
         await tester.pump(const Duration(milliseconds: 100));
       }

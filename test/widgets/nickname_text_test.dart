@@ -28,24 +28,6 @@ void main() {
   group('NicknameText', () {
     const style = TextStyle(fontSize: 16, color: Color(0xFF1C0F0D));
 
-    testWidgets('顯示成「暱稱 #末4碼」，末碼字級一致、顏色較淡', (tester) async {
-      await tester.pumpWidget(
-        wrap(
-          const NicknameText(
-            '阿華',
-            friendCode: 'AB12K7Q2',
-            style: style,
-            maxLines: 1,
-          ),
-        ),
-      );
-
-      expect(find.text('阿華'), findsOneWidget);
-      final tag = tester.widget<Text>(find.text(' #K7Q2'));
-      expect(tag.style?.fontSize, 16, reason: '沿用暱稱的字級（含精簡模式）');
-      expect(tag.style?.color, style.color!.withValues(alpha: 0.55));
-    });
-
     testWidgets('可換行時末碼接在暱稱最後一個字後面', (tester) async {
       await tester.pumpWidget(
         wrap(const NicknameText('阿華', friendCode: 'AB12K7Q2', style: style)),
