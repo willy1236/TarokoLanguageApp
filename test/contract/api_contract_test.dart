@@ -288,6 +288,16 @@ final List<_Contract> _adminContracts = [
     _paged(_each('reports', AdminQuestionReport.fromJson)),
   ),
   _Contract(
+    'get_api_admin_users_lookup.json',
+    'AdminUserLookup',
+    (json) => AdminUserLookup.fromJson(json['user'] as Map<String, dynamic>),
+  ),
+  _Contract(
+    'get_api_admin_users_roles.json',
+    'AdminRoleUser',
+    _each('users', AdminRoleUser.fromJson),
+  ),
+  _Contract(
     'get_api_admin_millet_transactions.json',
     'MilletTransactionListResult',
     _paged(MilletTransactionListResult.fromJson),

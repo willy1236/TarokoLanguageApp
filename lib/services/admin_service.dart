@@ -124,6 +124,38 @@ class AdminService {
     });
   }
 
+  // ── 使用者與角色（內部管理.md §8.9、§8.10）───────────────────────
+  //
+  // 後台端點只收 uid；手上只有好友碼時一律先經 [lookupUser] 轉換。
+
+  /// 以好友碼查使用者（不分大小寫）。每次查詢後端都會記一筆操作紀錄。
+  static Future<AdminUserLookup> lookupUser(String friendCode) async {
+    final json = await ApiClient.get(
+      ApiConfig.adminUsersLookup,
+      query: {'friend_code': friendCode.trim()},
+    );
+    return AdminUserLookup.fromJson(json['user'] as Map<String, dynamic>);
+  }
+
+  /// 目前的管理員與活動發起人，管理員在前。
+  static Future<List<AdminRoleUser>> fetchRoleUsers() async {
+    final json = await ApiClient.get(ApiConfig.adminUsersRoles);
+    return _list(json, 'users', AdminRoleUser.fromJson);
+  }
+
+  /// 變更角色，[reason] 必填 1～200 字（長度由畫面先擋）。
+  static Future<AdminRoleChange> setRole(
+    int uid,
+    String role,
+    String reason,
+  ) async {
+    final json = await ApiClient.patch(ApiConfig.adminUserRole(uid), {
+      'role': role,
+      'reason': reason.trim(),
+    });
+    return AdminRoleChange.fromJson(json);
+  }
+
   // ── 禁言（安全防護.md「後台端點」）────────────────────────────
 
   /// 目前有效（未翻案、未到期）的禁言。
