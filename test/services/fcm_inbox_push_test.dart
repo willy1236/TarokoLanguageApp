@@ -156,6 +156,30 @@ void main() {
     ]);
   });
 
+  testWidgets('前景審核對話框按「我知道了」：不開詳情，但標已讀', (tester) async {
+    await tester.pumpWidget(_app());
+
+    FcmService.handleForegroundMessage(
+      _moderation({
+        'action': 'case_opened',
+        'case_id': '31',
+        'inbox_id': '901',
+      }),
+    );
+    await tester.pumpAndSettle();
+    expect(readBodies(), isEmpty);
+
+    await tester.tap(find.text('我知道了'));
+    await tester.pumpAndSettle();
+
+    expect(openedCases, isEmpty);
+    expect(readBodies(), [
+      {
+        'ids': [901],
+      },
+    ]);
+  });
+
   testWidgets('背景點論壇回覆推播：照舊開貼文，帶 inbox_id 時一併標已讀', (tester) async {
     await tester.pumpWidget(_app());
 

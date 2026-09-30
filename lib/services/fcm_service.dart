@@ -713,7 +713,7 @@ class FcmService {
               TextButton(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  onForumReplyTapped?.call(restoredPostId);
+                  _openForumReply(restoredPostId, inboxId);
                 },
                 child: const Text('查看貼文'),
               ),
@@ -726,7 +726,10 @@ class FcmService {
                 child: const Text('查看詳情'),
               ),
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _markInboxRead(inboxId);
+              },
               child: const Text('我知道了'),
             ),
           ],
