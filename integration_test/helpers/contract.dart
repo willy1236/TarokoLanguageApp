@@ -39,6 +39,7 @@ enum F {
   boolean,
   list,
   object,
+
   /// 型別不拘，只要 key 存在（值可以是 null）。
   any,
 }
@@ -85,30 +86,46 @@ void expectShape(
   String label = '',
 }) {
   final where = label.isEmpty ? '' : '[$label] ';
-  expect(json, isA<Map<String, dynamic>>(),
-      reason: '$where' '預期是 JSON object，實際是 ${_typeName(json)}');
+  expect(
+    json,
+    isA<Map<String, dynamic>>(),
+    reason:
+        '$where'
+        '預期是 JSON object，實際是 ${_typeName(json)}',
+  );
   final map = json as Map<String, dynamic>;
 
   spec.forEach((key, type) {
     expect(map.containsKey(key), isTrue, reason: '$where缺少必要欄位 "$key"');
     final value = map[key];
     if (value == null) {
-      expect(nullable.contains(key), isTrue,
-          reason: '$where欄位 "$key" 不應為 null');
+      expect(
+        nullable.contains(key),
+        isTrue,
+        reason: '$where欄位 "$key" 不應為 null',
+      );
       return;
     }
-    expect(_matches(type, value), isTrue,
-        reason: '$where欄位 "$key" 型別應為 ${type.name}，'
-            '實際是 ${_typeName(value)}');
+    expect(
+      _matches(type, value),
+      isTrue,
+      reason:
+          '$where欄位 "$key" 型別應為 ${type.name}，'
+          '實際是 ${_typeName(value)}',
+    );
   });
 
   optional.forEach((key, type) {
     if (!map.containsKey(key)) return;
     final value = map[key];
     if (value == null) return;
-    expect(_matches(type, value), isTrue,
-        reason: '$where選填欄位 "$key" 型別應為 ${type.name}，'
-            '實際是 ${_typeName(value)}');
+    expect(
+      _matches(type, value),
+      isTrue,
+      reason:
+          '$where選填欄位 "$key" 型別應為 ${type.name}，'
+          '實際是 ${_typeName(value)}',
+    );
   });
 
   final known = {...spec.keys, ...optional.keys};
@@ -126,8 +143,11 @@ void expectEachShape(
   Map<String, F> optional = const {},
   String label = '',
 }) {
-  expect(list, isA<List>(),
-      reason: '[$label] 預期是 JSON array，實際是 ${_typeName(list)}');
+  expect(
+    list,
+    isA<List>(),
+    reason: '[$label] 預期是 JSON array，實際是 ${_typeName(list)}',
+  );
   final items = list as List;
   for (var i = 0; i < items.length; i++) {
     expectShape(
@@ -145,15 +165,16 @@ void expectErrorShape(http.Response response, {String? code}) {
   final decoded = jsonDecode(response.body);
   expectShape(decoded, {'error': F.object}, label: 'error envelope');
   final error = (decoded as Map<String, dynamic>)['error'];
-  expectShape(error, {'code': F.string, 'message': F.string},
-      optional: {'retry_after': F.number, 'mute_until': F.string},
-      label: 'error');
+  expectShape(
+    error,
+    {'code': F.string, 'message': F.string},
+    optional: {'retry_after': F.number, 'mute_until': F.string},
+    label: 'error',
+  );
   if (code != null) {
-    expect((error as Map<String, dynamic>)['code'], code,
-        reason: '錯誤碼不符');
+    expect((error as Map<String, dynamic>)['code'], code, reason: '錯誤碼不符');
   }
 }
-
 
 // ---------------------------------------------------------------
 // Fixture 錄製

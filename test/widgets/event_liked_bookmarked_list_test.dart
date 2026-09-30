@@ -33,9 +33,7 @@ void main() {
     (EventListMode.liked, '/api/events/likes'),
     (EventListMode.bookmarked, '/api/events/bookmarks'),
   ]) {
-    testWidgets('$path：翻頁帶上一頁的游標，重複的只出現一次', (
-      tester,
-    ) async {
+    testWidgets('$path：翻頁帶上一頁的游標，重複的只出現一次', (tester) async {
       final cursors = <String?>[];
       ApiClient.httpClient = MockClient((r) async {
         expect(r.url.path, path);

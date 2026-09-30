@@ -364,10 +364,7 @@ class ForumLikedCommentPage {
   final List<ForumLikedComment> comments;
   final PageInfo pageInfo;
 
-  const ForumLikedCommentPage({
-    required this.comments,
-    required this.pageInfo,
-  });
+  const ForumLikedCommentPage({required this.comments, required this.pageInfo});
 
   factory ForumLikedCommentPage.fromJson(Map<String, dynamic> j) =>
       ForumLikedCommentPage(
