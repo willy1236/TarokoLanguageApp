@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../models/event_model.dart';
+import '../../models/inbox_models.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/event_service.dart';
 import '../../services/notification_summary_service.dart';
@@ -10,8 +11,8 @@ import '../../services/user_service.dart';
 import 'event_compose_screen.dart';
 import 'widgets/event_cards.dart';
 import 'event_detail_screen.dart';
-import 'event_notifications_screen.dart';
 import 'event_search_screen.dart';
+import '../inbox/inbox_screen.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/module_header_actions.dart';
 import '../../core/constants/app_typography.dart';
@@ -275,7 +276,10 @@ class _EventsScreenState extends State<EventsScreen> {
     onNotifications: () async {
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const EventNotificationsScreen()),
+        MaterialPageRoute(
+          builder: (_) =>
+              const InboxScreen(initialCategory: InboxCategory.event),
+        ),
       );
       NotificationSummaryService.refresh();
     },

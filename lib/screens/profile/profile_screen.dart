@@ -11,6 +11,7 @@ import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
+import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
@@ -28,6 +29,7 @@ import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/joined_events_screen.dart';
 import '../events/my_events_screen.dart';
+import '../inbox/inbox_screen.dart';
 import '../shop/shop_screen.dart';
 import '../millet/millet_ledger_screen.dart';
 import 'my_bookmarks_screen.dart';
@@ -438,6 +440,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _moreSection({required bool seniorMode, required bool isAdmin}) {
     return profileSection('SMRATUC · 更多', [
+      ValueListenableBuilder<NotificationSummary>(
+        valueListenable: NotificationSummaryService.notifier,
+        builder: (context, summary, _) => profileNavRow(
+          icon: Icons.inbox_outlined,
+          label: '收件匣',
+          seniorMode: seniorMode,
+          badgeCount: summary.inbox.total,
+          onTap: _openInbox,
+        ),
+      ),
+      const Divider(height: 1, color: AppColors.creamDeep),
       profileNavRow(
         icon: Icons.person_outline,
         label: '個人資料設定',
@@ -563,6 +576,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
         builder: (_) => ProfileInfoScreen(editTribalNameOnOpen: editTribalName),
       ),
     );
+  }
+
+  /// 論壇、活動、審核、官方公告的通知；看完回來重抓未讀數。
+  Future<void> _openInbox() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const InboxScreen()));
+    NotificationSummaryService.refresh();
   }
 
   void _openAboutApp() {

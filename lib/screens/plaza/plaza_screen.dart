@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_model.dart';
 import '../../models/forum_models.dart';
+import '../../models/inbox_models.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/event_service.dart';
 import '../../services/forum_service.dart';
@@ -11,10 +12,10 @@ import '../../services/senior_mode_controller.dart';
 import '../forum/forum_board_view.dart';
 import '../forum/forum_compose_screen.dart';
 import '../forum/forum_detail_screen.dart';
-import '../forum/forum_notifications_screen.dart';
 import '../forum/forum_search_screen.dart';
 import '../forum/forum_theme.dart';
 import '../events/event_detail_screen.dart';
+import '../inbox/inbox_screen.dart';
 import '../../shared/widgets/module_header_actions.dart';
 import 'widgets/plaza_cards.dart';
 import '../../core/constants/app_typography.dart';
@@ -296,7 +297,10 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     onNotifications: () async {
       await Navigator.push(
         context,
-        MaterialPageRoute(builder: (_) => const ForumNotificationsScreen()),
+        MaterialPageRoute(
+          builder: (_) =>
+              const InboxScreen(initialCategory: InboxCategory.forum),
+        ),
       );
       NotificationSummaryService.refresh();
     },
