@@ -8,6 +8,7 @@
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/admin_models.dart';
+import '../models/millet_transaction.dart';
 import '../models/page_info.dart';
 
 typedef AdminPage<T> = ({List<T> items, PageInfo pageInfo});
@@ -213,6 +214,32 @@ class AdminService {
     await ApiClient.patch(ApiConfig.adminQuestionReport(id), {
       'status': status,
     });
+  }
+
+  // ── 小米幣查帳（內部管理.md §4、§5）唯讀，不寫操作紀錄 ─────────────────
+
+  /// 任一使用者的小米幣明細，形狀同使用者自己的明細。
+  static Future<MilletTransactionListResult> fetchMilletTransactions(
+    int uid, {
+    String? cursor,
+  }) async {
+    final json = await ApiClient.get(
+      ApiConfig.adminMilletTransactions,
+      query: {
+        'uid': '$uid',
+        ...PageInfo.query(cursor: cursor),
+      },
+    );
+    return MilletTransactionListResult.fromJson(json);
+  }
+
+  /// 帳本加總是否等於目前餘額。
+  static Future<AdminMilletReconcile> reconcileMillet(int uid) async {
+    final json = await ApiClient.get(
+      ApiConfig.adminMilletReconcile,
+      query: {'uid': '$uid'},
+    );
+    return AdminMilletReconcile.fromJson(json);
   }
 
   // ── 文章（文章模組.md §5）─────────────────────────────────────

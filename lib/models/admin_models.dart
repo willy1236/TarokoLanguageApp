@@ -677,3 +677,25 @@ class AdminRoleChange {
     changed: j['changed'] != false,
   );
 }
+
+// ── 小米幣查帳（內部管理.md §4、§5）─────────────────────────────
+
+/// GET /api/admin/millet/reconcile：帳本加總是否等於目前餘額。
+class AdminMilletReconcile {
+  final int ledgerSum;
+  final int userMillet;
+  final bool ok;
+
+  const AdminMilletReconcile({
+    required this.ledgerSum,
+    required this.userMillet,
+    required this.ok,
+  });
+
+  factory AdminMilletReconcile.fromJson(Map<String, dynamic> j) =>
+      AdminMilletReconcile(
+        ledgerSum: _int(j['ledger_sum']) ?? 0,
+        userMillet: _int(j['user_millet']) ?? 0,
+        ok: j['ok'] == true,
+      );
+}

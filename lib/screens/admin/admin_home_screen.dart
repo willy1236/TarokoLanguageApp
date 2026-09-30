@@ -9,6 +9,7 @@ import 'admin_article_form_screen.dart';
 import 'admin_banned_words_screen.dart';
 import 'admin_cases_screen.dart';
 import 'admin_error.dart';
+import 'admin_millet_screen.dart';
 import 'admin_mutes_screen.dart';
 import 'admin_question_reports_screen.dart';
 import 'admin_reports_screen.dart';
@@ -39,6 +40,11 @@ final List<_Entry> _entries = [
     icon: Icons.manage_accounts_outlined,
     label: '角色管理',
     screen: () => const AdminRolesScreen(),
+  ),
+  (
+    icon: Icons.savings_outlined,
+    label: '小米幣查帳',
+    screen: () => const AdminMilletScreen(),
   ),
   (
     icon: Icons.block_outlined,

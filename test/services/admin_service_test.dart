@@ -201,4 +201,26 @@ void main() {
       expect(result.role, 'organizer');
     });
   });
+
+  test('小米幣查帳：明細與對帳都帶 uid，明細帶游標', () async {
+    final requests = <http.Request>[];
+    installMockClient({
+      '/api/admin/millet/transactions': loadFixtureMap(
+        'get_api_admin_millet_transactions.json',
+      ),
+      '/api/admin/millet/reconcile': loadFixtureMap(
+        'get_api_admin_millet_reconcile.json',
+      ),
+    }, onRequest: requests.add);
+
+    final page = await AdminService.fetchMilletTransactions(20, cursor: 'c1');
+    final reconcile = await AdminService.reconcileMillet(20);
+
+    expect(requests[0].url.queryParameters, {'uid': '20', 'cursor': 'c1'});
+    expect(requests[1].url.queryParameters, {'uid': '20'});
+    expect(page.transactions, isNotEmpty);
+    expect(reconcile.ledgerSum, -150);
+    expect(reconcile.userMillet, 350);
+    expect(reconcile.ok, isFalse);
+  });
 }

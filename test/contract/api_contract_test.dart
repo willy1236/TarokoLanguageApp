@@ -298,6 +298,11 @@ final List<_Contract> _adminContracts = [
     _each('users', AdminRoleUser.fromJson),
   ),
   _Contract(
+    'get_api_admin_millet_reconcile.json',
+    'AdminMilletReconcile',
+    AdminMilletReconcile.fromJson,
+  ),
+  _Contract(
     'get_api_admin_millet_transactions.json',
     'MilletTransactionListResult',
     _paged(MilletTransactionListResult.fromJson),
