@@ -20,11 +20,15 @@ Widget _app() => MaterialApp(
   home: const AdminBirthDateScreen(),
 );
 
-Map<String, dynamic> _lookup({String? birthDate}) => {
+Map<String, dynamic> _lookup({
+  String? birthDate,
+  int uid = 12,
+  String nickname = '阿華',
+}) => {
   'user': {
-    'uid': 12,
+    'uid': uid,
     'friend_code': 'ABCD2345',
-    'nickname': '阿華',
+    'nickname': nickname,
     'status': 'active',
     'role': 'user',
     'birth_date': birthDate,
@@ -91,6 +95,7 @@ void main() {
       'reason': '使用者來信說打錯一天',
     });
     expect(find.text('已滿 18 歲'), findsOneWidget);
+    expect(find.text('已更正「阿華」的出生日期'), findsOneWidget);
     expect(find.textContaining('移出隨機配對佇列'), findsNothing);
   });
 
@@ -142,11 +147,17 @@ void main() {
     expect(find.text('找不到這位使用者'), findsOneWidget);
   });
 
-  testWidgets('送出途中換對象：新對象的送出鈕不會卡住，舊的成功仍有提示', (tester) async {
+  testWidgets('送出途中換對象：新對象的送出鈕不會卡住，舊的結果不套用但有具名提示', (tester) async {
     final pending = Completer<http.Response>();
+    var lookups = 0;
     ApiClient.httpClient = MockClient((r) async {
       if (r.method == 'PATCH') return pending.future;
-      return jsonResponse(_lookup(birthDate: '2001-05-20'));
+      lookups++;
+      return jsonResponse(
+        lookups == 1
+            ? _lookup(birthDate: '2001-05-20')
+            : _lookup(birthDate: '1990-01-02', uid: 13, nickname: '小明'),
+      );
     });
     await lookUp(tester);
     await fillReasonAndConfirm(tester);
@@ -155,11 +166,13 @@ void main() {
     await tester.tap(find.text('查詢'));
     await tester.pumpAndSettle();
     pending.complete(
-      jsonResponse({'uid': 12, 'birth_date': '2001-05-20', 'adult': true}),
+      jsonResponse({'uid': 12, 'birth_date': '2012-01-01', 'adult': false}),
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('已更正出生日期'), findsOneWidget);
+    expect(find.text('已更正「阿華」的出生日期'), findsOneWidget);
+    expect(find.text('更正結果'), findsNothing, reason: '不把阿華的結果套到小明');
+    expect(find.textContaining('1990', findRichText: true), findsWidgets);
     expect(
       tester
           .widget<FilledButton>(find.widgetWithText(FilledButton, '送出更正'))

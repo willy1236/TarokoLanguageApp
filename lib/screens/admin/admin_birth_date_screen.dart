@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/network/api_client.dart';
 import '../../models/admin_models.dart';
 import '../../services/admin_service.dart';
 import '../../shared/utils/birth_date.dart';
@@ -32,7 +33,11 @@ class _AdminBirthDateScreenState extends State<AdminBirthDateScreen> {
   AdminBirthDateResult? _result;
   bool _submitting = false;
 
+  /// 換對象時加一：送出途中換過對象（即使換回同一人），回來的結果都不套用。
+  int _generation = 0;
+
   void _onUserChanged(AdminUserLookup? user) => setState(() {
+    _generation++;
     _user = user;
     _current = user?.birthDate;
     _selected = user?.birthDate;
@@ -64,6 +69,7 @@ class _AdminBirthDateScreenState extends State<AdminBirthDateScreen> {
       confirmText: '更正',
     );
     if (input == null || !mounted) return;
+    final generation = _generation;
     setState(() => _submitting = true);
     try {
       final result = await AdminService.updateBirthDate(
@@ -72,9 +78,10 @@ class _AdminBirthDateScreenState extends State<AdminBirthDateScreen> {
         input.reason,
       );
       if (!mounted) return;
-      showAdminMessage('已更正出生日期');
+      // 提示帶名字：送出途中換了對象時，才分得出是誰被改了。
+      showAdminMessage('已更正$name的出生日期');
       // 送出途中換了對象：更正已成功，但畫面已是別人，不套用結果。
-      if (_user?.uid != user.uid) return;
+      if (generation != _generation) return;
       setState(() {
         _result = result;
         _current = result.birthDate ?? date;
@@ -82,8 +89,14 @@ class _AdminBirthDateScreenState extends State<AdminBirthDateScreen> {
       });
     } catch (e) {
       if (!mounted) return;
-      if (_user?.uid == user.uid) setState(() => _submitting = false);
-      handleAdminError(context, e);
+      if (generation == _generation) {
+        setState(() => _submitting = false);
+        handleAdminError(context, e);
+      } else if (!isAdminOnlyError(e)) {
+        showAdminMessage('$name的出生日期更正失敗：${apiErrorMessage(e)}');
+      } else {
+        handleAdminError(context, e);
+      }
     }
   }
 
