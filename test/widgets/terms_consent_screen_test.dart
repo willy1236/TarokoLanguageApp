@@ -133,6 +133,39 @@ void main() {
     expect(log.contains('POST /api/terms/consent'), isFalse);
   });
 
+  testWidgets('帳號重新啟用後被條款擋下：同意完成進首頁才顯示重新啟用的提示', (tester) async {
+    ApiClient.httpClient = _server(
+      {'tos': _doc('tos'), 'privacy': _doc('privacy', consented: true)},
+      onConsent: (_) => _ok({
+        'document': _doc('tos', consented: true),
+        'all_consented': true,
+      }),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigatorKey,
+        onGenerateRoute: (settings) => MaterialPageRoute<void>(
+          settings: settings.name == '/'
+              ? const RouteSettings(name: '/', arguments: '帳號已重新啟用，歡迎回來')
+              : settings,
+          builder: (_) => settings.name == '/'
+              ? const TermsConsentScreen()
+              : const Scaffold(body: Text('HOME')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('帳號已重新啟用，歡迎回來'), findsNothing);
+
+    await tester.tap(find.text('同意《服務條款》'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('HOME'), findsOneWidget);
+    expect(find.text('帳號已重新啟用，歡迎回來'), findsOneWidget);
+  });
+
   testWidgets('只有一份改版：已同意的那份不出現，顯示第 1 份／共 1 份', (tester) async {
     ApiClient.httpClient = _server(
       {

@@ -175,7 +175,13 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     }
     if (!mounted) return;
     final route = entryRouteFor(user, allConsented: true);
+    // 帳號重新啟用後被條款擋下時，route arguments 帶著「已重新啟用」的提示。
+    final notice = ModalRoute.of(context)?.settings.arguments;
+    final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false);
+    if (notice is String) {
+      messenger.showSnackBar(SnackBar(content: Text(notice)));
+    }
     // 冷啟動被條款擋下時，splash 沒處理通知深連結，同意進首頁後補上。
     if (route == '/home') FcmService.consumePendingInitialMessage();
   }

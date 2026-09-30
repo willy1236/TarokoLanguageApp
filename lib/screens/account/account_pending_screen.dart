@@ -71,15 +71,23 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
           ? null
           : await UserService.fetchMe(forceRefresh: true);
       if (!mounted) return;
+      final message = status.isLocked ? '帳號已重新啟用，目前為唯讀狀態' : '帳號已重新啟用，歡迎回來';
+      if (status.consentRequired) {
+        // 提示交給同意畫面，同意完成離開時才顯示。
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/terms-consent',
+          (_) => false,
+          arguments: message,
+        );
+        return;
+      }
       Navigator.of(context).pushNamedAndRemoveUntil(
-        entryRouteFor(user, allConsented: !status.consentRequired),
+        entryRouteFor(user, allConsented: true),
         (_) => false,
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(status.isLocked ? '帳號已重新啟用，目前為唯讀狀態' : '帳號已重新啟用，歡迎回來'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } on ApiException catch (e) {
       if (!mounted || e.isAccountPurged) return;
       _showError(e.message);
