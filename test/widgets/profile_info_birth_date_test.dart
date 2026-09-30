@@ -1,5 +1,6 @@
 // 個人資料頁的出生日期（POL-01）：唯讀顯示 YYYY/MM/DD，沒有資料時顯示尚未填寫。
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -41,7 +42,7 @@ void main() {
     await tester.tap(find.text('2001/07/04'));
     await tester.pumpAndSettle();
     expect(find.byType(Dialog), findsNothing);
-    expect(find.byType(DatePickerDialog), findsNothing);
+    expect(find.byType(CupertinoPicker), findsNothing);
   });
 
   testWidgets('360dp 寬度下長內容（通知信箱加徽章）不 overflow', (tester) async {
