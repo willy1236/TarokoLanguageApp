@@ -368,4 +368,18 @@ void main() {
 
     expect(find.text('重試'), findsOneWidget);
   });
+
+  testWidgets('條款載入失敗或沒有條款時，強制同意畫面仍可刪除帳號、下載資料', (tester) async {
+    ApiClient.httpClient = MockClient((_) async => _err(500, 'INTERNAL'));
+    await _pumpScreen(tester);
+    expect(find.text('不同意，刪除帳號'), findsOneWidget);
+    expect(find.text('下載我的資料'), findsOneWidget);
+
+    ApiClient.httpClient = _server({});
+    await tester.tap(find.text('重試'));
+    await tester.pumpAndSettle();
+    expect(find.text('目前沒有條款內容'), findsOneWidget);
+    expect(find.text('不同意，刪除帳號'), findsOneWidget);
+    expect(find.text('下載我的資料'), findsOneWidget);
+  });
 }

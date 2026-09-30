@@ -247,6 +247,8 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton(onPressed: _load, child: const Text('重試')),
+              // 強制同意不能返回：條款載不到時也要能行使刪除權、查詢權。
+              if (!readOnly) ...[const SizedBox(height: 8), _accountActions()],
             ],
           ),
         ),
@@ -254,9 +256,22 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     }
     if (_documents.isEmpty) {
       return Center(
-        child: Text(
-          '目前沒有條款內容',
-          style: TextStyle(fontSize: AppTypography.body, color: AppColors.fog),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '目前沒有條款內容',
+              style: TextStyle(
+                fontSize: AppTypography.body,
+                color: AppColors.fog,
+              ),
+            ),
+            if (!readOnly)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: _accountActions(),
+              ),
+          ],
         ),
       );
     }
@@ -389,35 +404,36 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
               ),
             ),
             const SizedBox(height: 4),
-            Row(
-              children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: _openDeleteAccount,
-                    child: Text(
-                      '不同意，刪除帳號',
-                      style: AppTypography.bodyStyle(
-                        color: AppColors.dangerDark,
-                      ),
-                    ),
-                  ),
-                ),
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => exportMyData(context),
-                    child: Text(
-                      '下載我的資料',
-                      style: AppTypography.bodyStyle(color: AppColors.inkSoft),
-                    ),
-                  ),
-                ),
-              ],
-            ),
+            _accountActions(),
           ],
         ),
       ),
     );
   }
+
+  /// 「不同意，刪除帳號」「下載我的資料」：不必先同意條款。
+  Widget _accountActions() => Row(
+    children: [
+      Expanded(
+        child: TextButton(
+          onPressed: _openDeleteAccount,
+          child: Text(
+            '不同意，刪除帳號',
+            style: AppTypography.bodyStyle(color: AppColors.dangerDark),
+          ),
+        ),
+      ),
+      Expanded(
+        child: TextButton(
+          onPressed: () => exportMyData(context),
+          child: Text(
+            '下載我的資料',
+            style: AppTypography.bodyStyle(color: AppColors.inkSoft),
+          ),
+        ),
+      ),
+    ],
+  );
 
   void _openDeleteAccount() {
     Navigator.of(
