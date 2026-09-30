@@ -11,11 +11,10 @@ import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
-import '../../services/account_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
-import '../../shared/share_text_file.dart';
+import '../../shared/utils/export_my_data.dart';
 import '../account/account_delete_screen.dart';
 import '../admin/admin_error.dart';
 import '../admin/admin_home_screen.dart';
@@ -502,7 +501,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ('意見回饋', _openContactEmail),
       ('關於語見太魯閣', _openAboutApp),
       ('服務條款與隱私權政策', _openTermsView),
-      ('下載我的資料', _exportMyData),
+      ('下載我的資料', () => exportMyData(context)),
       ('刪除帳號', _openDeleteAccount),
     ];
     return profileSection(
@@ -576,35 +575,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const AccountDeleteScreen()));
-  }
-
-  bool _exporting = false;
-
-  /// 下載我的資料（個資法查詢/複製權）：拿到 JSON 後交給系統分享選單存檔。
-  /// 此端點限流每分鐘 5 次，不自動重試。
-  Future<void> _exportMyData() async {
-    if (_exporting) return;
-    _exporting = true;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('正在準備你的資料…')));
-    try {
-      final json = await AccountService.exportData();
-      if (!mounted) return;
-      await shareTextFile(
-        content: json,
-        filename: 'truku-account-data.json',
-        mimeType: 'application/json',
-        subject: '我的語見太魯閣資料',
-      );
-    } on ApiException catch (e) {
-      _showError(e.message);
-    } catch (e) {
-      debugPrint('ProfileScreen: 匯出資料失敗：$e');
-      _showError('下載失敗，請稍後再試');
-    } finally {
-      _exporting = false;
-    }
   }
 
   void _openTermsView() {
