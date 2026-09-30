@@ -170,6 +170,56 @@ void main() {
   setUp(stubSecureStorage);
   tearDown(restoreHttp);
 
+  group('從回覆通知進來（focusCommentId）', () {
+    Future<void> open(WidgetTester tester, int focus) async {
+      // 畫面矮到一頁放不下：不捲就看不到後面的留言。
+      tester.view.physicalSize = const Size(800, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        wrapScreen(ForumDetailScreen(postId: _postId, focusCommentId: focus)),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    bool onScreen(WidgetTester tester, String text) {
+      final finder = find.text(text);
+      if (finder.evaluate().isEmpty) return false;
+      final rect = tester.getRect(finder);
+      return rect.top >= 0 && rect.bottom <= 400;
+    }
+
+    testWidgets('留言在後面的分頁：往後載到那一頁並捲到它', (tester) async {
+      final forum = _FakeForum([1, 2, 3, 4, 5, 6]);
+      ApiClient.httpClient = forum.client();
+
+      await open(tester, 5);
+
+      expect(forum.commentRequests, hasLength(3));
+      expect(onScreen(tester, '留言5'), isTrue);
+    });
+
+    testWidgets('回覆掛在第一層留言下，也捲得到', (tester) async {
+      final forum = _FakeForum([1, 2, 3, 4])..replyParent[50] = 4;
+      ApiClient.httpClient = forum.client();
+
+      await open(tester, 50);
+
+      expect(onScreen(tester, '留言50'), isTrue);
+    });
+
+    testWidgets('留言已不存在：載完可載的分頁後停在頂端，不報錯', (tester) async {
+      final forum = _FakeForum([1, 2, 3]);
+      ApiClient.httpClient = forum.client();
+
+      await open(tester, 999);
+
+      expect(forum.commentRequests, hasLength(2));
+      expect(find.text('貼文'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+  });
+
   testWidgets('留言沒載完時送出第一層留言，載完後只出現一次且照時間排序', (tester) async {
     final forum = _FakeForum([1, 2, 3, 4]);
     ApiClient.httpClient = forum.client();

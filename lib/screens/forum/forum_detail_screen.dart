@@ -4,6 +4,7 @@
 // 後端會擋第三層，前端不送出必然失敗的請求。
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import '../../shared/widgets/async_state_view.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -53,11 +54,16 @@ class ForumDetailScreen extends StatefulWidget {
   /// 全螢幕圖片檢視，於是返回時會先停在內文頁，再返回才回列表。
   final int? initialImageIndex;
 
+  /// 不為 null 代表是從「有人回覆你」的通知進來的：載入後捲到這則留言。
+  /// 留言不在已載入的範圍就往後多載幾頁找，找不到（已刪除等）就停在頂端。
+  final int? focusCommentId;
+
   const ForumDetailScreen({
     super.key,
     required this.postId,
     this.onPostChanged,
     this.initialImageIndex,
+    this.focusCommentId,
   });
 
   /// route 名稱：讓通知導頁判斷最上層是不是這篇貼文。
@@ -68,12 +74,14 @@ class ForumDetailScreen extends StatefulWidget {
     required int postId,
     ValueChanged<ForumPost>? onPostChanged,
     int? initialImageIndex,
+    int? focusCommentId,
   }) => MaterialPageRoute<ForumDetailResult>(
     settings: RouteSettings(name: routeNameFor(postId)),
     builder: (_) => ForumDetailScreen(
       postId: postId,
       onPostChanged: onPostChanged,
       initialImageIndex: initialImageIndex,
+      focusCommentId: focusCommentId,
     ),
   );
 
@@ -131,6 +139,16 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 正在回覆的第一層留言；null 代表回覆貼文本身。
   ForumComment? _replyTarget;
+
+  /// 還沒捲到的 [ForumDetailScreen.focusCommentId]；捲到或確定找不到後清成 null。
+  late int? _pendingFocusId = widget.focusCommentId;
+
+  /// 掛在要捲去的那則留言上。
+  final _focusKey = GlobalKey();
+
+  /// 為了找那則留言已經往後多載了幾頁。
+  int _focusPagesLoaded = 0;
+  static const _focusMaxPages = 5;
 
   Map<String, ShopItem> _itemCatalogById = const {};
 
@@ -207,6 +225,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _loading = false;
       });
       _maybeOpenInitialImage();
+      _seekFocusComment();
     } on ApiException catch (e) {
       if (!mounted || generation != _generation) return;
       if (e.code == 'POST_NOT_FOUND') {
@@ -280,12 +299,50 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _mergeComments(page, advanceCursor: true);
         _loadingMore = false;
       });
+      _seekFocusComment();
     } on ApiException catch (e) {
       if (!mounted || generation != _generation) return;
-      setState(() => _loadingMore = false);
+      setState(() {
+        _loadingMore = false;
+        _pendingFocusId = null;
+      });
       _toast(e.message);
     }
   }
+
+  /// 捲到通知指的那則留言。還沒載到就往後載下一頁（載完會再回到這裡）。
+  void _seekFocusComment() {
+    final id = _pendingFocusId;
+    if (id == null) return;
+    final loaded =
+        _comments.any((c) => c.id == id) || _replies.any((c) => c.id == id);
+    if (!loaded) {
+      if (_nextCursor != null && _focusPagesLoaded < _focusMaxPages) {
+        _focusPagesLoaded++;
+        _loadMoreComments();
+      } else {
+        setState(() => _pendingFocusId = null);
+      }
+      return;
+    }
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final target = _focusKey.currentContext;
+      if (target != null) {
+        await Scrollable.ensureVisible(
+          target,
+          alignment: 0.2,
+          duration: const Duration(milliseconds: 300),
+        );
+      }
+      if (mounted) setState(() => _pendingFocusId = null);
+    });
+  }
+
+  /// 要捲去的那則留言掛上 [_focusKey]，其他留言原樣回傳。
+  Widget _focusable(ForumComment comment, Widget tile) =>
+      comment.id == widget.focusCommentId
+      ? KeyedSubtree(key: _focusKey, child: tile)
+      : tile;
 
   /// 把一批留言併進列表：按 id 去重、按 id 排序（id 越大越新）。
   /// 本地先插入的留言之後可能又從伺服器分頁回來，只靠 append 會重複且亂序。
@@ -763,6 +820,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       },
       child: ListView(
         controller: _scrollController,
+        // 還沒捲到指定留言前把整串留言都排版出來：捲動目標要先存在才量得到位置。
+        scrollCacheExtent: _pendingFocusId == null
+            ? null
+            : const ScrollCacheExtent.pixels(100000),
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
         children: [
           ForumPostBody(
@@ -799,49 +860,55 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               ),
             ),
           for (final thread in threads) ...[
-            ForumCommentTile(
-              comment: thread.root,
-              isReply: false,
-              isMine: UserService.isMe(thread.root.author?.friendCode),
-              onLike: () => _likeComment(thread.root),
-              onReply: locked
-                  ? null
-                  : () => setState(() => _replyTarget = thread.root),
-              onDelete: () => _deleteComment(thread.root),
-              onAdminRemove: _isAdmin
-                  ? () => _adminRemoveComment(thread.root)
-                  : null,
-              onReport: locked
-                  ? null
-                  : () => showForumReportSheet(
-                      context,
-                      targetType: 'comment',
-                      targetId: thread.root.id,
-                    ),
-              itemCatalogById: _itemCatalogById,
-            ),
-            for (final reply in thread.replies)
+            _focusable(
+              thread.root,
               ForumCommentTile(
-                comment: reply,
-                isReply: true,
-                isMine: UserService.isMe(reply.author?.friendCode),
-                onLike: () => _likeComment(reply),
-                // 論壇只有兩層：回覆「回覆」時，parent 仍是第一層那則。
+                comment: thread.root,
+                isReply: false,
+                isMine: UserService.isMe(thread.root.author?.friendCode),
+                onLike: () => _likeComment(thread.root),
                 onReply: locked
                     ? null
                     : () => setState(() => _replyTarget = thread.root),
-                onDelete: () => _deleteComment(reply),
+                onDelete: () => _deleteComment(thread.root),
                 onAdminRemove: _isAdmin
-                    ? () => _adminRemoveComment(reply)
+                    ? () => _adminRemoveComment(thread.root)
                     : null,
-                itemCatalogById: _itemCatalogById,
                 onReport: locked
                     ? null
                     : () => showForumReportSheet(
                         context,
                         targetType: 'comment',
-                        targetId: reply.id,
+                        targetId: thread.root.id,
                       ),
+                itemCatalogById: _itemCatalogById,
+              ),
+            ),
+            for (final reply in thread.replies)
+              _focusable(
+                reply,
+                ForumCommentTile(
+                  comment: reply,
+                  isReply: true,
+                  isMine: UserService.isMe(reply.author?.friendCode),
+                  onLike: () => _likeComment(reply),
+                  // 論壇只有兩層：回覆「回覆」時，parent 仍是第一層那則。
+                  onReply: locked
+                      ? null
+                      : () => setState(() => _replyTarget = thread.root),
+                  onDelete: () => _deleteComment(reply),
+                  onAdminRemove: _isAdmin
+                      ? () => _adminRemoveComment(reply)
+                      : null,
+                  itemCatalogById: _itemCatalogById,
+                  onReport: locked
+                      ? null
+                      : () => showForumReportSheet(
+                          context,
+                          targetType: 'comment',
+                          targetId: reply.id,
+                        ),
+                ),
               ),
           ],
         ],
