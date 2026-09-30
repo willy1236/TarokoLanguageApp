@@ -1,4 +1,6 @@
 // 違規案件詳情：二審「確認違規」「撤銷」，可附 500 字內備註。
+// 由檢舉開案的案件並列「檢舉當時」與「目前」的內容；下拉重新整理會重抓這個案件
+// （頭像複本是限時網址，過期要靠這個拿新的）。
 //
 // 二審必須是開案以外的另一位管理員：SAME_ADMIN、SELF_INVOLVED 顯示後端 message、
 // 案件留在列表；CASE_ALREADY_REVIEWED 顯示 message 並回列表重抓。
@@ -77,6 +79,22 @@ class _AdminCaseDetailScreenState extends State<AdminCaseDetailScreen> {
     }
   }
 
+  /// 後端沒有查單一案件的端點：重抓同一個狀態的列表，把這個案件換成新的。
+  Future<void> _refresh() async {
+    try {
+      final page = await AdminService.fetchCases(status: _case.status);
+      if (!mounted) return;
+      for (final fresh in page.items) {
+        if (fresh.id == _case.id) {
+          setState(() => _case = fresh);
+          return;
+        }
+      }
+    } catch (e) {
+      if (mounted) handleAdminError(context, e);
+    }
+  }
+
   /// 被處置者已被鎖帳號時，誤判救援：解鎖並推播通知當事人。
   Future<void> _unlock() async {
     final input = await promptAdminReason(
@@ -145,41 +163,50 @@ class _AdminCaseDetailScreenState extends State<AdminCaseDetailScreen> {
   @override
   Widget build(BuildContext context) => AdminScaffold(
     title: '案件詳情',
-    body: (context, senior) => ListView(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      children: [
-        AdminCaseCard(adminCase: _case, seniorMode: senior),
-        if (_case.offenderStatus == 'locked')
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
-              AppSpacing.md,
-              AppSpacing.md,
-              0,
-            ),
-            child: OutlinedButton.icon(
-              onPressed: _busy ? null : _unlock,
-              icon: const Icon(Icons.lock_open_outlined),
-              label: const Text('解鎖帳號'),
-            ),
+    body: (context, senior) => RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: _refresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        children: [
+          AdminCaseCard(
+            adminCase: _case,
+            seniorMode: senior,
+            compareSnapshot: true,
           ),
-        if (_case.isPending)
-          Padding(
-            padding: const EdgeInsets.all(AppSpacing.md),
-            child: TextField(
-              controller: _note,
-              maxLines: 3,
-              inputFormatters: const [
-                Utf16LengthLimitingTextInputFormatter(_noteMax),
-              ],
-              buildCounter: utf16CounterBuilder(_note, _noteMax),
-              decoration: const InputDecoration(
-                labelText: '備註（選填）',
-                border: OutlineInputBorder(),
+          if (_case.offenderStatus == 'locked')
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                AppSpacing.md,
+                AppSpacing.md,
+                AppSpacing.md,
+                0,
+              ),
+              child: OutlinedButton.icon(
+                onPressed: _busy ? null : _unlock,
+                icon: const Icon(Icons.lock_open_outlined),
+                label: const Text('解鎖帳號'),
               ),
             ),
-          ),
-      ],
+          if (_case.isPending)
+            Padding(
+              padding: const EdgeInsets.all(AppSpacing.md),
+              child: TextField(
+                controller: _note,
+                maxLines: 3,
+                inputFormatters: const [
+                  Utf16LengthLimitingTextInputFormatter(_noteMax),
+                ],
+                buildCounter: utf16CounterBuilder(_note, _noteMax),
+                decoration: const InputDecoration(
+                  labelText: '備註（選填）',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+        ],
+      ),
     ),
     bottom: (context, senior) => !_case.isPending
         ? const SizedBox.shrink()

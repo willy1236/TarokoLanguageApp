@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/main.dart' show navigatorKey;
+import 'package:flutter_application_1/screens/account/account_delete_screen.dart';
 import 'package:flutter_application_1/screens/terms/terms_consent_screen.dart';
 
 const _jsonHeaders = {'content-type': 'application/json; charset=utf-8'};
@@ -130,6 +131,39 @@ void main() {
     expect(bodies.last, '/api/terms/privacy/consent {"version":1}');
     expect(find.text('HOME'), findsOneWidget);
     expect(log.contains('POST /api/terms/consent'), isFalse);
+  });
+
+  testWidgets('帳號重新啟用後被條款擋下：同意完成進首頁才顯示重新啟用的提示', (tester) async {
+    ApiClient.httpClient = _server(
+      {'tos': _doc('tos'), 'privacy': _doc('privacy', consented: true)},
+      onConsent: (_) => _ok({
+        'document': _doc('tos', consented: true),
+        'all_consented': true,
+      }),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        navigatorKey: navigatorKey,
+        onGenerateRoute: (settings) => MaterialPageRoute<void>(
+          settings: settings.name == '/'
+              ? const RouteSettings(name: '/', arguments: '帳號已重新啟用，歡迎回來')
+              : settings,
+          builder: (_) => settings.name == '/'
+              ? const TermsConsentScreen()
+              : const Scaffold(body: Text('HOME')),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('帳號已重新啟用，歡迎回來'), findsNothing);
+
+    await tester.tap(find.text('同意《服務條款》'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('HOME'), findsOneWidget);
+    expect(find.text('帳號已重新啟用，歡迎回來'), findsOneWidget);
   });
 
   testWidgets('只有一份改版：已同意的那份不出現，顯示第 1 份／共 1 份', (tester) async {
@@ -318,11 +352,67 @@ void main() {
     expect(find.textContaining('最後更新日期'), findsOneWidget);
   });
 
+  testWidgets('沒捲到底也能按「不同意，刪除帳號」，開刪除帳號確認頁', (tester) async {
+    ApiClient.httpClient = _server({
+      'tos': _doc('tos', content: _longContent('段落')),
+    });
+
+    await _pumpScreen(tester);
+    expect(button(tester).onPressed, isNull);
+
+    await tester.tap(find.text('不同意，刪除帳號'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AccountDeleteScreen), findsOneWidget);
+  });
+
+  testWidgets('沒同意也能按「下載我的資料」，匯出後留在同意畫面', (tester) async {
+    final log = <String>[];
+    ApiClient.httpClient = MockClient((req) async {
+      log.add('${req.method} ${req.url.path}');
+      if (req.url.path == '/api/account/export') {
+        return _withRequest(_ok({'user': {}}), req);
+      }
+      return _ok({'document': _doc('tos'), 'all_consented': false});
+    });
+
+    await _pumpScreen(tester);
+    await tester.tap(find.text('下載我的資料'));
+    await tester.pumpAndSettle();
+
+    expect(log, contains('GET /api/account/export'));
+    expect(find.text('LOOP'), findsNothing);
+    expect(find.text('同意《服務條款》'), findsOneWidget);
+  });
+
+  testWidgets('唯讀檢視沒有刪除帳號與下載資料的入口', (tester) async {
+    ApiClient.httpClient = _server({'tos': _doc('tos', consented: true)});
+
+    await _pumpScreen(tester, readOnly: true);
+
+    expect(find.text('不同意，刪除帳號'), findsNothing);
+    expect(find.text('下載我的資料'), findsNothing);
+  });
+
   testWidgets('端點失敗時顯示錯誤與重試', (tester) async {
     ApiClient.httpClient = MockClient((_) async => _err(500, 'INTERNAL'));
 
     await _pumpScreen(tester);
 
     expect(find.text('重試'), findsOneWidget);
+  });
+
+  testWidgets('條款載入失敗或沒有條款時，強制同意畫面仍可刪除帳號、下載資料', (tester) async {
+    ApiClient.httpClient = MockClient((_) async => _err(500, 'INTERNAL'));
+    await _pumpScreen(tester);
+    expect(find.text('不同意，刪除帳號'), findsOneWidget);
+    expect(find.text('下載我的資料'), findsOneWidget);
+
+    ApiClient.httpClient = _server({});
+    await tester.tap(find.text('重試'));
+    await tester.pumpAndSettle();
+    expect(find.text('目前沒有條款內容'), findsOneWidget);
+    expect(find.text('不同意，刪除帳號'), findsOneWidget);
+    expect(find.text('下載我的資料'), findsOneWidget);
   });
 }

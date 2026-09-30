@@ -65,18 +65,29 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
       final status = await AccountService.reactivate();
       accountLockController.setLocked(status.isLocked);
       UserService.clearCache();
-      final user = await UserService.fetchMe(forceRefresh: true);
+      // 條款改過版時 /api/me 也會被 CONSENT_REQUIRED 擋下：不查，直接進同意畫面，
+      // 同意完成後由該畫面接續檢查基本資料。
+      final user = status.consentRequired
+          ? null
+          : await UserService.fetchMe(forceRefresh: true);
       if (!mounted) return;
-      // 條款未同意由 ApiClient 的 CONSENT_REQUIRED 全域處理，這裡不另查。
+      final message = status.isLocked ? '帳號已重新啟用，目前為唯讀狀態' : '帳號已重新啟用，歡迎回來';
+      if (status.consentRequired) {
+        // 提示交給同意畫面，同意完成離開時才顯示。
+        Navigator.of(context).pushNamedAndRemoveUntil(
+          '/terms-consent',
+          (_) => false,
+          arguments: message,
+        );
+        return;
+      }
       Navigator.of(context).pushNamedAndRemoveUntil(
         entryRouteFor(user, allConsented: true),
         (_) => false,
       );
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(status.isLocked ? '帳號已重新啟用，目前為唯讀狀態' : '帳號已重新啟用，歡迎回來'),
-        ),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
     } on ApiException catch (e) {
       if (!mounted || e.isAccountPurged) return;
       _showError(e.message);

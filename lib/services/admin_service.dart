@@ -171,6 +171,93 @@ class AdminService {
     return AdminBirthDateResult.fromJson(json);
   }
 
+  /// 更正族群／部落，整組覆寫。[reason] 必填 1～500 字。
+  /// 原住民要給 [ethnicGroup] 與屬於該族群的 [tribeId]；非原住民只送身分與理由
+  /// （後端會一併清空族群、部落、族語名）。
+  static Future<AdminIdentityResult> updateIdentity(
+    int uid, {
+    required bool isIndigenous,
+    String? ethnicGroup,
+    int? tribeId,
+    required String reason,
+  }) async {
+    final json = await ApiClient.patch(ApiConfig.adminUserIdentity(uid), {
+      'is_indigenous': isIndigenous,
+      if (isIndigenous) 'ethnic_group': ethnicGroup,
+      if (isIndigenous) 'tribe_id': tribeId,
+      'reason': reason.trim(),
+    });
+    return AdminIdentityResult.fromJson(json);
+  }
+
+  // ── 申訴（收件匣與申訴.md §4）──────────────────────────────
+
+  /// [status] 為 `pending`（舊到新）／`accepted`／`rejected`（新到舊），上限 100 筆。
+  static Future<List<AdminAppeal>> fetchAppeals({
+    String status = 'pending',
+  }) async {
+    final json = await ApiClient.get(
+      ApiConfig.adminAppeals,
+      query: {'status': status},
+    );
+    return _list(json, 'appeals', AdminAppeal.fromJson);
+  }
+
+  /// 處理申訴。[decision] 為 `accept`（撤銷處置）或 `reject`（維持處置）；
+  /// [reply] 是給申訴人看的回覆，必填 1～1000 字（長度由畫面先擋）。
+  /// 處理的人不能是當事人，也不能是這個案件的開案者或複審者。
+  static Future<AdminAppealResult> resolveAppeal(
+    int id,
+    String decision,
+    String reply,
+  ) async {
+    final json = await ApiClient.post(ApiConfig.adminAppealResolve(id), {
+      'decision': decision,
+      'reply': reply.trim(),
+    });
+    return AdminAppealResult.fromJson(json);
+  }
+
+  // ── 官方公告（收件匣與申訴.md §5）────────────────────────────
+
+  /// 公告圖片的大小上限（後端限制）。
+  static const int announcementImageMaxBytes = 5 * 1024 * 1024;
+
+  /// 最近 50 則已發布的公告。
+  static Future<List<AdminAnnouncement>> fetchAnnouncements() async {
+    final json = await ApiClient.get(ApiConfig.adminAnnouncements);
+    return _list(json, 'announcements', AdminAnnouncement.fromJson);
+  }
+
+  /// 發公告給所有正常與被鎖帳號，發出後收不回。
+  /// [imageBytes] 是已壓成 JPEG 的圖片（選填）；[push] 為 false 時只進收件匣。
+  static Future<AdminAnnouncementResult> createAnnouncement({
+    required String title,
+    required String body,
+    List<int>? imageBytes,
+    bool push = true,
+  }) async {
+    final json = await ApiClient.postMultipart(
+      ApiConfig.adminAnnouncements,
+      fields: {
+        'title': title.trim(),
+        'body': body.trim(),
+        // 後端預設推播，只有不推播時才需要送。
+        if (!push) 'push': 'false',
+      },
+      files: [
+        if (imageBytes != null)
+          MultipartFileData(
+            field: 'image',
+            bytes: imageBytes,
+            filename: 'announcement.jpg',
+            mimeType: 'image/jpeg',
+          ),
+      ],
+    );
+    return AdminAnnouncementResult.fromJson(json);
+  }
+
   // ── 禁言（安全防護.md「後台端點」）────────────────────────────
 
   /// 目前有效（未翻案、未到期）的禁言。

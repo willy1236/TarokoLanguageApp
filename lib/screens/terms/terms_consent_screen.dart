@@ -11,6 +11,8 @@
 // - 唯讀：兩份以 TabBar 在同一頁分頁顯示。
 // - 強制同意：只留尚未同意最新版的文件，一次顯示一份（第 N 份／共 M 份），
 //   捲到底解鎖「同意《…》」，按下即送 POST /api/terms/:doc_type/consent，成功才進下一份。
+//   不同意的人也要能行使刪除權、查詢權：底部另有「不同意，刪除帳號」「下載我的資料」，
+//   不必捲到底、也不必先同意（後端這兩支不擋 CONSENT_REQUIRED）。
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
@@ -21,7 +23,9 @@ import '../../services/fcm_service.dart';
 import '../../services/terms_service.dart';
 import '../../services/user_service.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/utils/export_my_data.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../account/account_delete_screen.dart';
 import '../auth/entry_route.dart';
 import 'widgets/terms_document_view.dart';
 
@@ -171,7 +175,13 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     }
     if (!mounted) return;
     final route = entryRouteFor(user, allConsented: true);
+    // 帳號重新啟用後被條款擋下時，route arguments 帶著「已重新啟用」的提示。
+    final notice = ModalRoute.of(context)?.settings.arguments;
+    final messenger = ScaffoldMessenger.of(context);
     Navigator.of(context).pushNamedAndRemoveUntil(route, (route) => false);
+    if (notice is String) {
+      messenger.showSnackBar(SnackBar(content: Text(notice)));
+    }
     // 冷啟動被條款擋下時，splash 沒處理通知深連結，同意進首頁後補上。
     if (route == '/home') FcmService.consumePendingInitialMessage();
   }
@@ -243,6 +253,8 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
               Text(_error!, textAlign: TextAlign.center),
               const SizedBox(height: 16),
               ElevatedButton(onPressed: _load, child: const Text('重試')),
+              // 強制同意不能返回：條款載不到時也要能行使刪除權、查詢權。
+              if (!readOnly) ...[const SizedBox(height: 8), _accountActions()],
             ],
           ),
         ),
@@ -250,9 +262,22 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
     }
     if (_documents.isEmpty) {
       return Center(
-        child: Text(
-          '目前沒有條款內容',
-          style: TextStyle(fontSize: AppTypography.body, color: AppColors.fog),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              '目前沒有條款內容',
+              style: TextStyle(
+                fontSize: AppTypography.body,
+                color: AppColors.fog,
+              ),
+            ),
+            if (!readOnly)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(20, 8, 20, 0),
+                child: _accountActions(),
+              ),
+          ],
         ),
       );
     }
@@ -337,7 +362,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
   Widget _buildAgreeBar(TermsDocument doc) {
     final unlocked = _readToEnd.contains(doc.docType);
     return Container(
-      padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
       decoration: BoxDecoration(
         color: AppColors.cream,
         border: Border(top: BorderSide(color: AppColors.creamDeep)),
@@ -384,9 +409,41 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
                       ),
               ),
             ),
+            const SizedBox(height: 4),
+            _accountActions(),
           ],
         ),
       ),
     );
+  }
+
+  /// 「不同意，刪除帳號」「下載我的資料」：不必先同意條款。
+  Widget _accountActions() => Row(
+    children: [
+      Expanded(
+        child: TextButton(
+          onPressed: _openDeleteAccount,
+          child: Text(
+            '不同意，刪除帳號',
+            style: AppTypography.bodyStyle(color: AppColors.dangerDark),
+          ),
+        ),
+      ),
+      Expanded(
+        child: TextButton(
+          onPressed: () => exportMyData(context),
+          child: Text(
+            '下載我的資料',
+            style: AppTypography.bodyStyle(color: AppColors.inkSoft),
+          ),
+        ),
+      ),
+    ],
+  );
+
+  void _openDeleteAccount() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const AccountDeleteScreen()));
   }
 }

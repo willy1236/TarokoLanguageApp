@@ -5,11 +5,14 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../profile/widgets/profile_rows.dart';
+import 'admin_announcements_screen.dart';
+import 'admin_appeals_screen.dart';
 import 'admin_article_form_screen.dart';
 import 'admin_banned_words_screen.dart';
 import 'admin_birth_date_screen.dart';
 import 'admin_cases_screen.dart';
 import 'admin_error.dart';
+import 'admin_identity_screen.dart';
 import 'admin_millet_screen.dart';
 import 'admin_mutes_screen.dart';
 import 'admin_question_reports_screen.dart';
@@ -33,6 +36,11 @@ final List<_Entry> _entries = [
     screen: () => const AdminCasesScreen(),
   ),
   (
+    icon: Icons.balance_outlined,
+    label: '申訴',
+    screen: () => const AdminAppealsScreen(),
+  ),
+  (
     icon: Icons.volume_off_outlined,
     label: '禁言',
     screen: () => const AdminMutesScreen(),
@@ -48,6 +56,11 @@ final List<_Entry> _entries = [
     screen: () => const AdminBirthDateScreen(),
   ),
   (
+    icon: Icons.diversity_3_outlined,
+    label: '更正族群／部落',
+    screen: () => const AdminIdentityScreen(),
+  ),
+  (
     icon: Icons.savings_outlined,
     label: '小米幣查帳',
     screen: () => const AdminMilletScreen(),
@@ -61,6 +74,11 @@ final List<_Entry> _entries = [
     icon: Icons.help_outline,
     label: '題目回報',
     screen: () => const AdminQuestionReportsScreen(),
+  ),
+  (
+    icon: Icons.campaign_outlined,
+    label: '官方公告',
+    screen: () => const AdminAnnouncementsScreen(),
   ),
   (
     icon: Icons.post_add_outlined,

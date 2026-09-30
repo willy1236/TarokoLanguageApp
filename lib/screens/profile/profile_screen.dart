@@ -11,11 +11,11 @@ import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
-import '../../services/account_service.dart';
+import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/shop_service.dart';
 import '../../services/user_service.dart';
-import '../../shared/share_text_file.dart';
+import '../../shared/utils/export_my_data.dart';
 import '../account/account_delete_screen.dart';
 import '../admin/admin_error.dart';
 import '../admin/admin_home_screen.dart';
@@ -29,12 +29,12 @@ import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/joined_events_screen.dart';
 import '../events/my_events_screen.dart';
+import '../inbox/inbox_screen.dart';
 import '../shop/shop_screen.dart';
 import '../millet/millet_ledger_screen.dart';
 import 'my_bookmarks_screen.dart';
 import 'my_likes_screen.dart';
 import '../terms/terms_consent_screen.dart';
-import '../friends/friends_list_screen.dart';
 
 // 頭像檔案限制（後端規則：≤8MB，僅接受 JPEG/PNG/WebP/GIF），前端先擋掉明顯無效
 // 的檔案以減少無效上傳，實際裁切壓縮一律由後端處理。
@@ -352,15 +352,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUser();
   }
 
-  /// 好友頁可設定/取消展示好友，回本頁要重抓才看得到變動。
-  Future<void> _openFriends() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const FriendsListScreen()));
-    if (!mounted) return;
-    _loadUser();
-  }
-
   Future<void> _openBookmarks() async {
     await Navigator.of(
       context,
@@ -369,14 +360,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadUser();
   }
 
-  // ── 快速入口（好友／背包／商店／收藏）─────────────────────────────────────
+  // ── 快速入口（收件匣／背包／商店／收藏）───────────────────────────────────
+  // 好友在底部導覽列已有分頁，這裡不重複放。
 
   Widget _buildQuickLinksGrid({required bool seniorMode}) {
     final links = [
       ProfileQuickLink(
-        icon: Icons.people_outline,
-        label: '好友',
-        onTap: _openFriends,
+        icon: Icons.inbox_outlined,
+        label: '收件匣',
+        onTap: _openInbox,
       ),
       ProfileQuickLink(
         icon: Icons.inventory_2_outlined,
@@ -401,7 +393,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
           Row(
             children: [
               Expanded(
-                child: profileQuickLinkCard(links[0], seniorMode: seniorMode),
+                child: ValueListenableBuilder<NotificationSummary>(
+                  valueListenable: NotificationSummaryService.notifier,
+                  builder: (context, summary, _) => profileQuickLinkCard(
+                    links[0],
+                    seniorMode: seniorMode,
+                    badgeCount: summary.inbox.total,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -502,7 +501,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ('意見回饋', _openContactEmail),
       ('關於語見太魯閣', _openAboutApp),
       ('服務條款與隱私權政策', _openTermsView),
-      ('下載我的資料', _exportMyData),
+      ('下載我的資料', () => exportMyData(context)),
       ('刪除帳號', _openDeleteAccount),
     ];
     return profileSection(
@@ -566,6 +565,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
   }
 
+  /// 論壇、活動、審核、官方公告的通知；看完回來重抓未讀數。
+  Future<void> _openInbox() async {
+    await Navigator.of(
+      context,
+    ).push(MaterialPageRoute<void>(builder: (_) => const InboxScreen()));
+    NotificationSummaryService.refresh();
+  }
+
   void _openAboutApp() {
     Navigator.of(
       context,
@@ -576,35 +583,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const AccountDeleteScreen()));
-  }
-
-  bool _exporting = false;
-
-  /// 下載我的資料（個資法查詢/複製權）：拿到 JSON 後交給系統分享選單存檔。
-  /// 此端點限流每分鐘 5 次，不自動重試。
-  Future<void> _exportMyData() async {
-    if (_exporting) return;
-    _exporting = true;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('正在準備你的資料…')));
-    try {
-      final json = await AccountService.exportData();
-      if (!mounted) return;
-      await shareTextFile(
-        content: json,
-        filename: 'truku-account-data.json',
-        mimeType: 'application/json',
-        subject: '我的語見太魯閣資料',
-      );
-    } on ApiException catch (e) {
-      _showError(e.message);
-    } catch (e) {
-      debugPrint('ProfileScreen: 匯出資料失敗：$e');
-      _showError('下載失敗，請稍後再試');
-    } finally {
-      _exporting = false;
-    }
   }
 
   void _openTermsView() {

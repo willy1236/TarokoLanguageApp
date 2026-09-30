@@ -2,7 +2,8 @@
 //
 // 進入點：登入回應 account_state == 'locked'、冷啟動查 /api/account/status、
 // 重新啟用回 status: 'locked'、任一寫入端點回 403 ACCOUNT_LOCKED。
-// 解除：account_unlocked 推播、唯讀中回前景時補查 status（[refreshIfLocked]）。
+// 解除：account_unlocked 推播、申訴成立且解除停權的推播（`account_unlocked: "true"`）、
+// 唯讀中回前景時補查 status（[refreshIfLocked]）。
 // 只存記憶體：每次冷啟動由 status 端點刷新，登出時歸零。
 // 後端刻意不透露封鎖原因，前端文案也不寫原因。
 // 規格：Truku_backend 說明文件/API/內部管理.md §8.4、帳號刪除.md §3.4／§3.5
@@ -28,7 +29,9 @@ class AccountLockController extends ChangeNotifier {
   /// 這則推播與帳號鎖定無關時回 null。
   bool? applyModerationPush(Map<String, dynamic> data) {
     final bool locked;
-    if (data['action'] == 'account_unlocked') {
+    // 管理員解鎖是 action，申訴成立連帶解除停權是另外帶的欄位。
+    if (data['action'] == 'account_unlocked' ||
+        data['account_unlocked']?.toString() == 'true') {
       locked = false;
     } else if (data['locked']?.toString() == 'true') {
       locked = true;

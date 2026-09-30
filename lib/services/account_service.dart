@@ -14,7 +14,14 @@ class AccountStatus {
   /// 永久刪除時間；active 帳號為 null。
   final DateTime? purgeAt;
 
-  const AccountStatus({required this.status, this.purgeAt});
+  /// 重新啟用的回應才有：刪除緩衝期間條款改過版，要先同意最新版才能使用。
+  final bool consentRequired;
+
+  const AccountStatus({
+    required this.status,
+    this.purgeAt,
+    this.consentRequired = false,
+  });
 
   bool get isPendingDeletion => status == 'pending_deletion';
   bool get isLocked => status == 'locked';
@@ -22,6 +29,7 @@ class AccountStatus {
   factory AccountStatus.fromJson(Map<String, dynamic> json) => AccountStatus(
     status: json['status'] as String? ?? 'active',
     purgeAt: DateTime.tryParse(json['purge_at'] as String? ?? '')?.toLocal(),
+    consentRequired: json['consent_required'] as bool? ?? false,
   );
 }
 
@@ -36,7 +44,8 @@ class AccountService {
     return AccountStatus.fromJson(data);
   }
 
-  /// 刪除緩衝期內重新啟用帳號（後端會一併補同意最新版條款）。
+  /// 刪除緩衝期內重新啟用帳號。後端不替使用者同意條款：緩衝期間條款改過版時
+  /// 回 `consent_required: true`，要先導去同意畫面。
   /// 刪除前是鎖定帳號的，會還原成 `locked` 而非 `active`。
   static Future<AccountStatus> reactivate() async {
     final data = await ApiClient.post(ApiConfig.accountReactivate, {

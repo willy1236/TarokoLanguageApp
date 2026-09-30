@@ -57,6 +57,13 @@ const Map<String, String> kStringMasks = {
   'self_intro': '測試自介',
   'review_note': '測試備註',
   'word': '測試詞',
+  'handled_by_nickname': '測試暱稱',
+  'created_by_nickname': '測試暱稱',
+  'offender_friend_code': 'TESTCODE',
+  'reply': '測試回覆',
+  // 限時簽章網址（公告圖片、檢舉當時的頭像複本）。
+  'image_url': 'https://example.com/image.png',
+  'avatar_evidence_url': 'https://example.com/avatar.png',
 };
 
 /// 自由文字裡也可能夾著 email 或電話，那些不會落在上面的欄位名單裡。

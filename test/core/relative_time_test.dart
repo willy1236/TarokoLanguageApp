@@ -1,4 +1,4 @@
-// formatRelativeTime（論壇、活動通知共用）：超過 7 天改顯示日期，日期要以本地時區計算。
+// formatRelativeTime（論壇、收件匣共用）：超過 7 天改顯示日期，日期要以本地時區計算。
 // 後端給的是 UTC，台灣凌晨 0～8 點發的文在 UTC 仍是前一天，直接取年月日會差一天。
 
 import 'package:flutter_test/flutter_test.dart';

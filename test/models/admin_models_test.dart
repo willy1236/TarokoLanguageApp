@@ -56,6 +56,81 @@ void main() {
     });
   });
 
+  group('檢舉當時的內容（target_snapshot／report_snapshot）', () {
+    final reports = [
+      for (final r
+          in loadSpecFixtureMap(
+                'get_api_admin_forum_reports_snapshot.json',
+              )['reports']
+              as List)
+        AdminReport.fromJson(r as Map<String, dynamic>),
+    ];
+
+    test('貼文：當時的標題內文，檢舉後已修改', () {
+      final r = reports[0];
+      expect(r.targetChanged, isTrue);
+      expect(r.targetSnapshot!.title, '檢舉當時的標題');
+      expect(r.targetSnapshot!.body, '檢舉當時的內文');
+      expect(r.targetPreview, '改過之後的標題');
+    });
+
+    test('活動：標題、說明、地點、地址', () {
+      final s = reports[1].targetSnapshot!;
+      expect(s.title, '當時的活動標題');
+      expect(s.description, '當時的活動說明');
+      expect(s.location, '當時的地點');
+      expect(s.address, '當時的地址');
+      expect(reports[1].targetChanged, isFalse);
+    });
+
+    test('個人檔案：有自訂頭像複本時帶 avatar_evidence_url', () {
+      final s = reports[2].targetSnapshot!;
+      expect(s.nickname, '當時的暱稱');
+      expect(s.selfIntro, '當時的自介');
+      expect(s.avatarEvidenceUrl, contains('evidence.webp'));
+    });
+
+    test('個人檔案：預設或商店頭像沒有複本，看 avatar_id', () {
+      final s = reports[3].targetSnapshot!;
+      expect(s.avatarEvidenceUrl, isNull);
+      expect(s.avatarId, 'avatar_gold_03');
+    });
+
+    test('留言等沒有存證的類型、舊回應缺欄位：snapshot 為 null、視為未修改', () {
+      expect(reports[4].targetSnapshot, isNull);
+      expect(reports[4].targetChanged, isFalse);
+
+      final old = AdminReport.fromJson({
+        'id': 1,
+        'target_type': 'post',
+        'target_id': 1,
+        'reason': 'x',
+        'status': 'pending',
+      });
+      expect(old.targetSnapshot, isNull);
+      expect(old.targetChanged, isFalse);
+    });
+
+    test('違規案件：開案那筆檢舉當時的內容與當事人好友碼', () {
+      final cases = [
+        for (final c
+            in loadSpecFixtureMap(
+                  'get_api_admin_moderation_cases_snapshot.json',
+                )['cases']
+                as List)
+          AdminCase.fromJson(c as Map<String, dynamic>),
+      ];
+
+      expect(cases[0].offenderFriendCode, 'DDDD2345');
+      expect(cases[0].reportSnapshot!.title, '檢舉當時的標題');
+      expect(cases[1].reportSnapshot, isNull);
+      // 解鎖後就地更新狀態時，這兩個欄位要留著。
+      final unlocked = cases[0].withOffenderStatus('active');
+      expect(unlocked.offenderFriendCode, 'DDDD2345');
+      expect(unlocked.reportSnapshot, isNotNull);
+    });
+  });
+
   group('AdminCase', () {
     final cases = [
       for (final c
@@ -86,7 +161,7 @@ void main() {
       final c = cases[6];
       final p = c.preview as ProfileCasePreview;
       expect(p.before['video_nickname'], '不雅暱稱');
-      expect(p.current.nickname, '使用者9');
+      expect(p.current!.nickname, '使用者9');
       expect(c.snapshot?['avatar_url'], 'https://example.com/a.webp');
     });
 

@@ -26,6 +26,13 @@ class ApiConfig {
 
   // 未讀徽章與搜尋輔助（見 Truku_backend 說明文件/前端交接/總覽.md §4.3）
   static const String notificationsSummary = '/api/notifications/summary';
+  // 收件匣、處置詳情與申訴（見 Truku_backend 說明文件/API/收件匣與申訴.md）。
+  // 這幾支只驗登入、不擋唯讀：被鎖帳號也能看收件匣、標已讀、看處置、提申訴。
+  static const String inbox = '/api/inbox';
+  static const String inboxRead = '/api/inbox/read';
+  static String myModerationCase(int id) => '/api/me/moderation/cases/$id';
+  static String myModerationCaseAppeal(int id) =>
+      '/api/me/moderation/cases/$id/appeal';
   static const String searchHistory = '/api/search/history';
   static const String searchPopular = '/api/search/popular';
 
@@ -102,8 +109,6 @@ class ApiConfig {
   static const String eventLikes = '/api/events/likes';
   static const String eventBookmarks = '/api/events/bookmarks';
   static const String eventSearch = '/api/events/search';
-  static const String eventNotifications = '/api/events/notifications';
-  static const String eventNotificationsRead = '/api/events/notifications/read';
   static const String devices = '/api/devices';
 
   // 每日簽到（issue #24，見 每日簽到.md）
@@ -122,8 +127,6 @@ class ApiConfig {
   static const String forumSearch = '/api/forum/search';
   static const String forumTags = '/api/forum/tags';
   static const String forumReports = '/api/forum/reports';
-  static const String forumNotifications = '/api/forum/notifications';
-  static const String forumNotificationsRead = '/api/forum/notifications/read';
   // 書籤端點由後端另行補上，前端依規格 §9 的約定先行實作。
   static String forumPostBookmark(int id) => '/api/forum/posts/$id/bookmark';
   static const String forumBookmarks = '/api/forum/bookmarks';
@@ -218,4 +221,8 @@ class ApiConfig {
   static String adminArticleArchive(int id) =>
       '/api/admin/articles/$id/archive';
   static const String adminTerms = '/api/admin/terms';
+  static String adminUserIdentity(int uid) => '/api/admin/users/$uid/identity';
+  static const String adminAppeals = '/api/admin/appeals';
+  static String adminAppealResolve(int id) => '/api/admin/appeals/$id/resolve';
+  static const String adminAnnouncements = '/api/admin/announcements';
 }

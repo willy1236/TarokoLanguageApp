@@ -10,9 +10,9 @@ Future<void> pickBirthDate(
 }) async {
   await tester.tap(find.text('請選擇出生日期'));
   await tester.pumpAndSettle();
-  FixedExtentScrollController wheel(int index) =>
-      tester.widget<CupertinoPicker>(find.byType(CupertinoPicker).at(index))
-          .scrollController!;
+  FixedExtentScrollController wheel(int index) => tester
+      .widget<CupertinoPicker>(find.byType(CupertinoPicker).at(index))
+      .scrollController!;
   wheel(0).jumpToItem(year - earliestBirthDate().year);
   await tester.pumpAndSettle();
   wheel(2).jumpToItem(day - 1);

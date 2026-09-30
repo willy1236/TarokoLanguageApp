@@ -53,7 +53,12 @@ class ProfileQuickLink {
   });
 }
 
-Widget profileQuickLinkCard(ProfileQuickLink link, {required bool seniorMode}) {
+/// [badgeCount] 大於 0 時在卡片右側顯示未讀數徽章。
+Widget profileQuickLinkCard(
+  ProfileQuickLink link, {
+  required bool seniorMode,
+  int badgeCount = 0,
+}) {
   return GestureDetector(
     onTap: link.onTap,
     child: Container(
@@ -90,6 +95,11 @@ Widget profileQuickLinkCard(ProfileQuickLink link, {required bool seniorMode}) {
                   ),
             ),
           ),
+          if (badgeCount > 0)
+            Badge(
+              label: Text(badgeCount > 99 ? '99+' : '$badgeCount'),
+              backgroundColor: AppColors.primary,
+            ),
         ],
       ),
     ),
@@ -135,10 +145,15 @@ Widget profileNavRow({
               ),
             ],
           ),
-          Icon(
-            Icons.chevron_right,
-            color: AppColors.fog,
-            size: AppIconSize.chevron(seniorMode),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.chevron_right,
+                color: AppColors.fog,
+                size: AppIconSize.chevron(seniorMode),
+              ),
+            ],
           ),
         ],
       ),

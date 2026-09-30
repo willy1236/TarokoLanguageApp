@@ -7,6 +7,7 @@ import 'package:http/testing.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/services/friend_service.dart';
 
+import '../helpers/fixtures.dart';
 import '../helpers/widget_test_helpers.dart';
 
 Map<String, dynamic> _message(int id) => {
@@ -58,5 +59,32 @@ void main() {
 
     expect(seen.single.url.queryParameters, {'cursor': 'm:15', 'limit': '30'});
     expect(page.nextCursor, isNull);
+  });
+
+  test('partner：對象暫時無法使用時 unavailable 為 true，歷史訊息照給', () async {
+    respondWith(loadSpecFixtureMap('get_api_friend_messages_unavailable.json'));
+
+    final page = await FriendService.getMessages('CCCC2345');
+
+    expect(page.partner!.unavailable, isTrue);
+    expect(page.partner!.nickname, '暫時無法使用');
+    expect(page.messages, hasLength(1));
+  });
+
+  test('partner：回應沒有 partner（封鎖關係）或沒有 unavailable 欄位時照常可用', () async {
+    respondWith({
+      'partner': null,
+      'messages': [],
+      'page_info': {'next_cursor': null, 'has_more': false},
+    });
+    expect((await FriendService.getMessages('BBBB2345')).partner, isNull);
+
+    respondWith({
+      'partner': {'nickname': '阿華', 'friend_code': 'BBBB2345'},
+      'messages': [],
+      'page_info': {'next_cursor': null, 'has_more': false},
+    });
+    final page = await FriendService.getMessages('BBBB2345');
+    expect(page.partner!.unavailable, isFalse);
   });
 }

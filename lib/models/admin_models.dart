@@ -37,6 +37,58 @@ class AdminProfileSnapshot {
       );
 }
 
+/// 檢舉送出當下存下來的內容（檢舉的 `target_snapshot`、案件的 `report_snapshot`）。
+/// 只有貼文、活動、個人檔案有；各類型用到的欄位不同，沒有的為 null，
+/// 這版不認得的欄位忽略。
+class AdminReportSnapshot {
+  // 貼文：title、body；活動：title、description、location、address。
+  final String? title;
+  final String? body;
+  final String? description;
+  final String? location;
+  final String? address;
+
+  // 個人檔案。
+  final String? nickname;
+  final String? selfIntro;
+  final String? avatarUrl;
+  final String? avatarId;
+
+  /// 檢舉當時自訂頭像的複本：限時網址（約 15 分鐘），不存到本機。
+  /// 當時用的是預設頭像或 Google 大頭貼時沒有這個欄位。
+  final String? avatarEvidenceUrl;
+
+  const AdminReportSnapshot({
+    this.title,
+    this.body,
+    this.description,
+    this.location,
+    this.address,
+    this.nickname,
+    this.selfIntro,
+    this.avatarUrl,
+    this.avatarId,
+    this.avatarEvidenceUrl,
+  });
+
+  /// 留言、私訊、通話與舊檢舉沒有存證，回 null。
+  static AdminReportSnapshot? tryParse(Object? raw) {
+    if (raw is! Map<String, dynamic>) return null;
+    return AdminReportSnapshot(
+      title: raw['title'] as String?,
+      body: raw['body'] as String?,
+      description: raw['description'] as String?,
+      location: raw['location'] as String?,
+      address: raw['address'] as String?,
+      nickname: raw['nickname'] as String?,
+      selfIntro: raw['self_intro'] as String?,
+      avatarUrl: raw['avatar_url'] as String?,
+      avatarId: raw['avatar_id'] as String?,
+      avatarEvidenceUrl: raw['avatar_evidence_url'] as String?,
+    );
+  }
+}
+
 /// 通話檢舉／案件的通話資訊（沒有內容，只有雙方與時間）。
 class AdminCallInfo {
   final int? callerUid;
@@ -89,6 +141,12 @@ class AdminReport {
   final AdminCallInfo? targetCall;
   final AdminProfileSnapshot? targetProfile;
 
+  /// 檢舉當時的內容；[targetPreview]／[targetProfile] 是目前的。請依這份判斷。
+  final AdminReportSnapshot? targetSnapshot;
+
+  /// 檢舉之後內容有沒有被改過（沒有存證時為 false）。
+  final bool targetChanged;
+
   const AdminReport({
     required this.id,
     required this.targetType,
@@ -105,6 +163,8 @@ class AdminReport {
     this.targetDeleted = false,
     this.targetCall,
     this.targetProfile,
+    this.targetSnapshot,
+    this.targetChanged = false,
   });
 
   factory AdminReport.fromJson(Map<String, dynamic> j) {
@@ -132,6 +192,8 @@ class AdminReport {
       targetProfile: profile is Map<String, dynamic>
           ? AdminProfileSnapshot.fromJson(profile)
           : null,
+      targetSnapshot: AdminReportSnapshot.tryParse(j['target_snapshot']),
+      targetChanged: j['target_changed'] == true,
     );
   }
 }
@@ -187,7 +249,7 @@ sealed class AdminCasePreview {
             ? AdminProfileSnapshot.fromJson(
                 j['current'] as Map<String, dynamic>,
               )
-            : const AdminProfileSnapshot(),
+            : null,
       ),
       // call，以及日後新增而這版不認得的類型：照通話欄位盡量解析。
       _ => CallCasePreview(AdminCallInfo.fromJson(j)),
@@ -233,11 +295,11 @@ class MuteCasePreview extends AdminCasePreview {
 }
 
 /// 個人檔案案件：[before] 是重設前的值（只含被重設的欄位，鍵為後端欄位名），
-/// [current] 是目前的公開欄位。
+/// [current] 是目前的公開欄位；申訴列表的案件只給 before，這時為 null。
 class ProfileCasePreview extends AdminCasePreview {
   final Map<String, dynamic> before;
-  final AdminProfileSnapshot current;
-  const ProfileCasePreview({required this.before, required this.current});
+  final AdminProfileSnapshot? current;
+  const ProfileCasePreview({required this.before, this.current});
 }
 
 class AdminCase {
@@ -246,6 +308,9 @@ class AdminCase {
   final int targetId;
   final int offenderUid;
   final String offenderNickname;
+
+  /// 被處置者的好友碼，對照使用者來反映時給的好友碼用；指定對象仍用 uid。
+  final String? offenderFriendCode;
 
   /// active／locked／…；locked 時才能解鎖帳號。
   final String? offenderStatus;
@@ -269,12 +334,17 @@ class AdminCase {
   final Map<String, dynamic>? snapshot;
   final AdminCasePreview preview;
 
+  /// 由使用者檢舉開案時，那筆檢舉送出當下的內容；[preview] 是目前的。
+  /// 管理員直接下架、自動禁言、舊檢舉與留言／私訊／通話為 null。
+  final AdminReportSnapshot? reportSnapshot;
+
   const AdminCase({
     required this.id,
     required this.targetType,
     required this.targetId,
     required this.offenderUid,
     this.offenderNickname = '',
+    this.offenderFriendCode,
     this.offenderStatus,
     required this.source,
     this.reportId,
@@ -291,6 +361,7 @@ class AdminCase {
     this.strikeNumber,
     this.snapshot,
     this.preview = const PostCasePreview(),
+    this.reportSnapshot,
   });
 
   factory AdminCase.fromJson(Map<String, dynamic> j) {
@@ -301,6 +372,7 @@ class AdminCase {
       targetId: _int(j['target_id']) ?? 0,
       offenderUid: _int(j['offender_uid']) ?? 0,
       offenderNickname: j['offender_nickname'] as String? ?? '',
+      offenderFriendCode: j['offender_friend_code'] as String?,
       offenderStatus: j['offender_status'] as String?,
       source: j['source'] as String? ?? '',
       reportId: _int(j['report_id']),
@@ -319,6 +391,7 @@ class AdminCase {
           ? j['snapshot'] as Map<String, dynamic>
           : null,
       preview: AdminCasePreview.fromJson(type, j['preview']),
+      reportSnapshot: AdminReportSnapshot.tryParse(j['report_snapshot']),
     );
   }
 
@@ -331,6 +404,7 @@ class AdminCase {
     targetId: targetId,
     offenderUid: offenderUid,
     offenderNickname: offenderNickname,
+    offenderFriendCode: offenderFriendCode,
     offenderStatus: status,
     source: source,
     reportId: reportId,
@@ -347,6 +421,7 @@ class AdminCase {
     strikeNumber: strikeNumber,
     snapshot: snapshot,
     preview: preview,
+    reportSnapshot: reportSnapshot,
   );
 }
 
@@ -450,6 +525,9 @@ class AdminMute {
   final int uid;
   final String nickname;
 
+  /// 對照使用者給的好友碼用；解除禁言仍用禁言 [id]。
+  final String? friendCode;
+
   /// strike（違規累計）／reports（檢舉滿門檻）／profanity（髒話漸進處置）。
   final String reason;
 
@@ -462,6 +540,7 @@ class AdminMute {
     required this.id,
     required this.uid,
     this.nickname = '',
+    this.friendCode,
     required this.reason,
     required this.scope,
     this.muteUntil,
@@ -472,6 +551,7 @@ class AdminMute {
     id: _int(j['id']) ?? 0,
     uid: _int(j['uid']) ?? 0,
     nickname: j['nickname'] as String? ?? '',
+    friendCode: j['friend_code'] as String?,
     reason: j['reason'] as String? ?? '',
     scope: j['scope'] as String? ?? '',
     muteUntil: _date(j['mute_until']),
@@ -713,5 +793,205 @@ class AdminBirthDateResult {
       AdminBirthDateResult(
         birthDate: parseApiDate(j['birth_date']),
         adult: j['adult'] == true,
+      );
+}
+
+// ── 族群／部落更正（內部管理.md §8.10）────────────────────────────
+
+/// PATCH /api/admin/users/:uid/identity 的結果：更正後的身分。
+/// 改成非原住民時族群、部落、族語名都會被清空。
+class AdminIdentityResult {
+  final bool isIndigenous;
+  final String? ethnicGroup;
+  final int? tribeId;
+  final String? tribalName;
+
+  const AdminIdentityResult({
+    required this.isIndigenous,
+    this.ethnicGroup,
+    this.tribeId,
+    this.tribalName,
+  });
+
+  factory AdminIdentityResult.fromJson(Map<String, dynamic> j) =>
+      AdminIdentityResult(
+        isIndigenous: j['is_indigenous'] == true,
+        ethnicGroup: j['ethnic_group'] as String?,
+        tribeId: _int(j['tribe_id']),
+        tribalName: j['tribal_name'] as String?,
+      );
+}
+
+// ── 申訴（收件匣與申訴.md §4）──────────────────────────────────
+
+/// 申訴的當事人（被處置者）。
+class AdminAppealOffender {
+  final int uid;
+  final String nickname;
+  final String friendCode;
+
+  /// active／locked／pending_deletion。
+  final String? status;
+
+  const AdminAppealOffender({
+    required this.uid,
+    this.nickname = '',
+    this.friendCode = '',
+    this.status,
+  });
+
+  factory AdminAppealOffender.fromJson(Object? raw) {
+    final j = raw is Map<String, dynamic> ? raw : const <String, dynamic>{};
+    return AdminAppealOffender(
+      uid: _int(j['uid']) ?? 0,
+      nickname: j['nickname'] as String? ?? '',
+      friendCode: j['friend_code'] as String? ?? '',
+      status: j['status'] as String?,
+    );
+  }
+}
+
+/// 申訴列表的一筆（GET /api/admin/appeals）。
+class AdminAppeal {
+  final int id;
+
+  /// pending／accepted／rejected。
+  final String status;
+
+  /// 申訴人寫的理由。
+  final String reason;
+
+  /// 管理員給申訴人的回覆，處理前為 null。
+  final String? reply;
+  final DateTime? createdAt;
+  final DateTime? handledAt;
+  final int? handledBy;
+  final String? handledByNickname;
+  final AdminAppealOffender offender;
+
+  /// 被申訴的案件，`reason` 是管理員看的原始理由。申訴回應的 `case` 不帶當事人，
+  /// 這裡已把 [offender] 併進去，可以直接交給違規區的預覽元件。
+  final AdminCase appealCase;
+
+  /// 案件有沒有內容預覽；通話、自動禁言案件後端回 null。
+  final bool hasPreview;
+
+  const AdminAppeal({
+    required this.id,
+    required this.status,
+    required this.reason,
+    this.reply,
+    this.createdAt,
+    this.handledAt,
+    this.handledBy,
+    this.handledByNickname,
+    required this.offender,
+    required this.appealCase,
+    this.hasPreview = true,
+  });
+
+  factory AdminAppeal.fromJson(Map<String, dynamic> j) {
+    final offender = AdminAppealOffender.fromJson(j['offender']);
+    final rawCase = j['case'];
+    return AdminAppeal(
+      id: _int(j['id']) ?? 0,
+      status: j['status'] as String? ?? 'pending',
+      reason: j['reason'] as String? ?? '',
+      reply: j['reply'] as String?,
+      createdAt: _date(j['created_at']),
+      handledAt: _date(j['handled_at']),
+      handledBy: _int(j['handled_by']),
+      handledByNickname: j['handled_by_nickname'] as String?,
+      offender: offender,
+      appealCase: AdminCase.fromJson({
+        if (rawCase is Map<String, dynamic>) ...rawCase,
+        'offender_uid': offender.uid,
+        'offender_nickname': offender.nickname,
+        'offender_friend_code': offender.friendCode,
+        'offender_status': offender.status,
+      }),
+      hasPreview: rawCase is Map<String, dynamic> && rawCase['preview'] is Map,
+    );
+  }
+}
+
+/// POST /api/admin/appeals/:id/resolve 的結果。
+class AdminAppealResult {
+  /// accepted／rejected。
+  final String status;
+
+  /// 接受時：這次違規的次數有沒有退回。
+  final bool strikeReverted;
+
+  /// 接受時：有沒有連帶解除停權。
+  final bool unlocked;
+
+  const AdminAppealResult({
+    required this.status,
+    this.strikeReverted = false,
+    this.unlocked = false,
+  });
+
+  factory AdminAppealResult.fromJson(Map<String, dynamic> j) =>
+      AdminAppealResult(
+        status: j['status'] as String? ?? '',
+        strikeReverted: j['strike_reverted'] == true,
+        unlocked: j['unlocked'] == true,
+      );
+}
+
+// ── 官方公告（收件匣與申訴.md §5）──────────────────────────────
+
+class AdminAnnouncement {
+  final int id;
+  final String title;
+  final String body;
+
+  /// 限時網址（約 15 分鐘），不存到本機。
+  final String? imageUrl;
+
+  /// 寫進幾人的收件匣。
+  final int recipients;
+  final DateTime? createdAt;
+  final int? createdBy;
+  final String? createdByNickname;
+
+  const AdminAnnouncement({
+    required this.id,
+    required this.title,
+    required this.body,
+    this.imageUrl,
+    this.recipients = 0,
+    this.createdAt,
+    this.createdBy,
+    this.createdByNickname,
+  });
+
+  factory AdminAnnouncement.fromJson(Map<String, dynamic> j) =>
+      AdminAnnouncement(
+        id: _int(j['id']) ?? 0,
+        title: j['title'] as String? ?? '',
+        body: j['body'] as String? ?? '',
+        imageUrl: j['image_url'] as String?,
+        recipients: _int(j['recipients']) ?? 0,
+        createdAt: _date(j['created_at']),
+        createdBy: _int(j['created_by']),
+        createdByNickname: j['created_by_nickname'] as String?,
+      );
+}
+
+/// POST /api/admin/announcements 的結果；[pushed] 是推播成功數。
+class AdminAnnouncementResult {
+  final AdminAnnouncement announcement;
+  final int pushed;
+
+  const AdminAnnouncementResult({required this.announcement, this.pushed = 0});
+
+  factory AdminAnnouncementResult.fromJson(Map<String, dynamic> j) =>
+      AdminAnnouncementResult(
+        announcement: AdminAnnouncement.fromJson(
+          j['announcement'] as Map<String, dynamic>? ?? const {},
+        ),
+        pushed: _int(j['pushed']) ?? 0,
       );
 }

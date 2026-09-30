@@ -32,6 +32,14 @@ Widget _app(Widget screen) => MaterialApp(
     '/login': (_) => const Scaffold(body: Text('LOGIN')),
     '/complete-profile': (_) => const Scaffold(body: Text('COMPLETE')),
     '/birth-date': (_) => const Scaffold(body: Text('BIRTH_DATE')),
+    '/terms-consent': (context) => Scaffold(
+      body: Column(
+        children: [
+          const Text('TERMS'),
+          Text('NOTICE:${ModalRoute.of(context)?.settings.arguments}'),
+        ],
+      ),
+    ),
   },
 );
 
@@ -121,6 +129,28 @@ void main() {
     expect(find.text('HOME'), findsOneWidget);
     expect(accountLockController.locked, isFalse);
     expect(find.text('帳號已重新啟用，歡迎回來'), findsOneWidget);
+  });
+
+  testWidgets('重新啟用回 consent_required → 直接進同意畫面，不先進首頁也不查 /api/me', (
+    tester,
+  ) async {
+    // 沒準備 /api/me：打了就會讓測試失敗。
+    installMockClient({
+      '/api/account/status': {'status': 'pending_deletion'},
+      '/api/account/reactivate': {'status': 'active', 'consent_required': true},
+    });
+
+    await tester.pumpWidget(_app(const AccountPendingScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('重新啟用帳號'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('TERMS'), findsOneWidget);
+    expect(find.text('HOME'), findsNothing);
+    // 提示不在這時顯示，交給同意畫面在同意完成後顯示。
+    expect(find.text('帳號已重新啟用，歡迎回來'), findsNothing);
+    expect(find.text('NOTICE:帳號已重新啟用，歡迎回來'), findsOneWidget);
   });
 
   testWidgets('重新啟用後要補填出生日期 → 導向補填頁', (tester) async {

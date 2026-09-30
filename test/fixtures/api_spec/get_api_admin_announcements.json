@@ -1,0 +1,17 @@
+{
+  "_source": "Truku_backend 說明文件/API/收件匣與申訴.md §5.2。錄製時還沒有發過公告，照規格手寫。",
+  "announcements": [
+    {
+      "id": 3, "title": "系統維護公告", "body": "週六凌晨 2 點到 4 點維護，期間無法使用。",
+      "image_url": "https://example.com/announcement.jpg?sig=abc",
+      "recipients": 128, "created_at": "2026-09-30T12:00:00Z",
+      "created_by": 1, "created_by_nickname": "管理員甲"
+    },
+    {
+      "id": 2, "title": "歡迎使用語見太魯閣", "body": "謝謝你的加入。",
+      "image_url": null,
+      "recipients": 96, "created_at": "2026-09-20T12:00:00Z",
+      "created_by": 1, "created_by_nickname": "管理員甲"
+    }
+  ]
+}

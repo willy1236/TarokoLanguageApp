@@ -1,0 +1,8 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §8.10 PATCH /api/admin/users/:uid/identity",
+  "uid": 12,
+  "is_indigenous": true,
+  "ethnic_group": "太魯閣族",
+  "tribe_id": 5,
+  "tribal_name": "Iwan"
+}

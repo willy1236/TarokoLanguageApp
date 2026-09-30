@@ -17,8 +17,6 @@
 //   GET    /api/forum/search                      關鍵字搜尋
 //   GET    /api/forum/tags                        標籤列表
 //   POST   /api/forum/reports                     檢舉
-//   GET    /api/forum/notifications               我的通知
-//   POST   /api/forum/notifications/read          標記已讀
 //   POST   / DELETE /api/forum/posts/:id/bookmark 收藏 / 取消
 //   GET    /api/forum/bookmarks                   我的收藏（游標是書籤 id，非貼文 id）
 //   GET    /api/forum/posts                       跨看板總覽（board 選填）
@@ -284,20 +282,6 @@ class ForumService {
     'target_id': targetId,
     'reason': reason,
   });
-
-  // ── 通知 ──────────────────────────────────────────────────
-
-  static Future<ForumNotificationPage> notifications({String? cursor}) async {
-    final data = await ApiClient.get(
-      ApiConfig.forumNotifications,
-      query: PageInfo.query(cursor: cursor),
-    );
-    return ForumNotificationPage.fromJson(data);
-  }
-
-  /// 不帶 [ids] 代表全部標記已讀。
-  static Future<void> markRead({List<int>? ids}) =>
-      ApiClient.post(ApiConfig.forumNotificationsRead, {'ids': ?ids});
 
   // ── 書籤 ──────────────────────────────────────────────────
 

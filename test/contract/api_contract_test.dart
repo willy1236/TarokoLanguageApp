@@ -16,6 +16,7 @@ import 'package:flutter_application_1/models/article_models.dart';
 import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/models/friend_message_model.dart';
 import 'package:flutter_application_1/models/history_models.dart';
+import 'package:flutter_application_1/models/inbox_models.dart';
 import 'package:flutter_application_1/models/forum_models.dart';
 import 'package:flutter_application_1/models/level_info.dart';
 import 'package:flutter_application_1/models/listening_models.dart';
@@ -94,6 +95,12 @@ final List<_Contract> _contracts = [
     'FriendMessage',
     _paged(_each('messages', FriendMessage.fromJson)),
   ),
+  // 聊天室靠 partner.unavailable 決定能不能傳訊，欄位改名會默默變成「永遠可傳」。
+  _Contract('get_api_friend_messages.json', 'ChatPartner', (json) {
+    final partner = json['partner'] as Map<String, dynamic>;
+    expect(partner['unavailable'], isA<bool>());
+    ChatPartner.fromJson(partner);
+  }),
   _Contract(
     'get_api_videos.json',
     'VideoListResponse',
@@ -185,11 +192,6 @@ final List<_Contract> _contracts = [
     'EventSummary(bookmarks)',
     _paged(_each('events', EventSummary.fromJson)),
   ),
-  _Contract(
-    'get_api_events_notifications.json',
-    'EventNotificationPage',
-    _paged(EventNotificationPage.fromJson),
-  ),
   _Contract('get_api_event_detail.json', 'EventDetail', EventDetail.fromJson),
   _Contract(
     'get_api_forum_search_q_a_range_1m.json',
@@ -215,11 +217,6 @@ final List<_Contract> _contracts = [
     'get_api_forum_post_comments.json',
     'ForumCommentPage',
     _paged(ForumCommentPage.fromJson),
-  ),
-  _Contract(
-    'get_api_forum_notifications.json',
-    'ForumNotificationPage',
-    _paged(ForumNotificationPage.fromJson),
   ),
   _Contract(
     'get_api_forum_posts_likes.json',
@@ -248,6 +245,7 @@ final List<_Contract> _contracts = [
     'NotificationSummary',
     NotificationSummary.fromJson,
   ),
+  _Contract('get_api_inbox.json', 'InboxPage', _paged(InboxPage.fromJson)),
   _Contract(
     'post_api_quiz_start.json',
     'QuizSession',
@@ -265,7 +263,12 @@ final List<_Contract> _adminContracts = [
   _Contract(
     'get_api_admin_forum_reports.json',
     'AdminReport',
-    _each('reports', AdminReport.fromJson),
+    _each('reports', (json) {
+      // 改名的話「檢舉後已修改」會默默消失，所以直接檢查欄位在不在。
+      expect(json['target_changed'], isA<bool>());
+      expect(json.containsKey('target_snapshot'), isTrue);
+      AdminReport.fromJson(json);
+    }),
   ),
   _Contract(
     'get_api_admin_moderation_cases.json',
@@ -276,6 +279,16 @@ final List<_Contract> _adminContracts = [
     'get_api_admin_mutes.json',
     'AdminMute',
     _each('mutes', AdminMute.fromJson),
+  ),
+  _Contract(
+    'get_api_admin_announcements.json',
+    'AdminAnnouncement',
+    _each('announcements', AdminAnnouncement.fromJson),
+  ),
+  _Contract(
+    'get_api_admin_appeals.json',
+    'AdminAppeal',
+    _each('appeals', AdminAppeal.fromJson),
   ),
   _Contract(
     'get_api_admin_banned_words.json',

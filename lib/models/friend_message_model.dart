@@ -78,6 +78,9 @@ class Conversation {
   final int unreadCount;
   final ConversationPreview? lastMessage;
 
+  /// 對象是刪除中或被鎖帳號：暱稱是後端的替代文字、頭像為 null，不能傳訊。
+  final bool unavailable;
+
   const Conversation({
     this.nickname,
     required this.friendCode,
@@ -86,6 +89,7 @@ class Conversation {
     this.frameId,
     required this.unreadCount,
     this.lastMessage,
+    this.unavailable = false,
   });
 
   factory Conversation.fromJson(Map<String, dynamic> j) => Conversation(
@@ -100,6 +104,37 @@ class Conversation {
             j['last_message'] as Map<String, dynamic>,
           )
         : null,
+    unavailable: j['unavailable'] == true,
+  );
+}
+
+/// GET /api/friends/:friend_code/messages 的 `partner`：聊天室對象的公開資料。
+class ChatPartner {
+  final String? nickname;
+  final String friendCode;
+  final String? avatarUrl;
+  final String? avatarId;
+  final String? frameId;
+
+  /// 同 [Conversation.unavailable]。
+  final bool unavailable;
+
+  const ChatPartner({
+    this.nickname,
+    required this.friendCode,
+    this.avatarUrl,
+    this.avatarId,
+    this.frameId,
+    this.unavailable = false,
+  });
+
+  factory ChatPartner.fromJson(Map<String, dynamic> j) => ChatPartner(
+    nickname: j['nickname'] as String?,
+    friendCode: j['friend_code'] as String? ?? '',
+    avatarUrl: j['avatar_url'] as String?,
+    avatarId: j['avatar_id'] as String?,
+    frameId: j['frame_id'] as String?,
+    unavailable: j['unavailable'] == true,
   );
 }
 

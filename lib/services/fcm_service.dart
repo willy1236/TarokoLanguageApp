@@ -14,6 +14,10 @@
 //     peer_friend_code/expires_at，不足以組出完整 VideoSession —— 收到後一律當「觸發
 //     訊號」，由畫面端另外呼叫 VideoService.fetchCurrentSession() 取得權威資料，
 //     不要直接拿 payload 欄位組物件（避免輪詢與 FCM 兩條路徑組出不一致的結果）。
+//   - 站內收件匣（見 Truku_backend 說明文件/API/收件匣與申訴.md）：論壇回覆、審核
+//     推播多帶 inbox_id，點開時一併標已讀；審核推播帶 case_id 時開處置詳情頁；
+//     官方公告 { type: 'announcement', announcement_id } 開收件匣的公告分頁。
+//     收件匣類推播一到就重抓未讀數。
 //
 // 使用方式（之後在 UI/啟動流程接）：
 //   main() 啟動時：await FcmService.init();
@@ -34,6 +38,7 @@ import 'account_lock_controller.dart';
 import 'auth_service.dart';
 import 'directed_call_service.dart';
 import 'event_service.dart';
+import 'inbox_service.dart';
 import 'notification_summary_service.dart';
 import 'user_service.dart';
 
@@ -86,9 +91,7 @@ class FcmService {
     _eventDeletedListeners.add(listener);
   }
 
-  static void removeEventDeletedListener(
-    void Function(int? eventId) listener,
-  ) {
+  static void removeEventDeletedListener(void Function(int? eventId) listener) {
     _eventDeletedListeners.remove(listener);
   }
 
@@ -117,6 +120,27 @@ class FcmService {
 
   /// 點擊論壇回覆通知時的導頁 callback。由 UI 層設定（用 navigatorKey 導到貼文詳情）。
   static void Function(int postId)? onForumReplyTapped;
+
+  /// 點擊帶 case_id 的審核通知：由 UI 層設定，開處置詳情頁。
+  static void Function(int caseId)? onModerationCaseTapped;
+
+  /// 點擊官方公告通知：由 UI 層設定，開收件匣的 [category] 分頁。
+  static void Function(String category)? onInboxTapped;
+
+  /// 會進站內收件匣的推播類型：收到就重抓未讀數，紅點才跟得上。
+  static const _inboxPushTypes = {
+    'reply_post',
+    'reply_comment',
+    'event_reminder',
+    'event_cancelled',
+    'event_deleted',
+    'tribe_event',
+    'moderation',
+    'account_role',
+    'announcement',
+  };
+
+  static const String _announcementPayload = 'inbox:announcement';
 
   /// 由 UI 層注入：前景收到論壇回覆推播時先交給該貼文開著的詳情頁，回傳 true
   /// 代表畫面已接手（改在頁內提示），就不彈通知列／SnackBar，避免蓋住留言輸入列。
@@ -210,8 +234,19 @@ class FcmService {
           return;
         }
         if (payload.startsWith('forum:')) {
-          final postId = int.tryParse(payload.substring('forum:'.length));
-          if (postId != null) onForumReplyTapped?.call(postId);
+          // forum:<post_id> 或 forum:<post_id>:<inbox_id>
+          final parts = payload.substring('forum:'.length).split(':');
+          final postId = int.tryParse(parts.first);
+          if (postId != null) {
+            _openForumReply(
+              postId,
+              parts.length > 1 ? int.tryParse(parts[1]) : null,
+            );
+          }
+          return;
+        }
+        if (payload == _announcementPayload) {
+          onInboxTapped?.call('announcement');
           return;
         }
         if (payload.startsWith(_eventDeletedPayloadPrefix)) {
@@ -351,6 +386,39 @@ class FcmService {
     return (postId: postId, type: type as String);
   }
 
+  /// 推播對應的收件匣那一則（論壇回覆、審核類才有），沒有回傳 null。
+  @visibleForTesting
+  static int? parseInboxId(Map<String, dynamic> data) =>
+      int.tryParse(data['inbox_id']?.toString() ?? '');
+
+  /// 審核推播對應的違規案件，沒有（例如解除禁言）回傳 null。
+  @visibleForTesting
+  static int? parseModerationCaseId(Map<String, dynamic> data) =>
+      data['type'] == 'moderation'
+      ? int.tryParse(data['case_id']?.toString() ?? '')
+      : null;
+
+  /// 點了推播就等於看過收件匣那一則。失敗不影響導頁，下次進收件匣再對齊。
+  static void _markInboxRead(int? inboxId) {
+    if (inboxId == null) return;
+    unawaited(
+      InboxService.markRead([inboxId]).then<void>(
+        (_) {},
+        onError: (Object e) => debugPrint('FcmService: 標記收件匣已讀失敗：$e'),
+      ),
+    );
+  }
+
+  static void _openForumReply(int postId, int? inboxId) {
+    _markInboxRead(inboxId);
+    onForumReplyTapped?.call(postId);
+  }
+
+  static void _openModerationCase(int caseId, int? inboxId) {
+    _markInboxRead(inboxId);
+    onModerationCaseTapped?.call(caseId);
+  }
+
   /// 解析好友相關通知，非此類型回傳 null。私訊與邀請的對方在 from_friend_code，
   /// 邀請被接受與羈絆展示在 friend_code；缺少時 friendCode 為 null。
   @visibleForTesting
@@ -403,8 +471,16 @@ class FcmService {
       _handleOpened(message);
 
   static void _onForegroundMessage(RemoteMessage message) {
+    if (_inboxPushTypes.contains(message.data['type'])) {
+      NotificationSummaryService.refresh();
+    }
     if (message.data['type'] == 'moderation') {
+      _applyModerationLock(message.data);
       _showModerationNotice(message);
+      return;
+    }
+    if (message.data['type'] == 'announcement') {
+      _onForegroundAnnouncement(message);
       return;
     }
     if (_applyAccountRole(message.data)) {
@@ -452,6 +528,7 @@ class FcmService {
     final forum = _parseForumPayload(message.data);
     if (forum != null) {
       final forumPostId = forum.postId;
+      final inboxId = parseInboxId(message.data);
       // 人就在那一頁：改由頁內提示，不再彈通知。
       final handled = onForumReplyWhileOpen?.call(forumPostId, forum.type);
       if (handled == true) return;
@@ -466,7 +543,9 @@ class FcmService {
             android: _reminderAndroidDetails,
           ),
           // 事件通知的 payload 是純數字的 event_id，論壇加前綴區分兩者。
-          payload: 'forum:$forumPostId',
+          payload: inboxId == null
+              ? 'forum:$forumPostId'
+              : 'forum:$forumPostId:$inboxId',
         ),
       );
       scaffoldMessengerKey.currentState
@@ -476,7 +555,7 @@ class FcmService {
             content: Text(body.isNotEmpty ? body : title),
             action: SnackBarAction(
               label: '查看',
-              onPressed: () => onForumReplyTapped?.call(forumPostId),
+              onPressed: () => _openForumReply(forumPostId, inboxId),
             ),
           ),
         );
@@ -567,20 +646,51 @@ class FcmService {
     return true;
   }
 
-  /// 處置通知（內容被隱藏、個人檔案被重設、確認違規、禁言／解除禁言）。
-  /// title／body 已是後端寫好的完整中文說明，前景時直接彈對話框顯示，
-  /// 不走 SnackBar——理由較長，且當事人需要確實看到。
-  static void _showModerationNotice(RemoteMessage message) {
-    final data = message.data;
-    if (accountLockController.applyModerationPush(data) == false) {
-      // 讓個人頁等畫面拿到解鎖後的最新資料。
-      unawaited(
-        UserService.fetchMe(forceRefresh: true).then<void>(
-          (_) {},
-          onError: (Object e) => debugPrint('解鎖後重抓 /api/me 失敗：$e'),
+  /// 前景收到官方公告：彈本機通知與 SnackBar，「查看」開收件匣的公告分頁。
+  static void _onForegroundAnnouncement(RemoteMessage message) {
+    final title = message.notification?.title ?? '官方公告';
+    final body = message.notification?.body ?? '';
+    unawaited(
+      _localNotifications.show(
+        id: message.hashCode,
+        title: title,
+        body: body,
+        notificationDetails: const NotificationDetails(
+          android: _reminderAndroidDetails,
+        ),
+        payload: _announcementPayload,
+      ),
+    );
+    scaffoldMessengerKey.currentState
+      ?..clearSnackBars()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(title),
+          action: SnackBarAction(
+            label: '查看',
+            onPressed: () => onInboxTapped?.call('announcement'),
+          ),
         ),
       );
-    }
+  }
+
+  /// 依審核推播更新唯讀狀態；解除時重抓 /api/me，讓個人頁等畫面拿到最新資料。
+  static void _applyModerationLock(Map<String, dynamic> data) {
+    if (accountLockController.applyModerationPush(data) != false) return;
+    unawaited(
+      UserService.fetchMe(forceRefresh: true).then<void>(
+        (_) {},
+        onError: (Object e) => debugPrint('解鎖後重抓 /api/me 失敗：$e'),
+      ),
+    );
+  }
+
+  /// 處置通知（內容被隱藏、個人檔案被重設、確認違規、禁言／解除禁言、申訴結果）。
+  /// title／body 已是後端寫好的完整中文說明，直接彈對話框顯示，
+  /// 不走 SnackBar——理由較長，且當事人需要確實看到。
+  /// 有對應案件時多一顆「查看詳情」開處置詳情頁。
+  static void _showModerationNotice(RemoteMessage message) {
+    final data = message.data;
     final context = navigatorKey.currentContext;
     if (context == null) return;
     final title = message.notification?.title ?? '內容審核通知';
@@ -590,6 +700,8 @@ class FcmService {
         data['action'] == 'case_overturned' && data['target_type'] == 'post'
         ? int.tryParse(data['target_id']?.toString() ?? '')
         : null;
+    final caseId = parseModerationCaseId(data);
+    final inboxId = parseInboxId(data);
     unawaited(
       showDialog<void>(
         context: context,
@@ -601,12 +713,23 @@ class FcmService {
               TextButton(
                 onPressed: () {
                   Navigator.pop(ctx);
-                  onForumReplyTapped?.call(restoredPostId);
+                  _openForumReply(restoredPostId, inboxId);
                 },
                 child: const Text('查看貼文'),
               ),
+            if (caseId != null)
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(ctx);
+                  _openModerationCase(caseId, inboxId);
+                },
+                child: const Text('查看詳情'),
+              ),
             TextButton(
-              onPressed: () => Navigator.pop(ctx),
+              onPressed: () {
+                Navigator.pop(ctx);
+                _markInboxRead(inboxId);
+              },
               child: const Text('我知道了'),
             ),
           ],
@@ -663,9 +786,24 @@ class FcmService {
   }
 
   static void _handleOpened(RemoteMessage message) {
+    if (_inboxPushTypes.contains(message.data['type'])) {
+      NotificationSummaryService.refresh();
+    }
     if (message.data['type'] == 'moderation') {
-      // 背景時系統通知列已自動顯示，點開後再顯示一次完整說明。
-      _showModerationNotice(message);
+      _applyModerationLock(message.data);
+      final caseId = parseModerationCaseId(message.data);
+      final inboxId = parseInboxId(message.data);
+      if (caseId != null) {
+        _openModerationCase(caseId, inboxId);
+      } else {
+        // 沒有案件可看（例如解除禁言）：通知列已顯示過，點開後再顯示一次完整說明。
+        _markInboxRead(inboxId);
+        _showModerationNotice(message);
+      }
+      return;
+    }
+    if (message.data['type'] == 'announcement') {
+      onInboxTapped?.call('announcement');
       return;
     }
     // 通知列已顯示過內容，點開只需讓入口跟上新角色。
@@ -703,7 +841,7 @@ class FcmService {
 
     final forum = _parseForumPayload(message.data);
     if (forum != null) {
-      onForumReplyTapped?.call(forum.postId);
+      _openForumReply(forum.postId, parseInboxId(message.data));
       return;
     }
     final deleted = parseEventDeleted(
