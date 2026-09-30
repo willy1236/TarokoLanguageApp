@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../profile/widgets/profile_rows.dart';
+import 'admin_announcements_screen.dart';
 import 'admin_appeals_screen.dart';
 import 'admin_article_form_screen.dart';
 import 'admin_banned_words_screen.dart';
@@ -73,6 +74,11 @@ final List<_Entry> _entries = [
     icon: Icons.help_outline,
     label: '題目回報',
     screen: () => const AdminQuestionReportsScreen(),
+  ),
+  (
+    icon: Icons.campaign_outlined,
+    label: '官方公告',
+    screen: () => const AdminAnnouncementsScreen(),
   ),
   (
     icon: Icons.post_add_outlined,

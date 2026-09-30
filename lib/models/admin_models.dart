@@ -934,3 +934,59 @@ class AdminAppealResult {
         unlocked: j['unlocked'] == true,
       );
 }
+
+// ── 官方公告（收件匣與申訴.md §5）──────────────────────────────
+
+class AdminAnnouncement {
+  final int id;
+  final String title;
+  final String body;
+
+  /// 限時網址（約 15 分鐘），不存到本機。
+  final String? imageUrl;
+
+  /// 寫進幾人的收件匣。
+  final int recipients;
+  final DateTime? createdAt;
+  final int? createdBy;
+  final String? createdByNickname;
+
+  const AdminAnnouncement({
+    required this.id,
+    required this.title,
+    required this.body,
+    this.imageUrl,
+    this.recipients = 0,
+    this.createdAt,
+    this.createdBy,
+    this.createdByNickname,
+  });
+
+  factory AdminAnnouncement.fromJson(Map<String, dynamic> j) =>
+      AdminAnnouncement(
+        id: _int(j['id']) ?? 0,
+        title: j['title'] as String? ?? '',
+        body: j['body'] as String? ?? '',
+        imageUrl: j['image_url'] as String?,
+        recipients: _int(j['recipients']) ?? 0,
+        createdAt: _date(j['created_at']),
+        createdBy: _int(j['created_by']),
+        createdByNickname: j['created_by_nickname'] as String?,
+      );
+}
+
+/// POST /api/admin/announcements 的結果；[pushed] 是推播成功數。
+class AdminAnnouncementResult {
+  final AdminAnnouncement announcement;
+  final int pushed;
+
+  const AdminAnnouncementResult({required this.announcement, this.pushed = 0});
+
+  factory AdminAnnouncementResult.fromJson(Map<String, dynamic> j) =>
+      AdminAnnouncementResult(
+        announcement: AdminAnnouncement.fromJson(
+          j['announcement'] as Map<String, dynamic>? ?? const {},
+        ),
+        pushed: _int(j['pushed']) ?? 0,
+      );
+}

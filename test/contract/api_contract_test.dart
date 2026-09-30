@@ -281,6 +281,11 @@ final List<_Contract> _adminContracts = [
     _each('mutes', AdminMute.fromJson),
   ),
   _Contract(
+    'get_api_admin_announcements.json',
+    'AdminAnnouncement',
+    _each('announcements', AdminAnnouncement.fromJson),
+  ),
+  _Contract(
     'get_api_admin_appeals.json',
     'AdminAppeal',
     _each('appeals', AdminAppeal.fromJson),

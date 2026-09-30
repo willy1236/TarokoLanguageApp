@@ -218,6 +218,46 @@ class AdminService {
     return AdminAppealResult.fromJson(json);
   }
 
+  // ── 官方公告（收件匣與申訴.md §5）────────────────────────────
+
+  /// 公告圖片的大小上限（後端限制）。
+  static const int announcementImageMaxBytes = 5 * 1024 * 1024;
+
+  /// 最近 50 則已發布的公告。
+  static Future<List<AdminAnnouncement>> fetchAnnouncements() async {
+    final json = await ApiClient.get(ApiConfig.adminAnnouncements);
+    return _list(json, 'announcements', AdminAnnouncement.fromJson);
+  }
+
+  /// 發公告給所有正常與被鎖帳號，發出後收不回。
+  /// [imageBytes] 是已壓成 JPEG 的圖片（選填）；[push] 為 false 時只進收件匣。
+  static Future<AdminAnnouncementResult> createAnnouncement({
+    required String title,
+    required String body,
+    List<int>? imageBytes,
+    bool push = true,
+  }) async {
+    final json = await ApiClient.postMultipart(
+      ApiConfig.adminAnnouncements,
+      fields: {
+        'title': title.trim(),
+        'body': body.trim(),
+        // 後端預設推播，只有不推播時才需要送。
+        if (!push) 'push': 'false',
+      },
+      files: [
+        if (imageBytes != null)
+          MultipartFileData(
+            field: 'image',
+            bytes: imageBytes,
+            filename: 'announcement.jpg',
+            mimeType: 'image/jpeg',
+          ),
+      ],
+    );
+    return AdminAnnouncementResult.fromJson(json);
+  }
+
   // ── 禁言（安全防護.md「後台端點」）────────────────────────────
 
   /// 目前有效（未翻案、未到期）的禁言。
