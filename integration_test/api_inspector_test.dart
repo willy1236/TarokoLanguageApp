@@ -628,8 +628,26 @@ void main() {
           'messages': F.number,
           'friend_requests': F.number,
           'total': F.number,
+          'inbox': F.object,
         },
         nullable: {'forum', 'events', 'messages', 'friend_requests', 'total'},
+      ),
+    );
+    // 收件匣（收件匣與申訴.md §1）。POST /api/inbox/read 會真的改已讀狀態，不錄。
+    test(
+      'GET /api/inbox',
+      () => _inspect(
+        'GET',
+        ApiConfig.inbox,
+        shape: {'items': F.list, 'unread': F.object, 'page_info': F.object},
+        listKey: 'items',
+        itemShape: {
+          'id': F.number,
+          'category': F.string,
+          'kind': F.string,
+          'is_read': F.boolean,
+          'created_at': F.string,
+        },
       ),
     );
     test(
@@ -743,6 +761,23 @@ void main() {
         '${ApiConfig.adminUsersLookup}?friend_code=${me['friend_code']}',
         shape: {'user': F.object},
         fixtureAs: 'get_api_admin_users_lookup.json',
+      ),
+    );
+    adminTest(
+      'GET /api/admin/appeals',
+      (_) => _inspect(
+        'GET',
+        ApiConfig.adminAppeals,
+        shape: {'appeals': F.list},
+      ),
+    );
+    // 只錄列表；POST 會真的發給所有使用者。
+    adminTest(
+      'GET /api/admin/announcements',
+      (_) => _inspect(
+        'GET',
+        ApiConfig.adminAnnouncements,
+        shape: {'announcements': F.list},
       ),
     );
   });

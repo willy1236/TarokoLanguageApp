@@ -1,0 +1,75 @@
+{
+  "items": [
+    {
+      "id": 9,
+      "category": "event",
+      "kind": "event_reminder",
+      "title": "測試標題",
+      "body": "測試內文",
+      "is_read": true,
+      "created_at": "2026-09-17T11:49:02.520Z",
+      "post_id": null,
+      "comment_id": null,
+      "event_id": 43,
+      "case_id": null,
+      "image_url": null,
+      "actor": null,
+      "target_state": "deleted"
+    },
+    {
+      "id": 6,
+      "category": "forum",
+      "kind": "reply_post",
+      "title": "測試標題",
+      "body": "測試內文",
+      "is_read": true,
+      "created_at": "2026-09-17T13:17:50.239Z",
+      "post_id": 13,
+      "comment_id": 13,
+      "event_id": null,
+      "case_id": null,
+      "image_url": null,
+      "actor": {
+        "display_name": "測試使用者",
+        "avatar_url": "https://example.com/avatar.png",
+        "avatar_id": "avatar_gold_03",
+        "frame_id": "frame_08",
+        "friend_code": "TESTCODE"
+      },
+      "target_state": "ok"
+    },
+    {
+      "id": 1,
+      "category": "forum",
+      "kind": "reply_post",
+      "title": "測試標題",
+      "body": null,
+      "is_read": true,
+      "created_at": "2026-08-20T05:59:17.659Z",
+      "post_id": 5,
+      "comment_id": 8,
+      "event_id": null,
+      "case_id": null,
+      "image_url": null,
+      "actor": {
+        "display_name": "測試使用者",
+        "avatar_url": "https://example.com/avatar.png",
+        "avatar_id": "avatar_gold_03",
+        "frame_id": "frame_08",
+        "friend_code": "TESTCODE"
+      },
+      "target_state": "deleted"
+    }
+  ],
+  "unread": {
+    "forum": 0,
+    "event": 0,
+    "moderation": 0,
+    "announcement": 0,
+    "total": 0
+  },
+  "page_info": {
+    "next_cursor": null,
+    "has_more": false
+  }
+}
