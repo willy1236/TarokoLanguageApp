@@ -190,6 +190,34 @@ class AdminService {
     return AdminIdentityResult.fromJson(json);
   }
 
+  // ── 申訴（收件匣與申訴.md §4）──────────────────────────────
+
+  /// [status] 為 `pending`（舊到新）／`accepted`／`rejected`（新到舊），上限 100 筆。
+  static Future<List<AdminAppeal>> fetchAppeals({
+    String status = 'pending',
+  }) async {
+    final json = await ApiClient.get(
+      ApiConfig.adminAppeals,
+      query: {'status': status},
+    );
+    return _list(json, 'appeals', AdminAppeal.fromJson);
+  }
+
+  /// 處理申訴。[decision] 為 `accept`（撤銷處置）或 `reject`（維持處置）；
+  /// [reply] 是給申訴人看的回覆，必填 1～1000 字（長度由畫面先擋）。
+  /// 處理的人不能是當事人，也不能是這個案件的開案者或複審者。
+  static Future<AdminAppealResult> resolveAppeal(
+    int id,
+    String decision,
+    String reply,
+  ) async {
+    final json = await ApiClient.post(ApiConfig.adminAppealResolve(id), {
+      'decision': decision,
+      'reply': reply.trim(),
+    });
+    return AdminAppealResult.fromJson(json);
+  }
+
   // ── 禁言（安全防護.md「後台端點」）────────────────────────────
 
   /// 目前有效（未翻案、未到期）的禁言。

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../profile/widgets/profile_rows.dart';
+import 'admin_appeals_screen.dart';
 import 'admin_article_form_screen.dart';
 import 'admin_banned_words_screen.dart';
 import 'admin_birth_date_screen.dart';
@@ -32,6 +33,11 @@ final List<_Entry> _entries = [
     icon: Icons.gavel_outlined,
     label: '違規區',
     screen: () => const AdminCasesScreen(),
+  ),
+  (
+    icon: Icons.balance_outlined,
+    label: '申訴',
+    screen: () => const AdminAppealsScreen(),
   ),
   (
     icon: Icons.volume_off_outlined,

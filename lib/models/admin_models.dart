@@ -821,3 +821,116 @@ class AdminIdentityResult {
         tribalName: j['tribal_name'] as String?,
       );
 }
+
+// ── 申訴（收件匣與申訴.md §4）──────────────────────────────────
+
+/// 申訴的當事人（被處置者）。
+class AdminAppealOffender {
+  final int uid;
+  final String nickname;
+  final String friendCode;
+
+  /// active／locked／pending_deletion。
+  final String? status;
+
+  const AdminAppealOffender({
+    required this.uid,
+    this.nickname = '',
+    this.friendCode = '',
+    this.status,
+  });
+
+  factory AdminAppealOffender.fromJson(Object? raw) {
+    final j = raw is Map<String, dynamic> ? raw : const <String, dynamic>{};
+    return AdminAppealOffender(
+      uid: _int(j['uid']) ?? 0,
+      nickname: j['nickname'] as String? ?? '',
+      friendCode: j['friend_code'] as String? ?? '',
+      status: j['status'] as String?,
+    );
+  }
+}
+
+/// 申訴列表的一筆（GET /api/admin/appeals）。
+class AdminAppeal {
+  final int id;
+
+  /// pending／accepted／rejected。
+  final String status;
+
+  /// 申訴人寫的理由。
+  final String reason;
+
+  /// 管理員給申訴人的回覆，處理前為 null。
+  final String? reply;
+  final DateTime? createdAt;
+  final DateTime? handledAt;
+  final int? handledBy;
+  final String? handledByNickname;
+  final AdminAppealOffender offender;
+
+  /// 被申訴的案件，`reason` 是管理員看的原始理由。申訴回應的 `case` 不帶當事人，
+  /// 這裡已把 [offender] 併進去，可以直接交給違規區的預覽元件。
+  final AdminCase appealCase;
+
+  const AdminAppeal({
+    required this.id,
+    required this.status,
+    required this.reason,
+    this.reply,
+    this.createdAt,
+    this.handledAt,
+    this.handledBy,
+    this.handledByNickname,
+    required this.offender,
+    required this.appealCase,
+  });
+
+  factory AdminAppeal.fromJson(Map<String, dynamic> j) {
+    final offender = AdminAppealOffender.fromJson(j['offender']);
+    final rawCase = j['case'];
+    return AdminAppeal(
+      id: _int(j['id']) ?? 0,
+      status: j['status'] as String? ?? 'pending',
+      reason: j['reason'] as String? ?? '',
+      reply: j['reply'] as String?,
+      createdAt: _date(j['created_at']),
+      handledAt: _date(j['handled_at']),
+      handledBy: _int(j['handled_by']),
+      handledByNickname: j['handled_by_nickname'] as String?,
+      offender: offender,
+      appealCase: AdminCase.fromJson({
+        if (rawCase is Map<String, dynamic>) ...rawCase,
+        'offender_uid': offender.uid,
+        'offender_nickname': offender.nickname,
+        'offender_friend_code': offender.friendCode,
+        'offender_status': offender.status,
+      }),
+    );
+  }
+}
+
+/// POST /api/admin/appeals/:id/resolve 的結果。
+class AdminAppealResult {
+  /// accepted／rejected。
+  final String status;
+
+  /// 接受時：這次違規的次數有沒有退回。
+  final bool strikeReverted;
+
+  /// 接受時：有沒有連帶解除停權。
+  final bool unlocked;
+
+  const AdminAppealResult({
+    required this.status,
+    this.strikeReverted = false,
+    this.unlocked = false,
+  });
+
+  factory AdminAppealResult.fromJson(Map<String, dynamic> j) =>
+      AdminAppealResult(
+        status: j['status'] as String? ?? '',
+        strikeReverted: j['strike_reverted'] == true,
+        unlocked: j['unlocked'] == true,
+      );
+}

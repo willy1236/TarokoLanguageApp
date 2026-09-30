@@ -1,5 +1,6 @@
 // 管理員下架、重設個人檔案等「必填理由」操作的共用流程：
-// 先填理由（1～500 字，UTF-16 長度檢查沿用 withinUtf16Limit），再二次確認。
+// 先填理由（預設 1～500 字，UTF-16 長度檢查沿用 withinUtf16Limit），再二次確認。
+// 申訴回覆也走這裡，只是欄位名稱換成「給申訴人的回覆」。
 // 任一步取消都回 null，呼叫端只要在拿到結果時才送出請求。
 
 import 'package:flutter/material.dart';
@@ -31,6 +32,9 @@ Future<AdminReasonInput?> promptAdminReason(
 
   /// false 時理由改為選填（例如解鎖帳號的備註），可以留空直接下一步。
   bool required = true,
+
+  /// 輸入框的欄位名稱；不給時必填為「理由」、選填為「備註」。
+  String? label,
 }) async {
   final input = await showDialog<AdminReasonInput>(
     context: context,
@@ -40,6 +44,7 @@ Future<AdminReasonInput?> promptAdminReason(
       maxLength: maxLength,
       profileFields: profileFields,
       required: required,
+      label: label ?? (required ? '理由' : '備註'),
     ),
   );
   if (input == null || !context.mounted) return null;
@@ -58,6 +63,7 @@ class _ReasonDialog extends StatefulWidget {
   final int maxLength;
   final bool profileFields;
   final bool required;
+  final String label;
 
   const _ReasonDialog({
     required this.title,
@@ -65,6 +71,7 @@ class _ReasonDialog extends StatefulWidget {
     required this.maxLength,
     required this.profileFields,
     required this.required,
+    required this.label,
   });
 
   @override
@@ -91,7 +98,7 @@ class _ReasonDialogState extends State<_ReasonDialog> {
       context,
       reason,
       widget.maxLength,
-      label: widget.required ? '理由' : '備註',
+      label: widget.label,
     )) {
       return;
     }
@@ -149,7 +156,7 @@ class _ReasonDialogState extends State<_ReasonDialog> {
               color: AppColors.ink,
             ),
             decoration: InputDecoration(
-              labelText: widget.required ? '理由（必填）' : '備註（選填）',
+              labelText: '${widget.label}（${widget.required ? '必填' : '選填'}）',
               border: const OutlineInputBorder(),
             ),
           ),
