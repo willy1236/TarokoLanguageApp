@@ -171,6 +171,25 @@ class AdminService {
     return AdminBirthDateResult.fromJson(json);
   }
 
+  /// 更正族群／部落，整組覆寫。[reason] 必填 1～500 字。
+  /// 原住民要給 [ethnicGroup] 與屬於該族群的 [tribeId]；非原住民只送身分與理由
+  /// （後端會一併清空族群、部落、族語名）。
+  static Future<AdminIdentityResult> updateIdentity(
+    int uid, {
+    required bool isIndigenous,
+    String? ethnicGroup,
+    int? tribeId,
+    required String reason,
+  }) async {
+    final json = await ApiClient.patch(ApiConfig.adminUserIdentity(uid), {
+      'is_indigenous': isIndigenous,
+      if (isIndigenous) 'ethnic_group': ethnicGroup,
+      if (isIndigenous) 'tribe_id': tribeId,
+      'reason': reason.trim(),
+    });
+    return AdminIdentityResult.fromJson(json);
+  }
+
   // ── 禁言（安全防護.md「後台端點」）────────────────────────────
 
   /// 目前有效（未翻案、未到期）的禁言。

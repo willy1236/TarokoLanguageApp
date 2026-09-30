@@ -10,6 +10,7 @@ import 'admin_banned_words_screen.dart';
 import 'admin_birth_date_screen.dart';
 import 'admin_cases_screen.dart';
 import 'admin_error.dart';
+import 'admin_identity_screen.dart';
 import 'admin_millet_screen.dart';
 import 'admin_mutes_screen.dart';
 import 'admin_question_reports_screen.dart';
@@ -46,6 +47,11 @@ final List<_Entry> _entries = [
     icon: Icons.cake_outlined,
     label: '更正出生日期',
     screen: () => const AdminBirthDateScreen(),
+  ),
+  (
+    icon: Icons.diversity_3_outlined,
+    label: '更正族群／部落',
+    screen: () => const AdminIdentityScreen(),
   ),
   (
     icon: Icons.savings_outlined,

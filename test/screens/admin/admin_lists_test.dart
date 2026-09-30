@@ -44,6 +44,10 @@ void main() {
       await tester.pumpWidget(_app(const AdminMutesScreen()));
       await tester.pumpAndSettle();
       expect(find.text('被禁言者'), findsOneWidget);
+      expect(
+        find.textContaining('FFFF2345', findRichText: true),
+        findsOneWidget,
+      );
       expect(find.textContaining('檢舉滿門檻', findRichText: true), findsOneWidget);
       expect(find.text('文字類'), findsOneWidget);
 

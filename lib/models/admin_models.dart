@@ -525,6 +525,9 @@ class AdminMute {
   final int uid;
   final String nickname;
 
+  /// 對照使用者給的好友碼用；解除禁言仍用禁言 [id]。
+  final String? friendCode;
+
   /// strike（違規累計）／reports（檢舉滿門檻）／profanity（髒話漸進處置）。
   final String reason;
 
@@ -537,6 +540,7 @@ class AdminMute {
     required this.id,
     required this.uid,
     this.nickname = '',
+    this.friendCode,
     required this.reason,
     required this.scope,
     this.muteUntil,
@@ -547,6 +551,7 @@ class AdminMute {
     id: _int(j['id']) ?? 0,
     uid: _int(j['uid']) ?? 0,
     nickname: j['nickname'] as String? ?? '',
+    friendCode: j['friend_code'] as String?,
     reason: j['reason'] as String? ?? '',
     scope: j['scope'] as String? ?? '',
     muteUntil: _date(j['mute_until']),
@@ -788,5 +793,31 @@ class AdminBirthDateResult {
       AdminBirthDateResult(
         birthDate: parseApiDate(j['birth_date']),
         adult: j['adult'] == true,
+      );
+}
+
+// ── 族群／部落更正（內部管理.md §8.10）────────────────────────────
+
+/// PATCH /api/admin/users/:uid/identity 的結果：更正後的身分。
+/// 改成非原住民時族群、部落、族語名都會被清空。
+class AdminIdentityResult {
+  final bool isIndigenous;
+  final String? ethnicGroup;
+  final int? tribeId;
+  final String? tribalName;
+
+  const AdminIdentityResult({
+    required this.isIndigenous,
+    this.ethnicGroup,
+    this.tribeId,
+    this.tribalName,
+  });
+
+  factory AdminIdentityResult.fromJson(Map<String, dynamic> j) =>
+      AdminIdentityResult(
+        isIndigenous: j['is_indigenous'] == true,
+        ethnicGroup: j['ethnic_group'] as String?,
+        tribeId: _int(j['tribe_id']),
+        tribalName: j['tribal_name'] as String?,
       );
 }

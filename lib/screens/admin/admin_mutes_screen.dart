@@ -1,4 +1,4 @@
-// 有效禁言列表：對象、範圍、到期時間、來源，可提前解除。
+// 有效禁言列表：對象（暱稱與好友碼）、範圍、到期時間、來源，可提前解除。
 
 import 'package:flutter/material.dart';
 
@@ -79,6 +79,8 @@ class _MuteCard extends StatelessWidget {
             AdminBadge(adminMuteScopeLabel(mute.scope), seniorMode: seniorMode),
           ],
         ),
+        if (mute.friendCode != null && mute.friendCode!.isNotEmpty)
+          AdminInfoRow('好友碼', mute.friendCode!, seniorMode: seniorMode),
         AdminInfoRow(
           '來源',
           adminMuteReasonLabel(mute.reason),
