@@ -657,7 +657,10 @@ void main() {
   // 管理員後台（唯讀 GET）。要用 role == 'admin' 的帳號錄，否則整組略過。
   // 只錄讀取：PATCH／POST 會真的改角色、發文章、發條款，回應依規格手寫。
   group('API Inspector — 管理員後台（需 admin 帳號）', () {
-    void adminTest(String name, Future<void> Function(int myUid) body) {
+    void adminTest(
+      String name,
+      Future<void> Function(Map<String, dynamic> me) body,
+    ) {
       test(name, () async {
         if (_token == null) {
           markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
@@ -668,7 +671,7 @@ void main() {
           markTestSkipped('這個帳號不是 admin，略過後台端點');
           return;
         }
-        await body(me!['uid'] as int);
+        await body(me!);
       });
     }
 
@@ -712,24 +715,34 @@ void main() {
     );
     adminTest(
       'GET /api/admin/millet/transactions (查自己)',
-      (uid) => _inspect(
+      (me) => _inspect(
         'GET',
-        '${ApiConfig.adminMilletTransactions}?uid=$uid',
+        '${ApiConfig.adminMilletTransactions}?uid=${me['uid']}',
         shape: {'transactions': F.list, 'page_info': F.object},
         fixtureAs: 'get_api_admin_millet_transactions.json',
       ),
     );
     adminTest(
       'GET /api/admin/millet/reconcile (查自己)',
-      (uid) => _inspect(
+      (me) => _inspect(
         'GET',
-        '${ApiConfig.adminMilletReconcile}?uid=$uid',
+        '${ApiConfig.adminMilletReconcile}?uid=${me['uid']}',
         shape: {
           'ledger_sum': F.number,
           'user_millet': F.number,
           'ok': F.boolean,
         },
         fixtureAs: 'get_api_admin_millet_reconcile.json',
+      ),
+    );
+    // 每次查詢後端都會記一筆操作紀錄，只查錄製帳號自己一次。
+    adminTest(
+      'GET /api/admin/users/lookup (查自己)',
+      (me) => _inspect(
+        'GET',
+        '${ApiConfig.adminUsersLookup}?friend_code=${me['friend_code']}',
+        shape: {'user': F.object},
+        fixtureAs: 'get_api_admin_users_lookup.json',
       ),
     );
   });

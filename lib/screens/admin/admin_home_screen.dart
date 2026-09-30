@@ -7,11 +7,14 @@ import '../../core/constants/app_typography.dart';
 import '../profile/widgets/profile_rows.dart';
 import 'admin_article_form_screen.dart';
 import 'admin_banned_words_screen.dart';
+import 'admin_birth_date_screen.dart';
 import 'admin_cases_screen.dart';
 import 'admin_error.dart';
+import 'admin_millet_screen.dart';
 import 'admin_mutes_screen.dart';
 import 'admin_question_reports_screen.dart';
 import 'admin_reports_screen.dart';
+import 'admin_roles_screen.dart';
 import 'admin_terms_publish_screen.dart';
 import 'widgets/admin_widgets.dart';
 
@@ -33,6 +36,21 @@ final List<_Entry> _entries = [
     icon: Icons.volume_off_outlined,
     label: '禁言',
     screen: () => const AdminMutesScreen(),
+  ),
+  (
+    icon: Icons.manage_accounts_outlined,
+    label: '角色管理',
+    screen: () => const AdminRolesScreen(),
+  ),
+  (
+    icon: Icons.cake_outlined,
+    label: '更正出生日期',
+    screen: () => const AdminBirthDateScreen(),
+  ),
+  (
+    icon: Icons.savings_outlined,
+    label: '小米幣查帳',
+    screen: () => const AdminMilletScreen(),
   ),
   (
     icon: Icons.block_outlined,

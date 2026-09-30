@@ -188,6 +188,7 @@ class ApiConfig {
   static String adminModerationCaseReview(int id) =>
       '/api/admin/moderation/cases/$id/review';
   static const String adminUsersRoles = '/api/admin/users/roles';
+  static const String adminUsersLookup = '/api/admin/users/lookup';
   static String adminUserRole(int uid) => '/api/admin/users/$uid/role';
   static String adminUserUnlock(int uid) => '/api/admin/users/$uid/unlock';
   static String adminUserProfileReset(int uid) =>

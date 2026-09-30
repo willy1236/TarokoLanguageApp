@@ -143,4 +143,84 @@ void main() {
     expect(seen.single.url.queryParameters['status'], 'pending');
     expect(seen.single.url.queryParameters.containsKey('cursor'), isFalse);
   });
+
+  group('使用者與角色', () {
+    test('lookupUser 帶去空白的好友碼，解析錄製的回應', () async {
+      respond(
+        '/api/admin/users/lookup',
+        loadFixtureMap('get_api_admin_users_lookup.json'),
+      );
+
+      final user = await AdminService.lookupUser('  testcode ');
+
+      expect(seen.single.url.queryParameters, {'friend_code': 'testcode'});
+      expect(user.uid, 20);
+      expect(user.role, 'admin');
+      expect(user.status, 'active');
+      expect(user.birthDate, DateTime(2000, 1, 1));
+      expect(user.tribeId, 31);
+      expect(user.millet, 350);
+    });
+
+    test('fetchRoleUsers 解析錄製的角色清單', () async {
+      respond(
+        '/api/admin/users/roles',
+        loadFixtureMap('get_api_admin_users_roles.json'),
+      );
+
+      final users = await AdminService.fetchRoleUsers();
+
+      expect(users, hasLength(8));
+      expect(users.first.role, 'admin');
+      expect(users.last.role, 'organizer');
+      expect(users[4].nickname, isEmpty, reason: '暱稱為 null 時不炸');
+    });
+
+    test('setRole 送角色與去空白理由，解析 changed', () async {
+      final bodies = <Map<String, dynamic>>[];
+      installMockClient(
+        {
+          '/api/admin/users/12/role': {
+            'ok': true,
+            'uid': 12,
+            'role': 'organizer',
+            'previous_role': 'organizer',
+            'changed': false,
+          },
+        },
+        onRequest: (r) {
+          expect(r.method, 'PATCH');
+          bodies.add(jsonDecode(r.body) as Map<String, dynamic>);
+        },
+      );
+
+      final result = await AdminService.setRole(12, 'organizer', ' 部落負責人 ');
+
+      expect(bodies.single, {'role': 'organizer', 'reason': '部落負責人'});
+      expect(result.changed, isFalse);
+      expect(result.role, 'organizer');
+    });
+  });
+
+  test('小米幣查帳：明細與對帳都帶 uid，明細帶游標', () async {
+    final requests = <http.Request>[];
+    installMockClient({
+      '/api/admin/millet/transactions': loadFixtureMap(
+        'get_api_admin_millet_transactions.json',
+      ),
+      '/api/admin/millet/reconcile': loadFixtureMap(
+        'get_api_admin_millet_reconcile.json',
+      ),
+    }, onRequest: requests.add);
+
+    final page = await AdminService.fetchMilletTransactions(20, cursor: 'c1');
+    final reconcile = await AdminService.reconcileMillet(20);
+
+    expect(requests[0].url.queryParameters, {'uid': '20', 'cursor': 'c1'});
+    expect(requests[1].url.queryParameters, {'uid': '20'});
+    expect(page.transactions, isNotEmpty);
+    expect(reconcile.ledgerSum, -150);
+    expect(reconcile.userMillet, 350);
+    expect(reconcile.ok, isFalse);
+  });
 }

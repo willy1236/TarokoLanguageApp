@@ -1,0 +1,52 @@
+{
+  "users": [
+    {
+      "uid": 20,
+      "nickname": "測試暱稱",
+      "friend_code": "TESTCODE",
+      "role": "admin"
+    },
+    {
+      "uid": 21,
+      "nickname": "測試暱稱",
+      "friend_code": "TESTCODE",
+      "role": "admin"
+    },
+    {
+      "uid": 22,
+      "nickname": "測試暱稱",
+      "friend_code": "TESTCODE",
+      "role": "admin"
+    },
+    {
+      "uid": 36,
+      "nickname": "測試暱稱",
+      "friend_code": "TESTCODE",
+      "role": "admin"
+    },
+    {
+      "uid": 41,
+      "nickname": null,
+      "friend_code": "TESTCODE",
+      "role": "admin"
+    },
+    {
+      "uid": 45,
+      "nickname": "測試暱稱",
+      "friend_code": "TESTCODE",
+      "role": "admin"
+    },
+    {
+      "uid": 2,
+      "nickname": "測試暱稱",
+      "friend_code": "TESTCODE",
+      "role": "organizer"
+    },
+    {
+      "uid": 43,
+      "nickname": "測試暱稱",
+      "friend_code": "TESTCODE",
+      "role": "organizer"
+    }
+  ]
+}

@@ -9,6 +9,29 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../utils/birth_date.dart';
 
+/// 從底部彈出年／月／日滾輪選出生日期，取消回 null。後台更正生日也用這個，
+/// 範圍與使用者自己填寫時相同。
+Future<DateTime?> pickBirthDate(
+  BuildContext context, {
+  DateTime? initial,
+  bool seniorMode = false,
+}) {
+  final today = taiwanToday();
+  return showModalBottomSheet<DateTime>(
+    context: context,
+    backgroundColor: AppColors.creamLight,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
+    ),
+    builder: (_) => _BirthDateWheelSheet(
+      initial: initial ?? DateTime(today.year - 20, today.month, today.day),
+      first: earliestBirthDate(),
+      last: today,
+      seniorMode: seniorMode,
+    ),
+  );
+}
+
 class BirthDateField extends StatelessWidget {
   final DateTime? value;
   final ValueChanged<DateTime> onChanged;
@@ -22,19 +45,10 @@ class BirthDateField extends StatelessWidget {
   });
 
   Future<void> _pick(BuildContext context) async {
-    final today = taiwanToday();
-    final picked = await showModalBottomSheet<DateTime>(
-      context: context,
-      backgroundColor: AppColors.creamLight,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
-      ),
-      builder: (_) => _BirthDateWheelSheet(
-        initial: value ?? DateTime(today.year - 20, today.month, today.day),
-        first: earliestBirthDate(),
-        last: today,
-        seniorMode: seniorMode,
-      ),
+    final picked = await pickBirthDate(
+      context,
+      initial: value,
+      seniorMode: seniorMode,
     );
     if (picked == null) return;
     onChanged(picked);

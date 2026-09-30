@@ -39,32 +39,35 @@ class _EventsScreenState extends State<EventsScreen> {
   List<EventSummary> _events = [];
   int get _unread => NotificationSummaryService.notifier.value.events;
 
-  // 是否可發起活動（organizer/admin），初始 false 保守擋下，取得身分後才放行。
-  bool _canCreateEvent = false;
+  // 是否可發起活動（organizer/admin）。跟著 userNotifier 走：角色被管理員改掉時
+  // （account_role 推播會重抓 /api/me）按鈕即時跟著變；還沒取得身分前保守擋下。
+  bool get _canCreateEvent =>
+      UserService.userNotifier.value?.canCreateEvent ?? false;
 
   @override
   void initState() {
     super.initState();
-    NotificationSummaryService.notifier.addListener(_onSummaryChanged);
+    NotificationSummaryService.notifier.addListener(_rebuild);
+    UserService.userNotifier.addListener(_rebuild);
     _load();
     _loadRole();
   }
 
   @override
   void dispose() {
-    NotificationSummaryService.notifier.removeListener(_onSummaryChanged);
+    NotificationSummaryService.notifier.removeListener(_rebuild);
+    UserService.userNotifier.removeListener(_rebuild);
     super.dispose();
   }
 
-  void _onSummaryChanged() {
+  void _rebuild() {
     if (mounted) setState(() {});
   }
 
+  /// 確保 userNotifier 有值；拿到後由監聽器觸發重繪。
   Future<void> _loadRole() async {
     try {
-      final user = await UserService.fetchMe();
-      if (!mounted) return;
-      setState(() => _canCreateEvent = user.canCreateEvent);
+      await UserService.fetchMe();
     } catch (_) {
       // 拿不到身分就維持擋下，不影響列表其餘功能。
     }

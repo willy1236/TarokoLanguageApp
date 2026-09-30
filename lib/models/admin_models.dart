@@ -1,8 +1,10 @@
 // 管理員後台的資料模型。
-// 規格：Truku_backend 說明文件/API/內部管理.md §4～§8.9、安全防護.md「後台端點」。
+// 規格：Truku_backend 說明文件/API/內部管理.md §4～§8.10、安全防護.md「後台端點」。
 //
 // 後端的後台回應欄位有過渡期寫法（例如檢舉人暱稱曾叫 reporter_name），
 // 解析一律容許缺欄位，缺了寧可顯示空白也不要讓整頁載入失敗。
+
+import '../shared/utils/birth_date.dart';
 
 DateTime? _date(Object? v) =>
     v == null ? null : DateTime.tryParse('$v')?.toLocal();
@@ -565,3 +567,151 @@ const adminProfileFields = <({String key, String label})>[
   (key: 'self_intro', label: '自我介紹'),
   (key: 'avatar', label: '頭像'),
 ];
+
+// ── 使用者與角色（內部管理.md §8.9、§8.10）──────────────────────────
+
+/// 帳號角色的中文名稱。
+String adminRoleLabel(String role) => switch (role) {
+  'user' => '一般使用者',
+  'organizer' => '活動發起人',
+  'admin' => '管理員',
+  _ => role,
+};
+
+/// 可指定的角色，依畫面顯示順序。
+const adminRoles = ['user', 'organizer', 'admin'];
+
+String adminUserStatusLabel(String status) => switch (status) {
+  'active' => '正常',
+  'locked' => '已鎖定',
+  'pending_deletion' => '刪除中',
+  _ => status,
+};
+
+/// 以好友碼查到的使用者（GET /api/admin/users/lookup）。
+/// 後台唯一的「好友碼 → uid」轉換點；不含真名與 email。
+class AdminUserLookup {
+  final int uid;
+  final String friendCode;
+  final String nickname;
+
+  /// active／locked／pending_deletion。
+  final String status;
+  final String role;
+  final DateTime? birthDate;
+  final bool isIndigenous;
+  final String? ethnicGroup;
+  final int? tribeId;
+  final String? tribeName;
+  final int millet;
+  final DateTime? createdAt;
+
+  const AdminUserLookup({
+    required this.uid,
+    required this.friendCode,
+    this.nickname = '',
+    this.status = 'active',
+    this.role = 'user',
+    this.birthDate,
+    this.isIndigenous = false,
+    this.ethnicGroup,
+    this.tribeId,
+    this.tribeName,
+    this.millet = 0,
+    this.createdAt,
+  });
+
+  factory AdminUserLookup.fromJson(Map<String, dynamic> j) => AdminUserLookup(
+    uid: _int(j['uid']) ?? 0,
+    friendCode: j['friend_code'] as String? ?? '',
+    nickname: j['nickname'] as String? ?? '',
+    status: j['status'] as String? ?? 'active',
+    role: j['role'] as String? ?? 'user',
+    birthDate: parseApiDate(j['birth_date']),
+    isIndigenous: j['is_indigenous'] == true,
+    ethnicGroup: j['ethnic_group'] as String?,
+    tribeId: _int(j['tribe_id']),
+    tribeName: j['tribe_name'] as String?,
+    millet: _int(j['millet']) ?? 0,
+    createdAt: _date(j['created_at']),
+  );
+}
+
+/// 角色清單的一筆（GET /api/admin/users/roles，只列管理員與活動發起人）。
+class AdminRoleUser {
+  final int uid;
+  final String nickname;
+  final String friendCode;
+  final String role;
+
+  const AdminRoleUser({
+    required this.uid,
+    this.nickname = '',
+    this.friendCode = '',
+    required this.role,
+  });
+
+  factory AdminRoleUser.fromJson(Map<String, dynamic> j) => AdminRoleUser(
+    uid: _int(j['uid']) ?? 0,
+    nickname: j['nickname'] as String? ?? '',
+    friendCode: j['friend_code'] as String? ?? '',
+    role: j['role'] as String? ?? 'user',
+  );
+}
+
+/// PATCH /api/admin/users/:uid/role 的結果。[changed] 為 false 代表角色本來就是這個。
+class AdminRoleChange {
+  final String role;
+  final String? previousRole;
+  final bool changed;
+
+  const AdminRoleChange({
+    required this.role,
+    this.previousRole,
+    this.changed = true,
+  });
+
+  factory AdminRoleChange.fromJson(Map<String, dynamic> j) => AdminRoleChange(
+    role: j['role'] as String? ?? '',
+    previousRole: j['previous_role'] as String?,
+    changed: j['changed'] != false,
+  );
+}
+
+// ── 小米幣查帳（內部管理.md §4、§5）─────────────────────────────
+
+/// GET /api/admin/millet/reconcile：帳本加總是否等於目前餘額。
+class AdminMilletReconcile {
+  final int ledgerSum;
+  final int userMillet;
+  final bool ok;
+
+  const AdminMilletReconcile({
+    required this.ledgerSum,
+    required this.userMillet,
+    required this.ok,
+  });
+
+  factory AdminMilletReconcile.fromJson(Map<String, dynamic> j) =>
+      AdminMilletReconcile(
+        ledgerSum: _int(j['ledger_sum']) ?? 0,
+        userMillet: _int(j['user_millet']) ?? 0,
+        ok: j['ok'] == true,
+      );
+}
+
+// ── 出生日期更正（內部管理.md §8.3a）──────────────────────────────
+
+/// PATCH /api/admin/users/:uid/birth-date 的結果。[adult] 為更正後是否滿 18 歲。
+class AdminBirthDateResult {
+  final DateTime? birthDate;
+  final bool adult;
+
+  const AdminBirthDateResult({this.birthDate, required this.adult});
+
+  factory AdminBirthDateResult.fromJson(Map<String, dynamic> j) =>
+      AdminBirthDateResult(
+        birthDate: parseApiDate(j['birth_date']),
+        adult: j['adult'] == true,
+      );
+}

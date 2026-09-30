@@ -86,7 +86,9 @@ class FcmService {
     _eventDeletedListeners.add(listener);
   }
 
-  static void removeEventDeletedListener(void Function(int? eventId) listener) {
+  static void removeEventDeletedListener(
+    void Function(int? eventId) listener,
+  ) {
     _eventDeletedListeners.remove(listener);
   }
 
@@ -405,6 +407,15 @@ class FcmService {
       _showModerationNotice(message);
       return;
     }
+    if (_applyAccountRole(message.data)) {
+      final text = message.notification?.body ?? message.notification?.title;
+      if (text != null && text.isNotEmpty) {
+        scaffoldMessengerKey.currentState
+          ?..clearSnackBars()
+          ..showSnackBar(SnackBar(content: Text(text)));
+      }
+      return;
+    }
 
     final callId = _parseFriendCallIncoming(message.data);
     if (callId != null) {
@@ -542,6 +553,20 @@ class FcmService {
     dispatchEventDeleted(notice.eventId);
   }
 
+  /// 帳號角色被管理員變更（type: account_role）：重抓 /api/me，
+  /// 「發起活動」「管理後台」入口監聽 userNotifier，不必重開 App 就跟著變。
+  /// 回傳是否為這類推播。
+  static bool _applyAccountRole(Map<String, dynamic> data) {
+    if (data['type'] != 'account_role') return false;
+    unawaited(
+      UserService.fetchMe(forceRefresh: true).then<void>(
+        (_) {},
+        onError: (Object e) => debugPrint('角色變更後重抓 /api/me 失敗：$e'),
+      ),
+    );
+    return true;
+  }
+
   /// 處置通知（內容被隱藏、個人檔案被重設、確認違規、禁言／解除禁言）。
   /// title／body 已是後端寫好的完整中文說明，前景時直接彈對話框顯示，
   /// 不走 SnackBar——理由較長，且當事人需要確實看到。
@@ -643,6 +668,8 @@ class FcmService {
       _showModerationNotice(message);
       return;
     }
+    // 通知列已顯示過內容，點開只需讓入口跟上新角色。
+    if (_applyAccountRole(message.data)) return;
 
     final callId = _parseFriendCallIncoming(message.data);
     if (callId != null) {

@@ -8,7 +8,9 @@
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/admin_models.dart';
+import '../models/millet_transaction.dart';
 import '../models/page_info.dart';
+import '../shared/utils/birth_date.dart';
 
 typedef AdminPage<T> = ({List<T> items, PageInfo pageInfo});
 
@@ -124,6 +126,51 @@ class AdminService {
     });
   }
 
+  // ── 使用者與角色（內部管理.md §8.9、§8.10）───────────────────────
+  //
+  // 後台端點只收 uid；手上只有好友碼時一律先經 [lookupUser] 轉換。
+
+  /// 以好友碼查使用者（不分大小寫）。每次查詢後端都會記一筆操作紀錄。
+  static Future<AdminUserLookup> lookupUser(String friendCode) async {
+    final json = await ApiClient.get(
+      ApiConfig.adminUsersLookup,
+      query: {'friend_code': friendCode.trim()},
+    );
+    return AdminUserLookup.fromJson(json['user'] as Map<String, dynamic>);
+  }
+
+  /// 目前的管理員與活動發起人，管理員在前。
+  static Future<List<AdminRoleUser>> fetchRoleUsers() async {
+    final json = await ApiClient.get(ApiConfig.adminUsersRoles);
+    return _list(json, 'users', AdminRoleUser.fromJson);
+  }
+
+  /// 變更角色，[reason] 必填 1～200 字（長度由畫面先擋）。
+  static Future<AdminRoleChange> setRole(
+    int uid,
+    String role,
+    String reason,
+  ) async {
+    final json = await ApiClient.patch(ApiConfig.adminUserRole(uid), {
+      'role': role,
+      'reason': reason.trim(),
+    });
+    return AdminRoleChange.fromJson(json);
+  }
+
+  /// 更正出生日期，[reason] 必填 1～500 字。更正後未滿 18 歲的人後端會移出隨機配對佇列。
+  static Future<AdminBirthDateResult> updateBirthDate(
+    int uid,
+    DateTime birthDate,
+    String reason,
+  ) async {
+    final json = await ApiClient.patch(ApiConfig.adminUserBirthDate(uid), {
+      'birth_date': formatApiDate(birthDate),
+      'reason': reason.trim(),
+    });
+    return AdminBirthDateResult.fromJson(json);
+  }
+
   // ── 禁言（安全防護.md「後台端點」）────────────────────────────
 
   /// 目前有效（未翻案、未到期）的禁言。
@@ -181,6 +228,32 @@ class AdminService {
     await ApiClient.patch(ApiConfig.adminQuestionReport(id), {
       'status': status,
     });
+  }
+
+  // ── 小米幣查帳（內部管理.md §4、§5）唯讀，不寫操作紀錄 ─────────────────
+
+  /// 任一使用者的小米幣明細，形狀同使用者自己的明細。
+  static Future<MilletTransactionListResult> fetchMilletTransactions(
+    int uid, {
+    String? cursor,
+  }) async {
+    final json = await ApiClient.get(
+      ApiConfig.adminMilletTransactions,
+      query: {
+        'uid': '$uid',
+        ...PageInfo.query(cursor: cursor),
+      },
+    );
+    return MilletTransactionListResult.fromJson(json);
+  }
+
+  /// 帳本加總是否等於目前餘額。
+  static Future<AdminMilletReconcile> reconcileMillet(int uid) async {
+    final json = await ApiClient.get(
+      ApiConfig.adminMilletReconcile,
+      query: {'uid': '$uid'},
+    );
+    return AdminMilletReconcile.fromJson(json);
   }
 
   // ── 文章（文章模組.md §5）─────────────────────────────────────

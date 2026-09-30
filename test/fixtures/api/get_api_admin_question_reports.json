@@ -1,0 +1,59 @@
+{
+  "total": 3,
+  "page": 1,
+  "page_size": 20,
+  "page_info": {
+    "next_cursor": null,
+    "has_more": false
+  },
+  "reports": [
+    {
+      "id": 6,
+      "question_type": "listening",
+      "session_id": "cdb2ec64-05d6-4b1b-829e-ae7968a11786",
+      "question_id": "632deb92-c1d2-4171-af26-e6c29fde9bcd",
+      "word_id": 3580,
+      "sentence_id": null,
+      "message": "測試訊息",
+      "status": "pending",
+      "created_at": "2026-08-17T05:58:21.969Z",
+      "reporter_uid": 2,
+      "reporter_nickname": "測試暱稱",
+      "reporter_friend_code": "TESTCODE",
+      "content_truku": "qtaan",
+      "content_zh": "看起來"
+    },
+    {
+      "id": 5,
+      "question_type": "quiz",
+      "session_id": "c1960455-835d-44a7-9649-e41be455c66f",
+      "question_id": "47596ca7-3c6c-445c-ad59-39dfa8b88206",
+      "word_id": 3135,
+      "sentence_id": null,
+      "message": "測試訊息",
+      "status": "pending",
+      "created_at": "2026-08-17T05:56:37.785Z",
+      "reporter_uid": 2,
+      "reporter_nickname": "測試暱稱",
+      "reporter_friend_code": "TESTCODE",
+      "content_truku": "tmaqu",
+      "content_zh": "跳蚤"
+    },
+    {
+      "id": 4,
+      "question_type": "listening",
+      "session_id": "bd537e46-cd38-4462-aa06-758fc1c7079d",
+      "question_id": "78d86f20-3643-4334-b5f5-34e4cb6faeac",
+      "word_id": 3965,
+      "sentence_id": null,
+      "message": "測試訊息",
+      "status": "pending",
+      "created_at": "2026-08-17T03:05:33.965Z",
+      "reporter_uid": 20,
+      "reporter_nickname": "測試暱稱",
+      "reporter_friend_code": "TESTCODE",
+      "content_truku": "ini tduwa",
+      "content_zh": "不可以"
+    }
+  ]
+}
