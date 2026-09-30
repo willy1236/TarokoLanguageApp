@@ -44,10 +44,12 @@ void openForumReplyPush(RouteStack routes, int postId) {
   nav.push(ForumDetailScreen.route(postId: postId));
 }
 
-/// 點帶 case_id 的審核通知：開處置詳情頁；人已在那一頁就不再疊一份。
+/// 點帶 case_id 的審核通知：開處置詳情頁；人已在那一頁就地重載，不再疊一份。
 void openModerationCasePush(RouteStack routes, int caseId) {
-  if (routes.topPage?.settings.name ==
-      ModerationCaseScreen.routeNameFor(caseId)) {
+  final top = routes.topPage;
+  if (top != null &&
+      top.settings.name == ModerationCaseScreen.routeNameFor(caseId)) {
+    ModerationCaseScreen.refreshRoute(top);
     return;
   }
   final nav = routes.navigator;

@@ -43,6 +43,12 @@ class ModerationCaseScreen extends StatefulWidget {
     builder: (_) => ModerationCaseScreen(caseId: caseId),
   );
 
+  /// 開著的詳情頁的重載函式，以所在的 route 為 key。
+  static final Map<Route<dynamic>, VoidCallback> _live = {};
+
+  /// 點審核通知時人已在 [route] 這份詳情頁：就地重載（例如申訴結果出來了）。
+  static void refreshRoute(Route<dynamic> route) => _live[route]?.call();
+
   @override
   State<ModerationCaseScreen> createState() => _ModerationCaseScreenState();
 }
@@ -57,6 +63,18 @@ class _ModerationCaseScreenState extends State<ModerationCaseScreen> {
   bool _appealing = false;
   bool _submitting = false;
 
+  Route<dynamic>? _route;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null && _route == null) {
+      _route = route;
+      ModerationCaseScreen._live[route] = _load;
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -65,6 +83,8 @@ class _ModerationCaseScreenState extends State<ModerationCaseScreen> {
 
   @override
   void dispose() {
+    final route = _route;
+    if (route != null) ModerationCaseScreen._live.remove(route);
     _reason.dispose();
     super.dispose();
   }
