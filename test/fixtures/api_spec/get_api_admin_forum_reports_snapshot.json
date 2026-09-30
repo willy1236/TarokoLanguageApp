@@ -1,0 +1,61 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §8.1（2026-09-30 起的 target_snapshot／target_changed）。錄製帳號的佇列沒有被改過內容的檢舉，照規格手寫。",
+  "reports": [
+    {
+      "id": 21, "target_type": "post", "target_id": 12,
+      "reason": "廣告內容", "status": "pending",
+      "created_at": "2026-09-30T09:00:00Z", "reviewed_at": null, "case_id": null,
+      "reporter_uid": 5, "reporter_nickname": "小明", "reporter_friend_code": "BBBB2345",
+      "target_preview": "改過之後的標題", "target_deleted": false,
+      "target_call": null, "target_profile": null,
+      "target_snapshot": { "title": "檢舉當時的標題", "body": "檢舉當時的內文", "tribe_id": null },
+      "target_changed": true
+    },
+    {
+      "id": 22, "target_type": "event", "target_id": 55,
+      "reason": "詐騙活動", "status": "pending",
+      "created_at": "2026-09-30T09:10:00Z", "reviewed_at": null, "case_id": null,
+      "reporter_uid": 5, "reporter_nickname": "小明", "reporter_friend_code": "BBBB2345",
+      "target_preview": "目前的活動標題\n目前的活動說明", "target_deleted": false,
+      "target_call": null, "target_profile": null,
+      "target_snapshot": { "title": "當時的活動標題", "description": "當時的活動說明", "location": "當時的地點", "address": "當時的地址" },
+      "target_changed": false
+    },
+    {
+      "id": 23, "target_type": "profile", "target_id": 9,
+      "reason": "頭像不雅", "status": "pending",
+      "created_at": "2026-09-30T09:20:00Z", "reviewed_at": null, "case_id": null,
+      "reporter_uid": 6, "reporter_nickname": "小華", "reporter_friend_code": "CCCC2345",
+      "target_preview": null, "target_deleted": null,
+      "target_call": null,
+      "target_profile": { "uid": 9, "nickname": "目前的暱稱", "self_intro": "目前的自介", "avatar_url": null, "avatar_id": null },
+      "target_snapshot": {
+        "nickname": "當時的暱稱", "self_intro": "當時的自介",
+        "avatar_url": "https://example.com/old-avatar.webp", "avatar_id": null,
+        "avatar_evidence_url": "https://example.com/evidence.webp?sig=abc"
+      },
+      "target_changed": true
+    },
+    {
+      "id": 24, "target_type": "profile", "target_id": 10,
+      "reason": "暱稱不雅", "status": "pending",
+      "created_at": "2026-09-30T09:30:00Z", "reviewed_at": null, "case_id": null,
+      "reporter_uid": 6, "reporter_nickname": "小華", "reporter_friend_code": "CCCC2345",
+      "target_preview": null, "target_deleted": null,
+      "target_call": null,
+      "target_profile": { "uid": 10, "nickname": "暱稱", "self_intro": null, "avatar_url": null, "avatar_id": "avatar_gold_03" },
+      "target_snapshot": { "nickname": "暱稱", "self_intro": null, "avatar_url": null, "avatar_id": "avatar_gold_03" },
+      "target_changed": false
+    },
+    {
+      "id": 25, "target_type": "comment", "target_id": 30,
+      "reason": "人身攻擊", "status": "pending",
+      "created_at": "2026-09-30T09:40:00Z", "reviewed_at": null, "case_id": null,
+      "reporter_uid": 5, "reporter_nickname": "小明", "reporter_friend_code": "BBBB2345",
+      "target_preview": "被檢舉的留言", "target_deleted": false,
+      "target_call": null, "target_profile": null,
+      "target_snapshot": null,
+      "target_changed": false
+    }
+  ]
+}

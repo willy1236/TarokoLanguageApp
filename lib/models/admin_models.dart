@@ -37,6 +37,58 @@ class AdminProfileSnapshot {
       );
 }
 
+/// 檢舉送出當下存下來的內容（檢舉的 `target_snapshot`、案件的 `report_snapshot`）。
+/// 只有貼文、活動、個人檔案有；各類型用到的欄位不同，沒有的為 null，
+/// 這版不認得的欄位忽略。
+class AdminReportSnapshot {
+  // 貼文：title、body；活動：title、description、location、address。
+  final String? title;
+  final String? body;
+  final String? description;
+  final String? location;
+  final String? address;
+
+  // 個人檔案。
+  final String? nickname;
+  final String? selfIntro;
+  final String? avatarUrl;
+  final String? avatarId;
+
+  /// 檢舉當時自訂頭像的複本：限時網址（約 15 分鐘），不存到本機。
+  /// 當時用的是預設頭像或 Google 大頭貼時沒有這個欄位。
+  final String? avatarEvidenceUrl;
+
+  const AdminReportSnapshot({
+    this.title,
+    this.body,
+    this.description,
+    this.location,
+    this.address,
+    this.nickname,
+    this.selfIntro,
+    this.avatarUrl,
+    this.avatarId,
+    this.avatarEvidenceUrl,
+  });
+
+  /// 留言、私訊、通話與舊檢舉沒有存證，回 null。
+  static AdminReportSnapshot? tryParse(Object? raw) {
+    if (raw is! Map<String, dynamic>) return null;
+    return AdminReportSnapshot(
+      title: raw['title'] as String?,
+      body: raw['body'] as String?,
+      description: raw['description'] as String?,
+      location: raw['location'] as String?,
+      address: raw['address'] as String?,
+      nickname: raw['nickname'] as String?,
+      selfIntro: raw['self_intro'] as String?,
+      avatarUrl: raw['avatar_url'] as String?,
+      avatarId: raw['avatar_id'] as String?,
+      avatarEvidenceUrl: raw['avatar_evidence_url'] as String?,
+    );
+  }
+}
+
 /// 通話檢舉／案件的通話資訊（沒有內容，只有雙方與時間）。
 class AdminCallInfo {
   final int? callerUid;
@@ -89,6 +141,12 @@ class AdminReport {
   final AdminCallInfo? targetCall;
   final AdminProfileSnapshot? targetProfile;
 
+  /// 檢舉當時的內容；[targetPreview]／[targetProfile] 是目前的。請依這份判斷。
+  final AdminReportSnapshot? targetSnapshot;
+
+  /// 檢舉之後內容有沒有被改過（沒有存證時為 false）。
+  final bool targetChanged;
+
   const AdminReport({
     required this.id,
     required this.targetType,
@@ -105,6 +163,8 @@ class AdminReport {
     this.targetDeleted = false,
     this.targetCall,
     this.targetProfile,
+    this.targetSnapshot,
+    this.targetChanged = false,
   });
 
   factory AdminReport.fromJson(Map<String, dynamic> j) {
@@ -132,6 +192,8 @@ class AdminReport {
       targetProfile: profile is Map<String, dynamic>
           ? AdminProfileSnapshot.fromJson(profile)
           : null,
+      targetSnapshot: AdminReportSnapshot.tryParse(j['target_snapshot']),
+      targetChanged: j['target_changed'] == true,
     );
   }
 }
@@ -247,6 +309,9 @@ class AdminCase {
   final int offenderUid;
   final String offenderNickname;
 
+  /// 被處置者的好友碼，對照使用者來反映時給的好友碼用；指定對象仍用 uid。
+  final String? offenderFriendCode;
+
   /// active／locked／…；locked 時才能解鎖帳號。
   final String? offenderStatus;
 
@@ -269,12 +334,17 @@ class AdminCase {
   final Map<String, dynamic>? snapshot;
   final AdminCasePreview preview;
 
+  /// 由使用者檢舉開案時，那筆檢舉送出當下的內容；[preview] 是目前的。
+  /// 管理員直接下架、自動禁言、舊檢舉與留言／私訊／通話為 null。
+  final AdminReportSnapshot? reportSnapshot;
+
   const AdminCase({
     required this.id,
     required this.targetType,
     required this.targetId,
     required this.offenderUid,
     this.offenderNickname = '',
+    this.offenderFriendCode,
     this.offenderStatus,
     required this.source,
     this.reportId,
@@ -291,6 +361,7 @@ class AdminCase {
     this.strikeNumber,
     this.snapshot,
     this.preview = const PostCasePreview(),
+    this.reportSnapshot,
   });
 
   factory AdminCase.fromJson(Map<String, dynamic> j) {
@@ -301,6 +372,7 @@ class AdminCase {
       targetId: _int(j['target_id']) ?? 0,
       offenderUid: _int(j['offender_uid']) ?? 0,
       offenderNickname: j['offender_nickname'] as String? ?? '',
+      offenderFriendCode: j['offender_friend_code'] as String?,
       offenderStatus: j['offender_status'] as String?,
       source: j['source'] as String? ?? '',
       reportId: _int(j['report_id']),
@@ -319,6 +391,7 @@ class AdminCase {
           ? j['snapshot'] as Map<String, dynamic>
           : null,
       preview: AdminCasePreview.fromJson(type, j['preview']),
+      reportSnapshot: AdminReportSnapshot.tryParse(j['report_snapshot']),
     );
   }
 
@@ -331,6 +404,7 @@ class AdminCase {
     targetId: targetId,
     offenderUid: offenderUid,
     offenderNickname: offenderNickname,
+    offenderFriendCode: offenderFriendCode,
     offenderStatus: status,
     source: source,
     reportId: reportId,
@@ -347,6 +421,7 @@ class AdminCase {
     strikeNumber: strikeNumber,
     snapshot: snapshot,
     preview: preview,
+    reportSnapshot: reportSnapshot,
   );
 }
 

@@ -9,6 +9,7 @@ import '../../models/admin_models.dart';
 import '../../services/admin_service.dart';
 import 'admin_case_detail_screen.dart';
 import 'admin_error.dart';
+import 'widgets/admin_snapshot_compare.dart';
 import 'widgets/admin_widgets.dart';
 
 const _statuses = <AdminStatusOption>[
@@ -169,12 +170,31 @@ class AdminCaseCard extends StatelessWidget {
   final bool seniorMode;
   final VoidCallback? onTap;
 
+  /// 詳情頁為 true：有開案那筆檢舉當時的內容時，與目前的內容並列。
+  final bool compareSnapshot;
+
   const AdminCaseCard({
     super.key,
     required this.adminCase,
     this.seniorMode = false,
     this.onTap,
+    this.compareSnapshot = false,
   });
+
+  Widget _content() {
+    final current = AdminCasePreviewView(
+      adminCase: adminCase,
+      seniorMode: seniorMode,
+    );
+    final snapshot = adminCase.reportSnapshot;
+    if (!compareSnapshot || snapshot == null) return current;
+    return AdminSnapshotCompare(
+      snapshot: snapshot,
+      targetType: adminCase.targetType,
+      current: current,
+      seniorMode: seniorMode,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -222,6 +242,8 @@ class AdminCaseCard extends StatelessWidget {
                 '${c.offenderStatus == null ? '' : '（${c.offenderStatus}）'}',
             seniorMode: seniorMode,
           ),
+          if (c.offenderFriendCode != null && c.offenderFriendCode!.isNotEmpty)
+            AdminInfoRow('好友碼', c.offenderFriendCode!, seniorMode: seniorMode),
           AdminInfoRow(
             '來源',
             adminCaseSourceLabel(c.source),
@@ -232,7 +254,7 @@ class AdminCaseCard extends StatelessWidget {
             c.openedByNickname ?? '系統',
             seniorMode: seniorMode,
           ),
-          AdminCasePreviewView(adminCase: c, seniorMode: seniorMode),
+          _content(),
           if (c.status != 'pending') ...[
             const SizedBox(height: 8),
             AdminInfoRow(

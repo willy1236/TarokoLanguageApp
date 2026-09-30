@@ -1,0 +1,29 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §8.6（2026-09-30 起的 report_snapshot／offender_friend_code）。錄製帳號的違規區是空的，照規格手寫。",
+  "cases": [
+    {
+      "id": 41, "target_type": "post", "target_id": 100,
+      "offender_uid": 3, "offender_nickname": "作者", "offender_status": "active",
+      "offender_friend_code": "DDDD2345",
+      "source": "user_report", "report_id": 21,
+      "reason": "廣告內容", "content_removed": true,
+      "opened_by": 1, "opened_by_nickname": "管理員甲", "opened_at": "2026-09-30T10:00:00Z",
+      "status": "pending", "reviewed_by": null, "reviewed_by_nickname": null, "reviewed_at": null,
+      "review_note": null, "strike_number": null, "snapshot": null,
+      "preview": { "title": "目前的標題", "body": "目前的內文" },
+      "report_snapshot": { "title": "檢舉當時的標題", "body": "檢舉當時的內文", "tribe_id": null }
+    },
+    {
+      "id": 42, "target_type": "post", "target_id": 101,
+      "offender_uid": 4, "offender_nickname": "另一位作者", "offender_status": "active",
+      "offender_friend_code": "EEEE2345",
+      "source": "admin_delete", "report_id": null,
+      "reason": "廣告洗版", "content_removed": true,
+      "opened_by": 1, "opened_by_nickname": "管理員甲", "opened_at": "2026-09-30T11:00:00Z",
+      "status": "pending", "reviewed_by": null, "reviewed_by_nickname": null, "reviewed_at": null,
+      "review_note": null, "strike_number": null, "snapshot": null,
+      "preview": { "title": "違規標題", "body": "違規內文" },
+      "report_snapshot": null
+    }
+  ]
+}

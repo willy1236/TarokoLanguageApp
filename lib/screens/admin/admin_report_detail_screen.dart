@@ -1,4 +1,6 @@
 // 檢舉詳情：完整預覽＋「駁回」「判定成立」（一審）。
+// 有檢舉當時的內容時與目前的內容並列；下拉重新整理會重抓這筆檢舉
+// （頭像複本是限時網址，過期要靠這個拿新的）。
 //
 // 處理完（或發現已被別人處理）以 pop(true) 通知列表重新整理。錯誤一律顯示後端
 // message：SELF_INVOLVED 留在本頁（交給別位管理員）、ALREADY_REVIEWED 直接回列表
@@ -35,8 +37,24 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   /// 判定成立時後端說找不到被檢舉對象：這筆只能駁回。
   bool _targetGone = false;
 
-  AdminReport get _report => widget.report;
+  late AdminReport _report = widget.report;
   bool get _isProfile => _report.targetType == 'profile';
+
+  /// 後端沒有查單筆檢舉的端點：重抓同一個狀態的佇列，把這筆換成新的。
+  Future<void> _refresh() async {
+    try {
+      final page = await AdminService.fetchReports(status: _report.status);
+      if (!mounted) return;
+      for (final fresh in page.items) {
+        if (fresh.id == _report.id) {
+          setState(() => _report = fresh);
+          return;
+        }
+      }
+    } catch (e) {
+      if (mounted) handleAdminError(context, e);
+    }
+  }
 
   Future<void> _submit(String action) async {
     final actioned = action == 'action';
@@ -89,47 +107,56 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   @override
   Widget build(BuildContext context) => AdminScaffold(
     title: '檢舉詳情',
-    body: (context, senior) => ListView(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      children: [
-        AdminReportCard(report: _report, seniorMode: senior),
-        if (_report.status == 'pending') ...[
-          if (_isProfile)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                AppSpacing.md,
-                AppSpacing.md,
-                0,
-              ),
-              child: AdminProfileFieldPicker(
-                selected: _resetFields,
-                seniorMode: senior,
-                onChanged: (fields) => setState(() {
-                  _resetFields
-                    ..clear()
-                    ..addAll(fields);
-                }),
-              ),
-            ),
-          if (_targetGone)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(
-                AppSpacing.md,
-                AppSpacing.md,
-                AppSpacing.md,
-                0,
-              ),
-              child: Text(
-                '找不到被檢舉的對象，這筆請改用「駁回」。',
-                style: AppTypography.bodyLargeStyle(
+    body: (context, senior) => RefreshIndicator(
+      color: AppColors.primary,
+      onRefresh: _refresh,
+      child: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
+        children: [
+          AdminReportCard(
+            report: _report,
+            seniorMode: senior,
+            compareSnapshot: true,
+          ),
+          if (_report.status == 'pending') ...[
+            if (_isProfile)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  0,
+                ),
+                child: AdminProfileFieldPicker(
+                  selected: _resetFields,
                   seniorMode: senior,
-                  color: AppColors.dangerDark,
+                  onChanged: (fields) => setState(() {
+                    _resetFields
+                      ..clear()
+                      ..addAll(fields);
+                  }),
                 ),
               ),
-            ),
+            if (_targetGone)
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  AppSpacing.md,
+                  0,
+                ),
+                child: Text(
+                  '找不到被檢舉的對象，這筆請改用「駁回」。',
+                  style: AppTypography.bodyLargeStyle(
+                    seniorMode: senior,
+                    color: AppColors.dangerDark,
+                  ),
+                ),
+              ),
+          ],
         ],
-      ],
+      ),
     ),
     bottom: (context, senior) => _report.status != 'pending'
         ? const SizedBox.shrink()

@@ -1,4 +1,5 @@
 // 檢舉佇列：依狀態切換，每筆顯示類型、理由、檢舉人、時間與被檢舉內容預覽。
+// 檢舉後內容被改過的標「⚠️ 檢舉後已修改」；詳情頁另外並列檢舉當時與目前的內容。
 
 import 'package:flutter/material.dart';
 
@@ -9,6 +10,7 @@ import '../../models/admin_models.dart';
 import '../../services/admin_service.dart';
 import 'admin_error.dart';
 import 'admin_report_detail_screen.dart';
+import 'widgets/admin_snapshot_compare.dart';
 import 'widgets/admin_widgets.dart';
 
 const _statuses = <AdminStatusOption>[
@@ -118,12 +120,28 @@ class AdminReportCard extends StatelessWidget {
   final bool seniorMode;
   final VoidCallback? onTap;
 
+  /// 詳情頁為 true：有檢舉當時的內容時，與目前的內容並列。
+  final bool compareSnapshot;
+
   const AdminReportCard({
     super.key,
     required this.report,
     this.seniorMode = false,
     this.onTap,
+    this.compareSnapshot = false,
   });
+
+  Widget _content() {
+    final current = AdminReportPreview(report: report, seniorMode: seniorMode);
+    final snapshot = report.targetSnapshot;
+    if (!compareSnapshot || snapshot == null) return current;
+    return AdminSnapshotCompare(
+      snapshot: snapshot,
+      targetType: report.targetType,
+      current: current,
+      seniorMode: seniorMode,
+    );
+  }
 
   @override
   Widget build(BuildContext context) => AdminCard(
@@ -168,7 +186,12 @@ class AdminReportCard extends StatelessWidget {
           report.reporterNickname ?? '（未知）',
           seniorMode: seniorMode,
         ),
-        AdminReportPreview(report: report, seniorMode: seniorMode),
+        if (report.targetChanged)
+          Padding(
+            padding: const EdgeInsets.only(top: 6),
+            child: AdminChangedBadge(seniorMode: seniorMode),
+          ),
+        _content(),
       ],
     ),
   );

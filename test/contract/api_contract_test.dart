@@ -263,7 +263,12 @@ final List<_Contract> _adminContracts = [
   _Contract(
     'get_api_admin_forum_reports.json',
     'AdminReport',
-    _each('reports', AdminReport.fromJson),
+    _each('reports', (json) {
+      // 改名的話「檢舉後已修改」會默默消失，所以直接檢查欄位在不在。
+      expect(json['target_changed'], isA<bool>());
+      expect(json.containsKey('target_snapshot'), isTrue);
+      AdminReport.fromJson(json);
+    }),
   ),
   _Contract(
     'get_api_admin_moderation_cases.json',
