@@ -1,6 +1,8 @@
 // 一對一聊天對話串。訂閱 ChatController 的 WS 事件即時收訊息/已讀，
 // 開啟時 markRead，往上滑分頁補歷史；陌生人（未加好友）超過 3 則會收到
 // NEED_FRIEND，被禁言收到 MUTED，皆用 SnackBar 呈現、不猜測前端狀態。
+// 對象是刪除中或被鎖帳號（歷史訊息回應的 partner.unavailable）時歷史照常顯示，
+// 輸入列停用：送出一定會被後端擋。
 
 import 'package:flutter/material.dart';
 
@@ -100,6 +102,18 @@ class _ChatScreenState extends State<ChatScreen> {
   /// 標題列頭像要查商店目錄才知道 avatarId/frameId 對應的圖。
   Map<String, ShopItem> _itemCatalogById = const {};
 
+  /// 後端回的對象資料，有值就蓋過建構子帶進來的暱稱與頭像；
+  /// 還沒載到、或對方不存在／有封鎖關係時為 null。
+  ChatPartner? _partner;
+
+  bool get _partnerUnavailable => _partner?.unavailable ?? false;
+  String? get _nickname => _partner?.nickname ?? widget.partnerNickname;
+  String? get _avatarUrl =>
+      _partner == null ? widget.partnerAvatarUrl : _partner!.avatarUrl;
+  String? get _avatarId =>
+      _partner == null ? widget.avatarId : _partner!.avatarId;
+  String? get _frameId => _partner == null ? widget.frameId : _partner!.frameId;
+
   /// 這個聊天室所在的 route，推播重載的登記 key。
   Route<dynamic>? _route;
 
@@ -125,7 +139,8 @@ class _ChatScreenState extends State<ChatScreen> {
   }
 
   Future<void> _loadItemCatalog() async {
-    if (widget.avatarId == null && widget.frameId == null) return;
+    if (_avatarId == null && _frameId == null) return;
+    if (_itemCatalogById.isNotEmpty) return;
     try {
       final catalog = await ShopService.fetchItemCatalogCached();
       if (!mounted) return;
@@ -191,8 +206,10 @@ class _ChatScreenState extends State<ChatScreen> {
           ..clear()
           ..addAll(page.messages);
         _nextCursor = page.nextCursor;
+        _partner = page.partner;
         _loading = false;
       });
+      _loadItemCatalog();
     } catch (e, st) {
       debugPrint('Failed to fetch messages: $e');
       debugPrintStack(stackTrace: st);
@@ -222,6 +239,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ..clear()
           ..addAll(merged ?? page.messages);
         if (merged == null) _nextCursor = page.nextCursor;
+        _partner = page.partner;
       });
       if (hadUnread) _markRead();
     } catch (e) {
@@ -332,7 +350,7 @@ class _ChatScreenState extends State<ChatScreen> {
       MaterialPageRoute(
         builder: (_) => DirectedCallWaitingScreen(
           calleeFriendCode: widget.friendCode,
-          calleeNickname: widget.partnerNickname,
+          calleeNickname: _nickname,
         ),
       ),
     );
@@ -357,13 +375,16 @@ class _ChatScreenState extends State<ChatScreen> {
     ),
   );
 
-  Widget _partnerAvatar(bool seniorMode) => FramedUserAvatar(
-    avatarId: widget.avatarId,
-    avatarUrl: widget.partnerAvatarUrl,
-    frameId: widget.frameId,
-    itemCatalogById: _itemCatalogById,
-    size: seniorMode ? 40 : 32,
-    fallbackIconColor: AppColors.gold,
+  Widget _partnerAvatar(bool seniorMode) => Opacity(
+    opacity: _partnerUnavailable ? 0.55 : 1,
+    child: FramedUserAvatar(
+      avatarId: _avatarId,
+      avatarUrl: _avatarUrl,
+      frameId: _frameId,
+      itemCatalogById: _itemCatalogById,
+      size: seniorMode ? 40 : 32,
+      fallbackIconColor: _partnerUnavailable ? AppColors.fog : AppColors.gold,
+    ),
   );
 
   Future<void> _openPartnerProfile() async {
@@ -382,23 +403,32 @@ class _ChatScreenState extends State<ChatScreen> {
         _partnerAvatar(seniorMode),
         const SizedBox(width: 8),
         Expanded(
-          child: GestureDetector(
-            // 頭像旁的暱稱是對方公開檔案的入口（好友列表已不再直接進檔案頁）。
-            onTap: widget.linkToProfile ? _openPartnerProfile : null,
-            behavior: HitTestBehavior.opaque,
-            child: NicknameText(
-              widget.partnerNickname?.isNotEmpty == true
-                  ? widget.partnerNickname!
-                  : '未命名旅人',
-              friendCode: widget.friendCode,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.titleStyle(
-                seniorMode: seniorMode,
-                color: AppColors.ink,
-              ),
-            ),
-          ),
+          child: _partnerUnavailable
+              // 暱稱是後端的替代文字，不附末碼；公開檔案也進不去。
+              ? Text(
+                  _nickname?.isNotEmpty == true ? _nickname! : '暫時無法使用',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.titleStyle(
+                    seniorMode: seniorMode,
+                    color: AppColors.fog,
+                  ),
+                )
+              : GestureDetector(
+                  // 頭像旁的暱稱是對方公開檔案的入口（好友列表已不再直接進檔案頁）。
+                  onTap: widget.linkToProfile ? _openPartnerProfile : null,
+                  behavior: HitTestBehavior.opaque,
+                  child: NicknameText(
+                    _nickname?.isNotEmpty == true ? _nickname! : '未命名旅人',
+                    friendCode: widget.friendCode,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.titleStyle(
+                      seniorMode: seniorMode,
+                      color: AppColors.ink,
+                    ),
+                  ),
+                ),
         ),
         IconButton(
           onPressed: _startVideoCall,
@@ -522,7 +552,7 @@ class _ChatScreenState extends State<ChatScreen> {
           Expanded(
             child: TextField(
               controller: _inputController,
-              enabled: !_locked,
+              enabled: !_inputDisabled,
               minLines: 1,
               maxLines: 4,
               inputFormatters: const [
@@ -533,7 +563,11 @@ class _ChatScreenState extends State<ChatScreen> {
                 color: AppColors.ink,
               ),
               decoration: InputDecoration(
-                hintText: _locked ? '帳號唯讀中，無法傳送訊息' : '傳送訊息…',
+                hintText: _locked
+                    ? '帳號唯讀中，無法傳送訊息'
+                    : _partnerUnavailable
+                    ? '對方暫時無法使用，無法傳送訊息'
+                    : '傳送訊息…',
                 hintStyle: AppTypography.bodyLargeStyle(
                   seniorMode: seniorMode,
                   color: AppColors.fog,
@@ -554,7 +588,7 @@ class _ChatScreenState extends State<ChatScreen> {
           ),
           const SizedBox(width: 8),
           IconButton(
-            onPressed: _sending || _locked ? null : _send,
+            onPressed: _sending || _inputDisabled ? null : _send,
             iconSize: AppIconSize.action(seniorMode),
             icon: const Icon(Icons.send, color: AppColors.primary),
           ),
@@ -565,6 +599,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   /// 唯讀帳號不能傳訊息（後端 403 ACCOUNT_LOCKED），輸入列停用。
   bool get _locked => accountLockController.locked;
+
+  bool get _inputDisabled => _locked || _partnerUnavailable;
 }
 
 class _ReportDialog extends StatefulWidget {

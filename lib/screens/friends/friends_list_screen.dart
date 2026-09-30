@@ -332,8 +332,17 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   }
 
   Widget _friendCard(Friendship f, bool seniorMode) {
-    if (f.unavailable) return _unavailableFriendCard(f, seniorMode);
     final conversation = _conversationsByCode[f.friendCode.toUpperCase()];
+    // 好友列表與對話列表各自帶 unavailable，任一邊說不能用就照不能用顯示。
+    if (f.unavailable || (conversation?.unavailable ?? false)) {
+      return _unavailableFriendCard(
+        f,
+        seniorMode,
+        // 只有對話列表說不能用時，好友列表的暱稱還是本名，改用對話列表給的替代文字。
+        nickname: f.unavailable ? f.nickname : conversation?.nickname,
+        hasHistory: conversation?.lastMessage != null,
+      );
+    }
     // 整列點擊直接進聊天室（原本是進公開檔案，另有一顆聊天鈕，兩者重複且
     // 小按鈕在實機容易誤觸）。要看公開檔案改從聊天室標題列的暱稱進入。
     return GestureDetector(
@@ -347,7 +356,13 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         ),
         child: Row(
           children: [
-            _avatar(f, seniorMode),
+            _avatar(
+              nickname: f.nickname,
+              avatarId: f.avatarId,
+              avatarUrl: f.avatarUrl,
+              frameId: f.frameId,
+              seniorMode: seniorMode,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -411,58 +426,84 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     );
   }
 
-  /// 帳號刪除中／已刪除的好友：灰階顯示、不能開檔案／傳訊／切換羈絆展示，
+  /// 帳號刪除中／被鎖的好友：灰階顯示、不能開檔案／傳訊／切換羈絆展示，
   /// 保留在列表避免使用者誤會被刪好友（後端決策 #17）。
-  Widget _unavailableFriendCard(Friendship f, bool seniorMode) {
-    return Opacity(
-      opacity: 0.55,
-      child: Container(
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.cream,
-          borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.creamDeep),
+  /// [hasHistory] 為 true 時可點進聊天室看歷史訊息（輸入列在聊天室內停用）。
+  Widget _unavailableFriendCard(
+    Friendship f,
+    bool seniorMode, {
+    String? nickname,
+    bool hasHistory = false,
+  }) {
+    return GestureDetector(
+      onTap: hasHistory ? () => _chatWithUnavailable(f) : null,
+      child: Opacity(
+        opacity: 0.55,
+        child: _unavailableCardBody(
+          f,
+          nickname?.isNotEmpty == true ? nickname! : '暫時無法使用',
+          seniorMode,
         ),
-        child: Row(
-          children: [
-            _avatar(f, seniorMode),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // 對方帳號已無法使用，暱稱是後端的替代文字，不附末碼。
-                  Text(
-                    f.nickname?.isNotEmpty == true ? f.nickname! : '暫時無法使用',
-                    style: AppTypography.bodyLargeStyle(
-                      seniorMode: seniorMode,
-                      color: AppColors.fog,
-                    ),
+      ),
+    );
+  }
+
+  /// 對方的暱稱、頭像已被後端換成替代值，不帶進聊天室，由聊天室自己讀 partner。
+  Future<void> _chatWithUnavailable(Friendship f) async {
+    await Navigator.of(
+      context,
+    ).push(ChatScreen.route(friendCode: f.friendCode));
+    if (mounted) _load();
+  }
+
+  Widget _unavailableCardBody(Friendship f, String nickname, bool seniorMode) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: AppColors.cream,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppColors.creamDeep),
+      ),
+      child: Row(
+        children: [
+          // 一律用預設頭像：後端對無法使用的帳號不給頭像。
+          _avatar(nickname: nickname, seniorMode: seniorMode),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // 對方帳號已無法使用，暱稱是後端的替代文字，不附末碼。
+                Text(
+                  nickname,
+                  style: AppTypography.bodyLargeStyle(
+                    seniorMode: seniorMode,
+                    color: AppColors.fog,
                   ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '對方帳號目前無法使用',
-                    style: AppTypography.bodyStyle(
-                      seniorMode: seniorMode,
-                      color: AppColors.fog,
-                    ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '對方帳號目前無法使用',
+                  style: AppTypography.bodyStyle(
+                    seniorMode: seniorMode,
+                    color: AppColors.fog,
                   ),
-                ],
+                ),
+              ],
+            ),
+          ),
+          // 沒有好友碼就無從指定對象，不給按（後端 2026-09-29 起都會給）。
+          if (f.friendCode.isNotEmpty)
+            IconButton(
+              tooltip: '刪除好友',
+              onPressed: () => _removeUnavailableFriend(f),
+              iconSize: AppIconSize.action(seniorMode),
+              icon: const Icon(
+                Icons.person_remove_outlined,
+                color: AppColors.ink,
               ),
             ),
-            // 沒有好友碼就無從指定對象，不給按（後端 2026-09-29 起都會給）。
-            if (f.friendCode.isNotEmpty)
-              IconButton(
-                tooltip: '刪除好友',
-                onPressed: () => _removeUnavailableFriend(f),
-                iconSize: AppIconSize.action(seniorMode),
-                icon: const Icon(
-                  Icons.person_remove_outlined,
-                  color: AppColors.ink,
-                ),
-              ),
-          ],
-        ),
+        ],
       ),
     );
   }
@@ -482,19 +523,25 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     ),
   );
 
-  Widget _avatar(Friendship f, bool seniorMode) {
+  Widget _avatar({
+    required String? nickname,
+    String? avatarId,
+    String? avatarUrl,
+    String? frameId,
+    required bool seniorMode,
+  }) {
     final size = seniorMode ? 52.0 : 44.0;
     return Container(
-      decoration: f.frameId == null
+      decoration: frameId == null
           ? BoxDecoration(
               shape: BoxShape.circle,
               border: Border.all(color: AppColors.gold, width: 1.5),
             )
           : null,
       child: FramedUserAvatar(
-        avatarId: f.avatarId,
-        avatarUrl: f.avatarUrl,
-        frameId: f.frameId,
+        avatarId: avatarId,
+        avatarUrl: avatarUrl,
+        frameId: frameId,
         itemCatalogById: _itemCatalogById,
         size: size,
         fallbackIconColor: AppColors.gold,
@@ -505,7 +552,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
           ),
           child: Center(
             child: Text(
-              f.nickname?.characters.firstOrNull ?? '?',
+              nickname?.characters.firstOrNull ?? '?',
               style: AppTypography.bodyLargeStyle(color: AppColors.gold),
             ),
           ),

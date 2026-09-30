@@ -94,6 +94,12 @@ final List<_Contract> _contracts = [
     'FriendMessage',
     _paged(_each('messages', FriendMessage.fromJson)),
   ),
+  // 聊天室靠 partner.unavailable 決定能不能傳訊，欄位改名會默默變成「永遠可傳」。
+  _Contract('get_api_friend_messages.json', 'ChatPartner', (json) {
+    final partner = json['partner'] as Map<String, dynamic>;
+    expect(partner['unavailable'], isA<bool>());
+    ChatPartner.fromJson(partner);
+  }),
   _Contract(
     'get_api_videos.json',
     'VideoListResponse',

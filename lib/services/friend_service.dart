@@ -16,7 +16,14 @@ class ChatMessagePage {
   /// 往上翻更舊訊息的游標；null 代表已到最早一則。
   final String? nextCursor;
 
-  const ChatMessagePage({required this.messages, this.nextCursor});
+  /// 對話對象；對方不存在或雙方有封鎖關係時為 null。
+  final ChatPartner? partner;
+
+  const ChatMessagePage({
+    required this.messages,
+    this.nextCursor,
+    this.partner,
+  });
 }
 
 class FriendService {
@@ -134,9 +141,13 @@ class FriendService {
       data,
       'messages',
     ).map((e) => FriendMessage.fromJson(e as Map<String, dynamic>)).toList();
+    final partner = data['partner'];
     return ChatMessagePage(
       messages: messages,
       nextCursor: PageInfo.fromResponse(data).nextCursor,
+      partner: partner is Map<String, dynamic>
+          ? ChatPartner.fromJson(partner)
+          : null,
     );
   }
 
