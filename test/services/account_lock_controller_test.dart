@@ -51,6 +51,42 @@ void main() {
       expect(accountLockController.locked, isFalse);
     });
 
+    test('申訴成立且解除停權（appeal_accepted 帶 account_unlocked: "true"）解除唯讀', () {
+      accountLockController.setLocked(true);
+
+      final result = accountLockController.applyModerationPush({
+        'type': 'moderation',
+        'action': 'appeal_accepted',
+        'case_id': '31',
+        'account_unlocked': 'true',
+      });
+
+      expect(result, isFalse);
+      expect(accountLockController.locked, isFalse);
+    });
+
+    test('申訴成立但沒有解除停權、申訴駁回：不動唯讀狀態', () {
+      accountLockController.setLocked(true);
+
+      expect(
+        accountLockController.applyModerationPush({
+          'type': 'moderation',
+          'action': 'appeal_accepted',
+          'case_id': '31',
+        }),
+        isNull,
+      );
+      expect(
+        accountLockController.applyModerationPush({
+          'type': 'moderation',
+          'action': 'appeal_rejected',
+          'case_id': '31',
+        }),
+        isNull,
+      );
+      expect(accountLockController.locked, isTrue);
+    });
+
     test('locked: "true" 設為唯讀', () {
       final result = accountLockController.applyModerationPush({
         'type': 'moderation',

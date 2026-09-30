@@ -25,6 +25,11 @@ Map<String, dynamic> _me(String role) => {
   'role': role,
 };
 
+/// 權限變更也會進收件匣，推播一到會順便重抓未讀數。
+const _summaryRoute = {
+  '/api/notifications/summary': {'total': 0},
+};
+
 Widget _app() => MaterialApp(
   scaffoldMessengerKey: scaffoldMessengerKey,
   home: const Scaffold(body: SizedBox()),
@@ -47,6 +52,7 @@ void main() {
     final paths = <String>[];
     installMockClient({
       '/api/me': _me('organizer'),
+      ..._summaryRoute,
     }, onRequest: (r) => paths.add(r.url.path));
     await tester.pumpWidget(_app());
 
@@ -54,7 +60,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('你的帳號權限已變更為「活動發起人」。'), findsOneWidget);
-    expect(paths, ['/api/me']);
+    expect(paths.where((p) => p == '/api/me'), hasLength(1));
     expect(UserService.userNotifier.value?.canCreateEvent, isTrue);
   });
 
@@ -62,13 +68,14 @@ void main() {
     final paths = <String>[];
     installMockClient({
       '/api/me': _me('user'),
+      ..._summaryRoute,
     }, onRequest: (r) => paths.add(r.url.path));
     await tester.pumpWidget(_app());
 
     FcmService.handleOpenedMessage(_roleMessage());
     await tester.pumpAndSettle();
 
-    expect(paths, ['/api/me']);
+    expect(paths.where((p) => p == '/api/me'), hasLength(1));
     expect(find.byType(SnackBar), findsNothing);
     expect(UserService.userNotifier.value?.role, 'user');
   });

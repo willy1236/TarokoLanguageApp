@@ -97,6 +97,10 @@ Future<void> main() async {
   // 點論壇回覆通知 → 導到該貼文詳情頁。
   FcmService.onForumReplyTapped = (postId) =>
       openForumReplyPush(routeStack, postId);
+  // 點帶案件的審核通知 → 處置詳情頁；點官方公告通知 → 收件匣的公告分頁。
+  FcmService.onModerationCaseTapped = (caseId) =>
+      openModerationCasePush(routeStack, caseId);
+  FcmService.onInboxTapped = (category) => openInboxPush(routeStack, category);
   // 收到好友定向來電（前景推播、或背景點擊通知開啟）→ 導到響鈴畫面。
   FcmService.onFriendCallIncoming = (call) {
     navigatorKey.currentState?.push(

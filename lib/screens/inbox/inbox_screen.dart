@@ -51,6 +51,11 @@ class InboxScreen extends StatefulWidget {
 
   const InboxScreen({super.key, this.initialCategory});
 
+  static Route<void> route({String? initialCategory}) =>
+      MaterialPageRoute<void>(
+        builder: (_) => InboxScreen(initialCategory: initialCategory),
+      );
+
   @override
   State<InboxScreen> createState() => _InboxScreenState();
 }
