@@ -65,11 +65,14 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
       final status = await AccountService.reactivate();
       accountLockController.setLocked(status.isLocked);
       UserService.clearCache();
-      final user = await UserService.fetchMe(forceRefresh: true);
+      // 條款改過版時 /api/me 也會被 CONSENT_REQUIRED 擋下：不查，直接進同意畫面，
+      // 同意完成後由該畫面接續檢查基本資料。
+      final user = status.consentRequired
+          ? null
+          : await UserService.fetchMe(forceRefresh: true);
       if (!mounted) return;
-      // 條款未同意由 ApiClient 的 CONSENT_REQUIRED 全域處理，這裡不另查。
       Navigator.of(context).pushNamedAndRemoveUntil(
-        entryRouteFor(user, allConsented: true),
+        entryRouteFor(user, allConsented: !status.consentRequired),
         (_) => false,
       );
       ScaffoldMessenger.of(context).showSnackBar(

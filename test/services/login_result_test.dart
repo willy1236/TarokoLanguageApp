@@ -50,6 +50,27 @@ void main() {
     expect(AccountStatus.fromJson({'status': 'active'}).isLocked, isFalse);
   });
 
+  test('reactivate 的 consent_required：true 才要先同意條款，缺欄位當作不用', () {
+    expect(
+      AccountStatus.fromJson({
+        'status': 'active',
+        'consent_required': true,
+      }).consentRequired,
+      isTrue,
+    );
+    expect(
+      AccountStatus.fromJson({
+        'status': 'active',
+        'consent_required': false,
+      }).consentRequired,
+      isFalse,
+    );
+    expect(
+      AccountStatus.fromJson({'status': 'active'}).consentRequired,
+      isFalse,
+    );
+  });
+
   test('daysUntilPurge 無條件進位、過期為 0', () {
     final now = DateTime(2026, 9, 15, 12);
     expect(daysUntilPurge(DateTime(2026, 9, 16, 12), now: now), 1);
