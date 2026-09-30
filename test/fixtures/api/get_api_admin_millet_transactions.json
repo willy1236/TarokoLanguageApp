@@ -1,0 +1,161 @@
+{
+  "transactions": [
+    {
+      "id": "54",
+      "delta": -50,
+      "reason": "purchase",
+      "ref_id": "avatar_green_01",
+      "balance_after": 350,
+      "created_at": "2026-09-17T11:14:37.507Z"
+    },
+    {
+      "id": "53",
+      "delta": 50,
+      "reason": "checkin",
+      "ref_id": "2026-09-17",
+      "balance_after": 400,
+      "created_at": "2026-09-17T11:13:05.777Z"
+    },
+    {
+      "id": "50",
+      "delta": 50,
+      "reason": "checkin",
+      "ref_id": "2026-09-13",
+      "balance_after": 350,
+      "created_at": "2026-09-13T02:45:33.107Z"
+    },
+    {
+      "id": "46",
+      "delta": 50,
+      "reason": "checkin",
+      "ref_id": "2026-09-12",
+      "balance_after": 300,
+      "created_at": "2026-09-11T16:22:00.479Z"
+    },
+    {
+      "id": "44",
+      "delta": -50,
+      "reason": "purchase",
+      "ref_id": "avatar_blue_02",
+      "balance_after": 250,
+      "created_at": "2026-09-11T04:10:46.602Z"
+    },
+    {
+      "id": "43",
+      "delta": -100,
+      "reason": "purchase",
+      "ref_id": "frame_05",
+      "balance_after": 300,
+      "created_at": "2026-09-10T15:56:28.433Z"
+    },
+    {
+      "id": "42",
+      "delta": -200,
+      "reason": "purchase",
+      "ref_id": "avatar_gold_03",
+      "balance_after": 400,
+      "created_at": "2026-09-10T15:56:06.930Z"
+    },
+    {
+      "id": "41",
+      "delta": 50,
+      "reason": "checkin",
+      "ref_id": "2026-09-10",
+      "balance_after": 600,
+      "created_at": "2026-09-10T15:55:35.396Z"
+    },
+    {
+      "id": "39",
+      "delta": -200,
+      "reason": "purchase",
+      "ref_id": "avatar_gold_01",
+      "balance_after": 550,
+      "created_at": "2026-09-09T10:32:56.601Z"
+    },
+    {
+      "id": "38",
+      "delta": 50,
+      "reason": "checkin",
+      "ref_id": "2026-09-09",
+      "balance_after": 750,
+      "created_at": "2026-09-09T10:32:50.210Z"
+    },
+    {
+      "id": "36",
+      "delta": 50,
+      "reason": "checkin",
+      "ref_id": "2026-09-04",
+      "balance_after": 700,
+      "created_at": "2026-09-04T12:29:00.766Z"
+    },
+    {
+      "id": "33",
+      "delta": 50,
+      "reason": "checkin",
+      "ref_id": "2026-09-02",
+      "balance_after": 650,
+      "created_at": "2026-09-02T02:07:45.406Z"
+    },
+    {
+      "id": "28",
+      "delta": 50,
+      "reason": "checkin",
+      "ref_id": "2026-09-01",
+      "balance_after": 600,
+      "created_at": "2026-09-01T07:55:31.738Z"
+    },
+    {
+      "id": "15",
+      "delta": 50,
+      "reason": "checkin",
+      "ref_id": "2026-07-31",
+      "balance_after": 550,
+      "created_at": "2026-07-31T07:00:41.405Z"
+    },
+    {
+      "id": "13",
+      "delta": 50,
+      "reason": "checkin",
+      "ref_id": "2026-07-26",
+      "balance_after": 500,
+      "created_at": "2026-07-26T04:15:44.327Z"
+    },
+    {
+      "id": "11",
+      "delta": 50,
+      "reason": "checkin",
+      "ref_id": "2026-07-25",
+      "balance_after": 450,
+      "created_at": "2026-07-25T12:35:17.209Z"
+    },
+    {
+      "id": "10",
+      "delta": 50,
+      "reason": "checkin",
+      "ref_id": "2026-07-24",
+      "balance_after": 400,
+      "created_at": "2026-07-24T09:50:36.319Z"
+    },
+    {
+      "id": "9",
+      "delta": -100,
+      "reason": "purchase",
+      "ref_id": "frame_01",
+      "balance_after": 350,
+      "created_at": "2026-07-24T09:25:45.209Z"
+    },
+    {
+      "id": "8",
+      "delta": -50,
+      "reason": "purchase",
+      "ref_id": "avatar_blue_01",
+      "balance_after": 450,
+      "created_at": "2026-07-24T05:38:24.341Z"
+    }
+  ],
+  "next_cursor": null,
+  "page_info": {
+    "next_cursor": null,
+    "has_more": false
+  }
+}

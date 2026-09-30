@@ -11,6 +11,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_application_1/models/admin_models.dart';
 import 'package:flutter_application_1/models/article_models.dart';
 import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/models/friend_message_model.dart';
@@ -259,6 +260,40 @@ final List<_Contract> _contracts = [
   ),
 ];
 
+/// 後台端點一律用 uid 指定使用者，開關開啟後照舊回 uid，不做剝除回放。
+final List<_Contract> _adminContracts = [
+  _Contract(
+    'get_api_admin_forum_reports.json',
+    'AdminReport',
+    _each('reports', AdminReport.fromJson),
+  ),
+  _Contract(
+    'get_api_admin_moderation_cases.json',
+    'AdminCase',
+    _each('cases', AdminCase.fromJson),
+  ),
+  _Contract(
+    'get_api_admin_mutes.json',
+    'AdminMute',
+    _each('mutes', AdminMute.fromJson),
+  ),
+  _Contract(
+    'get_api_admin_banned_words.json',
+    'AdminBannedWord',
+    _each('words', AdminBannedWord.fromJson),
+  ),
+  _Contract(
+    'get_api_admin_question_reports.json',
+    'AdminQuestionReport',
+    _paged(_each('reports', AdminQuestionReport.fromJson)),
+  ),
+  _Contract(
+    'get_api_admin_millet_transactions.json',
+    'MilletTransactionListResult',
+    _paged(MilletTransactionListResult.fromJson),
+  ),
+];
+
 /// 回應裡是自己的 uid，開關開啟後照舊保留，不能剝掉。
 const _ownUidFixtures = {'get_api_me.json', 'patch_api_me.json'};
 
@@ -291,7 +326,7 @@ void main() {
   });
 
   group('後端回應契約（離線回放錄製的真實回應）', () {
-    for (final c in _contracts) {
+    for (final c in [..._contracts, ..._adminContracts]) {
       test('${c.fixture} → ${c.model}', () {
         if (!hasFixture(c.fixture)) {
           markTestSkipped(
