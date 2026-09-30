@@ -125,7 +125,7 @@ class _InboxScreenState extends State<InboxScreen>
       actions: [
         IconButton(
           tooltip: '推播設定',
-          icon: const Icon(Icons.settings_outlined),
+          icon: const Icon(Icons.settings_outlined, color: AppColors.fog),
           iconSize: AppIconSize.action(seniorMode),
           onPressed: () => showTribeEventPushSheet(context),
         ),
@@ -139,6 +139,7 @@ class _InboxScreenState extends State<InboxScreen>
             labelColor: AppColors.ink,
             unselectedLabelColor: AppColors.fog,
             indicatorColor: AppColors.primary,
+            dividerColor: AppColors.creamDeep,
             labelPadding: EdgeInsets.zero,
             labelStyle: AppTypography.bodyStyle(
               seniorMode: seniorMode,
