@@ -1,4 +1,4 @@
-// 「活動通知」頁齒輪 → 部落新活動推播開關。進頁面不查設定，打開底板才 GET。
+// 收件匣齒輪 → 部落新活動推播開關。進頁面不查設定，打開底板才 GET。
 
 import 'dart:async';
 import 'dart:convert';
@@ -9,16 +9,21 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
 import 'package:flutter_application_1/core/network/api_client.dart';
-import 'package:flutter_application_1/screens/events/event_notifications_screen.dart';
+import 'package:flutter_application_1/screens/inbox/inbox_screen.dart';
 
 import '../helpers/widget_test_helpers.dart';
 
 const _settingsPath = '/api/me/notification-settings';
 
-final _notificationsPage = {
-  'notifications': <dynamic>[],
-  'unread_count': 0,
-  'page_info': {'next_cursor': null, 'has_more': false},
+/// 收件匣本身用到的端點；這支測的是推播設定，內容給空的就好。
+final _inboxRoutes = <String, Map<String, dynamic>>{
+  '/api/inbox': {
+    'items': <dynamic>[],
+    'unread': {'total': 0},
+    'page_info': {'next_cursor': null, 'has_more': false},
+  },
+  '/api/notifications/summary': {'total': 0},
+  '/api/shop/items': {'items': <dynamic>[]},
 };
 
 void main() {
@@ -35,9 +40,8 @@ void main() {
   void install(Map<String, Object?> settingsByMethod) {
     ApiClient.httpClient = MockClient((request) async {
       seen.add(request);
-      if (request.url.path == '/api/events/notifications') {
-        return jsonResponse(_notificationsPage);
-      }
+      final inbox = _inboxRoutes[request.url.path];
+      if (inbox != null) return jsonResponse(inbox);
       if (request.url.path != _settingsPath) {
         fail('沒有準備 ${request.method} ${request.url.path} 的假回應');
       }
@@ -62,7 +66,7 @@ void main() {
     install({
       'GET': {'tribe_events': false},
     });
-    await tester.pumpWidget(wrapScreen(const EventNotificationsScreen()));
+    await tester.pumpWidget(wrapScreen(const InboxScreen()));
     await tester.pumpAndSettle();
 
     expect(settingsRequests(), isEmpty);
@@ -78,7 +82,7 @@ void main() {
   testWidgets('載入中顯示轉圈，不先顯示預設開關', (tester) async {
     final pending = Completer<http.Response>();
     install({'GET': () => pending.future});
-    await tester.pumpWidget(wrapScreen(const EventNotificationsScreen()));
+    await tester.pumpWidget(wrapScreen(const InboxScreen()));
     await tester.pumpAndSettle();
 
     await tester.tap(find.byTooltip('推播設定'));
@@ -98,7 +102,7 @@ void main() {
       'GET': {'tribe_events': true},
       'PATCH': {'tribe_events': false},
     });
-    await tester.pumpWidget(wrapScreen(const EventNotificationsScreen()));
+    await tester.pumpWidget(wrapScreen(const InboxScreen()));
     await tester.pumpAndSettle();
     await openSheet(tester);
 
@@ -116,7 +120,7 @@ void main() {
       'GET': {'tribe_events': true},
       'PATCH': errorResponse('INTERNAL_ERROR', status: 500),
     });
-    await tester.pumpWidget(wrapScreen(const EventNotificationsScreen()));
+    await tester.pumpWidget(wrapScreen(const InboxScreen()));
     await tester.pumpAndSettle();
     await openSheet(tester);
 
@@ -134,7 +138,7 @@ void main() {
           ? errorResponse('INTERNAL_ERROR', status: 500, message: '伺服器錯誤')
           : jsonResponse({'tribe_events': true}),
     });
-    await tester.pumpWidget(wrapScreen(const EventNotificationsScreen()));
+    await tester.pumpWidget(wrapScreen(const InboxScreen()));
     await tester.pumpAndSettle();
     await openSheet(tester);
 
@@ -150,7 +154,7 @@ void main() {
 
   testWidgets('回應缺 tribe_events 欄位時視為開啟', (tester) async {
     install({'GET': <String, dynamic>{}});
-    await tester.pumpWidget(wrapScreen(const EventNotificationsScreen()));
+    await tester.pumpWidget(wrapScreen(const InboxScreen()));
     await tester.pumpAndSettle();
     await openSheet(tester);
 

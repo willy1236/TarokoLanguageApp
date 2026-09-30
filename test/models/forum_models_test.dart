@@ -140,33 +140,6 @@ void main() {
     });
   });
 
-  group('ForumNotificationPage.fromJson', () {
-    test('解析通知與未讀數', () {
-      final page = ForumNotificationPage.fromJson({
-        'notifications': [
-          {
-            'id': 3,
-            'type': 'reply_post',
-            'post_id': '1024',
-            'comment_id': '5',
-            'post_title': '關於 mhuway',
-            'is_read': false,
-            'created_at': '2026-08-01T11:00:00.000Z',
-            'actor': {'uid': 8, 'display_name': 'Pisaw', 'avatar_url': null},
-          },
-        ],
-        'unread_count': 1,
-        'page_info': {'next_cursor': '3', 'has_more': true},
-      });
-
-      expect(page.items.single.type, 'reply_post');
-      expect(page.items.single.postId, 1024);
-      expect(page.items.single.isRead, isFalse);
-      expect(page.unreadCount, 1);
-      expect(page.pageInfo.nextCursor, '3');
-    });
-  });
-
   group('groupComments', () {
     ForumComment comment(int id, {int? parent}) => ForumComment(
       id: id,

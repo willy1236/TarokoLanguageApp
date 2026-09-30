@@ -5,8 +5,6 @@
 // 後端回傳為 snake_case，這裡轉成 Dart 慣用的 camelCase。未知欄位（v2 擴充如
 // reminder_note、報名截止…）不解析也不影響，需要時再補欄位即可。
 
-import 'page_info.dart';
-
 /// 後端理論上都回數字，但曾遇過某些環境把 bigint 欄位序列化成字串；
 /// 這裡統一容錯解析，避免整頁因單一欄位型別跳掉而白畫面。
 int? asEventInt(dynamic v) {
@@ -379,59 +377,6 @@ class EventReminder {
       sentAt: json['sent_at'] != null
           ? DateTime.parse(json['sent_at'] as String)
           : null,
-    );
-  }
-}
-
-/// GET /api/events/notifications 單筆通知——我有報名的活動，發起人發出的提醒。
-class EventNotification {
-  final int id;
-  final int eventId;
-  final String eventTitle;
-  final String message;
-  final DateTime sentAt;
-  final bool isRead;
-
-  const EventNotification({
-    required this.id,
-    required this.eventId,
-    required this.eventTitle,
-    required this.message,
-    required this.sentAt,
-    required this.isRead,
-  });
-
-  factory EventNotification.fromJson(Map<String, dynamic> json) {
-    return EventNotification(
-      id: asEventInt(json['id'])!,
-      eventId: asEventInt(json['event_id'])!,
-      eventTitle: json['event_title'] as String? ?? '',
-      message: json['message'] as String,
-      sentAt: DateTime.parse(json['sent_at'] as String),
-      isRead: json['is_read'] == true,
-    );
-  }
-}
-
-class EventNotificationPage {
-  final List<EventNotification> items;
-  final int unreadCount;
-  final PageInfo pageInfo;
-
-  const EventNotificationPage({
-    required this.items,
-    required this.unreadCount,
-    required this.pageInfo,
-  });
-
-  factory EventNotificationPage.fromJson(Map<String, dynamic> json) {
-    final list = json['notifications'] as List<dynamic>? ?? const [];
-    return EventNotificationPage(
-      items: list
-          .map((e) => EventNotification.fromJson(e as Map<String, dynamic>))
-          .toList(),
-      unreadCount: asEventInt(json['unread_count']) ?? 0,
-      pageInfo: PageInfo.fromResponse(json),
     );
   }
 }

@@ -192,11 +192,6 @@ final List<_Contract> _contracts = [
     'EventSummary(bookmarks)',
     _paged(_each('events', EventSummary.fromJson)),
   ),
-  _Contract(
-    'get_api_events_notifications.json',
-    'EventNotificationPage',
-    _paged(EventNotificationPage.fromJson),
-  ),
   _Contract('get_api_event_detail.json', 'EventDetail', EventDetail.fromJson),
   _Contract(
     'get_api_forum_search_q_a_range_1m.json',
@@ -222,11 +217,6 @@ final List<_Contract> _contracts = [
     'get_api_forum_post_comments.json',
     'ForumCommentPage',
     _paged(ForumCommentPage.fromJson),
-  ),
-  _Contract(
-    'get_api_forum_notifications.json',
-    'ForumNotificationPage',
-    _paged(ForumNotificationPage.fromJson),
   ),
   _Contract(
     'get_api_forum_posts_likes.json',

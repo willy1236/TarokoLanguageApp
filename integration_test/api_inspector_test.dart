@@ -285,18 +285,6 @@ void main() {
       ),
     );
     test(
-      'GET /api/forum/notifications',
-      () => _inspect(
-        'GET',
-        ApiConfig.forumNotifications,
-        shape: {
-          'notifications': F.list,
-          'unread_count': F.number,
-          'page_info': F.object,
-        },
-      ),
-    );
-    test(
       'GET /api/forum/posts/likes',
       () => _inspect(
         'GET',
@@ -477,18 +465,6 @@ void main() {
         listKey: 'events',
         itemShape: _eventSummaryShape,
         itemOptional: _eventSummaryOptional,
-      ),
-    );
-    test(
-      'GET /api/events/notifications',
-      () => _inspect(
-        'GET',
-        ApiConfig.eventNotifications,
-        shape: {
-          'notifications': F.list,
-          'unread_count': F.number,
-          'page_info': F.object,
-        },
       ),
     );
     test(
@@ -765,11 +741,8 @@ void main() {
     );
     adminTest(
       'GET /api/admin/appeals',
-      (_) => _inspect(
-        'GET',
-        ApiConfig.adminAppeals,
-        shape: {'appeals': F.list},
-      ),
+      (_) =>
+          _inspect('GET', ApiConfig.adminAppeals, shape: {'appeals': F.list}),
     );
     // 只錄列表；POST 會真的發給所有使用者。
     adminTest(

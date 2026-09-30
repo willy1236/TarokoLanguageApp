@@ -83,18 +83,4 @@ void main() {
     });
     expect(seen[1].url.queryParameters, {'tab': 'ended', 'limit': '20'});
   });
-
-  test('活動通知帶字串游標，未讀數照舊', () async {
-    respondWith({
-      'notifications': <dynamic>[],
-      'unread_count': 2,
-      'page_info': {'next_cursor': 'n:9', 'has_more': true},
-    });
-
-    final page = await EventService.notifications(cursor: 'n:30');
-
-    expect(seen.single.url.queryParameters, {'cursor': 'n:30'});
-    expect(page.unreadCount, 2);
-    expect(page.pageInfo.nextCursor, 'n:9');
-  });
 }
