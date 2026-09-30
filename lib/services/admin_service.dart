@@ -10,6 +10,7 @@ import '../core/network/api_client.dart';
 import '../models/admin_models.dart';
 import '../models/millet_transaction.dart';
 import '../models/page_info.dart';
+import '../shared/utils/birth_date.dart';
 
 typedef AdminPage<T> = ({List<T> items, PageInfo pageInfo});
 
@@ -155,6 +156,19 @@ class AdminService {
       'reason': reason.trim(),
     });
     return AdminRoleChange.fromJson(json);
+  }
+
+  /// 更正出生日期，[reason] 必填 1～500 字。更正後未滿 18 歲的人後端會移出隨機配對佇列。
+  static Future<AdminBirthDateResult> updateBirthDate(
+    int uid,
+    DateTime birthDate,
+    String reason,
+  ) async {
+    final json = await ApiClient.patch(ApiConfig.adminUserBirthDate(uid), {
+      'birth_date': formatApiDate(birthDate),
+      'reason': reason.trim(),
+    });
+    return AdminBirthDateResult.fromJson(json);
   }
 
   // ── 禁言（安全防護.md「後台端點」）────────────────────────────

@@ -699,3 +699,19 @@ class AdminMilletReconcile {
         ok: j['ok'] == true,
       );
 }
+
+// ── 出生日期更正（內部管理.md §8.3a）──────────────────────────────
+
+/// PATCH /api/admin/users/:uid/birth-date 的結果。[adult] 為更正後是否滿 18 歲。
+class AdminBirthDateResult {
+  final DateTime? birthDate;
+  final bool adult;
+
+  const AdminBirthDateResult({this.birthDate, required this.adult});
+
+  factory AdminBirthDateResult.fromJson(Map<String, dynamic> j) =>
+      AdminBirthDateResult(
+        birthDate: parseApiDate(j['birth_date']),
+        adult: j['adult'] == true,
+      );
+}
