@@ -1,6 +1,7 @@
 // 更正出生日期：查人後預帶目前生日，選日期、填理由、確認後送出，顯示是否滿 18 歲。
 // PATCH 回應依 內部管理.md §8.3a 手寫（錄製會真的改資料）。
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -128,5 +129,42 @@ void main() {
 
     expect(find.text('出生日期不可晚於今天'), findsOneWidget);
     expect(find.text('已滿 18 歲'), findsNothing);
+  });
+
+  testWidgets('USER_NOT_FOUND 顯示後端 message', (tester) async {
+    install(
+      patch: (_) =>
+          errorResponse('USER_NOT_FOUND', status: 404, message: '找不到這位使用者'),
+    );
+    await lookUp(tester);
+    await fillReasonAndConfirm(tester);
+
+    expect(find.text('找不到這位使用者'), findsOneWidget);
+  });
+
+  testWidgets('送出途中換對象：新對象的送出鈕不會卡住，舊的成功仍有提示', (tester) async {
+    final pending = Completer<http.Response>();
+    ApiClient.httpClient = MockClient((r) async {
+      if (r.method == 'PATCH') return pending.future;
+      return jsonResponse(_lookup(birthDate: '2001-05-20'));
+    });
+    await lookUp(tester);
+    await fillReasonAndConfirm(tester);
+
+    await tester.enterText(find.byType(TextField).first, 'OTHER234');
+    await tester.tap(find.text('查詢'));
+    await tester.pumpAndSettle();
+    pending.complete(
+      jsonResponse({'uid': 12, 'birth_date': '2001-05-20', 'adult': true}),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('已更正出生日期'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '送出更正'))
+          .onPressed,
+      isNotNull,
+    );
   });
 }

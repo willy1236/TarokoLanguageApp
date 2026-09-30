@@ -37,6 +37,7 @@ class _AdminBirthDateScreenState extends State<AdminBirthDateScreen> {
     _current = user?.birthDate;
     _selected = user?.birthDate;
     _result = null;
+    _submitting = false;
   });
 
   Future<void> _pick(bool senior) async {
@@ -70,16 +71,18 @@ class _AdminBirthDateScreenState extends State<AdminBirthDateScreen> {
         date,
         input.reason,
       );
-      if (!mounted || _user?.uid != user.uid) return;
+      if (!mounted) return;
+      showAdminMessage('已更正出生日期');
+      // 送出途中換了對象：更正已成功，但畫面已是別人，不套用結果。
+      if (_user?.uid != user.uid) return;
       setState(() {
         _result = result;
         _current = result.birthDate ?? date;
         _submitting = false;
       });
-      showAdminMessage('已更正出生日期');
     } catch (e) {
       if (!mounted) return;
-      setState(() => _submitting = false);
+      if (_user?.uid == user.uid) setState(() => _submitting = false);
       handleAdminError(context, e);
     }
   }
