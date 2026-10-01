@@ -1,5 +1,5 @@
 // 好友定向來電響鈴畫面。接聽 → 進真實 Agora 通話；拒接 → 回上一頁。
-// 響鈴期間輪詢來電狀態（前景推播 friend_call_cancelled 會提早觸發），撥出方
+// 響鈴期間輪詢來電狀態（推播或即時連線的 friend_call_cancelled 會提早觸發），撥出方
 // 取消或逾時未接時自動關閉畫面。響鈴期間依系統鈴聲模式循環播放鈴聲／震動。
 
 import 'dart:async';
@@ -14,6 +14,7 @@ import '../../core/network/api_client.dart';
 import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/chat_socket_service.dart';
 import '../../services/directed_call_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/shop_service.dart';
@@ -46,6 +47,8 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
     _loadItemCatalog();
     _startPolling();
     FcmService.onFriendCallCancelled = _onCallCancelledPush;
+    // 撥出方取消也經即時連線送出，沒開通知權限也能立即關閉。
+    chatController.connect();
     _startRinging();
   }
 

@@ -277,7 +277,7 @@ class VideoCallController extends ChangeNotifier {
     _set(() => _camOff = next);
   }
 
-  /// 對方結束通話（FCM）：本地清理，但不再通知後端（對方已通知過）。
+  /// 對方結束通話（推播或即時連線）：本地清理，但不再通知後端（對方已通知過）。
   void onPeerEnded(int? sessionId) {
     if (_ended || sessionId != session.id) return;
     unawaited(_leave(notifyBackend: false));

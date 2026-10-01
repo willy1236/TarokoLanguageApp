@@ -6,6 +6,7 @@ import '../../core/network/api_client.dart';
 import '../../main.dart' show scaffoldMessengerKey;
 import '../../models/video_call_model.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/chat_socket_service.dart';
 import '../../services/directed_call_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/friend_service.dart';
@@ -96,6 +97,8 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       _friendCallEndedHandler = handler;
       FcmService.onFriendCallEnded = handler;
     }
+    // 對方掛斷的事件也經即時連線送出，沒開通知權限也收得到。
+    chatController.connect();
     WidgetsBinding.instance.addObserver(this);
     _call.start();
   }

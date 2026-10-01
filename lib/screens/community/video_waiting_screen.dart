@@ -5,6 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../main.dart' show scaffoldMessengerKey;
 import '../../models/video_call_model.dart';
+import '../../services/chat_socket_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
@@ -53,6 +54,8 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
 
     WidgetsBinding.instance.addObserver(this);
     FcmService.onVideoMatchedForeground = (_, _) => _poll();
+    // 配對與通話結束事件也經即時連線送出，沒開通知權限也收得到。
+    chatController.connect();
     // 輪詢兼作佇列心跳：間隔必須小於 30 秒，否則後端會視為已離開佇列。
     _pollTimer = Timer.periodic(const Duration(seconds: 4), (_) => _poll());
   }

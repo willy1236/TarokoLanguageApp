@@ -1,5 +1,6 @@
-// 撥打好友定向通話的「撥出中」畫面。撥號後輪詢來電狀態，接通時用既有
-// VideoCallService.refreshToken 取得自己的 Agora 憑證再進通話畫面（見 friendCalls.ts 註解）。
+// 撥打好友定向通話的「撥出中」畫面。撥號後輪詢來電狀態（收到接聽／拒接事件時
+// 立即查），接通時用既有 VideoCallService.refreshToken 取得自己的 Agora 憑證再進
+// 通話畫面（見 friendCalls.ts 註解）。
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -7,7 +8,9 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/video_call_model.dart';
+import '../../services/chat_socket_service.dart';
 import '../../services/directed_call_service.dart';
+import '../../services/fcm_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
@@ -47,11 +50,25 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
+    // 對方接聽／拒接時推播或即時連線會先到，收到就立即查，不等下一輪輪詢。
+    FcmService.onFriendCallAccepted = _onCallAnswered;
+    FcmService.onFriendCallDeclined = _onCallAnswered;
+    chatController.connect();
     _startCall();
+  }
+
+  void _onCallAnswered(int callId) {
+    if (callId == _callId) _poll();
   }
 
   @override
   void dispose() {
+    if (FcmService.onFriendCallAccepted == _onCallAnswered) {
+      FcmService.onFriendCallAccepted = null;
+    }
+    if (FcmService.onFriendCallDeclined == _onCallAnswered) {
+      FcmService.onFriendCallDeclined = null;
+    }
     _controller.dispose();
     _pollTimer?.cancel();
     final id = _callId;
