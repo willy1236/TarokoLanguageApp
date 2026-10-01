@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/models/admin_models.dart';
 import 'package:flutter_application_1/models/article_models.dart';
+import 'package:flutter_application_1/models/data_source_models.dart';
 import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/models/friend_message_model.dart';
 import 'package:flutter_application_1/models/history_models.dart';
@@ -229,6 +230,7 @@ final List<_Contract> _contracts = [
     _paged(ForumLikedCommentPage.fromJson),
   ),
   _Contract('get_api_terms.json', 'TermsStatus', TermsStatus.fromJson),
+  _Contract('get_api_data_sources.json', 'DataSources', DataSources.fromJson),
   _Contract(
     'get_api_account_status.json',
     'AccountStatus',

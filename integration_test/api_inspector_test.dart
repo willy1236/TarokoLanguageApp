@@ -620,6 +620,20 @@ void main() {
         itemOptional: {'consented_version': F.number},
       ),
     );
+    // 2026-10-01 前端待辦 A3（見 Truku_backend 說明文件/API/資料來源與授權.md）。
+    // 不需登入、沒有個資，不用遮罩。
+    test(
+      'GET /api/data-sources',
+      () => _inspect(
+        'GET',
+        ApiConfig.dataSources,
+        shape: {'title': F.string, 'sources': F.list},
+        listKey: 'sources',
+        itemShape: _dataSourceShape,
+        itemNullable: {'license'},
+        itemOptional: {'license': F.string},
+      ),
+    );
     test(
       'GET /api/account/status',
       () => _inspect(
@@ -1468,6 +1482,15 @@ const Map<String, F> _termsDocShape = {
   'content_md': F.string,
   'published_at': F.string,
   'consented': F.boolean,
+};
+
+/// GET /api/data-sources → lib/models/data_source_models.dart DataSource.fromJson
+const Map<String, F> _dataSourceShape = {
+  'id': F.string,
+  'name': F.string,
+  'used_for': F.list,
+  'attribution': F.string,
+  'links': F.list,
 };
 
 /// POST /api/quiz/start → lib/models/quiz_models.dart QuizSession.fromJson
