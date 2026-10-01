@@ -254,4 +254,183 @@ void main() {
       expect(paths, ['/api/events', _uploadPath]);
     });
   });
+
+  group('編輯活動', () {
+    EventDetail editing({int imageCount = 2}) => EventDetail(
+      id: 1,
+      isHost: true,
+      title: '部落豐年祭',
+      description: '一起來跳舞',
+      startsAt: DateTime.now().add(const Duration(days: 30)),
+      location: '花蓮縣秀林鄉',
+      address: '秀林鄉中正路 1 號',
+      status: 'active',
+      effectiveStatus: 'active',
+      registrationOpen: true,
+      images: [
+        for (var i = 1; i <= imageCount; i++)
+          EventImage(id: 10 + i, url: 'https://example.invalid/${10 + i}.jpg'),
+      ],
+    );
+
+    testWidgets('顯示現有照片，可標記刪除並還原，封面跟著換', (tester) async {
+      await tester.pumpWidget(_host(editing: editing(), onPop: (_) {}));
+      await _openForm(tester);
+
+      expect(find.text('2/6 張・第一張是封面'), findsOneWidget);
+      await tester.tap(find.byTooltip('移除這張照片').first);
+      await tester.pumpAndSettle();
+
+      expect(find.text('將刪除'), findsOneWidget);
+      expect(find.text('1/6 張・第一張是封面'), findsOneWidget);
+      // 封面標到第二張（第一張已標記刪除）。
+      final cover = tester.getCenter(find.text('封面'));
+      final removed = tester.getCenter(find.text('將刪除'));
+      expect(cover.dx, greaterThan(removed.dx));
+
+      await tester.tap(find.byTooltip('還原這張照片'));
+      await tester.pumpAndSettle();
+      expect(find.text('將刪除'), findsNothing);
+      expect(find.text('2/6 張・第一張是封面'), findsOneWidget);
+    });
+
+    testWidgets('按返回放棄：照片與文字都不送出', (tester) async {
+      _fakePicker(count: 1);
+      var calls = 0;
+      installMockClient(const {}, onRequest: (_) => calls++);
+      await tester.pumpWidget(_host(editing: editing(), onPop: (_) {}));
+      await _openForm(tester);
+      await tester.tap(find.byTooltip('移除這張照片').first);
+      await tester.tap(find.text('新增照片'));
+      await tester.pumpAndSettle();
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(calls, 0);
+    });
+
+    testWidgets('儲存：先存文字、再刪標記的照片、最後上傳新照片', (tester) async {
+      _fakePicker(count: 1);
+      Object? popped;
+      final calls = <String>[];
+      installMockClient({
+        '/api/events/1': <String, dynamic>{'ok': true},
+        '/api/events/1/images/11': {
+          'ok': true,
+          'images': [
+            {'id': 12, 'url': 'https://a/12.jpg'},
+          ],
+        },
+        '/api/events/1/images': jsonResponse({
+          'images': [
+            {'id': 12, 'url': 'https://a/12.jpg'},
+            {'id': 13, 'url': 'https://a/13.jpg'},
+          ],
+        }, status: 201),
+      }, onRequest: (r) => calls.add('${r.method} ${r.url.path}'));
+      await tester.pumpWidget(
+        _host(editing: editing(), onPop: (r) => popped = r),
+      );
+      await _openForm(tester);
+
+      await tester.tap(find.byTooltip('移除這張照片').first);
+      await tester.tap(find.text('新增照片'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.text('部落豐年祭').first, '部落豐年祭（改地點）');
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+
+      expect(calls, [
+        'PATCH /api/events/1',
+        'DELETE /api/events/1/images/11',
+        'POST /api/events/1/images',
+      ]);
+      expect(popped, isTrue);
+      expect(find.text('活動已更新'), findsOneWidget);
+    });
+
+    testWidgets('只改照片、沒改文字也能儲存（不送空的 PATCH）', (tester) async {
+      final calls = <String>[];
+      installMockClient({
+        '/api/events/1/images/11': {'ok': true, 'images': <Object?>[]},
+      }, onRequest: (r) => calls.add('${r.method} ${r.url.path}'));
+      await tester.pumpWidget(
+        _host(editing: editing(imageCount: 1), onPop: (_) {}),
+      );
+      await _openForm(tester);
+
+      await tester.tap(find.byTooltip('移除這張照片'));
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+
+      expect(calls, ['DELETE /api/events/1/images/11']);
+    });
+
+    testWidgets('文字已存但新照片上傳失敗：照樣回詳情頁，說明照片沒更新與原因', (tester) async {
+      _fakePicker(count: 1);
+      Object? popped;
+      installMockClient({
+        '/api/events/1/images': errorResponse(
+          'MUTED',
+          status: 403,
+          message: '你目前被禁言',
+        ),
+      });
+      await tester.pumpWidget(
+        _host(editing: editing(), onPop: (r) => popped = r),
+      );
+      await _openForm(tester);
+
+      await tester.tap(find.text('新增照片'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+
+      expect(popped, isTrue);
+      expect(find.textContaining('活動已更新，新照片沒有上傳（你目前被禁言）'), findsOneWidget);
+      expect(find.textContaining('活動頁頂端'), findsOneWidget);
+    });
+
+    testWidgets('儲存時活動已開始（409）：退回詳情頁，照片不送', (tester) async {
+      _fakePicker(count: 1);
+      final calls = <String>[];
+      installMockClient({
+        '/api/events/1': errorResponse('EVENT_ENDED', status: 409),
+      }, onRequest: (r) => calls.add('${r.method} ${r.url.path}'));
+      await tester.pumpWidget(_host(editing: editing(), onPop: (_) {}));
+      await _openForm(tester);
+
+      await tester.tap(find.byTooltip('移除這張照片').first);
+      await tester.tap(find.text('新增照片'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.text('部落豐年祭').first, '改個名字');
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+
+      expect(calls, ['PATCH /api/events/1']);
+      expect(find.text('活動已開始，無法修改'), findsOneWidget);
+    });
+
+    testWidgets('滿 6 張：標記刪除一張才能再加，加了之後不能還原', (tester) async {
+      final limits = _fakePicker(count: 1);
+      await tester.pumpWidget(
+        _host(editing: editing(imageCount: 6), onPop: (_) {}),
+      );
+      await _openForm(tester);
+
+      expect(find.text('新增照片'), findsNothing);
+      await tester.tap(find.byTooltip('移除這張照片').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('新增照片'));
+      await tester.pumpAndSettle();
+      expect(limits, [1]);
+      expect(find.text('6/6 張・第一張是封面'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('還原這張照片'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('先移除一張新照片才能還原'), findsOneWidget);
+      expect(find.text('將刪除'), findsOneWidget);
+    });
+  });
 }

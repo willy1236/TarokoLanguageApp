@@ -316,21 +316,24 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         tribeNotifyLimited = draft.notifyTribe && created.tribeNotifyLimited;
         imageFailure = await _uploadNewImages(created.id);
       } else {
+        // 時間欄位已不能改時後端回 409，照片也就不送，見下方 catch。
         await EventService.updateEvent(editing.id, draft, editing);
+        imageFailure = await _syncEditedImages(editing.id);
       }
       if (!mounted) return;
       final notices = [
         if (tribeNotifyLimited) '今天的部落推播次數已用完，這次沒有通知部落成員',
         ?imageFailure,
       ];
+      final done = editing == null ? '活動已建立' : '活動已更新';
       ScaffoldMessenger.of(context).showSnackBar(
         notices.isNotEmpty
             // 發起人以為都送出了，這則要停久一點讓人讀完。
             ? SnackBar(
-                content: Text('活動已建立，${notices.join('；')}'),
+                content: Text('$done，${notices.join('；')}'),
                 duration: const Duration(seconds: 8),
               )
-            : SnackBar(content: Text(editing == null ? '活動已發起' : '活動已更新')),
+            : SnackBar(content: Text(editing == null ? '活動已發起' : done)),
       );
       Navigator.pop(context, true); // 通知列表/詳情頁刷新
     } catch (e) {
@@ -367,6 +370,30 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     } catch (e) {
       final reason = apiErrorMessage(e, fallback: '網路不穩');
       return '圖片可以稍後在編輯頁補上（$reason）';
+    }
+  }
+
+  /// 編輯儲存時，文字欄位存好後處理照片：先刪標記的、再傳新的——先刪才不會在
+  /// 已有 6 張時被上限擋下。文字已存、無法回滾，照片失敗只回傳說明。
+  Future<String?> _syncEditedImages(int eventId) async {
+    final uploads = _images.toUpload;
+    try {
+      for (final imageId in _images.toDelete) {
+        await EventService.deleteImage(eventId, imageId);
+      }
+    } catch (e) {
+      final reason = apiErrorMessage(e, fallback: '網路不穩');
+      return uploads.isEmpty
+          ? '有照片沒有刪除（$reason），可到活動頁頂端再刪'
+          : '有照片沒有刪除、新照片也沒有上傳（$reason），可到活動頁頂端調整';
+    }
+    if (uploads.isEmpty) return null;
+    try {
+      await EventService.uploadImages(eventId, uploads);
+      return null;
+    } catch (e) {
+      final reason = apiErrorMessage(e, fallback: '網路不穩');
+      return '新照片沒有上傳（$reason），可到活動頁頂端重新新增';
     }
   }
 
