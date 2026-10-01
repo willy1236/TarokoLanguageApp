@@ -428,4 +428,36 @@ void main() {
       expect(detailCalls, 1 + 3 + 1);
     });
   });
+
+  testWidgets('過期重取還在路上時上傳成功：晚回來的舊詳情不會蓋掉新照片', (tester) async {
+    _fakePicker();
+    var detailCalls = 0;
+    installMockClient(
+      _routes(_detail(isHost: true, imageIds: [1]), {
+        _uploadPath: jsonResponse({
+          'images': _images([1, 2]),
+        }, status: 201),
+      }),
+      onRequest: (r) {
+        if (r.url.path == _detailPath) detailCalls++;
+      },
+      // 進頁後的重取晚 2 秒才回來，期間完成上傳。
+      delayFor: (r) => r.url.path == _detailPath && detailCalls > 1
+          ? const Duration(seconds: 2)
+          : Duration.zero,
+    );
+    await _open(tester);
+
+    tester
+        .widget<EventDetailHero>(find.byType(EventDetailHero))
+        .onImageExpired!();
+    await tester.pump();
+    await tester.tap(find.byTooltip('新增照片'));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(find.text('2／2'), findsOneWidget);
+
+    await tester.pumpAndSettle(const Duration(seconds: 3));
+    expect(detailCalls, 2);
+    expect(find.text('2／2'), findsOneWidget);
+  });
 }

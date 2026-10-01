@@ -223,14 +223,20 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   /// 動作（參加/退出/取消）成功後的刷新：只更新資料本身，不設 `_loading = true`，
   /// 避免整頁重建與剛關閉的對話框收尾動畫互撞（觸發 `_dependents.isEmpty` assertion）。
   Future<void> _silentRefresh() async {
+    final imagesVersion = _imagesVersion;
     try {
       final results = await Future.wait([
         EventService.fetchEventDetail(widget.eventId),
         _fetchRemindersSafe(),
       ]);
       if (!mounted) return;
+      final fresh = results[0] as EventDetail;
+      final current = _event;
       setState(() {
-        _event = results[0] as EventDetail;
+        // 重取途中發起人剛上傳或刪除照片：這份回應的照片是舊的，保留剛換上的清單。
+        _event = imagesVersion != _imagesVersion && current != null
+            ? fresh.withImages(current.images)
+            : fresh;
         _reminders = results[1] as List<EventReminder>;
       });
     } catch (e, st) {
@@ -427,9 +433,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   }
 
   /// 發起人在頂端輪播上傳或刪除圖片成功：換成後端回的清單，返回時列表重載換封面。
+  /// 每次輪播換上後端回的照片清單就加一，讓較早發出的重取不會蓋回舊照片。
+  int _imagesVersion = 0;
+
   void _onImagesChanged(List<EventImage> images) {
     final event = _event;
     if (event == null) return;
+    _imagesVersion++;
     _markChanged();
     setState(() => _event = event.withImages(images));
   }
