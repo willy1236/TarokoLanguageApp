@@ -23,6 +23,10 @@
 //   POST   / DELETE /api/events/:id/bookmark 收藏 / 取消
 //   GET    /api/events/likes              我按讚過的活動
 //   GET    /api/events/bookmarks          我收藏的活動
+//   POST   /api/events/:id/images         上傳活動圖片（僅發起人，multipart）
+//   DELETE /api/events/:id/images/:imgId  刪除一張活動圖片（僅發起人）
+
+import 'dart:typed_data';
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
@@ -34,6 +38,10 @@ import '../models/page_info.dart';
 typedef EventPage = ({List<EventSummary> events, PageInfo pageInfo});
 
 class EventService {
+  /// 每場活動最多幾張圖片、每張多大（後端同樣限制）。
+  static const int imageMaxCount = 6;
+  static const int imageMaxBytes = 5 * 1024 * 1024;
+
   // ── 活動 ────────────────────────────────────────────────────
 
   /// 活動列表：只含尚未開始的活動，依開始時間升冪（後端已不分 scope）。
@@ -149,6 +157,44 @@ class EventService {
   static Future<int> deleteEvent(int eventId) async {
     final data = await ApiClient.delete(ApiConfig.eventDetail(eventId));
     return int.tryParse(data['notified']?.toString() ?? '') ?? 0;
+  }
+
+  // ── 圖片（僅發起人；任何狀態的活動都可以，已刪除的除外）───────────
+
+  /// 上傳圖片（已在 App 端壓成 JPEG，見 pickImagesForUpload）。一次全部成功或
+  /// 全部失敗；回傳該活動目前全部的圖片，依上傳順序，第一張是封面。
+  static Future<List<EventImage>> uploadImages(
+    int eventId,
+    List<Uint8List> jpegs,
+  ) async {
+    final data = await ApiClient.postMultipart(
+      ApiConfig.eventImages(eventId),
+      fields: const {},
+      files: [
+        for (var i = 0; i < jpegs.length; i++)
+          MultipartFileData(
+            field: 'images',
+            bytes: jpegs[i],
+            filename: 'event_${eventId}_$i.jpg',
+            mimeType: 'image/jpeg',
+          ),
+      ],
+    );
+    return EventImage.listFromJson(data['images']);
+  }
+
+  /// 刪除一張圖片，回傳剩下的全部圖片。那張已經不在（IMAGE_NOT_FOUND，例如在
+  /// 別台裝置刪過）也算成功，改從活動詳情取目前的圖片。
+  static Future<List<EventImage>> deleteImage(int eventId, int imageId) async {
+    try {
+      final data = await ApiClient.delete(
+        ApiConfig.eventImage(eventId, imageId),
+      );
+      return EventImage.listFromJson(data['images']);
+    } on ApiException catch (e) {
+      if (e.code != 'IMAGE_NOT_FOUND') rethrow;
+      return (await fetchEventDetail(eventId)).images;
+    }
   }
 
   // ── 按讚／收藏 ──────────────────────────────────────────────
