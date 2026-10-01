@@ -23,7 +23,8 @@ class AgoraVideoRtc implements VideoRtc {
         onError: (err, msg) => callbacks.onError('$err $msg'),
         onJoinChannelSuccess: (_, _) => callbacks.onJoinSuccess(),
         onUserJoined: (_, remoteUid, _) => callbacks.onRemoteJoined(remoteUid),
-        onUserOffline: (_, remoteUid, _) => callbacks.onRemoteLeft(remoteUid),
+        onUserOffline: (_, remoteUid, reason) =>
+            callbacks.onRemoteLeft(remoteUid, _leftReason(reason)),
         onUserMuteVideo: (_, _, muted) => callbacks.onRemoteVideoMuted(muted),
         onTokenPrivilegeWillExpire: (_, _) => callbacks.onTokenWillExpire(),
       ),
@@ -38,6 +39,13 @@ class AgoraVideoRtc implements VideoRtc {
     if (_released) return;
     await engine.startPreview();
   }
+
+  static RemoteLeftReason _leftReason(UserOfflineReasonType reason) =>
+      switch (reason) {
+        UserOfflineReasonType.userOfflineQuit => RemoteLeftReason.quit,
+        UserOfflineReasonType.userOfflineDropped => RemoteLeftReason.dropped,
+        _ => RemoteLeftReason.other,
+      };
 
   @override
   Future<void> join({

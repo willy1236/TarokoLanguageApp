@@ -63,6 +63,11 @@ class _Harness {
   CallPermissionResult permission = CallPermissionResult.granted;
   Object? refreshError;
   Completer<void>? endGate;
+
+  /// 後端回報的通話狀態；[serverGate] 不為 null 時查詢會卡住直到完成。
+  bool serverEnded = false;
+  Object? serverError;
+  Completer<void>? serverGate;
   DateTime now = _t0;
   int leftCount = 0;
   int renewFailedCount = 0;
@@ -101,6 +106,12 @@ class _Harness {
             notifyEnded: () async {
               log.add('backend.end');
               if (endGate != null) await endGate!.future;
+            },
+            isEndedOnServer: () async {
+              log.add('backend.status');
+              if (serverGate != null) await serverGate!.future;
+              if (serverError != null) throw serverError!;
+              return serverEnded;
             },
             now: () => now,
           )
@@ -248,6 +259,167 @@ void main() {
       expect(h.log, ['rtc.start', 'rtc.join:tok', 'rtc.release']);
       expect(h.leftCount, 1);
       h.call.dispose();
+    });
+  });
+
+  group('對方離開頻道', () {
+    /// 入房並看到對方，回傳 harness；log 只留之後的紀錄。
+    _Harness joined(FakeAsync async) {
+      final h = _Harness();
+      h.call.start();
+      async.flushMicrotasks();
+      h.rtc.callbacks!.onJoinSuccess();
+      h.rtc.callbacks!.onRemoteJoined(9);
+      h.log.clear();
+      return h;
+    }
+
+    test('主動離開且後端已結束：本地離開、不通知後端', () {
+      fakeAsync((async) {
+        final h = joined(async)..serverEnded = true;
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.quit);
+        async.flushMicrotasks();
+        expect(h.log, ['backend.status', 'rtc.release']);
+        expect(h.leftCount, 1);
+        h.call.dispose();
+      });
+    });
+
+    test('主動離開但後端還沒結束：隔一段時間再查一次', () {
+      fakeAsync((async) {
+        final h = joined(async);
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.quit);
+        async.flushMicrotasks();
+        expect(h.log, ['backend.status']);
+        expect(h.call.ended, isFalse);
+        h.serverEnded = true;
+        async.elapse(const Duration(seconds: 5));
+        expect(h.log, ['backend.status', 'backend.status', 'rtc.release']);
+        expect(h.leftCount, 1);
+        h.call.dispose();
+      });
+    });
+
+    test('斷線後 15 秒內回來：不查狀態、通話繼續', () {
+      fakeAsync((async) {
+        final h = joined(async)..serverEnded = true;
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.dropped);
+        async.elapse(const Duration(seconds: 10));
+        h.rtc.callbacks!.onRemoteJoined(9);
+        async.elapse(const Duration(seconds: 30));
+        expect(h.log, isEmpty);
+        expect(h.call.remoteUid, 9);
+        h.call.dispose();
+      });
+    });
+
+    test('斷線超過 15 秒：查一次，後端仍通話中就留著', () {
+      fakeAsync((async) {
+        final h = joined(async);
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.dropped);
+        async.elapse(const Duration(seconds: 14));
+        expect(h.log, isEmpty);
+        async.elapse(const Duration(seconds: 1));
+        expect(h.log, ['backend.status']);
+        async.elapse(const Duration(minutes: 1));
+        expect(h.log, ['backend.status']);
+        expect(h.call.ended, isFalse);
+        h.call.dispose();
+      });
+    });
+
+    test('查狀態失敗：不退出', () {
+      fakeAsync((async) {
+        final h = joined(async)..serverError = StateError('offline');
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.dropped);
+        async.elapse(const Duration(seconds: 15));
+        expect(h.log, ['backend.status']);
+        expect(h.call.ended, isFalse);
+        expect(h.leftCount, 0);
+        h.call.dispose();
+      });
+    });
+
+    test('查詢途中推播已結束通話：只離開一次', () {
+      fakeAsync((async) {
+        final h = joined(async)
+          ..serverEnded = true
+          ..serverGate = Completer<void>();
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.quit);
+        async.flushMicrotasks();
+        h.call.onPeerEnded(1);
+        async.flushMicrotasks();
+        h.serverGate!.complete();
+        async.flushMicrotasks();
+        expect(h.log.where((e) => e == 'rtc.release'), hasLength(1));
+        expect(h.leftCount, 1);
+        h.call.dispose();
+      });
+    });
+
+    test('查詢途中對方又進出頻道：舊查詢作廢，照新的斷線寬限再查', () {
+      fakeAsync((async) {
+        final h = joined(async)..serverGate = Completer<void>();
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.quit);
+        async.flushMicrotasks();
+        h.rtc.callbacks!.onRemoteJoined(9);
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.dropped);
+        h.serverGate!.complete();
+        h.serverGate = null;
+        async.flushMicrotasks();
+        expect(h.log, ['backend.status']);
+        // 舊查詢不排 5 秒後的重查，等到斷線滿 15 秒才查。
+        async.elapse(const Duration(seconds: 14));
+        expect(h.log, ['backend.status']);
+        async.elapse(const Duration(seconds: 1));
+        expect(h.log, ['backend.status', 'backend.status']);
+        h.call.dispose();
+      });
+    });
+
+    test('查詢途中對方回到頻道：後端未結束就不再重查', () {
+      fakeAsync((async) {
+        final h = joined(async)..serverGate = Completer<void>();
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.quit);
+        async.flushMicrotasks();
+        h.rtc.callbacks!.onRemoteJoined(9);
+        h.serverGate!.complete();
+        async.flushMicrotasks();
+        async.elapse(const Duration(minutes: 1));
+        expect(h.log, ['backend.status']);
+        expect(h.call.ended, isFalse);
+        h.call.dispose();
+      });
+    });
+
+    test('查詢途中對方又進出頻道，後端已結束：照樣離開', () {
+      fakeAsync((async) {
+        final h = joined(async)
+          ..serverEnded = true
+          ..serverGate = Completer<void>();
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.quit);
+        async.flushMicrotasks();
+        h.rtc.callbacks!.onRemoteJoined(9);
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.dropped);
+        h.serverGate!.complete();
+        async.flushMicrotasks();
+        expect(h.leftCount, 1);
+        // 離開時取消斷線計時器，不會再查。
+        async.elapse(const Duration(seconds: 30));
+        expect(h.log, ['backend.status', 'rtc.release']);
+        h.call.dispose();
+      });
+    });
+
+    test('其他原因（例如轉為觀眾）只清掉對方畫面', () {
+      fakeAsync((async) {
+        final h = joined(async)..serverEnded = true;
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.other);
+        async.elapse(const Duration(seconds: 30));
+        expect(h.log, isEmpty);
+        expect(h.call.remoteUid, isNull);
+        h.call.dispose();
+      });
     });
   });
 

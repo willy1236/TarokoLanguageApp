@@ -3,11 +3,15 @@
 
 import 'package:flutter/widgets.dart';
 
+/// 對方離開頻道的原因：[quit] 主動離開（按掛斷）、[dropped] 斷線逾時
+/// （可能還會回來）、[other] 其餘（例如轉為觀眾）。
+enum RemoteLeftReason { quit, dropped, other }
+
 /// SDK 事件。全部在 [VideoRtc.start] 時註冊。
 class RtcCallbacks {
   final VoidCallback onJoinSuccess;
   final ValueChanged<int> onRemoteJoined;
-  final ValueChanged<int> onRemoteLeft;
+  final void Function(int uid, RemoteLeftReason reason) onRemoteLeft;
   final ValueChanged<bool> onRemoteVideoMuted;
 
   /// SDK 回報錯誤（參數為給除錯用的錯誤碼描述）。

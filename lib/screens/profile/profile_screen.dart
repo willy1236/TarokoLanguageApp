@@ -37,7 +37,8 @@ import 'my_likes_screen.dart';
 import '../terms/terms_consent_screen.dart';
 
 // 頭像檔案限制（後端規則：≤8MB，僅接受 JPEG/PNG/WebP/GIF），前端先擋掉明顯無效
-// 的檔案以減少無效上傳，實際裁切壓縮一律由後端處理。
+// 的檔案以減少無效上傳。裁切後由 AvatarCropScreen 縮到邊長 1024，後端再縮成
+// 512×512 WebP；GIF 不裁切、原檔上傳。
 const int _kMaxAvatarBytes = 8 * 1024 * 1024;
 const _kAllowedAvatarExtensions = {'jpg', 'jpeg', 'png', 'webp', 'gif'};
 

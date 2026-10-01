@@ -30,6 +30,7 @@ import 'core/network/api_client.dart';
 import 'models/shop_item.dart';
 import 'models/user_model.dart';
 import 'services/account_lock_controller.dart';
+import 'services/chat_socket_service.dart';
 import 'services/checkin_service.dart';
 import 'services/app_badge.dart';
 import 'services/app_update/app_update_service.dart';
@@ -107,6 +108,8 @@ Future<void> main() async {
       MaterialPageRoute(builder: (_) => IncomingCallScreen(call: call)),
     );
   };
+  // 即時連線收到的通話事件與推播走同一個入口，兩邊都到時只處理先到的。
+  chatController.callEvents.listen(FcmService.handleSocketCallEvent);
   // 點好友相關通知（私訊、邀請、接受、羈絆展示）→ 導到對應畫面。
   FcmService.onFriendPushTapped = (type, friendCode) =>
       openFriendPush(routeStack, type, friendCode);

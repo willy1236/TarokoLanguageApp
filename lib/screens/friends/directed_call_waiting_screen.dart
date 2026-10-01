@@ -1,5 +1,6 @@
-// 撥打好友定向通話的「撥出中」畫面。撥號後輪詢來電狀態，接通時用既有
-// VideoCallService.refreshToken 取得自己的 Agora 憑證再進通話畫面（見 friendCalls.ts 註解）。
+// 撥打好友定向通話的「撥出中」畫面。撥號後輪詢來電狀態（收到接聽／拒接事件時
+// 立即查），接通時用既有 VideoCallService.refreshToken 取得自己的 Agora 憑證再進
+// 通話畫面（見 friendCalls.ts 註解）。
 
 import 'dart:async';
 import 'package:flutter/material.dart';
@@ -7,7 +8,9 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/video_call_model.dart';
+import '../../services/chat_socket_service.dart';
 import '../../services/directed_call_service.dart';
+import '../../services/fcm_service.dart';
 import '../../services/video_call_service.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
@@ -38,6 +41,10 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
 
   /// getCall 回應可能慢於輪詢間隔，上一輪還沒回來就不發下一輪，避免重複導頁。
   bool _polling = false;
+
+  /// 收到接聽／拒接事件時正在輪詢或還沒拿到 call_id：這輪結束（或拿到 id）
+  /// 後立刻再查一次，不等下一輪。
+  bool _pollAgain = false;
   String? _errorMessage;
 
   @override
@@ -47,11 +54,28 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
+    // 對方接聽／拒接時推播或即時連線會先到，收到就立即查，不等下一輪輪詢。
+    FcmService.onFriendCallAccepted = _onCallAnswered;
+    FcmService.onFriendCallDeclined = _onCallAnswered;
+    chatController.connect();
     _startCall();
+  }
+
+  void _onCallAnswered(int callId) {
+    // 還沒拿到 call_id 時同一時間只會有這一通撥出，先記下。
+    if (_callId != null && callId != _callId) return;
+    _pollAgain = true;
+    _poll();
   }
 
   @override
   void dispose() {
+    if (FcmService.onFriendCallAccepted == _onCallAnswered) {
+      FcmService.onFriendCallAccepted = null;
+    }
+    if (FcmService.onFriendCallDeclined == _onCallAnswered) {
+      FcmService.onFriendCallDeclined = null;
+    }
     _controller.dispose();
     _pollTimer?.cancel();
     final id = _callId;
@@ -74,6 +98,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
       }
       setState(() => _callId = callId);
       _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => _poll());
+      if (_pollAgain) _poll();
     } catch (e) {
       if (!mounted) return;
       setState(() => _errorMessage = _describeError(e));
@@ -84,6 +109,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
     final id = _callId;
     if (id == null || _polling || _navigated) return;
     _polling = true;
+    _pollAgain = false;
     try {
       final status = await DirectedCallService.getCall(id);
       if (!mounted) return;
@@ -109,6 +135,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
       // 輪詢期間的暫時性錯誤忽略，下次輪詢再試。
     } finally {
       _polling = false;
+      if (_pollAgain && mounted) _poll();
     }
   }
 

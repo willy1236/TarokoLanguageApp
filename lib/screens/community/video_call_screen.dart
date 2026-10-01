@@ -6,6 +6,7 @@ import '../../core/network/api_client.dart';
 import '../../main.dart' show scaffoldMessengerKey;
 import '../../models/video_call_model.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/chat_socket_service.dart';
 import '../../services/directed_call_service.dart';
 import '../../services/fcm_service.dart';
 import '../../services/friend_service.dart';
@@ -81,6 +82,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
             notifyEnded: () => directedCallId != null
                 ? DirectedCallService.endCall(directedCallId)
                 : VideoCallService.endSession(widget.session.id),
+            isEndedOnServer: _isEndedOnServer,
           )
           ..onTokenRenewFailed = _onTokenRenewFailed
           ..onLeft = _onLeft;
@@ -95,8 +97,21 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       _friendCallEndedHandler = handler;
       FcmService.onFriendCallEnded = handler;
     }
+    // 對方掛斷的事件也經即時連線送出，沒開通知權限也收得到。
+    chatController.connect();
     WidgetsBinding.instance.addObserver(this);
     _call.start();
+  }
+
+  /// 好友通話只有 accepted 是進行中；隨機配對看目前的 session 是不是這一通。
+  Future<bool> _isEndedOnServer() async {
+    final directedCallId = widget.directedCallId;
+    if (directedCallId != null) {
+      final call = await DirectedCallService.getCall(directedCallId);
+      return call.status != 'accepted';
+    }
+    final current = (await VideoCallService.fetchCurrentSession()).session;
+    return current?.id != widget.session.id;
   }
 
   @override

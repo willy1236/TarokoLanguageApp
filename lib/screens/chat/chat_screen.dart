@@ -1,6 +1,7 @@
 // 一對一聊天對話串。訂閱 ChatController 的 WS 事件即時收訊息/已讀，
-// 開啟時 markRead，往上滑分頁補歷史；陌生人（未加好友）超過 3 則會收到
-// NEED_FRIEND，被禁言收到 MUTED，皆用 SnackBar 呈現、不猜測前端狀態。
+// 開啟時 markRead，往上滑分頁補歷史；陌生人（未加好友）超過 3 則、或任一方
+// 未成年／沒填生日時會收到 NEED_FRIEND，被禁言收到 MUTED，皆用 SnackBar 顯示
+// 後端訊息、不猜測前端狀態。
 // 對象是刪除中或被鎖帳號（歷史訊息回應的 partner.unavailable）時歷史照常顯示，
 // 輸入列停用：送出一定會被後端擋。
 
@@ -310,7 +311,8 @@ class _ChatScreenState extends State<ChatScreen> {
 
   void _handleSendError(ApiException e) {
     if (e.isNeedFriend) {
-      _showMessage('陌生人最多只能傳 3 則訊息，加對方為好友才能繼續聊天');
+      // 超過 3 則與未成年保護共用此錯誤碼，原因只有後端知道，照它的訊息顯示。
+      _showMessage(e.message.isNotEmpty ? e.message : '加對方為好友才能繼續聊天');
       return;
     }
     if (e.isMuted) {
