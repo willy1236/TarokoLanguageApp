@@ -61,6 +61,11 @@ class ReviewCard extends StatelessWidget {
         : '回報失敗，請稍後再試',
   );
 
+  /// 兩顆播放鍵播的是同一個音檔（目前單字與聽力都是）時只留題目列那顆，
+  /// 免得使用者以為是兩段不同的錄音。
+  bool get _singleAudio =>
+      promptAudioUrl != null && promptAudioUrl == detailAudioUrl;
+
   Future<void> _play(BuildContext context, String? url) async {
     if (url == null) return;
     try {
@@ -163,8 +168,8 @@ class ReviewCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 2),
-                      const Text(
-                        '原題發音',
+                      Text(
+                        _singleAudio ? '發音' : '原題發音',
                         style: TextStyle(
                           fontSize: AppTypography.micro,
                           color: AppColors.fog,
@@ -227,7 +232,7 @@ class ReviewCard extends StatelessWidget {
                   ],
                 ),
               ),
-              if (detailAudioUrl != null)
+              if (detailAudioUrl != null && !_singleAudio)
                 Padding(
                   padding: const EdgeInsets.only(left: 8),
                   child: Column(
