@@ -18,6 +18,10 @@
 //     推播多帶 inbox_id，點開時一併標已讀；審核推播帶 case_id 時開處置詳情頁；
 //     官方公告 { type: 'announcement', announcement_id } 開收件匣的公告分頁。
 //     收件匣類推播一到就重抓未讀數。
+//   - 通話事件（video_matched、video_session_ended、friend_call_*）同一則也會經
+//     即時連線送出（見 Truku_backend API/即時連線.md「通話事件」）。前景推播、點通知、
+//     即時連線三個來源走同一個入口 _handleCallEvent，以 type＋call_id／session_id
+//     去重，先到的處理、後到的略過。
 //
 // 使用方式（之後在 UI/啟動流程接）：
 //   main() 啟動時：await FcmService.init();
@@ -44,6 +48,9 @@ import 'user_service.dart';
 
 /// 活動被發起人刪除的推播內容。[title]／[body] 是後端寫好的通知文字，缺少時為預設值。
 typedef EventDeletedNotice = ({int? eventId, String title, String body});
+
+/// 通話事件從哪裡來：決定沒有畫面接手時要不要彈通知、點通知時改走冷啟動導頁。
+enum _CallEventSource { foregroundPush, openedPush, socket }
 
 /// 背景/App 被系統回收時收到訊息的處理器。必須是頂層函式並標註 vm:entry-point。
 /// 通知列的顯示由系統處理，這裡通常不需額外動作。
@@ -157,6 +164,12 @@ class FcmService {
   /// IncomingCallScreen 在 initState/dispose 掛上/清空——收到後應重新查詢
   /// 來電狀態，不要直接用 payload 判斷。
   static void Function(int callId)? onFriendCallCancelled;
+
+  /// 撥出中收到 friend_call_accepted／friend_call_declined。由
+  /// DirectedCallWaitingScreen 在 initState/dispose 掛上/清空——收到後立即查詢
+  /// 來電狀態，不直接用 payload 導頁。
+  static void Function(int callId)? onFriendCallAccepted;
+  static void Function(int callId)? onFriendCallDeclined;
 
   /// 收到 friend_call_ended（好友通話中對方掛斷或封鎖，前景或點擊通知皆會觸發）。
   /// 由 VideoCallScreen 在好友通話時於 initState/dispose 掛上/清空；沒有訂閱者
@@ -358,19 +371,6 @@ class FcmService {
   static String _eventDeletedText(EventDeletedNotice notice) =>
       notice.body.isNotEmpty ? notice.body : _eventDeletedFallbackMessage;
 
-  /// 解析視訊配對相關通知的 payload，非視訊類型回傳 null。
-  static (String type, int? sessionId, String? channel)? _parseVideoPayload(
-    Map<String, dynamic> data,
-  ) {
-    final type = data['type'];
-    if (type != 'video_matched' && type != 'video_session_ended') return null;
-    final sessionId = int.tryParse(data['session_id']?.toString() ?? '');
-    if (sessionId == null) {
-      debugPrint('FcmService: session_id 缺失或無法解析，忽略：${data['session_id']}');
-    }
-    return (type as String, sessionId, data['channel'] as String?);
-  }
-
   /// 解析論壇回覆通知的 payload，非論壇類型回傳 null。
   /// 後端送出的 data：{ type: 'reply_post' | 'reply_comment', post_id, comment_id }
   static ({int postId, String type})? _parseForumPayload(
@@ -434,20 +434,6 @@ class FcmService {
     );
   }
 
-  /// 解析 friend_call_ended 的 call_id 並交給通話畫面，是此類型回傳 true。
-  static bool _dispatchFriendCallEnded(Map<String, dynamic> data) {
-    if (data['type'] != 'friend_call_ended') return false;
-    final callId = int.tryParse(data['call_id']?.toString() ?? '');
-    if (callId != null) onFriendCallEnded?.call(callId);
-    return true;
-  }
-
-  /// 解析好友定向來電推播的 call_id，非此類型回傳 null。
-  static int? _parseFriendCallIncoming(Map<String, dynamic> data) {
-    if (data['type'] != 'friend_call_incoming') return null;
-    return int.tryParse(data['call_id']?.toString() ?? '');
-  }
-
   /// 用 call_id 查目前來電中吻合的那一通，取得暱稱/頭像等展示欄位。
   /// 找不到（已被取消/接聽/逾時）時回傳 null，呼叫端應忽略。
   static Future<IncomingCall?> _fetchIncomingCall(int callId) async {
@@ -460,6 +446,112 @@ class FcmService {
       debugPrint('FcmService: 查詢來電詳情失敗：$e');
     }
     return null;
+  }
+
+  static const _callEventTypes = {
+    'video_matched',
+    'video_session_ended',
+    'friend_call_incoming',
+    'friend_call_accepted',
+    'friend_call_declined',
+    'friend_call_cancelled',
+    'friend_call_ended',
+  };
+
+  /// 最近處理過的通話事件（type:id），只留最後 [_maxHandledCallEvents] 筆。
+  static final Set<String> _handledCallEvents = <String>{};
+  static const _maxHandledCallEvents = 50;
+
+  @visibleForTesting
+  static void resetHandledCallEvents() => _handledCallEvents.clear();
+
+  /// 即時連線收到的通話事件（main.dart 掛上）。與推播走同一個入口，
+  /// 兩邊都收到同一則時只處理先到的。
+  static void handleSocketCallEvent(Map<String, dynamic> data) =>
+      _handleCallEvent(data, _CallEventSource.socket);
+
+  /// 是通話事件就處理並回傳 true（處理過的同一則略過）。
+  /// 即時連線來的事件沒有畫面接手時不記下，留給隨後的推播彈通知。
+  static bool _handleCallEvent(
+    Map<String, dynamic> data,
+    _CallEventSource source,
+  ) {
+    final type = data['type'];
+    if (type is! String || !_callEventTypes.contains(type)) return false;
+    final id =
+        (type.startsWith('video_') ? data['session_id'] : data['call_id'])
+            ?.toString();
+    final key = id == null || id.isEmpty ? null : '$type:$id';
+    if (key != null && _handledCallEvents.contains(key)) return true;
+    final delivered = _dispatchCallEvent(type, data, source);
+    if (key != null && (delivered || source != _CallEventSource.socket)) {
+      _handledCallEvents.add(key);
+      if (_handledCallEvents.length > _maxHandledCallEvents) {
+        _handledCallEvents.remove(_handledCallEvents.first);
+      }
+    }
+    return true;
+  }
+
+  /// 交給對應的畫面回呼，有人接手回傳 true。前景推播的視訊事件沒人接手時
+  /// 改彈本地通知；即時連線不彈，交給隨後的推播。
+  static bool _dispatchCallEvent(
+    String type,
+    Map<String, dynamic> data,
+    _CallEventSource source,
+  ) {
+    final callId = int.tryParse(data['call_id']?.toString() ?? '');
+    final sessionId = int.tryParse(data['session_id']?.toString() ?? '');
+    bool deliver(void Function(int)? handler, int? id) {
+      if (handler == null || id == null) return false;
+      handler(id);
+      return true;
+    }
+
+    switch (type) {
+      case 'video_matched':
+        final channel = data['channel']?.toString();
+        if (source == _CallEventSource.openedPush) {
+          onVideoMatchedColdStart?.call(sessionId, channel);
+          return true;
+        }
+        final handler = onVideoMatchedForeground;
+        if (handler != null) {
+          handler(sessionId, channel);
+          return true;
+        }
+        if (source == _CallEventSource.foregroundPush) {
+          _showVideoNotification(sessionId, matched: true);
+        }
+        return false;
+      case 'video_session_ended':
+        final handler = onVideoSessionEnded;
+        if (handler != null) {
+          handler(sessionId);
+          return true;
+        }
+        if (source == _CallEventSource.foregroundPush) {
+          _showVideoNotification(sessionId, matched: false);
+        }
+        return false;
+      case 'friend_call_incoming':
+        if (callId == null) return false;
+        unawaited(
+          _fetchIncomingCall(callId).then((call) {
+            if (call != null) onFriendCallIncoming?.call(call);
+          }),
+        );
+        return true;
+      case 'friend_call_accepted':
+        return deliver(onFriendCallAccepted, callId);
+      case 'friend_call_declined':
+        return deliver(onFriendCallDeclined, callId);
+      case 'friend_call_cancelled':
+        return deliver(onFriendCallCancelled, callId);
+      case 'friend_call_ended':
+        return deliver(onFriendCallEnded, callId);
+    }
+    return false;
   }
 
   @visibleForTesting
@@ -493,35 +585,13 @@ class FcmService {
       return;
     }
 
-    final callId = _parseFriendCallIncoming(message.data);
-    if (callId != null) {
-      unawaited(
-        _fetchIncomingCall(callId).then((call) {
-          if (call != null) onFriendCallIncoming?.call(call);
-        }),
-      );
+    if (_handleCallEvent(message.data, _CallEventSource.foregroundPush)) {
       return;
     }
-
-    if (message.data['type'] == 'friend_call_cancelled') {
-      final cancelledId = int.tryParse(
-        message.data['call_id']?.toString() ?? '',
-      );
-      if (cancelledId != null) onFriendCallCancelled?.call(cancelledId);
-      return;
-    }
-
-    if (_dispatchFriendCallEnded(message.data)) return;
 
     // 好友相關：App 開著時只更新紅點與未讀數，不彈提示。
     if (parseFriendPush(message.data) != null) {
       NotificationSummaryService.refresh();
-      return;
-    }
-
-    final videoParsed = _parseVideoPayload(message.data);
-    if (videoParsed != null) {
-      _onForegroundVideoMessage(videoParsed);
       return;
     }
 
@@ -738,49 +808,19 @@ class FcmService {
     );
   }
 
-  /// 前景收到視訊配對相關通知：畫面自己開著時交給畫面等級訂閱處理，不彈本地
-  /// 系統通知，避免使用者正看著等待/通話畫面卻又跳一則通知打擾；沒有對應
-  /// 訂閱者（代表使用者不在該畫面）時才彈通知。
-  static void _onForegroundVideoMessage(
-    (String type, int? sessionId, String? channel) parsed,
-  ) {
-    final (type, sessionId, channel) = parsed;
-
-    if (type == 'video_matched') {
-      if (onVideoMatchedForeground != null) {
-        onVideoMatchedForeground!(sessionId, channel);
-        return;
-      }
-      unawaited(
-        _localNotifications.show(
-          id: sessionId ?? DateTime.now().millisecondsSinceEpoch,
-          title: '找到語伴了！',
-          body: '點開始你們的視訊練習',
-          notificationDetails: const NotificationDetails(
-            android: _reminderAndroidDetails,
-          ),
-          payload: 'video:$sessionId',
-        ),
-      );
-      return;
-    }
-
-    // video_session_ended
-    if (onVideoSessionEnded != null) {
-      onVideoSessionEnded!(sessionId);
-      return;
-    }
-    // 對稱於 video_matched：沒有訂閱者代表使用者不在通話畫面，
-    // 少了這則 fallback，對方掛斷時使用者完全不會被告知通話已結束。
+  /// 前景收到視訊配對相關推播、但等待／通話畫面沒開著時彈的本地通知；畫面
+  /// 開著時由畫面處理，不彈通知打擾。配對結束也要彈：少了這則，對方掛斷時
+  /// 不在通話畫面的使用者完全不會被告知通話已結束。
+  static void _showVideoNotification(int? sessionId, {required bool matched}) {
     unawaited(
       _localNotifications.show(
         id: sessionId ?? DateTime.now().millisecondsSinceEpoch,
-        title: '視訊練習已結束',
-        body: '這次的通話已經結束了',
+        title: matched ? '找到語伴了！' : '視訊練習已結束',
+        body: matched ? '點開始你們的視訊練習' : '這次的通話已經結束了',
         notificationDetails: const NotificationDetails(
           android: _reminderAndroidDetails,
         ),
-        payload: 'video_ended:$sessionId',
+        payload: matched ? 'video:$sessionId' : 'video_ended:$sessionId',
       ),
     );
   }
@@ -809,33 +849,12 @@ class FcmService {
     // 通知列已顯示過內容，點開只需讓入口跟上新角色。
     if (_applyAccountRole(message.data)) return;
 
-    final callId = _parseFriendCallIncoming(message.data);
-    if (callId != null) {
-      unawaited(
-        _fetchIncomingCall(callId).then((call) {
-          if (call != null) onFriendCallIncoming?.call(call);
-        }),
-      );
-      return;
-    }
-
-    if (_dispatchFriendCallEnded(message.data)) return;
+    if (_handleCallEvent(message.data, _CallEventSource.openedPush)) return;
 
     final friendPush = parseFriendPush(message.data);
     if (friendPush != null) {
       final code = friendPush.friendCode;
       if (code != null) onFriendPushTapped?.call(friendPush.type, code);
-      return;
-    }
-
-    final videoParsed = _parseVideoPayload(message.data);
-    if (videoParsed != null) {
-      final (type, sessionId, channel) = videoParsed;
-      if (type == 'video_matched') {
-        onVideoMatchedColdStart?.call(sessionId, channel);
-      } else {
-        onVideoSessionEnded?.call(sessionId);
-      }
       return;
     }
 
