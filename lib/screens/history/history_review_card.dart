@@ -5,7 +5,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/audio_url.dart';
 import '../../services/history_service.dart';
-import 'report_question_dialog.dart';
+import '../../shared/widgets/report_sheet.dart';
 import '../../core/constants/app_typography.dart';
 
 class ReviewCard extends StatelessWidget {
@@ -42,32 +42,24 @@ class ReviewCard extends StatelessWidget {
     required this.questionType,
   });
 
-  Future<void> _report(BuildContext context) async {
-    final message = await showDialog<String>(
-      context: context,
-      builder: (_) => const ReportQuestionDialog(),
-    );
-    if (message == null || message.isEmpty) return;
-    if (!context.mounted) return;
-    try {
-      await HistoryService.reportQuestion(
-        questionType: questionType,
-        sessionId: sessionId,
-        questionId: questionId,
-        message: message,
-      );
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('已送出回報，感謝您的協助')));
-    } catch (e) {
-      if (!context.mounted) return;
-      final text = e is ApiException
-          ? (e.isQuestionNotFound ? '找不到此題目，可能資料已異動' : e.message)
-          : '回報失敗，請稍後再試';
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
-    }
-  }
+  Future<void> _report(BuildContext context) => showReportSheet(
+    context,
+    title: '回報問題',
+    description: '請說明題目或答案哪裡有誤，我們會再確認。',
+    hintText: '例如：正確答案有誤、發音與題目不符',
+    submitLabel: '送出回報',
+    successMessage: '已送出回報，感謝您的協助',
+    maxLength: 1000,
+    onSubmit: (message) => HistoryService.reportQuestion(
+      questionType: questionType,
+      sessionId: sessionId,
+      questionId: questionId,
+      message: message,
+    ),
+    errorMessage: (e) => e is ApiException
+        ? (e.isQuestionNotFound ? '找不到此題目，可能資料已異動' : e.message)
+        : '回報失敗，請稍後再試',
+  );
 
   Future<void> _play(BuildContext context, String? url) async {
     if (url == null) return;
