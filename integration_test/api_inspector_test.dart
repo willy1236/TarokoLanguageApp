@@ -1092,6 +1092,28 @@ Future<void> _inspectEventImages() async {
   final pngBytes = base64Decode(
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
   );
+  // 中途任何斷言失敗都要把這次上傳的測試圖刪掉，不在正式後端留下：
+  // 重取詳情，刪掉上傳前沒有的圖片。
+  addTearDown(() async {
+    final after = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}${ApiConfig.eventDetail(eventId)}'),
+      headers: {'Authorization': 'Bearer $_token'},
+    );
+    final images =
+        (jsonDecode(after.body) as Map<String, dynamic>)['images']
+            as List<dynamic>? ??
+        const [];
+    for (final image in images) {
+      final id = '${(image as Map<String, dynamic>)['id']}';
+      if (beforeIds.contains(id)) continue;
+      await http.delete(
+        Uri.parse(
+          '${ApiConfig.baseUrl}${ApiConfig.eventImage(eventId, int.parse(id))}',
+        ),
+        headers: {'Authorization': 'Bearer $_token'},
+      );
+    }
+  });
   final uploadPath = ApiConfig.eventImages(eventId);
   final request =
       http.MultipartRequest(
@@ -1118,15 +1140,6 @@ Future<void> _inspectEventImages() async {
     '${images.map((i) => (i as Map<String, dynamic>)['id']).firstWhere((id) => !beforeIds.contains('$id'))}',
   );
   final deletePath = ApiConfig.eventImage(eventId, newImageId);
-  var cleanedUp = false;
-  // 中途任何斷言失敗都要把測試圖刪掉，不在正式後端留下。
-  addTearDown(() async {
-    if (cleanedUp) return;
-    await http.delete(
-      Uri.parse('${ApiConfig.baseUrl}$deletePath'),
-      headers: {'Authorization': 'Bearer $_token'},
-    );
-  });
   expectEachShape(images, _eventImageShape, label: 'POST images.images');
 
   await _inspect(
@@ -1155,7 +1168,6 @@ Future<void> _inspectEventImages() async {
     headers: {'Authorization': 'Bearer $_token'},
   );
   _printResponse('DELETE', deletePath, deleted);
-  cleanedUp = deleted.statusCode == 200;
   recordFixture(
     'DELETE',
     deletePath,
