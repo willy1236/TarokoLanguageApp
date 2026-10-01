@@ -15,6 +15,7 @@ import '../forum/forum_detail_screen.dart';
 import '../forum/forum_search_screen.dart';
 import '../forum/forum_theme.dart';
 import '../events/event_detail_screen.dart';
+import '../events/widgets/event_cover.dart';
 import '../inbox/inbox_screen.dart';
 import '../../shared/widgets/module_header_actions.dart';
 import 'widgets/plaza_cards.dart';
@@ -400,16 +401,19 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
             ),
           )
         else
-          SizedBox(
-            height: 120,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-              itemCount: _events.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => PlazaMiniEventCard(
-                event: _events[i],
-                onTap: () => _openEventDetail(_events[i]),
+          EventCoverRefresher(
+            onRefresh: _loadEvents,
+            child: SizedBox(
+              height: 120,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                itemCount: _events.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (_, i) => PlazaMiniEventCard(
+                  event: _events[i],
+                  onTap: () => _openEventDetail(_events[i]),
+                ),
               ),
             ),
           ),

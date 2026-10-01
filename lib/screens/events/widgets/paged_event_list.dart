@@ -6,6 +6,7 @@ import '../../../models/event_model.dart';
 import '../../../models/page_info.dart';
 import '../../../services/event_service.dart';
 import '../../../shared/widgets/async_state_view.dart';
+import 'event_cover.dart';
 
 /// 往下捲分頁的活動清單：下拉重新整理、捲到底載入下一頁、載入下一頁失敗時
 /// 底部改顯示重試。「我參加的活動」兩個分頁與「我發起的活動」共用。
@@ -157,10 +158,13 @@ class _PagedEventListState extends State<PagedEventList>
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return RefreshIndicator(
+    return EventCoverRefresher(
       onRefresh: _load,
-      color: AppColors.primary,
-      child: _buildBody(),
+      child: RefreshIndicator(
+        onRefresh: _load,
+        color: AppColors.primary,
+        child: _buildBody(),
+      ),
     );
   }
 

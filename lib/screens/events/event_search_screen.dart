@@ -13,6 +13,7 @@ import '../../services/search_assist_service.dart';
 import '../../shared/widgets/module_search_bar.dart';
 import '../../shared/widgets/search_suggestions.dart';
 import 'event_detail_screen.dart';
+import 'widgets/event_cover.dart';
 
 class EventSearchScreen extends StatefulWidget {
   const EventSearchScreen({super.key});
@@ -186,26 +187,29 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
         ),
       );
     }
-    return NotificationListener<ScrollNotification>(
-      onNotification: (n) {
-        if (n.metrics.extentAfter < 200) _loadMore();
-        return false;
-      },
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _events.length + (_cursor != null ? 1 : 0),
-        separatorBuilder: (_, _) => const SizedBox(height: 10),
-        itemBuilder: (context, i) {
-          if (i >= _events.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: CircularProgressIndicator(color: AppColors.primary),
-              ),
-            );
-          }
-          return _EventResultTile(event: _events[i], seniorMode: seniorMode);
+    return EventCoverRefresher(
+      onRefresh: _search,
+      child: NotificationListener<ScrollNotification>(
+        onNotification: (n) {
+          if (n.metrics.extentAfter < 200) _loadMore();
+          return false;
         },
+        child: ListView.separated(
+          padding: const EdgeInsets.all(16),
+          itemCount: _events.length + (_cursor != null ? 1 : 0),
+          separatorBuilder: (_, _) => const SizedBox(height: 10),
+          itemBuilder: (context, i) {
+            if (i >= _events.length) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              );
+            }
+            return _EventResultTile(event: _events[i], seniorMode: seniorMode);
+          },
+        ),
       ),
     );
   }
@@ -298,6 +302,7 @@ class _EventResultTile extends StatelessWidget {
                 ],
               ),
             ),
+            EventCoverThumb(url: event.coverImageUrl, seniorMode: seniorMode),
           ],
         ),
       ),

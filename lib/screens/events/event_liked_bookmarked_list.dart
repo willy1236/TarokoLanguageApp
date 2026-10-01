@@ -13,6 +13,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'event_detail_screen.dart';
+import 'widgets/event_cover.dart';
 
 enum EventListMode { liked, bookmarked }
 
@@ -120,38 +121,41 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
     if (_events.isEmpty) {
       return _buildEmpty(seniorMode);
     }
-    return RefreshIndicator(
+    return EventCoverRefresher(
       onRefresh: _load,
-      color: AppColors.primary,
-      child: ListView.separated(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(16),
-        itemCount: _events.length + (_cursor != null ? 1 : 0),
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          if (index >= _events.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.primary,
+      child: RefreshIndicator(
+        onRefresh: _load,
+        color: AppColors.primary,
+        child: ListView.separated(
+          controller: _scrollController,
+          padding: const EdgeInsets.all(16),
+          itemCount: _events.length + (_cursor != null ? 1 : 0),
+          separatorBuilder: (_, _) => const SizedBox(height: 12),
+          itemBuilder: (context, index) {
+            if (index >= _events.length) {
+              return const Padding(
+                padding: EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
-              ),
+              );
+            }
+            return _EventListItem(
+              event: _events[index],
+              seniorMode: seniorMode,
+              // 在詳情頁取消收藏/按讚後返回，清單要重新整理，否則仍看得到
+              // 已經取消的項目。
+              onReturn: _load,
             );
-          }
-          return _EventListItem(
-            event: _events[index],
-            seniorMode: seniorMode,
-            // 在詳情頁取消收藏/按讚後返回，清單要重新整理，否則仍看得到
-            // 已經取消的項目。
-            onReturn: _load,
-          );
-        },
+          },
+        ),
       ),
     );
   }
@@ -202,33 +206,70 @@ class _EventListItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.creamDeep),
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Expanded(child: _buildInfo()),
+            EventCoverThumb(url: event.coverImageUrl, seniorMode: seniorMode),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          event.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: AppColors.ink,
+            fontSize: AppTypography.size(
+              AppTypography.body,
+              seniorMode: seniorMode,
+            ),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Icon(
+              Icons.access_time,
+              size: seniorMode ? 20 : 13,
+              color: AppColors.fog,
+            ),
+            const SizedBox(width: 4),
             Text(
-              event.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+              formatDateTime(event.startsAt.toLocal()),
               style: TextStyle(
-                color: AppColors.ink,
+                color: AppColors.inkSoft,
                 fontSize: AppTypography.size(
-                  AppTypography.body,
+                  AppTypography.caption,
                   seniorMode: seniorMode,
                 ),
-                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Icon(
-                  Icons.access_time,
-                  size: seniorMode ? 20 : 13,
-                  color: AppColors.fog,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  formatDateTime(event.startsAt.toLocal()),
+          ],
+        ),
+        if (event.location != null && event.location!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(
+                Icons.location_on_outlined,
+                size: seniorMode ? 20 : 13,
+                color: AppColors.fog,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  event.location!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: AppColors.inkSoft,
                     fontSize: AppTypography.size(
@@ -237,59 +278,32 @@ class _EventListItem extends StatelessWidget {
                     ),
                   ),
                 ),
-              ],
-            ),
-            if (event.location != null && event.location!.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    size: seniorMode ? 20 : 13,
-                    color: AppColors.fog,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      event.location!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppColors.inkSoft,
-                        fontSize: AppTypography.size(
-                          AppTypography.caption,
-                          seniorMode: seniorMode,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ],
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(
-                  event.isLiked ? Icons.favorite : Icons.favorite_border,
-                  size: seniorMode ? 22 : 14,
-                  color: event.isLiked ? AppColors.primary : AppColors.fog,
+          ),
+        ],
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Icon(
+              event.isLiked ? Icons.favorite : Icons.favorite_border,
+              size: seniorMode ? 22 : 14,
+              color: event.isLiked ? AppColors.primary : AppColors.fog,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '${event.likeCount}',
+              style: TextStyle(
+                color: AppColors.fog,
+                fontSize: AppTypography.size(
+                  AppTypography.caption,
+                  seniorMode: seniorMode,
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  '${event.likeCount}',
-                  style: TextStyle(
-                    color: AppColors.fog,
-                    fontSize: AppTypography.size(
-                      AppTypography.caption,
-                      seniorMode: seniorMode,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 }

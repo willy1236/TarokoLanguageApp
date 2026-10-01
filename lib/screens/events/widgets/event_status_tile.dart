@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
+import 'event_cover.dart';
 
 /// 個人頁活動清單（我發起的、我參加的）的一列：日期、標題、參加人數與狀態標籤。
 class EventStatusTile extends StatelessWidget {
@@ -116,14 +117,19 @@ class EventStatusTile extends StatelessWidget {
                             color: AppColors.inkSoft,
                           ),
                           const SizedBox(width: 4),
-                          Text(
-                            '${e.participantCount} 人參加',
-                            style: TextStyle(
-                              fontSize: AppTypography.size(
-                                AppTypography.caption,
-                                seniorMode: seniorMode,
+                          // 精簡模式在窄螢幕上這欄只剩 80 左右，放不下就截斷。
+                          Flexible(
+                            child: Text(
+                              '${e.participantCount} 人參加',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: AppTypography.size(
+                                  AppTypography.caption,
+                                  seniorMode: seniorMode,
+                                ),
+                                color: AppColors.inkSoft,
                               ),
-                              color: AppColors.inkSoft,
                             ),
                           ),
                         ],
@@ -141,26 +147,37 @@ class EventStatusTile extends StatelessWidget {
                 ],
               ),
             ),
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: seniorMode ? 10 : 8,
-                vertical: seniorMode ? 6 : 4,
-              ),
-              decoration: BoxDecoration(
-                color: chip.color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                chip.text,
-                style: TextStyle(
-                  fontSize: AppTypography.size(
-                    AppTypography.caption,
-                    seniorMode: seniorMode,
+            // 封面縮圖放在狀態標籤下方，標題才不會被擠得太窄（精簡模式尤其）。
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: seniorMode ? 10 : 8,
+                    vertical: seniorMode ? 6 : 4,
                   ),
-                  color: chip.color,
-                  letterSpacing: 0.5,
+                  decoration: BoxDecoration(
+                    color: chip.color.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: Text(
+                    chip.text,
+                    style: TextStyle(
+                      fontSize: AppTypography.size(
+                        AppTypography.caption,
+                        seniorMode: seniorMode,
+                      ),
+                      color: chip.color,
+                      letterSpacing: 0.5,
+                    ),
+                  ),
                 ),
-              ),
+                EventCoverThumb(
+                  url: e.coverImageUrl,
+                  seniorMode: seniorMode,
+                  padding: const EdgeInsets.only(top: 8),
+                ),
+              ],
             ),
           ],
         ),

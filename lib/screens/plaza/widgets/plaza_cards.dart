@@ -6,6 +6,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
 import '../../../shared/widgets/truku_widgets.dart';
+import '../../events/widgets/event_cover.dart';
 
 class PlazaEventMessageCard extends StatelessWidget {
   final IconData icon;
@@ -125,136 +126,161 @@ class PlazaMiniEventCard extends StatelessWidget {
     final d = event.startsAt.toLocal();
     final month = monthLabel(d);
     final day = d.day.toString().padLeft(2, '0');
+    final cover = event.coverImageUrl;
+    final content = _buildContent(month, day);
     return GestureDetector(
       onTap: onTap,
-      child: Container(
-        width: 200,
-        padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(
-          color: AppColors.ink,
-          borderRadius: BorderRadius.circular(14),
-        ),
-        child: Stack(
-          children: [
-            Positioned(
-              right: -16,
-              top: -16,
-              child: Opacity(
-                opacity: 0.13,
-                child: TrukuDiamond(size: 80, color: AppColors.gold),
+      child: cover == null
+          ? Container(
+              width: 200,
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.ink,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Stack(
+                children: [
+                  Positioned(
+                    right: -16,
+                    top: -16,
+                    child: Opacity(
+                      opacity: 0.13,
+                      child: TrukuDiamond(size: 80, color: AppColors.gold),
+                    ),
+                  ),
+                  content,
+                ],
+              ),
+            )
+          // 有封面：照片鋪滿整張卡，疊一層深色讓文字與按鈕讀得清楚。
+          : Container(
+              width: 200,
+              decoration: BoxDecoration(
+                color: AppColors.ink,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              clipBehavior: Clip.hardEdge,
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: EventCoverImage(
+                      url: cover,
+                      placeholder: const SizedBox.shrink(),
+                    ),
+                  ),
+                  Positioned.fill(
+                    child: ColoredBox(
+                      color: AppColors.ink.withValues(alpha: 0.6),
+                    ),
+                  ),
+                  Padding(padding: const EdgeInsets.all(14), child: content),
+                ],
               ),
             ),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: event.isJoined
-                            ? AppColors.primary
-                            : AppColors.moss,
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            month,
-                            style: const TextStyle(
-                              fontSize: AppTypography.micro,
-                              color: AppColors.gold,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                          Text(
-                            day,
-                            style: AppTypography.serif(
-                              fontSize: AppTypography.subtitle,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.creamLight,
-                              height: 1,
-                            ),
-                          ),
-                        ],
-                      ),
+    );
+  }
+
+  Widget _buildContent(String month, String day) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              width: 44,
+              height: 44,
+              decoration: BoxDecoration(
+                color: event.isJoined ? AppColors.primary : AppColors.moss,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(
+                    month,
+                    style: const TextStyle(
+                      fontSize: AppTypography.micro,
+                      color: AppColors.gold,
+                      letterSpacing: 0.3,
                     ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            event.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.serif(
-                              fontSize: AppTypography.body,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.creamLight,
-                              letterSpacing: 0.6,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            event.location ?? '線上',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              fontSize: AppTypography.micro,
-                              color: AppColors.creamLight.withValues(
-                                alpha: 0.65,
-                              ),
-                              letterSpacing: 0.8,
-                            ),
-                          ),
-                        ],
-                      ),
+                  ),
+                  Text(
+                    day,
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.subtitle,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.creamLight,
+                      height: 1,
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '● ${event.participantCount} 人報名',
-                      style: const TextStyle(
-                        fontSize: AppTypography.micro,
-                        color: AppColors.gold,
-                        letterSpacing: 1.5,
-                      ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    event.title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.body,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.creamLight,
+                      letterSpacing: 0.6,
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: AppColors.gold.withValues(alpha: 0.5),
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                      ),
-                      child: Text(
-                        event.isJoined ? '已報名' : '我要參加',
-                        style: const TextStyle(
-                          fontSize: AppTypography.caption,
-                          color: AppColors.gold,
-                          letterSpacing: 1.5,
-                        ),
-                      ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    event.location ?? '線上',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      fontSize: AppTypography.micro,
+                      color: AppColors.creamLight.withValues(alpha: 0.65),
+                      letterSpacing: 0.8,
                     ),
-                  ],
-                ),
-              ],
+                  ),
+                ],
+              ),
             ),
           ],
         ),
-      ),
+        const SizedBox(height: 10),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '● ${event.participantCount} 人報名',
+              style: const TextStyle(
+                fontSize: AppTypography.micro,
+                color: AppColors.gold,
+                letterSpacing: 1.5,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+              decoration: BoxDecoration(
+                border: Border.all(
+                  color: AppColors.gold.withValues(alpha: 0.5),
+                ),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Text(
+                event.isJoined ? '已報名' : '我要參加',
+                style: const TextStyle(
+                  fontSize: AppTypography.caption,
+                  color: AppColors.gold,
+                  letterSpacing: 1.5,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 }
