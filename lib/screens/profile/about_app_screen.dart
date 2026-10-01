@@ -226,29 +226,6 @@ class AboutAppScreen extends StatelessWidget {
     );
   }
 
-  Widget _sectionLabel(String text, bool seniorMode) => Row(
-    children: [
-      Container(
-        width: 4,
-        height: seniorMode ? 22 : 18,
-        color: AppColors.primary,
-      ),
-      const SizedBox(width: 8),
-      Text(
-        text,
-        style: AppTypography.serif(
-          fontSize: AppTypography.size(
-            AppTypography.subtitle,
-            seniorMode: seniorMode,
-          ),
-          fontWeight: FontWeight.w700,
-          color: AppColors.ink,
-          letterSpacing: 1.0,
-        ),
-      ),
-    ],
-  );
-
   /// 品牌故事「織語者」— 語言／文化／記憶三股色帶交疊，收束到織紋徽章，
   /// 具象化「重新編織」這個核心意象，而不是單純一段文字。
   Widget _buildWeaveStory(bool seniorMode) {
@@ -467,3 +444,22 @@ class AboutAppScreen extends StatelessWidget {
     );
   }
 }
+
+Widget _sectionLabel(String text, bool seniorMode) => Row(
+  children: [
+    Container(width: 4, height: seniorMode ? 22 : 18, color: AppColors.primary),
+    const SizedBox(width: 8),
+    Text(
+      text,
+      style: AppTypography.serif(
+        fontSize: AppTypography.size(
+          AppTypography.subtitle,
+          seniorMode: seniorMode,
+        ),
+        fontWeight: FontWeight.w700,
+        color: AppColors.ink,
+        letterSpacing: 1.0,
+      ),
+    ),
+  ],
+);
