@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../forum_theme.dart';
-import 'forum_toast.dart';
+import '../../../shared/widgets/app_toast.dart';
 import '../../../core/network/api_client.dart';
 import '../../../services/forum_service.dart';
 import '../../../services/senior_mode_controller.dart';
@@ -59,11 +59,11 @@ class _ReportSheetState extends State<_ReportSheet> {
       );
       if (!mounted) return;
       Navigator.pop(context);
-      showForumToast(context, '已收到檢舉');
+      showAppToast(context, '已收到檢舉');
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _sending = false);
-      showForumToast(context, e.message);
+      showAppToast(context, e.message);
     }
   }
 

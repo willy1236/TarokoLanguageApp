@@ -31,7 +31,7 @@ import 'widgets/forum_image_grid.dart' show ForumImageViewer;
 import 'widgets/forum_comment_tile.dart';
 import 'widgets/forum_new_reply_chip.dart';
 import 'widgets/forum_post_body.dart';
-import 'widgets/forum_toast.dart';
+import '../../shared/widgets/app_toast.dart';
 import 'widgets/forum_report_sheet.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/app_back_button.dart';
@@ -380,7 +380,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   void _toast(String message) {
     if (!mounted) return;
-    showForumToast(context, message);
+    showAppToast(context, message);
   }
 
   /// 貼文已不存在：回到列表並回報已刪除，讓呼叫端把它移除。
