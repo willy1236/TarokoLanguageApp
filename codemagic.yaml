@@ -20,10 +20,10 @@ workflows:
       - name: 套用簽章設定
         script: xcode-project use-profiles
       - name: 建置 IPA
-        # build number 用 Codemagic 的建置序號，確保每次上傳都遞增
+        # build number 取自 pubspec.yaml 的 version（+N），與 Android 同號；
+        # 沒升版就重跑，App Store Connect 會拒收重複的 build 號。
         script: |
           flutter build ipa --release \
-            --build-number=$BUILD_NUMBER \
             --export-options-plist=/Users/builder/export_options.plist
     artifacts:
       - build/ios/ipa/*.ipa
