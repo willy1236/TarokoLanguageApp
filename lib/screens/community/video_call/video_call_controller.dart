@@ -210,8 +210,9 @@ class VideoCallController extends ChangeNotifier {
     }
   }
 
-  /// 後端顯示已結束就本地離開（不再通知後端）；查詢失敗當作未結束。
-  /// 查詢期間對方又進出過頻道就不處理，交給那次事件排的查詢。
+  /// 後端顯示已結束就本地離開（不再通知後端），結束是終態，查詢期間對方
+  /// 進出過頻道也照樣離開。查詢失敗當作未結束；未結束時若期間對方進出過頻道，
+  /// 就不排重查，交給那次事件排的查詢。
   Future<void> _leaveIfEndedOnServer({Duration? recheckAfter}) async {
     if (_ended) return;
     final generation = _peerPresenceGeneration;
@@ -222,10 +223,10 @@ class VideoCallController extends ChangeNotifier {
       debugPrint('VideoCallController: 查詢通話狀態失敗（忽略）：$e');
       ended = false;
     }
-    if (_ended || _disposed || generation != _peerPresenceGeneration) return;
+    if (_ended || _disposed) return;
     if (ended) {
       await _leave(notifyBackend: false);
-    } else if (recheckAfter != null) {
+    } else if (recheckAfter != null && generation == _peerPresenceGeneration) {
       _peerCheckTimer = Timer(
         recheckAfter,
         () => unawaited(_leaveIfEndedOnServer()),

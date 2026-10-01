@@ -377,6 +377,40 @@ void main() {
       });
     });
 
+    test('查詢途中對方回到頻道：後端未結束就不再重查', () {
+      fakeAsync((async) {
+        final h = joined(async)..serverGate = Completer<void>();
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.quit);
+        async.flushMicrotasks();
+        h.rtc.callbacks!.onRemoteJoined(9);
+        h.serverGate!.complete();
+        async.flushMicrotasks();
+        async.elapse(const Duration(minutes: 1));
+        expect(h.log, ['backend.status']);
+        expect(h.call.ended, isFalse);
+        h.call.dispose();
+      });
+    });
+
+    test('查詢途中對方又進出頻道，後端已結束：照樣離開', () {
+      fakeAsync((async) {
+        final h = joined(async)
+          ..serverEnded = true
+          ..serverGate = Completer<void>();
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.quit);
+        async.flushMicrotasks();
+        h.rtc.callbacks!.onRemoteJoined(9);
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.dropped);
+        h.serverGate!.complete();
+        async.flushMicrotasks();
+        expect(h.leftCount, 1);
+        // 離開時取消斷線計時器，不會再查。
+        async.elapse(const Duration(seconds: 30));
+        expect(h.log, ['backend.status', 'rtc.release']);
+        h.call.dispose();
+      });
+    });
+
     test('其他原因（例如轉為觀眾）只清掉對方畫面', () {
       fakeAsync((async) {
         final h = joined(async)..serverEnded = true;
