@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../models/quiz_models.dart';
 import '../../services/learn_service.dart';
-import '../../shared/widgets/confirm_dialog.dart';
 import '../history/history_screen.dart';
+import 'quiz_flow/quiz_conflict_dialog.dart';
 import 'quiz_flow/quiz_flow_adapters.dart';
 import 'quiz_flow/quiz_flow_controller.dart';
 import 'quiz_flow/quiz_flow_view.dart';
@@ -42,16 +42,20 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
         QuizAnswer(questionId: a.questionId, selectedOptionId: a.optionId),
     ]),
     emptyMessage: '此級別目前沒有可用的題目，請稍後再試',
-    confirmConflict: (oldLevel, wantedLevel) => showConfirmDialog(
+    confirmConflict: (oldLevel, wantedLevel) => showQuizConflictDialog(
       context,
       title: '有未完成的測驗',
-      message:
-          '你還有未完成的「$oldLevel」測驗，要繼續完成，還是先返回？\n'
-          '（目前尚不支援直接放棄舊測驗，需完成後才能開始「$wantedLevel」）',
-      cancelText: '返回',
-      confirmText: '繼續「$oldLevel」測驗',
-      barrierDismissible: false,
+      subject: '測驗',
+      oldLevel: oldLevel,
+      wantedLevel: wantedLevel,
     ),
+    abandon: LearnService.abandonQuiz,
+    onAbandonNotice: (message) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(message)));
+    },
     onSaveFailed: (e) {
       debugPrint('LessonCardScreen: 儲存答案失敗：$e');
       if (!mounted) return;

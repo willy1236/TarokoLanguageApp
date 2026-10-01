@@ -67,16 +67,19 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
             ),
         ]),
     emptyMessage: '此級別目前沒有可用的聽力題目，請稍後再試',
-    confirmConflict: (oldLevel, wantedLevel) => showConfirmDialog(
-      context,
-      title: '有未完成的聽力測驗',
-      message:
-          '你還有未完成的「$oldLevel」聽力測驗，要繼續完成，還是先返回？\n'
-          '（目前尚不支援直接放棄舊測驗，需完成後才能開始「$wantedLevel」）',
-      cancelText: '返回',
-      confirmText: '繼續「$oldLevel」測驗',
-      barrierDismissible: false,
-    ),
+    confirmConflict: (oldLevel, wantedLevel) async =>
+        await showConfirmDialog(
+          context,
+          title: '有未完成的聽力測驗',
+          message:
+              '你還有未完成的「$oldLevel」聽力測驗，要繼續完成，還是先返回？\n'
+              '（目前尚不支援直接放棄舊測驗，需完成後才能開始「$wantedLevel」）',
+          cancelText: '返回',
+          confirmText: '繼續「$oldLevel」測驗',
+          barrierDismissible: false,
+        )
+        ? QuizConflictChoice.resume
+        : QuizConflictChoice.back,
     onSaveFailed: (e) {
       if (!mounted) return;
       final message =

@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/screens/learn/quiz_flow/quiz_flow_controller.dart';
+import 'package:flutter_application_1/services/learn_refresh_notifier.dart';
 
 QuizFlowQuestion q(String id, {int? selected}) => QuizFlowQuestion(
   id: id,
@@ -16,6 +17,14 @@ QuizFlowQuestion q(String id, {int? selected}) => QuizFlowQuestion(
 
 class _Harness {
   QuizFlowSession session;
+
+  /// 依序作為每次 start 的回應，用完後一律回 [session]。
+  final starts = <QuizFlowSession>[];
+
+  /// start／abandon 的呼叫順序，例如 ['start', 'abandon:old', 'start']。
+  final calls = <String>[];
+  Object? abandonError;
+  final notices = <String>[];
   final saved = <(String, int)>[];
   final submitted = <List<QuizFlowAnswer>>[];
   Object? saveError;
@@ -25,11 +34,15 @@ class _Harness {
 
   _Harness(
     this.session, {
-    Future<bool> Function(String, String)? confirmConflict,
+    Future<QuizConflictChoice> Function(String, String)? confirmConflict,
+    bool canAbandon = false,
     String? emptyMessage,
   }) {
     flow = QuizFlowController<String>(
-      start: () async => session,
+      start: () async {
+        calls.add('start');
+        return starts.isNotEmpty ? starts.removeAt(0) : session;
+      },
       saveAnswer: (_, qid, opt) async {
         saved.add((qid, opt));
         if (saveError != null) throw saveError!;
@@ -39,6 +52,13 @@ class _Harness {
         return submitGate?.future ?? Future.value('ok');
       },
       confirmConflict: confirmConflict,
+      abandon: canAbandon
+          ? (sessionId) async {
+              calls.add('abandon:$sessionId');
+              if (abandonError != null) throw abandonError!;
+            }
+          : null,
+      onAbandonNotice: notices.add,
       emptyMessage: emptyMessage,
       onSaveFailed: saveFailures.add,
     );
@@ -159,23 +179,146 @@ void main() {
     expect((h.flow.error as ApiException).message, '沒有題目');
   });
 
-  test('衝突時拒絕續接回傳 false', () async {
-    final asked = <(String, String)>[];
-    final h = _Harness(
-      QuizFlowSession(
-        sessionId: 's',
-        level: 'A1',
-        conflictingLevel: 'A2',
-        questions: [q('q1')],
-      ),
-      confirmConflict: (cur, wanted) async {
-        asked.add((cur, wanted));
-        return false;
-      },
+  group('有未完成的舊測驗', () {
+    // 舊測驗是 A1（已答一題），使用者這次想開 A2。
+    QuizFlowSession conflict() => QuizFlowSession(
+      sessionId: 'old',
+      level: 'A1',
+      conflictingLevel: 'A2',
+      questions: [q('q1', selected: 1), q('q2')],
     );
-    expect(await h.flow.load(), isFalse);
-    expect(asked, [('A1', 'A2')]);
-    expect(h.flow.phase, QuizFlowPhase.loading);
+    final fresh = QuizFlowSession(
+      sessionId: 'new',
+      level: 'A2',
+      questions: [q('n1'), q('n2')],
+    );
+
+    test('選返回時回傳 false', () async {
+      final asked = <(String, String)>[];
+      final h = _Harness(
+        conflict(),
+        canAbandon: true,
+        confirmConflict: (cur, wanted) async {
+          asked.add((cur, wanted));
+          return QuizConflictChoice.back;
+        },
+      );
+      expect(await h.flow.load(), isFalse);
+      expect(asked, [('A1', 'A2')]);
+      expect(h.calls, ['start']);
+      expect(h.flow.phase, QuizFlowPhase.loading);
+    });
+
+    test('選續接時開出舊測驗並還原作答', () async {
+      final h = _Harness(
+        conflict(),
+        canAbandon: true,
+        confirmConflict: (_, _) async => QuizConflictChoice.resume,
+      );
+      expect(await h.flow.load(), isTrue);
+      expect(h.calls, ['start']);
+      expect(h.flow.session!.sessionId, 'old');
+      expect(h.flow.currentIndex, 1);
+    });
+
+    test('選放棄時先放棄舊測驗再重新 start，開出新測驗', () async {
+      final h = _Harness(
+        fresh,
+        canAbandon: true,
+        confirmConflict: (_, _) async => QuizConflictChoice.abandon,
+      )..starts.add(conflict());
+      final before = LearnRefreshNotifier.revision.value;
+
+      expect(await h.flow.load(), isTrue);
+
+      expect(h.calls, ['start', 'abandon:old', 'start']);
+      expect(h.flow.phase, QuizFlowPhase.quiz);
+      expect(h.flow.session!.level, 'A2');
+      expect(h.flow.currentIndex, 0);
+      expect(h.flow.selectedOptionId, isNull);
+      expect(h.notices, isEmpty);
+      expect(LearnRefreshNotifier.revision.value, before + 1);
+    });
+
+    test('放棄時舊測驗已交卷（409）：通知訊息後照樣開出新測驗', () async {
+      final h = _Harness(
+        fresh,
+        canAbandon: true,
+        confirmConflict: (_, _) async => QuizConflictChoice.abandon,
+      )..starts.add(conflict());
+      h.abandonError = ApiException(
+        statusCode: 409,
+        code: 'SESSION_ALREADY_COMPLETED',
+        message: '測驗已完成，不能放棄',
+      );
+
+      await h.flow.load();
+
+      expect(h.notices, ['測驗已完成，不能放棄']);
+      expect(h.calls, ['start', 'abandon:old', 'start']);
+      expect(h.flow.phase, QuizFlowPhase.quiz);
+      expect(h.flow.session!.sessionId, 'new');
+    });
+
+    test('放棄失敗進錯誤狀態；重試會重新 start 並再問一次', () async {
+      var asked = 0;
+      final h = _Harness(
+        conflict(),
+        canAbandon: true,
+        confirmConflict: (_, _) async {
+          asked++;
+          return QuizConflictChoice.abandon;
+        },
+      );
+      h.abandonError = ApiException(
+        statusCode: 0,
+        code: 'NETWORK_ERROR',
+        message: 'offline',
+      );
+
+      await h.flow.load();
+      expect(h.flow.phase, QuizFlowPhase.error);
+      expect(h.calls, ['start', 'abandon:old']);
+
+      h.abandonError = null;
+      h.session = fresh;
+      h.starts.add(conflict());
+      await h.flow.load();
+      expect(asked, 2);
+      expect(h.flow.phase, QuizFlowPhase.quiz);
+      expect(h.flow.session!.sessionId, 'new');
+    });
+
+    test('重新 start 又衝突時再問一次，不直接續接', () async {
+      final choices = [QuizConflictChoice.abandon, QuizConflictChoice.back];
+      final h = _Harness(
+        fresh,
+        canAbandon: true,
+        confirmConflict: (_, _) async => choices.removeAt(0),
+      );
+      h.starts.addAll([
+        conflict(),
+        QuizFlowSession(
+          sessionId: 'other-device',
+          level: 'A3',
+          conflictingLevel: 'A2',
+          questions: [q('x1')],
+        ),
+      ]);
+
+      expect(await h.flow.load(), isFalse);
+      expect(h.calls, ['start', 'abandon:old', 'start']);
+      expect(choices, isEmpty);
+    });
+
+    test('沒注入 abandon 卻選放棄時視同返回', () async {
+      final h = _Harness(
+        conflict(),
+        confirmConflict: (_, _) async => QuizConflictChoice.abandon,
+      );
+      expect(await h.flow.load(), isFalse);
+      expect(h.calls, ['start']);
+    });
   });
 
   test('dispose 後才回來的送出結果被忽略', () async {
