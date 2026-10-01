@@ -1069,8 +1069,24 @@ Future<void> _inspectEventImages() async {
     markTestSkipped('錄製帳號沒有自己發起的活動可測');
     return;
   }
-  final eventId = (events.first as Map<String, dynamic>)['id'] as int;
+  // 列表的 id 實際是字串（例如 "44"）。
+  final eventId = int.parse('${(events.first as Map<String, dynamic>)['id']}');
   print('（挑到自己發起的活動 id=$eventId）');
+  final before = await http.get(
+    Uri.parse('${ApiConfig.baseUrl}${ApiConfig.eventDetail(eventId)}'),
+    headers: {'Authorization': 'Bearer $_token'},
+  );
+  final beforeIds = {
+    for (final image
+        in (jsonDecode(before.body) as Map<String, dynamic>)['images']
+                as List<dynamic>? ??
+            const [])
+      '${(image as Map<String, dynamic>)['id']}',
+  };
+  if (beforeIds.length >= 6) {
+    markTestSkipped('活動 $eventId 已有 6 張圖片，無法再上傳測試圖');
+    return;
+  }
 
   // 1x1 透明 PNG bytes（伺服器會重新輸出成 JPEG）
   final pngBytes = base64Decode(
@@ -1098,8 +1114,20 @@ Future<void> _inspectEventImages() async {
   final uploadedJson = jsonDecode(uploaded.body);
   expectShape(uploadedJson, {'images': F.list}, label: 'POST images');
   final images = (uploadedJson as Map<String, dynamic>)['images'] as List;
+  final newImageId = int.parse(
+    '${images.map((i) => (i as Map<String, dynamic>)['id']).firstWhere((id) => !beforeIds.contains('$id'))}',
+  );
+  final deletePath = ApiConfig.eventImage(eventId, newImageId);
+  var cleanedUp = false;
+  // 中途任何斷言失敗都要把測試圖刪掉，不在正式後端留下。
+  addTearDown(() async {
+    if (cleanedUp) return;
+    await http.delete(
+      Uri.parse('${ApiConfig.baseUrl}$deletePath'),
+      headers: {'Authorization': 'Bearer $_token'},
+    );
+  });
   expectEachShape(images, _eventImageShape, label: 'POST images.images');
-  final newImageId = (images.last as Map<String, dynamic>)['id'] as int;
 
   await _inspect(
     'GET',
@@ -1122,12 +1150,12 @@ Future<void> _inspectEventImages() async {
     itemOptional: _eventSummaryOptional,
   );
 
-  final deletePath = ApiConfig.eventImage(eventId, newImageId);
   final deleted = await http.delete(
     Uri.parse('${ApiConfig.baseUrl}$deletePath'),
     headers: {'Authorization': 'Bearer $_token'},
   );
   _printResponse('DELETE', deletePath, deleted);
+  cleanedUp = deleted.statusCode == 200;
   recordFixture(
     'DELETE',
     deletePath,
