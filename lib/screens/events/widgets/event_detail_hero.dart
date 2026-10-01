@@ -17,11 +17,17 @@ class EventDetailHero extends StatelessWidget {
   /// 發起人上傳或刪除圖片成功後，後端回的該活動全部圖片。
   final ValueChanged<List<EventImage>> onImagesChanged;
 
+  /// 照片載入失敗（多半是網址過期）時自動觸發／使用者點重試，見 [EventImageCarousel]。
+  final VoidCallback? onImageExpired;
+  final VoidCallback? onImageRetryTap;
+
   const EventDetailHero({
     super.key,
     required this.event,
     required this.seniorMode,
     required this.onImagesChanged,
+    this.onImageExpired,
+    this.onImageRetryTap,
   });
 
   @override
@@ -40,6 +46,8 @@ class EventDetailHero extends StatelessWidget {
         seniorMode: seniorMode,
         background: _GradientBackground(muted: cancelled || ended),
         onImagesChanged: onImagesChanged,
+        onImageExpired: onImageExpired,
+        onImageRetryTap: onImageRetryTap,
         overlayBuilder: (context, controls) => Stack(
           fit: StackFit.expand,
           children: [

@@ -12,6 +12,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/screens/events/event_detail_screen.dart';
+import 'package:flutter_application_1/screens/events/widgets/event_detail_hero.dart';
+import 'package:flutter_application_1/screens/forum/widgets/forum_image_grid.dart';
 import 'package:flutter_application_1/services/account_lock_controller.dart';
 import 'package:flutter_application_1/services/senior_mode_controller.dart';
 import 'package:flutter_application_1/shared/utils/pick_images.dart';
@@ -373,5 +375,57 @@ void main() {
 
     expect(tester.takeException(), isNull);
     expect(find.text('1／6'), findsOneWidget);
+  });
+
+  group('全螢幕與網址過期', () {
+    testWidgets('點照片從那一張開全螢幕；發起人點照片也不會誤刪', (tester) async {
+      var deletes = 0;
+      installMockClient(
+        _routes(_detail(isHost: true, imageIds: [1, 2, 3])),
+        onRequest: (r) {
+          if (r.method == 'DELETE') deletes++;
+        },
+      );
+      await _open(tester);
+      await tester.drag(find.byType(PageView), const Offset(-500, 0));
+      await tester.pumpAndSettle();
+
+      await tester.tapAt(tester.getCenter(find.byType(PageView)));
+      await tester.pumpAndSettle();
+
+      final viewer = tester.widget<ForumImageViewer>(
+        find.byType(ForumImageViewer),
+      );
+      expect(viewer.initialIndex, 1);
+      expect(viewer.images, hasLength(3));
+      expect(find.text('2 / 3'), findsOneWidget);
+      expect(deletes, 0);
+    });
+
+    testWidgets('網址過期自動重取詳情有次數上限，手動重試不受限', (tester) async {
+      var detailCalls = 0;
+      installMockClient(
+        _routes(_detail(isHost: false, imageIds: [1, 2])),
+        onRequest: (r) {
+          if (r.url.path == _detailPath) detailCalls++;
+        },
+      );
+      await _open(tester);
+      expect(detailCalls, 1);
+
+      // 測試環境無法真的讓 CachedNetworkImage 進 errorWidget，直接驅動回報的接縫，
+      // 模擬每次重取後照片仍然載不起來的最壞情況。
+      EventDetailHero hero() =>
+          tester.widget<EventDetailHero>(find.byType(EventDetailHero));
+      for (var i = 0; i < 10; i++) {
+        hero().onImageExpired!();
+        await tester.pumpAndSettle();
+      }
+      expect(detailCalls, 1 + 3);
+
+      hero().onImageRetryTap!();
+      await tester.pumpAndSettle();
+      expect(detailCalls, 1 + 3 + 1);
+    });
   });
 }

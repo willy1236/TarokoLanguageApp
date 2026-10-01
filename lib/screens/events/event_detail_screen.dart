@@ -434,6 +434,25 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     setState(() => _event = event.withImages(images));
   }
 
+  /// 照片網址過期（15 分鐘）自動重取詳情的次數；圖片本身壞掉時重取也沒用，
+  /// 設上限避免一直重打。手動點重試不受限。
+  int _imageAutoRefreshes = 0;
+  static const _maxImageAutoRefreshes = 3;
+  bool _imageRefreshing = false;
+
+  Future<void> _onImageExpired() async {
+    if (_imageRefreshing || _imageAutoRefreshes >= _maxImageAutoRefreshes) {
+      return;
+    }
+    _imageAutoRefreshes++;
+    _imageRefreshing = true;
+    try {
+      await _silentRefresh();
+    } finally {
+      _imageRefreshing = false;
+    }
+  }
+
   // ── 編輯 / 刪除（僅發起人） ────────────────────────────────────
   Future<void> _editEvent() async {
     final event = _event;
@@ -529,6 +548,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 event: e,
                 seniorMode: seniorMode,
                 onImagesChanged: _onImagesChanged,
+                onImageExpired: _onImageExpired,
+                onImageRetryTap: _silentRefresh,
               ),
             ),
             SliverToBoxAdapter(

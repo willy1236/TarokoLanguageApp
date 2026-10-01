@@ -3,7 +3,6 @@
 
 import 'dart:math';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
@@ -14,6 +13,8 @@ import '../../../services/account_lock_controller.dart';
 import '../../../services/event_service.dart';
 import '../../../shared/utils/pick_images.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
+import '../../../shared/widgets/signed_network_image.dart';
+import '../../forum/widgets/forum_image_grid.dart';
 
 enum _Busy { uploading, deleting }
 
@@ -31,6 +32,13 @@ class EventImageCarousel extends StatefulWidget {
   /// 上傳或刪除成功後，後端回的該活動全部圖片。
   final ValueChanged<List<EventImage>> onImagesChanged;
 
+  /// 照片載入失敗時自動觸發（多半是網址過期），每個網址只回報一次；
+  /// 呼叫端重新取得詳情換新網址，並自行限制次數。
+  final VoidCallback? onImageExpired;
+
+  /// 使用者點破圖上的重試鈕。
+  final VoidCallback? onImageRetryTap;
+
   /// 疊在照片上的內容。[controls] 是頁數指示與發起人的新增、刪除按鈕，由呼叫端
   /// 決定擺放位置；其餘疊上去的文字要包 IgnorePointer，才不會吃掉左右滑。
   final Widget Function(BuildContext context, Widget controls) overlayBuilder;
@@ -44,6 +52,8 @@ class EventImageCarousel extends StatefulWidget {
     required this.background,
     required this.onImagesChanged,
     required this.overlayBuilder,
+    this.onImageExpired,
+    this.onImageRetryTap,
   });
 
   @override
@@ -149,6 +159,21 @@ class _EventImageCarouselState extends State<EventImageCarousel> {
     }
   }
 
+  /// 全螢幕檢視：從被點的那張開始，可左右滑、雙指縮放。
+  void _openViewer(int index) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => ForumImageViewer(
+          images: [
+            for (final image in widget.images) signedImageProvider(image.url),
+          ],
+          initialIndex: index,
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final images = widget.images;
@@ -162,11 +187,14 @@ class _EventImageCarouselState extends State<EventImageCarousel> {
             controller: _controller,
             itemCount: images.length,
             onPageChanged: (i) => setState(() => _index = i),
-            itemBuilder: (_, i) => CachedNetworkImage(
-              imageUrl: images[i].url,
-              fit: BoxFit.cover,
-              placeholder: (_, _) => widget.background,
-              errorWidget: (_, _, _) => widget.background,
+            itemBuilder: (_, i) => GestureDetector(
+              onTap: () => _openViewer(i),
+              child: SignedNetworkImage(
+                url: images[i].url,
+                placeholder: widget.background,
+                onExpired: widget.onImageExpired,
+                onRetryTap: widget.onImageRetryTap,
+              ),
             ),
           ),
         widget.overlayBuilder(context, _buildControls()),
