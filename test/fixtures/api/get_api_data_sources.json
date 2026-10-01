@@ -1,0 +1,58 @@
+{
+  "title": "資料來源與授權",
+  "sources": [
+    {
+      "id": "klokah",
+      "name": "原住民族語E樂園",
+      "used_for": [
+        "單字",
+        "句子",
+        "字母",
+        "音檔",
+        "文章"
+      ],
+      "license": "CC BY-NC-SA 4.0",
+      "attribution": "本 App 的太魯閣語單字、句子、字母、音檔與族語短文文章，資料來源－原住民族語E樂園，由財團法人原住民族語言研究發展基金會製作，以創用CC 姓名標示－非商業性－相同方式分享 4.0 國際授權條款（CC BY-NC-SA 4.0）釋出。文章僅重新排版，文字與插圖內容未修改，並以相同條款分享。",
+      "links": [
+        {
+          "label": "原住民族語E樂園",
+          "url": "https://web.klokah.tw"
+        },
+        {
+          "label": "CC BY-NC-SA 4.0 授權條款",
+          "url": "https://creativecommons.org/licenses/by-nc-sa/4.0/deed.zh-hant"
+        }
+      ]
+    },
+    {
+      "id": "curriculum",
+      "name": "十二年國教課程原住民族語文教材 太魯閣語 學習手冊",
+      "used_for": [
+        "句子",
+        "音檔"
+      ],
+      "license": "CC BY-NC-ND 3.0 TW",
+      "attribution": "部分句子與音檔取自「十二年國教課程原住民族語文教材 太魯閣語 學習手冊」，發行單位：教育部、原住民族委員會，編輯單位：國立政治大學原住民族研究中心，以創用CC 姓名標示－非商業性－禁止改作 3.0 台灣授權條款（CC BY-NC-ND 3.0 TW）授權，本 App 未修改其內容。",
+      "links": [
+        {
+          "label": "教材電子書城",
+          "url": "https://ebook-alcd.k12ea.gov.tw"
+        },
+        {
+          "label": "CC BY-NC-ND 3.0 TW 授權條款",
+          "url": "https://creativecommons.org/licenses/by-nc-nd/3.0/tw/"
+        }
+      ]
+    },
+    {
+      "id": "youtube",
+      "name": "影音（YouTube 影片）",
+      "used_for": [
+        "影片"
+      ],
+      "license": null,
+      "attribution": "影音頁的影片以 YouTube 官方播放器嵌入播放，著作權屬原發布單位（原住民族語E樂園、原住民族電視台、原住民族文化事業基金會、鄉公所等），本 App 未下載或重新上傳；各影片的出處標示在影片簡介中。",
+      "links": []
+    }
+  ]
+}

@@ -24,6 +24,9 @@ class ApiConfig {
   static const String accountStatus = '/api/account/status';
   static const String accountExport = '/api/account/export';
 
+  // 關於頁的資料來源與授權，不需登入（見 Truku_backend 說明文件/API/資料來源與授權.md）
+  static const String dataSources = '/api/data-sources';
+
   // 未讀徽章與搜尋輔助（見 Truku_backend 說明文件/前端交接/總覽.md §4.3）
   static const String notificationsSummary = '/api/notifications/summary';
   // 收件匣、處置詳情與申訴（見 Truku_backend 說明文件/API/收件匣與申訴.md）。
