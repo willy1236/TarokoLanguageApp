@@ -12,7 +12,12 @@ typedef PickedImages = ({List<Uint8List> images, String? skippedNotice});
 /// 開相簿讓使用者最多選 [limit] 張，逐張壓縮（長邊 1920、JPEG）；無法處理或
 /// 壓縮後仍超過 [maxBytes] 的略過，檔名放進 [PickedImages.skippedNotice]。
 /// 使用者取消時回空清單。
-Future<PickedImages> pickImagesForUpload({
+///
+/// 是變數而非函式，測試才能換成假的，不必真的開相簿與壓縮。
+Future<PickedImages> Function({required int limit, required int maxBytes})
+pickImagesForUpload = _pickAndCompress;
+
+Future<PickedImages> _pickAndCompress({
   required int limit,
   required int maxBytes,
 }) async {

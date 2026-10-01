@@ -426,6 +426,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
+  /// 發起人在頂端輪播上傳或刪除圖片成功：換成後端回的清單，返回時列表重載換封面。
+  void _onImagesChanged(List<EventImage> images) {
+    final event = _event;
+    if (event == null) return;
+    _markChanged();
+    setState(() => _event = event.withImages(images));
+  }
+
   // ── 編輯 / 刪除（僅發起人） ────────────────────────────────────
   Future<void> _editEvent() async {
     final event = _event;
@@ -517,7 +525,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
-              child: EventDetailHero(event: e, seniorMode: seniorMode),
+              child: EventDetailHero(
+                event: e,
+                seniorMode: seniorMode,
+                onImagesChanged: _onImagesChanged,
+              ),
             ),
             SliverToBoxAdapter(
               child: EventDetailBody(
