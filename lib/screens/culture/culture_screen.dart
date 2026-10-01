@@ -184,7 +184,7 @@ class _CultureScreenState extends State<CultureScreen> {
           if (_tabIndex == 0) ...[
             SliverToBoxAdapter(child: _buildChips(seniorMode)),
             SliverToBoxAdapter(child: _buildVideoSectionHeader(seniorMode)),
-            SliverToBoxAdapter(child: _buildVideoGrid(seniorMode)),
+            SliverToBoxAdapter(child: _buildVideoList(seniorMode)),
           ],
           // 文章分頁常駐（只是隱藏），切回來時分類、排序與已載入的清單都還在。
           SliverToBoxAdapter(
@@ -395,7 +395,7 @@ class _CultureScreenState extends State<CultureScreen> {
     );
   }
 
-  Widget _buildVideoGrid(bool seniorMode) {
+  Widget _buildVideoList(bool seniorMode) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: FutureBuilder<VideoListResponse>(
@@ -431,39 +431,13 @@ class _CultureScreenState extends State<CultureScreen> {
               ),
             );
           }
-          // 精簡模式下 2 欄改 1 欄，避免字級放大後卡片過擠（探索報告 8.1 節資訊密度原則）。
-          // 改用固定 aspect ratio 的 Grid 會因放大後標題行高不固定而溢位，故精簡模式改用
-          // 自然高度的 Column 逐張排列；一般模式維持原本 GridView 兩欄版面不變。
-          if (seniorMode) {
-            return Column(
-              children: videos
-                  .map(
-                    (v) => Padding(
-                      padding: const EdgeInsets.only(bottom: 12),
-                      child: CultureVideoCard(video: v, seniorMode: true),
-                    ),
-                  )
-                  .toList(),
-            );
-          }
-          // 兩欄逐列排、卡片取自然高度；固定 aspect ratio 在寬螢幕會把卡片拉得過高。
           return Column(
             children: [
-              for (var i = 0; i < videos.length; i += 2) ...[
-                if (i > 0) const SizedBox(height: 12),
-                Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Expanded(child: CultureVideoCard(video: videos[i])),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: i + 1 < videos.length
-                          ? CultureVideoCard(video: videos[i + 1])
-                          : const SizedBox.shrink(),
-                    ),
-                  ],
+              for (final v in videos)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: CultureVideoCard(video: v, seniorMode: seniorMode),
                 ),
-              ],
             ],
           );
         },
