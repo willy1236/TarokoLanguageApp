@@ -1,4 +1,5 @@
-// 個人資料「其他」→「關於語見太魯閣」。純靜態內容，不打 API。
+// 個人資料「其他」→「關於語見太魯閣」。品牌內容是靜態的；只有最底下的
+// 「資料來源與授權」打 GET /api/data-sources，改文字或新增來源不用等 App 更新。
 //
 // 版面刻意不做成一整面純文字：品牌故事「織語者」的核心意象是「把快消失的
 // 語言、文化、記憶重新編織在一起」，所以中段用三股色帶交疊象徵編織過程，
@@ -6,31 +7,18 @@
 // 模組（學習／文化影音／論壇），把「使命」直接錨回使用者已經在用的功能。
 
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../models/data_source_models.dart';
+import '../../services/data_source_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/app_back_button.dart';
 
-// ── 資料來源與授權 ────────────────────────────────────────────
-// 等後端確認授權書要求、提供標示文字後，換掉 [_dataSources] 的內容並把
-// [_showDataSources] 改成 true 即可上線，不必再動版面。
-const bool _showDataSources = false;
-
-const String _dataSourcesTitle = '資料來源與授權';
-
-/// 每筆一個來源：名稱與授權標示文字。
-const List<({String source, String license})> _dataSources = [
-  (source: '資料來源名稱（待提供）', license: '授權方式與標示文字（待提供）'),
-];
-
 class AboutAppScreen extends StatelessWidget {
-  /// 測試用：強制顯示「資料來源與授權」區塊，正式畫面一律依 [_showDataSources]。
-  @visibleForTesting
-  final bool? debugShowDataSources;
-
-  const AboutAppScreen({super.key, this.debugShowDataSources});
+  const AboutAppScreen({super.key});
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -180,47 +168,8 @@ class AboutAppScreen extends StatelessWidget {
           _sectionLabel('三個入口，一起編織', seniorMode),
           const SizedBox(height: 14),
           _buildPillars(seniorMode),
-          if (debugShowDataSources ?? _showDataSources) ...[
-            const SizedBox(height: 32),
-            _sectionLabel(_dataSourcesTitle, seniorMode),
-            const SizedBox(height: 14),
-            _buildDataSources(seniorMode),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildDataSources(bool seniorMode) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppColors.cream,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: AppColors.creamDeep),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          for (var i = 0; i < _dataSources.length; i++) ...[
-            if (i > 0) const SizedBox(height: 14),
-            Text(
-              _dataSources[i].source,
-              style: AppTypography.titleStyle(
-                seniorMode: seniorMode,
-                color: AppColors.ink,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              _dataSources[i].license,
-              style: AppTypography.bodyStyle(
-                seniorMode: seniorMode,
-                color: AppColors.inkSoft,
-              ),
-            ),
-          ],
+          const SizedBox(height: 32),
+          _DataSourcesSection(seniorMode: seniorMode),
         ],
       ),
     );
@@ -463,3 +412,188 @@ Widget _sectionLabel(String text, bool seniorMode) => Row(
     ),
   ],
 );
+
+// ── 資料來源與授權 ────────────────────────────────────────────
+// 內容全部來自 GET /api/data-sources，App 內不留寫死的來源文字：授權標示
+// 要跟授權方核可的版本一致，讀不到時寧可顯示失敗，也不顯示可能過期的版本。
+// 獨立成 StatefulWidget，讀取中與失敗只重畫這一塊，上面的品牌內容不受影響。
+
+const String _dataSourcesFallbackTitle = '資料來源與授權';
+
+class _DataSourcesSection extends StatefulWidget {
+  final bool seniorMode;
+
+  const _DataSourcesSection({required this.seniorMode});
+
+  @override
+  State<_DataSourcesSection> createState() => _DataSourcesSectionState();
+}
+
+class _DataSourcesSectionState extends State<_DataSourcesSection> {
+  // 存在 State 裡，切換長輩模式重建時不會重打。
+  late final Future<DataSources> _future = DataSourceService.fetch();
+
+  @override
+  Widget build(BuildContext context) {
+    final seniorMode = widget.seniorMode;
+    return FutureBuilder<DataSources>(
+      future: _future,
+      builder: (context, snapshot) {
+        final data = snapshot.data;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _sectionLabel(data?.title ?? _dataSourcesFallbackTitle, seniorMode),
+            const SizedBox(height: 14),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.cream,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.creamDeep),
+              ),
+              child: switch (snapshot) {
+                AsyncSnapshot(hasData: true) => _buildSources(data!.sources),
+                AsyncSnapshot(hasError: true) => Text(
+                  '暫時無法載入資料來源，請稍後再試',
+                  style: AppTypography.bodyStyle(
+                    seniorMode: seniorMode,
+                    color: AppColors.inkSoft,
+                  ),
+                ),
+                _ => const SizedBox(
+                  height: 120,
+                  child: Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primary,
+                    ),
+                  ),
+                ),
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildSources(List<DataSource> sources) {
+    final seniorMode = widget.seniorMode;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        for (var i = 0; i < sources.length; i++) ...[
+          if (i > 0) ...[
+            const SizedBox(height: 14),
+            const Divider(height: 1, color: AppColors.creamDeep),
+            const SizedBox(height: 14),
+          ],
+          Text(
+            sources[i].name,
+            key: ValueKey('data-source-${sources[i].id}'),
+            style: AppTypography.titleStyle(
+              seniorMode: seniorMode,
+              color: AppColors.ink,
+            ),
+          ),
+          if (sources[i].usedFor.isNotEmpty) ...[
+            const SizedBox(height: 6),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                for (final tag in sources[i].usedFor) _usedForTag(tag),
+              ],
+            ),
+          ],
+          const SizedBox(height: 8),
+          SelectableText(
+            sources[i].attribution,
+            style: AppTypography.bodyStyle(
+              seniorMode: seniorMode,
+              color: AppColors.inkSoft,
+            ),
+          ),
+          if (sources[i].links.isNotEmpty) ...[
+            const SizedBox(height: 4),
+            Wrap(
+              spacing: 12,
+              children: [for (final link in sources[i].links) _link(link)],
+            ),
+          ],
+        ],
+      ],
+    );
+  }
+
+  Widget _usedForTag(String text) => Container(
+    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+    decoration: BoxDecoration(
+      color: AppColors.primary.withValues(alpha: 0.08),
+      borderRadius: BorderRadius.circular(999),
+    ),
+    child: Text(
+      text,
+      style: AppTypography.captionStyle(
+        seniorMode: widget.seniorMode,
+        color: AppColors.primaryDeep,
+      ),
+    ),
+  );
+
+  /// 用 Text.rich 而非 TextButton.icon：標籤很長時要能換行，長輩模式窄螢幕才不會 overflow。
+  Widget _link(DataSourceLink link) {
+    final style = AppTypography.bodyStyle(
+      seniorMode: widget.seniorMode,
+      color: AppColors.primary,
+    );
+    return InkWell(
+      onTap: () => _open(link.url),
+      borderRadius: BorderRadius.circular(6),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 8),
+        child: Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(
+                text: link.label,
+                style: style.copyWith(decoration: TextDecoration.underline),
+              ),
+              WidgetSpan(
+                alignment: PlaceholderAlignment.middle,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 3),
+                  child: Icon(
+                    Icons.open_in_new,
+                    size: (style.fontSize ?? 14) * 0.95,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          style: style,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _open(String url) async {
+    final uri = Uri.tryParse(url);
+    var launched = false;
+    if (uri != null) {
+      try {
+        launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } catch (_) {
+        // 沒有可開啟的瀏覽器等平台錯誤，一律當開啟失敗。
+      }
+    }
+    if (!launched && mounted) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('無法開啟連結')));
+    }
+  }
+}
