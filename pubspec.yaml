@@ -57,6 +57,7 @@ dependencies:
   web: ^1.1.0 # Web 版影音以 <video> + hls.js 內嵌播放（better_player_plus 無 Web 實作）
   image_picker: ^1.2.3
   crop_your_image: ^2.0.0
+  image: ^4.10.1 # 頭像裁切後縮圖、旋轉（純 Dart，Web 也能用）
 
   # 論壇附圖：列表捲動時避免重複下載
   cached_network_image: ^4.0.2
