@@ -19,6 +19,9 @@ class AppDialog extends StatelessWidget {
   /// 次要按鈕（文字, 動作），依序由左到右排在主要按鈕下方。
   final List<(String, VoidCallback)> secondary;
 
+  /// 次要按鈕改成由上到下直排、各佔整列；文字長、並排會擠成兩行時用。
+  final bool stackSecondary;
+
   const AppDialog({
     super.key,
     this.title,
@@ -26,6 +29,7 @@ class AppDialog extends StatelessWidget {
     this.primaryText,
     this.onPrimary,
     this.secondary = const [],
+    this.stackSecondary = false,
   });
 
   @override
@@ -73,20 +77,16 @@ class AppDialog extends StatelessWidget {
                     ),
                   if (secondary.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        for (final (text, onTap) in secondary)
-                          Expanded(
-                            child: TextButton(
-                              onPressed: onTap,
-                              style: TextButton.styleFrom(
-                                foregroundColor: AppColors.cream,
-                              ),
-                              child: Text(text),
-                            ),
-                          ),
-                      ],
-                    ),
+                    if (stackSecondary)
+                      for (final (text, onTap) in secondary)
+                        _secondaryButton(text, onTap)
+                    else
+                      Row(
+                        children: [
+                          for (final (text, onTap) in secondary)
+                            Expanded(child: _secondaryButton(text, onTap)),
+                        ],
+                      ),
                   ],
                 ],
               ),
@@ -96,6 +96,12 @@ class AppDialog extends StatelessWidget {
       ),
     );
   }
+
+  Widget _secondaryButton(String text, VoidCallback onTap) => TextButton(
+    onPressed: onTap,
+    style: TextButton.styleFrom(foregroundColor: AppColors.cream),
+    child: Text(text),
+  );
 }
 
 /// （可省略的）標題 + 訊息 + 確認/取消兩顆按鈕的對話框，回傳 `true`＝已確認、`false`＝取消或關閉。
