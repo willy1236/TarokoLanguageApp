@@ -1,6 +1,6 @@
 // 視訊通話狀態機：權限 → 憑證 → 媒體初始化／入房（含逾時看門狗）→ 倒數 →
-// 掛斷；對方離開頻道時向後端確認通話是否已結束。原本全寫在 VideoCallScreen 的 State 裡、直接呼叫 Agora 與 static
-// service，無法在不啟動 SDK 的情況下測試；抽出後媒體層（[VideoRtc]）、權限、
+// 掛斷；對方離開頻道時向後端確認通話是否已結束。原本全寫在 VideoCallScreen
+// 的 State 裡、直接呼叫 Agora 與 static service，無法在不啟動 SDK 的情況下測試；抽出後媒體層（[VideoRtc]）、權限、
 // 後端呼叫與時鐘都由建構子注入。
 //
 // 畫面仍負責：畫面組裝、導頁、檢舉對話框、SnackBar、FCM 回呼註冊。
@@ -79,6 +79,9 @@ class VideoCallController extends ChangeNotifier {
 
   /// 對方離開頻道後的延遲查詢；對方回來、離開通話時取消。
   Timer? _peerCheckTimer;
+
+  /// 對方每次進出頻道加一；查詢回來時已變就作廢，避免舊查詢蓋掉新的計時器。
+  int _peerPresenceGeneration = 0;
   bool _disposed = false;
 
   bool get joining => _joining;
@@ -174,6 +177,7 @@ class VideoCallController extends ChangeNotifier {
       _set(() => _joining = false);
     },
     onRemoteJoined: (uid) {
+      _peerPresenceGeneration++;
       _peerCheckTimer?.cancel();
       _set(() => _remoteUid = uid);
     },
@@ -190,6 +194,7 @@ class VideoCallController extends ChangeNotifier {
   /// 對方離開頻道不一定是通話結束（斷線可能回來），結束與否以後端為準。
   /// 通常推播或即時連線會先讓通話結束；兩者都沒到時靠這裡兜底。
   void _onRemoteLeft(int uid, RemoteLeftReason reason) {
+    _peerPresenceGeneration++;
     _peerCheckTimer?.cancel();
     _set(() => _remoteUid = null);
     switch (reason) {
@@ -206,9 +211,10 @@ class VideoCallController extends ChangeNotifier {
   }
 
   /// 後端顯示已結束就本地離開（不再通知後端）；查詢失敗當作未結束。
-  /// 查詢期間對方回到頻道就不處理。
+  /// 查詢期間對方又進出過頻道就不處理，交給那次事件排的查詢。
   Future<void> _leaveIfEndedOnServer({Duration? recheckAfter}) async {
     if (_ended) return;
+    final generation = _peerPresenceGeneration;
     bool ended;
     try {
       ended = await _isEndedOnServer();
@@ -216,7 +222,7 @@ class VideoCallController extends ChangeNotifier {
       debugPrint('VideoCallController: 查詢通話狀態失敗（忽略）：$e');
       ended = false;
     }
-    if (_ended || _disposed || _remoteUid != null) return;
+    if (_ended || _disposed || generation != _peerPresenceGeneration) return;
     if (ended) {
       await _leave(notifyBackend: false);
     } else if (recheckAfter != null) {

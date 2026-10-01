@@ -357,6 +357,26 @@ void main() {
       });
     });
 
+    test('查詢途中對方又進出頻道：舊查詢作廢，照新的斷線寬限再查', () {
+      fakeAsync((async) {
+        final h = joined(async)..serverGate = Completer<void>();
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.quit);
+        async.flushMicrotasks();
+        h.rtc.callbacks!.onRemoteJoined(9);
+        h.rtc.callbacks!.onRemoteLeft(9, RemoteLeftReason.dropped);
+        h.serverGate!.complete();
+        h.serverGate = null;
+        async.flushMicrotasks();
+        expect(h.log, ['backend.status']);
+        // 舊查詢不排 5 秒後的重查，等到斷線滿 15 秒才查。
+        async.elapse(const Duration(seconds: 14));
+        expect(h.log, ['backend.status']);
+        async.elapse(const Duration(seconds: 1));
+        expect(h.log, ['backend.status', 'backend.status']);
+        h.call.dispose();
+      });
+    });
+
     test('其他原因（例如轉為觀眾）只清掉對方畫面', () {
       fakeAsync((async) {
         final h = joined(async)..serverEnded = true;
