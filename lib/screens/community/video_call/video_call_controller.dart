@@ -1,5 +1,5 @@
 // 視訊通話狀態機：權限 → 憑證 → 媒體初始化／入房（含逾時看門狗）→ 倒數 →
-// 掛斷。原本全寫在 VideoCallScreen 的 State 裡、直接呼叫 Agora 與 static
+// 掛斷；對方離開頻道時向後端確認通話是否已結束。原本全寫在 VideoCallScreen 的 State 裡、直接呼叫 Agora 與 static
 // service，無法在不啟動 SDK 的情況下測試；抽出後媒體層（[VideoRtc]）、權限、
 // 後端呼叫與時鐘都由建構子注入。
 //
@@ -22,9 +22,19 @@ class VideoCallController extends ChangeNotifier {
 
   /// 通知後端結束通話（隨機配對或定向通話由呼叫端決定打哪支 API）。
   final Future<void> Function() _notifyEnded;
+
+  /// 查後端這通通話是否已結束（對方離開頻道時用）。
+  final Future<bool> Function() _isEndedOnServer;
   final DateTime Function() _now;
   final Duration joinTimeout;
   final Duration backendNotifyTimeout;
+
+  /// 對方斷線後等多久沒回來才查狀態。
+  final Duration peerDropGrace;
+
+  /// 對方主動離開時先查一次；對方是先離開頻道再通知後端，那時後端可能
+  /// 還沒結束，隔這麼久再查一次。
+  final Duration peerQuitRecheck;
 
   /// token 續期兩次都失敗（通話可能即將中斷）。
   VoidCallback? onTokenRenewFailed;
@@ -39,14 +49,18 @@ class VideoCallController extends ChangeNotifier {
     required Future<CallPermissionResult> Function() requestPermissions,
     required Future<RefreshedTokenResult> Function(int sessionId) refreshToken,
     required Future<void> Function() notifyEnded,
+    required Future<bool> Function() isEndedOnServer,
     DateTime Function()? now,
     this.joinTimeout = const Duration(seconds: 15),
     this.backendNotifyTimeout = const Duration(seconds: 5),
+    this.peerDropGrace = const Duration(seconds: 15),
+    this.peerQuitRecheck = const Duration(seconds: 5),
   }) : _credentials = credentials,
        _rtc = rtc,
        _requestPermissions = requestPermissions,
        _refreshToken = refreshToken,
        _notifyEnded = notifyEnded,
+       _isEndedOnServer = isEndedOnServer,
        _now = now ?? DateTime.now;
 
   bool _joining = true;
@@ -62,6 +76,9 @@ class VideoCallController extends ChangeNotifier {
   Duration _remaining = Duration.zero;
   Timer? _countdownTimer;
   Timer? _joinWatchdog;
+
+  /// 對方離開頻道後的延遲查詢；對方回來、離開通話時取消。
+  Timer? _peerCheckTimer;
   bool _disposed = false;
 
   bool get joining => _joining;
@@ -156,9 +173,11 @@ class VideoCallController extends ChangeNotifier {
       _joinWatchdog?.cancel();
       _set(() => _joining = false);
     },
-    onRemoteJoined: (uid) => _set(() => _remoteUid = uid),
-    // 對方畫面離開不等於通話結束；結束交給 FCM 或倒數／手動掛斷。
-    onRemoteLeft: (_) => _set(() => _remoteUid = null),
+    onRemoteJoined: (uid) {
+      _peerCheckTimer?.cancel();
+      _set(() => _remoteUid = uid);
+    },
+    onRemoteLeft: _onRemoteLeft,
     onRemoteVideoMuted: (muted) => _set(() => _remoteCamOff = muted),
     onError: (description) {
       debugPrint('VideoCallController: RTC onError $description');
@@ -167,6 +186,46 @@ class VideoCallController extends ChangeNotifier {
     },
     onTokenWillExpire: () => unawaited(_renewToken()),
   );
+
+  /// 對方離開頻道不一定是通話結束（斷線可能回來），結束與否以後端為準。
+  /// 通常推播或即時連線會先讓通話結束；兩者都沒到時靠這裡兜底。
+  void _onRemoteLeft(int uid, RemoteLeftReason reason) {
+    _peerCheckTimer?.cancel();
+    _set(() => _remoteUid = null);
+    switch (reason) {
+      case RemoteLeftReason.quit:
+        unawaited(_leaveIfEndedOnServer(recheckAfter: peerQuitRecheck));
+      case RemoteLeftReason.dropped:
+        _peerCheckTimer = Timer(
+          peerDropGrace,
+          () => unawaited(_leaveIfEndedOnServer()),
+        );
+      case RemoteLeftReason.other:
+        break;
+    }
+  }
+
+  /// 後端顯示已結束就本地離開（不再通知後端）；查詢失敗當作未結束。
+  /// 查詢期間對方回到頻道就不處理。
+  Future<void> _leaveIfEndedOnServer({Duration? recheckAfter}) async {
+    if (_ended) return;
+    bool ended;
+    try {
+      ended = await _isEndedOnServer();
+    } catch (e) {
+      debugPrint('VideoCallController: 查詢通話狀態失敗（忽略）：$e');
+      ended = false;
+    }
+    if (_ended || _disposed || _remoteUid != null) return;
+    if (ended) {
+      await _leave(notifyBackend: false);
+    } else if (recheckAfter != null) {
+      _peerCheckTimer = Timer(
+        recheckAfter,
+        () => unawaited(_leaveIfEndedOnServer()),
+      );
+    }
+  }
 
   void _failJoin(String message) {
     _joinWatchdog?.cancel();
@@ -235,6 +294,7 @@ class VideoCallController extends ChangeNotifier {
     _ended = true;
     _countdownTimer?.cancel();
     _joinWatchdog?.cancel();
+    _peerCheckTimer?.cancel();
     _set(() => _leaving = true);
 
     // 先停本機影音再通知後端：後端若卡住，鏡頭與麥克風不能還在送流。
@@ -271,6 +331,7 @@ class VideoCallController extends ChangeNotifier {
     _disposed = true;
     _countdownTimer?.cancel();
     _joinWatchdog?.cancel();
+    _peerCheckTimer?.cancel();
     // 正常流程都走 _leave；這裡只兜底（手勢／系統返回繞過 PopScope），
     // 避免媒體資源洩漏。release() 可重複呼叫。
     if (!_ended) {
