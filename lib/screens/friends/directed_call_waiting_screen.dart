@@ -41,6 +41,10 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
 
   /// getCall 回應可能慢於輪詢間隔，上一輪還沒回來就不發下一輪，避免重複導頁。
   bool _polling = false;
+
+  /// 收到接聽／拒接事件時正在輪詢或還沒拿到 call_id：這輪結束（或拿到 id）
+  /// 後立刻再查一次，不等下一輪。
+  bool _pollAgain = false;
   String? _errorMessage;
 
   @override
@@ -58,7 +62,10 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
   }
 
   void _onCallAnswered(int callId) {
-    if (callId == _callId) _poll();
+    // 還沒拿到 call_id 時同一時間只會有這一通撥出，先記下。
+    if (_callId != null && callId != _callId) return;
+    _pollAgain = true;
+    _poll();
   }
 
   @override
@@ -91,6 +98,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
       }
       setState(() => _callId = callId);
       _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => _poll());
+      if (_pollAgain) _poll();
     } catch (e) {
       if (!mounted) return;
       setState(() => _errorMessage = _describeError(e));
@@ -101,6 +109,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
     final id = _callId;
     if (id == null || _polling || _navigated) return;
     _polling = true;
+    _pollAgain = false;
     try {
       final status = await DirectedCallService.getCall(id);
       if (!mounted) return;
@@ -126,6 +135,7 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
       // 輪詢期間的暫時性錯誤忽略，下次輪詢再試。
     } finally {
       _polling = false;
+      if (_pollAgain && mounted) _poll();
     }
   }
 
