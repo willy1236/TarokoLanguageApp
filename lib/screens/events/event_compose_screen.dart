@@ -11,6 +11,7 @@ import '../../services/user_service.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/related_tribe_field.dart';
 import '../../shared/utils/utf16_length_limit.dart';
+import 'widgets/event_images_field.dart';
 
 /// 發起／編輯活動表單。
 ///
@@ -64,6 +65,11 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   /// 推播給相關部落成員。只在建立時提供，且要先選部落才能勾。
   bool _notifyTribe = false;
   bool _submitting = false;
+
+  /// 照片：按發布／儲存才送出，建立時在活動建好、拿到 id 之後才上傳。
+  late final _images = EventImagesController(
+    widget.editing?.images ?? const [],
+  );
 
   // 常用分類（對應活動列表的篩選標籤）；點一下切換，可不選。
   static const _categories = ['族語', '走讀', '工藝', '線上', '音樂', '其他'];
@@ -136,6 +142,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     _maxParticipants.dispose();
     _reminderNote.dispose();
     _locationFocus.dispose();
+    _images.dispose();
     super.dispose();
   }
 
@@ -300,24 +307,38 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       return;
     }
 
+    if (_images.picking) {
+      _showError('照片還在處理中，請稍候再送出');
+      return;
+    }
+
     setState(() => _submitting = true);
     try {
       var tribeNotifyLimited = false;
+      String? imageFailure;
       if (editing == null) {
         final created = await EventService.createEvent(draft);
         tribeNotifyLimited = draft.notifyTribe && created.tribeNotifyLimited;
+        imageFailure = await _uploadNewImages(created.id);
       } else {
+        // 時間欄位已不能改時後端回 409，照片也就不送，見下方 catch。
         await EventService.updateEvent(editing.id, draft, editing);
+        imageFailure = await _syncEditedImages(editing.id);
       }
       if (!mounted) return;
+      final notices = [
+        if (tribeNotifyLimited) '今天的部落推播次數已用完，這次沒有通知部落成員',
+        ?imageFailure,
+      ];
+      final done = editing == null ? '活動已建立' : '活動已更新';
       ScaffoldMessenger.of(context).showSnackBar(
-        tribeNotifyLimited
-            // 發起人以為部落成員都收到了，這則要停久一點讓人讀完。
-            ? const SnackBar(
-                content: Text('活動已建立；今天的部落推播次數已用完，這次沒有通知部落成員'),
-                duration: Duration(seconds: 8),
+        notices.isNotEmpty
+            // 發起人以為都送出了，這則要停久一點讓人讀完。
+            ? SnackBar(
+                content: Text('$done，${notices.join('；')}'),
+                duration: const Duration(seconds: 8),
               )
-            : SnackBar(content: Text(editing == null ? '活動已發起' : '活動已更新')),
+            : SnackBar(content: Text(editing == null ? '活動已發起' : done)),
       );
       Navigator.pop(context, true); // 通知列表/詳情頁刷新
     } catch (e) {
@@ -343,6 +364,67 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     }
   }
 
+  /// 編輯時既有照片的網址過期（詳情頁取得後超過 15 分鐘）：重新取得詳情換網址。
+  /// 自動觸發有次數上限，照片本身壞掉時才不會一直重打；[manual]（使用者點重試）不受限。
+  int _imageUrlRefreshes = 0;
+  bool _refreshingImageUrls = false;
+
+  Future<void> _refreshImageUrls({bool manual = false}) async {
+    final editing = widget.editing;
+    if (editing == null || _refreshingImageUrls) return;
+    if (!manual) {
+      if (_imageUrlRefreshes >= 3) return;
+      _imageUrlRefreshes++;
+    }
+    _refreshingImageUrls = true;
+    try {
+      final detail = await EventService.fetchEventDetail(editing.id);
+      if (mounted) _images.refreshUrls(detail.images);
+    } catch (e) {
+      debugPrint('EventComposeScreen: 照片網址更新失敗（忽略）：$e');
+    } finally {
+      _refreshingImageUrls = false;
+    }
+  }
+
+  /// 建立活動後上傳選好的照片。活動已經建立，照片失敗不能讓整個送出變失敗
+  /// 而留在表單（再按一次會重複建立活動），回傳要告訴發起人的說明。
+  Future<String?> _uploadNewImages(int eventId) async {
+    final images = _images.toUpload;
+    if (images.isEmpty) return null;
+    try {
+      await EventService.uploadImages(eventId, images);
+      return null;
+    } catch (e) {
+      final reason = apiErrorMessage(e, fallback: '網路不穩');
+      return '圖片可以稍後在編輯頁補上（$reason）';
+    }
+  }
+
+  /// 編輯儲存時，文字欄位存好後處理照片：先刪標記的、再傳新的——先刪才不會在
+  /// 已有 6 張時被上限擋下。文字已存、無法回滾，照片失敗只回傳說明。
+  Future<String?> _syncEditedImages(int eventId) async {
+    final uploads = _images.toUpload;
+    try {
+      for (final imageId in _images.toDelete) {
+        await EventService.deleteImage(eventId, imageId);
+      }
+    } catch (e) {
+      final reason = apiErrorMessage(e, fallback: '網路不穩');
+      return uploads.isEmpty
+          ? '有照片沒有刪除（$reason），可到活動頁頂端再刪'
+          : '有照片沒有刪除、新照片也沒有上傳（$reason），可到活動頁頂端調整';
+    }
+    if (uploads.isEmpty) return null;
+    try {
+      await EventService.uploadImages(eventId, uploads);
+      return null;
+    } catch (e) {
+      final reason = apiErrorMessage(e, fallback: '網路不穩');
+      return '新照片沒有上傳（$reason），可到活動頁頂端重新新增';
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
@@ -363,7 +445,14 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
                 children: [
-                  _buildCoverPlaceholder(seniorMode),
+                  _label('活動照片', required: false, seniorMode: seniorMode),
+                  EventImagesField(
+                    controller: _images,
+                    seniorMode: seniorMode,
+                    enabled: !_submitting,
+                    onExistingExpired: _refreshImageUrls,
+                    onExistingRetryTap: () => _refreshImageUrls(manual: true),
+                  ),
                   if (_isEditing) ...[
                     const SizedBox(height: 18),
                     _buildReadOnlyNotice(seniorMode),
@@ -651,51 +740,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _buildCoverPlaceholder(bool seniorMode) {
-    return GestureDetector(
-      onTap: () {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('活動封面上傳功能尚未開放')));
-      },
-      child: Container(
-        width: double.infinity,
-        height: 160,
-        decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [AppColors.primaryDeep, AppColors.primary],
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        alignment: Alignment.center,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.lock_outline,
-              color: AppColors.creamLight.withValues(alpha: 0.85),
-              size: seniorMode ? 34 : 26,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '活動封面（尚未開放）',
-              style: TextStyle(
-                fontSize: AppTypography.size(
-                  AppTypography.body,
-                  seniorMode: seniorMode,
-                ),
-                color: AppColors.creamLight.withValues(alpha: 0.85),
-                letterSpacing: 1.0,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

@@ -58,6 +58,9 @@ class EventDetail {
   /// 已取消活動的取消理由，只給報名者與發起人；其他人或未填為 null。
   final String? cancelReason;
 
+  /// 活動圖片，依上傳順序，第一張就是封面；沒有圖片為空清單。網址 15 分鐘到期。
+  final List<EventImage> images;
+
   const EventDetail({
     required this.id,
     this.isHost = false,
@@ -89,7 +92,11 @@ class EventDetail {
     this.isJoined = false,
     this.myRegistration,
     this.cancelReason,
+    this.images = const [],
   });
+
+  /// 封面＝第一張圖片的網址，沒有圖片為 null（後端的 cover_image_url 也是這樣算）。
+  String? get coverImageUrl => images.isEmpty ? null : images.first.url;
 
   /// 優先用後端算好的計數；只有在後端沒帶這個欄位時才 fallback 用陣列長度
   /// （這種情況只在拿得到完整 participants 時才準）。
@@ -145,6 +152,7 @@ class EventDetail {
       isJoined: json['is_joined'] as bool? ?? false,
       myRegistration: EventRegistration.tryFromJson(json['my_registration']),
       cancelReason: json['cancel_reason'] as String?,
+      images: EventImage.listFromJson(json['images']),
     );
   }
 
@@ -160,39 +168,69 @@ class EventDetail {
   EventDetail withLikeResult({required bool liked, required int likeCount}) =>
       _copyWith(isLiked: liked, likeCount: likeCount);
 
-  EventDetail _copyWith({int? likeCount, bool? isLiked, bool? isBookmarked}) =>
-      EventDetail(
-        id: id,
-        isHost: isHost,
-        title: title,
-        description: description,
-        startsAt: startsAt,
-        location: location,
-        address: address,
-        registrationDeadline: registrationDeadline,
-        contactEmail: contactEmail,
-        contactPhone: contactPhone,
-        reminderNote: reminderNote,
-        maxParticipants: maxParticipants,
-        category: category,
-        tribeId: tribeId,
-        status: status,
-        effectiveStatus: effectiveStatus,
-        registrationOpen: registrationOpen,
-        endsAt: endsAt,
-        registrationStartsAt: registrationStartsAt,
-        registrationStatus: registrationStatus,
-        isFullRaw: isFullRaw,
-        createdAt: createdAt,
-        participants: participants,
-        participantCountRaw: participantCountRaw,
-        likeCount: likeCount ?? this.likeCount,
-        isLiked: isLiked ?? this.isLiked,
-        isBookmarked: isBookmarked ?? this.isBookmarked,
-        isJoined: isJoined,
-        myRegistration: myRegistration,
-        cancelReason: cancelReason,
-      );
+  /// 上傳或刪除圖片後，換成後端回的完整清單。
+  EventDetail withImages(List<EventImage> images) => _copyWith(images: images);
+
+  EventDetail _copyWith({
+    int? likeCount,
+    bool? isLiked,
+    bool? isBookmarked,
+    List<EventImage>? images,
+  }) => EventDetail(
+    id: id,
+    isHost: isHost,
+    title: title,
+    description: description,
+    startsAt: startsAt,
+    location: location,
+    address: address,
+    registrationDeadline: registrationDeadline,
+    contactEmail: contactEmail,
+    contactPhone: contactPhone,
+    reminderNote: reminderNote,
+    maxParticipants: maxParticipants,
+    category: category,
+    tribeId: tribeId,
+    status: status,
+    effectiveStatus: effectiveStatus,
+    registrationOpen: registrationOpen,
+    endsAt: endsAt,
+    registrationStartsAt: registrationStartsAt,
+    registrationStatus: registrationStatus,
+    isFullRaw: isFullRaw,
+    createdAt: createdAt,
+    participants: participants,
+    participantCountRaw: participantCountRaw,
+    likeCount: likeCount ?? this.likeCount,
+    isLiked: isLiked ?? this.isLiked,
+    isBookmarked: isBookmarked ?? this.isBookmarked,
+    isJoined: isJoined,
+    myRegistration: myRegistration,
+    cancelReason: cancelReason,
+    images: images ?? this.images,
+  );
+}
+
+/// 活動圖片 `{id, url}`。url 是 15 分鐘的限時網址，不要長期保存。
+class EventImage {
+  final int id;
+  final String url;
+
+  const EventImage({required this.id, required this.url});
+
+  /// 解析後端的 images 陣列；缺欄位、格式不對的項目略過，不讓整頁變錯誤畫面。
+  static List<EventImage> listFromJson(Object? json) {
+    if (json is! List) return const [];
+    return [
+      for (final item in json)
+        if (item is Map<String, dynamic>)
+          if ((asEventInt(item['id']), item['url']) case (
+            final int id,
+            final String url,
+          ))
+            EventImage(id: id, url: url),
+    ];
+  }
 }
 
 /// 活動列表項目（GET /api/events 回傳的 events[]，欄位比詳情頁精簡，
@@ -225,6 +263,9 @@ class EventSummary {
   /// 報名時間，只有我參加的活動（GET /api/events/joined）才有。
   final DateTime? joinedAt;
 
+  /// 封面（第一張活動圖片）的限時網址，沒有圖片為 null。
+  final String? coverImageUrl;
+
   const EventSummary({
     required this.id,
     required this.title,
@@ -247,6 +288,7 @@ class EventSummary {
     this.isBookmarked = false,
     this.isHost = false,
     this.joinedAt,
+    this.coverImageUrl,
   });
 
   /// 名額是否已滿（不限名額時永遠 false）；優先用後端的 is_full。
@@ -285,6 +327,7 @@ class EventSummary {
       isBookmarked: json['is_bookmarked'] as bool? ?? false,
       isHost: json['is_host'] as bool? ?? false,
       joinedAt: _parseTime(json['joined_at']),
+      coverImageUrl: json['cover_image_url'] as String?,
     );
   }
 }

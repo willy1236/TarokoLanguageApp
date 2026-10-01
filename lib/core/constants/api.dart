@@ -105,6 +105,9 @@ class ApiConfig {
   static String eventExport(int id) => '/api/events/$id/export';
   static String eventCancel(int id) => '/api/events/$id/cancel';
   static String eventReminders(int id) => '/api/events/$id/reminders';
+  static String eventImages(int id) => '/api/events/$id/images';
+  static String eventImage(int id, int imageId) =>
+      '/api/events/$id/images/$imageId';
   static String reminderDetail(int id) => '/api/reminders/$id';
   static String eventLike(int id) => '/api/events/$id/like';
   static String eventBookmark(int id) => '/api/events/$id/bookmark';

@@ -6,6 +6,7 @@ import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
 import '../../../shared/widgets/truku_painters.dart';
 import '../../../core/constants/app_typography.dart';
+import 'event_cover.dart';
 
 // 依分類配色（呼應發起活動表單的分類清單），純視覺區隔用。
 Color _categoryColor(String? category) {
@@ -74,100 +75,106 @@ class EventFeaturedCard extends StatelessWidget {
             children: [
               SizedBox(
                 height: 120,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [AppColors.primary, AppColors.primaryDeep],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
+                child: EventCover(
+                  url: e.coverImageUrl,
+                  placeholder: const _FeaturedBackground(),
+                  builder: (context, photo) => Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (photo != null) ...[
+                        photo,
+                        // 由下往上的暗色漸層：亮色照片上的山形、標籤與日期仍讀得清楚。
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                AppColors.ink.withValues(alpha: 0.7),
+                                AppColors.ink.withValues(alpha: 0.15),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ] else
+                        const _FeaturedBackground(),
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        height: 46,
+                        child: CustomPaint(
+                          painter: TrukuMountainsPainter(
+                            color: AppColors.ink,
+                            opacity: 0.9,
+                          ),
                         ),
                       ),
-                    ),
-                    Opacity(
-                      opacity: 0.25,
-                      child: CustomPaint(
-                        painter: TrukuWeavePainter(opacity: 1, scale: 0.7),
-                      ),
-                    ),
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      height: 46,
-                      child: CustomPaint(
-                        painter: TrukuMountainsPainter(
-                          color: AppColors.ink,
-                          opacity: 0.9,
+                      if (label.isNotEmpty)
+                        Positioned(
+                          top: 14,
+                          left: 14,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.gold,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              label,
+                              style: const TextStyle(
+                                fontSize: AppTypography.micro,
+                                color: AppColors.ink,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
-                    ),
-                    if (label.isNotEmpty)
                       Positioned(
                         top: 14,
-                        left: 14,
+                        right: 14,
                         child: Container(
                           padding: const EdgeInsets.symmetric(
                             horizontal: 10,
-                            vertical: 4,
+                            vertical: 6,
                           ),
                           decoration: BoxDecoration(
-                            color: AppColors.gold,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            label,
-                            style: const TextStyle(
-                              fontSize: AppTypography.micro,
-                              color: AppColors.ink,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 2.0,
+                            color: AppColors.ink.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.gold.withValues(alpha: 0.3),
                             ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _mon(d),
+                                style: const TextStyle(
+                                  fontSize: AppTypography.micro,
+                                  color: AppColors.gold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              Text(
+                                _day(d),
+                                style: AppTypography.serif(
+                                  fontSize: AppTypography.subtitle,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.creamLight,
+                                  height: 1,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
-                    Positioned(
-                      top: 14,
-                      right: 14,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.ink.withValues(alpha: 0.55),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _mon(d),
-                              style: const TextStyle(
-                                fontSize: AppTypography.micro,
-                                color: AppColors.gold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            Text(
-                              _day(d),
-                              style: AppTypography.serif(
-                                fontSize: AppTypography.subtitle,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.creamLight,
-                                height: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               Padding(
@@ -342,6 +349,31 @@ class EventFeaturedCard extends StatelessWidget {
   }
 }
 
+/// 精選大卡沒有封面時的主視覺，也是封面載入中與破圖時的樣子。
+class _FeaturedBackground extends StatelessWidget {
+  const _FeaturedBackground();
+
+  @override
+  Widget build(BuildContext context) => Stack(
+    fit: StackFit.expand,
+    children: [
+      const DecoratedBox(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.primary, AppColors.primaryDeep],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
+      ),
+      Opacity(
+        opacity: 0.25,
+        child: CustomPaint(painter: TrukuWeavePainter(opacity: 1, scale: 0.7)),
+      ),
+    ],
+  );
+}
+
 /// 精選以外的活動列表。
 class EventList extends StatelessWidget {
   final List<EventSummary> events;
@@ -501,14 +533,19 @@ class EventList extends StatelessWidget {
                         color: AppColors.inkSoft,
                       ),
                       const SizedBox(width: 4),
-                      Text(
-                        capacityText,
-                        style: TextStyle(
-                          fontSize: AppTypography.size(
-                            AppTypography.caption,
-                            seniorMode: seniorMode,
+                      // 有封面縮圖時這欄變窄，精簡模式在窄螢幕上放不下就截斷。
+                      Flexible(
+                        child: Text(
+                          capacityText,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            fontSize: AppTypography.size(
+                              AppTypography.caption,
+                              seniorMode: seniorMode,
+                            ),
+                            color: AppColors.inkSoft,
                           ),
-                          color: AppColors.inkSoft,
                         ),
                       ),
                     ],
@@ -516,6 +553,7 @@ class EventList extends StatelessWidget {
                 ],
               ),
             ),
+            EventCoverThumb(url: e.coverImageUrl, seniorMode: seniorMode),
           ],
         ),
       ),

@@ -12,6 +12,7 @@ import 'event_compose_screen.dart';
 import 'widgets/event_cards.dart';
 import 'event_detail_screen.dart';
 import 'event_search_screen.dart';
+import 'widgets/event_cover.dart';
 import '../inbox/inbox_screen.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/module_header_actions.dart';
@@ -95,6 +96,18 @@ class _EventsScreenState extends State<EventsScreen> {
     }
   }
 
+  /// 封面網址過期：安靜地重取換新網址，不閃載入畫面；失敗就保留原清單。
+  Future<void> _refreshCovers() async {
+    if (_loading) return;
+    try {
+      final (:events, pageInfo: _) = await EventService.fetchEvents();
+      if (!mounted || _loading) return;
+      setState(() => _events = events);
+    } catch (_) {
+      // 換不到新網址就維持原樣，破掉的封面已退回沒有封面的樣子。
+    }
+  }
+
   void _onFilterTap(int i) => setState(() => _filterIndex = i);
 
   List<EventSummary> get _filteredEvents {
@@ -132,23 +145,26 @@ class _EventsScreenState extends State<EventsScreen> {
   Widget _buildScaffold(bool seniorMode) {
     return ColoredBox(
       color: AppColors.creamLight,
-      child: RefreshIndicator(
-        onRefresh: _load,
-        color: AppColors.primary,
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(child: _buildHeader(seniorMode)),
-            if (widget.topToggle != null)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
-                  child: widget.topToggle,
+      child: EventCoverRefresher(
+        onRefresh: _refreshCovers,
+        child: RefreshIndicator(
+          onRefresh: _load,
+          color: AppColors.primary,
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(child: _buildHeader(seniorMode)),
+              if (widget.topToggle != null)
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+                    child: widget.topToggle,
+                  ),
                 ),
-              ),
-            SliverToBoxAdapter(child: _buildFilterChips(seniorMode)),
-            ..._buildContentSlivers(seniorMode),
-            const SliverToBoxAdapter(child: SizedBox(height: 100)),
-          ],
+              SliverToBoxAdapter(child: _buildFilterChips(seniorMode)),
+              ..._buildContentSlivers(seniorMode),
+              const SliverToBoxAdapter(child: SizedBox(height: 100)),
+            ],
+          ),
         ),
       ),
     );

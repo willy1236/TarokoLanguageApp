@@ -13,6 +13,7 @@ import '../../services/search_assist_service.dart';
 import '../../shared/widgets/module_search_bar.dart';
 import '../../shared/widgets/search_suggestions.dart';
 import 'event_detail_screen.dart';
+import 'widgets/event_cover.dart';
 
 class EventSearchScreen extends StatefulWidget {
   const EventSearchScreen({super.key});
@@ -72,6 +73,29 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
         _error = e.toString();
         _loading = false;
       });
+    }
+  }
+
+  /// 封面網址過期：用上次送出的條件安靜地重查第一頁換新網址，不閃載入畫面；
+  /// 失敗就保留原結果。不讀輸入框——使用者可能改了字還沒送出。
+  Future<void> _refreshCovers() async {
+    if (_loading) return;
+    final gen = _reqGen;
+    try {
+      final result = await EventService.searchEvents(
+        q: _q,
+        range: _range,
+        tribeId: _tribe?.id,
+      );
+      if (!mounted || gen != _reqGen) return;
+      setState(() {
+        _reqGen++; // 進行中的載入更多屬於舊結果，丟棄
+        _events = result.events;
+        _cursor = result.pageInfo.nextCursor;
+        _loadingMore = false;
+      });
+    } catch (_) {
+      // 換不到新網址就維持原樣，破掉的封面已退回沒有封面的樣子。
     }
   }
 
@@ -161,7 +185,14 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
                 _search();
               },
             ),
-          if (_searched) Expanded(child: _resultList(seniorMode)),
+          // 包在載入、空結果判斷外面，重新整理時冷卻狀態才不會跟著清掉。
+          if (_searched)
+            Expanded(
+              child: EventCoverRefresher(
+                onRefresh: _refreshCovers,
+                child: _resultList(seniorMode),
+              ),
+            ),
         ],
       ),
     );
@@ -298,6 +329,7 @@ class _EventResultTile extends StatelessWidget {
                 ],
               ),
             ),
+            EventCoverThumb(url: event.coverImageUrl, seniorMode: seniorMode),
           ],
         ),
       ),

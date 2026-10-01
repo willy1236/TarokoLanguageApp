@@ -5,6 +5,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:integration_test/integration_test.dart';
 
 import 'package:flutter_application_1/core/constants/api.dart';
@@ -579,6 +580,11 @@ void main() {
         itemOptional: _articleSummaryOptional,
       ),
     );
+    // 活動圖片：在錄製帳號自己發起的活動上傳一張、看詳情與列表、再刪掉。
+    test(
+      'POST/DELETE /api/events/:id/images (上傳一張再刪掉)',
+      () => _inspectEventImages(),
+    );
     test(
       'GET /api/events/search',
       () => _inspect(
@@ -1042,6 +1048,168 @@ Future<void> _inspectAvatarUpload() async {
   print('');
 }
 
+/// 活動圖片上傳／刪除：挑錄製帳號自己發起的第一場活動，上傳一張 1x1 PNG，
+/// 看詳情的 images／cover_image_url 與「我發起的」列表的 cover_image_url，
+/// 再把剛上傳的那張刪掉，最後重刪一次確認 404 IMAGE_NOT_FOUND 的格式。
+/// 不動活動原有的圖片。
+Future<void> _inspectEventImages() async {
+  if (_token == null) {
+    markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+    return;
+  }
+  final mine = await http.get(
+    Uri.parse('${ApiConfig.baseUrl}${ApiConfig.eventsMine}'),
+    headers: {'Authorization': 'Bearer $_token'},
+  );
+  final events =
+      (jsonDecode(mine.body) as Map<String, dynamic>)['events']
+          as List<dynamic>? ??
+      const [];
+  if (events.isEmpty) {
+    markTestSkipped('錄製帳號沒有自己發起的活動可測');
+    return;
+  }
+  // 列表的 id 實際是字串（例如 "44"）。
+  final eventId = int.parse('${(events.first as Map<String, dynamic>)['id']}');
+  print('（挑到自己發起的活動 id=$eventId）');
+  final before = await http.get(
+    Uri.parse('${ApiConfig.baseUrl}${ApiConfig.eventDetail(eventId)}'),
+    headers: {'Authorization': 'Bearer $_token'},
+  );
+  final beforeIds = {
+    for (final image
+        in (jsonDecode(before.body) as Map<String, dynamic>)['images']
+                as List<dynamic>? ??
+            const [])
+      '${(image as Map<String, dynamic>)['id']}',
+  };
+  if (beforeIds.length >= 6) {
+    markTestSkipped('活動 $eventId 已有 6 張圖片，無法再上傳測試圖');
+    return;
+  }
+
+  // 1x1 透明 PNG bytes（伺服器會重新輸出成 JPEG）
+  final pngBytes = base64Decode(
+    'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=',
+  );
+  // 中途任何斷言失敗都要把這次上傳的測試圖刪掉，不在正式後端留下：
+  // 重取詳情，刪掉上傳前沒有的圖片。
+  addTearDown(() async {
+    final after = await http.get(
+      Uri.parse('${ApiConfig.baseUrl}${ApiConfig.eventDetail(eventId)}'),
+      headers: {'Authorization': 'Bearer $_token'},
+    );
+    final images =
+        (jsonDecode(after.body) as Map<String, dynamic>)['images']
+            as List<dynamic>? ??
+        const [];
+    for (final image in images) {
+      final id = '${(image as Map<String, dynamic>)['id']}';
+      if (beforeIds.contains(id)) continue;
+      await http.delete(
+        Uri.parse(
+          '${ApiConfig.baseUrl}${ApiConfig.eventImage(eventId, int.parse(id))}',
+        ),
+        headers: {'Authorization': 'Bearer $_token'},
+      );
+    }
+  });
+  final uploadPath = ApiConfig.eventImages(eventId);
+  final request =
+      http.MultipartRequest(
+          'POST',
+          Uri.parse('${ApiConfig.baseUrl}$uploadPath'),
+        )
+        ..headers['Authorization'] = 'Bearer $_token'
+        ..files.add(
+          http.MultipartFile.fromBytes(
+            'images',
+            pngBytes,
+            filename: 'inspector_test.png',
+            contentType: MediaType('image', 'png'),
+          ),
+        );
+  final uploaded = await http.Response.fromStream(await request.send());
+  _printResponse('POST', uploadPath, uploaded);
+  recordFixture('POST', uploadPath, uploaded, as: 'post_api_event_images.json');
+  expect(uploaded.statusCode, 201, reason: uploaded.body);
+  final uploadedJson = jsonDecode(uploaded.body);
+  expectShape(uploadedJson, {'images': F.list}, label: 'POST images');
+  final images = (uploadedJson as Map<String, dynamic>)['images'] as List;
+  final newImageId = int.parse(
+    '${images.map((i) => (i as Map<String, dynamic>)['id']).firstWhere((id) => !beforeIds.contains('$id'))}',
+  );
+  final deletePath = ApiConfig.eventImage(eventId, newImageId);
+  expectEachShape(images, _eventImageShape, label: 'POST images.images');
+
+  await _inspect(
+    'GET',
+    ApiConfig.eventDetail(eventId),
+    fixtureAs: 'get_api_event_detail_with_images.json',
+    shape: {
+      ..._eventDetailShape,
+      'images': F.list,
+      'cover_image_url': F.string,
+    },
+    optional: _eventDetailOptional,
+  );
+  await _inspect(
+    'GET',
+    ApiConfig.eventsMine,
+    fixtureAs: 'get_api_events_mine_with_cover.json',
+    shape: {'events': F.list, 'page_info': F.object},
+    listKey: 'events',
+    itemShape: _eventSummaryShape,
+    itemOptional: _eventSummaryOptional,
+  );
+
+  final deleted = await http.delete(
+    Uri.parse('${ApiConfig.baseUrl}$deletePath'),
+    headers: {'Authorization': 'Bearer $_token'},
+  );
+  _printResponse('DELETE', deletePath, deleted);
+  recordFixture(
+    'DELETE',
+    deletePath,
+    deleted,
+    as: 'delete_api_event_image.json',
+  );
+  expect(deleted.statusCode, 200, reason: deleted.body);
+  final deletedJson = jsonDecode(deleted.body);
+  expectShape(deletedJson, {
+    'ok': F.boolean,
+    'images': F.list,
+  }, label: 'DELETE image');
+  expectEachShape(
+    (deletedJson as Map<String, dynamic>)['images'],
+    _eventImageShape,
+    label: 'DELETE image.images',
+  );
+
+  final again = await http.delete(
+    Uri.parse('${ApiConfig.baseUrl}$deletePath'),
+    headers: {'Authorization': 'Bearer $_token'},
+  );
+  _printResponse('DELETE', '$deletePath (再刪一次)', again);
+  expect(again.statusCode, 404, reason: again.body);
+  expectErrorShape(again, code: 'IMAGE_NOT_FOUND');
+}
+
+void _printResponse(String method, String path, http.Response response) {
+  String prettyBody;
+  try {
+    prettyBody = const JsonEncoder.withIndent(
+      '  ',
+    ).convert(jsonDecode(response.body));
+  } catch (_) {
+    prettyBody = response.body;
+  }
+  print('--- $method $path ---');
+  print('Status: ${response.statusCode}');
+  print(prettyBody);
+  print('');
+}
+
 /// 打一支端點：印出回應、（若有給 [shape]）斷言格式、（錄製模式下）輸出 fixture。
 ///
 /// [shape] 描述最外層 object 的必要欄位；要逐筆檢查清單時給 [listKey] + [itemShape]。
@@ -1285,7 +1453,12 @@ const Map<String, F> _eventSummaryOptional = {
   'like_count': F.any,
   'is_liked': F.boolean,
   'is_bookmarked': F.boolean,
+  // 第一張活動圖片的限時網址，沒有圖片為 null。
+  'cover_image_url': F.string,
 };
+
+/// 活動圖片 → lib/models/event_model.dart EventImage.fromJson
+const Map<String, F> _eventImageShape = {'id': F.number, 'url': F.string};
 
 /// GET /api/terms → lib/models/terms_models.dart TermsDocument.fromJson
 const Map<String, F> _termsDocShape = {
@@ -1338,4 +1511,6 @@ const Map<String, F> _eventDetailOptional = {
   'reminder_note': F.string,
   'created_at': F.string,
   'participants': F.list,
+  // 沒有圖片為空陣列；每筆 {id, url}。
+  'images': F.list,
 };

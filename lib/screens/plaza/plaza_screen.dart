@@ -15,6 +15,7 @@ import '../forum/forum_detail_screen.dart';
 import '../forum/forum_search_screen.dart';
 import '../forum/forum_theme.dart';
 import '../events/event_detail_screen.dart';
+import '../events/widgets/event_cover.dart';
 import '../inbox/inbox_screen.dart';
 import '../../shared/widgets/module_header_actions.dart';
 import 'widgets/plaza_cards.dart';
@@ -84,6 +85,17 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   /// 下拉刷新時與貼文一起更新的頁首內容。
   Future<void> _refreshHeader() async {
     await Future.wait([_loadEvents(), NotificationSummaryService.refresh()]);
+  }
+
+  /// 活動封面網址過期：安靜地重取換新網址；失敗就保留原清單，不換成錯誤卡。
+  Future<void> _refreshEventCovers() async {
+    try {
+      final (:events, pageInfo: _) = await EventService.fetchEvents();
+      if (!mounted) return;
+      setState(() => _events = events);
+    } catch (_) {
+      // 換不到新網址就維持原樣，破掉的封面已退回沒有封面的樣子。
+    }
   }
 
   Future<void> _loadEvents() async {
@@ -400,16 +412,19 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
             ),
           )
         else
-          SizedBox(
-            height: 120,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
-              itemCount: _events.length,
-              separatorBuilder: (_, _) => const SizedBox(width: 10),
-              itemBuilder: (_, i) => PlazaMiniEventCard(
-                event: _events[i],
-                onTap: () => _openEventDetail(_events[i]),
+          EventCoverRefresher(
+            onRefresh: _refreshEventCovers,
+            child: SizedBox(
+              height: 120,
+              child: ListView.separated(
+                scrollDirection: Axis.horizontal,
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
+                itemCount: _events.length,
+                separatorBuilder: (_, _) => const SizedBox(width: 10),
+                itemBuilder: (_, i) => PlazaMiniEventCard(
+                  event: _events[i],
+                  onTap: () => _openEventDetail(_events[i]),
+                ),
               ),
             ),
           ),

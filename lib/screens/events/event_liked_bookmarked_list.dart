@@ -13,6 +13,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'event_detail_screen.dart';
+import 'widgets/event_cover.dart';
 
 enum EventListMode { liked, bookmarked }
 
@@ -60,7 +61,12 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
         : EventService.fetchBookmarkedEvents(cursor: cursor);
   }
 
+  /// 清單世代：整頁重載或封面重取換掉清單時加一，較早送出的載入更多回來就丟棄，
+  /// 不會把舊清單的下一頁接到新清單後面。
+  int _generation = 0;
+
   Future<void> _load() async {
+    _generation++;
     setState(() {
       _loading = true;
       _error = null;
@@ -82,11 +88,30 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
     }
   }
 
+  /// 封面網址過期：安靜地重取第一頁換新網址，不閃載入畫面；失敗就保留原清單。
+  Future<void> _refreshCovers() async {
+    if (_loading) return;
+    final generation = _generation;
+    try {
+      final res = await _fetch(null);
+      if (!mounted || generation != _generation) return;
+      setState(() {
+        _generation++; // 進行中的載入更多是舊清單的下一頁，丟棄
+        _events = res.events;
+        _cursor = res.pageInfo.nextCursor;
+        _loadingMore = false;
+      });
+    } catch (_) {
+      // 換不到新網址就維持原樣，破掉的封面已退回沒有封面的樣子。
+    }
+  }
+
   Future<void> _loadMore() async {
+    final generation = _generation;
     setState(() => _loadingMore = true);
     try {
       final res = await _fetch(_cursor);
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() {
         _events = appendUnique(_events, res.events, (e) => e.id);
         _cursor = res.pageInfo.nextCursor;
@@ -94,7 +119,9 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
     } catch (_) {
       // 翻頁失敗保持原清單，使用者可再滑動觸發重試。
     } finally {
-      if (mounted) setState(() => _loadingMore = false);
+      if (mounted && generation == _generation) {
+        setState(() => _loadingMore = false);
+      }
     }
   }
 
@@ -102,7 +129,11 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: seniorModeController,
-      builder: (context, _) => _buildBody(seniorModeController.enabled),
+      // 包在載入、空清單判斷外面，重新整理時冷卻狀態才不會跟著清掉。
+      builder: (context, _) => EventCoverRefresher(
+        onRefresh: _refreshCovers,
+        child: _buildBody(seniorModeController.enabled),
+      ),
     );
   }
 
@@ -202,33 +233,70 @@ class _EventListItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.creamDeep),
         ),
-        child: Column(
+        child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Expanded(child: _buildInfo()),
+            EventCoverThumb(url: event.coverImageUrl, seniorMode: seniorMode),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildInfo() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          event.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
+          style: TextStyle(
+            color: AppColors.ink,
+            fontSize: AppTypography.size(
+              AppTypography.body,
+              seniorMode: seniorMode,
+            ),
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Row(
+          children: [
+            Icon(
+              Icons.access_time,
+              size: seniorMode ? 20 : 13,
+              color: AppColors.fog,
+            ),
+            const SizedBox(width: 4),
             Text(
-              event.title,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+              formatDateTime(event.startsAt.toLocal()),
               style: TextStyle(
-                color: AppColors.ink,
+                color: AppColors.inkSoft,
                 fontSize: AppTypography.size(
-                  AppTypography.body,
+                  AppTypography.caption,
                   seniorMode: seniorMode,
                 ),
-                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 6),
-            Row(
-              children: [
-                Icon(
-                  Icons.access_time,
-                  size: seniorMode ? 20 : 13,
-                  color: AppColors.fog,
-                ),
-                const SizedBox(width: 4),
-                Text(
-                  formatDateTime(event.startsAt.toLocal()),
+          ],
+        ),
+        if (event.location != null && event.location!.isNotEmpty) ...[
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Icon(
+                Icons.location_on_outlined,
+                size: seniorMode ? 20 : 13,
+                color: AppColors.fog,
+              ),
+              const SizedBox(width: 4),
+              Expanded(
+                child: Text(
+                  event.location!,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: TextStyle(
                     color: AppColors.inkSoft,
                     fontSize: AppTypography.size(
@@ -237,59 +305,32 @@ class _EventListItem extends StatelessWidget {
                     ),
                   ),
                 ),
-              ],
-            ),
-            if (event.location != null && event.location!.isNotEmpty) ...[
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(
-                    Icons.location_on_outlined,
-                    size: seniorMode ? 20 : 13,
-                    color: AppColors.fog,
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Text(
-                      event.location!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        color: AppColors.inkSoft,
-                        fontSize: AppTypography.size(
-                          AppTypography.caption,
-                          seniorMode: seniorMode,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
               ),
             ],
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(
-                  event.isLiked ? Icons.favorite : Icons.favorite_border,
-                  size: seniorMode ? 22 : 14,
-                  color: event.isLiked ? AppColors.primary : AppColors.fog,
+          ),
+        ],
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Icon(
+              event.isLiked ? Icons.favorite : Icons.favorite_border,
+              size: seniorMode ? 22 : 14,
+              color: event.isLiked ? AppColors.primary : AppColors.fog,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              '${event.likeCount}',
+              style: TextStyle(
+                color: AppColors.fog,
+                fontSize: AppTypography.size(
+                  AppTypography.caption,
+                  seniorMode: seniorMode,
                 ),
-                const SizedBox(width: 4),
-                Text(
-                  '${event.likeCount}',
-                  style: TextStyle(
-                    color: AppColors.fog,
-                    fontSize: AppTypography.size(
-                      AppTypography.caption,
-                      seniorMode: seniorMode,
-                    ),
-                  ),
-                ),
-              ],
+              ),
             ),
           ],
         ),
-      ),
+      ],
     );
   }
 }

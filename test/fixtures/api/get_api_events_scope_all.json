@@ -1,5 +1,5 @@
 {
-  "total": 0,
+  "total": 1,
   "page": 1,
   "page_size": 20,
   "page_info": {
@@ -7,5 +7,30 @@
     "has_more": false
   },
   "scope": "all",
-  "events": []
+  "events": [
+    {
+      "id": "44",
+      "title": "測試標題",
+      "starts_at": "2026-10-02T04:00:00.000Z",
+      "location": "測試地點",
+      "registration_deadline": "2026-10-02T02:00:00.000Z",
+      "status": "active",
+      "max_participants": null,
+      "category": null,
+      "tribe_id": null,
+      "ends_at": "2026-10-03T09:00:00.000Z",
+      "registration_starts_at": "2026-10-01T17:05:00.000Z",
+      "participant_count": 1,
+      "is_joined": false,
+      "like_count": 0,
+      "is_liked": false,
+      "is_bookmarked": false,
+      "is_host": false,
+      "effective_status": "active",
+      "registration_status": "not_open",
+      "registration_open": false,
+      "is_full": false,
+      "cover_image_url": null
+    }
+  ]
 }

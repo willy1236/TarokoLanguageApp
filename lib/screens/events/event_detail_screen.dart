@@ -223,14 +223,20 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   /// 動作（參加/退出/取消）成功後的刷新：只更新資料本身，不設 `_loading = true`，
   /// 避免整頁重建與剛關閉的對話框收尾動畫互撞（觸發 `_dependents.isEmpty` assertion）。
   Future<void> _silentRefresh() async {
+    final imagesVersion = _imagesVersion;
     try {
       final results = await Future.wait([
         EventService.fetchEventDetail(widget.eventId),
         _fetchRemindersSafe(),
       ]);
       if (!mounted) return;
+      final fresh = results[0] as EventDetail;
+      final current = _event;
       setState(() {
-        _event = results[0] as EventDetail;
+        // 重取途中發起人剛上傳或刪除照片：這份回應的照片是舊的，保留剛換上的清單。
+        _event = imagesVersion != _imagesVersion && current != null
+            ? fresh.withImages(current.images)
+            : fresh;
         _reminders = results[1] as List<EventReminder>;
       });
     } catch (e, st) {
@@ -426,6 +432,37 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
   }
 
+  /// 發起人在頂端輪播上傳或刪除圖片成功：換成後端回的清單，返回時列表重載換封面。
+  /// 每次輪播換上後端回的照片清單就加一，讓較早發出的重取不會蓋回舊照片。
+  int _imagesVersion = 0;
+
+  void _onImagesChanged(List<EventImage> images) {
+    final event = _event;
+    if (event == null) return;
+    _imagesVersion++;
+    _markChanged();
+    setState(() => _event = event.withImages(images));
+  }
+
+  /// 照片網址過期（15 分鐘）自動重取詳情的次數；圖片本身壞掉時重取也沒用，
+  /// 設上限避免一直重打。手動點重試不受限。
+  int _imageAutoRefreshes = 0;
+  static const _maxImageAutoRefreshes = 3;
+  bool _imageRefreshing = false;
+
+  Future<void> _onImageExpired() async {
+    if (_imageRefreshing || _imageAutoRefreshes >= _maxImageAutoRefreshes) {
+      return;
+    }
+    _imageAutoRefreshes++;
+    _imageRefreshing = true;
+    try {
+      await _silentRefresh();
+    } finally {
+      _imageRefreshing = false;
+    }
+  }
+
   // ── 編輯 / 刪除（僅發起人） ────────────────────────────────────
   Future<void> _editEvent() async {
     final event = _event;
@@ -517,7 +554,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         child: CustomScrollView(
           slivers: [
             SliverToBoxAdapter(
-              child: EventDetailHero(event: e, seniorMode: seniorMode),
+              child: EventDetailHero(
+                event: e,
+                seniorMode: seniorMode,
+                onImagesChanged: _onImagesChanged,
+                onImageExpired: _onImageExpired,
+                onImageRetryTap: _silentRefresh,
+              ),
             ),
             SliverToBoxAdapter(
               child: EventDetailBody(
