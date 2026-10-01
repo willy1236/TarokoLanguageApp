@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../models/listening_models.dart';
 import '../../services/listening_service.dart';
+import '../../shared/widgets/app_toast.dart';
 import 'listening_correction_screen.dart';
 import 'quiz_flow/quiz_conflict_dialog.dart';
 import 'quiz_flow/quiz_flow_adapters.dart';
@@ -78,10 +79,7 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
     abandon: ListeningService.abandonListening,
     // 409 直接顯示後端訊息，不套 _listeningErrorMessage 的「此測驗已完成」。
     onAbandonNotice: (message) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      if (mounted) showAppToast(context, message);
     },
     onSaveFailed: (e) {
       if (!mounted) return;

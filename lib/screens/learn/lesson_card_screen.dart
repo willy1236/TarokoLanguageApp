@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../models/quiz_models.dart';
 import '../../services/learn_service.dart';
 import '../history/history_screen.dart';
+import '../../shared/widgets/app_toast.dart';
 import 'quiz_flow/quiz_conflict_dialog.dart';
 import 'quiz_flow/quiz_flow_adapters.dart';
 import 'quiz_flow/quiz_flow_controller.dart';
@@ -51,10 +52,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
     ),
     abandon: LearnService.abandonQuiz,
     onAbandonNotice: (message) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      if (mounted) showAppToast(context, message);
     },
     onSaveFailed: (e) {
       debugPrint('LessonCardScreen: 儲存答案失敗：$e');
