@@ -16,12 +16,19 @@ import '../../forum/widgets/forum_image_grid.dart';
 /// 表單裡照片的編輯狀態：活動原有的照片（可標記刪除）與還沒上傳的新照片。
 /// 張數上限算兩者合計，標記刪除的不算。
 class EventImagesController extends ChangeNotifier {
-  EventImagesController([this.existing = const []]);
+  EventImagesController([List<EventImage> existing = const []])
+    : _existing = existing;
 
-  /// 活動原有的照片（建立活動時為空），依後端順序。
-  final List<EventImage> existing;
+  List<EventImage> _existing;
   final Set<int> _removedIds = {};
   final List<Uint8List> _pending = [];
+  bool _picking = false;
+
+  /// 活動原有的照片（建立活動時為空），依後端順序。
+  List<EventImage> get existing => _existing;
+
+  /// 正在開相簿或壓縮選好的照片；這時送出會漏掉還沒加進來的照片。
+  bool get picking => _picking;
 
   /// 送出時要刪掉的既有照片 id，依原本順序。
   List<int> get toDelete => [
@@ -41,9 +48,32 @@ class EventImagesController extends ChangeNotifier {
 
   bool isRemoved(EventImage image) => _removedIds.contains(image.id);
 
-  /// 加入新照片，超過上限的部分捨棄。
-  void addPending(List<Uint8List> images) {
-    _pending.addAll(images.take(remaining));
+  /// 開相簿挑照片並壓縮，加到待上傳；回傳略過了哪些圖的說明。挑圖失敗（例如
+  /// 沒有相簿權限）照常丟出。
+  Future<String?> pickMore() async {
+    if (_picking || remaining <= 0) return null;
+    _picking = true;
+    notifyListeners();
+    try {
+      final picked = await pickImagesForUpload(
+        limit: remaining,
+        maxBytes: EventService.imageMaxBytes,
+      );
+      _pending.addAll(picked.images.take(remaining));
+      return picked.skippedNotice;
+    } finally {
+      _picking = false;
+      notifyListeners();
+    }
+  }
+
+  /// 既有照片的網址過期後，換成重新取得的網址（依 id 對應，順序不變）。
+  void refreshUrls(List<EventImage> fresh) {
+    final urls = {for (final image in fresh) image.id: image.url};
+    _existing = [
+      for (final image in _existing)
+        EventImage(id: image.id, url: urls[image.id] ?? image.url),
+    ];
     notifyListeners();
   }
 
@@ -72,11 +102,16 @@ class EventImagesField extends StatefulWidget {
   /// 送出中不能再改。
   final bool enabled;
 
+  /// 既有照片載入失敗（多半是網址過期）時自動觸發，每個網址一次；使用者點
+  /// 破圖上的重試也走這裡。呼叫端重新取得網址後交給 [EventImagesController.refreshUrls]。
+  final VoidCallback? onExistingExpired;
+
   const EventImagesField({
     super.key,
     required this.controller,
     required this.seniorMode,
     this.enabled = true,
+    this.onExistingExpired,
   });
 
   @override
@@ -91,8 +126,6 @@ typedef _Item = ({
 });
 
 class _EventImagesFieldState extends State<EventImagesField> {
-  bool _picking = false;
-
   EventImagesController get _c => widget.controller;
 
   void _snack(String message) {
@@ -103,22 +136,17 @@ class _EventImagesFieldState extends State<EventImagesField> {
   }
 
   Future<void> _add() async {
-    if (_picking || !widget.enabled) return;
+    if (_c.picking || !widget.enabled) return;
     if (_c.remaining <= 0) {
       _snack('每場活動最多 ${EventService.imageMaxCount} 張照片');
       return;
     }
-    setState(() => _picking = true);
     try {
-      final picked = await pickImagesForUpload(
-        limit: _c.remaining,
-        maxBytes: EventService.imageMaxBytes,
-      );
-      final notice = picked.skippedNotice;
+      final notice = await _c.pickMore();
       if (notice != null) _snack(notice);
-      _c.addPending(picked.images);
-    } finally {
-      if (mounted) setState(() => _picking = false);
+    } catch (e) {
+      debugPrint('EventImagesField: 挑圖失敗：$e');
+      _snack('無法開啟相簿，請確認已允許 App 存取照片');
     }
   }
 
@@ -216,6 +244,8 @@ class _EventImagesFieldState extends State<EventImagesField> {
                   ? SignedNetworkImage(
                       url: existing.url,
                       placeholder: placeholder,
+                      onExpired: widget.onExistingExpired,
+                      onRetryTap: widget.onExistingExpired,
                     )
                   : Image(image: item.image, fit: BoxFit.cover),
             ),
@@ -329,7 +359,7 @@ class _EventImagesFieldState extends State<EventImagesField> {
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: AppColors.creamDeep, width: 1.5),
           ),
-          child: _picking
+          child: _c.picking
               ? const Center(
                   child: SizedBox.square(
                     dimension: 20,

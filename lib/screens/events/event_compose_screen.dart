@@ -307,6 +307,11 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       return;
     }
 
+    if (_images.picking) {
+      _showError('照片還在處理中，請稍候再送出');
+      return;
+    }
+
     setState(() => _submitting = true);
     try {
       var tribeNotifyLimited = false;
@@ -356,6 +361,28 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       }
       // 後端訊息，例如「需要活動主辦權限（organizer / admin）」
       _showError(e.toString());
+    }
+  }
+
+  /// 編輯時既有照片的網址過期（詳情頁取得後超過 15 分鐘）：重新取得詳情換網址。
+  /// 自動觸發有次數上限，照片本身壞掉時才不會一直重打。
+  int _imageUrlRefreshes = 0;
+  bool _refreshingImageUrls = false;
+
+  Future<void> _refreshImageUrls() async {
+    final editing = widget.editing;
+    if (editing == null || _refreshingImageUrls || _imageUrlRefreshes >= 3) {
+      return;
+    }
+    _imageUrlRefreshes++;
+    _refreshingImageUrls = true;
+    try {
+      final detail = await EventService.fetchEventDetail(editing.id);
+      if (mounted) _images.refreshUrls(detail.images);
+    } catch (e) {
+      debugPrint('EventComposeScreen: 照片網址更新失敗（忽略）：$e');
+    } finally {
+      _refreshingImageUrls = false;
     }
   }
 
@@ -422,6 +449,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     controller: _images,
                     seniorMode: seniorMode,
                     enabled: !_submitting,
+                    onExistingExpired: _refreshImageUrls,
                   ),
                   if (_isEditing) ...[
                     const SizedBox(height: 18),

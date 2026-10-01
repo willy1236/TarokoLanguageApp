@@ -3,7 +3,9 @@
 // 這支取代的人工測試：發起一場帶照片的活動、故意讓照片上傳失敗，看活動有沒有
 // 照常建立、提示對不對——每試一次就在正式後端多一場活動。
 
+import 'dart:async';
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -12,7 +14,9 @@ import 'package:http/http.dart' as http;
 import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/screens/events/event_compose_screen.dart';
 import 'package:flutter_application_1/screens/forum/widgets/forum_image_grid.dart';
+import 'package:flutter_application_1/screens/events/widgets/event_images_field.dart';
 import 'package:flutter_application_1/shared/utils/pick_images.dart';
+import 'package:flutter_application_1/shared/widgets/signed_network_image.dart';
 
 import '../helpers/widget_test_helpers.dart';
 
@@ -255,6 +259,49 @@ void main() {
     });
   });
 
+  group('挑圖', () {
+    testWidgets('開不了相簿時提示，不讓例外漏出去', (tester) async {
+      pickImagesForUpload = ({required int limit, required int maxBytes}) =>
+          Future.error(Exception('photo access denied'));
+      await tester.pumpWidget(_host(onPop: (_) {}));
+      await _openForm(tester);
+
+      await tester.tap(find.text('新增照片'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('無法開啟相簿'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('照片還在壓縮時按發布：擋下並提示，不建立活動', (tester) async {
+      final picking = Completer<PickedImages>();
+      pickImagesForUpload = ({required int limit, required int maxBytes}) =>
+          picking.future;
+      var calls = 0;
+      installMockClient({
+        '/api/events': jsonResponse(_created(), status: 201),
+      }, onRequest: (_) => calls++);
+      await tester.pumpWidget(_host(onPop: (_) {}));
+      await _openForm(tester);
+      await _fillRequired(tester);
+      await tester.scrollUntilVisible(
+        find.text('新增照片'),
+        -200,
+        scrollable: find.byType(Scrollable).first,
+      );
+
+      await tester.tap(find.text('新增照片'));
+      await tester.pump();
+      await tester.tap(find.text('發布'));
+      await tester.pump();
+
+      expect(calls, 0);
+      expect(find.textContaining('照片還在處理中'), findsOneWidget);
+      picking.complete((images: <Uint8List>[], skippedNotice: null));
+      await tester.pumpAndSettle();
+    });
+  });
+
   group('編輯活動', () {
     EventDetail editing({int imageCount = 2}) => EventDetail(
       id: 1,
@@ -432,5 +479,54 @@ void main() {
       expect(find.textContaining('先移除一張新照片才能還原'), findsOneWidget);
       expect(find.text('將刪除'), findsOneWidget);
     });
+  });
+
+  testWidgets('編輯頁的既有照片網址過期：重新取得詳情換網址，自動最多 3 次', (tester) async {
+    var detailCalls = 0;
+    installMockClient(
+      {
+        '/api/events/1': {
+          'id': 1,
+          'title': '部落豐年祭',
+          'starts_at': '2026-12-01T10:00:00Z',
+          'images': [
+            {'id': 11, 'url': 'https://example.invalid/11.jpg?sig=new'},
+          ],
+        },
+      },
+      onRequest: (r) {
+        if (r.method == 'GET') detailCalls++;
+      },
+    );
+    await tester.pumpWidget(
+      _host(
+        editing: EventDetail(
+          id: 1,
+          isHost: true,
+          title: '部落豐年祭',
+          startsAt: DateTime.now().add(const Duration(days: 30)),
+          status: 'active',
+          images: const [
+            EventImage(id: 11, url: 'https://example.invalid/11.jpg?sig=old'),
+          ],
+        ),
+        onPop: (_) {},
+      ),
+    );
+    await _openForm(tester);
+
+    SignedNetworkImage thumb() => tester.widget<SignedNetworkImage>(
+      find.descendant(
+        of: find.byType(EventImagesField),
+        matching: find.byType(SignedNetworkImage),
+      ),
+    );
+    for (var i = 0; i < 6; i++) {
+      thumb().onExpired!();
+      await tester.pumpAndSettle();
+    }
+
+    expect(thumb().url, 'https://example.invalid/11.jpg?sig=new');
+    expect(detailCalls, 3);
   });
 }
