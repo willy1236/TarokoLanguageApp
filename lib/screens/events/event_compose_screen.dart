@@ -365,16 +365,17 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   }
 
   /// 編輯時既有照片的網址過期（詳情頁取得後超過 15 分鐘）：重新取得詳情換網址。
-  /// 自動觸發有次數上限，照片本身壞掉時才不會一直重打。
+  /// 自動觸發有次數上限，照片本身壞掉時才不會一直重打；[manual]（使用者點重試）不受限。
   int _imageUrlRefreshes = 0;
   bool _refreshingImageUrls = false;
 
-  Future<void> _refreshImageUrls() async {
+  Future<void> _refreshImageUrls({bool manual = false}) async {
     final editing = widget.editing;
-    if (editing == null || _refreshingImageUrls || _imageUrlRefreshes >= 3) {
-      return;
+    if (editing == null || _refreshingImageUrls) return;
+    if (!manual) {
+      if (_imageUrlRefreshes >= 3) return;
+      _imageUrlRefreshes++;
     }
-    _imageUrlRefreshes++;
     _refreshingImageUrls = true;
     try {
       final detail = await EventService.fetchEventDetail(editing.id);
@@ -450,6 +451,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     seniorMode: seniorMode,
                     enabled: !_submitting,
                     onExistingExpired: _refreshImageUrls,
+                    onExistingRetryTap: () => _refreshImageUrls(manual: true),
                   ),
                   if (_isEditing) ...[
                     const SizedBox(height: 18),

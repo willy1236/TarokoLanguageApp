@@ -23,6 +23,7 @@ class EventImagesController extends ChangeNotifier {
   final Set<int> _removedIds = {};
   final List<Uint8List> _pending = [];
   bool _picking = false;
+  bool _disposed = false;
 
   /// 活動原有的照片（建立活動時為空），依後端順序。
   List<EventImage> get existing => _existing;
@@ -63,8 +64,15 @@ class EventImagesController extends ChangeNotifier {
       return picked.skippedNotice;
     } finally {
       _picking = false;
-      notifyListeners();
+      // 壓縮途中按返回，表單已經把 controller 釋放掉。
+      if (!_disposed) notifyListeners();
     }
+  }
+
+  @override
+  void dispose() {
+    _disposed = true;
+    super.dispose();
   }
 
   /// 既有照片的網址過期後，換成重新取得的網址（依 id 對應，順序不變）。
@@ -102,9 +110,12 @@ class EventImagesField extends StatefulWidget {
   /// 送出中不能再改。
   final bool enabled;
 
-  /// 既有照片載入失敗（多半是網址過期）時自動觸發，每個網址一次；使用者點
-  /// 破圖上的重試也走這裡。呼叫端重新取得網址後交給 [EventImagesController.refreshUrls]。
+  /// 既有照片載入失敗（多半是網址過期）時自動觸發，每個網址一次；呼叫端重新
+  /// 取得網址後交給 [EventImagesController.refreshUrls]，自行限制次數。
   final VoidCallback? onExistingExpired;
+
+  /// 使用者點既有照片破圖上的重試；明確的使用者意圖，不該受自動次數上限限制。
+  final VoidCallback? onExistingRetryTap;
 
   const EventImagesField({
     super.key,
@@ -112,6 +123,7 @@ class EventImagesField extends StatefulWidget {
     required this.seniorMode,
     this.enabled = true,
     this.onExistingExpired,
+    this.onExistingRetryTap,
   });
 
   @override
@@ -245,7 +257,7 @@ class _EventImagesFieldState extends State<EventImagesField> {
                       url: existing.url,
                       placeholder: placeholder,
                       onExpired: widget.onExistingExpired,
-                      onRetryTap: widget.onExistingExpired,
+                      onRetryTap: widget.onExistingRetryTap,
                     )
                   : Image(image: item.image, fit: BoxFit.cover),
             ),

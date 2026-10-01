@@ -80,7 +80,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
   /// 失敗就保留原結果。不讀輸入框——使用者可能改了字還沒送出。
   Future<void> _refreshCovers() async {
     if (_loading) return;
-    final gen = ++_reqGen; // 進行中的載入更多屬於舊結果，丟棄
+    final gen = _reqGen;
     try {
       final result = await EventService.searchEvents(
         q: _q,
@@ -89,12 +89,13 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
       );
       if (!mounted || gen != _reqGen) return;
       setState(() {
+        _reqGen++; // 進行中的載入更多屬於舊結果，丟棄
         _events = result.events;
         _cursor = result.pageInfo.nextCursor;
         _loadingMore = false;
       });
     } catch (_) {
-      if (mounted && gen == _reqGen) setState(() => _loadingMore = false);
+      // 換不到新網址就維持原樣，破掉的封面已退回沒有封面的樣子。
     }
   }
 

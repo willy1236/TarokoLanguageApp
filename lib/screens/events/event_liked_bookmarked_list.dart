@@ -61,7 +61,12 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
         : EventService.fetchBookmarkedEvents(cursor: cursor);
   }
 
+  /// 清單世代：整頁重載或封面重取換掉清單時加一，較早送出的載入更多回來就丟棄，
+  /// 不會把舊清單的下一頁接到新清單後面。
+  int _generation = 0;
+
   Future<void> _load() async {
+    _generation++;
     setState(() {
       _loading = true;
       _error = null;
@@ -85,13 +90,16 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
 
   /// 封面網址過期：安靜地重取第一頁換新網址，不閃載入畫面；失敗就保留原清單。
   Future<void> _refreshCovers() async {
-    if (_loading || _loadingMore) return;
+    if (_loading) return;
+    final generation = _generation;
     try {
       final res = await _fetch(null);
-      if (!mounted || _loading || _loadingMore) return;
+      if (!mounted || generation != _generation) return;
       setState(() {
+        _generation++; // 進行中的載入更多是舊清單的下一頁，丟棄
         _events = res.events;
         _cursor = res.pageInfo.nextCursor;
+        _loadingMore = false;
       });
     } catch (_) {
       // 換不到新網址就維持原樣，破掉的封面已退回沒有封面的樣子。
@@ -99,10 +107,11 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
   }
 
   Future<void> _loadMore() async {
+    final generation = _generation;
     setState(() => _loadingMore = true);
     try {
       final res = await _fetch(_cursor);
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() {
         _events = appendUnique(_events, res.events, (e) => e.id);
         _cursor = res.pageInfo.nextCursor;
@@ -110,7 +119,9 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
     } catch (_) {
       // 翻頁失敗保持原清單，使用者可再滑動觸發重試。
     } finally {
-      if (mounted) setState(() => _loadingMore = false);
+      if (mounted && generation == _generation) {
+        setState(() => _loadingMore = false);
+      }
     }
   }
 

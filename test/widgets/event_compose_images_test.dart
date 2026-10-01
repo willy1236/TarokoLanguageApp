@@ -528,5 +528,10 @@ void main() {
 
     expect(thumb().url, 'https://example.invalid/11.jpg?sig=new');
     expect(detailCalls, 3);
+
+    // 手動點重試不受自動上限限制。
+    thumb().onRetryTap!();
+    await tester.pumpAndSettle();
+    expect(detailCalls, 4);
   });
 }
