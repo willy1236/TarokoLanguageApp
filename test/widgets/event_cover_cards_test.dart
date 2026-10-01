@@ -9,11 +9,13 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/screens/events/event_liked_bookmarked_list.dart';
+import 'package:flutter_application_1/screens/events/my_events_screen.dart';
 import 'package:flutter_application_1/screens/events/event_search_screen.dart';
 import 'package:flutter_application_1/screens/events/widgets/event_cards.dart';
 import 'package:flutter_application_1/screens/events/widgets/event_cover.dart';
 import 'package:flutter_application_1/screens/events/widgets/event_status_tile.dart';
 import 'package:flutter_application_1/screens/plaza/widgets/plaza_cards.dart';
+import 'package:flutter_application_1/shared/widgets/async_state_view.dart';
 import 'package:flutter_application_1/shared/widgets/signed_network_image.dart';
 
 import '../helpers/widget_test_helpers.dart';
@@ -144,6 +146,20 @@ void main() {
     });
   });
 
+  testWidgets('縮圖破圖後換了新網址會再試一次', (tester) async {
+    Widget thumb(String url) =>
+        _wrap(EventCoverThumb(url: url, seniorMode: false));
+    await tester.pumpWidget(thumb('https://h/a.jpg?s=1'));
+    tester
+        .widget<SignedNetworkImage>(find.byType(SignedNetworkImage))
+        .onExpired!();
+    await tester.pump();
+    expect(find.byType(SignedNetworkImage), findsNothing);
+
+    await tester.pumpWidget(thumb('https://h/a.jpg?s=2'));
+    expect(find.byType(SignedNetworkImage), findsOneWidget);
+  });
+
   group('EventCoverRefresher', () {
     testWidgets('冷卻時間內多張封面過期只重新整理一次，過了才再整理', (tester) async {
       var refreshes = 0;
@@ -203,6 +219,100 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       expect(find.byType(SignedNetworkImage), findsOneWidget);
+    });
+  });
+
+  group('封面過期換新網址', () {
+    /// 模擬封面永遠載不起來：每輪把畫面上所有封面都回報一次過期。
+    Future<void> expireAll(WidgetTester tester) async {
+      for (final image in tester.widgetList<SignedNetworkImage>(
+        find.byType(SignedNetworkImage),
+      )) {
+        image.onExpired!();
+      }
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    testWidgets('按讚列表：封面一直壞也只重取一次，不閃載入畫面', (tester) async {
+      var calls = 0;
+      installMockClient(
+        {
+          '/api/events/likes': {
+            'events': [_json(id: 1), _json(id: 2)],
+          },
+        },
+        onRequest: (r) {
+          if (r.url.path == '/api/events/likes') calls++;
+        },
+      );
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: EventLikedBookmarkedList(mode: EventListMode.liked),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(calls, 1);
+
+      for (var round = 0; round < 5; round++) {
+        await expireAll(tester);
+        expect(find.byType(TrukuLoadingView), findsNothing);
+        await tester.pumpAndSettle();
+      }
+
+      expect(calls, 2);
+    });
+
+    testWidgets('我發起的活動：重取失敗時保留原清單，不換成錯誤畫面', (tester) async {
+      installMockClient({
+        '/api/events/mine': {
+          'events': [_json(id: 1)],
+        },
+      });
+      await tester.pumpWidget(const MaterialApp(home: MyEventsScreen()));
+      await tester.pumpAndSettle();
+      // 之後的重取都失敗（例如斷線）。
+      installMockClient({
+        '/api/events/mine': errorResponse('SERVER_ERROR', status: 500),
+      });
+
+      await expireAll(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(TrukuErrorView), findsNothing);
+      expect(find.text(_longTitle), findsOneWidget);
+    });
+
+    testWidgets('搜尋結果：重取用上次送出的關鍵字，不用輸入框裡還沒送出的字', (tester) async {
+      final queries = <String?>[];
+      installMockClient(
+        {
+          '/api/search/history': {'history': <dynamic>[]},
+          '/api/search/popular': {'popular': <dynamic>[]},
+          '/api/events/search': {
+            'events': [_json(id: 1)],
+          },
+        },
+        onRequest: (r) {
+          if (r.url.path == '/api/events/search') {
+            queries.add(r.url.queryParameters['q']);
+          }
+        },
+      );
+      await tester.pumpWidget(const MaterialApp(home: EventSearchScreen()));
+      await tester.pump();
+      await tester.enterText(find.byType(TextField).first, '織布');
+      await tester.testTextInput.receiveAction(TextInputAction.search);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.enterText(find.byType(TextField).first, '還沒送出');
+
+      await expireAll(tester);
+
+      expect(queries, ['織布', '織布']);
+      expect(find.text(_longTitle), findsOneWidget);
     });
   });
 }

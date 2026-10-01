@@ -126,6 +126,27 @@ class _PagedEventListState extends State<PagedEventList>
     }
   }
 
+  /// 封面網址過期：安靜地重取第一頁換新網址，不閃載入畫面；失敗就保留原清單。
+  /// 捲得比第一頁深時，清單縮回第一頁後會照常續載。
+  Future<void> _refreshCovers() async {
+    if (_loading) return;
+    final generation = _generation;
+    try {
+      final page = await widget.loadPage(null);
+      if (!mounted || generation != _generation) return;
+      setState(() {
+        _generation++; // 進行中的載入更多是舊清單的下一頁，丟棄
+        _events = page.events;
+        _cursor = page.pageInfo.nextCursor;
+        _loadingMore = false;
+        _loadMoreFailed = false;
+      });
+      _checkNearEnd();
+    } catch (e) {
+      debugPrint('PagedEventList._refreshCovers failed: $e');
+    }
+  }
+
   Future<void> _loadMore() async {
     final cursor = _cursor;
     if (_loading || _loadingMore || _loadMoreFailed || cursor == null) return;
@@ -159,7 +180,7 @@ class _PagedEventListState extends State<PagedEventList>
   Widget build(BuildContext context) {
     super.build(context);
     return EventCoverRefresher(
-      onRefresh: _load,
+      onRefresh: _refreshCovers,
       child: RefreshIndicator(
         onRefresh: _load,
         color: AppColors.primary,

@@ -76,6 +76,28 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
     }
   }
 
+  /// 封面網址過期：用上次送出的條件安靜地重查第一頁換新網址，不閃載入畫面；
+  /// 失敗就保留原結果。不讀輸入框——使用者可能改了字還沒送出。
+  Future<void> _refreshCovers() async {
+    if (_loading) return;
+    final gen = ++_reqGen; // 進行中的載入更多屬於舊結果，丟棄
+    try {
+      final result = await EventService.searchEvents(
+        q: _q,
+        range: _range,
+        tribeId: _tribe?.id,
+      );
+      if (!mounted || gen != _reqGen) return;
+      setState(() {
+        _events = result.events;
+        _cursor = result.pageInfo.nextCursor;
+        _loadingMore = false;
+      });
+    } catch (_) {
+      if (mounted && gen == _reqGen) setState(() => _loadingMore = false);
+    }
+  }
+
   Future<void> _loadMore() async {
     final cursor = _cursor;
     if (_loadingMore || cursor == null) return;
@@ -162,7 +184,14 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
                 _search();
               },
             ),
-          if (_searched) Expanded(child: _resultList(seniorMode)),
+          // 包在載入、空結果判斷外面，重新整理時冷卻狀態才不會跟著清掉。
+          if (_searched)
+            Expanded(
+              child: EventCoverRefresher(
+                onRefresh: _refreshCovers,
+                child: _resultList(seniorMode),
+              ),
+            ),
         ],
       ),
     );
@@ -187,29 +216,26 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
         ),
       );
     }
-    return EventCoverRefresher(
-      onRefresh: _search,
-      child: NotificationListener<ScrollNotification>(
-        onNotification: (n) {
-          if (n.metrics.extentAfter < 200) _loadMore();
-          return false;
+    return NotificationListener<ScrollNotification>(
+      onNotification: (n) {
+        if (n.metrics.extentAfter < 200) _loadMore();
+        return false;
+      },
+      child: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        itemCount: _events.length + (_cursor != null ? 1 : 0),
+        separatorBuilder: (_, _) => const SizedBox(height: 10),
+        itemBuilder: (context, i) {
+          if (i >= _events.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: CircularProgressIndicator(color: AppColors.primary),
+              ),
+            );
+          }
+          return _EventResultTile(event: _events[i], seniorMode: seniorMode);
         },
-        child: ListView.separated(
-          padding: const EdgeInsets.all(16),
-          itemCount: _events.length + (_cursor != null ? 1 : 0),
-          separatorBuilder: (_, _) => const SizedBox(height: 10),
-          itemBuilder: (context, i) {
-            if (i >= _events.length) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(
-                  child: CircularProgressIndicator(color: AppColors.primary),
-                ),
-              );
-            }
-            return _EventResultTile(event: _events[i], seniorMode: seniorMode);
-          },
-        ),
       ),
     );
   }

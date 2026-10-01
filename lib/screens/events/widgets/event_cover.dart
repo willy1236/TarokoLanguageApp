@@ -53,29 +53,58 @@ class _EventCoverRefresherState extends State<EventCoverRefresher> {
       );
 }
 
-/// 鋪滿的封面照片（精選大卡、廣場小卡）。載入中與破圖時顯示 [placeholder]，
-/// 也就是沒有封面時原本的樣子。
-class EventCoverImage extends StatelessWidget {
-  final String url;
+/// 依封面狀態建卡片：沒有封面或封面破圖時 [builder] 收到 null，卡片畫沒有封面
+/// 的樣子；有封面時收到照片元件（載入中顯示 [placeholder]），由卡片決定擺法。
+class EventCover extends StatefulWidget {
+  final String? url;
   final Widget placeholder;
+  final Widget Function(BuildContext context, Widget? photo) builder;
 
-  const EventCoverImage({
+  const EventCover({
     super.key,
     required this.url,
-    required this.placeholder,
+    required this.builder,
+    this.placeholder = const SizedBox.shrink(),
   });
 
   @override
-  Widget build(BuildContext context) => SignedNetworkImage(
-    url: url,
-    placeholder: placeholder,
-    onExpired: () => const EventCoverExpiredNotification().dispatch(context),
-  );
+  State<EventCover> createState() => _EventCoverState();
+}
+
+class _EventCoverState extends State<EventCover> {
+  bool _failed = false;
+
+  @override
+  void didUpdateWidget(EventCover old) {
+    super.didUpdateWidget(old);
+    // 列表重新整理換了新網址，再試一次。
+    if (old.url != widget.url) _failed = false;
+  }
+
+  void _onExpired() {
+    const EventCoverExpiredNotification().dispatch(context);
+    if (mounted) setState(() => _failed = true);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final url = widget.url;
+    return widget.builder(
+      context,
+      url == null || _failed
+          ? null
+          : SignedNetworkImage(
+              url: url,
+              placeholder: widget.placeholder,
+              onExpired: _onExpired,
+            ),
+    );
+  }
 }
 
 /// 列表列右側的小方形封面縮圖，自帶與旁邊內容的間距 [padding]。沒有封面或破圖
 /// 時連間距都不佔，列和沒有封面時一樣。
-class EventCoverThumb extends StatefulWidget {
+class EventCoverThumb extends StatelessWidget {
   final String? url;
   final bool seniorMode;
   final EdgeInsets padding;
@@ -90,41 +119,20 @@ class EventCoverThumb extends StatefulWidget {
   static double sizeFor(bool seniorMode) => seniorMode ? 72 : 56;
 
   @override
-  State<EventCoverThumb> createState() => _EventCoverThumbState();
-}
-
-class _EventCoverThumbState extends State<EventCoverThumb> {
-  bool _failed = false;
-
-  @override
-  void didUpdateWidget(EventCoverThumb old) {
-    super.didUpdateWidget(old);
-    if (old.url != widget.url) _failed = false;
-  }
-
-  void _onExpired() {
-    const EventCoverExpiredNotification().dispatch(context);
-    if (mounted) setState(() => _failed = true);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final url = widget.url;
-    if (url == null || _failed) return const SizedBox.shrink();
-    final size = EventCoverThumb.sizeFor(widget.seniorMode);
-    return Padding(
-      padding: widget.padding,
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(10),
-        child: SizedBox.square(
-          dimension: size,
-          child: SignedNetworkImage(
-            url: url,
-            placeholder: const ColoredBox(color: AppColors.creamDeep),
-            onExpired: _onExpired,
+  Widget build(BuildContext context) => EventCover(
+    url: url,
+    placeholder: const ColoredBox(color: AppColors.creamDeep),
+    builder: (context, photo) => photo == null
+        ? const SizedBox.shrink()
+        : Padding(
+            padding: padding,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(10),
+              child: SizedBox.square(
+                dimension: sizeFor(seniorMode),
+                child: photo,
+              ),
+            ),
           ),
-        ),
-      ),
-    );
-  }
+  );
 }

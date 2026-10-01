@@ -87,6 +87,17 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     await Future.wait([_loadEvents(), NotificationSummaryService.refresh()]);
   }
 
+  /// 活動封面網址過期：安靜地重取換新網址；失敗就保留原清單，不換成錯誤卡。
+  Future<void> _refreshEventCovers() async {
+    try {
+      final (:events, pageInfo: _) = await EventService.fetchEvents();
+      if (!mounted) return;
+      setState(() => _events = events);
+    } catch (_) {
+      // 換不到新網址就維持原樣，破掉的封面已退回沒有封面的樣子。
+    }
+  }
+
   Future<void> _loadEvents() async {
     try {
       final (:events, pageInfo: _) = await EventService.fetchEvents();
@@ -402,7 +413,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
           )
         else
           EventCoverRefresher(
-            onRefresh: _loadEvents,
+            onRefresh: _refreshEventCovers,
             child: SizedBox(
               height: 120,
               child: ListView.separated(

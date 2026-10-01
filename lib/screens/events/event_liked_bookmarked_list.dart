@@ -83,6 +83,21 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
     }
   }
 
+  /// 封面網址過期：安靜地重取第一頁換新網址，不閃載入畫面；失敗就保留原清單。
+  Future<void> _refreshCovers() async {
+    if (_loading || _loadingMore) return;
+    try {
+      final res = await _fetch(null);
+      if (!mounted || _loading || _loadingMore) return;
+      setState(() {
+        _events = res.events;
+        _cursor = res.pageInfo.nextCursor;
+      });
+    } catch (_) {
+      // 換不到新網址就維持原樣，破掉的封面已退回沒有封面的樣子。
+    }
+  }
+
   Future<void> _loadMore() async {
     setState(() => _loadingMore = true);
     try {
@@ -103,7 +118,11 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: seniorModeController,
-      builder: (context, _) => _buildBody(seniorModeController.enabled),
+      // 包在載入、空清單判斷外面，重新整理時冷卻狀態才不會跟著清掉。
+      builder: (context, _) => EventCoverRefresher(
+        onRefresh: _refreshCovers,
+        child: _buildBody(seniorModeController.enabled),
+      ),
     );
   }
 
@@ -121,41 +140,38 @@ class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
     if (_events.isEmpty) {
       return _buildEmpty(seniorMode);
     }
-    return EventCoverRefresher(
+    return RefreshIndicator(
       onRefresh: _load,
-      child: RefreshIndicator(
-        onRefresh: _load,
-        color: AppColors.primary,
-        child: ListView.separated(
-          controller: _scrollController,
-          padding: const EdgeInsets.all(16),
-          itemCount: _events.length + (_cursor != null ? 1 : 0),
-          separatorBuilder: (_, _) => const SizedBox(height: 12),
-          itemBuilder: (context, index) {
-            if (index >= _events.length) {
-              return const Padding(
-                padding: EdgeInsets.symmetric(vertical: 16),
-                child: Center(
-                  child: SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.primary,
-                    ),
+      color: AppColors.primary,
+      child: ListView.separated(
+        controller: _scrollController,
+        padding: const EdgeInsets.all(16),
+        itemCount: _events.length + (_cursor != null ? 1 : 0),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
+        itemBuilder: (context, index) {
+          if (index >= _events.length) {
+            return const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16),
+              child: Center(
+                child: SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    color: AppColors.primary,
                   ),
                 ),
-              );
-            }
-            return _EventListItem(
-              event: _events[index],
-              seniorMode: seniorMode,
-              // 在詳情頁取消收藏/按讚後返回，清單要重新整理，否則仍看得到
-              // 已經取消的項目。
-              onReturn: _load,
+              ),
             );
-          },
-        ),
+          }
+          return _EventListItem(
+            event: _events[index],
+            seniorMode: seniorMode,
+            // 在詳情頁取消收藏/按讚後返回，清單要重新整理，否則仍看得到
+            // 已經取消的項目。
+            onReturn: _load,
+          );
+        },
       ),
     );
   }

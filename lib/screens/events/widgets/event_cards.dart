@@ -75,105 +75,106 @@ class EventFeaturedCard extends StatelessWidget {
             children: [
               SizedBox(
                 height: 120,
-                child: Stack(
-                  fit: StackFit.expand,
-                  children: [
-                    if (e.coverImageUrl case final cover?) ...[
-                      EventCoverImage(
-                        url: cover,
-                        placeholder: const _FeaturedBackground(),
+                child: EventCover(
+                  url: e.coverImageUrl,
+                  placeholder: const _FeaturedBackground(),
+                  builder: (context, photo) => Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      if (photo != null) ...[
+                        photo,
+                        // 由下往上的暗色漸層：亮色照片上的山形、標籤與日期仍讀得清楚。
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.bottomCenter,
+                              end: Alignment.topCenter,
+                              colors: [
+                                AppColors.ink.withValues(alpha: 0.7),
+                                AppColors.ink.withValues(alpha: 0.15),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ] else
+                        const _FeaturedBackground(),
+                      Positioned(
+                        left: 0,
+                        right: 0,
+                        bottom: 0,
+                        height: 46,
+                        child: CustomPaint(
+                          painter: TrukuMountainsPainter(
+                            color: AppColors.ink,
+                            opacity: 0.9,
+                          ),
+                        ),
                       ),
-                      // 由下往上的暗色漸層：亮色照片上的山形、標籤與日期仍讀得清楚。
-                      DecoratedBox(
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            begin: Alignment.bottomCenter,
-                            end: Alignment.topCenter,
-                            colors: [
-                              AppColors.ink.withValues(alpha: 0.7),
-                              AppColors.ink.withValues(alpha: 0.15),
+                      if (label.isNotEmpty)
+                        Positioned(
+                          top: 14,
+                          left: 14,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.gold,
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              label,
+                              style: const TextStyle(
+                                fontSize: AppTypography.micro,
+                                color: AppColors.ink,
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 2.0,
+                              ),
+                            ),
+                          ),
+                        ),
+                      Positioned(
+                        top: 14,
+                        right: 14,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.ink.withValues(alpha: 0.55),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: AppColors.gold.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                _mon(d),
+                                style: const TextStyle(
+                                  fontSize: AppTypography.micro,
+                                  color: AppColors.gold,
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                              Text(
+                                _day(d),
+                                style: AppTypography.serif(
+                                  fontSize: AppTypography.subtitle,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.creamLight,
+                                  height: 1,
+                                ),
+                              ),
                             ],
                           ),
                         ),
                       ),
-                    ] else
-                      const _FeaturedBackground(),
-                    Positioned(
-                      left: 0,
-                      right: 0,
-                      bottom: 0,
-                      height: 46,
-                      child: CustomPaint(
-                        painter: TrukuMountainsPainter(
-                          color: AppColors.ink,
-                          opacity: 0.9,
-                        ),
-                      ),
-                    ),
-                    if (label.isNotEmpty)
-                      Positioned(
-                        top: 14,
-                        left: 14,
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 4,
-                          ),
-                          decoration: BoxDecoration(
-                            color: AppColors.gold,
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                          child: Text(
-                            label,
-                            style: const TextStyle(
-                              fontSize: AppTypography.micro,
-                              color: AppColors.ink,
-                              fontWeight: FontWeight.w600,
-                              letterSpacing: 2.0,
-                            ),
-                          ),
-                        ),
-                      ),
-                    Positioned(
-                      top: 14,
-                      right: 14,
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.ink.withValues(alpha: 0.55),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color: AppColors.gold.withValues(alpha: 0.3),
-                          ),
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              _mon(d),
-                              style: const TextStyle(
-                                fontSize: AppTypography.micro,
-                                color: AppColors.gold,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                            Text(
-                              _day(d),
-                              style: AppTypography.serif(
-                                fontSize: AppTypography.subtitle,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.creamLight,
-                                height: 1,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               Padding(

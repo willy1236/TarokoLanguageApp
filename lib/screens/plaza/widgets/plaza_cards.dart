@@ -126,57 +126,54 @@ class PlazaMiniEventCard extends StatelessWidget {
     final d = event.startsAt.toLocal();
     final month = monthLabel(d);
     final day = d.day.toString().padLeft(2, '0');
-    final cover = event.coverImageUrl;
     final content = _buildContent(month, day);
     return GestureDetector(
       onTap: onTap,
-      child: cover == null
-          ? Container(
-              width: 200,
-              padding: const EdgeInsets.all(14),
-              decoration: BoxDecoration(
-                color: AppColors.ink,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              child: Stack(
-                children: [
-                  Positioned(
-                    right: -16,
-                    top: -16,
-                    child: Opacity(
-                      opacity: 0.13,
-                      child: TrukuDiamond(size: 80, color: AppColors.gold),
+      child: EventCover(
+        url: event.coverImageUrl,
+        builder: (context, photo) => photo == null
+            ? Container(
+                width: 200,
+                padding: const EdgeInsets.all(14),
+                decoration: BoxDecoration(
+                  color: AppColors.ink,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Stack(
+                  children: [
+                    Positioned(
+                      right: -16,
+                      top: -16,
+                      child: Opacity(
+                        opacity: 0.13,
+                        child: TrukuDiamond(size: 80, color: AppColors.gold),
+                      ),
                     ),
-                  ),
-                  content,
-                ],
-              ),
-            )
-          // 有封面：照片鋪滿整張卡，疊一層深色讓文字與按鈕讀得清楚。
-          : Container(
-              width: 200,
-              decoration: BoxDecoration(
-                color: AppColors.ink,
-                borderRadius: BorderRadius.circular(14),
-              ),
-              clipBehavior: Clip.hardEdge,
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: EventCoverImage(
-                      url: cover,
-                      placeholder: const SizedBox.shrink(),
+                    content,
+                  ],
+                ),
+              )
+            // 有封面：照片鋪滿整張卡，疊一層深色讓文字與按鈕讀得清楚。
+            : Container(
+                width: 200,
+                decoration: BoxDecoration(
+                  color: AppColors.ink,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                clipBehavior: Clip.hardEdge,
+                child: Stack(
+                  children: [
+                    Positioned.fill(child: photo),
+                    Positioned.fill(
+                      child: ColoredBox(
+                        color: AppColors.ink.withValues(alpha: 0.6),
+                      ),
                     ),
-                  ),
-                  Positioned.fill(
-                    child: ColoredBox(
-                      color: AppColors.ink.withValues(alpha: 0.6),
-                    ),
-                  ),
-                  Padding(padding: const EdgeInsets.all(14), child: content),
-                ],
+                    Padding(padding: const EdgeInsets.all(14), child: content),
+                  ],
+                ),
               ),
-            ),
+      ),
     );
   }
 
