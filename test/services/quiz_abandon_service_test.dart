@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/services/learn_service.dart';
+import 'package:flutter_application_1/services/listening_service.dart';
 
 import '../helpers/widget_test_helpers.dart';
 
@@ -16,7 +17,10 @@ void main() {
   setUp(stubCommonChannels);
   tearDown(restoreHttp);
 
-  final cases = {'/api/quiz/abandon': LearnService.abandonQuiz};
+  final cases = {
+    '/api/quiz/abandon': LearnService.abandonQuiz,
+    '/api/listening/abandon': ListeningService.abandonListening,
+  };
 
   for (final MapEntry(key: path, value: abandon) in cases.entries) {
     group(path, () {
