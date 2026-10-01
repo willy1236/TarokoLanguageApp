@@ -27,6 +27,33 @@ void main() {
     });
   });
 
+  group('通話事件', () {
+    test('從 callEvents 送出、不動 lastEvent；連續兩則都收得到', () async {
+      final controller = ChatController();
+      addTearDown(controller.dispose);
+      final received = <Map<String, String>>[];
+      final sub = controller.callEvents.listen(received.add);
+      addTearDown(sub.cancel);
+      var notified = 0;
+      controller.addListener(() => notified++);
+
+      controller.debugSimulateData(
+        '{"type":"friend_call_accepted","call_id":"12","session_id":"34"}',
+      );
+      controller.debugSimulateData(
+        '{"type":"video_session_ended","session_id":"34"}',
+      );
+      await Future<void>.delayed(Duration.zero);
+
+      expect(received, [
+        {'type': 'friend_call_accepted', 'call_id': '12', 'session_id': '34'},
+        {'type': 'video_session_ended', 'session_id': '34'},
+      ]);
+      expect(controller.lastEvent, isNull);
+      expect(notified, 0);
+    });
+  });
+
   group('ChatController.reconnectDelaySeconds', () {
     test('前幾次指數成長', () {
       expect(ChatController.reconnectDelaySeconds(1), 2);

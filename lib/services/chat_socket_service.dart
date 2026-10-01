@@ -1,6 +1,8 @@
 // 一對一聊天即時通道：wss://.../ws，連上後第一則訊息送 {type:auth, token}（見 Truku_backend backend/realtime.ts）。
 // token 不放網址：Cloud Run 請求日誌會記下完整網址（後端已知問題 SEC-01）。
 // 除驗證訊息外只接收，不送出——送訊息/已讀一律走 FriendService 的 REST 端點，WS 純粹是推播。
+// 通話事件（與同名推播同時送出，見 Truku_backend API/即時連線.md「通話事件」）
+// 不走 lastEvent，另從 [ChatController.callEvents] 送出，由 main.dart 轉給 FcmService。
 // 指數退避重連；close code 4001 "token expired"（連線中 JWT 自然過期）先重換 JWT 再重連
 // （連上前只換一次，換完仍被踢就退回退避），
 // 其他 4001（unauthorized / token revoked）不重連、交給 REST 401 導回登入；
@@ -18,7 +20,7 @@ import '../main.dart';
 import '../models/friend_message_model.dart';
 import 'auth_service.dart';
 
-enum ChatSocketEventType { connected, message, read }
+enum ChatSocketEventType { connected, message, read, call }
 
 class ChatSocketEvent {
   final ChatSocketEventType type;
@@ -29,12 +31,26 @@ class ChatSocketEvent {
   final String? friendCode;
   final int? count;
 
+  /// 通話事件的原始內容（含 type；id 一律字串），格式與同名推播的 data 相同。
+  final Map<String, String>? callData;
+
   const ChatSocketEvent._(
     this.type, {
     this.message,
     this.friendCode,
     this.count,
+    this.callData,
   });
+
+  static const _callTypes = {
+    'video_matched',
+    'video_session_ended',
+    'friend_call_incoming',
+    'friend_call_accepted',
+    'friend_call_declined',
+    'friend_call_cancelled',
+    'friend_call_ended',
+  };
 
   factory ChatSocketEvent.connected() =>
       const ChatSocketEvent._(ChatSocketEventType.connected);
@@ -57,9 +73,19 @@ class ChatSocketEvent {
     count: count,
   );
 
+  factory ChatSocketEvent.call(Map<String, String> data) =>
+      ChatSocketEvent._(ChatSocketEventType.call, callData: data);
+
   /// 伺服器推來的一則事件；不認得的類型或格式不對回 null。
   static ChatSocketEvent? fromJson(Map<String, dynamic> json) {
-    switch (json['type']) {
+    final type = json['type'];
+    if (_callTypes.contains(type)) {
+      return ChatSocketEvent.call({
+        for (final e in json.entries)
+          if (e.value != null) e.key: e.value.toString(),
+      });
+    }
+    switch (type) {
       case 'connected':
         return ChatSocketEvent.connected();
       case 'message':
@@ -93,6 +119,12 @@ class ChatController extends ChangeNotifier {
   int _generation = 0;
 
   ChatSocketEvent? lastEvent;
+
+  final _callEvents = StreamController<Map<String, String>>.broadcast();
+
+  /// 通話事件。另開 stream 而不走 [lastEvent]：連續兩則事件時，
+  /// 監聽者可能只讀到後一則。
+  Stream<Map<String, String>> get callEvents => _callEvents.stream;
 
   bool get isConnected => _channel != null;
 
@@ -160,6 +192,10 @@ class ChatController extends ChangeNotifier {
     }
     final event = ChatSocketEvent.fromJson(json);
     if (event == null) return;
+    if (event.type == ChatSocketEventType.call) {
+      _callEvents.add(event.callData!);
+      return;
+    }
     if (event.type == ChatSocketEventType.connected) {
       _reconnectAttempts = 0;
       _refreshedForExpiry = false;
@@ -222,6 +258,7 @@ class ChatController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     disconnect();
+    _callEvents.close();
     super.dispose();
   }
 }
