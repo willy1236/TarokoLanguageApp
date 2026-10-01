@@ -27,6 +27,7 @@ import '../friends/public_profile_screen.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/nickname_text.dart';
+import '../../shared/widgets/report_sheet.dart';
 
 class ChatScreen extends StatefulWidget {
   /// 對方的好友碼：辨識聊天室、打聊天 API、標題列末碼與點進公開檔案都用它。
@@ -532,22 +533,18 @@ class _ChatScreenState extends State<ChatScreen> {
     );
   }
 
-  Future<void> _reportMessage(FriendMessage m) async {
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (context) => _ReportDialog(),
-    );
-    if (reason == null || reason.trim().isEmpty) return;
-    try {
-      await FriendService.reportMessage(m.id, reason.trim());
-      _showMessage('已送出檢舉');
-    } on ApiException catch (e) {
-      _showMessage(e.message);
-    } catch (e) {
-      debugPrint('Failed to report message: $e');
-      _showMessage('檢舉失敗，請稍後再試');
-    }
-  }
+  Future<void> _reportMessage(FriendMessage m) => showReportSheet(
+    context,
+    title: '檢舉此訊息',
+    description: '請說明檢舉的原因，管理員會再確認。',
+    hintText: '例如：騷擾、詐騙、不當內容',
+    submitLabel: '送出檢舉',
+    successMessage: '已送出檢舉',
+    // 後端 friendMessages.ts 的 REASON_MAX。
+    maxLength: 500,
+    onSubmit: (reason) => FriendService.reportMessage(m.id, reason),
+    errorMessage: (e) => apiErrorMessage(e, fallback: '檢舉失敗，請稍後再試'),
+  );
 
   Widget _inputBar(bool seniorMode) => SafeArea(
     top: false,
@@ -607,51 +604,4 @@ class _ChatScreenState extends State<ChatScreen> {
   bool get _locked => accountLockController.locked;
 
   bool get _inputDisabled => _locked || _partnerUnavailable;
-}
-
-class _ReportDialog extends StatefulWidget {
-  @override
-  State<_ReportDialog> createState() => _ReportDialogState();
-}
-
-class _ReportDialogState extends State<_ReportDialog> {
-  /// 後端 friendMessages.ts 的 REASON_MAX。
-  static const _reportReasonMax = 500;
-
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('檢舉此訊息'),
-    content: TextField(
-      controller: _controller,
-      maxLines: 3,
-      inputFormatters: const [
-        Utf16LengthLimitingTextInputFormatter(_reportReasonMax),
-      ],
-      buildCounter: utf16CounterBuilder(_controller, _reportReasonMax),
-      decoration: const InputDecoration(hintText: '請說明檢舉原因'),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('取消'),
-      ),
-      TextButton(
-        onPressed: () {
-          if (!withinUtf16Limit(context, _controller.text, _reportReasonMax)) {
-            return;
-          }
-          Navigator.of(context).pop(_controller.text);
-        },
-        child: const Text('送出'),
-      ),
-    ],
-  );
 }

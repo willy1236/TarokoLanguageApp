@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import '../../core/network/api_client.dart';
 import '../../models/listening_models.dart';
 import '../../services/listening_service.dart';
-import '../../shared/widgets/confirm_dialog.dart';
+import '../../shared/widgets/app_toast.dart';
 import 'listening_correction_screen.dart';
+import 'quiz_flow/quiz_conflict_dialog.dart';
 import 'quiz_flow/quiz_flow_adapters.dart';
 import 'quiz_flow/quiz_flow_controller.dart';
 import 'quiz_flow/quiz_flow_view.dart';
@@ -67,16 +68,19 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
             ),
         ]),
     emptyMessage: '此級別目前沒有可用的聽力題目，請稍後再試',
-    confirmConflict: (oldLevel, wantedLevel) => showConfirmDialog(
+    confirmConflict: (oldLevel, wantedLevel) => showQuizConflictDialog(
       context,
       title: '有未完成的聽力測驗',
-      message:
-          '你還有未完成的「$oldLevel」聽力測驗，要繼續完成，還是先返回？\n'
-          '（目前尚不支援直接放棄舊測驗，需完成後才能開始「$wantedLevel」）',
-      cancelText: '返回',
-      confirmText: '繼續「$oldLevel」測驗',
-      barrierDismissible: false,
+      subject: '聽力測驗',
+      oldLevel: oldLevel,
+      wantedLevel: wantedLevel,
     ),
+    // 只刪這個 mode 的舊測驗；重新 start 沿用上面的 start（已帶 mode、level）。
+    abandon: ListeningService.abandonListening,
+    // 409 直接顯示後端訊息，不套 _listeningErrorMessage 的「此測驗已完成」。
+    onAbandonNotice: (message) {
+      if (mounted) showAppToast(context, message);
+    },
     onSaveFailed: (e) {
       if (!mounted) return;
       final message =

@@ -26,7 +26,7 @@ import '../../shared/widgets/related_tribe_field.dart';
 import '../../shared/widgets/user_avatar.dart';
 import 'widgets/forum_compose_images.dart';
 import 'widgets/forum_image_grid.dart' show ForumImageViewer;
-import 'widgets/forum_toast.dart';
+import '../../shared/widgets/app_toast.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 
@@ -148,7 +148,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
 
   void _toast(String message) {
     if (!mounted) return;
-    showForumToast(context, message);
+    showAppToast(context, message);
   }
 
   Future<void> _pickImages() async {

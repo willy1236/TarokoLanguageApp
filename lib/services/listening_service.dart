@@ -38,4 +38,16 @@ class ListeningService {
     final data = (json['data'] as Map<String, dynamic>?) ?? json;
     return ListeningResult.fromJson(data);
   }
+
+  /// 放棄未完成的舊聽力測驗，只刪這一份，其他 mode 不受影響。
+  /// 404 SESSION_NOT_FOUND 視同成功，其他錯誤照樣丟給呼叫端。
+  static Future<void> abandonListening(String sessionId) async {
+    try {
+      await ApiClient.post(ApiConfig.listeningAbandon, {
+        'session_id': sessionId,
+      });
+    } on ApiException catch (e) {
+      if (!e.isSessionNotFound) rethrow;
+    }
+  }
 }

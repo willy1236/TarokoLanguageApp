@@ -18,6 +18,7 @@ import 'video_call/video_call_controller.dart';
 import 'video_call/widgets/call_controls.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/confirm_dialog.dart';
+import '../../shared/widgets/report_sheet.dart';
 
 enum _CallMenuAction { addFriend, block }
 
@@ -237,22 +238,19 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       confirmText: '檢舉此通話',
     );
     if (shouldReport != true || !mounted) return;
-    final reason = await showDialog<String>(
-      context: context,
-      builder: (context) => const CallReportDialog(),
-    );
-    if (reason == null || reason.trim().isEmpty || !mounted) return;
-    String message;
-    try {
-      await DirectedCallService.reportCall(callId, reason.trim());
-      message = '已送出檢舉';
-    } catch (e) {
-      message = apiErrorMessage(e, fallback: '檢舉失敗，請稍後再試');
-    }
-    if (!mounted) return;
-    ScaffoldMessenger.of(
+    // 面板關閉（送出或直接關掉）後才回到 _onLeft 回首頁；提示由面板經
+    // 送出前取好的 messenger 顯示，本頁在送出途中被關掉也不受影響。
+    await showReportSheet(
       context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+      title: '檢舉此通話',
+      description: '請說明檢舉的原因，管理員會再確認。',
+      hintText: '例如：騷擾、不當內容',
+      submitLabel: '送出檢舉',
+      successMessage: '已送出檢舉',
+      maxLength: 500,
+      onSubmit: (reason) => DirectedCallService.reportCall(callId, reason),
+      errorMessage: (e) => apiErrorMessage(e, fallback: '檢舉失敗，請稍後再試'),
+    );
   }
 
   String get _timeLabel {

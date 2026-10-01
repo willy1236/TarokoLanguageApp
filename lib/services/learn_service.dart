@@ -46,4 +46,14 @@ class LearnService {
     final data = (json['data'] as Map<String, dynamic>?) ?? json;
     return QuizResult.fromJson(data);
   }
+
+  /// 放棄未完成的舊測驗。404 SESSION_NOT_FOUND 代表已經放棄過（例如網路重送），
+  /// 視同成功；409 SESSION_ALREADY_COMPLETED 等其他錯誤照樣丟給呼叫端。
+  static Future<void> abandonQuiz(String sessionId) async {
+    try {
+      await ApiClient.post(ApiConfig.quizAbandon, {'session_id': sessionId});
+    } on ApiException catch (e) {
+      if (!e.isSessionNotFound) rethrow;
+    }
+  }
 }

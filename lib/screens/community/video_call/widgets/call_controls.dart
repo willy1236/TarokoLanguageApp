@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import '../../../../core/constants/app_colors.dart';
 import '../../../../core/constants/app_typography.dart';
-import '../../../../shared/utils/utf16_length_limit.dart';
 
 // ─── Control button ────────────────────────────────────────────────────────────
 
@@ -315,48 +314,4 @@ class _DotsPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_DotsPainter _) => false;
-}
-
-// ─── Call report dialog ─────────────────────────────────────────────────────
-
-class CallReportDialog extends StatefulWidget {
-  const CallReportDialog({super.key});
-
-  @override
-  State<CallReportDialog> createState() => _CallReportDialogState();
-}
-
-class _CallReportDialogState extends State<CallReportDialog> {
-  final _controller = TextEditingController();
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) => AlertDialog(
-    title: const Text('檢舉此通話'),
-    content: TextField(
-      controller: _controller,
-      maxLines: 3,
-      inputFormatters: const [Utf16LengthLimitingTextInputFormatter(500)],
-      buildCounter: utf16CounterBuilder(_controller, 500),
-      decoration: const InputDecoration(hintText: '請說明檢舉原因'),
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.of(context).pop(),
-        child: const Text('取消'),
-      ),
-      TextButton(
-        onPressed: () {
-          if (!withinUtf16Limit(context, _controller.text, 500)) return;
-          Navigator.of(context).pop(_controller.text);
-        },
-        child: const Text('送出'),
-      ),
-    ],
-  );
 }

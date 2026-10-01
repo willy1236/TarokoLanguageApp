@@ -49,6 +49,8 @@ class CultureVideoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 與文章卡同一種排法：左縮圖、右分類＋標題＋觀看次數、最右箭頭。
+    final thumbWidth = seniorMode ? 144.0 : 112.0;
     return GestureDetector(
       onTap: () {
         Navigator.of(context).push(
@@ -58,107 +60,48 @@ class CultureVideoCard extends StatelessWidget {
         );
       },
       child: Container(
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: AppColors.midnightSoft,
-          borderRadius: BorderRadius.circular(14),
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.cream.withValues(alpha: 0.06)),
         ),
-        clipBehavior: Clip.antiAlias,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  if (video.thumbnailUrl != null)
-                    Image.network(
-                      video.thumbnailUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, _, _) => _fallbackBackground(),
-                    )
-                  else
-                    _fallbackBackground(),
-                  Positioned(
-                    top: 8,
-                    left: 8,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: seniorMode ? 5 : 3,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                      child: Text(
-                        VideoCategory.label(video.category),
-                        style: TextStyle(
-                          fontSize: AppTypography.size(
-                            AppTypography.micro,
-                            seniorMode: seniorMode,
-                          ),
-                          color: AppColors.gold,
-                          letterSpacing: 2.4,
-                        ),
-                      ),
-                    ),
-                  ),
-                  // YouTube 影片沒有長度（duration_sec 為 null），改標來源；
-                  // 其他沒長度的影片直接不顯示，不要顯示成 0:00。
-                  if (_badgeText(video) case final badge?)
-                    Positioned(
-                      bottom: 8,
-                      right: 8,
-                      child: Container(
-                        padding: EdgeInsets.symmetric(
-                          horizontal: seniorMode ? 8 : 6,
-                          vertical: seniorMode ? 3 : 2,
-                        ),
-                        decoration: BoxDecoration(
-                          color: Colors.black.withValues(alpha: 0.7),
-                          borderRadius: BorderRadius.circular(3),
-                        ),
-                        child: Text(
-                          badge,
-                          style: AppTypography.mono(
-                            fontSize: AppTypography.size(
-                              AppTypography.micro,
-                              seniorMode: seniorMode,
-                            ),
-                            color: AppColors.creamLight,
-                          ),
-                        ),
-                      ),
-                    ),
-                  Center(
-                    child: Container(
-                      width: seniorMode ? 52 : 36,
-                      height: seniorMode ? 52 : 36,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: Colors.black.withValues(alpha: 0.5),
-                        border: Border.all(
-                          color: AppColors.gold.withValues(alpha: 0.5),
-                        ),
-                      ),
-                      child: Center(
-                        child: CulturePlayIcon(
-                          size: seniorMode ? 18 : 12,
-                          color: AppColors.gold,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            Container(
+              width: thumbWidth,
+              height: thumbWidth * 9 / 16,
+              clipBehavior: Clip.antiAlias,
+              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
+              child: _thumbnail(),
             ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            const SizedBox(width: 12),
+            Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 7,
+                      vertical: seniorMode ? 4 : 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.gold.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(3),
+                    ),
+                    child: Text(
+                      VideoCategory.label(video.category),
+                      style: TextStyle(
+                        fontSize: AppTypography.size(
+                          AppTypography.micro,
+                          seniorMode: seniorMode,
+                        ),
+                        color: AppColors.gold,
+                        letterSpacing: 2.8,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
                   Text(
                     video.title,
                     maxLines: 1, // 標題固定一行，過長以 … 截斷
@@ -170,27 +113,90 @@ class CultureVideoCard extends StatelessWidget {
                       ),
                       fontWeight: FontWeight.w600,
                       color: AppColors.creamLight,
-                      letterSpacing: 1.0,
+                      letterSpacing: 0.5,
+                      height: 1.35,
                     ),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    '${video.viewCount} 次觀看',
-                    style: TextStyle(
-                      fontSize: AppTypography.size(
-                        AppTypography.caption,
-                        seniorMode: seniorMode,
+                  // 精簡模式比照文章卡隱藏統計數字，聚焦標題判讀
+                  if (!seniorMode) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      '${video.viewCount} 次觀看',
+                      style: const TextStyle(
+                        fontSize: AppTypography.micro,
+                        color: AppColors.fog,
+                        letterSpacing: 1.2,
                       ),
-                      color: AppColors.fog,
-                      letterSpacing: 1.2,
                     ),
-                  ),
+                  ],
                 ],
               ),
             ),
+            const SizedBox(width: 8),
+            CultureArrowIcon(size: seniorMode ? 22 : 16),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _thumbnail() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        if (video.thumbnailUrl != null)
+          Image.network(
+            video.thumbnailUrl!,
+            fit: BoxFit.cover,
+            errorBuilder: (_, _, _) => _fallbackBackground(),
+          )
+        else
+          _fallbackBackground(),
+        Center(
+          child: Container(
+            width: seniorMode ? 32 : 26,
+            height: seniorMode ? 32 : 26,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.black.withValues(alpha: 0.5),
+              border: Border.all(color: AppColors.gold.withValues(alpha: 0.5)),
+            ),
+            child: Center(
+              child: CulturePlayIcon(
+                size: seniorMode ? 12 : 9,
+                color: AppColors.gold,
+              ),
+            ),
+          ),
+        ),
+        // YouTube 影片沒有長度（duration_sec 為 null）時改標來源；
+        // 其他沒長度的影片直接不顯示，不要顯示成 0:00。
+        if (_badgeText(video) case final badge?)
+          Positioned(
+            bottom: 4,
+            right: 4,
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: seniorMode ? 6 : 4,
+                vertical: seniorMode ? 2 : 1,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.black.withValues(alpha: 0.7),
+                borderRadius: BorderRadius.circular(3),
+              ),
+              child: Text(
+                badge,
+                style: AppTypography.mono(
+                  fontSize: AppTypography.size(
+                    AppTypography.micro,
+                    seniorMode: seniorMode,
+                  ),
+                  color: AppColors.creamLight,
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 

@@ -60,6 +60,18 @@ typedef QuizFlowAnswer = ({String questionId, int optionId});
 
 enum QuizFlowPhase { loading, error, quiz, done }
 
+/// 有未完成的舊測驗時，使用者在衝突對話框的選擇。
+enum QuizConflictChoice {
+  /// 續接舊測驗。
+  resume,
+
+  /// 放棄舊測驗，改開使用者這次想測的級別。
+  abandon,
+
+  /// 都不要，返回上一頁。
+  back,
+}
+
 class QuizFlowController<R> extends ChangeNotifier {
   final Future<QuizFlowSession> Function() _start;
   final Future<void> Function(String sessionId, String questionId, int optionId)
@@ -67,9 +79,20 @@ class QuizFlowController<R> extends ChangeNotifier {
   final Future<R> Function(String sessionId, List<QuizFlowAnswer> answers)
   _submit;
 
-  /// 有衝突時問使用者要不要續接舊 session；回 false 代表放棄（畫面應返回）。
-  final Future<bool> Function(String currentLevel, String wantedLevel)?
+  /// 有衝突時問使用者怎麼處理舊 session。沒注入 [abandon] 時不應給出放棄選項；
+  /// 若仍回 [QuizConflictChoice.abandon]，視同返回。
+  final Future<QuizConflictChoice> Function(
+    String currentLevel,
+    String wantedLevel,
+  )?
   confirmConflict;
+
+  /// 放棄舊 session（後端刪掉它），之後 controller 會重新 start。
+  final Future<void> Function(String sessionId)? abandon;
+
+  /// 放棄時後端回 409 SESSION_ALREADY_COMPLETED（舊測驗剛好已交卷）的訊息；
+  /// 畫面顯示後 controller 照樣重新 start。
+  final void Function(String message)? onAbandonNotice;
 
   /// 非 null 時，沒有題目視為錯誤並顯示這段訊息；null 則不檢查。
   final String? emptyMessage;
@@ -88,6 +111,8 @@ class QuizFlowController<R> extends ChangeNotifier {
     required Future<R> Function(String sessionId, List<QuizFlowAnswer> answers)
     submit,
     this.confirmConflict,
+    this.abandon,
+    this.onAbandonNotice,
     this.emptyMessage,
     this.onSaveFailed,
   }) : _start = start,
@@ -114,30 +139,56 @@ class QuizFlowController<R> extends ChangeNotifier {
   int? get selectedOptionId => _session == null ? null : _answers[current.id];
 
   /// 開始或續接。回傳 false 表示使用者在衝突對話框選擇返回。
+  ///
+  /// 選擇放棄時先放棄舊 session 再重新 start；重新 start 若又衝突（例如另一台
+  /// 裝置剛開了新測驗）就再問一次，不直接續接。
   Future<bool> load() async {
     _set(() => _phase = QuizFlowPhase.loading);
     try {
-      final session = await _start();
-      if (_disposed) return true;
-      final empty = emptyMessage;
-      if (empty != null && session.questions.isEmpty) {
-        _fail(
-          ApiException(statusCode: 0, code: 'NO_QUESTIONS', message: empty),
-        );
-        return true;
-      }
-      final wanted = session.conflictingLevel;
-      final confirm = confirmConflict;
-      if (wanted != null && confirm != null) {
-        final keepGoing = await confirm(session.level ?? '', wanted);
+      var session = await _start();
+      while (true) {
         if (_disposed) return true;
-        if (!keepGoing) return false;
+        final empty = emptyMessage;
+        if (empty != null && session.questions.isEmpty) {
+          _fail(
+            ApiException(statusCode: 0, code: 'NO_QUESTIONS', message: empty),
+          );
+          return true;
+        }
+        final wanted = session.conflictingLevel;
+        final confirm = confirmConflict;
+        if (wanted == null || confirm == null) break;
+        final choice = await confirm(session.level ?? '', wanted);
+        if (_disposed) return true;
+        if (choice == QuizConflictChoice.resume) break;
+        final abandonOld = abandon;
+        if (choice == QuizConflictChoice.back || abandonOld == null) {
+          return false;
+        }
+        await _abandon(abandonOld, session.sessionId);
+        if (_disposed) return true;
+        session = await _start();
       }
       _apply(session);
     } catch (e) {
       if (!_disposed) _fail(e);
     }
     return true;
+  }
+
+  Future<void> _abandon(
+    Future<void> Function(String sessionId) abandonOld,
+    String sessionId,
+  ) async {
+    try {
+      await abandonOld(sessionId);
+    } on ApiException catch (e) {
+      // 舊測驗剛好已交卷：沒有東西可放棄，告知使用者後照樣開新測驗。
+      if (!e.isSessionAlreadyCompleted) rethrow;
+      if (!_disposed) onAbandonNotice?.call(e.message);
+    }
+    // 舊測驗已不在進行中：通知等級選擇頁與測驗紀錄頁重抓。
+    LearnRefreshNotifier.bump();
   }
 
   void _apply(QuizFlowSession session) {

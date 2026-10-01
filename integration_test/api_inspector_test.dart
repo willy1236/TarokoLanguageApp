@@ -133,6 +133,15 @@ void main() {
         unwrap: true,
       );
     });
+    // 放棄舊測驗：先製造等級衝突取得舊 session_id → abandon → 重複 abandon 應 404
+    // → 再 start 想要的等級要拿到新測驗。會刪掉測試帳號原本進行中的單字測驗。
+    test('POST /api/quiz/abandon (製造衝突後放棄，再重新 start)', () async {
+      await _inspectAbandonFlow(
+        startPath: ApiConfig.quizStart,
+        abandonPath: ApiConfig.quizAbandon,
+        startBody: (level) => {'level': level},
+      );
+    });
     test(
       'POST /api/quiz/submit (空資料測格式)',
       () => _inspect(
@@ -177,6 +186,37 @@ void main() {
         body: {'mode': 'word_to_zh', 'level': level},
         shape: _listeningSessionShape,
         unwrap: true,
+      );
+    });
+    // 流程同 /api/quiz/abandon；另一個 mode 先開一份，放棄後確認它仍能續接。
+    test('POST /api/listening/abandon (製造衝突後放棄，再重新 start)', () async {
+      Map<String, dynamic> body(String mode, String level) => {
+        'mode': mode,
+        'level': level,
+      };
+      final levels = await _levelCodes();
+      if (levels.isEmpty) {
+        markTestSkipped('拿不到 /api/levels，無法決定合法的 level');
+        return;
+      }
+      final other = await _postData(
+        ApiConfig.listeningStart,
+        body('sentence_to_zh', levels.first),
+      );
+      await _inspectAbandonFlow(
+        startPath: ApiConfig.listeningStart,
+        abandonPath: ApiConfig.listeningAbandon,
+        startBody: (level) => body('word_to_zh', level),
+      );
+      if (other == null) return;
+      final again = await _postData(
+        ApiConfig.listeningStart,
+        body('sentence_to_zh', levels.first),
+      );
+      expect(
+        again?['session_id'],
+        other['session_id'],
+        reason: '放棄 word_to_zh 不應影響 sentence_to_zh 的進行中測驗',
       );
     });
     test(
@@ -839,7 +879,13 @@ Future<String?> _firstFriendCode() async {
 /// 取 /api/levels 的第一個等級代號，給 quiz／listening 的 start 當合法 level 用。
 /// 等級是中文（初級／中級／中高級／高級），寫死英文代號會被擋成 400。
 Future<String?> _firstLevel() async {
-  if (_token == null) return null;
+  final levels = await _levelCodes();
+  return levels.isEmpty ? null : levels.first;
+}
+
+/// /api/levels 回傳的所有等級代號，依後端順序。
+Future<List<String>> _levelCodes() async {
+  if (_token == null) return const [];
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.levels}');
   final response = await http.get(
     uri,
@@ -848,12 +894,80 @@ Future<String?> _firstLevel() async {
       'Authorization': 'Bearer $_token',
     },
   );
-  if (response.statusCode != 200) return null;
+  if (response.statusCode != 200) return const [];
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   final levels = decoded['levels'] as List<dynamic>? ?? const [];
-  if (levels.isEmpty) return null;
-  final first = levels.first as Map<String, dynamic>;
-  return (first['code'] ?? first['label'] ?? first['level']) as String?;
+  return [
+    for (final l in levels.whereType<Map<String, dynamic>>())
+      if ((l['code'] ?? l['label'] ?? l['level']) case final String code) code,
+  ];
+}
+
+/// POST 並回傳 data（有 {data: ...} 信封就拆掉）；非 200 回 null。
+Future<Map<String, dynamic>?> _postData(
+  String path,
+  Map<String, dynamic> body,
+) async {
+  final response = await http.post(
+    Uri.parse('${ApiConfig.baseUrl}$path'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_token',
+    },
+    body: jsonEncode(body),
+  );
+  print('--- POST $path ${jsonEncode(body)} → ${response.statusCode}');
+  if (response.statusCode != 200) return null;
+  final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+  return (decoded['data'] as Map<String, dynamic>?) ?? decoded;
+}
+
+/// 單字／聽力共用的放棄流程：取得衝突時的舊 session_id → abandon（200）
+/// → 重複 abandon（404 SESSION_NOT_FOUND）→ 再 start 想要的等級拿到新測驗。
+Future<void> _inspectAbandonFlow({
+  required String startPath,
+  required String abandonPath,
+  required Map<String, dynamic> Function(String level) startBody,
+}) async {
+  final levels = await _levelCodes();
+  if (levels.length < 2) {
+    markTestSkipped('/api/levels 少於兩個等級，無法製造衝突');
+    return;
+  }
+  // 帳號原本就有進行中的測驗時，第一次 start 就會衝突；沒有的話換等級再 start 一次。
+  var wanted = levels[0];
+  var conflict = await _postData(startPath, startBody(wanted));
+  if (conflict?['conflicting_level'] == null) {
+    wanted = levels[1];
+    conflict = await _postData(startPath, startBody(wanted));
+  }
+  expect(
+    conflict?['conflicting_level'],
+    wanted,
+    reason: '換等級 start 應回 conflicting_level',
+  );
+  final oldSessionId = conflict!['session_id'] as String;
+  print('舊測驗 ${conflict['level']}（$oldSessionId），想開 $wanted');
+
+  await _inspect(
+    'POST',
+    abandonPath,
+    body: {'session_id': oldSessionId},
+    shape: const {'ok': F.boolean, 'abandoned_level': F.string},
+  );
+  await _inspect(
+    'POST',
+    abandonPath,
+    body: {'session_id': oldSessionId},
+    expectStatus: 404,
+    expectError: true,
+    errorCode: 'SESSION_NOT_FOUND',
+  );
+
+  final fresh = await _postData(startPath, startBody(wanted));
+  expect(fresh?['level'], wanted, reason: '放棄後重新 start 應開出想要的等級');
+  expect(fresh?['conflicting_level'], isNull);
+  expect(fresh?['session_id'], isNot(oldSessionId));
 }
 
 Future<String?> _fetchDisplayName() async {
