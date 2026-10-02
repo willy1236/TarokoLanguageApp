@@ -78,6 +78,7 @@ void main() {
             .descendant(
               of: find.byKey(Key(key), skipOffstage: false),
               matching: find.byType(Scrollable, skipOffstage: false),
+              skipOffstage: false,
             )
             .first,
       )
