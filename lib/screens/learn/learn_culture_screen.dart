@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../shared/widgets/pill_segmented_toggle.dart';
+import '../../shared/widgets/swipe_segment_switcher.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../culture/culture_screen.dart';
 import 'learn_screen.dart';
@@ -36,6 +37,17 @@ class _LearnCultureScreenState extends State<LearnCultureScreen> {
   final _headerKey = GlobalKey();
   double _headerHeight = 0;
 
+  // 左右滑動進度只給膠囊預移色塊用，不經 setState，免得每一幀重建整頁內容。
+  final _dragProgress = ValueNotifier<double>(0);
+
+  @override
+  void dispose() {
+    _dragProgress.dispose();
+    super.dispose();
+  }
+
+  void _select(int index) => setState(() => _tabIndex = index);
+
   // 頂部高度隨狀態列、精簡模式字級而變，量出實際高度讓學習頭卡的織紋接得上。
   void _measureHeader() {
     final height = _headerKey.currentContext?.size?.height;
@@ -54,21 +66,27 @@ class _LearnCultureScreenState extends State<LearnCultureScreen> {
         children: [
           _buildHeader(isLearn),
           Expanded(
-            // 影音(1)與文章(2)同屬 CultureScreen，只是把子分頁索引往下傳。
-            child: IndexedStack(
-              index: isLearn ? 0 : 1,
-              sizing: StackFit.expand,
-              children: [
-                LearnScreen(
-                  reselectSignal: isLearn ? widget.reselectSignal : null,
-                  weaveOffsetY: _headerHeight,
-                ),
-                CultureScreen(
-                  cultureTabIndex: isLearn ? 0 : _tabIndex - 1,
-                  reselectSignal: isLearn ? null : widget.reselectSignal,
-                  active: widget.active && !isLearn,
-                ),
-              ],
+            child: SwipeSegmentSwitcher(
+              index: _tabIndex,
+              count: 3,
+              onChanged: _select,
+              onDragProgress: (p) => _dragProgress.value = p,
+              // 影音(1)與文章(2)同屬 CultureScreen，只是把子分頁索引往下傳。
+              child: IndexedStack(
+                index: isLearn ? 0 : 1,
+                sizing: StackFit.expand,
+                children: [
+                  LearnScreen(
+                    reselectSignal: isLearn ? widget.reselectSignal : null,
+                    weaveOffsetY: _headerHeight,
+                  ),
+                  CultureScreen(
+                    cultureTabIndex: isLearn ? 0 : _tabIndex - 1,
+                    reselectSignal: isLearn ? null : widget.reselectSignal,
+                    active: widget.active && !isLearn,
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -105,18 +123,22 @@ class _LearnCultureScreenState extends State<LearnCultureScreen> {
             bottom: false,
             child: Padding(
               padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-              child: PillSegmentedToggle(
-                index: _tabIndex,
-                onChanged: (i) => setState(() => _tabIndex = i),
-                backgroundColor: Colors.black.withValues(alpha: 0.2),
-                selectedColor: AppColors.gold,
-                selectedTextColor: AppColors.ink,
-                unselectedTextColor: AppColors.creamLight,
-                items: const [
-                  PillSegmentedItem(label: '學習', subtitle: 'SLHAYAN'),
-                  PillSegmentedItem(label: '影音', subtitle: 'LNGLUNGAN'),
-                  PillSegmentedItem(label: '文章', subtitle: 'PATAS KARI'),
-                ],
+              child: ValueListenableBuilder<double>(
+                valueListenable: _dragProgress,
+                builder: (context, dragProgress, _) => PillSegmentedToggle(
+                  index: _tabIndex,
+                  onChanged: _select,
+                  dragProgress: dragProgress,
+                  backgroundColor: Colors.black.withValues(alpha: 0.2),
+                  selectedColor: AppColors.gold,
+                  selectedTextColor: AppColors.ink,
+                  unselectedTextColor: AppColors.creamLight,
+                  items: const [
+                    PillSegmentedItem(label: '學習', subtitle: 'SLHAYAN'),
+                    PillSegmentedItem(label: '影音', subtitle: 'LNGLUNGAN'),
+                    PillSegmentedItem(label: '文章', subtitle: 'PATAS KARI'),
+                  ],
+                ),
               ),
             ),
           ),
