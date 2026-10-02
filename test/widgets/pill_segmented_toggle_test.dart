@@ -23,6 +23,11 @@ Widget _toggle({required int index, double dragProgress = 0}) => MaterialApp(
   ),
 );
 
+Finder get _indicator => find.descendant(
+  of: find.byType(AnimatedPositioned),
+  matching: find.byType(DecoratedBox),
+);
+
 double _indicatorLeft(WidgetTester tester) =>
     tester.widget<AnimatedPositioned>(find.byType(AnimatedPositioned)).left!;
 
@@ -36,13 +41,18 @@ void main() {
     expect(_indicatorLeft(tester), 0);
   });
 
-  testWidgets('跟手時不加動畫，換段後色塊接在同一位置不跳', (tester) async {
+  testWidgets('跟手時色塊當幀就到位，不落後手指', (tester) async {
+    await tester.pumpWidget(_toggle(index: 0));
+    final origin = tester.getTopLeft(_indicator).dx;
+    await tester.pumpWidget(_toggle(index: 0, dragProgress: 0.5));
+    expect(tester.getTopLeft(_indicator).dx, origin + 50);
+  });
+
+  testWidgets('換段後色塊接在同一位置不跳', (tester) async {
     await tester.pumpWidget(_toggle(index: 0, dragProgress: 1));
-    await tester.pump();
-    final atThreshold = tester.getTopLeft(find.byType(DecoratedBox).last).dx;
+    final atThreshold = tester.getTopLeft(_indicator).dx;
     await tester.pumpWidget(_toggle(index: 1));
-    await tester.pump();
-    expect(tester.getTopLeft(find.byType(DecoratedBox).last).dx, atThreshold);
+    expect(tester.getTopLeft(_indicator).dx, atThreshold);
   });
 
   testWidgets('兩端往外的進度夾住，色塊不超出膠囊', (tester) async {

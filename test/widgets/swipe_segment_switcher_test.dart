@@ -53,6 +53,19 @@ void main() {
     expect(h.changes, [2, 0]);
   });
 
+  testWidgets('略斜（約 13°）的大滑照樣切到隔壁段', (tester) async {
+    final h = _Harness();
+    await tester.pumpWidget(h.build());
+    final gesture = await tester.startGesture(tester.getCenter(content));
+    for (var i = 0; i < 20; i++) {
+      await gesture.moveBy(const Offset(-340, -80) / 20);
+      await tester.pump();
+    }
+    await gesture.up();
+    await tester.pumpAndSettle();
+    expect(h.changes, [1]);
+  });
+
   testWidgets('距離不到門檻不切', (tester) async {
     final h = _Harness();
     await tester.pumpWidget(h.build());
