@@ -8,6 +8,7 @@ import '../../shared/widgets/truku_painters.dart';
 import '../history/history_screen.dart';
 import 'listening_mode_screen.dart';
 import 'listening_placement_screen.dart';
+import 'placement_done_screen.dart';
 import 'quiz_placement_screen.dart';
 import 'vocab_level_screen.dart';
 import 'widgets/learn_cards.dart';
@@ -102,18 +103,37 @@ class _LearnScreenState extends State<LearnScreen> {
     }
   }
 
+  // 已做過的分級測驗不再進題目頁（後端會回 ALREADY_PLACED），直接顯示已完成頁。
   Future<void> _goToVocabPlacement(BuildContext context) async {
+    final level = _quizSuggestedLevel;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const QuizPlacementScreen()),
+      MaterialPageRoute(
+        builder: (_) => level != null
+            ? PlacementDoneScreen(
+                title: '單字分級測驗',
+                suggestedLevel: level,
+                levelOf: (user) => user.quizSuggestedLevel,
+              )
+            : const QuizPlacementScreen(),
+      ),
     );
     _loadSuggestedLevel();
   }
 
   Future<void> _goToListeningPlacement(BuildContext context) async {
+    final level = _listeningSuggestedLevel;
     await Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const ListeningPlacementScreen()),
+      MaterialPageRoute(
+        builder: (_) => level != null
+            ? PlacementDoneScreen(
+                title: '聽力分級測驗',
+                suggestedLevel: level,
+                levelOf: (user) => user.listeningSuggestedLevel,
+              )
+            : const ListeningPlacementScreen(),
+      ),
     );
     _loadSuggestedLevel();
   }
