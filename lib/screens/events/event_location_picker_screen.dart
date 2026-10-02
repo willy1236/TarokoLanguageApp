@@ -1,4 +1,4 @@
-// 發起活動時在地圖上選位置：搜尋地點，或拖曳地圖讓中央的大頭針對準位置，
+// 發起活動時在地圖上選位置：搜尋地點、點或長按地圖，或拖曳地圖讓中央的大頭針對準位置，
 // 按「使用這個位置」帶回 PickedLocation。只在 PlatformFeatures.supportsMapPicker 時開啟。
 
 import 'dart:async';
@@ -131,6 +131,16 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
 
   void _onCameraMove(CameraPosition p) => _center = p.target;
 
+  /// 點或長按地圖：把那一點移到中央的大頭針下，停下後照常查地址。
+  /// Android 點在地標圖示上的事件會被地圖 SDK 吃掉，長按才收得到。
+  void _moveTo(LatLng point) {
+    _searchFocus.unfocus();
+    if (_suggestions.isNotEmpty) setState(() => _suggestions = const []);
+    _map?.animateCamera(CameraUpdate.newLatLng(point));
+  }
+
+  void _zoomBy(CameraUpdate update) => _map?.animateCamera(update);
+
   void _onCameraMoveStarted() {
     if (!_moving) setState(() => _moving = true);
   }
@@ -261,6 +271,8 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
                         onCameraMoveStarted: _onCameraMoveStarted,
                         onCameraMove: _onCameraMove,
                         onCameraIdle: _onCameraIdle,
+                        onTap: _moveTo,
+                        onLongPress: _moveTo,
                         myLocationButtonEnabled: false,
                         zoomControlsEnabled: false,
                         mapToolbarEnabled: false,
@@ -286,12 +298,46 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
                         top: 12,
                         child: _buildSearch(seniorMode),
                       ),
+                      Positioned(
+                        right: 12,
+                        bottom: 12,
+                        child: _buildZoomButtons(seniorMode),
+                      ),
                     ],
                   ),
                 ),
                 _buildBottomPanel(seniorMode),
               ],
             ),
+    );
+  }
+
+  Widget _buildZoomButtons(bool seniorMode) {
+    final size = seniorMode ? 56.0 : 44.0;
+    Widget button(IconData icon, String tooltip, CameraUpdate update) =>
+        SizedBox(
+          width: size,
+          height: size,
+          child: IconButton(
+            tooltip: tooltip,
+            icon: Icon(icon, size: seniorMode ? 28 : 22),
+            color: AppColors.ink,
+            onPressed: () => _zoomBy(update),
+          ),
+        );
+    return Material(
+      elevation: 3,
+      borderRadius: BorderRadius.circular(12),
+      color: AppColors.creamLight,
+      clipBehavior: Clip.antiAlias,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          button(Icons.add, '放大', CameraUpdate.zoomIn()),
+          const Divider(height: 1, color: AppColors.creamDeep),
+          button(Icons.remove, '縮小', CameraUpdate.zoomOut()),
+        ],
+      ),
     );
   }
 
@@ -418,6 +464,14 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
               style: AppTypography.bodyStyle(
                 seniorMode: seniorMode,
                 color: canConfirm ? AppColors.inkSoft : AppColors.fog,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              '拖曳、點或長按地圖都能移動大頭針',
+              style: AppTypography.captionStyle(
+                seniorMode: seniorMode,
+                color: AppColors.fog,
               ),
             ),
             const SizedBox(height: 12),
