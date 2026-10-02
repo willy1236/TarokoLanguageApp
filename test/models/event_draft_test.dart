@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/models/event_draft.dart';
 import 'package:flutter_application_1/models/event_model.dart';
+import 'package:flutter_application_1/models/picked_location.dart';
 
 void main() {
   final now = DateTime(2026, 9, 11, 12);
@@ -230,6 +231,134 @@ void main() {
         'location': '活動中心',
         'address': '富世村／活動中心',
       });
+    });
+  });
+
+  group('地圖選點', () {
+    const pick = PickedLocation(
+      name: '富世部落活動中心',
+      address: '花蓮縣秀林鄉富世村 12 號',
+      latitude: 24.15,
+      longitude: 121.62,
+    );
+
+    EventDraft draft({String address = '花蓮縣秀林鄉富世村 12 號'}) => EventDraft(
+      title: '走讀',
+      description: '說明',
+      address: address,
+      picked: pick,
+      startsAt: future,
+    );
+
+    test('選到 Google 地點：地點名稱用地點名稱，送出帶座標', () {
+      final body = draft().toCreateBody();
+      expect(body['location'], '富世部落活動中心');
+      expect(body['address'], '花蓮縣秀林鄉富世村 12 號');
+      expect(body['latitude'], 24.15);
+      expect(body['longitude'], 121.62);
+    });
+
+    test('拖曳地圖選的沒有名稱：地點名稱照地址截取', () {
+      final body = EventDraft(
+        title: '走讀',
+        description: '說明',
+        address: '花蓮縣秀林鄉富世村 12 號',
+        picked: const PickedLocation(
+          address: '花蓮縣秀林鄉富世村 12 號',
+          latitude: 24.15,
+          longitude: 121.62,
+        ),
+        startsAt: future,
+      ).toCreateBody();
+      expect(body['location'], '富世村 12 號');
+      expect(body['latitude'], 24.15);
+    });
+
+    test('選點後手動改了地址：不帶座標，地點名稱改從地址截', () {
+      final body = draft(address: '花蓮縣秀林鄉富世村 13 號').toCreateBody();
+      expect(body.containsKey('latitude'), isFalse);
+      expect(body.containsKey('longitude'), isFalse);
+      expect(body['location'], '富世村 13 號');
+    });
+
+    EventDetail withCoords() => EventDetail(
+      id: 1,
+      title: '走讀',
+      description: '說明',
+      startsAt: future,
+      location: '富世部落活動中心',
+      address: '花蓮縣秀林鄉富世村 12 號',
+      latitude: 24.15,
+      longitude: 121.62,
+      status: 'active',
+    );
+
+    EventDraft edited(
+      EventDetail e, {
+      String? address,
+      PickedLocation? picked,
+    }) {
+      final d = EventDraft.fromDetail(e);
+      return EventDraft(
+        title: d.title,
+        description: d.description,
+        address: address ?? d.address,
+        picked: picked ?? d.picked,
+      );
+    }
+
+    test('編輯有座標的活動：沒改不送；地點名稱沿用原本的', () {
+      final e = withCoords();
+      final d = EventDraft.fromDetail(e);
+      expect(d.address, '花蓮縣秀林鄉富世村 12 號');
+      expect(d.location, '富世部落活動中心');
+      expect(d.latitude, 24.15);
+      expect(d.toPatchBody(e), isEmpty);
+    });
+
+    test('編輯時手動改地址：清除座標（兩個都送 null）', () {
+      final e = withCoords();
+      expect(edited(e, address: '秀林鄉崇德村').toPatchBody(e), {
+        'location': '崇德村',
+        'address': '秀林鄉崇德村',
+        'latitude': null,
+        'longitude': null,
+      });
+    });
+
+    test('編輯時重新選點：只有緯度變了也成對送出', () {
+      final e = withCoords();
+      final body = edited(
+        e,
+        picked: const PickedLocation(
+          name: '富世部落活動中心',
+          address: '花蓮縣秀林鄉富世村 12 號',
+          latitude: 24.16,
+          longitude: 121.62,
+        ),
+      ).toPatchBody(e);
+      expect(body, {'latitude': 24.16, 'longitude': 121.62});
+    });
+
+    test('詳情只有一邊座標時當作沒有座標', () {
+      final e = EventDetail.fromJson({
+        'id': 1,
+        'title': 't',
+        'starts_at': '2026-12-01T10:00:00Z',
+        'latitude': 24.1,
+        'longitude': null,
+      });
+      expect(e.latitude, isNull);
+      expect(e.longitude, isNull);
+      final ok = EventDetail.fromJson({
+        'id': 1,
+        'title': 't',
+        'starts_at': '2026-12-01T10:00:00Z',
+        'latitude': 24,
+        'longitude': 121.5,
+      });
+      expect(ok.latitude, 24.0);
+      expect(ok.longitude, 121.5);
     });
   });
 
