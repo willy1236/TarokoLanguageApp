@@ -3,8 +3,9 @@ import 'package:flutter/widgets.dart';
 
 /// 在內容區左右大滑切換膠囊分頁：往左滑到右邊一段、往右滑到左邊一段，兩端不繞回。
 ///
-/// 只看放開時的總位移：水平距離達寬度 × [distanceFraction]、且明顯比垂直位移大
-/// 才切換；不看甩動速度，避免輕甩或斜著捲清單誤切。只認觸控與觸控筆，滑鼠拖曳
+/// 水平位移明顯比垂直大（> 2 倍）才搶下手勢，否則留給垂直捲動；放開時水平距離
+/// 達寬度 × [distanceFraction] 且仍明顯比垂直大才切換。不看甩動速度，避免輕甩或
+/// 斜著捲清單誤切。只認觸控與觸控筆，滑鼠拖曳
 /// 不觸發。內層能橫滑的元件（輪播、chip 列）在手勢競技場裡較深、會先贏，不必排除。
 ///
 /// 滑動中 [child] 跟手微移並略淡化，[onDragProgress] 同步回報進度給膠囊預移色塊；
@@ -162,12 +163,19 @@ class _HorizontalDominantDragRecognizer
     extends HorizontalDragGestureRecognizer {
   _HorizontalDominantDragRecognizer({super.supportedDevices});
 
-  Offset _down = Offset.zero;
+  // 只記第一根手指的按下點，與父類起算拖曳的那一指一致。
+  Offset? _down;
 
   @override
   void addAllowedPointer(PointerDownEvent event) {
-    _down = event.position;
+    _down ??= event.position;
     super.addAllowedPointer(event);
+  }
+
+  @override
+  void didStopTrackingLastPointer(int pointer) {
+    _down = null;
+    super.didStopTrackingLastPointer(pointer);
   }
 
   @override
@@ -181,7 +189,9 @@ class _HorizontalDominantDragRecognizer
     )) {
       return false;
     }
-    final moved = lastPosition.global - _down;
+    final down = _down;
+    if (down == null) return false;
+    final moved = lastPosition.global - down;
     return moved.dx.abs() > 2 * moved.dy.abs();
   }
 }
