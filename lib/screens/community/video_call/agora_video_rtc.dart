@@ -1,4 +1,5 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'video_rtc.dart';
@@ -87,6 +88,16 @@ class AgoraVideoRtc implements VideoRtc {
     await engine.release();
   }
 
+  /// iOS 的原生 platform view（AgoraSurfaceView）會蓋掉疊在影像上的 Flutter
+  /// 元件（通話控制列、右上選單），所以 iOS 改走 Flutter 紋理渲染繞過。
+  /// Android 的 platform view 疊層正常，維持原生渲染。升級 agora_rtc_engine
+  /// 後若 iOS platform view 疊層恢復正常，可移除這個分支。
+  ///
+  /// 計時器每秒 rebuild 都會 new 一個 controller，但套件以 `isSame` 比對
+  /// canvas／connection，相同就沿用既有紋理，不會每秒重建。
+  static bool get _useFlutterTexture =>
+      defaultTargetPlatform == TargetPlatform.iOS;
+
   @override
   Widget localView() {
     final engine = _engine;
@@ -95,6 +106,7 @@ class AgoraVideoRtc implements VideoRtc {
       controller: VideoViewController(
         rtcEngine: engine,
         canvas: const VideoCanvas(uid: 0),
+        useFlutterTexture: _useFlutterTexture,
       ),
     );
   }
@@ -108,6 +120,7 @@ class AgoraVideoRtc implements VideoRtc {
         rtcEngine: engine,
         canvas: VideoCanvas(uid: uid),
         connection: RtcConnection(channelId: channel),
+        useFlutterTexture: _useFlutterTexture,
       ),
     );
   }
