@@ -12,6 +12,7 @@ import '../history/quiz_history_detail_screen.dart';
 import 'lesson_card_screen.dart';
 import 'quiz_placement_screen.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/utils/date_format.dart';
 import '../../shared/widgets/app_back_button.dart';
 
 class VocabLevelScreen extends StatefulWidget {
@@ -386,8 +387,7 @@ class _RecentPracticeRow extends StatelessWidget {
     final raw = record.completedAt ?? record.lastActiveAt;
     final dt = DateTime.tryParse(raw);
     if (dt == null) return raw;
-    final local = dt.toLocal();
-    return '${local.year}/${local.month.toString().padLeft(2, '0')}/${local.day.toString().padLeft(2, '0')}';
+    return formatDate(dt);
   }
 
   @override

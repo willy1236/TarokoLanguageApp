@@ -2,6 +2,8 @@
 // 只看年月日、以台灣時間的「今天」為準；不早於 120 年前以年份判斷。
 // 規格：Truku_backend 說明文件/API/00_核心與認證.md §2.4a、用戶視訊.md。
 
+import '../../core/utils/date_format.dart';
+
 const int _adultAge = 18;
 const int _maxAgeYears = 120;
 
@@ -19,9 +21,10 @@ DateTime earliestBirthDate({DateTime? now}) =>
 String formatApiDate(DateTime d) =>
     '${d.year.toString().padLeft(4, '0')}-${_two(d.month)}-${_two(d.day)}';
 
-/// 顯示用的 `YYYY/MM/DD`。
-String formatDisplayDate(DateTime d) =>
-    '${d.year.toString().padLeft(4, '0')}/${_two(d.month)}/${_two(d.day)}';
+/// 顯示用的 `YYYY/MM/DD`，與全 App 日期格式同一份。
+/// 生日一律是本地午夜的純日期（[parseApiDate]、生日滾輪都用 `DateTime(y, m, d)`），
+/// formatDate 內部的 toLocal() 對本地時間不換算，不會差一天。
+String formatDisplayDate(DateTime d) => formatDate(d);
 
 /// 解析後端的 `YYYY-MM-DD`，格式不符或日期不存在（如 2/30）回 null。
 DateTime? parseApiDate(Object? value) {

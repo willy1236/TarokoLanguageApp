@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_typography.dart';
@@ -48,6 +49,12 @@ import 'shared/widgets/confirm_dialog.dart';
 
 final navigatorKey = GlobalKey<NavigatorState>();
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
+
+/// App 唯一語系：台灣繁體中文。
+///
+/// 不可寫成帶 scriptCode 的 zh_Hant_TW：intl 沒有這組日期格式，
+/// 會退回 zh（簡體「周」、一週從週一開始）。zh_TW 本身就對到繁中翻譯。
+const appLocale = Locale('zh', 'TW');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -153,6 +160,11 @@ class KariTrukuApp extends StatelessWidget {
       scaffoldMessengerKey: scaffoldMessengerKey,
       title: 'KARI TRUKU',
       debugShowCheckedModeBanner: false,
+      // 固定繁體中文：選擇器的月份、星期、按鈕與系統內建文字都走中文，
+      // 一週從週日開始；不跟手機語系走，畫面文案本來就只有中文。
+      locale: appLocale,
+      supportedLocales: const [appLocale],
+      localizationsDelegates: GlobalMaterialLocalizations.delegates,
       theme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: AppColors.background,

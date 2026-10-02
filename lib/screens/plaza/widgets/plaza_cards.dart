@@ -125,7 +125,7 @@ class PlazaMiniEventCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final d = event.startsAt.toLocal();
     final month = monthLabel(d);
-    final day = d.day.toString().padLeft(2, '0');
+    final day = dayLabel(d);
     final content = _buildContent(month, day);
     return GestureDetector(
       onTap: onTap,

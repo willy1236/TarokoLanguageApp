@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
 import '../../models/page_info.dart';
 import '../../models/tribe_model.dart';
@@ -274,7 +275,7 @@ class _EventResultTile extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      '${d.month}月',
+                      monthLabel(d),
                       style: TextStyle(
                         fontSize: AppTypography.size(
                           AppTypography.micro,
@@ -284,7 +285,7 @@ class _EventResultTile extends StatelessWidget {
                       ),
                     ),
                     Text(
-                      '${d.day}',
+                      dayLabel(d),
                       style: AppTypography.serif(
                         fontSize: AppTypography.size(
                           AppTypography.subtitle,

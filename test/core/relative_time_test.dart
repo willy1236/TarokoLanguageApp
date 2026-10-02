@@ -1,4 +1,4 @@
-// formatRelativeTime（論壇、收件匣共用）：超過 7 天改顯示日期，日期要以本地時區計算。
+// formatRelativeTime（論壇、收件匣共用）：超過 7 天改顯示日期，格式與 formatDate 相同（補零），以本地時區計算。
 // 後端給的是 UTC，台灣凌晨 0～8 點發的文在 UTC 仍是前一天，直接取年月日會差一天。
 
 import 'package:flutter_test/flutter_test.dart';
@@ -21,15 +21,15 @@ void main() {
     final localEarlyMorning = DateTime(2026, 9, 1, 3);
     final fromBackend = localEarlyMorning.toUtc();
 
-    expect(formatRelativeTime(fromBackend), '2026/9/1');
+    expect(formatRelativeTime(fromBackend), '2026/09/01');
   });
 
   test('本地 23:59 與隔天 00:00 顯示不同日期', () {
     expect(
       formatRelativeTime(DateTime(2026, 8, 31, 23, 59).toUtc()),
-      '2026/8/31',
+      '2026/08/31',
     );
-    expect(formatRelativeTime(DateTime(2026, 9, 1).toUtc()), '2026/9/1');
+    expect(formatRelativeTime(DateTime(2026, 9, 1).toUtc()), '2026/09/01');
   });
 
   test('7 天內仍顯示相對時間', () {
