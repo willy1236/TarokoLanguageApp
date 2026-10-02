@@ -90,6 +90,202 @@ class CultureSortLabels extends StatelessWidget {
   static const _minTapSize = 44.0;
 }
 
+/// 總覽清單的大圖卡：上方封面、左上分類標籤、標題疊在封面底部漸層上，
+/// 下方摘要＋箭頭。
+///
+/// 精簡模式標題改放到封面下方的實色區（避免封面色彩複雜時蓋掉放大後的標題），
+/// 並隱藏摘要維持密度精簡。
+class CultureCoverCard extends StatelessWidget {
+  /// 封面內容（圖片或佔位），會被裁成卡片寬、固定高度。
+  final Widget cover;
+  final String category;
+  final String title;
+  final String summary;
+  final bool seniorMode;
+  final VoidCallback onTap;
+
+  const CultureCoverCard({
+    super.key,
+    required this.cover,
+    required this.category,
+    required this.title,
+    required this.summary,
+    required this.onTap,
+    this.seniorMode = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.midnightSoft,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.cream.withValues(alpha: 0.06)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            SizedBox(height: seniorMode ? 140 : 120, child: _cover()),
+            if (!seniorMode) _summaryRow() else _seniorTitleRow(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _cover() {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        cover,
+        Positioned(
+          top: 12,
+          left: 12,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: AppColors.gold,
+              borderRadius: BorderRadius.circular(4),
+            ),
+            child: Text(
+              category,
+              style: TextStyle(
+                fontSize: AppTypography.size(
+                  AppTypography.micro,
+                  seniorMode: seniorMode,
+                ),
+                color: AppColors.ink,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 2.8,
+              ),
+            ),
+          ),
+        ),
+        // 底部漸層遮罩，避免淺色封面圖讓標題文字失去對比而看不清（一般模式標題疊在圖上）
+        if (!seniorMode) ...[
+          Positioned(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            child: Container(
+              height: 64,
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [Colors.transparent, Colors.black87],
+                ),
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: 14,
+            left: 16,
+            right: 16,
+            child: Text(
+              title,
+              style: AppTypography.serif(
+                fontSize: AppTypography.title,
+                fontWeight: FontWeight.w600,
+                color: AppColors.creamLight,
+                letterSpacing: 1.0,
+                height: 1.25,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _summaryRow() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              summary,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                fontSize: AppTypography.caption,
+                color: AppColors.fog,
+                letterSpacing: 1.0,
+                height: 1.4,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          const CultureArrowIcon(),
+        ],
+      ),
+    );
+  }
+
+  Widget _seniorTitleRow() {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Expanded(
+            child: Text(
+              title,
+              style: AppTypography.serif(
+                fontSize: AppTypography.display24,
+                fontWeight: FontWeight.w600,
+                color: AppColors.creamLight,
+                letterSpacing: 1.0,
+                height: 1.3,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 8),
+          const CultureArrowIcon(size: 24),
+        ],
+      ),
+    );
+  }
+}
+
+/// 沒有封面圖時的織紋漸層佔位（酒紅底＋金色織紋）。
+class CultureWeaveCover extends StatelessWidget {
+  const CultureWeaveCover({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [AppColors.primary, AppColors.primaryDeep],
+            ),
+          ),
+        ),
+        CustomPaint(
+          painter: TrukuWeavePainter(
+            color: AppColors.gold,
+            opacity: 0.25,
+            scale: 0.7,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class CultureVideoCard extends StatelessWidget {
   final VideoSummary video;
   final bool seniorMode;
