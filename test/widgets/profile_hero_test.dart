@@ -10,6 +10,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/core/constants/app_typography.dart';
 import 'package:flutter_application_1/models/user_model.dart';
 import 'package:flutter_application_1/screens/profile/widgets/profile_hero.dart';
+import 'package:flutter_application_1/shared/widgets/user_avatar.dart';
 
 const _narrowSurface = Size(360, 800);
 const _longName = '太魯閣族語學習者暨部落文化推廣志工團隊召集人與傳統織布工藝傳承者';
@@ -87,7 +88,13 @@ void main() {
       expect(paragraph.didExceedMaxLines, isTrue, reason: '測試名稱要夠長才有驗到截斷');
 
       // 頭像固定 96 寬、貼左內距 20，名稱從頭像右邊 16 開始。
-      final avatar = find.byType(GestureDetector).first;
+      final avatar = find.ancestor(
+        of: find.byType(FramedUserAvatar),
+        matching: find.byWidgetPredicate(
+          (w) => w is SizedBox && w.width == 96 && w.height == 96,
+        ),
+      );
+      expect(avatar, findsOneWidget);
       final avatarRect = tester.getRect(avatar);
       expect(avatarRect.left, 20);
       expect(avatarRect.width, 96);
