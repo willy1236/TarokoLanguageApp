@@ -4,6 +4,8 @@
 
 import 'package:flutter/foundation.dart';
 
+import '../constants/maps_config.dart';
+
 class PlatformFeatures {
   PlatformFeatures._();
 
@@ -19,6 +21,11 @@ class PlatformFeatures {
   static bool get supportsVideoCall => isMobile;
 
   static const videoCallUnsupportedMessage = '視訊通話目前僅支援手機 App';
+
+  /// 活動發布的地圖選點（google_maps_flutter＋Places SDK）。桌面版沒有實作；
+  /// 該平台還沒設定 Maps 金鑰時也不顯示，發起人照樣手打地址。
+  static bool get supportsMapPicker =>
+      (isMobile || kIsWeb) && MapsConfig.apiKey.isNotEmpty;
 
   /// better_player_plus HLS 播放器。
   static bool get supportsHlsPlayer => isMobile;
