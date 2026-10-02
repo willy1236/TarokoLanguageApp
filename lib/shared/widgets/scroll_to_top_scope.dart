@@ -9,6 +9,11 @@ import 'package:flutter/widgets.dart';
 ///
 /// 只動捲動位置，不動任何 State：分類、排序、輸入內容都保留。
 /// 橫向捲動（輪播、chip 列）不動。
+///
+/// 前提：子樹裡「所有」垂直 [Scrollable] 都會被歸零，不只頁面主體那一條——
+/// 多行 `TextField` 內部的捲動、直式 `PageView`、巢狀的垂直清單都算在內。
+/// 若子樹裡有不該被重設的垂直捲動（例如直式翻頁要停在原頁），不要把它放在
+/// 這個元件底下，或另外處理。
 class ScrollToTopScope extends StatefulWidget {
   final Listenable signal;
   final Widget child;
