@@ -109,7 +109,10 @@ void _labeledPicker(List<String> labels) {
   pickImagesForUpload = ({required int limit, required int maxBytes}) async => (
     images: [
       for (final label in labels)
-        Uint8List.fromList([...base64Decode(_pngBase64), ...latin1.encode(label)]),
+        Uint8List.fromList([
+          ...base64Decode(_pngBase64),
+          ...latin1.encode(label),
+        ]),
     ],
     skippedNotice: null,
   );
@@ -335,6 +338,44 @@ void main() {
       expect(positions, orderedEquals([...positions]..sort()));
     });
 
+    testWidgets('拖曳中另一指刪掉照片再放開：拖曳取消、不出錯，刪除照常生效', (tester) async {
+      _labeledPicker(['PHOTO-A', 'PHOTO-B', 'PHOTO-C']);
+      await tester.pumpWidget(_host(onPop: (_) {}));
+      await _openForm(tester);
+      await tester.tap(find.text('新增照片'));
+      await tester.pumpAndSettle();
+      final thumbs = find.descendant(
+        of: find.byType(EventImagesField),
+        matching: find.byType(Image),
+      );
+
+      // 長按最後一張開始拖，往左拖到第二位（浮起的那張不蓋到第一張）。
+      final drag = await tester.startGesture(tester.getCenter(thumbs.at(2)));
+      await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+      for (var i = 0; i < 11; i++) {
+        await drag.moveBy(const Offset(-10, 0));
+        await tester.pump(const Duration(milliseconds: 16));
+      }
+      // 另一指點第一張的刪除鈕（刪除鈕拖曳中維持可點）。
+      await tester.tap(find.byTooltip('移除這張照片').first, pointer: 7);
+      await tester.pump();
+      await drag.up();
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      final controller = tester
+          .widget<EventImagesField>(find.byType(EventImagesField))
+          .controller;
+      final labels = [
+        for (final bytes in controller.toUpload)
+          latin1.decode(bytes).substring(bytes.length - 'PHOTO-A'.length),
+      ];
+      // 張數一變拖曳就取消，放開時不套用過期的位置：剩下的照原順序。
+      expect(labels, ['PHOTO-B', 'PHOTO-C']);
+      expect(find.text('2/6 張・第一張是封面'), findsOneWidget);
+      expect(find.text('封面'), findsOneWidget);
+    });
+
     testWidgets('只有一張照片：不能拖、沒有拖曳提示', (tester) async {
       _fakePicker(count: 1);
       await tester.pumpWidget(_host(onPop: (_) {}));
@@ -368,13 +409,10 @@ void main() {
 
     testWidgets('送出中不能拖', (tester) async {
       _fakePicker(count: 2);
-      installMockClient(
-        {
-          '/api/events': jsonResponse(_created(), status: 201),
-          _uploadPath: jsonResponse({'images': <Object?>[]}, status: 201),
-        },
-        delayFor: (_) => const Duration(milliseconds: 500),
-      );
+      installMockClient({
+        '/api/events': jsonResponse(_created(), status: 201),
+        _uploadPath: jsonResponse({'images': <Object?>[]}, status: 201),
+      }, delayFor: (_) => const Duration(milliseconds: 500));
       await tester.pumpWidget(_host(onPop: (_) {}));
       await _openForm(tester);
       await tester.tap(find.text('新增照片'));

@@ -68,12 +68,18 @@ void main() {
       expect(notified, 0);
     });
 
-    test('超出範圍丟 RangeError，順序不變', () async {
-      final c = await _withPending(_photos(2));
+    test('位置超出範圍（拖曳中照片數變了）就忽略，不丟例外、不通知', () async {
+      final c = await _withPending(_photos(3));
+      c.removePending(2);
+      var notified = 0;
+      c.addListener(() => notified++);
 
-      expect(() => c.move(0, 2), throwsRangeError);
-      expect(() => c.move(-1, 0), throwsRangeError);
+      c.move(2, 0);
+      c.move(0, 2);
+      c.move(-1, 0);
+
       expect(_order(c), [0, 1]);
+      expect(notified, 0);
     });
   });
 

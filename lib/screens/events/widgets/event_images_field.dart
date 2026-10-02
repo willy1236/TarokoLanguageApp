@@ -96,11 +96,13 @@ class EventImagesController extends ChangeNotifier {
   bool get canReorder => existing.isEmpty && _pending.length > 1 && !_picking;
 
   /// 把第 [from] 張新照片移到第 [to] 個位置（[to] 是移完之後的位置）。上傳依
-  /// 這個順序，第一張就是封面。不能排序時不動。
+  /// 這個順序，第一張就是封面。不能排序時不動；位置超出範圍也不動——拖曳中
+  /// 另一指刪掉或新增照片時位置會過期（ReorderableListView 張數一變就取消
+  /// 拖曳，這裡是第二道保險）。
   void move(int from, int to) {
     if (!canReorder || from == to) return;
-    RangeError.checkValidIndex(from, _pending, 'from');
-    RangeError.checkValidIndex(to, _pending, 'to');
+    final n = _pending.length;
+    if (from < 0 || from >= n || to < 0 || to >= n) return;
     _pending.insert(to, _pending.removeAt(from));
     notifyListeners();
   }
@@ -283,31 +285,39 @@ class _EventImagesFieldState extends State<EventImagesField> {
     double size,
     Animation<double> animation,
     int coverIndex,
-  ) => AnimatedBuilder(
-    animation: animation,
-    builder: (_, _) {
-      final t = Curves.easeInOut.transform(animation.value);
-      return Material(
-        type: MaterialType.transparency,
-        child: Padding(
-          padding: const EdgeInsets.only(right: 8),
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(10),
-              boxShadow: [
-                BoxShadow(
-                  color: AppColors.ink.withValues(alpha: 0.35 * t),
-                  blurRadius: 12 * t,
-                  offset: Offset(0, 4 * t),
+  ) => index >= items.length
+      // 拖曳中另一指刪了照片，這格已經不在清單裡（保險，正常會先取消拖曳）。
+      ? const SizedBox.shrink()
+      : AnimatedBuilder(
+          animation: animation,
+          builder: (_, _) {
+            final t = Curves.easeInOut.transform(animation.value);
+            return Material(
+              type: MaterialType.transparency,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.ink.withValues(alpha: 0.35 * t),
+                        blurRadius: 12 * t,
+                        offset: Offset(0, 4 * t),
+                      ),
+                    ],
+                  ),
+                  child: _buildThumb(
+                    items,
+                    index,
+                    size,
+                    isCover: index == coverIndex,
+                  ),
                 ),
-              ],
-            ),
-            child: _buildThumb(items, index, size, isCover: index == coverIndex),
-          ),
-        ),
-      );
-    },
-  );
+              ),
+            );
+          },
+        );
 
   Widget _buildThumb(
     List<_Item> items,
