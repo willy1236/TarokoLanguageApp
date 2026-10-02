@@ -54,7 +54,7 @@
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>需要存取相簿以選擇照片作為頭像</string>
 	<key>GMSApiKey</key>
-	<string></string>
+	<string>AIzaSyB7Tuzw_-4cHXqMcEctLkf3iysWgjMpxtE</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

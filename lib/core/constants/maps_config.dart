@@ -3,15 +3,17 @@
 // firebase_options.dart 一樣放在原始碼。地圖本身另外讀平台設定，換金鑰時要一起改：
 // Android `AndroidManifest.xml` 的 com.google.android.geo.API_KEY、iOS `Info.plist` 的 GMSApiKey。
 // 還沒填的平台不顯示地圖選點（見 PlatformFeatures.supportsMapPicker）。
+// 金鑰在 GCP 專案 extreme-quasar-494406-v7 的「Maps Android／iOS／Web（活動地圖選點）」，
+// 各自只開放用到的 API；Places、Geocoding、Maps JS 每日上限 300 次。
 
 import 'package:flutter/foundation.dart';
 
 class MapsConfig {
   MapsConfig._();
 
-  static const _androidKey = '';
-  static const _iosKey = '';
-  static const _webKey = '';
+  static const _androidKey = 'AIzaSyDkSoWRdAgX7vDGNyrnWBg-er-TuIt1tuw';
+  static const _iosKey = 'AIzaSyB7Tuzw_-4cHXqMcEctLkf3iysWgjMpxtE';
+  static const _webKey = 'AIzaSyDuLhk4hc-4UV5K8U1Hto4juSV_VT58p1Q';
 
   /// 目前平台的金鑰；空字串＝這個平台還沒設定。
   static String get apiKey {
