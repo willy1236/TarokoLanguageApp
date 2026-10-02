@@ -187,53 +187,60 @@ class CultureArticleSectionState extends State<CultureArticleSection> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
       // 窄螢幕（精簡模式字級放大後）標題與排序放不下一行時，排序換到下一行。
-      child: Wrap(
-        crossAxisAlignment: WrapCrossAlignment.end,
-        alignment: WrapAlignment.spaceBetween,
-        runSpacing: 8,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: AppTypography.serif(
-                  fontSize: AppTypography.size(
-                    AppTypography.bodyLarge,
-                    seniorMode: seniorMode,
+      // 外層 Column 是 start 對齊、給的是鬆寬度，Wrap 會縮成內容寬，
+      // spaceBetween 就推不到右邊，所以要撐滿整行。
+      child: SizedBox(
+        width: double.infinity,
+        child: Wrap(
+          crossAxisAlignment: WrapCrossAlignment.end,
+          alignment: WrapAlignment.spaceBetween,
+          runSpacing: 8,
+          children: [
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: AppTypography.serif(
+                    fontSize: AppTypography.size(
+                      AppTypography.bodyLarge,
+                      seniorMode: seniorMode,
+                    ),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.cream,
+                    letterSpacing: 1.5,
                   ),
-                  fontWeight: FontWeight.w600,
-                  color: AppColors.cream,
-                  letterSpacing: 1.5,
                 ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                'patas kari',
-                style: AppTypography.latin(
-                  fontStyle: FontStyle.italic,
-                  fontSize: AppTypography.size(
-                    AppTypography.micro,
-                    seniorMode: seniorMode,
+                const SizedBox(height: 2),
+                Text(
+                  'patas kari',
+                  style: AppTypography.latin(
+                    fontStyle: FontStyle.italic,
+                    fontSize: AppTypography.size(
+                      AppTypography.micro,
+                      seniorMode: seniorMode,
+                    ),
+                    color: AppColors.fog,
+                    letterSpacing: 3.6,
                   ),
-                  color: AppColors.fog,
-                  letterSpacing: 3.6,
                 ),
-              ),
-            ],
-          ),
-          CultureSortLabels(
-            options: [for (final opt in _articleSortOptions) (opt.$1, opt.$3)],
-            selected: _articleSort,
-            seniorMode: seniorMode,
-            onChanged: (value) {
-              setState(() {
-                _articleSort = value;
-                _articlesFuture = _fetchArticles();
-              });
-            },
-          ),
-        ],
+              ],
+            ),
+            CultureSortLabels(
+              options: [
+                for (final opt in _articleSortOptions) (opt.$1, opt.$3),
+              ],
+              selected: _articleSort,
+              seniorMode: seniorMode,
+              onChanged: (value) {
+                setState(() {
+                  _articleSort = value;
+                  _articlesFuture = _fetchArticles();
+                });
+              },
+            ),
+          ],
+        ),
       ),
     );
   }
