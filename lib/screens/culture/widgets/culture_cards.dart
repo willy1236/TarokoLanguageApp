@@ -26,6 +26,60 @@ class CultureChipsRow extends StatelessWidget {
   }
 }
 
+/// 標題列右側的排序字（例如「最新／熱門／本週熱門」）：影音與文章分頁共用。
+///
+/// [options] 是 `(值, 顯示字)`；點到目前已選的值不會呼叫 [onChanged]。
+class CultureSortLabels extends StatelessWidget {
+  final List<(String, String)> options;
+  final String selected;
+  final ValueChanged<String> onChanged;
+  final bool seniorMode;
+
+  const CultureSortLabels({
+    super.key,
+    required this.options,
+    required this.selected,
+    required this.onChanged,
+    this.seniorMode = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      // 外層若是 Wrap，給子元件的寬度是整行，Row 撐滿就會永遠自成一行。
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        for (final (i, (value, label)) in options.indexed) ...[
+          if (i > 0) const SizedBox(width: 10),
+          _label(value, label),
+        ],
+      ],
+    );
+  }
+
+  Widget _label(String value, String label) {
+    final active = selected == value;
+    return GestureDetector(
+      onTap: () {
+        if (active) return;
+        onChanged(value);
+      },
+      child: Text(
+        label,
+        style: TextStyle(
+          fontSize: AppTypography.size(
+            AppTypography.caption,
+            seniorMode: seniorMode,
+          ),
+          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+          color: active ? AppColors.gold : AppColors.fog,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
+}
+
 class CultureVideoCard extends StatelessWidget {
   final VideoSummary video;
   final bool seniorMode;

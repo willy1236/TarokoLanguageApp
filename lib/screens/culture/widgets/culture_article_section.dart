@@ -225,40 +225,18 @@ class CultureArticleSectionState extends State<CultureArticleSection> {
               ),
             ],
           ),
-          Row(
-            children: [
-              for (final opt in _articleSortOptions) ...[
-                _articleSortLabel(opt.$1, opt.$3, seniorMode),
-                if (opt != _articleSortOptions.last) const SizedBox(width: 10),
-              ],
-            ],
+          CultureSortLabels(
+            options: [for (final opt in _articleSortOptions) (opt.$1, opt.$3)],
+            selected: _articleSort,
+            seniorMode: seniorMode,
+            onChanged: (value) {
+              setState(() {
+                _articleSort = value;
+                _articlesFuture = _fetchArticles();
+              });
+            },
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _articleSortLabel(String value, String label, bool seniorMode) {
-    final active = _articleSort == value;
-    return GestureDetector(
-      onTap: () {
-        if (_articleSort == value) return;
-        setState(() {
-          _articleSort = value;
-          _articlesFuture = _fetchArticles();
-        });
-      },
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: AppTypography.size(
-            AppTypography.caption,
-            seniorMode: seniorMode,
-          ),
-          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-          color: active ? AppColors.gold : AppColors.fog,
-          letterSpacing: 1.5,
-        ),
       ),
     );
   }
