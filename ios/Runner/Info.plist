@@ -6,6 +6,10 @@
 	<false/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>zh-Hant</string>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>語見・太魯閣</string>
 	<key>CFBundleExecutable</key>
