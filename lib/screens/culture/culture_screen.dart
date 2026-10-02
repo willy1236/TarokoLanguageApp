@@ -357,40 +357,16 @@ class _CultureScreenState extends State<CultureScreen> {
               ),
             ],
           ),
-          Row(
-            // Wrap 給子元件的寬度是整行，Row 撐滿就會永遠自成一行。
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              for (final opt in _videoSortOptions) ...[
-                _sortLabel(opt.$1, opt.$3, seniorMode),
-                if (opt != _videoSortOptions.last) const SizedBox(width: 10),
-              ],
-            ],
+          CultureSortLabels(
+            options: [for (final opt in _videoSortOptions) (opt.$1, opt.$3)],
+            selected: _sort,
+            seniorMode: seniorMode,
+            onChanged: (value) {
+              setState(() => _sort = value);
+              _reloadVideos();
+            },
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _sortLabel(String value, String label, bool seniorMode) {
-    final active = _sort == value;
-    return GestureDetector(
-      onTap: () {
-        if (_sort == value) return;
-        setState(() => _sort = value);
-        _reloadVideos();
-      },
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: AppTypography.size(
-            AppTypography.caption,
-            seniorMode: seniorMode,
-          ),
-          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-          color: active ? AppColors.gold : AppColors.fog,
-          letterSpacing: 1.5,
-        ),
       ),
     );
   }
