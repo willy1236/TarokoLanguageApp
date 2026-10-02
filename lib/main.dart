@@ -507,6 +507,39 @@ class _MainContainerState extends State<MainContainer>
     }
   });
 
+  // 順序同 _learnCultureIndex 等常數與 TrukuBottomTab。
+  List<Widget> _buildTabs() => [
+    HomeScreen(
+      displayName: _displayName,
+      millet: _millet,
+      avatarId: _avatarId,
+      avatarUrl: _avatarUrl,
+      itemCatalogById: _itemCatalogById,
+      checkedInToday: _checkedInToday,
+      checkinStreak: _checkinStreak,
+      weeklyCheckinCount: _weeklyCheckinCount,
+      weeklyBonusEarned: _weeklyBonusEarned,
+      onCheckin: _checkin,
+      onShowProfile: () => _navigate(_profileVideoIndex, subTab: 0),
+      onNavigateToTab: _navigate,
+    ),
+    LearnCultureScreen(
+      key: ValueKey('learn_culture_$_learnCultureSubTab'),
+      initialTabIndex: _learnCultureSubTab,
+      reselectSignal: _learnCultureReselect,
+      active: _currentIndex == _learnCultureIndex,
+    ),
+    PlazaEventScreen(
+      key: ValueKey('plaza_event_$_plazaEventSubTab'),
+      initialTabIndex: _plazaEventSubTab,
+    ),
+    const FriendsListScreen(showBackButton: false),
+    ProfileVideoScreen(
+      key: ValueKey('profile_video_$_profileVideoSubTab'),
+      initialTabIndex: _profileVideoSubTab,
+    ),
+  ];
+
   Future<void> _handleBack() async {
     if (_currentIndex != 0) {
       _navigate(0);
@@ -542,40 +575,7 @@ class _MainContainerState extends State<MainContainer>
           },
           child: Scaffold(
             extendBody: false,
-            body: IndexedStack(
-              index: _currentIndex,
-              children: [
-                HomeScreen(
-                  displayName: _displayName,
-                  millet: _millet,
-                  avatarId: _avatarId,
-                  avatarUrl: _avatarUrl,
-                  itemCatalogById: _itemCatalogById,
-                  checkedInToday: _checkedInToday,
-                  checkinStreak: _checkinStreak,
-                  weeklyCheckinCount: _weeklyCheckinCount,
-                  weeklyBonusEarned: _weeklyBonusEarned,
-                  onCheckin: _checkin,
-                  onShowProfile: () => _navigate(_profileVideoIndex, subTab: 0),
-                  onNavigateToTab: _navigate,
-                ),
-                LearnCultureScreen(
-                  key: ValueKey('learn_culture_$_learnCultureSubTab'),
-                  initialTabIndex: _learnCultureSubTab,
-                  reselectSignal: _learnCultureReselect,
-                  active: _currentIndex == _learnCultureIndex,
-                ),
-                PlazaEventScreen(
-                  key: ValueKey('plaza_event_$_plazaEventSubTab'),
-                  initialTabIndex: _plazaEventSubTab,
-                ),
-                const FriendsListScreen(showBackButton: false),
-                ProfileVideoScreen(
-                  key: ValueKey('profile_video_$_profileVideoSubTab'),
-                  initialTabIndex: _profileVideoSubTab,
-                ),
-              ],
-            ),
+            body: IndexedStack(index: _currentIndex, children: _buildTabs()),
             bottomNavigationBar: TrukuBottomTab(
               currentIndex: _currentIndex,
               onTap: _onBottomTabTap,
