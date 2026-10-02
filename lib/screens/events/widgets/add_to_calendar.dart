@@ -34,8 +34,10 @@ String? _placeOf(EventDetail e) {
 /// 說明欄最後附上 App 名稱與活動編號，使用者從日曆看到時知道回哪裡查。
 String _detailsOf(EventDetail e, {int? maxDescription}) {
   var description = e.description?.trim() ?? '';
-  if (maxDescription != null && description.length > maxDescription) {
-    description = '${description.substring(0, maxDescription)}…';
+  // 以字元（grapheme）截斷，emoji 才不會被切成半個。
+  if (maxDescription != null &&
+      description.characters.length > maxDescription) {
+    description = '${description.characters.take(maxDescription)}…';
   }
   final footer = '在「語見・太魯閣」App 的活動查看詳情：${e.title}（活動編號 ${e.id}）';
   return description.isEmpty ? footer : '$description\n\n$footer';

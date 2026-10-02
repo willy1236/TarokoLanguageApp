@@ -90,6 +90,13 @@ void main() {
       expect(details, contains('活動編號 42'));
     });
 
+    test('截斷不會把 emoji 切成一半', () {
+      final details = googleCalendarUri(
+        _event(description: '${'長' * 499}😀😀'),
+      ).queryParameters['details']!;
+      expect(details, startsWith('${'長' * 499}😀…'));
+    });
+
     test('沒有說明時只有回查文字', () {
       expect(
         googleCalendarUri(_event(description: null)).queryParameters['details'],
