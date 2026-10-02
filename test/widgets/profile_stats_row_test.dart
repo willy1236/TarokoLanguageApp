@@ -42,7 +42,7 @@ void main() {
     );
   }
 
-  /// 數字實際畫出來是一行，且整個落在所屬格子（Expanded 的 Column）內。
+  /// 數字實際畫出來是一行、沒有被裁切，且整個落在所屬格子（Expanded 的 Column）內。
   void expectSingleLineInsideCell(WidgetTester tester, String value) {
     final text = find.text(value);
     final paragraph = tester.renderObject<RenderParagraph>(text);
@@ -51,6 +51,8 @@ void main() {
       closeTo(paragraph.size.height, 0.01),
       reason: '$value 不該換行',
     );
+    // 單靠 maxLines:1 會把數字直接裁掉，上面兩項仍會通過；要確認字沒被截。
+    expect(paragraph.didExceedMaxLines, isFalse, reason: '$value 不該被裁切');
     final cell = find.ancestor(of: text, matching: find.byType(Column)).first;
     final cellRect = tester.getRect(cell);
     final textRect = tester.getRect(text);
