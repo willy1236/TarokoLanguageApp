@@ -29,6 +29,7 @@ import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/joined_events_screen.dart';
 import '../events/my_events_screen.dart';
+import '../history/history_screen.dart';
 import '../inbox/inbox_screen.dart';
 import '../shop/shop_screen.dart';
 import '../millet/millet_ledger_screen.dart';
@@ -471,6 +472,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         onTap: () => Navigator.of(
           context,
         ).push(MaterialPageRoute(builder: (_) => const MyLikesScreen())),
+      ),
+      const Divider(height: 1, color: AppColors.creamDeep),
+      profileNavRow(
+        icon: Icons.history,
+        label: '測驗紀錄',
+        seniorMode: seniorMode,
+        onTap: () => Navigator.of(
+          context,
+        ).push(MaterialPageRoute(builder: (_) => const HistoryScreen())),
       ),
       if (isAdmin) ...[
         const Divider(height: 1, color: AppColors.creamDeep),

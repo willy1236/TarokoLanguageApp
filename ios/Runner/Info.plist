@@ -6,6 +6,10 @@
 	<false/>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>zh-Hant</string>
+	</array>
 	<key>CFBundleDisplayName</key>
 	<string>語見・太魯閣</string>
 	<key>CFBundleExecutable</key>
@@ -53,6 +57,8 @@
 	<string>需要使用麥克風以進行語伴視訊通話</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>需要存取相簿以選擇照片作為頭像</string>
+	<key>GMSApiKey</key>
+	<string>AIzaSyB7Tuzw_-4cHXqMcEctLkf3iysWgjMpxtE</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>

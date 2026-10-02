@@ -318,6 +318,8 @@ class _EventResultTile extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     '${event.location ?? '線上'} · ${event.participantCount} 人報名',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: AppTypography.size(
                         AppTypography.caption,

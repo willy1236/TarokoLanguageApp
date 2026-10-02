@@ -5,6 +5,8 @@
 // 驗證不過時有沒有顯示錯誤而且不打 API、成功後有沒有回傳 true 讓列表刷新、
 // 編輯途中活動被取消／已開始時會不會把使用者留在存不了的表單裡。
 
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -95,13 +97,14 @@ void main() {
 
     expect(find.text('編輯活動'), findsOneWidget);
     expect(find.text('部落豐年祭'), findsWidgets);
-    // 表單多了活動結束時間，地址欄預設在可視範圍外。
+    // 舊活動地點與地址分開填、互不包含：合成一欄時兩邊都留著。
+    const merged = '花蓮縣秀林鄉 秀林鄉中正路 1 號';
     await tester.scrollUntilVisible(
-      find.text('秀林鄉中正路 1 號'),
+      find.text(merged),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('秀林鄉中正路 1 號'), findsWidgets);
+    expect(find.text(merged), findsOneWidget);
     expect(find.textContaining('需要調整時間，請取消這場活動後重新發起'), findsOneWidget);
   });
 
@@ -119,6 +122,46 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(popped, isTrue);
+  });
+
+  testWidgets('有地圖座標的活動：手動改地址後提示，儲存時清除座標', (tester) async {
+    Map<String, dynamic>? sent;
+    installMockClient(
+      {'/api/events/1': <String, dynamic>{}},
+      onRequest: (r) {
+        if (r.method == 'PATCH') sent = jsonDecode(r.body);
+      },
+    );
+    final e = EventDetail(
+      id: 1,
+      title: '部落豐年祭',
+      description: '一起來跳舞',
+      startsAt: DateTime.now().add(const Duration(days: 30)),
+      location: '富世部落活動中心',
+      address: '花蓮縣秀林鄉富世村 12 號',
+      latitude: 24.15,
+      longitude: 121.62,
+      status: 'active',
+      effectiveStatus: 'active',
+    );
+
+    await tester.pumpWidget(_host(editing: e, onPop: (_) {}));
+    await _openForm(tester);
+    expect(find.text('已在地圖上定位'), findsOneWidget);
+
+    await tester.enterText(find.text('花蓮縣秀林鄉富世村 12 號'), '花蓮縣秀林鄉富世村 13 號');
+    await tester.pump();
+    expect(find.text('已在地圖上定位'), findsNothing);
+    expect(find.text('已改為手動地址，可重新在地圖上選擇'), findsOneWidget);
+
+    await tester.tap(find.text('儲存'));
+    await tester.pumpAndSettle();
+    expect(sent, {
+      'location': '富世村 13 號',
+      'address': '花蓮縣秀林鄉富世村 13 號',
+      'latitude': null,
+      'longitude': null,
+    });
   });
 
   testWidgets('沒有發起權限時顯示後端錯誤，留在表單', (tester) async {

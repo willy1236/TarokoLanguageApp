@@ -9,6 +9,7 @@ import '../../../shared/widgets/engagement_icon_button.dart';
 import '../../../services/user_service.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../core/constants/app_typography.dart';
+import 'event_map_link.dart';
 
 class EventDetailBody extends StatelessWidget {
   final EventDetail event;
@@ -212,14 +213,7 @@ class EventDetailBody extends StatelessWidget {
 
           _infoRow(Icons.access_time, '時間', timeText, seniorMode),
           const SizedBox(height: 12),
-          if (e.location != null && e.location!.isNotEmpty) ...[
-            _infoRow(Icons.location_on_outlined, '地點', e.location!, seniorMode),
-            const SizedBox(height: 12),
-          ],
-          if (e.address != null && e.address!.isNotEmpty) ...[
-            _infoRow(Icons.map_outlined, '地址', e.address!, seniorMode),
-            const SizedBox(height: 12),
-          ],
+          ..._buildPlaceRows(e, seniorMode),
           // 刻意寫「相關部落」而非「發起人部落」：標籤由發起人自選。
           if (tribeName case final name?) ...[
             _infoRow(Icons.place_outlined, '相關部落', name, seniorMode),
@@ -335,6 +329,41 @@ class EventDetailBody extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// 地點與地址。新活動只填一個地址、地點是從地址截出來的，同一件事不重複
+  /// 顯示兩列；舊活動兩者分開填、互不包含時維持兩列。
+  static List<(IconData, String, String)> _placeRows(EventDetail e) {
+    final location = e.location?.trim() ?? '';
+    final address = e.address?.trim() ?? '';
+    if (address.isEmpty) {
+      return [
+        if (location.isNotEmpty) (Icons.location_on_outlined, '地點', location),
+      ];
+    }
+    return [
+      if (location.isNotEmpty && !address.contains(location))
+        (Icons.location_on_outlined, '地點', location),
+      (Icons.map_outlined, '地址', address),
+    ];
+  }
+
+  /// 最後一列（地址，沒有地址時是地點）可點開地圖。
+  List<Widget> _buildPlaceRows(EventDetail e, bool seniorMode) {
+    final rows = _placeRows(e);
+    return [
+      for (final (i, (icon, label, value)) in rows.indexed) ...[
+        if (i == rows.length - 1)
+          EventMapLink(
+            event: e,
+            seniorMode: seniorMode,
+            child: _infoRow(icon, label, value, seniorMode),
+          )
+        else
+          _infoRow(icon, label, value, seniorMode),
+        const SizedBox(height: 12),
+      ],
+    ];
   }
 
   Widget _infoRow(IconData icon, String label, String value, bool seniorMode) {

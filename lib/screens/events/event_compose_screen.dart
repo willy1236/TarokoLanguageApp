@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../core/platform/platform_features.dart';
 import '../../models/event_draft.dart';
 import '../../models/event_model.dart';
+import '../../models/picked_location.dart';
 import '../../models/tribe_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -11,6 +13,7 @@ import '../../services/user_service.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/related_tribe_field.dart';
 import '../../shared/utils/utf16_length_limit.dart';
+import 'event_location_picker_screen.dart';
 import 'widgets/event_images_field.dart';
 
 /// 發起／編輯活動表單。
@@ -19,13 +22,14 @@ import 'widgets/event_images_field.dart';
 /// （POST /api/events）；帶入既有 EventDetail 時是編輯模式，預填欄位，
 /// 送出呼叫 EventService.updateEvent（PATCH /api/events/:id）。
 ///
-/// **編輯模式只能改後端 PATCH 接受的欄位**：活動名稱、說明、地點、詳細地址、
+/// **編輯模式只能改後端 PATCH 接受的欄位**：活動名稱、說明、地址、
 /// 聯絡 Email/電話、提醒事項、標籤、名額、相關部落。開始時間與報名截止在後端不可改
 /// （牽涉提醒重新排程），所以表單設為唯讀並顯示說明。
 /// 清空語意：文字欄位送空字串即清空；名額留空送 null（不限名額）。
 /// 後端只允許編輯未取消、未開始的活動，否則回 409 EVENT_CLOSED / EVENT_ENDED。
 ///
-/// 後端五個必填：標題 / 活動介紹 / 地點名稱 / 詳細地址 / 開始時間（需未來、1 年內）。
+/// 必填：標題 / 活動介紹 / 地址 / 開始時間（需未來、1 年內）。後端的地點名稱由
+/// 地址推得，見 [EventDraft.location]。
 /// 聯絡 email、電話為選填。
 /// 權限：僅 organizer / admin 角色可發起，一般帳號會收到 403，表單會顯示錯誤訊息。
 ///
@@ -42,7 +46,6 @@ class EventComposeScreen extends StatefulWidget {
 class _EventComposeScreenState extends State<EventComposeScreen> {
   final _title = TextEditingController();
   final _desc = TextEditingController();
-  final _location = TextEditingController();
   final _address = TextEditingController();
   final _email = TextEditingController();
   final _phone = TextEditingController();
@@ -51,7 +54,12 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   /// 提醒事項：後端 PATCH 支援的欄位之一，只在編輯模式顯示（建立活動的
   /// POST 沒有這個欄位）。
   final _reminderNote = TextEditingController();
-  final _locationFocus = FocusNode();
+
+  /// 在地圖上選的位置；地址欄被改得跟回填的不一樣就清掉（座標不再可信）。
+  PickedLocation? _picked;
+
+  /// 選點後又手動改了地址，提示可以重新在地圖上選。
+  bool _pickCleared = false;
 
   DateTime? _startsAt;
   DateTime? _registrationDeadline;
@@ -84,8 +92,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     final d = EventDraft.fromDetail(e);
     _title.text = d.title;
     _desc.text = d.description;
-    _location.text = d.location;
     _address.text = d.address;
+    _picked = d.picked;
     _email.text = d.contactEmail;
     _phone.text = d.contactPhone;
     _maxParticipants.text = d.maxParticipantsText;
@@ -116,8 +124,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   EventDraft get _draft => EventDraft(
     title: _title.text,
     description: _desc.text,
-    location: _location.text,
     address: _address.text,
+    picked: _picked,
     startsAt: _startsAt,
     registrationDeadline: _registrationDeadline,
     registrationStartsAt: _registrationStartsAt,
@@ -135,15 +143,37 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   void dispose() {
     _title.dispose();
     _desc.dispose();
-    _location.dispose();
     _address.dispose();
     _email.dispose();
     _phone.dispose();
     _maxParticipants.dispose();
     _reminderNote.dispose();
-    _locationFocus.dispose();
     _images.dispose();
     super.dispose();
+  }
+
+  void _onAddressChanged(String text) {
+    final picked = _picked;
+    if (picked == null || picked.address.trim() == text.trim()) return;
+    setState(() {
+      _picked = null;
+      _pickCleared = true;
+    });
+  }
+
+  Future<void> _pickOnMap() async {
+    final picked = await Navigator.push<PickedLocation>(
+      context,
+      MaterialPageRoute(
+        builder: (_) => EventLocationPickerScreen(initial: _picked),
+      ),
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _picked = picked;
+      _pickCleared = false;
+      _address.text = picked.address;
+    });
   }
 
   void _adjustMaxParticipants(int delta) {
@@ -466,51 +496,22 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     seniorMode: seniorMode,
                   ),
                   const SizedBox(height: 18),
-                  if (seniorMode)
-                    Column(
-                      children: [
-                        _buildSummaryCard(
-                          icon: Icons.event,
-                          label: '日期',
-                          value: _startsAt == null
-                              ? null
-                              : _formatDateOnly(_startsAt!),
-                          subValue: _startsAt == null
-                              ? null
-                              : _formatTimeOnly(_startsAt!),
-                          placeholder: '選擇日期',
-                          onTap: _isEditing ? null : _pickDateTime,
-                          seniorMode: seniorMode,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildLocationCard(seniorMode),
-                      ],
-                    )
-                  else
-                    IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: _buildSummaryCard(
-                              icon: Icons.event,
-                              label: '日期',
-                              value: _startsAt == null
-                                  ? null
-                                  : _formatDateOnly(_startsAt!),
-                              subValue: _startsAt == null
-                                  ? null
-                                  : _formatTimeOnly(_startsAt!),
-                              placeholder: '選擇日期',
-                              onTap: _isEditing ? null : _pickDateTime,
-                              seniorMode: seniorMode,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildLocationCard(seniorMode)),
-                        ],
-                      ),
-                    ),
+                  // 地址會換行，不放進跟日期並排的半寬卡片。
+                  _buildSummaryCard(
+                    icon: Icons.event,
+                    label: '日期',
+                    value: _startsAt == null
+                        ? null
+                        : _formatDateOnly(_startsAt!),
+                    subValue: _startsAt == null
+                        ? null
+                        : _formatTimeOnly(_startsAt!),
+                    placeholder: '選擇日期',
+                    onTap: _isEditing ? null : _pickDateTime,
+                    seniorMode: seniorMode,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLocationCard(seniorMode),
                   const SizedBox(height: 18),
                   _label('活動結束時間', required: false, seniorMode: seniorMode),
                   _buildDateField(
@@ -520,14 +521,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     seniorMode: seniorMode,
                   ),
                   _caption('未設定時，預設為活動開始後 3 小時結束', seniorMode),
-                  const SizedBox(height: 18),
-                  _label('詳細地址', required: true, seniorMode: seniorMode),
-                  _textField(
-                    _address,
-                    hint: '例如：花蓮縣秀林鄉…',
-                    maxLength: EventDraft.addressMax,
-                    seniorMode: seniorMode,
-                  ),
                   const SizedBox(height: 18),
                   _label('報名開始時間', required: false, seniorMode: seniorMode),
                   _buildDateField(
@@ -843,7 +836,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               ),
               const SizedBox(width: 6),
               Text(
-                '地點',
+                '地址',
                 style: TextStyle(
                   fontSize: AppTypography.size(
                     AppTypography.caption,
@@ -856,11 +849,14 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             ],
           ),
           const SizedBox(height: 6),
+          // 地址可能很長，換行最多三行。
           TextField(
-            controller: _location,
-            focusNode: _locationFocus,
+            controller: _address,
+            onChanged: _onAddressChanged,
+            minLines: 1,
+            maxLines: 3,
             inputFormatters: const [
-              Utf16LengthLimitingTextInputFormatter(EventDraft.locationMax),
+              Utf16LengthLimitingTextInputFormatter(EventDraft.addressMax),
             ],
             style: TextStyle(
               fontSize: AppTypography.size(
@@ -871,7 +867,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               color: AppColors.ink,
             ),
             decoration: InputDecoration(
-              hintText: '例如：秀林部落活動中心',
+              hintText: '門牌或描述，例如：秀林鄉富世村 12 號／部落活動中心',
+              hintMaxLines: 3,
               hintStyle: TextStyle(
                 color: AppColors.fog,
                 fontSize: AppTypography.size(
@@ -885,10 +882,54 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               contentPadding: EdgeInsets.zero,
             ),
           ),
+          if (_picked != null)
+            _locationHint(Icons.check_circle_outline, '已在地圖上定位', seniorMode)
+          else if (_pickCleared)
+            _locationHint(Icons.info_outline, '已改為手動地址，可重新在地圖上選擇', seniorMode),
+          if (PlatformFeatures.supportsMapPicker)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _submitting ? null : _pickOnMap,
+                style: TextButton.styleFrom(
+                  foregroundColor: AppColors.primary,
+                  padding: EdgeInsets.zero,
+                  minimumSize: Size(0, seniorMode ? 48 : 36),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                ),
+                icon: Icon(Icons.map_outlined, size: seniorMode ? 22 : 18),
+                label: Text(
+                  '在地圖上選擇',
+                  style: AppTypography.bodyStyle(
+                    seniorMode: seniorMode,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
   }
+
+  Widget _locationHint(IconData icon, String text, bool seniorMode) => Padding(
+    padding: const EdgeInsets.only(top: 8),
+    child: Row(
+      children: [
+        Icon(icon, size: seniorMode ? 18 : 14, color: AppColors.inkSoft),
+        const SizedBox(width: 6),
+        Expanded(
+          child: Text(
+            text,
+            style: AppTypography.captionStyle(
+              seniorMode: seniorMode,
+              color: AppColors.inkSoft,
+            ),
+          ),
+        ),
+      ],
+    ),
+  );
 
   Widget _buildParticipantsStepper(bool seniorMode) {
     return Container(
