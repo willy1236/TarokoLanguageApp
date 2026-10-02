@@ -42,6 +42,7 @@ import 'services/shop_service.dart';
 import 'services/user_service.dart';
 import 'services/video_call_service.dart';
 import 'shared/widgets/app_update_prompt.dart';
+import 'shared/widgets/scroll_to_top_scope.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 import 'shared/widgets/confirm_dialog.dart';
 
@@ -297,6 +298,7 @@ class _MainContainerState extends State<MainContainer>
   static const int _plazaEventIndex = 2;
   static const int _friendsIndex = 3;
   static const int _profileVideoIndex = 4;
+  static const int _tabCount = 5;
 
   int _currentIndex = 0;
   // 精簡模式首頁省略「族語學習」卡，學習影音分頁預設改開文化影音（1）。
@@ -305,6 +307,11 @@ class _MainContainerState extends State<MainContainer>
   int _plazaEventSubTab = 0;
   int _profileVideoSubTab = 0;
   final _learnCultureReselect = _ReselectSignal();
+  // 每個底部分頁一個「捲回最上面」訊號，順序同 IndexedStack。
+  final _scrollToTopSignals = List.generate(
+    _tabCount,
+    (_) => _ReselectSignal(),
+  );
   String? _displayName;
   int? _millet;
   String? _avatarId;
@@ -348,6 +355,9 @@ class _MainContainerState extends State<MainContainer>
     UserService.userNotifier.removeListener(_onUserChanged);
     NotificationSummaryService.notifier.removeListener(_onSummaryChanged);
     _learnCultureReselect.dispose();
+    for (final signal in _scrollToTopSignals) {
+      signal.dispose();
+    }
     super.dispose();
   }
 
@@ -489,23 +499,73 @@ class _MainContainerState extends State<MainContainer>
     }
   }
 
-  // 底部導航再次點擊目前所在的「學習影音」：通知該頁捲回頂部並重新整理。
+  // 底部導航再次點擊目前所在的分頁：整個分頁（含膠囊沒顯示的那塊）直接跳回
+  // 最上面。「學習影音」另外重新整理；該頁原本的捲回動畫因已在頂端而不再出現。
   void _onBottomTabTap(int index) {
-    if (index == _currentIndex && index == _learnCultureIndex) {
-      _learnCultureReselect.notifyListeners();
+    if (index == _currentIndex) {
+      _scrollToTopSignals[index].notifyListeners();
+      if (index == _learnCultureIndex) _learnCultureReselect.notifyListeners();
       return;
     }
     _navigate(index);
   }
 
-  void _navigate(int index, {int? subTab}) => setState(() {
-    _currentIndex = index;
-    if (subTab != null) {
-      if (index == _learnCultureIndex) _learnCultureSubTab = subTab;
-      if (index == _plazaEventIndex) _plazaEventSubTab = subTab;
-      if (index == _profileVideoIndex) _profileVideoSubTab = subTab;
-    }
-  });
+  // 換到另一個分頁時，該分頁（含膠囊切換沒顯示的那塊）從最上面開始；
+  // 只動捲動位置，分類、排序等 State 保留。
+  void _navigate(int index, {int? subTab}) {
+    if (index != _currentIndex) _scrollToTopSignals[index].notifyListeners();
+    setState(() {
+      _currentIndex = index;
+      if (subTab != null) {
+        if (index == _learnCultureIndex) _learnCultureSubTab = subTab;
+        if (index == _plazaEventIndex) _plazaEventSubTab = subTab;
+        if (index == _profileVideoIndex) _profileVideoSubTab = subTab;
+      }
+    });
+  }
+
+  // 順序同 _learnCultureIndex 等常數與 TrukuBottomTab。
+  // 捲回頂端訊號依 _tabCount 預先建好，分頁數不符時在 debug 直接擋下。
+  List<Widget> _buildTabs() {
+    final tabs = _tabList();
+    assert(
+      tabs.length == _tabCount,
+      '分頁有 ${tabs.length} 個，_tabCount 卻是 $_tabCount',
+    );
+    return tabs;
+  }
+
+  List<Widget> _tabList() => [
+    HomeScreen(
+      displayName: _displayName,
+      millet: _millet,
+      avatarId: _avatarId,
+      avatarUrl: _avatarUrl,
+      itemCatalogById: _itemCatalogById,
+      checkedInToday: _checkedInToday,
+      checkinStreak: _checkinStreak,
+      weeklyCheckinCount: _weeklyCheckinCount,
+      weeklyBonusEarned: _weeklyBonusEarned,
+      onCheckin: _checkin,
+      onShowProfile: () => _navigate(_profileVideoIndex, subTab: 0),
+      onNavigateToTab: _navigate,
+    ),
+    LearnCultureScreen(
+      key: ValueKey('learn_culture_$_learnCultureSubTab'),
+      initialTabIndex: _learnCultureSubTab,
+      reselectSignal: _learnCultureReselect,
+      active: _currentIndex == _learnCultureIndex,
+    ),
+    PlazaEventScreen(
+      key: ValueKey('plaza_event_$_plazaEventSubTab'),
+      initialTabIndex: _plazaEventSubTab,
+    ),
+    const FriendsListScreen(showBackButton: false),
+    ProfileVideoScreen(
+      key: ValueKey('profile_video_$_profileVideoSubTab'),
+      initialTabIndex: _profileVideoSubTab,
+    ),
+  ];
 
   Future<void> _handleBack() async {
     if (_currentIndex != 0) {
@@ -545,35 +605,8 @@ class _MainContainerState extends State<MainContainer>
             body: IndexedStack(
               index: _currentIndex,
               children: [
-                HomeScreen(
-                  displayName: _displayName,
-                  millet: _millet,
-                  avatarId: _avatarId,
-                  avatarUrl: _avatarUrl,
-                  itemCatalogById: _itemCatalogById,
-                  checkedInToday: _checkedInToday,
-                  checkinStreak: _checkinStreak,
-                  weeklyCheckinCount: _weeklyCheckinCount,
-                  weeklyBonusEarned: _weeklyBonusEarned,
-                  onCheckin: _checkin,
-                  onShowProfile: () => _navigate(_profileVideoIndex, subTab: 0),
-                  onNavigateToTab: _navigate,
-                ),
-                LearnCultureScreen(
-                  key: ValueKey('learn_culture_$_learnCultureSubTab'),
-                  initialTabIndex: _learnCultureSubTab,
-                  reselectSignal: _learnCultureReselect,
-                  active: _currentIndex == _learnCultureIndex,
-                ),
-                PlazaEventScreen(
-                  key: ValueKey('plaza_event_$_plazaEventSubTab'),
-                  initialTabIndex: _plazaEventSubTab,
-                ),
-                const FriendsListScreen(showBackButton: false),
-                ProfileVideoScreen(
-                  key: ValueKey('profile_video_$_profileVideoSubTab'),
-                  initialTabIndex: _profileVideoSubTab,
-                ),
+                for (final (i, tab) in _buildTabs().indexed)
+                  ScrollToTopScope(signal: _scrollToTopSignals[i], child: tab),
               ],
             ),
             bottomNavigationBar: TrukuBottomTab(
