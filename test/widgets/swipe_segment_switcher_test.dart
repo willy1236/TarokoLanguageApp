@@ -99,6 +99,24 @@ void main() {
     expect(tester.getTopLeft(content).dy, lessThan(before - 200));
   });
 
+  testWidgets('約 30°～37° 的斜滑照常捲清單，不被切換手勢吃掉', (tester) async {
+    final h = _Harness();
+    await tester.pumpWidget(h.build());
+    for (final delta in const [Offset(-200, -120), Offset(-200, -150)]) {
+      final before = tester.getTopLeft(content).dy;
+      // 分 20 步移動，像真實手指一樣陸續送 move 事件。
+      final gesture = await tester.startGesture(tester.getCenter(content));
+      for (var i = 0; i < 20; i++) {
+        await gesture.moveBy(delta / 20);
+        await tester.pump();
+      }
+      await gesture.up();
+      await tester.pumpAndSettle();
+      expect(tester.getTopLeft(content).dy, lessThan(before - 60));
+    }
+    expect(h.changes, isEmpty);
+  });
+
   testWidgets('在內層橫向清單上滑動，動的是清單不切分頁', (tester) async {
     final h = _Harness();
     await tester.pumpWidget(h.build());

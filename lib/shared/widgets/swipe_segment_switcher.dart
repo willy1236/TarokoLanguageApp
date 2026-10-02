@@ -84,7 +84,9 @@ class _SwipeSegmentSwitcherState extends State<SwipeSegmentSwitcher>
     _setProgress(_settleFrom * (1 - Curves.easeOut.transform(_settle.value)));
   }
 
+  // 點擊或縱向捲動時水平辨識器輸掉競技場也會走到這裡，進度本來就是 0 不必跑動畫。
   void _settleBack() {
+    if (_progress == 0) return;
     _settleFrom = _progress;
     _settle.forward(from: 0);
   }
@@ -118,18 +120,28 @@ class _SwipeSegmentSwitcherState extends State<SwipeSegmentSwitcher>
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return RawGestureDetector(
       behavior: HitTestBehavior.translucent,
-      dragStartBehavior: DragStartBehavior.down,
-      supportedDevices: const {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.stylus,
-        PointerDeviceKind.invertedStylus,
+      gestures: {
+        _HorizontalDominantDragRecognizer:
+            GestureRecognizerFactoryWithHandlers<
+              _HorizontalDominantDragRecognizer
+            >(
+              () => _HorizontalDominantDragRecognizer(
+                supportedDevices: const {
+                  PointerDeviceKind.touch,
+                  PointerDeviceKind.stylus,
+                  PointerDeviceKind.invertedStylus,
+                },
+              ),
+              (recognizer) => recognizer
+                ..dragStartBehavior = DragStartBehavior.down
+                ..onStart = _onStart
+                ..onUpdate = _onUpdate
+                ..onEnd = _onEnd
+                ..onCancel = _settleBack,
+            ),
       },
-      onHorizontalDragStart: _onStart,
-      onHorizontalDragUpdate: _onUpdate,
-      onHorizontalDragEnd: _onEnd,
-      onHorizontalDragCancel: _settleBack,
       child: Transform.translate(
         offset: Offset(-_progress * _maxShift, 0),
         child: Opacity(
@@ -138,5 +150,38 @@ class _SwipeSegmentSwitcherState extends State<SwipeSegmentSwitcher>
         ),
       ),
     );
+  }
+}
+
+/// 水平位移過了觸控 slop、且明顯大於垂直位移（> 2 倍，約 27° 以內）才搶下手勢。
+///
+/// 一般的水平拖曳只要水平分量先過 slop 就搶，斜著往上捲清單（27°～45°）會被
+/// 它搶走、放開時又不夠水平而不切換，變成兩邊都不動；角度跟切換條件一致後，
+/// 這類斜滑會留給垂直捲動。
+class _HorizontalDominantDragRecognizer
+    extends HorizontalDragGestureRecognizer {
+  _HorizontalDominantDragRecognizer({super.supportedDevices});
+
+  Offset _down = Offset.zero;
+
+  @override
+  void addAllowedPointer(PointerDownEvent event) {
+    _down = event.position;
+    super.addAllowedPointer(event);
+  }
+
+  @override
+  bool hasSufficientGlobalDistanceToAccept(
+    PointerDeviceKind pointerDeviceKind,
+    double? deviceTouchSlop,
+  ) {
+    if (!super.hasSufficientGlobalDistanceToAccept(
+      pointerDeviceKind,
+      deviceTouchSlop,
+    )) {
+      return false;
+    }
+    final moved = lastPosition.global - _down;
+    return moved.dx.abs() > 2 * moved.dy.abs();
   }
 }
