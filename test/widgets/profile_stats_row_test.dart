@@ -77,9 +77,7 @@ void main() {
       expect(number.color, AppColors.primary);
       expect(
         label.fontSize,
-        greaterThanOrEqualTo(
-          AppTypography.size(AppTypography.body, seniorMode: senior),
-        ),
+        AppTypography.size(AppTypography.caption, seniorMode: senior),
       );
       expect(label.fontSize! + 6, lessThanOrEqualTo(numberSize));
     });

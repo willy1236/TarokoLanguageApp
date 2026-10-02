@@ -12,7 +12,7 @@ Widget profileStatDivider() => const SizedBox(
   child: VerticalDivider(color: AppColors.creamDeep, width: 1),
 );
 
-/// 統計格：數字是重點（display24 粗體酒紅，精簡模式 +2），標籤 body 明顯較小。
+/// 統計格：數字是重點（display24 粗體酒紅，精簡模式 +2），標籤 body 12 明顯較小。
 /// 數字包 FittedBox 縮放，窄螢幕＋精簡模式的多位數也不換行、不溢出格子。
 Widget profileStatCell(bool seniorMode, String value, String label) {
   return Expanded(
@@ -38,7 +38,7 @@ Widget profileStatCell(bool seniorMode, String value, String label) {
         const SizedBox(height: 2),
         Text(
           label,
-          style: AppTypography.bodyLargeStyle(
+          style: AppTypography.bodyStyle(
             seniorMode: seniorMode,
             color: AppColors.fog,
           ),

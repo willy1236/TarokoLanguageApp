@@ -170,25 +170,29 @@ void main() {
       expect(badge.bottom, greaterThan(cover.center.dy));
     });
 
-    testWidgets('320dp 寬時兩行疊字標題不會壓到播放鈕', (tester) async {
+    testWidgets('一般模式標題排在封面下方、簡介之上，不疊在縮圖上', (tester) async {
       await pumpCard(
         tester,
-        _video(durationSec: 725, title: '太魯閣族傳統織布與苧麻工藝體驗暨部落長者口述歷史分享會'),
+        _video(
+          durationSec: 725,
+          title: '太魯閣族傳統織布與苧麻工藝體驗暨部落長者口述歷史分享會',
+          description: '這是影片簡介',
+        ),
       );
 
-      final title = find.textContaining('太魯閣族傳統織布');
-      final button = tester.getRect(
-        find
-            .ancestor(
-              of: find.byType(CulturePlayIcon),
-              matching: find.byType(Container),
-            )
-            .first,
-      );
-      final titleRect = tester.getRect(title);
-      // 標題確實換成兩行，這條才有意義。
-      expect(titleRect.height, greaterThan(40));
-      expect(button.bottom, lessThanOrEqualTo(titleRect.top));
+      final cover = tester.getRect(find.byType(AspectRatio));
+      final title = tester.getRect(find.textContaining('太魯閣族傳統織布'));
+      final summary = tester.getRect(find.text('這是影片簡介'));
+      expect(title.top, greaterThanOrEqualTo(cover.bottom));
+      expect(summary.top, greaterThanOrEqualTo(title.bottom));
+    });
+
+    testWidgets('沒有簡介時仍顯示封面下方的標題', (tester) async {
+      await pumpCard(tester, _video(title: '織布影片', description: ''));
+
+      final cover = tester.getRect(find.byType(AspectRatio));
+      final title = tester.getRect(find.text('織布影片'));
+      expect(title.top, greaterThanOrEqualTo(cover.bottom));
     });
 
     testWidgets('YouTube 影片沒有片長時標「YouTube」', (tester) async {

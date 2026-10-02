@@ -48,9 +48,7 @@ class CultureSortLabels extends StatelessWidget {
     return Row(
       // 外層若是 Wrap，給子元件的寬度是整行，Row 撐滿就會永遠自成一行。
       mainAxisSize: MainAxisSize.min,
-      children: [
-        for (final (value, label) in options) _label(value, label),
-      ],
+      children: [for (final (value, label) in options) _label(value, label)],
     );
   }
 
@@ -73,13 +71,14 @@ class CultureSortLabels extends StatelessWidget {
         alignment: Alignment.center,
         child: Text(
           label,
-          style: AppTypography.bodyLargeStyle(
-            seniorMode: seniorMode,
-            color: active ? AppColors.gold : AppColors.fog,
-          ).copyWith(
-            fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-            letterSpacing: 1.5,
-          ),
+          style:
+              AppTypography.bodyLargeStyle(
+                seniorMode: seniorMode,
+                color: active ? AppColors.gold : AppColors.fog,
+              ).copyWith(
+                fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+                letterSpacing: 1.5,
+              ),
         ),
       ),
     );
@@ -109,6 +108,9 @@ class CultureCoverCard extends StatelessWidget {
 
   /// 空白或 null 時不顯示摘要列。
   final String? summary;
+
+  /// 一般模式標題疊在封面底部；影片縮圖內容雜，疊字看不清，改 false 讓標題排到封面下方。
+  final bool titleOnCover;
   final bool seniorMode;
   final VoidCallback onTap;
 
@@ -121,8 +123,11 @@ class CultureCoverCard extends StatelessWidget {
     this.summary,
     this.coverAspectRatio,
     this.coverBadge,
+    this.titleOnCover = true,
     this.seniorMode = false,
   });
+
+  bool get _overlayTitle => titleOnCover && !seniorMode;
 
   @override
   Widget build(BuildContext context) {
@@ -144,6 +149,8 @@ class CultureCoverCard extends StatelessWidget {
               SizedBox(height: seniorMode ? 140 : 120, child: _cover()),
             if (seniorMode)
               _seniorTitleRow()
+            else if (!titleOnCover)
+              _titleBelowBlock()
             else if (summary case final text? when text.trim().isNotEmpty)
               _summaryRow(text.trim()),
           ],
@@ -181,7 +188,7 @@ class CultureCoverCard extends StatelessWidget {
           ),
         ),
         // 底部漸層遮罩，避免淺色封面圖讓標題文字失去對比而看不清（一般模式標題疊在圖上）
-        if (!seniorMode) ...[
+        if (_overlayTitle) ...[
           Positioned(
             left: 0,
             right: 0,
@@ -231,9 +238,9 @@ class CultureCoverCard extends StatelessWidget {
     );
   }
 
-  Widget _summaryRow(String summary) {
+  Widget _summaryRow(String summary, {double top = 14}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      padding: EdgeInsets.fromLTRB(16, top, 16, 14),
       child: Row(
         children: [
           Expanded(
@@ -251,6 +258,41 @@ class CultureCoverCard extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           const CultureArrowIcon(),
+        ],
+      ),
+    );
+  }
+
+  Widget _titleBelowBlock() {
+    final text = summary?.trim() ?? '';
+    final titleText = Text(
+      title,
+      style: AppTypography.serif(
+        fontSize: AppTypography.title,
+        fontWeight: FontWeight.w600,
+        color: AppColors.creamLight,
+        letterSpacing: 1.0,
+        height: 1.3,
+      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+    );
+    if (text.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+        child: titleText,
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: titleText,
+          ),
+          _summaryRow(text, top: 8),
         ],
       ),
     );
@@ -315,7 +357,7 @@ class CultureWeaveCover extends StatelessWidget {
 }
 
 /// 影音總覽的一則：大圖卡，封面是 16:9 縮圖＋中央播放鈕，右下片長或「YouTube」，
-/// 下方是影片簡介。
+/// 下方是標題與影片簡介。
 class CultureVideoCard extends StatelessWidget {
   final VideoSummary video;
   final bool seniorMode;
@@ -342,9 +384,9 @@ class CultureVideoCard extends StatelessWidget {
     return CultureCoverCard(
       cover: _thumbnail(),
       // 用縮圖原本的 16:9，不裁掉人臉，封面也比固定 120 高多出空間給播放鈕。
-      // 窄螢幕上 16:9 仍不夠避開兩行疊字標題，播放鈕位置另見 [_thumbnail]。
       coverAspectRatio: 16 / 9,
       coverBadge: _badge(),
+      titleOnCover: false,
       category: VideoCategory.label(video.category),
       title: video.title,
       summary: video.description,
@@ -372,10 +414,7 @@ class CultureVideoCard extends StatelessWidget {
           )
         else
           _fallbackBackground(),
-        Align(
-          // 一般模式標題疊在封面底部（底距 14＋兩行約 50）。320dp 寬時封面約 156 高，
-          // 置中的播放鈕會被兩行標題壓到約 8px，所以往上挪；精簡模式標題不在圖上，維持置中。
-          alignment: seniorMode ? Alignment.center : const Alignment(0, -0.3),
+        Center(
           child: Container(
             width: buttonSize,
             height: buttonSize,
