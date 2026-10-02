@@ -328,11 +328,19 @@ class ScoreHeader extends StatelessWidget {
   final int score;
   final int total;
 
+  /// 分數下方的選填區塊（例如分級測驗的建議等級與說明句），自帶樣式。
+  final Widget? footer;
+
+  /// 精簡模式時標題字級 +2；分數是展示字級，不隨模式變動。
+  final bool seniorMode;
+
   const ScoreHeader({
     super.key,
     required this.title,
     required this.score,
     required this.total,
+    this.footer,
+    this.seniorMode = false,
   });
 
   @override
@@ -347,7 +355,10 @@ class ScoreHeader extends StatelessWidget {
           Text(
             title,
             style: AppTypography.latin(
-              fontSize: AppTypography.caption,
+              fontSize: AppTypography.size(
+                AppTypography.caption,
+                seniorMode: seniorMode,
+              ),
               fontStyle: FontStyle.italic,
               color: AppColors.gold,
               letterSpacing: 2.0,
@@ -362,6 +373,7 @@ class ScoreHeader extends StatelessWidget {
               color: AppColors.creamLight,
             ),
           ),
+          if (footer != null) ...[const SizedBox(height: 16), footer!],
         ],
       ),
     );
