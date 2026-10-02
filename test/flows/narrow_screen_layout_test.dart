@@ -18,6 +18,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/main.dart' show navigatorKey;
 import 'package:flutter_application_1/screens/backpack/backpack_screen.dart';
+import 'package:flutter_application_1/screens/culture/widgets/culture_cards.dart';
 import 'package:flutter_application_1/screens/events/event_compose_screen.dart';
 import 'package:flutter_application_1/screens/events/event_detail_screen.dart';
 import 'package:flutter_application_1/screens/events/event_search_screen.dart';
@@ -86,7 +87,7 @@ void main() {
       ),
       '/api/levels': loadFixtureMap('get_api_levels.json'),
       '/api/videos': withLongTitles('get_api_videos.json', 'videos'),
-      '/api/articles': {'articles': <dynamic>[], 'total': 0},
+      '/api/articles': withLongTitles('get_api_articles.json', 'articles'),
       '/api/events': withLongTitles('get_api_events_scope_all.json', 'events'),
       '/api/events/${eventDetail['id']}': eventDetail,
       '/api/videos/${videoDetail['id']}': videoDetail,
@@ -182,7 +183,8 @@ void main() {
       });
 
       // 文章分頁的標題列原本是 Row，排序字放大後放不下會溢位；改 Wrap 後換行。
-      testWidgets('320dp 寬度下文章分頁的標題列不 overflow', (tester) async {
+      // 清單用真實 fixture（標題換成超長字串），確認大圖卡也不會撐爆版面。
+      testWidgets('320dp 寬度下文章分頁（標題列與長標題大圖卡）不 overflow', (tester) async {
         expect(seniorModeController.enabled, senior);
         await startApp(tester);
 
@@ -190,6 +192,16 @@ void main() {
         await tapText(tester, '文章');
         expect(find.text('最新文章').hitTestable(), findsOneWidget);
         expect(find.text('本週熱門').hitTestable(), findsOneWidget);
+        expect(find.byType(CultureArticleCard), findsWidgets);
+      });
+
+      testWidgets('320dp 寬度下影音分頁的長標題大圖卡不 overflow', (tester) async {
+        expect(seniorModeController.enabled, senior);
+        await startApp(tester);
+
+        await tapText(tester, '學習影音', within: find.byType(TrukuBottomTab));
+        await tapText(tester, '影音');
+        expect(find.byType(CultureVideoCard), findsWidgets);
       });
 
       testWidgets('320dp 寬度下常用子頁面都不 overflow', (tester) async {

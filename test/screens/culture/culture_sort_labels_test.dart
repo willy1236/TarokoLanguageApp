@@ -45,9 +45,7 @@ void main() {
   );
 
   for (final senior in [false, true]) {
-    testWidgets('${senior ? '精簡' : '一般'}模式每個排序字的點擊範圍至少 44×44', (
-      tester,
-    ) async {
+    testWidgets('${senior ? '精簡' : '一般'}模式每個排序字的點擊範圍至少 44×44', (tester) async {
       await pumpLabels(tester, seniorMode: senior);
       for (final (_, label) in _options) {
         final box = hitBox(tester, label);

@@ -108,19 +108,46 @@ void main() {
   });
 
   group('影音總覽卡', () {
-    Future<void> pumpCard(WidgetTester tester, VideoSummary video) async {
+    Future<void> pumpCard(
+      WidgetTester tester,
+      VideoSummary video, {
+      bool senior = false,
+    }) async {
       usePhoneSurface(tester, size: const Size(320, 800));
       await tester.pumpWidget(
         wrap(
           SingleChildScrollView(
             child: Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
-              child: CultureVideoCard(video: video),
+              child: CultureVideoCard(video: video, seniorMode: senior),
             ),
           ),
         ),
       );
     }
+
+    testWidgets('精簡模式標題在封面下方、不顯示簡介，片長仍在封面右下', (tester) async {
+      await pumpCard(
+        tester,
+        _video(
+          title: '太魯閣族傳統織布與苧麻工藝體驗暨部落長者口述歷史分享會',
+          description: '這是影片簡介',
+          durationSec: 725,
+        ),
+        senior: true,
+      );
+
+      final cover = tester.getRect(find.byType(AspectRatio));
+      expect(cover.width / cover.height, closeTo(16 / 9, 0.01));
+      final title = tester.getRect(find.textContaining('太魯閣族傳統織布'));
+      expect(title.top, greaterThanOrEqualTo(cover.bottom));
+      expect(find.text('這是影片簡介'), findsNothing);
+      final badge = tester.getRect(find.text('12:05'));
+      expect(cover.contains(badge.center), isTrue);
+      expect(badge.right, greaterThan(cover.center.dx));
+      expect(badge.bottom, greaterThan(cover.center.dy));
+      expect(find.textContaining('觀看'), findsNothing);
+    });
 
     testWidgets('大圖卡顯示簡介與片長，看不到觀看數', (tester) async {
       await pumpCard(tester, _video(description: '這是影片簡介', durationSec: 725));
