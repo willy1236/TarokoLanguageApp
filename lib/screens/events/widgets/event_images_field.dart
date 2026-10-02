@@ -195,6 +195,11 @@ class _EventImagesFieldState extends State<EventImagesField> {
       (existing: null, pendingIndex: i, image: MemoryImage(_c.toUpload[i])),
   ];
 
+  /// 排序清單每格要穩定的 key：既有照片用 id，新照片用那份 bytes 本身。
+  Key _itemKey(_Item item) => item.existing != null
+      ? ValueKey(item.existing!.id)
+      : ObjectKey(_c.toUpload[item.pendingIndex!]);
+
   void _preview(List<_Item> items, int index) {
     Navigator.push(
       context,
@@ -226,13 +231,18 @@ class _EventImagesFieldState extends State<EventImagesField> {
       children: [
         SizedBox(
           height: size,
-          child: ListView.separated(
+          child: ReorderableListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: items.length + (_c.remaining > 0 ? 1 : 0),
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (_, i) => i == items.length
-                ? _buildAddTile(size)
-                : _buildThumb(items, i, size, isCover: i == coverIndex),
+            buildDefaultDragHandles: false,
+            itemCount: items.length,
+            onReorderItem: (_, _) {},
+            itemBuilder: (_, i) => Padding(
+              key: _itemKey(items[i]),
+              padding: const EdgeInsets.only(right: 8),
+              child: _buildThumb(items, i, size, isCover: i == coverIndex),
+            ),
+            // 「新增」格不參與排序。
+            footer: _c.remaining > 0 ? _buildAddTile(size) : null,
           ),
         ),
         const SizedBox(height: 6),
