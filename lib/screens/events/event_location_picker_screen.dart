@@ -29,6 +29,12 @@ class EventLocationPickerScreen extends StatefulWidget {
 const _fallbackCenter = LatLng(24.1167, 121.6208);
 const _zoom = 16.0;
 const _searchDebounce = Duration(milliseconds: 400);
+const _initTimeout = Duration(seconds: 15);
+
+bool _samePoint(LatLng a, LatLng? b) =>
+    b != null &&
+    (a.latitude - b.latitude).abs() < 1e-6 &&
+    (a.longitude - b.longitude).abs() < 1e-6;
 
 class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
   GoogleMapController? _map;
@@ -51,8 +57,12 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
   /// 新的搜尋 session：開啟畫面後第一次搜尋、或選定一筆結果之後。
   bool _newSession = true;
 
-  /// 搜尋結果造成的鏡頭移動，停下來時不要用反向地理編碼蓋掉地點名稱。
-  bool _movingToResult = false;
+  /// 目前名稱與地址對應的位置。鏡頭停下時中心沒離開這裡（地圖剛載入、移到搜尋
+  /// 結果）就不重查，才不會蓋掉原本的地點名稱。
+  LatLng? _resolvedAt;
+
+  /// 地圖移動中：中心與下方的地址還對不上，先不能確認。
+  bool _moving = false;
 
   /// 只有最後一次反向地理編碼的結果有效，避免舊請求晚回蓋掉新位置。
   int _resolveSeq = 0;
@@ -68,16 +78,22 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
     final start = initial != null
         ? LatLng(initial.latitude, initial.longitude)
         : await _currentPosition() ?? _fallbackCenter;
-    // Web 的地圖靠 Places 初始化時注入的 Maps JS，要先等它載完。
+    // Web 的地圖靠 Places 初始化時注入的 Maps JS，要先等它載完。Maps JS 載不到
+    // （網路、CSP、金鑰被拒）時外掛不會回報錯誤，只會一直等，所以要設逾時。
     try {
-      await PlacesService.ensureReady();
+      await PlacesService.ensureReady().timeout(_initTimeout);
     } catch (e) {
       debugPrint('EventLocationPickerScreen: Places 初始化失敗：$e');
+      if (!mounted) return;
+      _showMessage('地圖暫時無法使用，請直接輸入地址');
+      Navigator.pop(context);
+      return;
     }
     if (!mounted) return;
     setState(() {
       _start = start;
       _center = start;
+      _resolvedAt = start;
       _name = initial?.name;
       _address = initial?.address;
     });
@@ -119,6 +135,7 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
 
   Future<void> _resolveAddress(LatLng at) async {
     final seq = ++_resolveSeq;
+    _resolvedAt = at;
     setState(() {
       _resolving = true;
       _addressFailed = false;
@@ -139,12 +156,14 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
 
   void _onCameraMove(CameraPosition p) => _center = p.target;
 
+  void _onCameraMoveStarted() {
+    if (!_moving) setState(() => _moving = true);
+  }
+
   void _onCameraIdle() {
     if (_start == null) return;
-    if (_movingToResult) {
-      _movingToResult = false;
-      return;
-    }
+    if (_moving) setState(() => _moving = false);
+    if (_samePoint(_center, _resolvedAt)) return;
     _name = null;
     _resolveAddress(_center);
   }
@@ -196,12 +215,12 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
     _resolveSeq++; // 讓還沒回來的反向地理編碼作廢
     setState(() {
       _center = target;
+      _resolvedAt = target;
       _name = place!.name;
       _address = place.address;
       _resolving = false;
       _addressFailed = false;
     });
-    _movingToResult = true;
     await _map?.animateCamera(CameraUpdate.newLatLngZoom(target, _zoom));
   }
 
@@ -264,6 +283,7 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
                           zoom: _zoom,
                         ),
                         onMapCreated: (c) => _map = c,
+                        onCameraMoveStarted: _onCameraMoveStarted,
                         onCameraMove: _onCameraMove,
                         onCameraIdle: _onCameraIdle,
                         myLocationEnabled: true,
@@ -394,7 +414,8 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
     } else {
       preview = address;
     }
-    final canConfirm = !_resolving && address != null && address.isNotEmpty;
+    final canConfirm =
+        !_moving && !_resolving && address != null && address.isNotEmpty;
     return SafeArea(
       top: false,
       child: Container(
