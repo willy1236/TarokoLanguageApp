@@ -49,12 +49,11 @@ import 'shared/widgets/confirm_dialog.dart';
 final navigatorKey = GlobalKey<NavigatorState>();
 final scaffoldMessengerKey = GlobalKey<ScaffoldMessengerState>();
 
-/// App 唯一語系：台灣繁體中文。帶 Hant 讓中文字形取繁體字形。
-const appLocale = Locale.fromSubtags(
-  languageCode: 'zh',
-  scriptCode: 'Hant',
-  countryCode: 'TW',
-);
+/// App 唯一語系：台灣繁體中文。
+///
+/// 不可寫成帶 scriptCode 的 zh_Hant_TW：intl 沒有這組日期格式，
+/// 會退回 zh（簡體「周」、一週從週一開始）。zh_TW 本身就對到繁中翻譯。
+const appLocale = Locale('zh', 'TW');
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
