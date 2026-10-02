@@ -135,7 +135,7 @@ class EventDraft {
   double? get longitude => _activePick?.longitude;
 
   /// 從地址截出短名稱：有分隔符（逗號、頓號、斜線）取最後一段；否則去掉開頭的
-  /// 郵遞區號與縣市、鄉鎮市區前綴；截完是空的就用原文。空白不算分隔符，
+  /// 郵遞區號與縣市（及緊接的鄉鎮市區）前綴；截完是空的就用原文。空白不算分隔符，
   /// 「富世村 12 號」才不會截成「號」。
   static String shortNameOf(String address) {
     final text = address.trim();
@@ -146,8 +146,10 @@ class EventDraft {
     return stripped.isEmpty ? text : stripped;
   }
 
+  // 鄉鎮市區只在接著縣市時才算前綴，「光復鄉公所」「富世社區活動中心」這類以地名開頭的
+  // 場地名稱才不會被截掉；「縣立」「市立」是機關名稱的一部分，也不截。
   static final _regionPrefix = RegExp(
-    r'^(\d{3,6}\s*)?(.{2,3}?[縣市])?(.{1,3}?[鄉鎮市區])?',
+    r'^(\d{3,6}\s*)?((.{2,3}?[縣市])(?!立)((.{1,3}?[鄉鎮市區])(?!立))?)?',
   );
 
   /// 名額：留空 = 不限（null）；格式錯誤時也回 null，先呼叫 [validate] 擋掉。

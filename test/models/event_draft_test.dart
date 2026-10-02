@@ -181,8 +181,17 @@ void main() {
       expect(EventDraft.shortNameOf('花蓮縣秀林鄉富世村 12 號'), '富世村 12 號');
       expect(EventDraft.shortNameOf('972 花蓮縣秀林鄉富世村'), '富世村');
       expect(EventDraft.shortNameOf('臺北市信義區市府路 1 號'), '市府路 1 號');
-      expect(EventDraft.shortNameOf('秀林鄉富世村'), '富世村');
+      expect(EventDraft.shortNameOf('花蓮縣秀林鄉富世村'), '富世村');
+      expect(EventDraft.shortNameOf('花蓮市中山路 1 號'), '中山路 1 號');
       expect(EventDraft.shortNameOf('部落活動中心'), '部落活動中心');
+    });
+
+    test('短名稱：以地名開頭的場地名稱不截', () {
+      expect(EventDraft.shortNameOf('光復鄉公所'), '光復鄉公所');
+      expect(EventDraft.shortNameOf('富世社區活動中心'), '富世社區活動中心');
+      expect(EventDraft.shortNameOf('花蓮縣立體育館'), '花蓮縣立體育館');
+      expect(EventDraft.shortNameOf('花蓮縣秀林鄉立圖書館'), '秀林鄉立圖書館');
+      expect(EventDraft.shortNameOf('秀林鄉富世村'), '秀林鄉富世村');
     });
 
     test('短名稱：截完是空的用原文', () {
@@ -318,9 +327,9 @@ void main() {
 
     test('編輯時手動改地址：清除座標（兩個都送 null）', () {
       final e = withCoords();
-      expect(edited(e, address: '秀林鄉崇德村').toPatchBody(e), {
+      expect(edited(e, address: '花蓮縣秀林鄉崇德村').toPatchBody(e), {
         'location': '崇德村',
-        'address': '秀林鄉崇德村',
+        'address': '花蓮縣秀林鄉崇德村',
         'latitude': null,
         'longitude': null,
       });
