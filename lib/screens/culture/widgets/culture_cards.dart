@@ -29,6 +29,7 @@ class CultureChipsRow extends StatelessWidget {
 /// 標題列右側的排序字（例如「最新／熱門／本週熱門」）：影音與文章分頁共用。
 ///
 /// [options] 是 `(值, 顯示字)`；點到目前已選的值不會呼叫 [onChanged]。
+/// 字級是內文（14，精簡模式 +2），每個字至少 44×44 的點擊範圍。
 class CultureSortLabels extends StatelessWidget {
   final List<(String, String)> options;
   final String selected;
@@ -49,10 +50,7 @@ class CultureSortLabels extends StatelessWidget {
       // 外層若是 Wrap，給子元件的寬度是整行，Row 撐滿就會永遠自成一行。
       mainAxisSize: MainAxisSize.min,
       children: [
-        for (final (i, (value, label)) in options.indexed) ...[
-          if (i > 0) const SizedBox(width: 10),
-          _label(value, label),
-        ],
+        for (final (value, label) in options) _label(value, label),
       ],
     );
   }
@@ -60,24 +58,36 @@ class CultureSortLabels extends StatelessWidget {
   Widget _label(String value, String label) {
     final active = selected == value;
     return GestureDetector(
+      // 字旁邊的空白也算點到，長輩不必瞄準字本身。
+      behavior: HitTestBehavior.opaque,
       onTap: () {
         if (active) return;
         onChanged(value);
       },
-      child: Text(
-        label,
-        style: TextStyle(
-          fontSize: AppTypography.size(
-            AppTypography.caption,
+      child: Container(
+        constraints: const BoxConstraints(
+          minWidth: _minTapSize,
+          minHeight: _minTapSize,
+        ),
+        // 左右內距同時當字與字的間距。
+        padding: const EdgeInsets.symmetric(horizontal: 8),
+        alignment: Alignment.center,
+        child: Text(
+          label,
+          style: AppTypography.bodyLargeStyle(
             seniorMode: seniorMode,
+            color: active ? AppColors.gold : AppColors.fog,
+          ).copyWith(
+            fontWeight: active ? FontWeight.w700 : FontWeight.w400,
+            letterSpacing: 1.5,
           ),
-          fontWeight: active ? FontWeight.w700 : FontWeight.w400,
-          color: active ? AppColors.gold : AppColors.fog,
-          letterSpacing: 1.5,
         ),
       ),
     );
   }
+
+  /// 最小點擊範圍（Material／iOS 建議的 44～48）。
+  static const _minTapSize = 44.0;
 }
 
 class CultureVideoCard extends StatelessWidget {

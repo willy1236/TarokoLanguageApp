@@ -191,9 +191,11 @@ class CultureArticleSectionState extends State<CultureArticleSection> {
         .$2;
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 8, 20, 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.end,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      // 窄螢幕（精簡模式字級放大後）標題與排序放不下一行時，排序換到下一行。
+      child: Wrap(
+        crossAxisAlignment: WrapCrossAlignment.end,
+        alignment: WrapAlignment.spaceBetween,
+        runSpacing: 8,
         children: [
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,

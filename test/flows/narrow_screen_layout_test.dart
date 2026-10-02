@@ -181,6 +181,17 @@ void main() {
         }
       });
 
+      // 文章分頁的標題列原本是 Row，排序字放大後放不下會溢位；改 Wrap 後換行。
+      testWidgets('320dp 寬度下文章分頁的標題列不 overflow', (tester) async {
+        expect(seniorModeController.enabled, senior);
+        await startApp(tester);
+
+        await tapText(tester, '學習影音', within: find.byType(TrukuBottomTab));
+        await tapText(tester, '文章');
+        expect(find.text('最新文章').hitTestable(), findsOneWidget);
+        expect(find.text('本週熱門').hitTestable(), findsOneWidget);
+      });
+
       testWidgets('320dp 寬度下常用子頁面都不 overflow', (tester) async {
         expect(seniorModeController.enabled, senior);
         await startApp(tester);
