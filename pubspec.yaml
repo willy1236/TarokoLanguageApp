@@ -30,6 +30,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations: # 繁體中文語系：日期時間選擇器、系統內建文字
+    sdk: flutter
 
   cupertino_icons: ^1.0.9
   google_fonts: ^8.2.0

@@ -7,10 +7,11 @@
 // HTTP 假回應、channel stub 等仍然沿用 widget_test_helpers.dart，不要在這裡重寫。
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/main.dart'
-    show navigatorKey, scaffoldMessengerKey, MainContainer;
+    show navigatorKey, scaffoldMessengerKey, MainContainer, appLocale;
 import 'package:flutter_application_1/core/constants/app_colors.dart';
 import 'package:flutter_application_1/screens/account/account_pending_screen.dart';
 import 'package:flutter_application_1/screens/auth/birth_date_screen.dart';
@@ -44,6 +45,9 @@ Widget buildTestApp({
     navigatorKey: navigatorKey,
     scaffoldMessengerKey: scaffoldMessengerKey,
     debugShowCheckedModeBanner: false,
+    locale: appLocale,
+    supportedLocales: const [appLocale],
+    localizationsDelegates: GlobalMaterialLocalizations.delegates,
     theme: ThemeData(
       brightness: Brightness.dark,
       scaffoldBackgroundColor: AppColors.background,
