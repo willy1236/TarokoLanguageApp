@@ -9,6 +9,7 @@ import '../../../shared/widgets/engagement_icon_button.dart';
 import '../../../services/user_service.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../core/constants/app_typography.dart';
+import 'event_map_link.dart';
 
 class EventDetailBody extends StatelessWidget {
   final EventDetail event;
@@ -212,10 +213,7 @@ class EventDetailBody extends StatelessWidget {
 
           _infoRow(Icons.access_time, '時間', timeText, seniorMode),
           const SizedBox(height: 12),
-          for (final (icon, label, value) in _placeRows(e)) ...[
-            _infoRow(icon, label, value, seniorMode),
-            const SizedBox(height: 12),
-          ],
+          ..._buildPlaceRows(e, seniorMode),
           // 刻意寫「相關部落」而非「發起人部落」：標籤由發起人自選。
           if (tribeName case final name?) ...[
             _infoRow(Icons.place_outlined, '相關部落', name, seniorMode),
@@ -347,6 +345,24 @@ class EventDetailBody extends StatelessWidget {
       if (location.isNotEmpty && !address.contains(location))
         (Icons.location_on_outlined, '地點', location),
       (Icons.map_outlined, '地址', address),
+    ];
+  }
+
+  /// 最後一列（地址，沒有地址時是地點）可點開地圖。
+  List<Widget> _buildPlaceRows(EventDetail e, bool seniorMode) {
+    final rows = _placeRows(e);
+    return [
+      for (final (i, (icon, label, value)) in rows.indexed) ...[
+        if (i == rows.length - 1)
+          EventMapLink(
+            event: e,
+            seniorMode: seniorMode,
+            child: _infoRow(icon, label, value, seniorMode),
+          )
+        else
+          _infoRow(icon, label, value, seniorMode),
+        const SizedBox(height: 12),
+      ],
     ];
   }
 
