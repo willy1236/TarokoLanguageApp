@@ -11,6 +11,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/date_format.dart';
 import '../../services/account_service.dart';
 import '../../services/auth_service.dart';
 import '../../services/session_service.dart';
@@ -251,8 +252,6 @@ class AccountDeletedScreen extends StatelessWidget {
 
   const AccountDeletedScreen({super.key, this.purgeAt});
 
-  String _formatDate(DateTime d) => '${d.year} 年 ${d.month} 月 ${d.day} 日';
-
   @override
   Widget build(BuildContext context) {
     final purgeAt = this.purgeAt;
@@ -291,7 +290,7 @@ class AccountDeletedScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        _formatDate(purgeAt),
+                        formatDate(purgeAt),
                         style: AppTypography.headlineStyle(
                           color: AppColors.ink,
                         ),

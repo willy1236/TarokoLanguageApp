@@ -330,16 +330,21 @@ class HomeScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 2),
                     ],
-                    Text(
-                      // 精簡模式字大，刻意在逗號後換行，避免從字中間斷開。
-                      '${displayName ?? 'Yudaw'}，${seniorMode ? '\n' : ''}今天學什麼？',
-                      style: AppTypography.serif(
-                        fontSize: seniorMode
-                            ? AppTypography.display28
-                            : AppTypography.display24,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.ink,
-                        letterSpacing: 1.0,
+                    // 與廣場、活動主標一致：保持一行，寬度不足時縮小字級而非換行或截字。
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        '${displayName ?? 'Yudaw'}，今天學什麼？',
+                        maxLines: 1,
+                        style: AppTypography.serif(
+                          fontSize: seniorMode
+                              ? AppTypography.display28
+                              : AppTypography.display24,
+                          fontWeight: FontWeight.w600,
+                          color: AppColors.ink,
+                          letterSpacing: 1.0,
+                        ),
                       ),
                     ),
                   ],

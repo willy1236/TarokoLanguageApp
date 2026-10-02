@@ -98,12 +98,22 @@ class ProfileHero extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // 名稱是頂端主角：放大到 display28（精簡模式同步 +2），
+                // 長名稱最多兩行後截斷；頭像固定寬，名稱在 Expanded 內不會推擠它。
                 Text(
                   user?.displayName ?? 'Apyang Imiq',
-                  style: AppTypography.headlineStyle(
-                    seniorMode: seniorMode,
-                    color: AppColors.creamLight,
-                  ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style:
+                      AppTypography.headlineStyle(
+                        seniorMode: seniorMode,
+                        color: AppColors.creamLight,
+                      ).copyWith(
+                        fontSize: AppTypography.size(
+                          AppTypography.display28,
+                          seniorMode: seniorMode,
+                        ),
+                      ),
                 ),
                 const SizedBox(height: 2),
                 _buildTribalName(seniorMode: seniorMode),
@@ -116,26 +126,6 @@ class ProfileHero extends StatelessWidget {
                       color: AppColors.creamLight.withValues(alpha: 0.75),
                     ),
                   ),
-                // 尚未載入時不畫標章，避免先閃「未測驗」再變成等級；精簡模式不顯示。
-                if (user != null && !seniorMode) ...[
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: [
-                      _levelBadge(
-                        '單字',
-                        user!.quizSuggestedLevel,
-                        seniorMode: seniorMode,
-                      ),
-                      _levelBadge(
-                        '聽力',
-                        user!.listeningSuggestedLevel,
-                        seniorMode: seniorMode,
-                      ),
-                    ],
-                  ),
-                ],
               ],
             ),
           ),
@@ -167,32 +157,6 @@ class ProfileHero extends StatelessWidget {
                 seniorMode: seniorMode,
                 color: AppColors.creamLight.withValues(alpha: 0.5),
               ),
-      ),
-    );
-  }
-
-  /// 純裝飾標章：顯示「單字 · 等級」，未分級顯示「單字 · 未測驗」。
-  /// 不可點——已分級的本來就不能點，只有未分級能點會讓人以為標章壞掉，
-  /// 分級測驗另有自己的入口。
-  Widget _levelBadge(String label, String? level, {required bool seniorMode}) {
-    final tested = level != null;
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-      decoration: BoxDecoration(
-        color: tested
-            ? AppColors.gold.withValues(alpha: 0.18)
-            : Colors.transparent,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(
-          color: AppColors.gold.withValues(alpha: tested ? 0.4 : 0.6),
-        ),
-      ),
-      child: Text(
-        '$label · ${level ?? '未測驗'}',
-        style: AppTypography.captionStyle(
-          seniorMode: seniorMode,
-          color: tested ? AppColors.gold : AppColors.creamLight,
-        ),
       ),
     );
   }

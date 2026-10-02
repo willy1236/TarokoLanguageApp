@@ -71,7 +71,7 @@ void main() {
 
     expect(find.text('已申請刪除帳號'), findsOneWidget);
     expect(find.text('永久刪除日期'), findsOneWidget);
-    expect(find.text('2026 年 11 月 1 日'), findsOneWidget);
+    expect(find.text('2026/11/01'), findsOneWidget);
     // 離開原因要真的送出去，否則這個欄位只是裝飾。
     expect(sentBody?['body'], contains('不想用了'));
   });

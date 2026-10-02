@@ -6,6 +6,7 @@
 import 'package:flutter/material.dart';
 import '../../models/placement_models.dart';
 import '../../services/placement_service.dart';
+import 'placement_done_screen.dart';
 import 'placement_result_screen.dart';
 import 'quiz_flow/quiz_flow_adapters.dart';
 import 'quiz_flow/quiz_flow_controller.dart';
@@ -88,6 +89,12 @@ class _QuizPlacementScreenState extends State<QuizPlacementScreen> {
       onConfirm: _confirm,
       errorMessageOf: placementErrorMessage,
       retryable: (e) => !isAlreadyPlaced(e),
+      errorBuilder: (context, e) => isAlreadyPlaced(e)
+          ? PlacementDoneView(
+              title: '單字分級測驗',
+              levelOf: (user) => user.quizSuggestedLevel,
+            )
+          : null,
     );
   }
 }
