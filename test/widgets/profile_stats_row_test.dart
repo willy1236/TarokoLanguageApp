@@ -69,7 +69,7 @@ void main() {
       final number = tester.widget<Text>(find.text('365')).style!;
       final label = tester.widget<Text>(find.text('連續學習')).style!;
       final numberSize = AppTypography.size(
-        AppTypography.display24,
+        AppTypography.title,
         seniorMode: senior,
       );
       expect(number.fontSize, numberSize);
@@ -77,7 +77,7 @@ void main() {
       expect(number.color, AppColors.primary);
       expect(
         label.fontSize,
-        AppTypography.size(AppTypography.micro, seniorMode: senior),
+        AppTypography.size(AppTypography.body, seniorMode: senior),
       );
       expect(label.fontSize! + 6, lessThanOrEqualTo(numberSize));
     });
