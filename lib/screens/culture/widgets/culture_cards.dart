@@ -341,7 +341,8 @@ class CultureVideoCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return CultureCoverCard(
       cover: _thumbnail(),
-      // 用縮圖原本的 16:9，不裁掉人臉；固定 120 高時中央播放鈕也會被兩行標題蓋到。
+      // 用縮圖原本的 16:9，不裁掉人臉，封面也比固定 120 高多出空間給播放鈕。
+      // 窄螢幕上 16:9 仍不夠避開兩行疊字標題，播放鈕位置另見 [_thumbnail]。
       coverAspectRatio: 16 / 9,
       coverBadge: _badge(),
       category: VideoCategory.label(video.category),
@@ -371,7 +372,10 @@ class CultureVideoCard extends StatelessWidget {
           )
         else
           _fallbackBackground(),
-        Center(
+        Align(
+          // 一般模式標題疊在封面底部（底距 14＋兩行約 50）。320dp 寬時封面約 156 高，
+          // 置中的播放鈕會被兩行標題壓到約 8px，所以往上挪；精簡模式標題不在圖上，維持置中。
+          alignment: seniorMode ? Alignment.center : const Alignment(0, -0.3),
           child: Container(
             width: buttonSize,
             height: buttonSize,

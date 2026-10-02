@@ -27,17 +27,21 @@ Map<String, dynamic> _article(int id, {String? summary}) => {
   'published_at': '2026-09-01T00:00:00Z',
 };
 
-VideoSummary _video({String? description, int? durationSec, String? source}) =>
-    VideoSummary(
-      id: 1,
-      title: '影片標題',
-      description: description,
-      category: VideoCategory.all.first,
-      source: source ?? VideoSource.hls,
-      durationSec: durationSec,
-      viewCount: 1234,
-      weeklyViewCount: 56,
-    );
+VideoSummary _video({
+  String title = '影片標題',
+  String? description,
+  int? durationSec,
+  String? source,
+}) => VideoSummary(
+  id: 1,
+  title: title,
+  description: description,
+  category: VideoCategory.all.first,
+  source: source ?? VideoSource.hls,
+  durationSec: durationSec,
+  viewCount: 1234,
+  weeklyViewCount: 56,
+);
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -137,6 +141,27 @@ void main() {
       final badge = tester.getRect(find.text('12:05'));
       expect(badge.right, greaterThan(cover.center.dx));
       expect(badge.bottom, greaterThan(cover.center.dy));
+    });
+
+    testWidgets('320dp 寬時兩行疊字標題不會壓到播放鈕', (tester) async {
+      await pumpCard(
+        tester,
+        _video(durationSec: 725, title: '太魯閣族傳統織布與苧麻工藝體驗暨部落長者口述歷史分享會'),
+      );
+
+      final title = find.textContaining('太魯閣族傳統織布');
+      final button = tester.getRect(
+        find
+            .ancestor(
+              of: find.byType(CulturePlayIcon),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final titleRect = tester.getRect(title);
+      // 標題確實換成兩行，這條才有意義。
+      expect(titleRect.height, greaterThan(40));
+      expect(button.bottom, lessThanOrEqualTo(titleRect.top));
     });
 
     testWidgets('YouTube 影片沒有片長時標「YouTube」', (tester) async {
