@@ -42,6 +42,7 @@ import 'services/shop_service.dart';
 import 'services/user_service.dart';
 import 'services/video_call_service.dart';
 import 'shared/widgets/app_update_prompt.dart';
+import 'shared/widgets/scroll_to_top_scope.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 import 'shared/widgets/confirm_dialog.dart';
 
@@ -297,6 +298,7 @@ class _MainContainerState extends State<MainContainer>
   static const int _plazaEventIndex = 2;
   static const int _friendsIndex = 3;
   static const int _profileVideoIndex = 4;
+  static const int _tabCount = 5;
 
   int _currentIndex = 0;
   // 精簡模式首頁省略「族語學習」卡，學習影音分頁預設改開文化影音（1）。
@@ -305,6 +307,11 @@ class _MainContainerState extends State<MainContainer>
   int _plazaEventSubTab = 0;
   int _profileVideoSubTab = 0;
   final _learnCultureReselect = _ReselectSignal();
+  // 每個底部分頁一個「捲回最上面」訊號，順序同 IndexedStack。
+  final _scrollToTopSignals = List.generate(
+    _tabCount,
+    (_) => _ReselectSignal(),
+  );
   String? _displayName;
   int? _millet;
   String? _avatarId;
@@ -348,6 +355,9 @@ class _MainContainerState extends State<MainContainer>
     UserService.userNotifier.removeListener(_onUserChanged);
     NotificationSummaryService.notifier.removeListener(_onSummaryChanged);
     _learnCultureReselect.dispose();
+    for (final signal in _scrollToTopSignals) {
+      signal.dispose();
+    }
     super.dispose();
   }
 
@@ -489,23 +499,33 @@ class _MainContainerState extends State<MainContainer>
     }
   }
 
-  // 底部導航再次點擊目前所在的「學習影音」：通知該頁捲回頂部並重新整理。
+  // 底部導航再次點擊目前所在的分頁：捲回最上面。「學習影音」維持原本的
+  // 捲回頂部並重新整理（由該頁自己處理）。
   void _onBottomTabTap(int index) {
-    if (index == _currentIndex && index == _learnCultureIndex) {
-      _learnCultureReselect.notifyListeners();
+    if (index == _currentIndex) {
+      if (index == _learnCultureIndex) {
+        _learnCultureReselect.notifyListeners();
+      } else {
+        _scrollToTopSignals[index].notifyListeners();
+      }
       return;
     }
     _navigate(index);
   }
 
-  void _navigate(int index, {int? subTab}) => setState(() {
-    _currentIndex = index;
-    if (subTab != null) {
-      if (index == _learnCultureIndex) _learnCultureSubTab = subTab;
-      if (index == _plazaEventIndex) _plazaEventSubTab = subTab;
-      if (index == _profileVideoIndex) _profileVideoSubTab = subTab;
-    }
-  });
+  // 換到另一個分頁時，該分頁（含膠囊切換沒顯示的那塊）從最上面開始；
+  // 只動捲動位置，分類、排序等 State 保留。
+  void _navigate(int index, {int? subTab}) {
+    if (index != _currentIndex) _scrollToTopSignals[index].notifyListeners();
+    setState(() {
+      _currentIndex = index;
+      if (subTab != null) {
+        if (index == _learnCultureIndex) _learnCultureSubTab = subTab;
+        if (index == _plazaEventIndex) _plazaEventSubTab = subTab;
+        if (index == _profileVideoIndex) _profileVideoSubTab = subTab;
+      }
+    });
+  }
 
   // 順序同 _learnCultureIndex 等常數與 TrukuBottomTab。
   List<Widget> _buildTabs() => [
@@ -575,7 +595,13 @@ class _MainContainerState extends State<MainContainer>
           },
           child: Scaffold(
             extendBody: false,
-            body: IndexedStack(index: _currentIndex, children: _buildTabs()),
+            body: IndexedStack(
+              index: _currentIndex,
+              children: [
+                for (final (i, tab) in _buildTabs().indexed)
+                  ScrollToTopScope(signal: _scrollToTopSignals[i], child: tab),
+              ],
+            ),
             bottomNavigationBar: TrukuBottomTab(
               currentIndex: _currentIndex,
               onTap: _onBottomTabTap,
