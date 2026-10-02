@@ -45,7 +45,6 @@ class EventStatusTile extends StatelessWidget {
     final e = event;
     final d = e.startsAt.toLocal();
     final chip = _statusChip();
-    String two(int n) => n.toString().padLeft(2, '0');
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -74,7 +73,7 @@ class EventStatusTile extends StatelessWidget {
                     ),
                   ),
                   Text(
-                    two(d.day),
+                    dayLabel(d),
                     style: AppTypography.serif(
                       fontSize: AppTypography.size(
                         AppTypography.headline,

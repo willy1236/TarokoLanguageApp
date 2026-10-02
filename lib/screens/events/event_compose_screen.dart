@@ -3,6 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
+import '../../core/utils/date_format.dart';
 import '../../models/event_draft.dart';
 import '../../models/event_model.dart';
 import '../../models/picked_location.dart';
@@ -266,21 +267,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     }
   }
 
-  String _formatDateTime(DateTime dt) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${dt.year}/${two(dt.month)}/${two(dt.day)}  ${two(dt.hour)}:${two(dt.minute)}';
-  }
-
-  String _formatDateOnly(DateTime dt) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${dt.year}/${two(dt.month)}/${two(dt.day)}';
-  }
-
-  String _formatTimeOnly(DateTime dt) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${two(dt.hour)}:${two(dt.minute)}';
-  }
-
   // 送出失敗一律用 SnackBar：送出按鈕在固定的 header，錯誤訊息若渲染在表單裡，
   // 使用者按下去會看不到任何反應。與 reminder_compose_screen 的作法一致。
   void _showError(String message) {
@@ -466,12 +452,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                   _buildSummaryCard(
                     icon: Icons.event,
                     label: '日期',
-                    value: _startsAt == null
-                        ? null
-                        : _formatDateOnly(_startsAt!),
-                    subValue: _startsAt == null
-                        ? null
-                        : _formatTimeOnly(_startsAt!),
+                    value: _startsAt == null ? null : formatDate(_startsAt!),
+                    subValue: _startsAt == null ? null : formatTime(_startsAt!),
                     placeholder: '選擇日期',
                     onTap: _isEditing ? null : _pickDateTime,
                     seniorMode: seniorMode,
@@ -1123,7 +1105,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             const SizedBox(width: 10),
             Expanded(
               child: Text(
-                value == null ? placeholder : _formatDateTime(value),
+                value == null ? placeholder : formatDateTime(value),
                 style: TextStyle(
                   fontSize: AppTypography.size(
                     AppTypography.body,

@@ -147,7 +147,7 @@ class EventDetailHero extends StatelessWidget {
             ),
           ),
         Text(
-          '${monthLabel(start)}${start.day}日 · ${weekdayLabel(start)}',
+          '${formatDate(start)} · ${weekdayLabel(start)}',
           style: AppTypography.serif(
             fontStyle: FontStyle.italic,
             fontSize: AppTypography.size(

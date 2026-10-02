@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/date_format.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/app_back_button.dart';
@@ -29,12 +30,7 @@ class ReminderComposeScreen extends StatefulWidget {
   /// 排定的發送時間晚於活動結束時回傳說明文字，否則 null。
   static String? sendTimeAfterEndError(DateTime scheduledAt, DateTime? endsAt) {
     if (endsAt == null || !scheduledAt.isAfter(endsAt)) return null;
-    return '發送時間不能晚於活動結束（${_formatDateTime(endsAt)}）';
-  }
-
-  static String _formatDateTime(DateTime dt) {
-    String two(int n) => n.toString().padLeft(2, '0');
-    return '${dt.year}/${two(dt.month)}/${two(dt.day)}  ${two(dt.hour)}:${two(dt.minute)}';
+    return '發送時間不能晚於活動結束（${formatDateTime(endsAt)}）';
   }
 
   @override
@@ -98,9 +94,6 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
     });
   }
 
-  String _formatDateTime(DateTime dt) =>
-      ReminderComposeScreen._formatDateTime(dt);
-
   Future<void> _submit() async {
     if (_submitting) return;
     final msg = _controller.text.trim();
@@ -148,7 +141,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
       if (!mounted) return;
       final whenText = _sendNow
           ? '立即發送'
-          : '排定於 ${_formatDateTime(_scheduledAt!)}';
+          : '排定於 ${formatDateTime(_scheduledAt!)}';
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('提醒已建立 — $whenText')));
@@ -439,7 +432,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
                   const SizedBox(width: 10),
                   Expanded(
                     child: Text(
-                      _formatDateTime(_scheduledAt!),
+                      formatDateTime(_scheduledAt!),
                       style: TextStyle(
                         fontSize: AppTypography.size(
                           AppTypography.body,
