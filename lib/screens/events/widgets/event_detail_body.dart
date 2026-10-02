@@ -9,6 +9,7 @@ import '../../../shared/widgets/engagement_icon_button.dart';
 import '../../../services/user_service.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../core/constants/app_typography.dart';
+import 'add_to_calendar.dart';
 
 class EventDetailBody extends StatelessWidget {
   final EventDetail event;
@@ -210,7 +211,15 @@ class EventDetailBody extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          _infoRow(Icons.access_time, '時間', timeText, seniorMode),
+          _infoRow(
+            Icons.access_time,
+            '時間',
+            timeText,
+            seniorMode,
+            trailing: canAddToCalendar(e)
+                ? AddToCalendarButton(event: e, seniorMode: seniorMode)
+                : null,
+          ),
           const SizedBox(height: 12),
           if (e.location != null && e.location!.isNotEmpty) ...[
             _infoRow(Icons.location_on_outlined, '地點', e.location!, seniorMode),
@@ -337,7 +346,13 @@ class EventDetailBody extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(IconData icon, String label, String value, bool seniorMode) {
+  Widget _infoRow(
+    IconData icon,
+    String label,
+    String value,
+    bool seniorMode, {
+    Widget? trailing,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -368,6 +383,7 @@ class EventDetailBody extends StatelessWidget {
             ),
           ),
         ),
+        ?trailing,
       ],
     );
   }

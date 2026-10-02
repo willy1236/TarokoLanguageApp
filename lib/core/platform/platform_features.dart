@@ -20,6 +20,9 @@ class PlatformFeatures {
 
   static const videoCallUnsupportedMessage = '視訊通話目前僅支援手機 App';
 
+  /// add_2_calendar 開系統日曆的新增事件畫面；其餘平台改開 Google Calendar 網址。
+  static bool get supportsNativeCalendar => isMobile;
+
   /// better_player_plus HLS 播放器。
   static bool get supportsHlsPlayer => isMobile;
 
