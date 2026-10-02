@@ -212,12 +212,8 @@ class EventDetailBody extends StatelessWidget {
 
           _infoRow(Icons.access_time, '時間', timeText, seniorMode),
           const SizedBox(height: 12),
-          if (e.location != null && e.location!.isNotEmpty) ...[
-            _infoRow(Icons.location_on_outlined, '地點', e.location!, seniorMode),
-            const SizedBox(height: 12),
-          ],
-          if (e.address != null && e.address!.isNotEmpty) ...[
-            _infoRow(Icons.map_outlined, '地址', e.address!, seniorMode),
+          for (final (icon, label, value) in _placeRows(e)) ...[
+            _infoRow(icon, label, value, seniorMode),
             const SizedBox(height: 12),
           ],
           // 刻意寫「相關部落」而非「發起人部落」：標籤由發起人自選。
@@ -335,6 +331,23 @@ class EventDetailBody extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  /// 地點與地址。新活動只填一個地址、地點是從地址截出來的，同一件事不重複
+  /// 顯示兩列；舊活動兩者分開填、互不包含時維持兩列。
+  static List<(IconData, String, String)> _placeRows(EventDetail e) {
+    final location = e.location?.trim() ?? '';
+    final address = e.address?.trim() ?? '';
+    if (address.isEmpty) {
+      return [
+        if (location.isNotEmpty) (Icons.location_on_outlined, '地點', location),
+      ];
+    }
+    return [
+      if (location.isNotEmpty && !address.contains(location))
+        (Icons.location_on_outlined, '地點', location),
+      (Icons.map_outlined, '地址', address),
+    ];
   }
 
   Widget _infoRow(IconData icon, String label, String value, bool seniorMode) {

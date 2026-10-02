@@ -19,13 +19,14 @@ import 'widgets/event_images_field.dart';
 /// （POST /api/events）；帶入既有 EventDetail 時是編輯模式，預填欄位，
 /// 送出呼叫 EventService.updateEvent（PATCH /api/events/:id）。
 ///
-/// **編輯模式只能改後端 PATCH 接受的欄位**：活動名稱、說明、地點、詳細地址、
+/// **編輯模式只能改後端 PATCH 接受的欄位**：活動名稱、說明、地址、
 /// 聯絡 Email/電話、提醒事項、標籤、名額、相關部落。開始時間與報名截止在後端不可改
 /// （牽涉提醒重新排程），所以表單設為唯讀並顯示說明。
 /// 清空語意：文字欄位送空字串即清空；名額留空送 null（不限名額）。
 /// 後端只允許編輯未取消、未開始的活動，否則回 409 EVENT_CLOSED / EVENT_ENDED。
 ///
-/// 後端五個必填：標題 / 活動介紹 / 地點名稱 / 詳細地址 / 開始時間（需未來、1 年內）。
+/// 必填：標題 / 活動介紹 / 地址 / 開始時間（需未來、1 年內）。後端的地點名稱由
+/// 地址推得，見 [EventDraft.location]。
 /// 聯絡 email、電話為選填。
 /// 權限：僅 organizer / admin 角色可發起，一般帳號會收到 403，表單會顯示錯誤訊息。
 ///
@@ -42,7 +43,6 @@ class EventComposeScreen extends StatefulWidget {
 class _EventComposeScreenState extends State<EventComposeScreen> {
   final _title = TextEditingController();
   final _desc = TextEditingController();
-  final _location = TextEditingController();
   final _address = TextEditingController();
   final _email = TextEditingController();
   final _phone = TextEditingController();
@@ -51,7 +51,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   /// 提醒事項：後端 PATCH 支援的欄位之一，只在編輯模式顯示（建立活動的
   /// POST 沒有這個欄位）。
   final _reminderNote = TextEditingController();
-  final _locationFocus = FocusNode();
 
   DateTime? _startsAt;
   DateTime? _registrationDeadline;
@@ -84,7 +83,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     final d = EventDraft.fromDetail(e);
     _title.text = d.title;
     _desc.text = d.description;
-    _location.text = d.location;
     _address.text = d.address;
     _email.text = d.contactEmail;
     _phone.text = d.contactPhone;
@@ -116,7 +114,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   EventDraft get _draft => EventDraft(
     title: _title.text,
     description: _desc.text,
-    location: _location.text,
     address: _address.text,
     startsAt: _startsAt,
     registrationDeadline: _registrationDeadline,
@@ -135,13 +132,11 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   void dispose() {
     _title.dispose();
     _desc.dispose();
-    _location.dispose();
     _address.dispose();
     _email.dispose();
     _phone.dispose();
     _maxParticipants.dispose();
     _reminderNote.dispose();
-    _locationFocus.dispose();
     _images.dispose();
     super.dispose();
   }
@@ -466,51 +461,22 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     seniorMode: seniorMode,
                   ),
                   const SizedBox(height: 18),
-                  if (seniorMode)
-                    Column(
-                      children: [
-                        _buildSummaryCard(
-                          icon: Icons.event,
-                          label: '日期',
-                          value: _startsAt == null
-                              ? null
-                              : _formatDateOnly(_startsAt!),
-                          subValue: _startsAt == null
-                              ? null
-                              : _formatTimeOnly(_startsAt!),
-                          placeholder: '選擇日期',
-                          onTap: _isEditing ? null : _pickDateTime,
-                          seniorMode: seniorMode,
-                        ),
-                        const SizedBox(height: 12),
-                        _buildLocationCard(seniorMode),
-                      ],
-                    )
-                  else
-                    IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Expanded(
-                            child: _buildSummaryCard(
-                              icon: Icons.event,
-                              label: '日期',
-                              value: _startsAt == null
-                                  ? null
-                                  : _formatDateOnly(_startsAt!),
-                              subValue: _startsAt == null
-                                  ? null
-                                  : _formatTimeOnly(_startsAt!),
-                              placeholder: '選擇日期',
-                              onTap: _isEditing ? null : _pickDateTime,
-                              seniorMode: seniorMode,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(child: _buildLocationCard(seniorMode)),
-                        ],
-                      ),
-                    ),
+                  // 地址會換行，不放進跟日期並排的半寬卡片。
+                  _buildSummaryCard(
+                    icon: Icons.event,
+                    label: '日期',
+                    value: _startsAt == null
+                        ? null
+                        : _formatDateOnly(_startsAt!),
+                    subValue: _startsAt == null
+                        ? null
+                        : _formatTimeOnly(_startsAt!),
+                    placeholder: '選擇日期',
+                    onTap: _isEditing ? null : _pickDateTime,
+                    seniorMode: seniorMode,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLocationCard(seniorMode),
                   const SizedBox(height: 18),
                   _label('活動結束時間', required: false, seniorMode: seniorMode),
                   _buildDateField(
@@ -520,14 +486,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     seniorMode: seniorMode,
                   ),
                   _caption('未設定時，預設為活動開始後 3 小時結束', seniorMode),
-                  const SizedBox(height: 18),
-                  _label('詳細地址', required: true, seniorMode: seniorMode),
-                  _textField(
-                    _address,
-                    hint: '例如：花蓮縣秀林鄉…',
-                    maxLength: EventDraft.addressMax,
-                    seniorMode: seniorMode,
-                  ),
                   const SizedBox(height: 18),
                   _label('報名開始時間', required: false, seniorMode: seniorMode),
                   _buildDateField(
@@ -843,7 +801,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               ),
               const SizedBox(width: 6),
               Text(
-                '地點',
+                '地址',
                 style: TextStyle(
                   fontSize: AppTypography.size(
                     AppTypography.caption,
@@ -856,11 +814,13 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
             ],
           ),
           const SizedBox(height: 6),
+          // 地址可能很長，換行最多三行，不要在半寬的卡片裡被截掉看不到。
           TextField(
-            controller: _location,
-            focusNode: _locationFocus,
+            controller: _address,
+            minLines: 1,
+            maxLines: 3,
             inputFormatters: const [
-              Utf16LengthLimitingTextInputFormatter(EventDraft.locationMax),
+              Utf16LengthLimitingTextInputFormatter(EventDraft.addressMax),
             ],
             style: TextStyle(
               fontSize: AppTypography.size(
@@ -871,7 +831,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               color: AppColors.ink,
             ),
             decoration: InputDecoration(
-              hintText: '例如：秀林部落活動中心',
+              hintText: '門牌或描述，例如：秀林鄉富世村 12 號／部落活動中心',
+              hintMaxLines: 3,
               hintStyle: TextStyle(
                 color: AppColors.fog,
                 fontSize: AppTypography.size(

@@ -10,7 +10,6 @@ void main() {
       EventDraft(
         title: '走讀',
         description: '說明',
-        location: '部落',
         address: '秀林鄉',
         startsAt: startsAt ?? future,
         registrationDeadline: deadline,
@@ -37,19 +36,25 @@ void main() {
         const EventDraft(title: ' ').validate(creating: true, now: now),
         '請填寫所有必填欄位',
       );
+      expect(
+        const EventDraft(
+          title: '走讀',
+          description: '說明',
+          address: '  ',
+        ).validate(creating: true, now: now),
+        '請填寫地址',
+      );
     });
 
     test('文字欄位超過後端長度上限（組字中直接送出）', () {
       String? check({
         String title = '走讀',
         String description = '說明',
-        String location = '部落',
         String address = '秀林鄉',
         String reminderNote = '',
       }) => EventDraft(
         title: title,
         description: description,
-        location: location,
         address: address,
         reminderNote: reminderNote,
         startsAt: future,
@@ -60,8 +65,8 @@ void main() {
       // emoji 算 2，與後端 JS `.length` 一致。
       expect(check(title: '😀' * 51), '活動名稱不能超過 100 字');
       expect(check(description: 'a' * 2001), '活動說明不能超過 2000 字');
-      expect(check(location: 'a' * 201), '地點不能超過 200 字');
-      expect(check(address: 'a' * 201), '詳細地址不能超過 200 字');
+      expect(check(address: 'a' * 200), isNull);
+      expect(check(address: 'a' * 201), '地址不能超過 200 字');
       expect(check(reminderNote: 'a' * 501), '提醒事項不能超過 500 字');
       // 後端 trim 後才比長度。
       expect(check(reminderNote: '${'a' * 500}  '), isNull);
@@ -79,7 +84,6 @@ void main() {
         const EventDraft(
           title: 't',
           description: 'd',
-          location: 'l',
           address: 'a',
         ).validate(creating: true, now: now),
         '請選擇活動開始時間',
@@ -100,7 +104,6 @@ void main() {
       EventDraft withTimes({DateTime? ends, DateTime? regStart}) => EventDraft(
         title: '走讀',
         description: '說明',
-        location: '部落',
         address: '秀林鄉',
         startsAt: future,
         endsAt: ends,
@@ -149,7 +152,6 @@ void main() {
     final body = EventDraft(
       title: ' 走讀 ',
       description: '說明',
-      location: '部落',
       address: '秀林鄉',
       startsAt: future,
       contactEmail: '  ',
@@ -166,12 +168,76 @@ void main() {
     expect(body['starts_at'], future.toUtc().toIso8601String());
   });
 
+  group('地址', () {
+    test('短名稱：有分隔符取最後一段', () {
+      expect(EventDraft.shortNameOf('秀林鄉富世村 12 號／部落活動中心'), '部落活動中心');
+      expect(EventDraft.shortNameOf('花蓮縣秀林鄉, 文蘭部落'), '文蘭部落');
+      expect(EventDraft.shortNameOf('崇德、天祥'), '天祥');
+      expect(EventDraft.shortNameOf('富世村/'), '富世村');
+    });
+
+    test('短名稱：空白不算分隔符，去掉郵遞區號與縣市鄉鎮前綴', () {
+      expect(EventDraft.shortNameOf('花蓮縣秀林鄉富世村 12 號'), '富世村 12 號');
+      expect(EventDraft.shortNameOf('972 花蓮縣秀林鄉富世村'), '富世村');
+      expect(EventDraft.shortNameOf('臺北市信義區市府路 1 號'), '市府路 1 號');
+      expect(EventDraft.shortNameOf('秀林鄉富世村'), '富世村');
+      expect(EventDraft.shortNameOf('部落活動中心'), '部落活動中心');
+    });
+
+    test('短名稱：截完是空的用原文', () {
+      expect(EventDraft.shortNameOf('花蓮縣秀林鄉'), '花蓮縣秀林鄉');
+      expect(EventDraft.shortNameOf(' 秀林鄉 '), '秀林鄉');
+    });
+
+    test('送出時 location 由地址推得，address 送完整地址', () {
+      final body = EventDraft(
+        title: '走讀',
+        description: '說明',
+        address: ' 秀林鄉富世村 12 號／活動中心 ',
+        startsAt: future,
+      ).toCreateBody();
+      expect(body['location'], '活動中心');
+      expect(body['address'], '秀林鄉富世村 12 號／活動中心');
+    });
+
+    EventDetail old(String? location, String? address) => EventDetail(
+      id: 1,
+      title: 't',
+      startsAt: future,
+      location: location,
+      address: address,
+      status: 'active',
+    );
+
+    test('舊活動合成一欄時不丟任何一邊的資訊', () {
+      expect(EventDraft.fromDetail(old('部落', '秀林鄉')).address, '部落 秀林鄉');
+      expect(EventDraft.fromDetail(old('活動中心', '秀林鄉活動中心')).address, '秀林鄉活動中心');
+      expect(EventDraft.fromDetail(old('秀林鄉', '秀林鄉')).address, '秀林鄉');
+      expect(EventDraft.fromDetail(old(null, '秀林鄉')).address, '秀林鄉');
+      expect(EventDraft.fromDetail(old('部落', null)).address, '部落');
+    });
+
+    test('沒改地址不送地點與地址；改了兩個都送', () {
+      final e = old('部落', '秀林鄉');
+      final d = EventDraft.fromDetail(e);
+      expect(d.toPatchBody(e), isEmpty);
+      final edited = EventDraft(
+        title: d.title,
+        description: d.description,
+        address: '富世村／活動中心',
+      );
+      expect(edited.toPatchBody(e), {
+        'location': '活動中心',
+        'address': '富世村／活動中心',
+      });
+    });
+  });
+
   group('相關部落', () {
     test('沒選部落時不送 tribe_id，也不送 notify_tribe', () {
       final body = EventDraft(
         title: 't',
         description: 'd',
-        location: 'l',
         address: 'a',
         startsAt: future,
         notifyTribe: true,
@@ -184,7 +250,6 @@ void main() {
       final body = EventDraft(
         title: 't',
         description: 'd',
-        location: 'l',
         address: 'a',
         startsAt: future,
         tribeId: 30,
@@ -209,7 +274,6 @@ void main() {
       final cleared = EventDraft(
         title: d.title,
         description: d.description,
-        location: d.location,
         address: d.address,
         startsAt: d.startsAt,
       );
@@ -230,7 +294,6 @@ void main() {
       final edited = EventDraft(
         title: d.title,
         description: '新說明',
-        location: d.location,
         address: d.address,
         startsAt: d.startsAt,
         contactEmail: d.contactEmail,
@@ -257,7 +320,6 @@ void main() {
       return EventDraft(
         title: title ?? d.title,
         description: d.description,
-        location: d.location,
         address: d.address,
         startsAt: startsAt ?? d.startsAt,
         registrationDeadline: deadline ?? d.registrationDeadline,

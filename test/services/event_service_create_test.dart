@@ -18,8 +18,7 @@ void main() {
   final draft = EventDraft(
     title: '豐年祭',
     description: '一起來',
-    location: '部落廣場',
-    address: '花蓮縣秀林鄉',
+    address: '花蓮縣秀林鄉部落廣場',
     startsAt: DateTime.now().add(const Duration(days: 7)),
     tribeId: 1,
     notifyTribe: true,

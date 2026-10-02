@@ -95,13 +95,14 @@ void main() {
 
     expect(find.text('編輯活動'), findsOneWidget);
     expect(find.text('部落豐年祭'), findsWidgets);
-    // 表單多了活動結束時間，地址欄預設在可視範圍外。
+    // 舊活動地點與地址分開填、互不包含：合成一欄時兩邊都留著。
+    const merged = '花蓮縣秀林鄉 秀林鄉中正路 1 號';
     await tester.scrollUntilVisible(
-      find.text('秀林鄉中正路 1 號'),
+      find.text(merged),
       200,
       scrollable: find.byType(Scrollable).first,
     );
-    expect(find.text('秀林鄉中正路 1 號'), findsWidgets);
+    expect(find.text(merged), findsOneWidget);
     expect(find.textContaining('需要調整時間，請取消這場活動後重新發起'), findsOneWidget);
   });
 

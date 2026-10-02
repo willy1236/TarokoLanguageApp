@@ -6,13 +6,15 @@ import 'event_model.dart';
 /// 文字欄位保留使用者輸入的原樣，trim 在驗證與組 body 時才做；
 /// [maxParticipantsText] 也保留原字串，才能區分「留空＝不限」與「亂填」。
 ///
+/// 地點只有一個 [address] 輸入；後端仍要 location（列表、推播用的短名稱）
+/// 與 address 兩個必填，location 由 [address] 推得，見 [location]。
+///
 /// 後端契約（PATCH /api/events/:id）：只接受 [editableFields]；省略＝不動，
 /// 文字欄位送空字串或 null 皆為清空（title/location/address 不可清空），
 /// 名額送 null＝不限名額。所有時間欄位（開始、結束、報名開始／截止）不可改。
 class EventDraft {
   final String title;
   final String description;
-  final String location;
   final String address;
   final DateTime? startsAt;
   final DateTime? registrationDeadline;
@@ -38,7 +40,6 @@ class EventDraft {
   const EventDraft({
     this.title = '',
     this.description = '',
-    this.location = '',
     this.address = '',
     this.startsAt,
     this.registrationDeadline,
@@ -56,8 +57,7 @@ class EventDraft {
   factory EventDraft.fromDetail(EventDetail e) => EventDraft(
     title: e.title,
     description: e.description ?? '',
-    location: e.location ?? '',
-    address: e.address ?? '',
+    address: _mergeAddress(e.location, e.address),
     startsAt: e.startsAt,
     registrationDeadline: e.registrationDeadline,
     registrationStartsAt: e.registrationStartsAt,
@@ -84,13 +84,41 @@ class EventDraft {
     'tribe_id',
   };
 
+  /// 舊活動的地點與地址是分開填的，合成一欄時兩邊的資訊都要留著：
+  /// 地址已包含地點名稱就只用地址，否則接在前面。
+  static String _mergeAddress(String? location, String? address) {
+    final loc = location?.trim() ?? '';
+    final addr = address?.trim() ?? '';
+    if (loc.isEmpty || addr.contains(loc)) return addr;
+    if (addr.isEmpty) return loc;
+    return '$loc $addr';
+  }
+
+  /// 送給後端的地點名稱，列表卡片、搜尋結果、提醒推播都用它。
+  String get location => shortNameOf(address);
+
+  /// 從地址截出短名稱：有分隔符（逗號、頓號、斜線）取最後一段；否則去掉開頭的
+  /// 郵遞區號與縣市、鄉鎮市區前綴；截完是空的就用原文。空白不算分隔符，
+  /// 「富世村 12 號」才不會截成「號」。
+  static String shortNameOf(String address) {
+    final text = address.trim();
+    final parts = text.split(RegExp(r'[,，、/／]'));
+    final segments = parts.map((s) => s.trim()).where((s) => s.isNotEmpty);
+    if (parts.length > 1 && segments.isNotEmpty) return segments.last;
+    final stripped = text.replaceFirst(_regionPrefix, '').trim();
+    return stripped.isEmpty ? text : stripped;
+  }
+
+  static final _regionPrefix = RegExp(
+    r'^(\d{3,6}\s*)?(.{2,3}?[縣市])?(.{1,3}?[鄉鎮市區])?',
+  );
+
   /// 名額：留空 = 不限（null）；格式錯誤時也回 null，先呼叫 [validate] 擋掉。
   int? get maxParticipants => int.tryParse(maxParticipantsText.trim());
 
   /// 後端的文字欄位長度上限，以 UTF-16 單位計（與 JS `.length` 一致）。
   static const titleMax = 100;
   static const descriptionMax = 2000;
-  static const locationMax = 200;
   static const addressMax = 200;
   static const reminderNoteMax = 500;
 
@@ -100,18 +128,15 @@ class EventDraft {
   /// 回傳第一個錯誤訊息；null 表示可送出。
   /// [creating] 為 false（編輯模式）時時間欄位是唯讀的，不重驗。
   String? validate({required bool creating, required DateTime now}) {
-    if (title.trim().isEmpty ||
-        description.trim().isEmpty ||
-        location.trim().isEmpty ||
-        address.trim().isEmpty) {
+    if (title.trim().isEmpty || description.trim().isEmpty) {
       return '請填寫所有必填欄位';
     }
+    if (address.trim().isEmpty) return '請填寫地址';
     // 輸入框的 formatter 在組字中會先放行，直接送出時可能超過上限。
     for (final (label, text, max) in [
       ('活動名稱', title, titleMax),
       ('活動說明', description, descriptionMax),
-      ('地點', location, locationMax),
-      ('詳細地址', address, addressMax),
+      ('地址', address, addressMax),
       ('提醒事項', reminderNote, reminderNoteMax),
     ]) {
       if (text.trim().length > max) return '$label不能超過 $max 字';

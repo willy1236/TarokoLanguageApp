@@ -50,17 +50,19 @@ Future<void> _openForm(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-/// 填好建立活動的五個必填欄位；日期時間用選擇器的預設值（明天、一小時後）。
+/// 填好建立活動的四個必填欄位；日期時間用選擇器的預設值（明天、一小時後）。
 Future<void> _fillRequired(WidgetTester tester) async {
   await tester.enterText(find.widgetWithText(TextField, '例如：青年族語營'), '豐年祭');
-  await tester.enterText(find.widgetWithText(TextField, '例如：秀林部落活動中心'), '活動中心');
+  await tester.enterText(
+    find.widgetWithText(TextField, '門牌或描述，例如：秀林鄉富世村 12 號／部落活動中心'),
+    '秀林鄉中正路 1 號',
+  );
   await tester.tap(find.text('選擇日期'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('OK'));
   await tester.pumpAndSettle();
   await tester.tap(find.text('OK'));
   await tester.pumpAndSettle();
-  await _enterBelow(tester, '例如：花蓮縣秀林鄉…', '秀林鄉中正路 1 號');
   await _enterBelow(tester, '介紹活動內容、流程、注意事項…', '一起來跳舞');
 }
 
