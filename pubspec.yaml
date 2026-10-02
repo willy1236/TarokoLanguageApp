@@ -82,10 +82,9 @@ dependencies:
   youtube_player_iframe: ^6.0.2
   firebase_remote_config: ^6.7.0
   package_info_plus: ^10.2.1
-  # 活動發布的地圖選點：地圖、目前位置、地點搜尋（原生 Places SDK，Web 走 Maps JS）、
+  # 活動發布的地圖選點：地圖、地點搜尋（原生 Places SDK，Web 走 Maps JS）、
   # 手機的反向地理編碼（系統內建，Web 改打 Geocoding API）。金鑰見 lib/core/constants/maps_config.dart
   google_maps_flutter: ^2.18.1
-  geolocator: ^14.1.1
   flutter_google_places_sdk: ^0.4.3
   geocoding: ^5.0.0
 

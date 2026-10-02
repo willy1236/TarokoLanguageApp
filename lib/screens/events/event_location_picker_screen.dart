@@ -4,7 +4,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -15,7 +14,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/app_back_button.dart';
 
 class EventLocationPickerScreen extends StatefulWidget {
-  /// 編輯時已有的選點，地圖從這裡開始；null 時從發起人目前位置開始。
+  /// 編輯時已有的選點，地圖從這裡開始；null 時從秀林鄉開始。
   final PickedLocation? initial;
 
   const EventLocationPickerScreen({super.key, this.initial});
@@ -25,8 +24,8 @@ class EventLocationPickerScreen extends StatefulWidget {
       _EventLocationPickerScreenState();
 }
 
-/// 拒絕定位權限或定位失敗時的預設中心：花蓮秀林鄉。
-const _fallbackCenter = LatLng(24.1167, 121.6208);
+/// 新建活動時的地圖起點：花蓮秀林鄉。
+const _defaultCenter = LatLng(24.1167, 121.6208);
 const _zoom = 16.0;
 const _searchDebounce = Duration(milliseconds: 400);
 const _initTimeout = Duration(seconds: 15);
@@ -41,7 +40,7 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
   final _search = TextEditingController();
   final _searchFocus = FocusNode();
 
-  /// 地圖起點；定位完成（或放棄）前是 null，先顯示載入中。
+  /// 地圖起點；Web 的 Maps JS 載完前是 null，先顯示載入中。
   LatLng? _start;
   late LatLng _center;
 
@@ -77,7 +76,7 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
     final initial = widget.initial;
     final start = initial != null
         ? LatLng(initial.latitude, initial.longitude)
-        : await _currentPosition() ?? _fallbackCenter;
+        : _defaultCenter;
     // Web 的地圖靠 Places 初始化時注入的 Maps JS，要先等它載完。Maps JS 載不到
     // （網路、CSP、金鑰被拒）時外掛不會回報錯誤，只會一直等，所以要設逾時。
     try {
@@ -98,30 +97,6 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
       _address = initial?.address;
     });
     if (initial == null) _resolveAddress(start);
-  }
-
-  Future<LatLng?> _currentPosition() async {
-    try {
-      if (!await Geolocator.isLocationServiceEnabled()) return null;
-      var permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-      }
-      if (permission == LocationPermission.denied ||
-          permission == LocationPermission.deniedForever) {
-        return null;
-      }
-      final p = await Geolocator.getCurrentPosition(
-        locationSettings: const LocationSettings(
-          accuracy: LocationAccuracy.high,
-          timeLimit: Duration(seconds: 10),
-        ),
-      );
-      return LatLng(p.latitude, p.longitude);
-    } catch (e) {
-      debugPrint('EventLocationPickerScreen: 定位失敗，改用預設位置：$e');
-      return null;
-    }
   }
 
   @override
@@ -286,8 +261,7 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
                         onCameraMoveStarted: _onCameraMoveStarted,
                         onCameraMove: _onCameraMove,
                         onCameraIdle: _onCameraIdle,
-                        myLocationEnabled: true,
-                        myLocationButtonEnabled: true,
+                        myLocationButtonEnabled: false,
                         zoomControlsEnabled: false,
                         mapToolbarEnabled: false,
                       ),
