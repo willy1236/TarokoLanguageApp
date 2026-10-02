@@ -12,6 +12,7 @@ import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/related_tribe_field.dart';
+import '../../shared/utils/pick_date_time.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 import 'event_location_picker_screen.dart';
 import 'widgets/event_images_field.dart';
@@ -186,25 +187,27 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
 
   Future<void> _pickDateTime() async {
     final now = DateTime.now();
-    final date = await showDatePicker(
-      context: context,
-      initialDate: _startsAt ?? now.add(const Duration(days: 1)),
+    final tomorrow = now.add(const Duration(days: 1));
+    final hourLater = now.add(const Duration(hours: 1));
+    final picked = await pickDateTime(
+      context,
+      // 沒選過時，日期預設明天、時間預設一小時後。
+      initial:
+          _startsAt ??
+          DateTime(
+            tomorrow.year,
+            tomorrow.month,
+            tomorrow.day,
+            hourLater.hour,
+            hourLater.minute,
+          ),
       firstDate: now,
       lastDate: now.add(const Duration(days: 365)),
-      helpText: '選擇活動日期',
+      dateHelp: '選擇活動日期',
+      timeHelp: '選擇活動時間',
     );
-    if (date == null || !mounted) return;
-    final t = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(
-        _startsAt ?? now.add(const Duration(hours: 1)),
-      ),
-      helpText: '選擇活動時間',
-    );
-    if (t == null || !mounted) return;
-    setState(() {
-      _startsAt = DateTime(date.year, date.month, date.day, t.hour, t.minute);
-    });
+    if (picked == null || !mounted) return;
+    setState(() => _startsAt = picked);
   }
 
   Future<void> _pickRegistrationDeadline() async {
@@ -216,57 +219,16 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         (_startsAt != null
             ? _startsAt!.subtract(const Duration(hours: 2))
             : now);
-    final date = await showDatePicker(
-      context: context,
-      initialDate: defaultDeadline.isBefore(now) ? now : defaultDeadline,
+    final picked = await pickDateTime(
+      context,
+      initial: defaultDeadline,
       firstDate: now,
       lastDate: lastDate.isAfter(now) ? lastDate : now,
-      helpText: '選擇報名截止日期',
+      dateHelp: '選擇報名截止日期',
+      timeHelp: '選擇報名截止時間',
     );
-    if (date == null || !mounted) return;
-    final t = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(defaultDeadline),
-      helpText: '選擇報名截止時間',
-    );
-    if (t == null || !mounted) return;
-    setState(() {
-      _registrationDeadline = DateTime(
-        date.year,
-        date.month,
-        date.day,
-        t.hour,
-        t.minute,
-      );
-    });
-  }
-
-  /// 依序選日期與時間；任一步取消回 null。
-  Future<DateTime?> _pickDateAndTime({
-    required DateTime initial,
-    required DateTime firstDate,
-    required DateTime lastDate,
-    required String dateHelp,
-    required String timeHelp,
-  }) async {
-    final clamped = initial.isBefore(firstDate)
-        ? firstDate
-        : (initial.isAfter(lastDate) ? lastDate : initial);
-    final date = await showDatePicker(
-      context: context,
-      initialDate: clamped,
-      firstDate: firstDate,
-      lastDate: lastDate,
-      helpText: dateHelp,
-    );
-    if (date == null || !mounted) return null;
-    final t = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(initial),
-      helpText: timeHelp,
-    );
-    if (t == null || !mounted) return null;
-    return DateTime(date.year, date.month, date.day, t.hour, t.minute);
+    if (picked == null || !mounted) return;
+    setState(() => _registrationDeadline = picked);
   }
 
   Future<void> _pickEndsAt() async {
@@ -275,20 +237,22 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       _showError('請先選擇活動開始時間');
       return;
     }
-    final picked = await _pickDateAndTime(
+    final picked = await pickDateTime(
+      context,
       initial: _endsAt ?? starts.add(const Duration(hours: 3)),
       firstDate: DateTime(starts.year, starts.month, starts.day),
       lastDate: starts.add(EventDraft.maxDuration),
       dateHelp: '選擇活動結束日期',
       timeHelp: '選擇活動結束時間',
     );
-    if (picked != null) setState(() => _endsAt = picked);
+    if (picked != null && mounted) setState(() => _endsAt = picked);
   }
 
   Future<void> _pickRegistrationStartsAt() async {
     final now = DateTime.now();
     final last = _registrationDeadline ?? _startsAt;
-    final picked = await _pickDateAndTime(
+    final picked = await pickDateTime(
+      context,
       initial: _registrationStartsAt ?? now.add(const Duration(hours: 1)),
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: last != null && last.isAfter(now)
@@ -297,7 +261,9 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       dateHelp: '選擇報名開始日期',
       timeHelp: '選擇報名開始時間',
     );
-    if (picked != null) setState(() => _registrationStartsAt = picked);
+    if (picked != null && mounted) {
+      setState(() => _registrationStartsAt = picked);
+    }
   }
 
   String _formatDateTime(DateTime dt) {

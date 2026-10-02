@@ -5,6 +5,7 @@ import '../../core/network/api_client.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/utils/pick_date_time.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 
 /// 發送提醒表單，送出時呼叫 POST /api/events/:id/reminders。
@@ -75,26 +76,15 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
       ).showSnackBar(const SnackBar(content: Text('活動已結束，無法排定發送時間')));
       return;
     }
-    var initialDate = _scheduledAt ?? now.add(const Duration(hours: 1));
-    if (initialDate.isBefore(now)) initialDate = now;
-    if (initialDate.isAfter(lastDate)) initialDate = lastDate;
-    final date = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
+    final picked = await pickDateTime(
+      context,
+      initial: _scheduledAt ?? now.add(const Duration(hours: 1)),
       firstDate: now,
       lastDate: lastDate,
-      helpText: '選擇發送日期',
+      dateHelp: '選擇發送日期',
+      timeHelp: '選擇發送時間',
     );
-    if (date == null || !mounted) return;
-    final t = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(
-        _scheduledAt ?? now.add(const Duration(hours: 1)),
-      ),
-      helpText: '選擇發送時間',
-    );
-    if (t == null || !mounted) return;
-    final picked = DateTime(date.year, date.month, date.day, t.hour, t.minute);
+    if (picked == null || !mounted) return;
     final error = ReminderComposeScreen.sendTimeAfterEndError(picked, endsAt);
     if (error != null) {
       ScaffoldMessenger.of(
