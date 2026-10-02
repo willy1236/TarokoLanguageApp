@@ -227,6 +227,8 @@ class EventFeaturedCard extends StatelessWidget {
                         ),
                         Text(
                           e.location ?? '線上',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: AppTypography.size(
                               AppTypography.caption,
@@ -515,6 +517,8 @@ class EventList extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     '${_time(d)} · ${e.location ?? '線上'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: AppTypography.size(
                         AppTypography.caption,
