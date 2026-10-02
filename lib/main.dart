@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
+import 'core/constants/picker_themes.dart';
 import 'core/constants/app_typography.dart';
 import 'firebase_options.dart';
 import 'screens/account/account_pending_screen.dart';
@@ -161,6 +162,8 @@ class KariTrukuApp extends StatelessWidget {
           secondary: AppColors.surfaceVariant,
           surface: AppColors.surface,
         ),
+        datePickerTheme: PickerThemes.date,
+        timePickerTheme: PickerThemes.time,
         textTheme: GoogleFonts.notoSansTcTextTheme(
           const TextTheme(
             bodySmall: TextStyle(
