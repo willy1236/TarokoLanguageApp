@@ -17,6 +17,10 @@ class PillSegmentedToggle extends StatelessWidget {
   final List<PillSegmentedItem> items;
   final int index;
   final ValueChanged<int> onChanged;
+
+  /// 內容區左右滑動的進度（-1..1），選中色塊預先往隔壁段移這麼多格；
+  /// 文字顏色仍依 [index]，放開真的換段後才變。見 SwipeSegmentSwitcher。
+  final double dragProgress;
   final Color backgroundColor;
   final Color selectedColor;
   final Color selectedTextColor;
@@ -27,6 +31,7 @@ class PillSegmentedToggle extends StatelessWidget {
     required this.items,
     required this.index,
     required this.onChanged,
+    this.dragProgress = 0,
     this.backgroundColor = AppColors.cream,
     this.selectedColor = AppColors.primary,
     this.selectedTextColor = AppColors.creamLight,
@@ -46,11 +51,41 @@ class PillSegmentedToggle extends StatelessWidget {
         color: backgroundColor,
         borderRadius: BorderRadius.circular(28),
       ),
-      child: Row(
-        children: [
-          for (var i = 0; i < items.length; i++)
-            Expanded(child: _segment(i, seniorMode)),
-        ],
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final segmentWidth = constraints.maxWidth / items.length;
+          final position = (index + dragProgress).clamp(
+            0.0,
+            items.length - 1.0,
+          );
+          return Stack(
+            children: [
+              // 跟手時不加動畫，否則色塊會落後手指；點擊換段才滑過去。
+              AnimatedPositioned(
+                duration: dragProgress == 0
+                    ? const Duration(milliseconds: 200)
+                    : Duration.zero,
+                curve: Curves.easeOut,
+                top: 0,
+                bottom: 0,
+                left: position * segmentWidth,
+                width: segmentWidth,
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    color: selectedColor,
+                    borderRadius: BorderRadius.circular(24),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  for (var i = 0; i < items.length; i++)
+                    Expanded(child: _segment(i, seniorMode)),
+                ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -69,10 +104,6 @@ class PillSegmentedToggle extends StatelessWidget {
         constraints: BoxConstraints(minHeight: seniorMode ? 56 : 0),
         alignment: Alignment.center,
         padding: EdgeInsets.symmetric(vertical: seniorMode ? 12 : 14),
-        decoration: BoxDecoration(
-          color: selected ? selectedColor : Colors.transparent,
-          borderRadius: BorderRadius.circular(24),
-        ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
