@@ -7,6 +7,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:typed_data';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -101,6 +102,42 @@ const _pngBase64 =
     'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=';
 
 Map<String, Object?> _created() => {'id': _createdId};
+
+/// 每次挑圖依序回傳 [labels] 各一張；PNG 後面接上標記字，上傳的 multipart
+/// 內文裡找得到，用來比對順序（解碼器會忽略 IEND 之後的資料）。
+void _labeledPicker(List<String> labels) {
+  pickImagesForUpload = ({required int limit, required int maxBytes}) async => (
+    images: [
+      for (final label in labels)
+        Uint8List.fromList([...base64Decode(_pngBase64), ...latin1.encode(label)]),
+    ],
+    skippedNotice: null,
+  );
+}
+
+Iterable<ReorderableDelayedDragStartListener> _dragListeners(
+  WidgetTester tester,
+) => tester.widgetList<ReorderableDelayedDragStartListener>(
+  find.byType(ReorderableDelayedDragStartListener),
+);
+
+/// 長按第 [from] 張縮圖、往左拖 [slots] 格後放開。
+Future<void> _dragThumbLeft(WidgetTester tester, int from, int slots) async {
+  final thumbs = find.descendant(
+    of: find.byType(EventImagesField),
+    matching: find.byType(Image),
+  );
+  final start = tester.getCenter(thumbs.at(from));
+  final step = start.dx - tester.getCenter(thumbs.at(from - 1)).dx;
+  final gesture = await tester.startGesture(start);
+  await tester.pump(kLongPressTimeout + const Duration(milliseconds: 100));
+  for (var i = 0; i < 10; i++) {
+    await gesture.moveBy(Offset(-step * slots / 10, 0));
+    await tester.pump(const Duration(milliseconds: 16));
+  }
+  await gesture.up();
+  await tester.pumpAndSettle();
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -259,6 +296,100 @@ void main() {
 
       expect(paths, ['/api/events', _uploadPath]);
     });
+
+    testWidgets('長按拖到第一位的那張變封面，上傳順序跟著拖曳後的順序', (tester) async {
+      _labeledPicker(['PHOTO-A', 'PHOTO-B', 'PHOTO-C']);
+      final requests = <http.Request>[];
+      installMockClient({
+        '/api/events': jsonResponse(_created(), status: 201),
+        _uploadPath: jsonResponse({'images': <Object?>[]}, status: 201),
+      }, onRequest: requests.add);
+      await tester.pumpWidget(_host(onPop: (_) {}));
+      await _openForm(tester);
+      await tester.tap(find.text('新增照片'));
+      await tester.pumpAndSettle();
+      expect(find.text('長按照片可拖曳調整順序'), findsOneWidget);
+
+      await _dragThumbLeft(tester, 2, 2);
+
+      // 封面標籤仍只有一個，在最左邊那格。
+      expect(find.text('封面'), findsOneWidget);
+      final thumbs = find.descendant(
+        of: find.byType(EventImagesField),
+        matching: find.byType(Image),
+      );
+      final first = tester.getRect(thumbs.first);
+      expect(first.contains(tester.getCenter(find.text('封面'))), isTrue);
+
+      await _fillRequired(tester);
+      await tester.tap(find.text('發布'));
+      await tester.pumpAndSettle();
+
+      final body = latin1.decode(requests.last.bodyBytes);
+      expect(requests.last.url.path, _uploadPath);
+      final positions = [
+        for (final label in ['PHOTO-C', 'PHOTO-A', 'PHOTO-B'])
+          body.indexOf(label),
+      ];
+      expect(positions.every((p) => p >= 0), isTrue);
+      expect(positions, orderedEquals([...positions]..sort()));
+    });
+
+    testWidgets('只有一張照片：不能拖、沒有拖曳提示', (tester) async {
+      _fakePicker(count: 1);
+      await tester.pumpWidget(_host(onPop: (_) {}));
+      await _openForm(tester);
+      await tester.tap(find.text('新增照片'));
+      await tester.pumpAndSettle();
+
+      expect(_dragListeners(tester).map((l) => l.enabled), [false]);
+      expect(find.text('長按照片可拖曳調整順序'), findsNothing);
+    });
+
+    testWidgets('挑圖中不能拖', (tester) async {
+      _fakePicker(count: 2);
+      await tester.pumpWidget(_host(onPop: (_) {}));
+      await _openForm(tester);
+      await tester.tap(find.text('新增照片'));
+      await tester.pumpAndSettle();
+      expect(_dragListeners(tester).every((l) => l.enabled), isTrue);
+
+      final picking = Completer<PickedImages>();
+      pickImagesForUpload = ({required int limit, required int maxBytes}) =>
+          picking.future;
+      await tester.tap(find.text('新增照片'));
+      await tester.pump();
+
+      expect(_dragListeners(tester).any((l) => l.enabled), isFalse);
+      picking.complete((images: <Uint8List>[], skippedNotice: null));
+      await tester.pumpAndSettle();
+      expect(_dragListeners(tester).every((l) => l.enabled), isTrue);
+    });
+
+    testWidgets('送出中不能拖', (tester) async {
+      _fakePicker(count: 2);
+      installMockClient(
+        {
+          '/api/events': jsonResponse(_created(), status: 201),
+          _uploadPath: jsonResponse({'images': <Object?>[]}, status: 201),
+        },
+        delayFor: (_) => const Duration(milliseconds: 500),
+      );
+      await tester.pumpWidget(_host(onPop: (_) {}));
+      await _openForm(tester);
+      await tester.tap(find.text('新增照片'));
+      await tester.pumpAndSettle();
+      await _fillRequired(tester);
+
+      await tester.tap(find.text('發布'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.drag(find.byType(Scrollable).first, const Offset(0, 3000));
+      await tester.pump();
+
+      expect(_dragListeners(tester), hasLength(2));
+      expect(_dragListeners(tester).any((l) => l.enabled), isFalse);
+      await tester.pumpAndSettle();
+    });
   });
 
   group('挑圖', () {
@@ -341,6 +472,18 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('將刪除'), findsNothing);
       expect(find.text('2/6 張・第一張是封面'), findsOneWidget);
+    });
+
+    testWidgets('有既有照片時不能排序：既有與新照片都不能拖、沒有拖曳提示', (tester) async {
+      _fakePicker(count: 2);
+      await tester.pumpWidget(_host(editing: editing(), onPop: (_) {}));
+      await _openForm(tester);
+      await tester.tap(find.text('新增照片'));
+      await tester.pumpAndSettle();
+
+      expect(_dragListeners(tester), hasLength(4));
+      expect(_dragListeners(tester).any((l) => l.enabled), isFalse);
+      expect(find.text('長按照片可拖曳調整順序'), findsNothing);
     });
 
     testWidgets('按返回放棄：照片與文字都不送出', (tester) async {

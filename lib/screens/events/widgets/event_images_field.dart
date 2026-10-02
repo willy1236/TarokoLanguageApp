@@ -226,6 +226,8 @@ class _EventImagesFieldState extends State<EventImagesField> {
     final coverIndex = items.indexWhere(
       (item) => item.existing == null || !_c.isRemoved(item.existing!),
     );
+    // 挑圖中、送出中、只有一張、或有既有照片（編輯）時不能拖。
+    final canDrag = widget.enabled && _c.canReorder;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -235,11 +237,20 @@ class _EventImagesFieldState extends State<EventImagesField> {
             scrollDirection: Axis.horizontal,
             buildDefaultDragHandles: false,
             itemCount: items.length,
-            onReorderItem: (_, _) {},
+            onReorderItem: (from, to) {
+              if (widget.enabled) _c.move(from, to);
+            },
+            proxyDecorator: (_, i, animation) =>
+                _buildDragProxy(items, i, size, animation, coverIndex),
             itemBuilder: (_, i) => Padding(
               key: _itemKey(items[i]),
               padding: const EdgeInsets.only(right: 8),
-              child: _buildThumb(items, i, size, isCover: i == coverIndex),
+              // 長按才開始拖，點一下照舊是預覽。
+              child: ReorderableDelayedDragStartListener(
+                index: i,
+                enabled: canDrag,
+                child: _buildThumb(items, i, size, isCover: i == coverIndex),
+              ),
             ),
             // 「新增」格不參與排序。
             footer: _c.remaining > 0 ? _buildAddTile(size) : null,
@@ -253,9 +264,50 @@ class _EventImagesFieldState extends State<EventImagesField> {
             color: AppColors.fog,
           ),
         ),
+        if (_c.canReorder)
+          Text(
+            '長按照片可拖曳調整順序',
+            style: AppTypography.bodyStyle(
+              seniorMode: seniorMode,
+              color: AppColors.fog,
+            ),
+          ),
       ],
     );
   }
+
+  /// 拖曳中的那張：浮起來加陰影。
+  Widget _buildDragProxy(
+    List<_Item> items,
+    int index,
+    double size,
+    Animation<double> animation,
+    int coverIndex,
+  ) => AnimatedBuilder(
+    animation: animation,
+    builder: (_, _) {
+      final t = Curves.easeInOut.transform(animation.value);
+      return Material(
+        type: MaterialType.transparency,
+        child: Padding(
+          padding: const EdgeInsets.only(right: 8),
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(10),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.ink.withValues(alpha: 0.35 * t),
+                  blurRadius: 12 * t,
+                  offset: Offset(0, 4 * t),
+                ),
+              ],
+            ),
+            child: _buildThumb(items, index, size, isCover: index == coverIndex),
+          ),
+        ),
+      );
+    },
+  );
 
   Widget _buildThumb(
     List<_Item> items,
