@@ -470,7 +470,11 @@ class CultureArticleCard extends StatelessWidget {
           : const CultureWeaveCover(),
       category: ArticleCategory.label(item.category),
       title: item.title,
-      summary: item.summary ?? '這篇文章還沒有摘要，點進去看看內容吧',
+      // 空字串或只有空白也算沒有摘要，照樣顯示引導字。
+      summary: switch (item.summary?.trim()) {
+        final text? when text.isNotEmpty => text,
+        _ => '這篇文章還沒有摘要，點進去看看內容吧',
+      },
       seniorMode: seniorMode,
       onTap: onTap,
     );

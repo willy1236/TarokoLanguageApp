@@ -56,7 +56,7 @@ void main() {
     Future<void> pumpSection(WidgetTester tester, {bool senior = false}) async {
       installMockClient({
         '/api/articles': {
-          'total': 3,
+          'total': 4,
           'page': 1,
           'page_size': 20,
           'sort': 'latest',
@@ -64,6 +64,7 @@ void main() {
             _article(1, summary: '摘要 1'),
             _article(2, summary: '摘要 2'),
             _article(3), // 沒有摘要
+            _article(4, summary: '   '), // 只有空白也算沒有摘要
           ],
         },
       });
@@ -83,9 +84,9 @@ void main() {
     testWidgets('每一篇（含第一篇）都是大圖卡，看不到閱讀數', (tester) async {
       await pumpSection(tester);
 
-      expect(find.byType(CultureCoverCard), findsNWidgets(3));
+      expect(find.byType(CultureCoverCard), findsNWidgets(4));
       expect(find.text('摘要 2'), findsOneWidget);
-      expect(find.text('這篇文章還沒有摘要，點進去看看內容吧'), findsOneWidget);
+      expect(find.text('這篇文章還沒有摘要，點進去看看內容吧'), findsNWidgets(2));
       expect(find.textContaining('閱讀'), findsNothing);
       expect(find.textContaining('1234'), findsNothing);
       // 排序字「本週熱門」也含「本週」，改用本週次數本身判斷。
@@ -95,7 +96,7 @@ void main() {
     testWidgets('精簡模式標題在封面下方、不顯示摘要', (tester) async {
       await pumpSection(tester, senior: true);
 
-      expect(find.byType(CultureCoverCard), findsNWidgets(3));
+      expect(find.byType(CultureCoverCard), findsNWidgets(4));
       expect(find.text('文章 2'), findsOneWidget);
       expect(find.text('摘要 1'), findsNothing);
       expect(find.text('摘要 2'), findsNothing);
