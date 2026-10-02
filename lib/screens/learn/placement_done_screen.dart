@@ -3,7 +3,7 @@
 //
 // 兩種進入方式：學習頁已知做過就直接推這頁；或測驗頁開始時後端回 ALREADY_PLACED
 // （學習頁資料過時），由 QuizFlowView 的 errorBuilder 換成 [PlacementDoneView]。
-// 版面比照分級結果頁：酒紅頂部 + 左上返回鍵 + 主要按鈕。
+// 內容不多，不套結果頁的酒紅頂部（下方會大片留白），改成整頁置中＋按鈕貼底。
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
@@ -88,13 +88,40 @@ class _PlacementDoneViewState extends State<PlacementDoneView> {
       listenable: seniorModeController,
       builder: (context, _) {
         final seniorMode = seniorModeController.enabled;
-        return ListView(
-          padding: EdgeInsets.zero,
-          children: [
-            _buildHeader(context, seniorMode),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-              child: _buildButton(context, seniorMode),
+        // 內容不多，整頁置中、按鈕貼底；字放大或螢幕矮時可捲動。
+        return CustomScrollView(
+          slivers: [
+            SliverFillRemaining(
+              hasScrollBody: false,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+                      child: AppBackButton(
+                        onPressed: () => Navigator.of(context).maybePop(),
+                      ),
+                    ),
+                  ),
+                  const Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 28),
+                    child: _buildContent(seniorMode),
+                  ),
+                  const Spacer(),
+                  Padding(
+                    padding: EdgeInsets.fromLTRB(
+                      20,
+                      24,
+                      20,
+                      20 + MediaQuery.paddingOf(context).bottom,
+                    ),
+                    child: _buildButton(context, seniorMode),
+                  ),
+                ],
+              ),
             ),
           ],
         );
@@ -102,84 +129,93 @@ class _PlacementDoneViewState extends State<PlacementDoneView> {
     );
   }
 
-  Widget _buildHeader(BuildContext context, bool seniorMode) {
-    final dim = AppColors.creamLight.withValues(alpha: 0.7);
+  Widget _buildContent(bool seniorMode) {
     final level = _level;
-    return ColoredBox(
-      color: AppColors.primary,
-      child: Stack(
-        children: [
-          Padding(
-            // 讓出返回鍵的高度，與分級結果頁一致。
-            padding: const EdgeInsets.fromLTRB(24, 36 + 28, 24, 24),
+    final badgeSize = seniorMode ? 88.0 : 76.0;
+    return Column(
+      children: [
+        Container(
+          width: badgeSize,
+          height: badgeSize,
+          decoration: const BoxDecoration(
+            color: AppColors.primary,
+            shape: BoxShape.circle,
+          ),
+          child: Icon(
+            Icons.check_rounded,
+            size: badgeSize * 0.55,
+            color: AppColors.creamLight,
+          ),
+        ),
+        const SizedBox(height: 20),
+        Text(
+          widget.title,
+          textAlign: TextAlign.center,
+          style: AppTypography.latin(
+            fontSize: AppTypography.size(
+              AppTypography.caption,
+              seniorMode: seniorMode,
+            ),
+            fontStyle: FontStyle.italic,
+            color: AppColors.primary,
+            letterSpacing: 2.0,
+          ),
+        ),
+        const SizedBox(height: 6),
+        Text(
+          '已完成',
+          textAlign: TextAlign.center,
+          style: AppTypography.serif(
+            fontSize: AppTypography.display36,
+            fontWeight: FontWeight.w700,
+            color: AppColors.ink,
+          ),
+        ),
+        if (level != null && level.isNotEmpty) ...[
+          const SizedBox(height: 24),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+            decoration: BoxDecoration(
+              color: AppColors.cream,
+              borderRadius: BorderRadius.circular(16),
+            ),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  widget.title,
-                  style: AppTypography.latin(
-                    fontSize: AppTypography.size(
-                      AppTypography.caption,
-                      seniorMode: seniorMode,
-                    ),
-                    fontStyle: FontStyle.italic,
-                    color: AppColors.gold,
-                    letterSpacing: 2.0,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '已完成',
-                  style: AppTypography.serif(
-                    fontSize: AppTypography.display36,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.creamLight,
-                  ),
-                ),
-                if (level != null && level.isNotEmpty) ...[
-                  const SizedBox(height: 16),
-                  Text(
-                    '建議起始等級',
-                    style: AppTypography.bodyStyle(
-                      seniorMode: seniorMode,
-                      color: dim,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    level,
-                    style: AppTypography.serif(
-                      fontSize: AppTypography.size(
-                        AppTypography.headline,
-                        seniorMode: seniorMode,
-                      ),
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.gold,
-                      letterSpacing: 1.5,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 8),
-                Text(
-                  '分級測驗每個帳號只做一次。建議等級只是參考，你隨時可以手動選擇其他等級開始測驗。',
+                  '建議起始等級',
                   style: AppTypography.bodyStyle(
                     seniorMode: seniorMode,
-                    color: dim,
+                    color: AppColors.fog,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  level,
+                  style: AppTypography.serif(
+                    fontSize: AppTypography.size(
+                      AppTypography.headline,
+                      seniorMode: seniorMode,
+                    ),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.primary,
+                    letterSpacing: 1.5,
                   ),
                 ),
               ],
             ),
           ),
-          Positioned(
-            left: 8,
-            top: 8,
-            child: AppBackButton(
-              onDark: true,
-              onPressed: () => Navigator.of(context).maybePop(),
-            ),
-          ),
         ],
-      ),
+        const SizedBox(height: 16),
+        Text(
+          '分級測驗每個帳號只做一次。建議等級只是參考，你隨時可以手動選擇其他等級開始測驗。',
+          textAlign: TextAlign.center,
+          style: AppTypography.bodyStyle(
+            seniorMode: seniorMode,
+            color: AppColors.fog,
+          ),
+        ),
+      ],
     );
   }
 
