@@ -3,11 +3,9 @@
 //
 // - 搜尋與地點詳情：flutter_google_places_sdk（Places API (New)）。手機走原生 Places SDK，
 //   金鑰的 Android 套件名＋SHA-1、iOS bundle id 限制由 SDK 自動帶上；Web 走 Maps JS 的
-//   places 程式庫（初始化時注入 Maps JS，地圖也靠它）。
-// - 反向地理編碼：手機用系統內建的地理編碼（geocoding，免金鑰）；Web 沒有實作，改打
-//   Geocoding API（瀏覽器直接呼叫，CORS 允許，金鑰以網址限制）。
-
-import 'dart:convert';
+//   places 程式庫（Maps JS 由 web_maps 載入，地圖也靠它）。
+// - 反向地理編碼：手機用系統內建的地理編碼（geocoding，免金鑰）；Web 沒有實作，改用
+//   Maps JS 的 Geocoder（Geocoding 的 REST 端點不接受限網址的金鑰）。
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart' show Locale;
@@ -16,9 +14,8 @@ import 'package:flutter_google_places_sdk/flutter_google_places_sdk.dart'
 import 'package:geocoding/geocoding.dart' as geo;
 
 import '../core/constants/maps_config.dart';
-import '../core/network/api_client.dart';
 import '../models/picked_location.dart';
-
+import 'web_maps/web_maps.dart';
 
 /// 搜尋框的一筆建議。
 class PlaceSuggestion {
@@ -46,8 +43,11 @@ class PlacesService {
         useNewApi: true,
       );
 
-  /// 初始化 Places。Web 會在這一步注入 Maps JS，顯示地圖前要先等它完成。
-  static Future<void> ensureReady() => _places.isInitialized();
+  /// 初始化 Places。Web 會在這一步載入 Maps JS，顯示地圖前要先等它完成。
+  static Future<void> ensureReady() async {
+    if (kIsWeb) await loadMapsJs(MapsConfig.apiKey);
+    await _places.isInitialized();
+  }
 
   /// 依輸入文字找地點，以 [near] 附近的結果優先。[newSession] 為 true 時開始新的
   /// 計費 session：一次選點從第一次搜尋到選定結果（[details]）算同一個 session。
@@ -109,7 +109,10 @@ class PlacesService {
 
   /// 座標所在的地址；查不到回 null（呼叫端顯示座標或請使用者手打）。
   static Future<String?> addressAt(double lat, double lng) async {
-    if (kIsWeb) return _webAddressAt(lat, lng);
+    if (kIsWeb) {
+      final address = await webAddressAt(lat, lng);
+      return address == null ? null : cleanAddress(address);
+    }
     final marks = await geo.Geocoding().placemarkFromCoordinates(
       lat,
       lng,
@@ -125,22 +128,6 @@ class PlacesService {
       subThoroughfare: marks.first.subThoroughfare,
       street: marks.first.street,
     );
-  }
-
-  static Future<String?> _webAddressAt(double lat, double lng) async {
-    final uri = Uri.https('maps.googleapis.com', '/maps/api/geocode/json', {
-      'latlng': '$lat,$lng',
-      'language': 'zh-TW',
-      'key': MapsConfig.apiKey,
-    });
-    final res = await ApiClient.httpClient.get(uri);
-    if (res.statusCode != 200) return null;
-    final body = jsonDecode(utf8.decode(res.bodyBytes));
-    if (body is! Map || body['status'] != 'OK') return null;
-    final results = body['results'];
-    if (results is! List || results.isEmpty) return null;
-    final address = (results.first as Map)['formatted_address'];
-    return address is String ? cleanAddress(address) : null;
   }
 
   /// 去掉 Google 地址開頭的郵遞區號與「台灣」，發起人看到的跟手打的一樣。
