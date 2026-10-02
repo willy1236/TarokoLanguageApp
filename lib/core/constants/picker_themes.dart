@@ -30,9 +30,18 @@ abstract class PickerThemes {
     cancelButtonStyle: _cancel,
     dayForegroundColor: _whenSelected(AppColors.creamLight),
     dayBackgroundColor: _whenSelected(AppColors.primaryLight),
-    todayForegroundColor: _whenSelected(AppColors.creamLight, AppColors.gold),
-    todayBackgroundColor: _whenSelected(AppColors.primaryLight),
-    todayBorder: const BorderSide(color: AppColors.gold),
+    // 今天未選中：金色半透明底＋粗金框，壓在深色底上不用找；選中時與其他日子同為酒紅底。
+    // 今天不在可選範圍（disabled）時交回預設的淡化樣式。
+    todayForegroundColor: WidgetStateProperty.resolveWith(
+      (states) =>
+          states.contains(WidgetState.disabled) ? null : AppColors.creamLight,
+    ),
+    todayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+      if (states.contains(WidgetState.selected)) return AppColors.primaryLight;
+      if (states.contains(WidgetState.disabled)) return null;
+      return AppColors.gold.withValues(alpha: 0.3);
+    }),
+    todayBorder: const BorderSide(color: AppColors.gold, width: 1.5),
     yearForegroundColor: _whenSelected(AppColors.creamLight),
     yearBackgroundColor: _whenSelected(AppColors.primaryLight),
   );
