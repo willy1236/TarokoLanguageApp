@@ -90,6 +90,21 @@ class EventImagesController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 能不能調整新照片的順序：要有兩張以上、沒在挑圖，而且沒有既有照片。
+  /// 既有照片的順序後端改不了，新照片只能接在它們後面，拖曳也換不了封面，
+  /// 所以編輯有照片的活動時整排都不能拖。
+  bool get canReorder => existing.isEmpty && _pending.length > 1 && !_picking;
+
+  /// 把第 [from] 張新照片移到第 [to] 個位置（[to] 是移完之後的位置）。上傳依
+  /// 這個順序，第一張就是封面。不能排序時不動。
+  void move(int from, int to) {
+    if (!canReorder || from == to) return;
+    RangeError.checkValidIndex(from, _pending, 'from');
+    RangeError.checkValidIndex(to, _pending, 'to');
+    _pending.insert(to, _pending.removeAt(from));
+    notifyListeners();
+  }
+
   /// 標記或取消標記刪除。取消標記會多佔一張，已滿時不能取消，回 false。
   bool toggleRemoved(EventImage image) {
     if (_removedIds.contains(image.id)) {
