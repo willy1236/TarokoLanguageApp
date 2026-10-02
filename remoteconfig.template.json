@@ -1,12 +1,12 @@
 {
   "parameters": {
     "latest_version_android": {
-      "defaultValue": { "value": "1.0.0+20" },
+      "defaultValue": { "value": "1.0.0+19" },
       "description": "Android 最新版本（名稱+build），新版可下載後才更新",
       "valueType": "STRING"
     },
     "latest_version_ios": {
-      "defaultValue": { "value": "1.0.0+20" },
+      "defaultValue": { "value": "1.0.0+19" },
       "description": "iOS 最新版本（名稱+build），TestFlight 處理完成後才更新",
       "valueType": "STRING"
     },
