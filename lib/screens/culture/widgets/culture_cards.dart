@@ -5,7 +5,6 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/article_models.dart';
 import '../../../models/video_models.dart';
-import '../../../shared/widgets/article_cover_placeholder.dart';
 import '../../../shared/widgets/truku_painters.dart';
 import '../video_detail_screen.dart';
 import 'culture_icons.dart';
@@ -485,6 +484,7 @@ class CultureVideoCard extends StatelessWidget {
   }
 }
 
+/// 文章總覽的一則：大圖卡，封面用文章封面圖，沒有就用織紋漸層。
 class CultureArticleCard extends StatelessWidget {
   final ArticleSummary item;
   final VoidCallback onTap;
@@ -498,95 +498,21 @@ class CultureArticleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final thumbSize = seniorMode ? 84.0 : 64.0;
-    return GestureDetector(
+    final coverUrl = item.coverImageUrl;
+    return CultureCoverCard(
+      cover: coverUrl != null
+          ? Image.network(
+              coverUrl,
+              fit: BoxFit.cover,
+              errorBuilder: (context, error, stackTrace) =>
+                  const CultureWeaveCover(),
+            )
+          : const CultureWeaveCover(),
+      category: ArticleCategory.label(item.category),
+      title: item.title,
+      summary: item.summary ?? '這篇文章還沒有摘要，點進去看看內容吧',
+      seniorMode: seniorMode,
       onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.midnightSoft,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.cream.withValues(alpha: 0.06)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: thumbSize,
-              height: thumbSize,
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-              child: item.coverImageUrl != null
-                  ? Image.network(
-                      item.coverImageUrl!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) =>
-                          ArticleCoverPlaceholder(category: item.category),
-                    )
-                  : ArticleCoverPlaceholder(category: item.category),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: seniorMode ? 4 : 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.gold.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Text(
-                      ArticleCategory.label(item.category),
-                      style: TextStyle(
-                        fontSize: AppTypography.size(
-                          AppTypography.micro,
-                          seniorMode: seniorMode,
-                        ),
-                        color: AppColors.gold,
-                        letterSpacing: 2.8,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.title,
-                    style: AppTypography.serif(
-                      fontSize: AppTypography.size(
-                        AppTypography.body,
-                        seniorMode: seniorMode,
-                      ),
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.creamLight,
-                      letterSpacing: 0.5,
-                      height: 1.35,
-                    ),
-                    maxLines: 1, // 與影音卡一致：標題固定一行
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  // 精簡模式下隱藏閱讀/本週統計數字，密度砍除聚焦標題判讀
-                  if (!seniorMode) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      '${item.viewCount} 閱讀 · 本週 ${item.weeklyViewCount}',
-                      style: TextStyle(
-                        fontSize: AppTypography.micro,
-                        color: AppColors.fog,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            CultureArrowIcon(size: seniorMode ? 22 : 16),
-          ],
-        ),
-      ),
     );
   }
 }

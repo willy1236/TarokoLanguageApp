@@ -113,15 +113,12 @@ class CultureArticleSectionState extends State<CultureArticleSection> {
             ],
           );
         }
-        final featured = articles.first;
-        final rest = articles.skip(1).toList();
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             _buildArticleChips(seniorMode),
             _buildArticleSectionHeader(seniorMode),
-            _buildFeaturedArticle(featured, seniorMode),
-            _buildArticleList(rest, seniorMode),
+            _buildArticleList(articles, seniorMode),
           ],
         );
       },
@@ -241,39 +238,16 @@ class CultureArticleSectionState extends State<CultureArticleSection> {
     );
   }
 
-  // ── Featured Article ──────────────────────────────────────────────────────
-
-  Widget _buildFeaturedArticle(ArticleSummary article, bool seniorMode) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 4, 20, 12),
-      child: CultureCoverCard(
-        cover: article.coverImageUrl != null
-            ? Image.network(
-                article.coverImageUrl!,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    const CultureWeaveCover(),
-              )
-            : const CultureWeaveCover(),
-        category: ArticleCategory.label(article.category),
-        title: article.title,
-        summary: article.summary ?? '這篇文章還沒有摘要，點進去看看內容吧',
-        seniorMode: seniorMode,
-        onTap: () => _openArticle(article.id),
-      ),
-    );
-  }
-
   // ── Article List ──────────────────────────────────────────────────────────
 
   Widget _buildArticleList(List<ArticleSummary> articles, bool seniorMode) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.fromLTRB(20, 4, 20, 0),
       child: Column(
         children: articles
             .map(
               (a) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: CultureArticleCard(
                   item: a,
                   seniorMode: seniorMode,
