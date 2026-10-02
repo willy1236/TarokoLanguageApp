@@ -90,16 +90,25 @@ class CultureSortLabels extends StatelessWidget {
 }
 
 /// 總覽清單的大圖卡：上方封面、左上分類標籤、標題疊在封面底部漸層上，
-/// 下方摘要＋箭頭。
+/// 下方摘要＋箭頭；沒有摘要就整列省略。
 ///
 /// 精簡模式標題改放到封面下方的實色區（避免封面色彩複雜時蓋掉放大後的標題），
 /// 並隱藏摘要維持密度精簡。
 class CultureCoverCard extends StatelessWidget {
-  /// 封面內容（圖片或佔位），會被裁成卡片寬、固定高度。
+  /// 封面內容（圖片或佔位），會被裁成卡片寬。
   final Widget cover;
+
+  /// 封面寬高比；不給就是固定高度（一般 120、精簡 140）。
+  final double? coverAspectRatio;
+
+  /// 封面右下角的小角標（例如影片片長），一般模式排在疊字標題右側不互相遮蓋。
+  final Widget? coverBadge;
+
   final String category;
   final String title;
-  final String summary;
+
+  /// 空白或 null 時不顯示摘要列。
+  final String? summary;
   final bool seniorMode;
   final VoidCallback onTap;
 
@@ -108,8 +117,10 @@ class CultureCoverCard extends StatelessWidget {
     required this.cover,
     required this.category,
     required this.title,
-    required this.summary,
     required this.onTap,
+    this.summary,
+    this.coverAspectRatio,
+    this.coverBadge,
     this.seniorMode = false,
   });
 
@@ -127,8 +138,14 @@ class CultureCoverCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(height: seniorMode ? 140 : 120, child: _cover()),
-            if (!seniorMode) _summaryRow() else _seniorTitleRow(),
+            if (coverAspectRatio case final ratio?)
+              AspectRatio(aspectRatio: ratio, child: _cover())
+            else
+              SizedBox(height: seniorMode ? 140 : 120, child: _cover()),
+            if (seniorMode)
+              _seniorTitleRow()
+            else if (summary case final text? when text.trim().isNotEmpty)
+              _summaryRow(text.trim()),
           ],
         ),
       ),
@@ -184,25 +201,37 @@ class CultureCoverCard extends StatelessWidget {
             bottom: 14,
             left: 16,
             right: 16,
-            child: Text(
-              title,
-              style: AppTypography.serif(
-                fontSize: AppTypography.title,
-                fontWeight: FontWeight.w600,
-                color: AppColors.creamLight,
-                letterSpacing: 1.0,
-                height: 1.25,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: AppTypography.serif(
+                      fontSize: AppTypography.title,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.creamLight,
+                      letterSpacing: 1.0,
+                      height: 1.25,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                if (coverBadge case final badge?) ...[
+                  const SizedBox(width: 8),
+                  badge,
+                ],
+              ],
             ),
           ),
-        ],
+        ] else if (coverBadge case final badge?)
+          Positioned(bottom: 8, right: 8, child: badge),
       ],
     );
   }
 
-  Widget _summaryRow() {
+  Widget _summaryRow(String summary) {
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
       child: Row(
@@ -285,6 +314,8 @@ class CultureWeaveCover extends StatelessWidget {
   }
 }
 
+/// 影音總覽的一則：大圖卡，封面是 16:9 縮圖＋中央播放鈕，右下片長或「YouTube」，
+/// 下方是影片簡介。
 class CultureVideoCard extends StatelessWidget {
   final VideoSummary video;
   final bool seniorMode;
@@ -308,9 +339,15 @@ class CultureVideoCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 與文章卡同一種排法：左縮圖、右分類＋標題＋觀看次數、最右箭頭。
-    final thumbWidth = seniorMode ? 144.0 : 112.0;
-    return GestureDetector(
+    return CultureCoverCard(
+      cover: _thumbnail(),
+      // 用縮圖原本的 16:9，不裁掉人臉；固定 120 高時中央播放鈕也會被兩行標題蓋到。
+      coverAspectRatio: 16 / 9,
+      coverBadge: _badge(),
+      category: VideoCategory.label(video.category),
+      title: video.title,
+      summary: video.description,
+      seniorMode: seniorMode,
       onTap: () {
         Navigator.of(context).push(
           MaterialPageRoute(
@@ -318,88 +355,11 @@ class CultureVideoCard extends StatelessWidget {
           ),
         );
       },
-      child: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: AppColors.midnightSoft,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: AppColors.cream.withValues(alpha: 0.06)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              width: thumbWidth,
-              height: thumbWidth * 9 / 16,
-              clipBehavior: Clip.antiAlias,
-              decoration: BoxDecoration(borderRadius: BorderRadius.circular(8)),
-              child: _thumbnail(),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: 7,
-                      vertical: seniorMode ? 4 : 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: AppColors.gold.withValues(alpha: 0.12),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                    child: Text(
-                      VideoCategory.label(video.category),
-                      style: TextStyle(
-                        fontSize: AppTypography.size(
-                          AppTypography.micro,
-                          seniorMode: seniorMode,
-                        ),
-                        color: AppColors.gold,
-                        letterSpacing: 2.8,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    video.title,
-                    maxLines: 1, // 標題固定一行，過長以 … 截斷
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.serif(
-                      fontSize: AppTypography.size(
-                        AppTypography.body,
-                        seniorMode: seniorMode,
-                      ),
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.creamLight,
-                      letterSpacing: 0.5,
-                      height: 1.35,
-                    ),
-                  ),
-                  // 精簡模式比照文章卡隱藏統計數字，聚焦標題判讀
-                  if (!seniorMode) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      '${video.viewCount} 次觀看',
-                      style: const TextStyle(
-                        fontSize: AppTypography.micro,
-                        color: AppColors.fog,
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            CultureArrowIcon(size: seniorMode ? 22 : 16),
-          ],
-        ),
-      ),
     );
   }
 
   Widget _thumbnail() {
+    final buttonSize = seniorMode ? 52.0 : 44.0;
     return Stack(
       fit: StackFit.expand,
       children: [
@@ -413,8 +373,8 @@ class CultureVideoCard extends StatelessWidget {
           _fallbackBackground(),
         Center(
           child: Container(
-            width: seniorMode ? 32 : 26,
-            height: seniorMode ? 32 : 26,
+            width: buttonSize,
+            height: buttonSize,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: Colors.black.withValues(alpha: 0.5),
@@ -422,40 +382,40 @@ class CultureVideoCard extends StatelessWidget {
             ),
             child: Center(
               child: CulturePlayIcon(
-                size: seniorMode ? 12 : 9,
+                size: seniorMode ? 18 : 15,
                 color: AppColors.gold,
               ),
             ),
           ),
         ),
-        // YouTube 影片沒有長度（duration_sec 為 null）時改標來源；
-        // 其他沒長度的影片直接不顯示，不要顯示成 0:00。
-        if (_badgeText(video) case final badge?)
-          Positioned(
-            bottom: 4,
-            right: 4,
-            child: Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: seniorMode ? 6 : 4,
-                vertical: seniorMode ? 2 : 1,
-              ),
-              decoration: BoxDecoration(
-                color: Colors.black.withValues(alpha: 0.7),
-                borderRadius: BorderRadius.circular(3),
-              ),
-              child: Text(
-                badge,
-                style: AppTypography.mono(
-                  fontSize: AppTypography.size(
-                    AppTypography.micro,
-                    seniorMode: seniorMode,
-                  ),
-                  color: AppColors.creamLight,
-                ),
-              ),
-            ),
-          ),
       ],
+    );
+  }
+
+  // YouTube 影片沒有長度（duration_sec 為 null）時改標來源；
+  // 其他沒長度的影片直接不顯示，不要顯示成 0:00。
+  Widget? _badge() {
+    final badge = _badgeText(video);
+    if (badge == null) return null;
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: seniorMode ? 6 : 4,
+        vertical: seniorMode ? 2 : 1,
+      ),
+      decoration: BoxDecoration(
+        color: Colors.black.withValues(alpha: 0.7),
+        borderRadius: BorderRadius.circular(3),
+      ),
+      child: Text(
+        badge,
+        style: AppTypography.mono(
+          fontSize: AppTypography.size(
+            AppTypography.micro,
+            seniorMode: seniorMode,
+          ),
+          color: AppColors.creamLight,
+        ),
+      ),
     );
   }
 
