@@ -11,10 +11,10 @@ import '../../models/tribe_model.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
-import '../../shared/widgets/app_back_button.dart';
-import '../../shared/widgets/related_tribe_field.dart';
 import '../../shared/utils/pick_date_time.dart';
 import '../../shared/utils/utf16_length_limit.dart';
+import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/related_tribe_field.dart';
 import 'event_location_picker_screen.dart';
 import 'widgets/event_images_field.dart';
 
