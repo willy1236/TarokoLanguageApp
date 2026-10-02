@@ -528,7 +528,17 @@ class _MainContainerState extends State<MainContainer>
   }
 
   // 順序同 _learnCultureIndex 等常數與 TrukuBottomTab。
-  List<Widget> _buildTabs() => [
+  // 捲回頂端訊號依 _tabCount 預先建好，分頁數不符時在 debug 直接擋下。
+  List<Widget> _buildTabs() {
+    final tabs = _tabList();
+    assert(
+      tabs.length == _tabCount,
+      '分頁有 ${tabs.length} 個，_tabCount 卻是 $_tabCount',
+    );
+    return tabs;
+  }
+
+  List<Widget> _tabList() => [
     HomeScreen(
       displayName: _displayName,
       millet: _millet,
