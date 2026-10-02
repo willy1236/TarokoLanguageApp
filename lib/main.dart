@@ -499,15 +499,12 @@ class _MainContainerState extends State<MainContainer>
     }
   }
 
-  // 底部導航再次點擊目前所在的分頁：捲回最上面。「學習影音」維持原本的
-  // 捲回頂部並重新整理（由該頁自己處理）。
+  // 底部導航再次點擊目前所在的分頁：整個分頁（含膠囊沒顯示的那塊）直接跳回
+  // 最上面。「學習影音」另外重新整理；該頁原本的捲回動畫因已在頂端而不再出現。
   void _onBottomTabTap(int index) {
     if (index == _currentIndex) {
-      if (index == _learnCultureIndex) {
-        _learnCultureReselect.notifyListeners();
-      } else {
-        _scrollToTopSignals[index].notifyListeners();
-      }
+      _scrollToTopSignals[index].notifyListeners();
+      if (index == _learnCultureIndex) _learnCultureReselect.notifyListeners();
       return;
     }
     _navigate(index);

@@ -10,6 +10,7 @@ import 'dart:math' as math;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_application_1/screens/learn/learn_culture_screen.dart';
 import 'package:flutter_application_1/screens/profile/profile_video_screen.dart';
 import 'package:flutter_application_1/shared/widgets/truku_bottom_tab.dart';
 
@@ -70,11 +71,11 @@ void main() {
     await pumpFrames(tester);
   }
 
-  /// 個人視訊分頁底下（含沒顯示的膠囊那塊）所有垂直捲動位置。
-  List<ScrollPosition> profileVideoPositions(WidgetTester tester) => tester
+  /// [tab] 分頁底下（含沒顯示的膠囊那塊）所有垂直捲動位置。
+  List<ScrollPosition> positionsIn(WidgetTester tester, Type tab) => tester
       .stateList<ScrollableState>(
         find.descendant(
-          of: find.byType(ProfileVideoScreen, skipOffstage: false),
+          of: find.byType(tab, skipOffstage: false),
           matching: find.byType(Scrollable, skipOffstage: false),
           skipOffstage: false,
         ),
@@ -84,9 +85,12 @@ void main() {
       .toList();
 
   /// 把每個捲得動的垂直位置捲到中段，回傳捲動過的那些。
-  List<ScrollPosition> scrollAllToMiddle(WidgetTester tester) {
+  List<ScrollPosition> scrollAllToMiddle(
+    WidgetTester tester, [
+    Type tab = ProfileVideoScreen,
+  ]) {
     final scrolled = <ScrollPosition>[];
-    for (final p in profileVideoPositions(tester)) {
+    for (final p in positionsIn(tester, tab)) {
       if (p.hasContentDimensions && p.maxScrollExtent > 0) {
         p.jumpTo(math.min(150, p.maxScrollExtent));
         scrolled.add(p);
@@ -95,13 +99,20 @@ void main() {
     return scrolled;
   }
 
-  Future<void> pumpApp(WidgetTester tester) async {
-    installMockClient(routes());
+  Future<void> pumpApp(
+    WidgetTester tester, {
+    String tab = '我的',
+    void Function(String path)? onRequest,
+  }) async {
+    installMockClient(
+      routes(),
+      onRequest: onRequest == null ? null : (r) => onRequest(r.url.path),
+    );
     // 畫面矮一點，個人資料與視訊配對兩塊都捲得動。
     usePhoneSurface(tester, size: const Size(414, 500));
     await tester.pumpWidget(buildTestApp(initialRoute: '/home'));
     await pumpFrames(tester, times: 10);
-    await tapTab(tester, '我的');
+    await tapTab(tester, tab);
   }
 
   testWidgets('個人視訊兩塊都捲到中段，切到首頁再切回來，兩塊都在最上面', (tester) async {
@@ -114,7 +125,7 @@ void main() {
     await tapTab(tester, '首頁');
     await tapTab(tester, '我的');
 
-    for (final p in profileVideoPositions(tester)) {
+    for (final p in positionsIn(tester, ProfileVideoScreen)) {
       expect(p.pixels, 0);
     }
   });
@@ -127,8 +138,31 @@ void main() {
 
     await tapTab(tester, '我的');
 
-    for (final p in profileVideoPositions(tester)) {
+    for (final p in positionsIn(tester, ProfileVideoScreen)) {
       expect(p.pixels, 0);
     }
+  });
+
+  testWidgets('學習影音再點一次：學習與影音兩塊都回最上面，學習照舊重新整理', (tester) async {
+    var levelCalls = 0;
+    await pumpApp(
+      tester,
+      tab: '學習影音',
+      onRequest: (path) {
+        if (path == '/api/levels') levelCalls++;
+      },
+    );
+
+    final scrolled = scrollAllToMiddle(tester, LearnCultureScreen);
+    expect(scrolled.length, greaterThanOrEqualTo(2), reason: '兩塊內容都要捲得動才驗得到');
+    await tester.pump();
+    final levelCallsBefore = levelCalls;
+
+    await tapTab(tester, '學習影音');
+
+    for (final p in positionsIn(tester, LearnCultureScreen)) {
+      expect(p.pixels, 0);
+    }
+    expect(levelCalls, greaterThan(levelCallsBefore), reason: '再點一次要重抓學習資料');
   });
 }
