@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
+import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../services/admin_service.dart';
 import '../../services/terms_service.dart';
@@ -31,6 +32,10 @@ class _AdminTermsPublishScreenState extends State<AdminTermsPublishScreen> {
   /// 目前線上的版本號；該類型還沒發布過時為 0，預覽會顯示「第 1 版」。
   int _currentVersion = 0;
   bool _loadingCurrent = true;
+
+  /// 讀取目前版本失敗（不是「尚未發布」的 404）：版本號不明，確認框不寫推算的版本號，
+  /// 並提供重試。
+  Object? _versionError;
   bool _preview = false;
   bool _busy = false;
   bool _submitted = false;
@@ -51,26 +56,34 @@ class _AdminTermsPublishScreenState extends State<AdminTermsPublishScreen> {
     super.dispose();
   }
 
-  /// 標題帶入目前線上版本的標題；查不到（尚未發布、網路問題）就留空讓管理員自己填。
-  Future<void> _loadCurrent() async {
+  /// 標題帶入目前線上版本的標題；查不到就留空讓管理員自己填。
+  /// 404 TERMS_NOT_FOUND＝還沒發布過，版本視為 0；其他錯誤記到 [_versionError]，
+  /// 不擋發布（版本號由後端遞增），但確認框不寫推算的版本號。
+  /// [keepTitle] 為 true 時不覆寫管理員已填的標題（重試用）。
+  Future<void> _loadCurrent({bool keepTitle = false}) async {
     final generation = ++_generation;
-    setState(() => _loadingCurrent = true);
+    setState(() {
+      _loadingCurrent = true;
+      _versionError = null;
+    });
     var title = '';
     var version = 0;
+    Object? error;
     try {
       final doc = (await TermsService.fetchDocument(_docType)).document;
       title = doc.title;
       version = doc.version;
     } catch (e) {
-      // 404 TERMS_NOT_FOUND＝還沒發布過，屬正常；其他錯誤也不擋發布。
       if (!(e is ApiException && e.isTermsNotFound)) {
         debugPrint('AdminTermsPublishScreen: 讀取目前條款失敗：$e');
+        error = e;
       }
     }
     if (!mounted || generation != _generation) return;
     setState(() {
-      _title.text = title;
+      if (!keepTitle || _title.text.trim().isEmpty) _title.text = title;
       _currentVersion = version;
+      _versionError = error;
       _loadingCurrent = false;
     });
   }
@@ -93,7 +106,7 @@ class _AdminTermsPublishScreenState extends State<AdminTermsPublishScreen> {
       title: '發布新版$label？',
       message:
           '發布後所有使用者下次使用都要重新同意這份$label。\n\n'
-          '版本號會自動遞增為第 ${_currentVersion + 1} 版，發布後無法收回。',
+          '${_versionError == null ? '版本號會自動遞增為第 ${_currentVersion + 1} 版' : '版本號會自動遞增'}，發布後無法收回。',
       confirmText: '發布',
     );
     if (!confirmed || !mounted) return;
@@ -167,6 +180,8 @@ class _AdminTermsPublishScreenState extends State<AdminTermsPublishScreen> {
       const SizedBox(height: AppSpacing.md),
       TextField(
         controller: _title,
+        // 讀取中不可輸入：回應回來會覆寫標題，先打的字會被吃掉。
+        enabled: !_loadingCurrent,
         onChanged: (_) => setState(() {}),
         decoration: InputDecoration(
           labelText: '標題',
@@ -175,6 +190,7 @@ class _AdminTermsPublishScreenState extends State<AdminTermsPublishScreen> {
           border: const OutlineInputBorder(),
         ),
       ),
+      if (_versionError != null) _versionErrorRow(),
       const SizedBox(height: AppSpacing.md),
       TextField(
         controller: _content,
@@ -187,6 +203,21 @@ class _AdminTermsPublishScreenState extends State<AdminTermsPublishScreen> {
           errorText: _submitted && _content.text.trim().isEmpty ? '全文必填' : null,
           border: const OutlineInputBorder(),
         ),
+      ),
+    ],
+  );
+
+  Widget _versionErrorRow() => Row(
+    children: [
+      Expanded(
+        child: Text(
+          '讀取目前版本失敗，發布後的版本號以系統為準',
+          style: AppTypography.captionStyle(color: AppColors.danger),
+        ),
+      ),
+      TextButton(
+        onPressed: () => _loadCurrent(keepTitle: true),
+        child: const Text('重試'),
       ),
     ],
   );
