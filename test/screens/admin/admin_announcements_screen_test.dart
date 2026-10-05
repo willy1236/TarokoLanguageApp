@@ -1,6 +1,8 @@
 // 後台官方公告：已發布列表、發布表單、確認框與結果。
 // 回應依 收件匣與申訴.md §5 手寫（POST 會真的發給所有人，不錄）。
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -30,9 +32,10 @@ void main() {
   });
   tearDown(restoreHttp);
 
-  void install({http.Response? post}) {
+  void install({http.Response? post, Object? postError}) {
     ApiClient.httpClient = MockClient.streaming((request, _) async {
       seen.add(request);
+      if (request.method == 'POST' && postError != null) throw postError;
       final response = request.method == 'POST'
           ? post ??
                 jsonResponse(
@@ -186,4 +189,54 @@ void main() {
       expect(find.byType(AdminAnnouncementFormScreen), findsOneWidget);
     });
   }
+
+  // T-14：後端要等全體推播送完才回應，這段時間公告已 commit。結果不明時不能讓
+  // 管理員直接重送，否則全體會收到兩則收不回的公告。
+  for (final (label, postError, post) in <(String, Object?, http.Response?)>[
+    ('斷線（SocketException）', const SocketException('reset'), null),
+    ('連線中斷（ClientException）', http.ClientException('closed'), null),
+    ('閘道逾時 504', null, errorResponse('GATEWAY_TIMEOUT', status: 504)),
+  ]) {
+    testWidgets('$label：提示可能已發出，按知道了回列表並重抓，不留在表單重送', (tester) async {
+      install(postError: postError, post: post);
+      await tester.pumpWidget(_app(const AdminAnnouncementsScreen()));
+      await tester.pumpAndSettle();
+      expect(seen.where((r) => r.method == 'GET'), hasLength(1));
+
+      await tester.tap(find.byTooltip('新增公告'));
+      await tester.pumpAndSettle();
+      await fill(tester);
+      await tester.tap(find.widgetWithText(FilledButton, '發布'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.widgetWithText(FilledButton, '發布').last);
+      await tester.pumpAndSettle();
+
+      expect(find.text('公告可能已經發出，請回列表確認。'), findsOneWidget);
+      await tester.tap(find.text('知道了'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AdminAnnouncementFormScreen), findsNothing);
+      expect(find.byType(AdminAnnouncementsScreen), findsOneWidget);
+      expect(seen.where((r) => r.method == 'GET'), hasLength(2));
+      expect(seen.where((r) => r.method == 'POST'), hasLength(1));
+    });
+  }
+
+  testWidgets('400 明確錯誤：解鎖發布鈕，修改後可再送', (tester) async {
+    install(post: errorResponse('INVALID_REQUEST', message: '標題不符'));
+    await tester.pumpWidget(_app(const AdminAnnouncementFormScreen()));
+    await fill(tester);
+    await tester.tap(find.widgetWithText(FilledButton, '發布'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, '發布').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('公告可能已經發出，請回列表確認。'), findsNothing);
+    expect(
+      tester
+          .widget<FilledButton>(find.widgetWithText(FilledButton, '發布'))
+          .onPressed,
+      isNotNull,
+    );
+  });
 }

@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/network/api_client.dart';
 import '../../services/admin_service.dart';
 import '../../shared/utils/upload_image.dart';
 import '../../shared/utils/utf16_length_limit.dart';
@@ -20,6 +21,14 @@ import 'widgets/admin_widgets.dart';
 const _titleMax = 100;
 const _bodyMax = 5000;
 const _allowedExtensions = {'jpg', 'jpeg', 'png', 'webp'};
+
+/// 送出後結果不明：請求可能已到後端並寫入。後端要等全體推播送完才回應，
+/// 這段時間公告已經 commit，斷線（NETWORK_ERROR、非 ApiException 的連線錯誤）
+/// 或閘道逾時（504）時不能讓管理員直接重送，否則全體會收到兩則收不回的公告。
+bool _outcomeUnknown(Object error) =>
+    error is! ApiException ||
+    error.code == 'NETWORK_ERROR' ||
+    error.statusCode == 504;
 
 class AdminAnnouncementFormScreen extends StatefulWidget {
   const AdminAnnouncementFormScreen({super.key});
@@ -107,6 +116,16 @@ class _AdminAnnouncementFormScreenState
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
+      if (_outcomeUnknown(e)) {
+        // 不解鎖：帶回列表重抓，讓管理員先確認是否已發出。
+        await showAdminInfoDialog(
+          context,
+          title: '無法確認是否已發布',
+          message: '公告可能已經發出，請回列表確認。',
+        );
+        if (mounted) Navigator.of(context).pop(true);
+        return;
+      }
       setState(() => _submitting = false);
       handleAdminError(context, e);
     }
