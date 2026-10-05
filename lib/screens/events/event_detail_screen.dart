@@ -1,5 +1,7 @@
 import '../../shared/widgets/async_state_view.dart';
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
@@ -88,6 +90,14 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   /// 這份詳情頁所在的 route，通知重載的登記 key。
   Route<dynamic>? _route;
 
+  /// 還沒消失（顯示中或排隊中）的重整失敗提示，見 [_showRefreshFailure]。
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _refreshFailureSnack;
+
+  /// [_refreshFailureSnack] 的失效計時：排隊中被 clearSnackBars 清掉時 closed
+  /// 永遠不會完成，超過這段時間就不再當它還在。
+  Timer? _refreshFailureExpiry;
+  static const _refreshFailureTtl = Duration(seconds: 8);
+
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
@@ -129,6 +139,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     )) {
       FcmService.onReminderReceivedForOpenScreen = null;
     }
+    _refreshFailureExpiry?.cancel();
     super.dispose();
   }
 
@@ -249,19 +260,25 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
-  /// 還沒消失（顯示中或排隊中）的重整失敗提示。
-  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _refreshFailureSnack;
-
   /// 離線時連點重試會一次次失敗：前一則重整失敗提示還在就不再排一則，不讓同樣
   /// 的提示排成一串。不用 hideCurrentSnackBar，那會連照片上傳結果等其他提示一起
   /// 收掉；也不 close 前一則，它可能還排在別則後面，close 只能用在顯示中的那則。
+  /// 前一則消失（closed）或排入超過 [_refreshFailureTtl] 就照常再排。
   void _showRefreshFailure(String message) {
     if (_refreshFailureSnack != null) return;
     final snack = _snack(message);
+    if (snack == null) return;
     _refreshFailureSnack = snack;
-    snack?.closed.whenComplete(() {
-      if (identical(_refreshFailureSnack, snack)) _refreshFailureSnack = null;
-    });
+    void release() {
+      if (!identical(_refreshFailureSnack, snack)) return;
+      _refreshFailureSnack = null;
+      _refreshFailureExpiry?.cancel();
+      _refreshFailureExpiry = null;
+    }
+
+    _refreshFailureExpiry?.cancel();
+    _refreshFailureExpiry = Timer(_refreshFailureTtl, release);
+    snack.closed.whenComplete(release);
   }
 
   /// 使用者自己要求的重整（下拉、點照片重試）：失敗要讓人知道。

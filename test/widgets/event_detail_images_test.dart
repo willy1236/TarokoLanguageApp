@@ -701,6 +701,41 @@ void main() {
       expect(find.text('無法連線到伺服器，請檢查網路'), findsOneWidget);
     });
 
+    testWidgets('排隊中的重整失敗提示被 clearSnackBars 清掉後，之後的失敗仍會提示', (
+      tester,
+    ) async {
+      _fakePicker();
+      var offline = false;
+      installMockClient(
+        _routes(_detail(isHost: true, imageIds: [1]), {
+          _uploadPath: errorResponse('UPLOAD_FAILED', message: '照片格式不支援'),
+        }),
+        onRequest: (r) {
+          if (offline && r.url.path == _detailPath) {
+            throw const SocketException('offline');
+          }
+        },
+      );
+      await _open(tester);
+
+      // 上傳失敗提示顯示中，重整失敗提示排在它後面。
+      await tester.tap(find.byTooltip('新增照片'));
+      await tester.pumpAndSettle();
+      offline = true;
+      await pullToRefresh(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // 例如帳號角色變更的推播會清空整個佇列，排隊中那則的 closed 永遠不會完成。
+      scaffoldMessengerKey.currentState!.clearSnackBars();
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing);
+
+      await tester.pump(const Duration(seconds: 9));
+      await pullToRefresh(tester);
+      await tester.pumpAndSettle();
+      expect(find.text('無法連線到伺服器，請檢查網路'), findsOneWidget);
+    });
+
     testWidgets('照片網址過期的自動重取失敗：不提示', (tester) async {
       await failingImageRefetch(tester, (hero) => hero.onImageExpired!);
       expect(find.byType(SnackBar), findsNothing);
