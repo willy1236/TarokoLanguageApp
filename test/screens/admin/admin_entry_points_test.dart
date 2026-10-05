@@ -123,6 +123,7 @@ void main() {
     bool pinned = false,
     Map<String, Object?> extra = const {},
     void Function(String path, Map<String, dynamic> body)? onWrite,
+    Duration writeDelay = Duration.zero,
   }) {
     installMockClient(
       {
@@ -136,6 +137,7 @@ void main() {
           onWrite?.call(r.url.path, jsonDecode(r.body) as Map<String, dynamic>);
         }
       },
+      delayFor: (r) => r.method == 'POST' ? writeDelay : Duration.zero,
     );
   }
 
@@ -183,6 +185,47 @@ void main() {
     expect(find.text('已置頂'), findsOneWidget);
     await _openMenu(tester);
     expect(find.text('取消置頂'), findsOneWidget);
+  });
+
+  testWidgets('置頂送出中：選單的置頂項停用，連點只送一次；完成後恢復', (tester) async {
+    _login('admin');
+    var pins = 0;
+    mockForum(
+      extra: {
+        '/api/admin/forum/posts/7/pin': {'id': 7, 'is_pinned': true},
+      },
+      onWrite: (_, _) => pins++,
+      writeDelay: const Duration(seconds: 1),
+    );
+    await tester.pumpWidget(_app());
+    await _openPost(tester);
+
+    await _openMenu(tester);
+    await tester.tap(find.text('置頂'));
+    await tester.pumpAndSettle();
+    await _openMenu(tester);
+    PopupMenuItem<String> pinItem() => tester.widget<PopupMenuItem<String>>(
+      find.widgetWithText(PopupMenuItem<String>, '置頂'),
+    );
+    expect(pinItem().enabled, isFalse);
+    await tester.tap(find.text('置頂'), warnIfMissed: false);
+    await tester.pump();
+
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(pins, 1);
+    // 停用項點了不會關選單；關掉重開看完成後的狀態。
+    await tester.tapAt(const Offset(5, 300));
+    await tester.pumpAndSettle();
+    await _openMenu(tester);
+    expect(
+      tester
+          .widget<PopupMenuItem<String>>(
+            find.widgetWithText(PopupMenuItem<String>, '取消置頂'),
+          )
+          .enabled,
+      isTrue,
+    );
   });
 
   testWidgets('自己的貼文：管理員選單有置頂，沒有管理員下架', (tester) async {

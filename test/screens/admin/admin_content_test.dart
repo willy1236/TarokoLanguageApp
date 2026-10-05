@@ -399,6 +399,47 @@ void main() {
       expect(find.text('已重新發布'), findsOneWidget);
       expect(ArticleRefreshNotifier.revision.value, revision + 2);
     });
+    testWidgets('下架送出中：管理員選單停用，連點只送一次', (tester) async {
+      _login('admin');
+      final calls = <String>[];
+      installMockClient(
+        {
+          '/api/articles/1': _article,
+          '/api/admin/articles/1/archive': {'id': 1},
+        },
+        onRequest: (r) => calls.add('${r.method} ${r.url.path}'),
+        delayFor: (r) =>
+            r.method == 'POST' ? const Duration(seconds: 1) : Duration.zero,
+      );
+      await openDetail(tester);
+
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('下架'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('下架').last);
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<PopupMenuButton<String>>(
+              find.byType(PopupMenuButton<String>),
+            )
+            .enabled,
+        isFalse,
+      );
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pump();
+      expect(find.text('編輯'), findsNothing, reason: '停用時點了不會開選單');
+
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(
+        calls.where((c) => c == 'POST /api/admin/articles/1/archive'),
+        hasLength(1),
+      );
+      expect(find.text('開文章'), findsOneWidget, reason: '成功後照舊關閉詳情');
+    });
   });
 
   group('發布條款', () {
