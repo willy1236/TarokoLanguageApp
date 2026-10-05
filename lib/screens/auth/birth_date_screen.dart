@@ -29,14 +29,21 @@ class _BirthDateScreenState extends State<BirthDateScreen> {
   DateTime? _birthDate;
   bool _submitting = false;
 
+  // 生日確認框開著：同一幀連點送出時擋住第二次，不疊兩個確認框、不送兩次。
+  // 只當守衛用，不必重建畫面（確認框的遮罩已蓋住送出鈕）。
+  bool _confirming = false;
+
   Future<void> _submit() async {
-    if (_submitting) return;
+    if (_submitting || _confirming) return;
     final birthDate = _birthDate;
     if (birthDate == null) {
       _showError('請選擇出生日期');
       return;
     }
-    if (!await confirmBirthDate(context, birthDate) || !mounted) return;
+    _confirming = true;
+    final confirmed = await confirmBirthDate(context, birthDate);
+    _confirming = false;
+    if (!confirmed || !mounted) return;
     setState(() => _submitting = true);
     try {
       UserModel user;

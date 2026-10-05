@@ -151,6 +151,36 @@ void main() {
     expect(find.text('HOME'), findsOneWidget);
   });
 
+  testWidgets('確認框蓋上前送出被觸發兩次：只跳一個確認框、只送一次', (tester) async {
+    await open(tester, {
+      '/api/me/birth-date': filledMe(),
+      '/api/terms': loadFixtureMap('get_api_terms.json'),
+    });
+    await pickBirthDate(tester);
+
+    // 實體點擊在 push 確認框時會被 Navigator 吸收到下一幀；鍵盤、無障礙
+    // 等直接觸發 onPressed 的路徑沒有這層保護，這裡直接連呼兩次重現。
+    final submit = tester
+        .widget<ElevatedButton>(
+          find.ancestor(
+            of: find.text('送　出'),
+            matching: find.byType(ElevatedButton),
+          ),
+        )
+        .onPressed!;
+    submit();
+    submit();
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsOneWidget);
+    await confirmBirthDateDialog(tester);
+    expect(find.byType(AppDialog), findsNothing);
+    expect(
+      requests.where((r) => r.url.path == '/api/me/birth-date'),
+      hasLength(1),
+    );
+  });
+
   testWidgets('確認框按取消回到原頁，不送出，選的日期保留', (tester) async {
     await open(tester, const {});
     await pickBirthDate(tester, year: 2000, day: 15);
