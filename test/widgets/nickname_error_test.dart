@@ -45,6 +45,7 @@ void main() {
       await pickBirthDate(tester);
       await tester.tap(find.text('完　成'));
       await tester.pumpAndSettle();
+      await confirmBirthDateDialog(tester);
     }
 
     testWidgets('INVALID_NICKNAME 顯示在暱稱欄位下方，改字就消失', (tester) async {

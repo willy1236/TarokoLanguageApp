@@ -9,6 +9,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:flutter_application_1/screens/auth/birth_date_screen.dart';
 import 'package:flutter_application_1/services/user_service.dart';
+import 'package:flutter_application_1/shared/widgets/confirm_dialog.dart';
 
 import '../helpers/birth_date_test_helpers.dart';
 import '../helpers/fixtures.dart';
@@ -67,6 +68,7 @@ void main() {
 
     await tester.tap(find.text('送　出'));
     await tester.pumpAndSettle();
+    await confirmBirthDateDialog(tester);
 
     final post = requests.firstWhere((r) => r.url.path == '/api/me/birth-date');
     expect(
@@ -87,6 +89,7 @@ void main() {
 
     await tester.tap(find.text('送　出'));
     await tester.pumpAndSettle();
+    await confirmBirthDateDialog(tester);
 
     expect(find.text('TERMS'), findsOneWidget);
   });
@@ -104,6 +107,7 @@ void main() {
 
     await tester.tap(find.text('送　出'));
     await tester.pumpAndSettle();
+    await confirmBirthDateDialog(tester);
 
     expect(requests.map((r) => r.url.path), contains('/api/me'));
     expect(find.text('HOME'), findsOneWidget);
@@ -120,8 +124,47 @@ void main() {
 
     await tester.tap(find.text('送　出'));
     await tester.pumpAndSettle();
+    await confirmBirthDateDialog(tester);
 
     expect(find.widgetWithText(SnackBar, '出生日期不合法'), findsOneWidget);
+    expect(find.byType(BirthDateScreen), findsOneWidget);
+  });
+
+  testWidgets('送出前確認框寫出所選日期與無法修改，按確認才送', (tester) async {
+    await open(tester, {
+      '/api/me/birth-date': filledMe(),
+      '/api/terms': loadFixtureMap('get_api_terms.json'),
+    });
+    await pickBirthDate(tester, year: 2000, day: 15);
+
+    await tester.tap(find.text('送　出'));
+    await tester.pumpAndSettle();
+
+    expect(requests, isEmpty, reason: '確認前不能送出');
+    final dialog = find.byType(AppDialog);
+    final message = tester.widget<AppDialog>(dialog).message;
+    expect(message, matches(RegExp(r'^2000/\d{2}/15\n')));
+    expect(message, contains('送出後無法自行修改'));
+
+    await confirmBirthDateDialog(tester);
+    expect(requests.map((r) => r.url.path), contains('/api/me/birth-date'));
+    expect(find.text('HOME'), findsOneWidget);
+  });
+
+  testWidgets('確認框按取消回到原頁，不送出，選的日期保留', (tester) async {
+    await open(tester, const {});
+    await pickBirthDate(tester, year: 2000, day: 15);
+    final picked = find.textContaining(RegExp(r'^2000/\d{2}/15$'));
+    expect(picked, findsOneWidget);
+
+    await tester.tap(find.text('送　出'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AppDialog), findsNothing);
+    expect(requests, isEmpty);
+    expect(picked, findsOneWidget);
     expect(find.byType(BirthDateScreen), findsOneWidget);
   });
 

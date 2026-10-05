@@ -60,9 +60,27 @@ void main() {
 
     await tester.tap(find.text('完　成'));
     await tester.pumpAndSettle();
+    expect(requests, isEmpty, reason: '確認前不能送出');
+    await confirmBirthDateDialog(tester);
 
     final body = jsonDecode(requests.single.body) as Map<String, dynamic>;
     expect(body['birth_date'], matches(RegExp(r'^2000-\d{2}-05$')));
     expect(find.text('HOME'), findsOneWidget);
+  });
+
+  testWidgets('確認框按取消不送出，選的日期保留', (tester) async {
+    await open(tester);
+    await pickBirthDate(tester, year: 2000, day: 5);
+    final picked = find.textContaining(RegExp(r'^2000/\d{2}/05$'));
+    expect(picked, findsOneWidget);
+
+    await tester.tap(find.text('完　成'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('確認出生日期'), findsNothing);
+    expect(requests, isEmpty);
+    expect(picked, findsOneWidget);
   });
 }

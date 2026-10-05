@@ -36,6 +36,7 @@ class _BirthDateScreenState extends State<BirthDateScreen> {
       _showError('請選擇出生日期');
       return;
     }
+    if (!await confirmBirthDate(context, birthDate) || !mounted) return;
     setState(() => _submitting = true);
     try {
       UserModel user;

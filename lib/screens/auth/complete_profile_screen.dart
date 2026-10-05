@@ -121,6 +121,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       _showError('請選擇出生日期');
       return;
     }
+    if (!await confirmBirthDate(context, birthDate) || !mounted) return;
     setState(() => _submitting = true);
     try {
       await UserService.completeProfile(

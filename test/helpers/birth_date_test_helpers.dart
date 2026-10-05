@@ -20,3 +20,10 @@ Future<void> pickBirthDate(
   await tester.tap(find.text('確定'));
   await tester.pumpAndSettle();
 }
+
+/// 按送出後跳出的生日確認框按「確認」。
+Future<void> confirmBirthDateDialog(WidgetTester tester) async {
+  expect(find.text('確認出生日期'), findsOneWidget);
+  await tester.tap(find.text('確認'));
+  await tester.pumpAndSettle();
+}
