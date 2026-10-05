@@ -121,6 +121,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   bool _loading = true;
   bool _loadingMore = false;
   bool _sending = false;
+
+  /// 管理員置頂／取消置頂送出中：選單裡的置頂項停用，連點只送一次。
+  bool _pinning = false;
   String? _error;
 
   /// 圖片過期自動重整每次載入只做一次，避免多張圖同時過期時連環重打 API。
@@ -632,7 +635,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   Future<void> _adminTogglePin() async {
     final post = _post;
-    if (post == null) return;
+    if (post == null || _pinning) return;
+    setState(() => _pinning = true);
     try {
       final pinned = await AdminService.pinPost(
         post.id,
@@ -644,6 +648,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       showAdminMessage(pinned ? '已置頂' : '已取消置頂');
     } catch (e) {
       if (mounted) handleAdminError(context, e);
+    } finally {
+      if (mounted) setState(() => _pinning = false);
     }
   }
 
@@ -737,6 +743,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 if (_isAdmin) ...[
                   PopupMenuItem(
                     value: 'admin_pin',
+                    enabled: !_pinning,
                     child: Text(post.isPinned ? '取消置頂' : '置頂'),
                   ),
                   if (!_isMine)
