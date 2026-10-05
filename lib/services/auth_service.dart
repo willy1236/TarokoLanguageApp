@@ -305,7 +305,8 @@ class AuthService {
   }
 
   /// 登入端點非 200 的回應轉成 [AuthException]：5xx（502／503／504 等，
-  /// 例如 Cloud Run 暫時不可用）標成暫時性，其餘（4xx）是後端拒絕。
+  /// 例如 Cloud Run 暫時不可用）用 [AuthException.serverError] 標成
+  /// `isServerError`，其餘（4xx 等）是後端拒絕。
   @visibleForTesting
   static AuthException loginErrorFor(http.Response resp) {
     final message = _parseError(resp.body);
