@@ -4,9 +4,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/screens/millet/millet_ledger_screen.dart';
+import 'package:flutter_application_1/services/senior_mode_controller.dart';
+import 'package:flutter_application_1/shared/widgets/async_state_view.dart';
+import 'package:flutter_application_1/shared/widgets/load_more_retry.dart';
+import 'package:flutter_application_1/shared/widgets/truku_empty_state.dart';
 
 import '../helpers/flow_test_helpers.dart';
 import '../helpers/widget_test_helpers.dart';
@@ -85,5 +90,106 @@ void main() {
     expect(calls, 1);
     expect(find.textContaining('紀錄 1 ·', skipOffstage: false), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('翻頁失敗：底部顯示重試，捲動不再自動重打，點了才重新請求', (tester) async {
+    var nextPageCalls = 0;
+    var failNext = true;
+    ApiClient.httpClient = MockClient((r) async {
+      final cursor = r.url.queryParameters['cursor'];
+      if (cursor == null) {
+        return jsonResponse({
+          'transactions': [for (var i = 40; i > 20; i--) _tx(i)],
+          'page_info': {'next_cursor': 'c-21', 'has_more': true},
+        });
+      }
+      nextPageCalls++;
+      if (failNext) return errorResponse('SERVER_ERROR', status: 500);
+      return jsonResponse({
+        'transactions': [for (var i = 20; i > 15; i--) _tx(i)],
+        'page_info': {'next_cursor': null, 'has_more': false},
+      });
+    });
+
+    await tester.pumpWidget(app());
+    await pumpFrames(tester);
+    await scrollToBottom(tester);
+    await scrollToBottom(tester);
+
+    expect(nextPageCalls, 1);
+    expect(find.text('載入失敗，點此重試'), findsOneWidget);
+
+    failNext = false;
+    await tester.tap(find.text('載入失敗，點此重試'));
+    await pumpFrames(tester, times: 10);
+
+    expect(nextPageCalls, 2);
+    expect(find.text('載入失敗，點此重試'), findsNothing);
+    await scrollToBottom(tester);
+    expect(find.textContaining('紀錄 16 ·', skipOffstage: false), findsOneWidget);
+  });
+
+  group('切換長輩模式時畫面跟著變', () {
+    setUp(() => SharedPreferences.setMockInitialValues({}));
+    tearDown(() => seniorModeController.setEnabled(false));
+
+    Future<void> toggleSenior(WidgetTester tester) async {
+      await seniorModeController.setEnabled(true);
+      await tester.pump();
+    }
+
+    testWidgets('錯誤畫面', (tester) async {
+      ApiClient.httpClient = MockClient(
+        (_) async => errorResponse('SERVER_ERROR', status: 500),
+      );
+      await tester.pumpWidget(app());
+      await pumpFrames(tester);
+      bool senior() =>
+          tester.widget<TrukuErrorView>(find.byType(TrukuErrorView)).seniorMode;
+      expect(senior(), isFalse);
+
+      await toggleSenior(tester);
+      expect(senior(), isTrue);
+    });
+
+    testWidgets('空狀態', (tester) async {
+      ApiClient.httpClient = MockClient(
+        (_) async => jsonResponse({
+          'transactions': <dynamic>[],
+          'page_info': {'next_cursor': null, 'has_more': false},
+        }),
+      );
+      await tester.pumpWidget(app());
+      await pumpFrames(tester);
+      bool senior() => tester
+          .widget<TrukuEmptyState>(find.byType(TrukuEmptyState))
+          .seniorMode;
+      expect(senior(), isFalse);
+
+      await toggleSenior(tester);
+      expect(senior(), isTrue);
+    });
+
+    testWidgets('翻頁失敗的重試列', (tester) async {
+      ApiClient.httpClient = MockClient((r) async {
+        if (r.url.queryParameters['cursor'] != null) {
+          return errorResponse('SERVER_ERROR', status: 500);
+        }
+        return jsonResponse({
+          'transactions': [for (var i = 40; i > 20; i--) _tx(i)],
+          'page_info': {'next_cursor': 'c-21', 'has_more': true},
+        });
+      });
+      await tester.pumpWidget(app());
+      await pumpFrames(tester);
+      await scrollToBottom(tester);
+      await scrollToBottom(tester);
+      bool senior() =>
+          tester.widget<LoadMoreRetry>(find.byType(LoadMoreRetry)).seniorMode;
+      expect(senior(), isFalse);
+
+      await toggleSenior(tester);
+      expect(senior(), isTrue);
+    });
   });
 }
