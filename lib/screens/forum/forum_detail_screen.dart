@@ -89,8 +89,10 @@ class ForumDetailScreen extends StatefulWidget {
   /// 關掉上層那份不影響下層。
   static final Map<Route<dynamic>, _ForumDetailScreenState> _live = {};
 
-  /// 點回覆通知時人已在 [route] 這份詳情頁：就地重載。
-  static void refreshRoute(Route<dynamic> route) => _live[route]?._load();
+  /// 點回覆通知時人已在 [route] 這份詳情頁：就地重載。帶 [focusCommentId] 時
+  /// 重載後改捲到那則留言（規則同 [ForumDetailScreen.focusCommentId]）。
+  static void refreshRoute(Route<dynamic> route, {int? focusCommentId}) =>
+      _live[route]?._refreshFromPush(focusCommentId);
 
   /// 人正停在 [route] 這份詳情頁時有人回覆了貼文或其中的留言（前景推播）：
   /// 在頁內浮出提示並回傳 true；[route] 已不是開著的詳情頁則回傳 false，由呼叫端
@@ -140,8 +142,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// 正在回覆的第一層留言；null 代表回覆貼文本身。
   ForumComment? _replyTarget;
 
-  /// 還沒捲到的 [ForumDetailScreen.focusCommentId]；捲到或確定找不到後清成 null。
-  late int? _pendingFocusId = widget.focusCommentId;
+  /// 要捲去的留言：一開始是 [ForumDetailScreen.focusCommentId]，頁面開著時點了
+  /// 別則回覆的通知就換成那一則。
+  late int? _focusCommentId = widget.focusCommentId;
+
+  /// 還沒捲到的 [_focusCommentId]；捲到或確定找不到後清成 null。
+  late int? _pendingFocusId = _focusCommentId;
 
   /// 掛在要捲去的那則留言上。
   final _focusKey = GlobalKey();
@@ -237,6 +243,16 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _loading = false;
       });
     }
+  }
+
+  /// 點回覆通知時人已在本頁：有指定留言就改捲到那一則，再整頁重載。
+  void _refreshFromPush(int? focusCommentId) {
+    if (focusCommentId != null) {
+      _focusCommentId = focusCommentId;
+      _pendingFocusId = focusCommentId;
+      _focusPagesLoaded = 0;
+    }
+    _load();
   }
 
   void _onNewReply(String type) {
@@ -340,7 +356,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 要捲去的那則留言掛上 [_focusKey]，其他留言原樣回傳。
   Widget _focusable(ForumComment comment, Widget tile) =>
-      comment.id == widget.focusCommentId
+      comment.id == _focusCommentId
       ? KeyedSubtree(key: _focusKey, child: tile)
       : tile;
 

@@ -126,7 +126,8 @@ class FcmService {
   static void Function(int? sessionId)? onVideoSessionEnded;
 
   /// 點擊論壇回覆通知時的導頁 callback。由 UI 層設定（用 navigatorKey 導到貼文詳情）。
-  static void Function(int postId)? onForumReplyTapped;
+  /// [commentId] 是那則回覆，貼文頁開啟後捲過去；舊推播沒帶時為 null。
+  static void Function(int postId, int? commentId)? onForumReplyTapped;
 
   /// 點擊帶 case_id 的審核通知：由 UI 層設定，開處置詳情頁。
   static void Function(int caseId)? onModerationCaseTapped;
@@ -246,14 +247,13 @@ class FcmService {
           );
           return;
         }
-        if (payload.startsWith('forum:')) {
-          // forum:<post_id> 或 forum:<post_id>:<inbox_id>
-          final parts = payload.substring('forum:'.length).split(':');
-          final postId = int.tryParse(parts.first);
-          if (postId != null) {
+        if (payload.startsWith(_forumPayloadPrefix)) {
+          final forum = parseForumNotificationPayload(payload);
+          if (forum != null) {
             _openForumReply(
-              postId,
-              parts.length > 1 ? int.tryParse(parts[1]) : null,
+              forum.postId,
+              forum.inboxId,
+              commentId: forum.commentId,
             );
           }
           return;
@@ -372,8 +372,10 @@ class FcmService {
       notice.body.isNotEmpty ? notice.body : _eventDeletedFallbackMessage;
 
   /// 解析論壇回覆通知的 payload，非論壇類型回傳 null。
-  /// 後端送出的 data：{ type: 'reply_post' | 'reply_comment', post_id, comment_id }
-  static ({int postId, String type})? _parseForumPayload(
+  /// 後端送出的 data：{ type: 'reply_post' | 'reply_comment', post_id, comment_id }；
+  /// 舊推播可能沒有 comment_id，此時 commentId 為 null。
+  @visibleForTesting
+  static ({int postId, String type, int? commentId})? parseForumPayload(
     Map<String, dynamic> data,
   ) {
     final type = data['type'];
@@ -383,7 +385,36 @@ class FcmService {
       debugPrint('FcmService: post_id 缺失或無法解析，忽略：${data['post_id']}');
       return null;
     }
-    return (postId: postId, type: type as String);
+    return (
+      postId: postId,
+      type: type as String,
+      commentId: int.tryParse(data['comment_id']?.toString() ?? ''),
+    );
+  }
+
+  /// 事件通知的 payload 是純數字的 event_id，論壇加前綴區分兩者。
+  static const _forumPayloadPrefix = 'forum:';
+
+  /// 前景論壇回覆本機通知的 payload：`forum:<post_id>:<inbox_id|空>:<comment_id|空>`。
+  @visibleForTesting
+  static String forumNotificationPayload(
+    int postId, {
+    int? inboxId,
+    int? commentId,
+  }) => '$_forumPayloadPrefix$postId:${inboxId ?? ''}:${commentId ?? ''}';
+
+  /// 解析 [forumNotificationPayload]；也認舊版的 `forum:<post_id>` 與
+  /// `forum:<post_id>:<inbox_id>`（更新前彈出、還留在通知列的通知）。
+  /// 不是論壇 payload 或 post_id 無法解析時回傳 null。
+  @visibleForTesting
+  static ({int postId, int? inboxId, int? commentId})?
+  parseForumNotificationPayload(String payload) {
+    if (!payload.startsWith(_forumPayloadPrefix)) return null;
+    final parts = payload.substring(_forumPayloadPrefix.length).split(':');
+    final postId = int.tryParse(parts.first);
+    if (postId == null) return null;
+    int? at(int i) => parts.length > i ? int.tryParse(parts[i]) : null;
+    return (postId: postId, inboxId: at(1), commentId: at(2));
   }
 
   /// 推播對應的收件匣那一則（論壇回覆、審核類才有），沒有回傳 null。
@@ -409,9 +440,9 @@ class FcmService {
     );
   }
 
-  static void _openForumReply(int postId, int? inboxId) {
+  static void _openForumReply(int postId, int? inboxId, {int? commentId}) {
     _markInboxRead(inboxId);
-    onForumReplyTapped?.call(postId);
+    onForumReplyTapped?.call(postId, commentId);
   }
 
   static void _openModerationCase(int caseId, int? inboxId) {
@@ -595,9 +626,10 @@ class FcmService {
       return;
     }
 
-    final forum = _parseForumPayload(message.data);
+    final forum = parseForumPayload(message.data);
     if (forum != null) {
       final forumPostId = forum.postId;
+      final commentId = forum.commentId;
       final inboxId = parseInboxId(message.data);
       // 人就在那一頁：改由頁內提示，不再彈通知。
       final handled = onForumReplyWhileOpen?.call(forumPostId, forum.type);
@@ -612,10 +644,11 @@ class FcmService {
           notificationDetails: const NotificationDetails(
             android: _reminderAndroidDetails,
           ),
-          // 事件通知的 payload 是純數字的 event_id，論壇加前綴區分兩者。
-          payload: inboxId == null
-              ? 'forum:$forumPostId'
-              : 'forum:$forumPostId:$inboxId',
+          payload: forumNotificationPayload(
+            forumPostId,
+            inboxId: inboxId,
+            commentId: commentId,
+          ),
         ),
       );
       scaffoldMessengerKey.currentState
@@ -625,7 +658,8 @@ class FcmService {
             content: Text(body.isNotEmpty ? body : title),
             action: SnackBarAction(
               label: '查看',
-              onPressed: () => _openForumReply(forumPostId, inboxId),
+              onPressed: () =>
+                  _openForumReply(forumPostId, inboxId, commentId: commentId),
             ),
           ),
         );
@@ -858,9 +892,13 @@ class FcmService {
       return;
     }
 
-    final forum = _parseForumPayload(message.data);
+    final forum = parseForumPayload(message.data);
     if (forum != null) {
-      _openForumReply(forum.postId, parseInboxId(message.data));
+      _openForumReply(
+        forum.postId,
+        parseInboxId(message.data),
+        commentId: forum.commentId,
+      );
       return;
     }
     final deleted = parseEventDeleted(

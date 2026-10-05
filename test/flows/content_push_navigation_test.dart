@@ -167,6 +167,27 @@ void main() {
       await pumpFrames(tester);
       expect(find.byType(ForumDetailScreen), findsOneWidget);
     });
+
+    testWidgets('沒開著且推播帶了留言：開啟詳情頁並指定要捲去的留言', (tester) async {
+      await start(tester);
+      openForumReplyPush(routes, 7, commentId: 8);
+      await pumpFrames(tester);
+      final screen = tester.widget<ForumDetailScreen>(
+        find.byType(ForumDetailScreen),
+      );
+      expect(screen.focusCommentId, 8);
+    });
+
+    testWidgets('詳情頁在最上層且推播帶了留言：就地重載，不疊頁', (tester) async {
+      await start(tester);
+      await push(tester, ForumDetailScreen.route(postId: 7));
+
+      openForumReplyPush(routes, 7, commentId: 8);
+      await pumpFrames(tester);
+
+      expect(hits[path], 2);
+      expect(find.byType(ForumDetailScreen), findsOneWidget);
+    });
   });
 
   group('論壇前景回覆推播', () {

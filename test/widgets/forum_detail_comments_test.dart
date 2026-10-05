@@ -208,6 +208,37 @@ void main() {
       expect(onScreen(tester, '留言50'), isTrue);
     });
 
+    testWidgets('頁面開著時點了另一則回覆的通知：重載並捲到新的那則', (tester) async {
+      final forum = _FakeForum([1, 2, 3, 4, 5, 6]);
+      ApiClient.httpClient = forum.client();
+      await open(tester, 1);
+      expect(onScreen(tester, '留言6'), isFalse);
+
+      ForumDetailScreen.refreshRoute(_detailRoute(tester), focusCommentId: 6);
+      await tester.pumpAndSettle();
+
+      expect(onScreen(tester, '留言6'), isTrue);
+    });
+
+    testWidgets('重載沒帶留言時照舊停在頂端', (tester) async {
+      final forum = _FakeForum([1, 2, 3, 4, 5, 6]);
+      ApiClient.httpClient = forum.client();
+      tester.view.physicalSize = const Size(800, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        wrapScreen(const ForumDetailScreen(postId: _postId)),
+      );
+      await tester.pumpAndSettle();
+      final requests = forum.commentRequests.length;
+
+      ForumDetailScreen.refreshRoute(_detailRoute(tester));
+      await tester.pumpAndSettle();
+
+      expect(forum.commentRequests, hasLength(requests + 1));
+      expect(onScreen(tester, '留言1'), isTrue);
+    });
+
     testWidgets('留言已不存在：載完可載的分頁後停在頂端，不報錯', (tester) async {
       final forum = _FakeForum([1, 2, 3]);
       ApiClient.httpClient = forum.client();
