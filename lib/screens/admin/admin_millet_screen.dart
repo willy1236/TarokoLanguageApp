@@ -125,7 +125,8 @@ class _AdminMilletScreenState extends State<AdminMilletScreen> {
         _loadingMore = false;
         _loadMoreFailed = true;
       });
-      handleAdminError(context, e);
+      // 尾端重試列已說明失敗，不另跳提示（會蓋住重試列）；ADMIN_ONLY 仍退出後台。
+      handleAdminError(context, e, toast: false);
     }
   }
 
