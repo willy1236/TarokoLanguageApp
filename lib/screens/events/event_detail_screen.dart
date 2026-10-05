@@ -218,10 +218,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
-  Future<void> _refresh() => _load();
-
-  /// 動作（參加/退出/取消）成功後的刷新：只更新資料本身，不設 `_loading = true`，
-  /// 避免整頁重建與剛關閉的對話框收尾動畫互撞（觸發 `_dependents.isEmpty` assertion）。
+  /// 動作（參加/退出/取消）成功後與下拉重整的刷新：只更新資料本身，不設
+  /// `_loading = true`，避免整頁重建與剛關閉的對話框收尾動畫互撞（觸發
+  /// `_dependents.isEmpty` assertion），也不卸載正在上傳或刪除照片的輪播。
+  /// 下拉重整失敗時保留現有畫面，不換成錯誤頁。
   Future<void> _silentRefresh() async {
     final imagesVersion = _imagesVersion;
     try {
@@ -539,7 +539,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         body: TrukuErrorView(
           error: _error,
           message: _error == null ? '找不到活動' : null,
-          onRetry: _refresh,
+          onRetry: _load,
           seniorMode: seniorMode,
         ),
       );
@@ -549,7 +549,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       body: RefreshIndicator(
-        onRefresh: _refresh,
+        onRefresh: _silentRefresh,
         color: AppColors.primary,
         child: CustomScrollView(
           slivers: [

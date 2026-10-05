@@ -460,4 +460,121 @@ void main() {
     expect(detailCalls, 2);
     expect(find.text('2／2'), findsOneWidget);
   });
+
+  group('下拉重整', () {
+    Future<void> pullToRefresh(WidgetTester tester) async {
+      await tester.fling(
+        find.byType(CustomScrollView),
+        const Offset(0, 400),
+        1000,
+      );
+      // 讓 RefreshIndicator 跑完拉下的動畫、送出重取，但不等請求回來。
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
+    Finder capacity(int count) =>
+        find.text('$count 人 · 不限名額', skipOffstage: false);
+
+    /// 上傳要 3 秒；進頁之後的詳情重取要 2 秒，重整途中的畫面才看得到。
+    Duration Function(http.Request) slowUploadAndRefetch() {
+      var detailCalls = 0;
+      return (r) {
+        if (r.url.path == _uploadPath) return const Duration(seconds: 3);
+        if (r.url.path == _detailPath && ++detailCalls > 1) {
+          return const Duration(seconds: 2);
+        }
+        return Duration.zero;
+      };
+    }
+
+    testWidgets('上傳中下拉重整：輪播不被卸載，上傳完照片出現在清單裡', (tester) async {
+      _fakePicker();
+      var detailCalls = 0;
+      installMockClient(
+        _routes(_detail(isHost: true, imageIds: [1]), {
+          _uploadPath: jsonResponse({
+            'images': _images([1, 2]),
+          }, status: 201),
+        }),
+        onRequest: (r) {
+          if (r.url.path == _detailPath) detailCalls++;
+        },
+        delayFor: slowUploadAndRefetch(),
+      );
+      await _open(tester);
+
+      await tester.tap(find.byTooltip('新增照片'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await pullToRefresh(tester);
+
+      expect(detailCalls, 2, reason: '下拉有重取詳情');
+      expect(find.byType(EventDetailHero), findsOneWidget, reason: '不換成載入畫面');
+
+      await tester.pumpAndSettle(const Duration(seconds: 3));
+      expect(find.text('2／2'), findsOneWidget);
+    });
+
+    testWidgets('上傳中下拉重整後上傳失敗：仍看得到失敗提示', (tester) async {
+      _fakePicker();
+      installMockClient(
+        _routes(_detail(isHost: true, imageIds: [1]), {
+          _uploadPath: errorResponse('UPLOAD_FAILED', message: '照片格式不支援'),
+        }),
+        delayFor: slowUploadAndRefetch(),
+      );
+      await _open(tester);
+
+      await tester.tap(find.byTooltip('新增照片'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await pullToRefresh(tester);
+
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pump();
+      expect(find.text('照片格式不支援'), findsOneWidget);
+    });
+
+    testWidgets('重整回來的舊照片清單不蓋掉剛上傳的結果', (tester) async {
+      _fakePicker();
+      var detailCalls = 0;
+      installMockClient(
+        _routes(_detail(isHost: true, imageIds: [1]), {
+          _uploadPath: jsonResponse({
+            'images': _images([1, 2]),
+          }, status: 201),
+        }),
+        onRequest: (r) {
+          if (r.url.path == _detailPath) detailCalls++;
+        },
+        // 下拉的重取晚 3 秒才回來，期間完成上傳。
+        delayFor: (r) => r.url.path == _detailPath && detailCalls > 1
+            ? const Duration(seconds: 3)
+            : Duration.zero,
+      );
+      await _open(tester);
+
+      await pullToRefresh(tester);
+      await tester.tap(find.byTooltip('新增照片'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('2／2'), findsOneWidget);
+
+      await tester.pumpAndSettle(const Duration(seconds: 3));
+      expect(detailCalls, 2);
+      expect(find.text('2／2'), findsOneWidget);
+    });
+
+    testWidgets('一般下拉重整照常更新報名人數', (tester) async {
+      final routes = _routes(_detail(isHost: false));
+      installMockClient(routes);
+      await _open(tester);
+      expect(capacity(5), findsOneWidget);
+
+      routes[_detailPath] = {..._detail(isHost: false), 'participant_count': 6};
+      await pullToRefresh(tester);
+      await tester.pumpAndSettle();
+
+      expect(capacity(6), findsOneWidget);
+      expect(capacity(5), findsNothing);
+    });
+  });
 }
