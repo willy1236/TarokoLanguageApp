@@ -243,8 +243,15 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     } catch (e, st) {
       debugPrint('[EventDetailScreen] _silentRefresh 失敗：$e');
       debugPrint('$st');
-      if (reportFailure) {
-        _snack(apiErrorMessage(e, fallback: '重新整理失敗，請稍後再試'));
+      if (reportFailure && mounted) {
+        // 離線時連點重試會一次次失敗：換掉上一則，不讓同樣的提示排成一串。
+        ScaffoldMessenger.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(
+              content: Text(apiErrorMessage(e, fallback: '重新整理失敗，請稍後再試')),
+            ),
+          );
       }
     }
   }

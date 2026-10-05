@@ -641,6 +641,34 @@ void main() {
       expect(find.text('找不到這個活動'), findsOneWidget);
     });
 
+    testWidgets('離線連點重試：提示只留一則，不會一則接一則排隊', (tester) async {
+      var offline = false;
+      installMockClient(
+        _routes(_detail(isHost: false, imageIds: [1])),
+        onRequest: (r) {
+          if (offline && r.url.path == _detailPath) {
+            throw const SocketException('offline');
+          }
+        },
+      );
+      await _open(tester);
+
+      offline = true;
+      for (var i = 0; i < 3; i++) {
+        tester
+            .widget<EventDetailHero>(find.byType(EventDetailHero))
+            .onImageRetryTap!();
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+      await tester.pumpAndSettle();
+      expect(find.text('無法連線到伺服器，請檢查網路'), findsOneWidget);
+
+      // SnackBar 預設停 4 秒；排隊的話時間到後會換下一則繼續顯示。
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
     testWidgets('照片網址過期的自動重取失敗：不提示', (tester) async {
       await failingImageRefetch(tester, (hero) => hero.onImageExpired!);
       expect(find.byType(SnackBar), findsNothing);
