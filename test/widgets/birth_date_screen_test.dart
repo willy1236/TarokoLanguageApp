@@ -181,6 +181,28 @@ void main() {
     );
   });
 
+  testWidgets('確認框按取消後可以再按送出，確認後只送一次', (tester) async {
+    await open(tester, {
+      '/api/me/birth-date': filledMe(),
+      '/api/terms': loadFixtureMap('get_api_terms.json'),
+    });
+    await pickBirthDate(tester);
+
+    await tester.tap(find.text('送　出'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('送　出'));
+    await tester.pumpAndSettle();
+    await confirmBirthDateDialog(tester);
+
+    expect(
+      requests.where((r) => r.url.path == '/api/me/birth-date'),
+      hasLength(1),
+    );
+    expect(find.text('HOME'), findsOneWidget);
+  });
+
   testWidgets('確認框按取消回到原頁，不送出，選的日期保留', (tester) async {
     await open(tester, const {});
     await pickBirthDate(tester, year: 2000, day: 15);
