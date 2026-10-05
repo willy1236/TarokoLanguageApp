@@ -533,6 +533,66 @@ void main() {
       expect(find.text('第 1 版'), findsOneWidget);
     });
 
+    testWidgets('讀目前版本失敗（非 404）：確認框不寫推算的版本號，可重試', (tester) async {
+      var gets = 0;
+      installMockClient({
+        '/api/terms/tos': errorResponse('INTERNAL', status: 500),
+      }, onRequest: (_) => gets++);
+      await tester.pumpWidget(
+        _host(() => const AdminTermsPublishScreen(), <Object?>[]),
+      );
+      await _open(tester);
+      expect(find.textContaining('讀取目前版本失敗'), findsOneWidget);
+
+      await tester.enterText(find.widgetWithText(TextField, '標題'), '自填標題');
+      await tester.enterText(
+        find.widgetWithText(TextField, '全文（Markdown，貼上）'),
+        '內容',
+      );
+      await tester.tap(find.text('發布'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('版本號會自動遞增'), findsOneWidget);
+      expect(find.textContaining('第 1 版'), findsNothing);
+      await tester.tap(find.text('取消'));
+      await tester.pumpAndSettle();
+
+      installMockClient({
+        '/api/terms/tos': doc('tos', 4, '服務條款'),
+      }, onRequest: (_) => gets++);
+      await tester.tap(find.text('重試'));
+      await tester.pumpAndSettle();
+      expect(gets, 2);
+      expect(find.textContaining('讀取目前版本失敗'), findsNothing);
+      expect(
+        find.widgetWithText(TextField, '自填標題'),
+        findsOneWidget,
+        reason: '重試不覆寫已填的標題',
+      );
+      await tester.tap(find.text('發布'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('第 5 版'), findsOneWidget);
+    });
+
+    testWidgets('讀取目前版本中：標題欄不可輸入', (tester) async {
+      installMockClient({
+        '/api/terms/tos': doc('tos', 4, '服務條款'),
+      }, delayFor: (_) => const Duration(seconds: 1));
+      await tester.pumpWidget(
+        _host(() => const AdminTermsPublishScreen(), <Object?>[]),
+      );
+      await tester.tap(find.text('開啟'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      TextField title() => tester.widget<TextField>(
+        find.ancestor(of: find.text('標題'), matching: find.byType(TextField)),
+      );
+      expect(title().enabled, isFalse);
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(title().enabled, isTrue);
+    });
+
     testWidgets('400：顯示後端 message，留在畫面', (tester) async {
       installMockClient({
         '/api/terms/tos': doc('tos', 4, '服務條款'),
