@@ -16,7 +16,7 @@ import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 
 import '../core/constants/api.dart';
-import '../main.dart';
+import '../core/network/api_client.dart';
 import '../models/friend_message_model.dart';
 import 'auth_service.dart';
 
@@ -223,7 +223,8 @@ class ChatController extends ChangeNotifier {
       return;
     }
     if (closeCode == 4003) {
-      navigatorKey.currentState?.pushNamed('/terms-consent');
+      // 與 REST 的 CONSENT_REQUIRED 同一個入口，兩邊同時發生也只疊一層。
+      ApiClient.showConsent();
       return;
     }
     _scheduleReconnect();

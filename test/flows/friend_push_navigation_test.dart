@@ -155,11 +155,75 @@ void main() {
       (_) async => http.Response('{"error":{"code":"INTERNAL"}}', 500),
     );
     await start(tester);
-    await open(tester, 'friend_message', 'AMIA2345');
+    await open(tester, 'friend_accepted', 'AMIA2345');
 
     expect(find.text('HOME'), findsOneWidget);
     expect(find.byType(FriendRequestsScreen), findsNothing);
     expect(find.text('無法開啟，請稍後再試'), findsOneWidget);
+  });
+
+  group('陌生人的私訊', () {
+    /// 好友列表裡沒有 GONE2345；訊息 API 照常回對方資料與那則破冰訊息。
+    void serveStranger({bool friendsFail = false}) {
+      ApiClient.httpClient = MockClient((request) async {
+        final path = request.url.path;
+        if (path == '/api/friends') {
+          if (friendsFail) {
+            return http.Response('{"error":{"code":"INTERNAL"}}', 500);
+          }
+          return jsonResponse({'friends': <dynamic>[]});
+        }
+        if (path == '/api/friends/GONE2345/messages') {
+          return jsonResponse({
+            'partner': {'nickname': '路人甲', 'friend_code': 'GONE2345'},
+            'messages': [
+              {
+                'id': 3,
+                'body': '你好，想認識你',
+                'created_at': '2026-10-05T01:00:00Z',
+                'read_at': null,
+                'mine': false,
+              },
+            ],
+            'page_info': {'next_cursor': null, 'has_more': false},
+          });
+        }
+        if (path == '/api/friends/GONE2345/messages/read') {
+          return jsonResponse({'ok': true, 'marked': 1});
+        }
+        return http.Response('{"error":{"code":"NOT_FOUND"}}', 404);
+      });
+    }
+
+    testWidgets('不是好友 → 開聊天室，看得到訊息，標題由訊息 API 補上暱稱', (tester) async {
+      serveStranger();
+      await start(tester);
+      await open(tester, 'friend_message', 'GONE2345');
+
+      expect(find.byType(ChatScreen), findsOneWidget);
+      expect(find.byType(FriendRequestsScreen), findsNothing);
+      expect(find.text('你好，想認識你'), findsOneWidget);
+      expect(find.textContaining('路人甲'), findsOneWidget);
+    });
+
+    testWidgets('查詢好友失敗 → 仍開聊天室，不提示無法開啟', (tester) async {
+      serveStranger(friendsFail: true);
+      await start(tester);
+      await open(tester, 'friend_message', 'GONE2345');
+
+      expect(find.byType(ChatScreen), findsOneWidget);
+      expect(find.text('你好，想認識你'), findsOneWidget);
+      expect(find.text('無法開啟，請稍後再試'), findsNothing);
+    });
+
+    testWidgets('聊天室已在最上層 → 就地重載，不疊頁', (tester) async {
+      serveStranger();
+      await start(tester);
+      await open(tester, 'friend_message', 'GONE2345');
+      await open(tester, 'friend_message', 'GONE2345');
+
+      expect(find.byType(ChatScreen, skipOffstage: false), findsOneWidget);
+    });
   });
 
   testWidgets('好友碼已不是好友 → 好友邀請頁，不報錯', (tester) async {

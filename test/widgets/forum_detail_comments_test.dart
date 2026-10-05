@@ -1,6 +1,6 @@
 // 貼文詳情的留言列表：本地插入、分頁「載入更多」、整頁重載交錯時，
 // 留言不重複、不亂序，過期的請求結果不會接到新列表上；停在頁內收到回覆推播時，
-// 浮出「有新回覆」提示，點了才整頁重載。
+// 浮出「有新回覆」提示，點了才載入（舊留言沒載完時往下載入，其餘整頁重載）。
 import 'dart:async';
 import 'dart:convert';
 
@@ -208,6 +208,159 @@ void main() {
       expect(onScreen(tester, '留言50'), isTrue);
     });
 
+    testWidgets('頁面開著時點了另一則回覆的通知：重載並捲到新的那則', (tester) async {
+      final forum = _FakeForum([1, 2, 3, 4, 5, 6]);
+      ApiClient.httpClient = forum.client();
+      await open(tester, 1);
+      expect(onScreen(tester, '留言6'), isFalse);
+
+      ForumDetailScreen.refreshRoute(_detailRoute(tester), focusCommentId: 6);
+      await tester.pumpAndSettle();
+
+      expect(onScreen(tester, '留言6'), isTrue);
+    });
+
+    testWidgets('重載沒帶留言時照舊停在頂端', (tester) async {
+      final forum = _FakeForum([1, 2, 3, 4, 5, 6]);
+      ApiClient.httpClient = forum.client();
+      tester.view.physicalSize = const Size(800, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        wrapScreen(const ForumDetailScreen(postId: _postId)),
+      );
+      await tester.pumpAndSettle();
+      final requests = forum.commentRequests.length;
+
+      ForumDetailScreen.refreshRoute(_detailRoute(tester));
+      await tester.pumpAndSettle();
+
+      expect(forum.commentRequests, hasLength(requests + 1));
+      expect(onScreen(tester, '留言1'), isTrue);
+    });
+
+    final highlight = find.byKey(const ValueKey('forum_focus_highlight'));
+
+    /// 標示底色目前的透明度；0 代表沒標示。
+    double highlightAlpha(WidgetTester tester) {
+      final box = tester.widget<AnimatedContainer>(highlight);
+      return (box.decoration! as BoxDecoration).color!.a;
+    }
+
+    /// 標示掛在哪一則留言上（底下的留言文字）。
+    String highlightedText(WidgetTester tester) => tester
+        .widget<Text>(
+          find
+              .descendant(of: highlight, matching: find.textContaining('留言'))
+              .first,
+        )
+        .data!;
+
+    testWidgets('捲到那則留言後短暫加底色標示，之後淡掉', (tester) async {
+      final forum = _FakeForum([1, 2, 3, 4, 5, 6]);
+      ApiClient.httpClient = forum.client();
+
+      await open(tester, 5);
+
+      expect(highlightedText(tester), '留言5');
+      expect(highlightAlpha(tester), greaterThan(0));
+
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+      expect(highlightAlpha(tester), 0);
+    });
+
+    testWidgets('頁面開著時換新的留言：標示移到新的那則', (tester) async {
+      final forum = _FakeForum([1, 2, 3, 4, 5, 6]);
+      ApiClient.httpClient = forum.client();
+      await open(tester, 1);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+      expect(highlightAlpha(tester), 0);
+
+      ForumDetailScreen.refreshRoute(_detailRoute(tester), focusCommentId: 6);
+      await tester.pumpAndSettle();
+
+      expect(highlight, findsOneWidget);
+      expect(highlightedText(tester), '留言6');
+      expect(highlightAlpha(tester), greaterThan(0));
+    });
+
+    /// 以 [first] 開頁，停在捲向它的動畫中途時點了 [second] 的通知；重載的第一頁
+    /// 晚回來，舊的捲動先跑完、新的那則還沒載到。最後要捲到並標示 [second]。
+    Future<void> switchFocusMidScroll(
+      WidgetTester tester, {
+      required int first,
+      required int second,
+    }) async {
+      final forum = _FakeForum([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      ApiClient.httpClient = forum.client();
+      tester.view.physicalSize = const Size(800, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        wrapScreen(ForumDetailScreen(postId: _postId, focusCommentId: first)),
+      );
+      // 一格一格推進，停在捲動動畫中途。
+      double pixels() => tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .pixels;
+      for (var i = 0; i < 100; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        if (find.byType(Scrollable).evaluate().isNotEmpty && pixels() > 0) {
+          break;
+        }
+      }
+      expect(pixels(), greaterThan(0));
+
+      final reload = Completer<void>();
+      forum.holdFor = (url) =>
+          url.queryParameters['cursor'] == null ? reload.future : null;
+      ForumDetailScreen.refreshRoute(
+        _detailRoute(tester),
+        focusCommentId: second,
+      );
+      // 載入中轉圈不會停，不能 pumpAndSettle；推進到舊的捲動結束。
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      forum.holdFor = null;
+      reload.complete();
+      await tester.pumpAndSettle();
+
+      expect(onScreen(tester, '留言$second'), isTrue);
+      expect(highlightedText(tester), '留言$second');
+      expect(highlightAlpha(tester), greaterThan(0));
+      await tester.pump(const Duration(seconds: 2));
+    }
+
+    testWidgets('捲向上一則的途中點了另一則的通知：仍捲到新的那則並標示它', (tester) async {
+      await switchFocusMidScroll(tester, first: 4, second: 10);
+    });
+
+    testWidgets('捲動途中同一則通知又被點一次：重載後仍捲到並標示它', (tester) async {
+      await switchFocusMidScroll(tester, first: 7, second: 7);
+    });
+
+    testWidgets('沒有指定留言：不標示；重載沒帶留言時清掉上一則的標示', (tester) async {
+      final forum = _FakeForum([1, 2, 3]);
+      ApiClient.httpClient = forum.client();
+      await tester.pumpWidget(
+        wrapScreen(const ForumDetailScreen(postId: _postId)),
+      );
+      await tester.pumpAndSettle();
+      expect(highlight, findsNothing);
+
+      ForumDetailScreen.refreshRoute(_detailRoute(tester), focusCommentId: 2);
+      await tester.pumpAndSettle();
+      expect(highlight, findsOneWidget);
+
+      ForumDetailScreen.refreshRoute(_detailRoute(tester));
+      await tester.pumpAndSettle();
+      expect(highlight, findsNothing);
+      await tester.pump(const Duration(seconds: 2));
+    });
+
     testWidgets('留言已不存在：載完可載的分頁後停在頂端，不報錯', (tester) async {
       final forum = _FakeForum([1, 2, 3]);
       ApiClient.httpClient = forum.client();
@@ -336,7 +489,7 @@ void main() {
     });
   });
 
-  group('點提示一律整頁重載', () {
+  group('點提示：已載完或含回覆留言時整頁重載', () {
     Future<void> tapChip(WidgetTester tester) async {
       await tester.tap(find.textContaining('則新回覆'));
       await tester.pumpAndSettle();
@@ -455,6 +608,97 @@ void main() {
 
       expect(forum.postRequests, posts + 1);
       expect(_visibleComments(tester), ['留言1', '留言3', '留言2']);
+    });
+  });
+
+  group('舊留言沒載完時點提示：往下載入新回覆', () {
+    final belowChip = find.text('有 1 則新回覆，往下載入就看得到');
+
+    Future<List<int>> openReporting(WidgetTester tester) async {
+      final reported = <int>[];
+      tester.view.physicalSize = const Size(800, 4000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        wrapScreen(
+          ForumDetailScreen(
+            postId: _postId,
+            onPostChanged: (p) => reported.add(p.commentCount),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+      return reported;
+    }
+
+    testWidgets('不整頁重載：載入下一頁，提示留到新回覆載入後才消失，留言數回報父層', (tester) async {
+      final forum = _FakeForum([1, 2, 3, 4, 5]);
+      ApiClient.httpClient = forum.client();
+      final reported = await openReporting(tester);
+      final posts = forum.postRequests;
+
+      forum.roots.add(6);
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
+      await tester.pumpAndSettle();
+
+      await tester.tap(belowChip);
+      await tester.pumpAndSettle();
+      expect(forum.commentRequests.last.queryParameters['cursor'], 'after:2');
+      expect(_visibleComments(tester), ['留言1', '留言2', '留言3', '留言4']);
+      expect(belowChip, findsOneWidget);
+      expect(forum.postRequests, posts);
+
+      await tester.tap(belowChip);
+      await tester.pumpAndSettle();
+      expect(_visibleComments(tester), [
+        '留言1',
+        '留言2',
+        '留言3',
+        '留言4',
+        '留言5',
+        '留言6',
+      ]);
+      expect(find.textContaining('則新回覆'), findsNothing);
+      expect(find.text('留言 6'), findsOneWidget);
+      expect(reported, [6]);
+    });
+
+    testWidgets('載入途中又收到推播：那一頁回來後提示仍在', (tester) async {
+      final forum = _FakeForum([1, 2, 3]);
+      ApiClient.httpClient = forum.client();
+      await openReporting(tester);
+
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
+      await tester.pumpAndSettle();
+      final hold = Completer<void>();
+      forum.holdFor = (_) => hold.future;
+      await tester.tap(belowChip);
+      await tester.pump();
+
+      // 這一頁在第二則回覆寫入前就查了，不一定含它。
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_post');
+      hold.complete();
+      await tester.pumpAndSettle();
+
+      expect(find.text('有 2 則新回覆'), findsOneWidget);
+    });
+
+    testWidgets('新回覆含回覆留言時照舊整頁重載', (tester) async {
+      final forum = _FakeForum([1, 2, 3]);
+      ApiClient.httpClient = forum.client();
+      await openReporting(tester);
+      final posts = forum.postRequests;
+
+      ForumDetailScreen.notifyNewReply(_detailRoute(tester), 'reply_comment');
+      await tester.pumpAndSettle();
+      await tester.tap(find.textContaining('則新回覆'));
+      await tester.pumpAndSettle();
+
+      expect(forum.postRequests, posts + 1);
+      expect(
+        forum.commentRequests.last.queryParameters.containsKey('cursor'),
+        isFalse,
+      );
     });
   });
 }

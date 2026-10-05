@@ -126,7 +126,8 @@ class FcmService {
   static void Function(int? sessionId)? onVideoSessionEnded;
 
   /// 點擊論壇回覆通知時的導頁 callback。由 UI 層設定（用 navigatorKey 導到貼文詳情）。
-  static void Function(int postId)? onForumReplyTapped;
+  /// [commentId] 是那則回覆，貼文頁開啟後捲過去；舊推播沒帶時為 null。
+  static void Function(int postId, int? commentId)? onForumReplyTapped;
 
   /// 點擊帶 case_id 的審核通知：由 UI 層設定，開處置詳情頁。
   static void Function(int caseId)? onModerationCaseTapped;
@@ -246,14 +247,13 @@ class FcmService {
           );
           return;
         }
-        if (payload.startsWith('forum:')) {
-          // forum:<post_id> 或 forum:<post_id>:<inbox_id>
-          final parts = payload.substring('forum:'.length).split(':');
-          final postId = int.tryParse(parts.first);
-          if (postId != null) {
+        if (payload.startsWith(_forumPayloadPrefix)) {
+          final forum = parseForumNotificationPayload(payload);
+          if (forum != null) {
             _openForumReply(
-              postId,
-              parts.length > 1 ? int.tryParse(parts[1]) : null,
+              forum.postId,
+              forum.inboxId,
+              commentId: forum.commentId,
             );
           }
           return;
@@ -372,8 +372,10 @@ class FcmService {
       notice.body.isNotEmpty ? notice.body : _eventDeletedFallbackMessage;
 
   /// 解析論壇回覆通知的 payload，非論壇類型回傳 null。
-  /// 後端送出的 data：{ type: 'reply_post' | 'reply_comment', post_id, comment_id }
-  static ({int postId, String type})? _parseForumPayload(
+  /// 後端送出的 data：{ type: 'reply_post' | 'reply_comment', post_id, comment_id }；
+  /// 舊推播可能沒有 comment_id，此時 commentId 為 null。
+  @visibleForTesting
+  static ({int postId, String type, int? commentId})? parseForumPayload(
     Map<String, dynamic> data,
   ) {
     final type = data['type'];
@@ -383,7 +385,36 @@ class FcmService {
       debugPrint('FcmService: post_id 缺失或無法解析，忽略：${data['post_id']}');
       return null;
     }
-    return (postId: postId, type: type as String);
+    return (
+      postId: postId,
+      type: type as String,
+      commentId: int.tryParse(data['comment_id']?.toString() ?? ''),
+    );
+  }
+
+  /// 事件通知的 payload 是純數字的 event_id，論壇加前綴區分兩者。
+  static const _forumPayloadPrefix = 'forum:';
+
+  /// 前景論壇回覆本機通知的 payload：`forum:<post_id>:<inbox_id|空>:<comment_id|空>`。
+  @visibleForTesting
+  static String forumNotificationPayload(
+    int postId, {
+    int? inboxId,
+    int? commentId,
+  }) => '$_forumPayloadPrefix$postId:${inboxId ?? ''}:${commentId ?? ''}';
+
+  /// 解析 [forumNotificationPayload]；也認舊版的 `forum:<post_id>` 與
+  /// `forum:<post_id>:<inbox_id>`（更新前彈出、還留在通知列的通知）。
+  /// 不是論壇 payload 或 post_id 無法解析時回傳 null。
+  @visibleForTesting
+  static ({int postId, int? inboxId, int? commentId})?
+  parseForumNotificationPayload(String payload) {
+    if (!payload.startsWith(_forumPayloadPrefix)) return null;
+    final parts = payload.substring(_forumPayloadPrefix.length).split(':');
+    final postId = int.tryParse(parts.first);
+    if (postId == null) return null;
+    int? at(int i) => parts.length > i ? int.tryParse(parts[i]) : null;
+    return (postId: postId, inboxId: at(1), commentId: at(2));
   }
 
   /// 推播對應的收件匣那一則（論壇回覆、審核類才有），沒有回傳 null。
@@ -409,9 +440,9 @@ class FcmService {
     );
   }
 
-  static void _openForumReply(int postId, int? inboxId) {
+  static void _openForumReply(int postId, int? inboxId, {int? commentId}) {
     _markInboxRead(inboxId);
-    onForumReplyTapped?.call(postId);
+    onForumReplyTapped?.call(postId, commentId);
   }
 
   static void _openModerationCase(int caseId, int? inboxId) {
@@ -462,8 +493,25 @@ class FcmService {
   static final Set<String> _handledCallEvents = <String>{};
   static const _maxHandledCallEvents = 50;
 
+  /// 正在查來電資料的 call_id。查詢期間同一通的其他來源先略過。
+  static final Set<int> _incomingInFlight = <int>{};
+
+  /// 查詢期間又有來源送來同一通：這次查不到就再查一次，不讓後到的來源白白被擋掉。
+  static final Set<int> _incomingRetry = <int>{};
+
   @visibleForTesting
-  static void resetHandledCallEvents() => _handledCallEvents.clear();
+  static void resetHandledCallEvents() {
+    _handledCallEvents.clear();
+    _incomingInFlight.clear();
+    _incomingRetry.clear();
+  }
+
+  static void _rememberCallEvent(String key) {
+    _handledCallEvents.add(key);
+    if (_handledCallEvents.length > _maxHandledCallEvents) {
+      _handledCallEvents.remove(_handledCallEvents.first);
+    }
+  }
 
   /// 即時連線收到的通話事件（main.dart 掛上）。與推播走同一個入口，
   /// 兩邊都收到同一則時只處理先到的。
@@ -472,6 +520,7 @@ class FcmService {
 
   /// 是通話事件就處理並回傳 true（處理過的同一則略過）。
   /// 即時連線來的事件沒有畫面接手時不記下，留給隨後的推播彈通知。
+  /// 來電要查到來電資料才算處理過（見 [_handleIncomingCall]）。
   static bool _handleCallEvent(
     Map<String, dynamic> data,
     _CallEventSource source,
@@ -483,18 +532,47 @@ class FcmService {
             ?.toString();
     final key = id == null || id.isEmpty ? null : '$type:$id';
     if (key != null && _handledCallEvents.contains(key)) return true;
+    if (type == 'friend_call_incoming') {
+      final callId = int.tryParse(id ?? '');
+      if (callId != null && key != null) {
+        unawaited(_handleIncomingCall(callId, key));
+      }
+      return true;
+    }
     final delivered = _dispatchCallEvent(type, data, source);
     if (key != null && (delivered || source != _CallEventSource.socket)) {
-      _handledCallEvents.add(key);
-      if (_handledCallEvents.length > _maxHandledCallEvents) {
-        _handledCallEvents.remove(_handledCallEvents.first);
-      }
+      _rememberCallEvent(key);
     }
     return true;
   }
 
+  /// 查到來電資料才記為處理過並開響鈴畫面；查詢失敗或已不在響鈴就不記，
+  /// 讓後到的來源（例如即時連線先到但查詢失敗，隨後的推播）再查一次。
+  /// 查詢期間同一通的其他來源不重複查，只在這次查不到時再補查一次。
+  static Future<void> _handleIncomingCall(int callId, String key) async {
+    if (!_incomingInFlight.add(callId)) {
+      _incomingRetry.add(callId);
+      return;
+    }
+    try {
+      while (true) {
+        final call = await _fetchIncomingCall(callId);
+        if (_handledCallEvents.contains(key)) return;
+        if (call != null) {
+          _rememberCallEvent(key);
+          onFriendCallIncoming?.call(call);
+          return;
+        }
+        if (!_incomingRetry.remove(callId)) return;
+      }
+    } finally {
+      _incomingInFlight.remove(callId);
+      _incomingRetry.remove(callId);
+    }
+  }
+
   /// 交給對應的畫面回呼，有人接手回傳 true。前景推播的視訊事件沒人接手時
-  /// 改彈本地通知；即時連線不彈，交給隨後的推播。
+  /// 改彈本地通知；即時連線不彈，交給隨後的推播。來電另由 [_handleIncomingCall] 處理。
   static bool _dispatchCallEvent(
     String type,
     Map<String, dynamic> data,
@@ -534,14 +612,6 @@ class FcmService {
           _showVideoNotification(sessionId, matched: false);
         }
         return false;
-      case 'friend_call_incoming':
-        if (callId == null) return false;
-        unawaited(
-          _fetchIncomingCall(callId).then((call) {
-            if (call != null) onFriendCallIncoming?.call(call);
-          }),
-        );
-        return true;
       case 'friend_call_accepted':
         return deliver(onFriendCallAccepted, callId);
       case 'friend_call_declined':
@@ -595,9 +665,10 @@ class FcmService {
       return;
     }
 
-    final forum = _parseForumPayload(message.data);
+    final forum = parseForumPayload(message.data);
     if (forum != null) {
       final forumPostId = forum.postId;
+      final commentId = forum.commentId;
       final inboxId = parseInboxId(message.data);
       // 人就在那一頁：改由頁內提示，不再彈通知。
       final handled = onForumReplyWhileOpen?.call(forumPostId, forum.type);
@@ -612,10 +683,11 @@ class FcmService {
           notificationDetails: const NotificationDetails(
             android: _reminderAndroidDetails,
           ),
-          // 事件通知的 payload 是純數字的 event_id，論壇加前綴區分兩者。
-          payload: inboxId == null
-              ? 'forum:$forumPostId'
-              : 'forum:$forumPostId:$inboxId',
+          payload: forumNotificationPayload(
+            forumPostId,
+            inboxId: inboxId,
+            commentId: commentId,
+          ),
         ),
       );
       scaffoldMessengerKey.currentState
@@ -625,7 +697,8 @@ class FcmService {
             content: Text(body.isNotEmpty ? body : title),
             action: SnackBarAction(
               label: '查看',
-              onPressed: () => _openForumReply(forumPostId, inboxId),
+              onPressed: () =>
+                  _openForumReply(forumPostId, inboxId, commentId: commentId),
             ),
           ),
         );
@@ -858,9 +931,13 @@ class FcmService {
       return;
     }
 
-    final forum = _parseForumPayload(message.data);
+    final forum = parseForumPayload(message.data);
     if (forum != null) {
-      _openForumReply(forum.postId, parseInboxId(message.data));
+      _openForumReply(
+        forum.postId,
+        parseInboxId(message.data),
+        commentId: forum.commentId,
+      );
       return;
     }
     final deleted = parseEventDeleted(
