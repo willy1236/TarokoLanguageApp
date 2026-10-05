@@ -269,18 +269,11 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
   }
 
   /// 管理員直接重設他人個人檔案：指定欄位立即改回預設值，並送進違規區等二審。
-  /// 公開個人頁不回 uid，後台端點又只收 uid，先用好友碼查到對方 uid。
+  /// 公開個人頁不回 uid，後台端點又只收 uid，確認理由後才用好友碼查 uid：
+  /// 查人會留稽核紀錄，只打開再取消不該留下一筆查詢。
   Future<void> _adminResetProfile() async {
     final friendCode = _profile?.friendCode;
     if (friendCode == null) return;
-    final int uid;
-    try {
-      uid = (await AdminService.lookupUser(friendCode)).uid;
-    } catch (e) {
-      if (mounted) handleAdminError(context, e);
-      return;
-    }
-    if (!mounted) return;
     final input = await promptAdminReason(
       context,
       title: '重設個人檔案',
@@ -291,6 +284,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
     );
     if (input == null || !mounted) return;
     try {
+      final uid = (await AdminService.lookupUser(friendCode)).uid;
       await AdminService.resetProfile(uid, input.reason, fields: input.fields);
       showAdminMessage('已重設，等待其他管理員二審');
       if (mounted) await _load();
