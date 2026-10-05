@@ -1,6 +1,7 @@
 // 後台官方公告：已發布列表、發布表單、確認框與結果。
 // 回應依 收件匣與申訴.md §5 手寫（POST 會真的發給所有人，不錄）。
 
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -32,9 +33,14 @@ void main() {
   });
   tearDown(restoreHttp);
 
-  void install({http.Response? post, Object? postError}) {
+  void install({
+    http.Response? post,
+    Object? postError,
+    Future<void>? postGate,
+  }) {
     ApiClient.httpClient = MockClient.streaming((request, _) async {
       seen.add(request);
+      if (request.method == 'POST' && postGate != null) await postGate;
       if (request.method == 'POST' && postError != null) throw postError;
       final response = request.method == 'POST'
           ? post ??
@@ -240,5 +246,47 @@ void main() {
           .onPressed,
       isNotNull,
     );
+  });
+
+  testWidgets('送出中：返回鈕與系統返回都留在表單；成功後照常回列表', (tester) async {
+    final gate = Completer<void>();
+    install(postGate: gate.future);
+    await tester.pumpWidget(_app(const AdminAnnouncementsScreen()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('新增公告'));
+    await tester.pumpAndSettle();
+    await fill(tester);
+    await tester.tap(find.widgetWithText(FilledButton, '發布'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(FilledButton, '發布').last);
+    await tester.pump();
+
+    await tester.tap(find.byTooltip('返回'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AdminAnnouncementFormScreen), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pumpAndSettle();
+    expect(find.byType(AdminAnnouncementFormScreen), findsOneWidget);
+
+    gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.textContaining('已寫入 128 人的收件匣'), findsOneWidget);
+    await tester.tap(find.text('知道了'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AdminAnnouncementFormScreen), findsNothing);
+    expect(find.byType(AdminAnnouncementsScreen), findsOneWidget);
+  });
+
+  testWidgets('沒在送出時返回鈕照常離開表單', (tester) async {
+    install();
+    await tester.pumpWidget(_app(const AdminAnnouncementsScreen()));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('新增公告'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('返回'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AdminAnnouncementFormScreen), findsNothing);
   });
 }

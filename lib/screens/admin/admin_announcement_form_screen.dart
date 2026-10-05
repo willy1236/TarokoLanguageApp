@@ -133,7 +133,14 @@ class _AdminAnnouncementFormScreenState
   }
 
   @override
-  Widget build(BuildContext context) => AdminScaffold(
+  Widget build(BuildContext context) => PopScope(
+    // 送出中擋系統返回、手勢與返回鈕（maybePop）：離開後就看不到發布結果。
+    // 成功或結果不明時由 _submit 直接 pop，不受影響。
+    canPop: !_submitting,
+    child: _form(context),
+  );
+
+  Widget _form(BuildContext context) => AdminScaffold(
     title: '新增公告',
     body: (context, senior) => ListView(
       padding: const EdgeInsets.all(AppSpacing.md),
