@@ -218,11 +218,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
-  /// 動作（參加/退出/取消）成功後與下拉重整的刷新：只更新資料本身，不設
-  /// `_loading = true`，避免整頁重建與剛關閉的對話框收尾動畫互撞（觸發
-  /// `_dependents.isEmpty` assertion），也不卸載正在上傳或刪除照片的輪播。
-  /// 失敗時保留現有畫面，不換成錯誤頁；[reportFailure]（下拉重整、點照片重試）才提示使用者，
-  /// 其他背景重取失敗不打擾。
+  /// 動作（參加/退出/取消）成功後與使用者重整（下拉、點照片重試）的刷新：
+  /// 只更新資料本身，不設 `_loading = true`，避免整頁重建與剛關閉的對話框收尾
+  /// 動畫互撞（觸發 `_dependents.isEmpty` assertion），也不卸載正在上傳或刪除
+  /// 照片的輪播。失敗時保留現有畫面，不換成錯誤頁；[reportFailure]（下拉重整、
+  /// 點照片重試）才提示使用者，其他背景重取失敗不打擾。
   Future<void> _silentRefresh({bool reportFailure = false}) async {
     final imagesVersion = _imagesVersion;
     try {
