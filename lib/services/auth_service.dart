@@ -307,7 +307,8 @@ class AuthService {
   @visibleForTesting
   static AuthException loginErrorFor(http.Response resp) {
     final message = _parseError(resp.body);
-    return resp.statusCode >= 500
+    final status = resp.statusCode;
+    return status >= 500 && status < 600
         ? AuthException.serverError(message)
         : AuthException(message);
   }

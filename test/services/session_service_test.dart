@@ -217,6 +217,8 @@ void main() {
       401: RefreshOutcome.rejected,
       403: RefreshOutcome.rejected,
       429: RefreshOutcome.rejected,
+      // 不是合法 HTTP 狀態碼：分不出來，維持 rejected。
+      600: RefreshOutcome.rejected,
     };
     cases.forEach((status, expected) {
       test('$status → ${expected.name}', () {
