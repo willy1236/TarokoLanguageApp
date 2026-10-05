@@ -276,12 +276,14 @@ class AuthService {
   }
 
   /// 續期失敗的原因歸類：連線層的失敗（逾時、socket／TLS／HTTP 連線錯誤、
-  /// Firebase 換 ID token 時沒網路）與伺服器 5xx 算 offline，其餘（後端 4xx 拒絕、Firebase
-  /// 帳號已失效、未預期的錯誤）算 rejected。分不出來的一律當 rejected，
-  /// 維持「換不到就登出」的舊行為，不讓帳號問題被誤當成暫時斷線而一直重試。
+  /// Firebase 換 ID token 時沒網路）算 offline，伺服器 5xx 算 serverUnavailable，
+  /// 其餘（後端 4xx 拒絕、Firebase 帳號已失效、未預期的錯誤）算 rejected。
+  /// 分不出來的一律當 rejected，維持「換不到就登出」的舊行為，不讓帳號問題
+  /// 被誤當成暫時斷線而一直重試。
   @visibleForTesting
   static RefreshOutcome refreshOutcomeFor(Object error) => switch (error) {
-    AuthException(isTransient: true) => RefreshOutcome.offline,
+    AuthException(isNetworkError: true) => RefreshOutcome.offline,
+    AuthException(isServerError: true) => RefreshOutcome.serverUnavailable,
     AuthException() => RefreshOutcome.rejected,
     TimeoutException() ||
     IOException() ||
@@ -337,6 +339,9 @@ enum RefreshOutcome {
 
   /// 連不上伺服器：登入狀態保留，等網路恢復再試。
   offline,
+
+  /// 伺服器暫時不可用（5xx）：登入狀態保留，稍後再試。
+  serverUnavailable,
 }
 
 /// `POST /api/auth/login` 的回應。active 帳號帶 `user`；非 active 帳號
@@ -365,16 +370,24 @@ class LoginResult {
 class AuthException implements Exception {
   final String message;
 
-  /// 暫時性失敗：連不上伺服器，或伺服器回 5xx（不是被後端拒絕）。
-  /// 啟動續期靠它分辨要不要登出。
-  final bool isTransient;
+  /// 連不上伺服器（不是被後端拒絕）。
+  final bool isNetworkError;
 
-  AuthException(this.message) : isTransient = false;
+  /// 伺服器回 5xx（不是被後端拒絕）。
+  /// 啟動續期靠這兩個旗標分辨要登出、還是保留登入等重試。
+  final bool isServerError;
 
-  AuthException.network() : message = '無法連線到伺服器，請檢查網路', isTransient = true;
+  AuthException(this.message) : isNetworkError = false, isServerError = false;
+
+  AuthException.network()
+    : message = '無法連線到伺服器，請檢查網路',
+      isNetworkError = true,
+      isServerError = false;
 
   /// 伺服器 5xx：訊息沿用後端（或「登入失敗」），登入頁顯示的文字不變。
-  AuthException.serverError(this.message) : isTransient = true;
+  AuthException.serverError(this.message)
+    : isNetworkError = false,
+      isServerError = true;
 
   @override
   String toString() => message;

@@ -244,6 +244,42 @@ void main() {
       expect(signOutCalls, isEmpty);
     });
 
+    testWidgets('伺服器暫時不可用：顯示中性文案與重試，不叫人檢查網路、不登出', (tester) async {
+      outcome = RefreshOutcome.serverUnavailable;
+      installMockClient({
+        '/api/account/status': loadFixtureMap('get_api_account_status.json'),
+        '/api/me': loadFixtureMap('get_api_me.json'),
+        '/api/terms': loadFixtureMap('get_api_terms.json'),
+      });
+
+      await tester.pumpWidget(app());
+      await pumpPastSplashDelay(tester);
+
+      expect(find.text('暫時無法連線到伺服器，請稍後再試'), findsOneWidget);
+      expect(find.text('無法連線，請檢查網路'), findsNothing);
+      expect(find.text('LOGIN'), findsNothing);
+      expect(signOutCalls, isEmpty);
+
+      outcome = RefreshOutcome.ok;
+      await tester.tap(find.widgetWithText(OutlinedButton, '重試'));
+      await pumpFrames(tester);
+      expect(find.text('HOME'), findsOneWidget);
+    });
+
+    testWidgets('重試時原因改變：文案跟著換成這次的原因', (tester) async {
+      outcome = RefreshOutcome.serverUnavailable;
+      installMockClient(const {});
+      await tester.pumpWidget(app());
+      await pumpPastSplashDelay(tester);
+
+      outcome = RefreshOutcome.offline;
+      await tester.tap(find.widgetWithText(OutlinedButton, '重試'));
+      await pumpFrames(tester);
+
+      expect(find.text('無法連線，請檢查網路'), findsOneWidget);
+      expect(find.text('暫時無法連線到伺服器，請稍後再試'), findsNothing);
+    });
+
     testWidgets('按重試仍離線：回到重試畫面', (tester) async {
       installMockClient(const {});
       await tester.pumpWidget(app());

@@ -158,6 +158,15 @@ void main() {
       expect(calls, isEmpty);
     });
 
+    test('伺服器暫時不可用：回 serverUnavailable，什麼都不清', () async {
+      SessionService.refreshSession = () async =>
+          RefreshOutcome.serverUnavailable;
+
+      expect(await SessionService.restore(), RestoreResult.serverUnavailable);
+      expect(calls, isEmpty);
+      expect(store['session_token'], 'jwt');
+    });
+
     test('被拒絕：只刪本機 FCM token、完整登出後回 loggedOut', () async {
       SessionService.refreshSession = () async => RefreshOutcome.rejected;
 
@@ -209,10 +218,10 @@ void main() {
       headers: {'content-type': 'application/json; charset=utf-8'},
     );
     final cases = <int, RefreshOutcome>{
-      500: RefreshOutcome.offline,
-      502: RefreshOutcome.offline,
-      503: RefreshOutcome.offline,
-      504: RefreshOutcome.offline,
+      500: RefreshOutcome.serverUnavailable,
+      502: RefreshOutcome.serverUnavailable,
+      503: RefreshOutcome.serverUnavailable,
+      504: RefreshOutcome.serverUnavailable,
       400: RefreshOutcome.rejected,
       401: RefreshOutcome.rejected,
       403: RefreshOutcome.rejected,
@@ -234,7 +243,10 @@ void main() {
         http.Response('<html>Bad Gateway</html>', 502),
       );
       expect(error.message, '登入失敗');
-      expect(AuthService.refreshOutcomeFor(error), RefreshOutcome.offline);
+      expect(
+        AuthService.refreshOutcomeFor(error),
+        RefreshOutcome.serverUnavailable,
+      );
     });
   });
 

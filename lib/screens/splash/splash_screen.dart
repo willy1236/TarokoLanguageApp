@@ -22,13 +22,13 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
-  /// JWT 已過期、續期時連不上：停在這頁顯示重試，不導去登入頁。
-  bool _offline = false;
+  /// JWT 已過期、續期時連不上的提示文字；有值時停在這頁顯示重試，不導去登入頁。
+  String? _retryMessage;
 
   /// 按了重試、還在等結果。
   bool _retrying = false;
 
-  bool get _showRetryArea => _offline || _retrying;
+  bool get _showRetryArea => _retryMessage != null || _retrying;
 
   @override
   void initState() {
@@ -46,22 +46,28 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void _retry() {
     setState(() {
-      _offline = false;
+      _retryMessage = null;
       _retrying = true;
     });
     _start();
   }
 
-  /// 還原登入並決定第一頁。只有 [RestoreResult.offline] 會留在這頁等重試。
+  void _showRetry(String message) => setState(() {
+    _retryMessage = message;
+    _retrying = false;
+  });
+
+  /// 還原登入並決定第一頁。連不上或伺服器暫時不可用時留在這頁等重試。
   Future<void> _start() async {
     final restored = await SessionService.restore();
     if (!mounted) return;
     switch (restored) {
       case RestoreResult.offline:
-        setState(() {
-          _offline = true;
-          _retrying = false;
-        });
+        _showRetry('無法連線，請檢查網路');
+        return;
+      case RestoreResult.serverUnavailable:
+        // 網路是通的，叫人檢查網路會誤導。
+        _showRetry('暫時無法連線到伺服器，請稍後再試');
         return;
       case RestoreResult.loggedOut:
         Navigator.pushReplacementNamed(context, '/login');
@@ -114,12 +120,12 @@ class _SplashScreenState extends State<SplashScreen> {
     if (route != '/birth-date') FcmService.consumePendingInitialMessage();
   }
 
-  Widget _buildOffline() {
+  Widget _buildRetryPrompt(String message) {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
         Text(
-          '無法連線，請檢查網路',
+          message,
           textAlign: TextAlign.center,
           style: AppTypography.bodyLargeStyle(color: AppColors.creamLight),
         ),
@@ -301,7 +307,9 @@ class _SplashScreenState extends State<SplashScreen> {
                   const SizedBox(height: 20),
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: _retrying ? _buildRetrying() : _buildOffline(),
+                    child: _retrying
+                        ? _buildRetrying()
+                        : _buildRetryPrompt(_retryMessage!),
                   ),
                 ],
               ],
