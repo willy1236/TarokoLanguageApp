@@ -148,10 +148,7 @@ class AuthService {
       throw AuthException.network();
     }
 
-    if (resp.statusCode != 200) {
-      final err = _parseError(resp.body);
-      throw AuthException(err);
-    }
+    if (resp.statusCode != 200) throw loginErrorFor(resp);
 
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
     // 刪除中帳號也會拿到 token：重新啟用端點要用它呼叫（見帳號刪除串接指南 §4）。
@@ -279,12 +276,12 @@ class AuthService {
   }
 
   /// 續期失敗的原因歸類：連線層的失敗（逾時、socket／TLS／HTTP 連線錯誤、
-  /// Firebase 換 ID token 時沒網路）算 offline，其餘（後端拒絕、Firebase
+  /// Firebase 換 ID token 時沒網路）與伺服器 5xx 算 offline，其餘（後端 4xx 拒絕、Firebase
   /// 帳號已失效、未預期的錯誤）算 rejected。分不出來的一律當 rejected，
   /// 維持「換不到就登出」的舊行為，不讓帳號問題被誤當成暫時斷線而一直重試。
   @visibleForTesting
   static RefreshOutcome refreshOutcomeFor(Object error) => switch (error) {
-    AuthException(isNetworkError: true) => RefreshOutcome.offline,
+    AuthException(isTransient: true) => RefreshOutcome.offline,
     AuthException() => RefreshOutcome.rejected,
     TimeoutException() ||
     IOException() ||
@@ -303,6 +300,16 @@ class AuthService {
     final expiry = DateTime.tryParse(expiresAt);
     if (expiry == null) return true;
     return !DateTime.now().isAfter(expiry);
+  }
+
+  /// 登入端點非 200 的回應轉成 [AuthException]：5xx（502／503／504 等，
+  /// 例如 Cloud Run 暫時不可用）標成暫時性，其餘（4xx）是後端拒絕。
+  @visibleForTesting
+  static AuthException loginErrorFor(http.Response resp) {
+    final message = _parseError(resp.body);
+    return resp.statusCode >= 500
+        ? AuthException.serverError(message)
+        : AuthException(message);
   }
 
   static String _parseError(String body) {
@@ -357,12 +364,16 @@ class LoginResult {
 class AuthException implements Exception {
   final String message;
 
-  /// 連不上伺服器（不是被後端拒絕）。啟動續期靠它分辨要不要登出。
-  final bool isNetworkError;
+  /// 暫時性失敗：連不上伺服器，或伺服器回 5xx（不是被後端拒絕）。
+  /// 啟動續期靠它分辨要不要登出。
+  final bool isTransient;
 
-  AuthException(this.message) : isNetworkError = false;
+  AuthException(this.message) : isTransient = false;
 
-  AuthException.network() : message = '無法連線到伺服器，請檢查網路', isNetworkError = true;
+  AuthException.network() : message = '無法連線到伺服器，請檢查網路', isTransient = true;
+
+  /// 伺服器 5xx：訊息沿用後端（或「登入失敗」），登入頁顯示的文字不變。
+  AuthException.serverError(this.message) : isTransient = true;
 
   @override
   String toString() => message;

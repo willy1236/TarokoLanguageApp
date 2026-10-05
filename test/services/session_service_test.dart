@@ -202,6 +202,40 @@ void main() {
     });
   });
 
+  group('登入端點非 200 → 續期結果', () {
+    http.Response resp(int status) => http.Response(
+      '{"error":{"code":"X","message":"後端訊息"}}',
+      status,
+      headers: {'content-type': 'application/json; charset=utf-8'},
+    );
+    final cases = <int, RefreshOutcome>{
+      500: RefreshOutcome.offline,
+      502: RefreshOutcome.offline,
+      503: RefreshOutcome.offline,
+      504: RefreshOutcome.offline,
+      400: RefreshOutcome.rejected,
+      401: RefreshOutcome.rejected,
+      403: RefreshOutcome.rejected,
+      429: RefreshOutcome.rejected,
+    };
+    cases.forEach((status, expected) {
+      test('$status → ${expected.name}', () {
+        final error = AuthService.loginErrorFor(resp(status));
+        expect(AuthService.refreshOutcomeFor(error), expected);
+        // 登入頁顯示的訊息不因分類而改變。
+        expect(error.message, '後端訊息');
+      });
+    });
+
+    test('5xx 回應不是 JSON 時訊息仍是「登入失敗」', () {
+      final error = AuthService.loginErrorFor(
+        http.Response('<html>Bad Gateway</html>', 502),
+      );
+      expect(error.message, '登入失敗');
+      expect(AuthService.refreshOutcomeFor(error), RefreshOutcome.offline);
+    });
+  });
+
   group('SessionService.signOut 順序', () {
     late Map<String, String> store;
     late List<String> calls;
