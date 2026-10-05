@@ -573,6 +573,27 @@ void main() {
       expect(find.textContaining('第 5 版'), findsOneWidget);
     });
 
+    testWidgets('讀目前版本失敗（非 404）：預覽不顯示推算的版本號', (tester) async {
+      installMockClient({
+        '/api/terms/tos': errorResponse('INTERNAL', status: 500),
+      });
+      await tester.pumpWidget(
+        _host(() => const AdminTermsPublishScreen(), <Object?>[]),
+      );
+      await _open(tester);
+      await tester.enterText(find.widgetWithText(TextField, '標題'), '新標題');
+      await tester.enterText(
+        find.widgetWithText(TextField, '全文（Markdown，貼上）'),
+        '內容',
+      );
+
+      await tester.tap(find.byTooltip('預覽'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('新標題'), findsOneWidget);
+      expect(find.textContaining(RegExp(r'第 \d+ 版')), findsNothing);
+    });
+
     testWidgets('讀取目前版本中：標題欄不可輸入', (tester) async {
       installMockClient({
         '/api/terms/tos': doc('tos', 4, '服務條款'),
