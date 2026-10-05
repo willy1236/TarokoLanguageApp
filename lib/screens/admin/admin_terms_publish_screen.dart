@@ -161,8 +161,10 @@ class _AdminTermsPublishScreenState extends State<AdminTermsPublishScreen> {
     padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
     child: TermsDocumentView(
       title: _title.text.trim(),
-      // 讀不到目前版本時不寫推算的版本號，和確認框一致。
-      version: _versionError == null ? _currentVersion + 1 : null,
+      // 讀取中或讀不到目前版本時不寫推算的版本號，和確認框一致。
+      version: _versionError == null && !_loadingCurrent
+          ? _currentVersion + 1
+          : null,
       contentMd: _content.text,
     ),
   );

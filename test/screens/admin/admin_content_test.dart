@@ -594,6 +594,26 @@ void main() {
       expect(find.textContaining(RegExp(r'第 \d+ 版')), findsNothing);
     });
 
+    testWidgets('讀取目前版本中：預覽不顯示推算的版本號，讀完才顯示', (tester) async {
+      installMockClient({
+        '/api/terms/tos': doc('tos', 4, '服務條款'),
+      }, delayFor: (_) => const Duration(seconds: 1));
+      await tester.pumpWidget(
+        _host(() => const AdminTermsPublishScreen(), <Object?>[]),
+      );
+      await tester.tap(find.text('開啟'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      await tester.tap(find.byTooltip('預覽'));
+      await tester.pump();
+      expect(find.textContaining(RegExp(r'第 \d+ 版')), findsNothing);
+
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(find.text('第 5 版'), findsOneWidget);
+    });
+
     testWidgets('讀取目前版本中：標題欄不可輸入', (tester) async {
       installMockClient({
         '/api/terms/tos': doc('tos', 4, '服務條款'),
