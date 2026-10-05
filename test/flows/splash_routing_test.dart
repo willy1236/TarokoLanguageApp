@@ -199,6 +199,7 @@ void main() {
       ('iPhone SE 1 代 320×568', const Size(320, 568), 1.0),
       ('360×640、字體放大 1.3 倍', const Size(360, 640), 1.3),
       ('iPhone SE 375×667、字體放大 1.3 倍', const Size(375, 667), 1.3),
+      ('iPhone SE 1 代 320×568、字體放大 1.5 倍（長輩模式上限）', const Size(320, 568), 1.5),
     ]) {
       testWidgets('小螢幕 $label：重試區在 logo 文字與菱形鏈下方、不超出畫面', (tester) async {
         usePhoneSurface(tester, size: size);
