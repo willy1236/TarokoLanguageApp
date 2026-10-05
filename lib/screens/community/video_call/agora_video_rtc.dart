@@ -89,8 +89,15 @@ class AgoraVideoRtc implements VideoRtc {
     final engine = _engine;
     _engine = null;
     if (engine == null) return;
-    await engine.leaveChannel();
-    await engine.release();
+    // 還沒入房（例如 initialize 途中就掛斷）時 leaveChannel 可能丟
+    // AgoraRtcException；不論成敗都要 release，否則鏡頭與引擎不會釋放。
+    try {
+      await engine.leaveChannel();
+    } catch (e) {
+      debugPrint('AgoraVideoRtc: leaveChannel 失敗（照常釋放引擎）：$e');
+    } finally {
+      await engine.release();
+    }
   }
 
   /// iOS 的原生 platform view（AgoraSurfaceView）會蓋掉疊在影像上的 Flutter
