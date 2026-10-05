@@ -12,6 +12,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_application_1/services/auth_service.dart';
+import 'package:flutter_application_1/services/session_service.dart';
+
 import '../helpers/fixtures.dart';
 import '../helpers/flow_test_helpers.dart';
 import '../helpers/widget_test_helpers.dart';
@@ -152,5 +155,101 @@ void main() {
 
     expect(find.text('HOME'), findsOneWidget);
     expect(find.text(readOnlyBannerText), findsOneWidget);
+  });
+
+  group('JWT 已過期', () {
+    final past = DateTime.now()
+        .subtract(const Duration(days: 1))
+        .toIso8601String();
+    final realRefresh = SessionService.refreshSession;
+    final realDeleteLocal = SessionService.deleteLocalToken;
+    final realClearAuth = SessionService.clearAuth;
+    late List<String> signOutCalls;
+    late RefreshOutcome outcome;
+
+    setUp(() {
+      stubCommonChannels(token: 'test-token', expiresAt: past);
+      signOutCalls = [];
+      outcome = RefreshOutcome.offline;
+      SessionService.refreshSession = () async => outcome;
+      SessionService.deleteLocalToken = () async =>
+          signOutCalls.add('deleteLocal');
+      SessionService.clearAuth = () async => signOutCalls.add('clearAuth');
+    });
+    tearDown(() {
+      SessionService.refreshSession = realRefresh;
+      SessionService.deleteLocalToken = realDeleteLocal;
+      SessionService.clearAuth = realClearAuth;
+    });
+
+    testWidgets('啟動時離線：顯示無法連線與重試，不導頁也不登出', (tester) async {
+      installMockClient(const {});
+
+      await tester.pumpWidget(app());
+      await pumpPastSplashDelay(tester);
+
+      expect(find.text('無法連線，請檢查網路'), findsOneWidget);
+      expect(find.widgetWithText(OutlinedButton, '重試'), findsOneWidget);
+      expect(find.text('LOGIN'), findsNothing);
+      expect(signOutCalls, isEmpty);
+    });
+
+    testWidgets('按重試且網路恢復後續期成功，照常進首頁', (tester) async {
+      installMockClient({
+        '/api/account/status': loadFixtureMap('get_api_account_status.json'),
+        '/api/me': loadFixtureMap('get_api_me.json'),
+        '/api/terms': loadFixtureMap('get_api_terms.json'),
+      });
+      await tester.pumpWidget(app());
+      await pumpPastSplashDelay(tester);
+
+      outcome = RefreshOutcome.ok;
+      await tester.tap(find.widgetWithText(OutlinedButton, '重試'));
+      await pumpFrames(tester);
+
+      expect(find.text('HOME'), findsOneWidget);
+      expect(signOutCalls, isEmpty);
+    });
+
+    testWidgets('按重試仍離線：回到重試畫面', (tester) async {
+      installMockClient(const {});
+      await tester.pumpWidget(app());
+      await pumpPastSplashDelay(tester);
+
+      await tester.tap(find.widgetWithText(OutlinedButton, '重試'));
+      await pumpFrames(tester);
+
+      expect(find.text('無法連線，請檢查網路'), findsOneWidget);
+      expect(find.text('LOGIN'), findsNothing);
+    });
+
+    testWidgets('按重試後條款未同意：導向條款頁', (tester) async {
+      installMockClient({
+        '/api/account/status': loadFixtureMap('get_api_account_status.json'),
+        '/api/me': loadFixtureMap('get_api_me.json'),
+        '/api/terms': loadFixtureMap('get_api_terms.json')
+          ..['all_consented'] = false,
+      });
+      await tester.pumpWidget(app());
+      await pumpPastSplashDelay(tester);
+
+      outcome = RefreshOutcome.ok;
+      await tester.tap(find.widgetWithText(OutlinedButton, '重試'));
+      await pumpFrames(tester);
+
+      expect(find.text('TERMS'), findsOneWidget);
+    });
+
+    testWidgets('網路正常但續期被拒絕：完整登出並進登入頁', (tester) async {
+      outcome = RefreshOutcome.rejected;
+      installMockClient(const {});
+
+      await tester.pumpWidget(app());
+      await pumpPastSplashDelay(tester);
+
+      expect(find.text('LOGIN'), findsOneWidget);
+      expect(signOutCalls, ['deleteLocal', 'clearAuth']);
+      expect(find.text('無法連線，請檢查網路'), findsNothing);
+    });
   });
 }

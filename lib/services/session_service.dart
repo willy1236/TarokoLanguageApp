@@ -37,20 +37,26 @@ class SessionService {
   static Future<void> Function() clearAuth = AuthService.signOut;
 
   /// 啟動時呼叫：本機 JWT 有效回 [RestoreResult.loggedIn]。JWT 已過期時先用
-  /// 仍登入中的 Firebase 帳號換新 JWT，成功回 loggedIn；換不到才完整登出後回
-  /// [RestoreResult.loggedOut]，確保這台手機不再收到舊帳號的推播。只在啟動時
-  /// 續期：使用中 API 回 401 照舊強制登出，後端對已撤銷的 token 也回
-  /// TOKEN_EXPIRED，續期會讓「登出所有裝置」失效。
+  /// 仍登入中的 Firebase 帳號換新 JWT，成功回 loggedIn；被拒絕才完整登出後回
+  /// [RestoreResult.loggedOut]，確保這台手機不再收到舊帳號的推播。連不上時
+  /// 什麼都不清、回 [RestoreResult.offline]，網路恢復後再呼叫一次即可：
+  /// 登出 Firebase 後要重選 Google 帳號，不該因為暫時收訊差就付這個代價。
+  /// 只在啟動時續期：使用中 API 回 401 照舊強制登出，後端對已撤銷的 token
+  /// 也回 TOKEN_EXPIRED，續期會讓「登出所有裝置」失效。
   static Future<RestoreResult> restore() async {
     if (await AuthService.isLoggedIn()) return RestoreResult.loggedIn;
     if (await AuthService.currentToken() == null) {
       return RestoreResult.loggedOut;
     }
-    if (await refreshSession() == RefreshOutcome.ok) {
-      return RestoreResult.loggedIn;
+    switch (await refreshSession()) {
+      case RefreshOutcome.ok:
+        return RestoreResult.loggedIn;
+      case RefreshOutcome.offline:
+        return RestoreResult.offline;
+      case RefreshOutcome.rejected:
+        await signOut(unregisterDevice: false);
+        return RestoreResult.loggedOut;
     }
-    await signOut(unregisterDevice: false);
-    return RestoreResult.loggedOut;
   }
 
   /// [unregisterDevice] 為 false 時不打後端註銷、只刪本機 FCM token：JWT 已失效
