@@ -132,11 +132,11 @@ flutter test integration_test/api_inspector_test.dart -d <device_id>
 | 目標    | 方式                                                                                                       |
 | ------- | ---------------------------------------------------------------------------------------------------------- |
 | Android | `flutter build appbundle --release`，上傳 Google Play 封閉測試。需要 `android/key.properties`（未進版控）指向正式金鑰，沒有時退回 debug 簽章 |
-| iOS     | Codemagic 的 `ios-testflight` workflow 建置並上傳 TestFlight；`ios-check` 只做未簽章建置檢查，見 [codemagic.yaml](codemagic.yaml) |
+| iOS     | Codemagic 的 `ios-testflight` workflow 建置並上傳 TestFlight，`pubspec.yaml` 版號變動合進 `master` 後由 GitHub Actions 經核准後觸發；`ios-check` 只做未簽章建置檢查，見 [codemagic.yaml](codemagic.yaml) |
 | Web     | GitHub Actions：PR 跑 analyze、test、build，合進 `master` 後部署到 Firebase Hosting；只在 App 相關路徑有變動時觸發 |
 
 升版時三件事一起做：
 
-1. 改 `pubspec.yaml` 的 `version`（名稱+build 號，Android 與 iOS 共用 build 號）。
+1. 改 `pubspec.yaml` 的 `version`（名稱+build 號，Android 與 iOS 共用 build 號）。合進 `master` 後 GitHub Actions 會比對版號，經核准才觸發 Codemagic 建置 iOS 並上傳 TestFlight。
 2. 改 `remoteconfig.template.json` 的 `latest_version_*`，要強制更新時一併調 `min_version_*`。合進 `master` 後 GitHub Actions 會比對線上設定，經核准才發布。
 3. 編出新的 release AAB。
