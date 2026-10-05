@@ -471,6 +471,28 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
   }
 }
 
+/// 後端沒有查單筆的端點：沿 [fetch] 的分頁找 [matches] 的那一筆。
+///
+/// - 找到：`found` 是伺服器上的最新資料。
+/// - 翻完都沒有：`gone` 為 true，代表這筆已不在這個狀態（通常是被其他管理員處理了）。
+/// - 翻了 [maxPages] 頁還沒找到也沒翻完：兩者皆空，呼叫端維持原狀。
+Future<({T? found, bool gone})> findInAdminPages<T>(
+  Future<AdminPage<T>> Function(String? cursor) fetch,
+  bool Function(T item) matches, {
+  int maxPages = 10,
+}) async {
+  String? cursor;
+  for (var i = 0; i < maxPages; i++) {
+    final page = await fetch(cursor);
+    for (final item in page.items) {
+      if (matches(item)) return (found: item, gone: false);
+    }
+    cursor = page.pageInfo.nextCursor;
+    if (cursor == null) return (found: null, gone: true);
+  }
+  return (found: null, gone: false);
+}
+
 /// 分頁列表的尾端：載入下一頁時轉圈；失敗時顯示「載入失敗，點此重試」，
 /// 點了才重送（列表在失敗後不會因捲動自動重打）。
 class AdminLoadMoreFooter extends StatelessWidget {
