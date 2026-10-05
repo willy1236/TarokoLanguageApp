@@ -286,6 +286,46 @@ void main() {
       expect(highlightAlpha(tester), greaterThan(0));
     });
 
+    testWidgets('捲向上一則的途中點了另一則的通知：仍捲到新的那則並標示它', (tester) async {
+      final forum = _FakeForum([1, 2, 3, 4, 5, 6, 7, 8, 9, 10]);
+      ApiClient.httpClient = forum.client();
+      tester.view.physicalSize = const Size(800, 400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        wrapScreen(const ForumDetailScreen(postId: _postId, focusCommentId: 4)),
+      );
+      // 一格一格推進，停在捲向留言4的動畫中途。
+      double pixels() => tester
+          .state<ScrollableState>(find.byType(Scrollable).first)
+          .position
+          .pixels;
+      for (var i = 0; i < 100; i++) {
+        await tester.pump(const Duration(milliseconds: 16));
+        if (find.byType(Scrollable).evaluate().isNotEmpty && pixels() > 0) {
+          break;
+        }
+      }
+      expect(pixels(), greaterThan(0));
+
+      // 重載的第一頁晚回來：舊的捲動先跑完，新的那則還沒載到。
+      final reload = Completer<void>();
+      forum.holdFor = (url) =>
+          url.queryParameters['cursor'] == null ? reload.future : null;
+      ForumDetailScreen.refreshRoute(_detailRoute(tester), focusCommentId: 10);
+      // 載入中轉圈不會停，不能 pumpAndSettle；推進到舊的捲動結束。
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      forum.holdFor = null;
+      reload.complete();
+      await tester.pumpAndSettle();
+
+      expect(onScreen(tester, '留言10'), isTrue);
+      expect(highlightedText(tester), '留言10');
+      expect(highlightAlpha(tester), greaterThan(0));
+      await tester.pump(const Duration(seconds: 2));
+    });
+
     testWidgets('沒有指定留言：不標示；重載沒帶留言時清掉上一則的標示', (tester) async {
       final forum = _FakeForum([1, 2, 3]);
       ApiClient.httpClient = forum.client();

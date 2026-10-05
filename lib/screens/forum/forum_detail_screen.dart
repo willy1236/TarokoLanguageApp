@@ -397,6 +397,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       return;
     }
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 捲動途中點了另一則回覆的通知（refreshRoute 換了 focus）：這一輪作廢，
+      // 不能清掉新的 pending，也不能把標示亮在還沒捲到的新留言上。
+      if (!mounted || _pendingFocusId != id) return;
       final target = _focusKey.currentContext;
       if (target != null) {
         await Scrollable.ensureVisible(
@@ -405,7 +408,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           duration: const Duration(milliseconds: 300),
         );
       }
-      if (!mounted) return;
+      if (!mounted || _pendingFocusId != id) return;
       setState(() {
         _pendingFocusId = null;
         _focusHighlighted = target != null;
