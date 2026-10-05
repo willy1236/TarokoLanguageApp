@@ -67,6 +67,9 @@ class CursorPager<T> extends ChangeNotifier {
   }
 
   /// 抓下一頁接在後面。載入中、上次翻頁失敗、或沒有下一頁時不動。
+  ///
+  /// PagerScrollLoader 會在每次 notify 後呼叫這裡，所以翻頁失敗或沒有下一頁時
+  /// 必須維持不動；拿掉這些判斷會變成無限自動重打。
   Future<void> loadMore() async {
     final cursor = _cursor;
     if (_loading || _loadingMore || _loadMoreFailed || cursor == null) return;
