@@ -234,8 +234,12 @@ class ChatController extends ChangeNotifier {
   /// 每次成功連上前只換一次，避免後端持續踢人時猛打登入端點。
   Future<void> _refreshAndReconnect() async {
     final generation = _generation;
-    final ok = await AuthService.refreshSession();
-    if (!ok || _disposed || generation != _generation) return;
+    final outcome = await AuthService.refreshSession();
+    if (outcome != RefreshOutcome.ok ||
+        _disposed ||
+        generation != _generation) {
+      return;
+    }
     await connect();
   }
 

@@ -11,10 +11,23 @@ import 'fcm_service.dart';
 import 'notification_summary_service.dart';
 import 'user_service.dart';
 
+/// [SessionService.restore] 的結果。
+enum RestoreResult {
+  /// 本機有可用的 JWT（原本就有效，或剛續期成功）。
+  loggedIn,
+
+  /// 沒有登入，或續期被拒絕、已完整登出。
+  loggedOut,
+
+  /// JWT 已過期、續期時連不上伺服器；登入狀態保留，等網路恢復再試。
+  offline,
+}
+
 class SessionService {
   // 測試接縫：AuthService／FcmService 都是靜態方法，測試以這些欄位換成假實作。
   @visibleForTesting
-  static Future<bool> Function() refreshSession = AuthService.refreshSession;
+  static Future<RefreshOutcome> Function() refreshSession =
+      AuthService.refreshSession;
   @visibleForTesting
   static Future<void> Function() unregisterDeviceToken =
       FcmService.unregisterDevice;
@@ -23,16 +36,21 @@ class SessionService {
   @visibleForTesting
   static Future<void> Function() clearAuth = AuthService.signOut;
 
-  /// 啟動時呼叫：本機 JWT 有效回 true。JWT 已過期時先用仍登入中的 Firebase
-  /// 帳號換新 JWT，成功回 true；換不到才完整登出後回 false，確保這台手機
-  /// 不再收到舊帳號的推播。只在啟動時續期：使用中 API 回 401 照舊強制登出，
-  /// 後端對已撤銷的 token 也回 TOKEN_EXPIRED，續期會讓「登出所有裝置」失效。
-  static Future<bool> restore() async {
-    if (await AuthService.isLoggedIn()) return true;
-    if (await AuthService.currentToken() == null) return false;
-    if (await refreshSession()) return true;
+  /// 啟動時呼叫：本機 JWT 有效回 [RestoreResult.loggedIn]。JWT 已過期時先用
+  /// 仍登入中的 Firebase 帳號換新 JWT，成功回 loggedIn；換不到才完整登出後回
+  /// [RestoreResult.loggedOut]，確保這台手機不再收到舊帳號的推播。只在啟動時
+  /// 續期：使用中 API 回 401 照舊強制登出，後端對已撤銷的 token 也回
+  /// TOKEN_EXPIRED，續期會讓「登出所有裝置」失效。
+  static Future<RestoreResult> restore() async {
+    if (await AuthService.isLoggedIn()) return RestoreResult.loggedIn;
+    if (await AuthService.currentToken() == null) {
+      return RestoreResult.loggedOut;
+    }
+    if (await refreshSession() == RefreshOutcome.ok) {
+      return RestoreResult.loggedIn;
+    }
     await signOut(unregisterDevice: false);
-    return false;
+    return RestoreResult.loggedOut;
   }
 
   /// [unregisterDevice] 為 false 時不打後端註銷、只刪本機 FCM token：JWT 已失效

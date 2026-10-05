@@ -33,9 +33,9 @@ class _SplashScreenState extends State<SplashScreen> {
     );
     Future.delayed(const Duration(milliseconds: 2500), () async {
       if (!mounted) return;
-      final loggedIn = await SessionService.restore();
+      final restored = await SessionService.restore();
       if (!mounted) return;
-      if (!loggedIn) {
+      if (restored != RestoreResult.loggedIn) {
         Navigator.pushReplacementNamed(context, '/login');
         return;
       }

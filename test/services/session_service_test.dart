@@ -76,43 +76,43 @@ void main() {
   });
 
   group('SessionService.restore', () {
-    test('token 有效回 true，不動本機狀態', () async {
+    test('token 有效回 loggedIn，不動本機狀態', () async {
       final store = stubStatefulSecureStorage({
         'session_token': 'jwt',
         'session_expires_at': future,
       });
 
-      expect(await SessionService.restore(), isTrue);
+      expect(await SessionService.restore(), RestoreResult.loggedIn);
       expect(store['session_token'], 'jwt');
     });
 
-    test('沒有 token 回 false', () async {
+    test('沒有 token 回 loggedOut', () async {
       stubStatefulSecureStorage({});
-      expect(await SessionService.restore(), isFalse);
+      expect(await SessionService.restore(), RestoreResult.loggedOut);
     });
 
-    test('token 過期且續期失敗（Firebase 未登入）：完整登出後回 false', () async {
+    test('token 過期且續期失敗（Firebase 未登入）：完整登出後回 loggedOut', () async {
       final store = stubStatefulSecureStorage({
         'session_token': 'jwt',
         'session_expires_at': past,
       });
 
-      expect(await SessionService.restore(), isFalse);
+      expect(await SessionService.restore(), RestoreResult.loggedOut);
       expect(store, isEmpty);
     });
   });
 
-  test('token 過期但續期成功：回 true，不登出', () async {
+  test('token 過期但續期成功：回 loggedIn，不登出', () async {
     stubStatefulSecureStorage({
       'session_token': 'jwt',
       'session_expires_at': past,
     });
     var signedOut = false;
-    SessionService.refreshSession = () async => true;
+    SessionService.refreshSession = () async => RefreshOutcome.ok;
     SessionService.clearAuth = () async => signedOut = true;
     SessionService.deleteLocalToken = () async => signedOut = true;
 
-    expect(await SessionService.restore(), isTrue);
+    expect(await SessionService.restore(), RestoreResult.loggedIn);
     expect(signedOut, isFalse);
   });
 
