@@ -83,7 +83,11 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
     final transactions = _pager.items;
     if (_pager.loading) return const TrukuLoadingView();
     if (_pager.error != null) {
-      return TrukuErrorView(error: _pager.error, onRetry: _pager.refresh);
+      return TrukuErrorView(
+        error: _pager.error,
+        onRetry: _pager.refresh,
+        seniorMode: seniorModeController.enabled,
+      );
     }
     if (transactions.isEmpty) {
       return TrukuEmptyState(
