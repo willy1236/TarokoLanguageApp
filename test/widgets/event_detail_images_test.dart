@@ -3,6 +3,7 @@
 // 這支取代的人工測試：用發起人帳號在正式後端上傳、刪除照片，看輪播、頁數指示、
 // 上限、錯誤訊息對不對——每試一次都會在活動上留下或刪掉真的照片。
 
+import 'dart:io' show SocketException;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -575,6 +576,64 @@ void main() {
 
       expect(capacity(6), findsOneWidget);
       expect(capacity(5), findsNothing);
+    });
+
+    testWidgets('下拉重整失敗：提示後端訊息，畫面內容保留', (tester) async {
+      final routes = _routes(_detail(isHost: false, imageIds: [1, 2]));
+      installMockClient(routes);
+      await _open(tester);
+
+      routes[_detailPath] = errorResponse(
+        'NOT_FOUND',
+        status: 404,
+        message: '找不到這個活動',
+      );
+      await pullToRefresh(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('找不到這個活動'), findsOneWidget);
+      expect(find.byType(EventDetailHero), findsOneWidget);
+      expect(find.text('1／2'), findsOneWidget);
+      expect(capacity(5), findsOneWidget);
+    });
+
+    testWidgets('下拉重整斷線：提示連不上伺服器', (tester) async {
+      var offline = false;
+      installMockClient(
+        _routes(_detail(isHost: false)),
+        onRequest: (r) {
+          if (offline && r.url.path == _detailPath) {
+            throw const SocketException('offline');
+          }
+        },
+      );
+      await _open(tester);
+
+      offline = true;
+      await pullToRefresh(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('無法連線到伺服器，請檢查網路'), findsOneWidget);
+      expect(capacity(5), findsOneWidget);
+    });
+
+    testWidgets('其他背景重取失敗不提示', (tester) async {
+      final routes = _routes(_detail(isHost: false, imageIds: [1]));
+      installMockClient(routes);
+      await _open(tester);
+
+      routes[_detailPath] = errorResponse(
+        'NOT_FOUND',
+        status: 404,
+        message: '找不到這個活動',
+      );
+      tester
+          .widget<EventDetailHero>(find.byType(EventDetailHero))
+          .onImageRetryTap!();
+      await tester.pumpAndSettle();
+
+      expect(find.byType(SnackBar), findsNothing);
+      expect(find.byType(EventDetailHero), findsOneWidget);
     });
   });
 }

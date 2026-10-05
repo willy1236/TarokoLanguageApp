@@ -221,8 +221,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   /// 動作（參加/退出/取消）成功後與下拉重整的刷新：只更新資料本身，不設
   /// `_loading = true`，避免整頁重建與剛關閉的對話框收尾動畫互撞（觸發
   /// `_dependents.isEmpty` assertion），也不卸載正在上傳或刪除照片的輪播。
-  /// 下拉重整失敗時保留現有畫面，不換成錯誤頁。
-  Future<void> _silentRefresh() async {
+  /// 失敗時保留現有畫面，不換成錯誤頁；[reportFailure]（下拉重整）才提示使用者，
+  /// 其他背景重取失敗不打擾。
+  Future<void> _silentRefresh({bool reportFailure = false}) async {
     final imagesVersion = _imagesVersion;
     try {
       final results = await Future.wait([
@@ -242,8 +243,13 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     } catch (e, st) {
       debugPrint('[EventDetailScreen] _silentRefresh 失敗：$e');
       debugPrint('$st');
+      if (reportFailure) {
+        _snack(apiErrorMessage(e, fallback: '重新整理失敗，請稍後再試'));
+      }
     }
   }
+
+  Future<void> _pullToRefresh() => _silentRefresh(reportFailure: true);
 
   // ── 行動：參加 / 退出 / 取消 ─────────────────────────────────
   Future<void> _join() async {
@@ -549,7 +555,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       body: RefreshIndicator(
-        onRefresh: _silentRefresh,
+        onRefresh: _pullToRefresh,
         color: AppColors.primary,
         child: CustomScrollView(
           slivers: [
