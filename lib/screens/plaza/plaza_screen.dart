@@ -309,10 +309,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     onNotifications: () async {
       await Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) =>
-              const InboxScreen(initialCategory: InboxCategory.forum),
-        ),
+        InboxScreen.route(initialCategory: InboxCategory.forum),
       );
       NotificationSummaryService.refresh();
     },

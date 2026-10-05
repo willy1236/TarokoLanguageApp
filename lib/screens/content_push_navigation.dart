@@ -60,8 +60,14 @@ void openModerationCasePush(RouteStack routes, int caseId) {
   nav.push(ModerationCaseScreen.route(caseId));
 }
 
-/// 點官方公告通知：開收件匣並停在 [category] 分頁。
+/// 點官方公告通知：開收件匣並停在 [category] 分頁。收件匣已在最上層時就地
+/// 切到該分頁並重載，連點幾則公告也只有一層收件匣。
 void openInboxPush(RouteStack routes, String category) {
+  final top = routes.topPage;
+  if (top != null && top.settings.name == InboxScreen.routeName) {
+    InboxScreen.refreshRoute(top, category: category);
+    return;
+  }
   final nav = routes.navigator;
   if (nav == null) {
     debugPrint('openInboxPush: Navigator 尚未掛上，導頁被忽略');

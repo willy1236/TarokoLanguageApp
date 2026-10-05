@@ -292,10 +292,7 @@ class _EventsScreenState extends State<EventsScreen> {
     onNotifications: () async {
       await Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) =>
-              const InboxScreen(initialCategory: InboxCategory.event),
-        ),
+        InboxScreen.route(initialCategory: InboxCategory.event),
       );
       NotificationSummaryService.refresh();
     },

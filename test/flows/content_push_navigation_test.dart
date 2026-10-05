@@ -14,6 +14,7 @@ import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/screens/content_push_navigation.dart';
 import 'package:flutter_application_1/screens/events/event_detail_screen.dart';
 import 'package:flutter_application_1/screens/forum/forum_detail_screen.dart';
+import 'package:flutter_application_1/screens/inbox/inbox_screen.dart';
 
 import '../helpers/flow_test_helpers.dart';
 import '../helpers/widget_test_helpers.dart';
@@ -47,11 +48,22 @@ void main() {
   /// 各詳情 API 被讀取的次數，key 是 path。
   final hits = <String, int>{};
 
+  /// 收件匣每次抓第一頁時帶的分類（null 為「全部」）。
+  final inboxFetches = <String?>[];
+
   setUp(() {
     stubCommonChannels();
     hits.clear();
+    inboxFetches.clear();
     ApiClient.httpClient = MockClient((request) async {
       final path = request.url.path;
+      if (path == '/api/inbox') {
+        inboxFetches.add(request.url.queryParameters['category']);
+        return jsonResponse({
+          'items': <dynamic>[],
+          'page_info': {'next_cursor': null, 'has_more': false},
+        });
+      }
       final post = _postPath.firstMatch(path);
       if (post != null) {
         hits[path] = (hits[path] ?? 0) + 1;
@@ -219,6 +231,51 @@ void main() {
       expect(showForumReplyInPage(routes, 99, 'reply_post'), isFalse);
       await pumpFrames(tester);
       expect(chip, findsNothing);
+    });
+  });
+
+  group('公告通知', () {
+    testWidgets('收件匣在最上層：不疊頁，重載公告分頁；返回一次就回到原本畫面', (tester) async {
+      await start(tester);
+      openInboxPush(routes, 'announcement');
+      await pumpFrames(tester);
+      expect(inboxFetches, ['announcement']);
+
+      openInboxPush(routes, 'announcement');
+      await pumpFrames(tester);
+
+      expect(find.byType(InboxScreen, skipOffstage: false), findsOneWidget);
+      expect(inboxFetches, ['announcement', 'announcement']);
+      await pop(tester);
+      expect(find.text('HOME'), findsOneWidget);
+    });
+
+    testWidgets('收件匣停在別的分頁：切到公告分頁並載入，不疊頁', (tester) async {
+      await start(tester);
+      await push(tester, InboxScreen.route());
+      expect(inboxFetches, [null]);
+
+      openInboxPush(routes, 'announcement');
+      await tester.pumpAndSettle();
+
+      expect(find.byType(InboxScreen, skipOffstage: false), findsOneWidget);
+      expect(inboxFetches.last, 'announcement');
+      final tabs = tester.widget<TabBar>(find.byType(TabBar));
+      expect(tabs.controller!.index, 4);
+    });
+
+    testWidgets('收件匣被通話畫面蓋住：疊一份新的，返回回到通話', (tester) async {
+      await start(tester);
+      await push(tester, InboxScreen.route());
+      await push(tester, callScreen());
+
+      openInboxPush(routes, 'announcement');
+      await pumpFrames(tester);
+
+      expect(find.byType(InboxScreen), findsOneWidget);
+      expect(find.byType(InboxScreen, skipOffstage: false), findsNWidgets(2));
+      await pop(tester);
+      expect(find.text('CALL'), findsOneWidget);
     });
   });
 
