@@ -14,6 +14,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/services/auth_service.dart';
 import 'package:flutter_application_1/services/session_service.dart';
+import 'package:flutter_application_1/shared/widgets/truku_widgets.dart';
 
 import '../helpers/fixtures.dart';
 import '../helpers/flow_test_helpers.dart';
@@ -193,6 +194,37 @@ void main() {
       expect(find.text('LOGIN'), findsNothing);
       expect(signOutCalls, isEmpty);
     });
+
+    for (final (label, size, scale) in [
+      ('iPhone SE 1 代 320×568', const Size(320, 568), 1.0),
+      ('360×640、字體放大 1.3 倍', const Size(360, 640), 1.3),
+      ('iPhone SE 375×667、字體放大 1.3 倍', const Size(375, 667), 1.3),
+    ]) {
+      testWidgets('小螢幕 $label：重試區在 logo 文字與菱形鏈下方、不超出畫面', (tester) async {
+        usePhoneSurface(tester, size: size);
+        tester.platformDispatcher.textScaleFactorTestValue = scale;
+        addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
+        installMockClient(const {});
+
+        await tester.pumpWidget(app());
+        await pumpPastSplashDelay(tester);
+        // 等 logo 上移動畫跑完再量。
+        await tester.pump(const Duration(milliseconds: 400));
+
+        final logoText = tester.getRect(find.text('Kari Truku · Lnglungan'));
+        final chain = tester.getRect(find.byType(TrukuChain).last);
+        final message = tester.getRect(find.text('無法連線，請檢查網路'));
+        final button = tester.getRect(
+          find.widgetWithText(OutlinedButton, '重試'),
+        );
+        expect(chain.top, greaterThanOrEqualTo(logoText.bottom));
+        expect(message.top, greaterThan(chain.bottom));
+        expect(button.top, greaterThan(message.bottom));
+        expect(button.bottom, lessThanOrEqualTo(size.height));
+        expect(find.text('說我們的話 · 走我們的山'), findsNothing);
+        expect(tester.takeException(), isNull);
+      });
+    }
 
     testWidgets('按重試且網路恢復後續期成功，照常進首頁', (tester) async {
       installMockClient({

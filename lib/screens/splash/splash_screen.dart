@@ -28,6 +28,8 @@ class _SplashScreenState extends State<SplashScreen> {
   /// 按了重試、還在等結果。
   bool _retrying = false;
 
+  bool get _showRetryArea => _offline || _retrying;
+
   @override
   void initState() {
     super.initState();
@@ -239,9 +241,12 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
           ),
 
-          // 中央 logo 區（top: 32%）
-          Positioned(
-            top: size.height * 0.32,
+          // 中央 logo 區（top: 32%）。顯示重試區時上移到 22%，騰出下方空間，
+          // 320×568 這類小螢幕才放得下。
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            top: size.height * (_showRetryArea ? 0.22 : 0.32),
             left: 0,
             right: 0,
             child: Column(
@@ -291,34 +296,34 @@ class _SplashScreenState extends State<SplashScreen> {
                   color: AppColors.gold,
                   gap: 5,
                 ),
+                // 離線重試接在 logo 下方跟著內容排，小螢幕、字體放大時也不會壓到上面。
+                if (_showRetryArea) ...[
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _retrying ? _buildRetrying() : _buildOffline(),
+                  ),
+                ],
               ],
             ),
           ),
 
-          // 離線重試（tagline 上方）
-          if (_offline || _retrying)
+          // 底部 tagline（bottom: 70）。重試區會往下長到這裡，顯示時先收起。
+          if (!_showRetryArea)
             Positioned(
-              bottom: 120,
-              left: 24,
-              right: 24,
-              child: _retrying ? _buildRetrying() : _buildOffline(),
-            ),
-
-          // 底部 tagline（bottom: 70）
-          Positioned(
-            bottom: 70,
-            left: 0,
-            right: 0,
-            child: Text(
-              '說我們的話 · 走我們的山',
-              textAlign: TextAlign.center,
-              style: AppTypography.sans(
-                fontSize: AppTypography.body,
-                color: AppColors.cream.withValues(alpha: 0.7),
-                letterSpacing: 3.9,
+              bottom: 70,
+              left: 0,
+              right: 0,
+              child: Text(
+                '說我們的話 · 走我們的山',
+                textAlign: TextAlign.center,
+                style: AppTypography.sans(
+                  fontSize: AppTypography.body,
+                  color: AppColors.cream.withValues(alpha: 0.7),
+                  letterSpacing: 3.9,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );
