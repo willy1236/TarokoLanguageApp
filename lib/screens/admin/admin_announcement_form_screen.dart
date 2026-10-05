@@ -23,12 +23,13 @@ const _bodyMax = 5000;
 const _allowedExtensions = {'jpg', 'jpeg', 'png', 'webp'};
 
 /// 送出後結果不明：請求可能已到後端並寫入。後端要等全體推播送完才回應，
-/// 這段時間公告已經 commit，斷線（NETWORK_ERROR、非 ApiException 的連線錯誤）
-/// 或閘道逾時（504）時不能讓管理員直接重送，否則全體會收到兩則收不回的公告。
+/// 這段時間公告已經 commit。斷線（NETWORK_ERROR、非 ApiException 的連線錯誤）、
+/// 閘道錯誤 502／503 與逾時 504（Cloud Run 在推播途中掛掉或逾時）時不能讓管理員
+/// 直接重送，否則全體會收到兩則收不回的公告。
 bool _outcomeUnknown(Object error) =>
     error is! ApiException ||
     error.code == 'NETWORK_ERROR' ||
-    error.statusCode == 504;
+    const {502, 503, 504}.contains(error.statusCode);
 
 class AdminAnnouncementFormScreen extends StatefulWidget {
   const AdminAnnouncementFormScreen({super.key});

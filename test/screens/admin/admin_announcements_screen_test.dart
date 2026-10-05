@@ -195,6 +195,8 @@ void main() {
   for (final (label, postError, post) in <(String, Object?, http.Response?)>[
     ('斷線（SocketException）', const SocketException('reset'), null),
     ('連線中斷（ClientException）', http.ClientException('closed'), null),
+    ('閘道錯誤 502', null, errorResponse('BAD_GATEWAY', status: 502)),
+    ('服務暫停 503', null, errorResponse('SERVICE_UNAVAILABLE', status: 503)),
     ('閘道逾時 504', null, errorResponse('GATEWAY_TIMEOUT', status: 504)),
   ]) {
     testWidgets('$label：提示可能已發出，按知道了回列表並重抓，不留在表單重送', (tester) async {
