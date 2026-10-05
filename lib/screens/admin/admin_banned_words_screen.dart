@@ -27,6 +27,9 @@ class _AdminBannedWordsScreenState extends State<AdminBannedWordsScreen> {
   List<AdminBannedWord> _words = [];
   bool _loading = true;
   bool _adding = false;
+
+  /// 刪除送出中的詞 id：只停用那一列的移除鈕，連點只送一次（第二次會 404）。
+  final Set<int> _deletingIds = {};
   Object? _error;
 
   @override
@@ -88,13 +91,16 @@ class _AdminBannedWordsScreenState extends State<AdminBannedWordsScreen> {
       message: '「${word.word}」移除後就不會再被過濾。',
       confirmText: '移除',
     );
-    if (!confirmed || !mounted) return;
+    if (!confirmed || !mounted || _deletingIds.contains(word.id)) return;
+    setState(() => _deletingIds.add(word.id));
     try {
       await AdminService.deleteBannedWord(word.id);
       showAdminMessage('已移除');
       await _load();
     } catch (e) {
       if (mounted) handleAdminError(context, e);
+    } finally {
+      if (mounted) setState(() => _deletingIds.remove(word.id));
     }
   }
 
@@ -174,7 +180,9 @@ class _AdminBannedWordsScreenState extends State<AdminBannedWordsScreen> {
                       trailing: IconButton(
                         tooltip: '移除',
                         icon: const Icon(Icons.delete_outline),
-                        onPressed: () => _delete(shown[i]),
+                        onPressed: _deletingIds.contains(shown[i].id)
+                            ? null
+                            : () => _delete(shown[i]),
                       ),
                     ),
                   ),
