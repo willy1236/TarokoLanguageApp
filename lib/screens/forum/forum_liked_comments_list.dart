@@ -8,6 +8,7 @@ import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/utils/cursor_pager.dart';
+import '../../shared/utils/pager_scroll_loader.dart';
 import '../../shared/widgets/load_more_retry.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
@@ -22,6 +23,7 @@ class ForumLikedCommentsList extends StatefulWidget {
 
 class _ForumLikedCommentsListState extends State<ForumLikedCommentsList> {
   final _scrollController = ScrollController();
+  late final PagerScrollLoader _scrollLoader;
   final _pager = CursorPager<ForumLikedComment>(
     fetch: (cursor) async {
       final page = await ForumService.likedComments(cursor: cursor);
@@ -33,22 +35,19 @@ class _ForumLikedCommentsListState extends State<ForumLikedCommentsList> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _scrollLoader = PagerScrollLoader(
+      controller: _scrollController,
+      pager: _pager,
+    );
     _pager.refresh();
   }
 
   @override
   void dispose() {
+    _scrollLoader.dispose();
     _scrollController.dispose();
     _pager.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300) {
-      _pager.loadMore();
-    }
   }
 
   @override

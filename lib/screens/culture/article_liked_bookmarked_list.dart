@@ -8,6 +8,7 @@ import '../../models/article_models.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/utils/cursor_pager.dart';
+import '../../shared/utils/pager_scroll_loader.dart';
 import '../../shared/widgets/load_more_retry.dart';
 import '../../shared/widgets/article_cover_placeholder.dart';
 import '../../shared/widgets/async_state_view.dart';
@@ -28,6 +29,7 @@ class ArticleLikedBookmarkedList extends StatefulWidget {
 class _ArticleLikedBookmarkedListState
     extends State<ArticleLikedBookmarkedList> {
   final _scrollController = ScrollController();
+  late final PagerScrollLoader _scrollLoader;
   late final _pager = CursorPager<ArticleSummary>(
     fetch: (cursor) async {
       final res = widget.mode == ArticleListMode.liked
@@ -41,22 +43,19 @@ class _ArticleLikedBookmarkedListState
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _scrollLoader = PagerScrollLoader(
+      controller: _scrollController,
+      pager: _pager,
+    );
     _pager.refresh();
   }
 
   @override
   void dispose() {
+    _scrollLoader.dispose();
     _scrollController.dispose();
     _pager.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300) {
-      _pager.loadMore();
-    }
   }
 
   @override

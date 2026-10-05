@@ -80,4 +80,31 @@ void main() {
       expect(find.text('項目 20', skipOffstage: false), findsOneWidget);
     });
   }
+
+  testWidgets('第一頁填不滿畫面：不用捲動就接著抓下一頁', (tester) async {
+    final cursors = <String?>[];
+    ApiClient.httpClient = MockClient((r) async {
+      final cursor = r.url.queryParameters['cursor'];
+      cursors.add(cursor);
+      return jsonResponse(
+        cursor == null
+            ? {
+                'posts': [_post(1), _post(2)],
+                'page_info': {'next_cursor': 't2', 'has_more': true},
+              }
+            : {
+                'posts': [_post(3)],
+                'page_info': {'next_cursor': null, 'has_more': false},
+              },
+      );
+    });
+
+    await tester.pumpWidget(
+      const MaterialApp(home: Scaffold(body: ForumLikedPostsList())),
+    );
+    await pumpFrames(tester, times: 10);
+
+    expect(cursors, [null, 't2']);
+    expect(find.text('項目 3'), findsOneWidget);
+  });
 }

@@ -9,6 +9,7 @@ import '../../shared/widgets/truku_empty_state.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/utils/cursor_pager.dart';
+import '../../shared/utils/pager_scroll_loader.dart';
 import '../../shared/widgets/load_more_retry.dart';
 
 const _pageSize = 20;
@@ -22,6 +23,7 @@ class MilletLedgerScreen extends StatefulWidget {
 
 class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
   final _scrollController = ScrollController();
+  late final PagerScrollLoader _scrollLoader;
   final _pager = CursorPager<MilletTransaction>(
     fetch: (cursor) async {
       final result = await MilletService.fetchTransactions(
@@ -36,23 +38,20 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
+    _scrollLoader = PagerScrollLoader(
+      controller: _scrollController,
+      pager: _pager,
+      nearEndExtent: 200,
+    );
     _pager.refresh();
   }
 
   @override
   void dispose() {
-    _scrollController.removeListener(_onScroll);
+    _scrollLoader.dispose();
     _scrollController.dispose();
     _pager.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scrollController.position.pixels >
-        _scrollController.position.maxScrollExtent - 200) {
-      _pager.loadMore();
-    }
   }
 
   @override
