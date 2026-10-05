@@ -221,7 +221,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   /// 動作（參加/退出/取消）成功後與下拉重整的刷新：只更新資料本身，不設
   /// `_loading = true`，避免整頁重建與剛關閉的對話框收尾動畫互撞（觸發
   /// `_dependents.isEmpty` assertion），也不卸載正在上傳或刪除照片的輪播。
-  /// 失敗時保留現有畫面，不換成錯誤頁；[reportFailure]（下拉重整）才提示使用者，
+  /// 失敗時保留現有畫面，不換成錯誤頁；[reportFailure]（下拉重整、點照片重試）才提示使用者，
   /// 其他背景重取失敗不打擾。
   Future<void> _silentRefresh({bool reportFailure = false}) async {
     final imagesVersion = _imagesVersion;
@@ -249,7 +249,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
-  Future<void> _pullToRefresh() => _silentRefresh(reportFailure: true);
+  /// 使用者自己要求的重整（下拉、點照片重試）：失敗要讓人知道。
+  Future<void> _userRefresh() => _silentRefresh(reportFailure: true);
 
   // ── 行動：參加 / 退出 / 取消 ─────────────────────────────────
   Future<void> _join() async {
@@ -555,7 +556,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     return Scaffold(
       backgroundColor: AppColors.creamLight,
       body: RefreshIndicator(
-        onRefresh: _pullToRefresh,
+        onRefresh: _userRefresh,
         color: AppColors.primary,
         child: CustomScrollView(
           slivers: [
@@ -565,7 +566,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
                 seniorMode: seniorMode,
                 onImagesChanged: _onImagesChanged,
                 onImageExpired: _onImageExpired,
-                onImageRetryTap: _silentRefresh,
+                onImageRetryTap: _userRefresh,
               ),
             ),
             SliverToBoxAdapter(

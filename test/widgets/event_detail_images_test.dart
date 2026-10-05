@@ -617,7 +617,11 @@ void main() {
       expect(capacity(5), findsOneWidget);
     });
 
-    testWidgets('其他背景重取失敗不提示', (tester) async {
+    // 照片載不出來時的重取：使用者點的「重試」失敗要提示，網址過期的自動重取不打擾。
+    Future<void> failingImageRefetch(
+      WidgetTester tester,
+      VoidCallback Function(EventDetailHero hero) trigger,
+    ) async {
       final routes = _routes(_detail(isHost: false, imageIds: [1]));
       installMockClient(routes);
       await _open(tester);
@@ -627,13 +631,19 @@ void main() {
         status: 404,
         message: '找不到這個活動',
       );
-      tester
-          .widget<EventDetailHero>(find.byType(EventDetailHero))
-          .onImageRetryTap!();
+      trigger(tester.widget<EventDetailHero>(find.byType(EventDetailHero)))();
       await tester.pumpAndSettle();
+      expect(find.byType(EventDetailHero), findsOneWidget, reason: '畫面內容保留');
+    }
 
+    testWidgets('手動點照片重試失敗：提示後端訊息', (tester) async {
+      await failingImageRefetch(tester, (hero) => hero.onImageRetryTap!);
+      expect(find.text('找不到這個活動'), findsOneWidget);
+    });
+
+    testWidgets('照片網址過期的自動重取失敗：不提示', (tester) async {
+      await failingImageRefetch(tester, (hero) => hero.onImageExpired!);
       expect(find.byType(SnackBar), findsNothing);
-      expect(find.byType(EventDetailHero), findsOneWidget);
     });
   });
 }
