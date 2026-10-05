@@ -86,4 +86,41 @@ void main() {
     expect(find.textContaining('紀錄 1 ·', skipOffstage: false), findsOneWidget);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
+
+  testWidgets('翻頁失敗：底部顯示重試，捲動不再自動重打，點了才重新請求', (tester) async {
+    var nextPageCalls = 0;
+    var failNext = true;
+    ApiClient.httpClient = MockClient((r) async {
+      final cursor = r.url.queryParameters['cursor'];
+      if (cursor == null) {
+        return jsonResponse({
+          'transactions': [for (var i = 40; i > 20; i--) _tx(i)],
+          'page_info': {'next_cursor': 'c-21', 'has_more': true},
+        });
+      }
+      nextPageCalls++;
+      if (failNext) return errorResponse('SERVER_ERROR', status: 500);
+      return jsonResponse({
+        'transactions': [for (var i = 20; i > 15; i--) _tx(i)],
+        'page_info': {'next_cursor': null, 'has_more': false},
+      });
+    });
+
+    await tester.pumpWidget(app());
+    await pumpFrames(tester);
+    await scrollToBottom(tester);
+    await scrollToBottom(tester);
+
+    expect(nextPageCalls, 1);
+    expect(find.text('載入失敗，點此重試'), findsOneWidget);
+
+    failNext = false;
+    await tester.tap(find.text('載入失敗，點此重試'));
+    await pumpFrames(tester, times: 10);
+
+    expect(nextPageCalls, 2);
+    expect(find.text('載入失敗，點此重試'), findsNothing);
+    await scrollToBottom(tester);
+    expect(find.textContaining('紀錄 16 ·', skipOffstage: false), findsOneWidget);
+  });
 }

@@ -8,6 +8,8 @@ import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/utils/cursor_pager.dart';
+import '../../shared/widgets/load_more_retry.dart';
 
 const _pageSize = 20;
 
@@ -20,75 +22,36 @@ class MilletLedgerScreen extends StatefulWidget {
 
 class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
   final _scrollController = ScrollController();
-  String? _cursor;
-  bool _loadingMore = false;
-  bool _initialLoading = true;
-  Object? _error;
-  final List<MilletTransaction> _transactions = [];
+  final _pager = CursorPager<MilletTransaction>(
+    fetch: (cursor) async {
+      final result = await MilletService.fetchTransactions(
+        cursor: cursor,
+        limit: _pageSize,
+      );
+      return (result.transactions, result.pageInfo);
+    },
+    idOf: (tx) => tx.id,
+  );
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _loadFirstPage();
+    _pager.refresh();
   }
 
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
+    _pager.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    if (_loadingMore || _cursor == null) return;
     if (_scrollController.position.pixels >
         _scrollController.position.maxScrollExtent - 200) {
-      _loadNextPage();
-    }
-  }
-
-  Future<void> _loadFirstPage() async {
-    setState(() {
-      _initialLoading = true;
-      _error = null;
-    });
-    try {
-      final result = await MilletService.fetchTransactions(limit: _pageSize);
-      if (!mounted) return;
-      setState(() {
-        _transactions
-          ..clear()
-          ..addAll(result.transactions);
-        _cursor = result.pageInfo.nextCursor;
-        _initialLoading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e;
-        _initialLoading = false;
-      });
-    }
-  }
-
-  Future<void> _loadNextPage() async {
-    setState(() => _loadingMore = true);
-    try {
-      final result = await MilletService.fetchTransactions(
-        cursor: _cursor,
-        limit: _pageSize,
-      );
-      if (!mounted) return;
-      setState(() {
-        _transactions.addAll(result.transactions);
-        _cursor = result.pageInfo.nextCursor;
-        _loadingMore = false;
-      });
-    } catch (e) {
-      debugPrint('MilletLedgerScreen._loadNextPage failed: $e');
-      if (!mounted) return;
-      setState(() => _loadingMore = false);
+      _pager.loadMore();
     }
   }
 
@@ -110,16 +73,20 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
           ),
         ),
       ),
-      body: _buildBody(),
+      body: ListenableBuilder(
+        listenable: _pager,
+        builder: (context, _) => _buildBody(),
+      ),
     );
   }
 
   Widget _buildBody() {
-    if (_initialLoading) return const TrukuLoadingView();
-    if (_error != null) {
-      return TrukuErrorView(error: _error, onRetry: _loadFirstPage);
+    final transactions = _pager.items;
+    if (_pager.loading) return const TrukuLoadingView();
+    if (_pager.error != null) {
+      return TrukuErrorView(error: _pager.error, onRetry: _pager.refresh);
     }
-    if (_transactions.isEmpty) {
+    if (transactions.isEmpty) {
       return TrukuEmptyState(
         icon: Icons.receipt_long_outlined,
         message: '目前沒有小米幣明細',
@@ -128,14 +95,21 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
       );
     }
     return RefreshIndicator(
-      onRefresh: _loadFirstPage,
+      onRefresh: _pager.refresh,
       child: ListView.builder(
         controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-        itemCount: _transactions.length + 1,
+        itemCount: transactions.length + 1,
         itemBuilder: (context, index) {
-          if (index == _transactions.length) {
-            if (!_loadingMore) return const SizedBox.shrink();
+          if (index == transactions.length) {
+            if (_pager.loadMoreFailed) {
+              return LoadMoreRetry(
+                onRetry: _pager.retryLoadMore,
+                color: AppColors.primary,
+                seniorMode: seniorModeController.enabled,
+              );
+            }
+            if (!_pager.loadingMore) return const SizedBox.shrink();
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(
@@ -143,7 +117,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
               ),
             );
           }
-          final tx = _transactions[index];
+          final tx = transactions[index];
           return Padding(
             padding: const EdgeInsets.only(bottom: 10),
             child: MilletTransactionRow(transaction: tx),
