@@ -291,6 +291,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// 排在最後：捲到底並載入下一頁，已載入的留言與捲動位置都保留，提示等全部
   /// 載完（新回覆出現）才消失。其餘情況整頁重載：游標是後端給的不透明字串，
   /// 前端不能自己組出「某則之後」的游標，只能從第一頁重新載入。
+  ///
+  /// 已知限制：「載入更多」在路上時收到第一層回覆推播，若那一頁已是最後一頁，
+  /// 提示不會自動清掉（那一頁不一定含新回覆，見 [_replySignal]）；之後已沒有
+  /// 下一頁，點提示會退回整頁重載。不另外自動補抓。
   Future<void> _showNewReplies() async {
     if (_newRepliesBelowUnloaded) {
       if (_scrollController.hasClients) {
@@ -346,6 +350,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _mergeComments(page, advanceCursor: true);
         _loadingMore = false;
       });
+      // 等待期間又收到推播就不清提示；最後一頁時會留到點提示整頁重載（已知限制，
+      // 見 _showNewReplies）。
       if (replySignal == _replySignal) _settleNewRepliesBelow(generation);
       _seekFocusComment();
     } on ApiException catch (e) {
