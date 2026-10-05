@@ -22,6 +22,14 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  /// JWT 已過期、續期時連不上的提示文字；有值時停在這頁顯示重試，不導去登入頁。
+  String? _retryMessage;
+
+  /// 按了重試、還在等結果。
+  bool _retrying = false;
+
+  bool get _showRetryArea => _retryMessage != null || _retrying;
+
   @override
   void initState() {
     super.initState();
@@ -31,54 +39,127 @@ class _SplashScreenState extends State<SplashScreen> {
         statusBarIconBrightness: Brightness.light,
       ),
     );
-    Future.delayed(const Duration(milliseconds: 2500), () async {
-      if (!mounted) return;
-      final loggedIn = await SessionService.restore();
-      if (!mounted) return;
-      if (!loggedIn) {
+    Future.delayed(const Duration(milliseconds: 2500), () {
+      if (mounted) _start();
+    });
+  }
+
+  void _retry() {
+    setState(() {
+      _retryMessage = null;
+      _retrying = true;
+    });
+    _start();
+  }
+
+  void _showRetry(String message) => setState(() {
+    _retryMessage = message;
+    _retrying = false;
+  });
+
+  /// 還原登入並決定第一頁。連不上或伺服器暫時不可用時留在這頁等重試。
+  Future<void> _start() async {
+    final restored = await SessionService.restore();
+    if (!mounted) return;
+    switch (restored) {
+      case RestoreResult.offline:
+        _showRetry('無法連線，請檢查網路');
+        return;
+      case RestoreResult.serverUnavailable:
+        // 網路是通的，叫人檢查網路會誤導。
+        _showRetry('暫時無法連線到伺服器，請稍後再試');
+        return;
+      case RestoreResult.loggedOut:
         Navigator.pushReplacementNamed(context, '/login');
         return;
+      case RestoreResult.loggedIn:
+        await _enter();
+    }
+  }
+
+  /// 已登入：查帳號狀態、使用者資料與條款，導去該去的第一頁。
+  Future<void> _enter() async {
+    // /me 沒有帳號狀態欄位，鎖定（唯讀）要另查 status；與 /me 並行，
+    // 查不到（離線）就維持非唯讀，寫入時由 403 ACCOUNT_LOCKED 補救。
+    final lockCheck = AccountService.fetchStatus()
+        .then((s) => accountLockController.setLocked(s.isLocked))
+        .catchError((Object e) {
+          debugPrint('SplashScreen: 帳號狀態查詢失敗，略過唯讀檢查：$e');
+        });
+    // 離線等原因查不到使用者資料時，不擋既有使用者進首頁。
+    UserModel? user;
+    try {
+      user = await UserService.fetchMe();
+    } on ApiException catch (e) {
+      // 刪除中／已刪除帳號：ApiClient 已導去重新啟用畫面或登入頁，這裡不可再導頁蓋掉。
+      // 未同意條款：ApiClient 已導去同意畫面，同意後由該畫面接續導頁，這裡再導會疊兩層。
+      if (e.isAccountPendingDeletion ||
+          e.isAccountPurged ||
+          e.isConsentRequired) {
+        return;
       }
-      // /me 沒有帳號狀態欄位，鎖定（唯讀）要另查 status；與 /me 並行，
-      // 查不到（離線）就維持非唯讀，寫入時由 403 ACCOUNT_LOCKED 補救。
-      final lockCheck = AccountService.fetchStatus()
-          .then((s) => accountLockController.setLocked(s.isLocked))
-          .catchError((Object e) {
-            debugPrint('SplashScreen: 帳號狀態查詢失敗，略過唯讀檢查：$e');
-          });
-      // 離線等原因查不到使用者資料時，不擋既有使用者進首頁。
-      UserModel? user;
-      try {
-        user = await UserService.fetchMe();
-      } on ApiException catch (e) {
-        // 刪除中／已刪除帳號：ApiClient 已導去重新啟用畫面或登入頁，這裡不可再導頁蓋掉。
-        // 未同意條款：ApiClient 已導去同意畫面，同意後由該畫面接續導頁，這裡再導會疊兩層。
-        if (e.isAccountPendingDeletion ||
-            e.isAccountPurged ||
-            e.isConsentRequired) {
-          return;
-        }
-        debugPrint('SplashScreen: fetchMe 失敗，略過完善資料檢查：$e');
-      } catch (e) {
-        debugPrint('SplashScreen: fetchMe 失敗，略過完善資料檢查：$e');
-      }
-      // 同理，離線等原因查不到同意狀態時，不擋既有使用者進首頁。
-      var allConsented = true;
-      try {
-        final status = await TermsService.fetchStatus();
-        allConsented = status.allConsented;
-      } catch (e) {
-        debugPrint('SplashScreen: fetchStatus 失敗，略過同意條款檢查：$e');
-      }
-      await lockCheck;
-      if (!mounted) return;
-      final route = entryRouteFor(user, allConsented: allConsented);
-      Navigator.pushReplacementNamed(context, route);
-      // 冷啟動由通知帶出的深連結導頁必須排在這裡之後，
-      // 否則會被上面這行 pushReplacementNamed 蓋掉（見 fcm_service.dart）。
-      // 補填出生日期不能跳過，深連結等補填完進首頁時由該頁接續。
-      if (route != '/birth-date') FcmService.consumePendingInitialMessage();
-    });
+      debugPrint('SplashScreen: fetchMe 失敗，略過完善資料檢查：$e');
+    } catch (e) {
+      debugPrint('SplashScreen: fetchMe 失敗，略過完善資料檢查：$e');
+    }
+    // 同理，離線等原因查不到同意狀態時，不擋既有使用者進首頁。
+    var allConsented = true;
+    try {
+      final status = await TermsService.fetchStatus();
+      allConsented = status.allConsented;
+    } catch (e) {
+      debugPrint('SplashScreen: fetchStatus 失敗，略過同意條款檢查：$e');
+    }
+    await lockCheck;
+    if (!mounted) return;
+    final route = entryRouteFor(user, allConsented: allConsented);
+    Navigator.pushReplacementNamed(context, route);
+    // 冷啟動由通知帶出的深連結導頁必須排在這裡之後，
+    // 否則會被上面這行 pushReplacementNamed 蓋掉（見 fcm_service.dart）。
+    // 補填出生日期不能跳過，深連結等補填完進首頁時由該頁接續。
+    if (route != '/birth-date') FcmService.consumePendingInitialMessage();
+  }
+
+  Widget _buildRetryPrompt(String message) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          message,
+          textAlign: TextAlign.center,
+          style: AppTypography.bodyLargeStyle(color: AppColors.creamLight),
+        ),
+        const SizedBox(height: 14),
+        OutlinedButton(
+          onPressed: _retry,
+          style: OutlinedButton.styleFrom(
+            foregroundColor: AppColors.gold,
+            side: const BorderSide(color: AppColors.gold),
+            minimumSize: const Size(140, 48),
+          ),
+          child: Text(
+            '重試',
+            style: AppTypography.bodyStyle(color: AppColors.gold),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRetrying() {
+    return const SizedBox(
+      height: 48,
+      child: Center(
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.gold,
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -166,9 +247,12 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
           ),
 
-          // 中央 logo 區（top: 32%）
-          Positioned(
-            top: size.height * 0.32,
+          // 中央 logo 區（top: 32%）。顯示重試區時上移到 22%，騰出下方空間，
+          // 320×568 這類小螢幕才放得下。
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOutCubic,
+            top: size.height * (_showRetryArea ? 0.22 : 0.32),
             left: 0,
             right: 0,
             child: Column(
@@ -218,25 +302,36 @@ class _SplashScreenState extends State<SplashScreen> {
                   color: AppColors.gold,
                   gap: 5,
                 ),
+                // 離線重試接在 logo 下方跟著內容排，小螢幕、字體放大時也不會壓到上面。
+                if (_showRetryArea) ...[
+                  const SizedBox(height: 20),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 24),
+                    child: _retrying
+                        ? _buildRetrying()
+                        : _buildRetryPrompt(_retryMessage!),
+                  ),
+                ],
               ],
             ),
           ),
 
-          // 底部 tagline（bottom: 70）
-          Positioned(
-            bottom: 70,
-            left: 0,
-            right: 0,
-            child: Text(
-              '說我們的話 · 走我們的山',
-              textAlign: TextAlign.center,
-              style: AppTypography.sans(
-                fontSize: AppTypography.body,
-                color: AppColors.cream.withValues(alpha: 0.7),
-                letterSpacing: 3.9,
+          // 底部 tagline（bottom: 70）。重試區會往下長到這裡，顯示時先收起。
+          if (!_showRetryArea)
+            Positioned(
+              bottom: 70,
+              left: 0,
+              right: 0,
+              child: Text(
+                '說我們的話 · 走我們的山',
+                textAlign: TextAlign.center,
+                style: AppTypography.sans(
+                  fontSize: AppTypography.body,
+                  color: AppColors.cream.withValues(alpha: 0.7),
+                  letterSpacing: 3.9,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

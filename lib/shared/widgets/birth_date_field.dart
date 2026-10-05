@@ -8,6 +8,16 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../utils/birth_date.dart';
+import 'confirm_dialog.dart';
+
+/// 送出生日前的確認框：生日填了就不能自己改，滾輪又預設停在 20 年前的今天，
+/// 沒轉滾輪直接送出就會寫錯。回 true 才送；取消或點背景回 false，選的值不動。
+Future<bool> confirmBirthDate(BuildContext context, DateTime birthDate) =>
+    showConfirmDialog(
+      context,
+      title: '確認出生日期',
+      message: '${formatDisplayDate(birthDate)}\n送出後無法自行修改，請確認日期正確。',
+    );
 
 /// 從底部彈出年／月／日滾輪選出生日期，取消回 null。後台更正生日也用這個，
 /// 範圍與使用者自己填寫時相同。

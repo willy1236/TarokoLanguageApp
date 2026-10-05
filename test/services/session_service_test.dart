@@ -3,8 +3,13 @@
 // 測試環境沒有初始化 Firebase，Google／Firebase 登出一定丟例外——正好用來驗
 // 「登出丟例外時 JWT 仍已刪除，重開 App 是登出狀態」。
 
+import 'dart:async';
+import 'dart:io';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:flutter_application_1/services/auth_service.dart';
 import 'package:flutter_application_1/services/session_service.dart';
@@ -76,44 +81,173 @@ void main() {
   });
 
   group('SessionService.restore', () {
-    test('token 有效回 true，不動本機狀態', () async {
+    test('token 有效回 loggedIn，不動本機狀態', () async {
       final store = stubStatefulSecureStorage({
         'session_token': 'jwt',
         'session_expires_at': future,
       });
 
-      expect(await SessionService.restore(), isTrue);
+      expect(await SessionService.restore(), RestoreResult.loggedIn);
       expect(store['session_token'], 'jwt');
     });
 
-    test('沒有 token 回 false', () async {
+    test('沒有 token 回 loggedOut', () async {
       stubStatefulSecureStorage({});
-      expect(await SessionService.restore(), isFalse);
+      expect(await SessionService.restore(), RestoreResult.loggedOut);
     });
 
-    test('token 過期且續期失敗（Firebase 未登入）：完整登出後回 false', () async {
+    test('token 過期且續期失敗（Firebase 未登入）：完整登出後回 loggedOut', () async {
       final store = stubStatefulSecureStorage({
         'session_token': 'jwt',
         'session_expires_at': past,
       });
 
-      expect(await SessionService.restore(), isFalse);
+      expect(await SessionService.restore(), RestoreResult.loggedOut);
       expect(store, isEmpty);
     });
   });
 
-  test('token 過期但續期成功：回 true，不登出', () async {
+  test('token 過期但續期成功：回 loggedIn，不登出', () async {
     stubStatefulSecureStorage({
       'session_token': 'jwt',
       'session_expires_at': past,
     });
     var signedOut = false;
-    SessionService.refreshSession = () async => true;
+    SessionService.refreshSession = () async => RefreshOutcome.ok;
     SessionService.clearAuth = () async => signedOut = true;
     SessionService.deleteLocalToken = () async => signedOut = true;
 
-    expect(await SessionService.restore(), isTrue);
+    expect(await SessionService.restore(), RestoreResult.loggedIn);
     expect(signedOut, isFalse);
+  });
+
+  group('token 過期且續期失敗', () {
+    late Map<String, String> store;
+    late List<String> calls;
+
+    setUp(() {
+      store = stubStatefulSecureStorage({
+        'session_token': 'jwt',
+        'session_expires_at': past,
+      });
+      calls = [];
+      SessionService.unregisterDeviceToken = () async =>
+          calls.add('unregister');
+      SessionService.deleteLocalToken = () async => calls.add('deleteLocal');
+      SessionService.clearAuth = () async {
+        calls.add('clearAuth');
+        await realClearAuth();
+      };
+    });
+
+    test('連不上：回 offline，不登出 Firebase、不刪 FCM token、JWT 保留', () async {
+      SessionService.refreshSession = () async => RefreshOutcome.offline;
+
+      expect(await SessionService.restore(), RestoreResult.offline);
+      expect(calls, isEmpty);
+      expect(store['session_token'], 'jwt');
+    });
+
+    test('連不上後網路恢復：再呼叫一次續期成功就回 loggedIn', () async {
+      var outcome = RefreshOutcome.offline;
+      SessionService.refreshSession = () async => outcome;
+
+      expect(await SessionService.restore(), RestoreResult.offline);
+      outcome = RefreshOutcome.ok;
+      expect(await SessionService.restore(), RestoreResult.loggedIn);
+      expect(calls, isEmpty);
+    });
+
+    test('伺服器暫時不可用：回 serverUnavailable，什麼都不清', () async {
+      SessionService.refreshSession = () async =>
+          RefreshOutcome.serverUnavailable;
+
+      expect(await SessionService.restore(), RestoreResult.serverUnavailable);
+      expect(calls, isEmpty);
+      expect(store['session_token'], 'jwt');
+    });
+
+    test('被拒絕：只刪本機 FCM token、完整登出後回 loggedOut', () async {
+      SessionService.refreshSession = () async => RefreshOutcome.rejected;
+
+      expect(await SessionService.restore(), RestoreResult.loggedOut);
+      expect(calls, ['deleteLocal', 'clearAuth']);
+      expect(store, isEmpty);
+    });
+  });
+
+  group('AuthService.refreshOutcomeFor', () {
+    final cases = <String, (Object, RefreshOutcome)>{
+      '連不上伺服器的 AuthException': (
+        AuthException.network(),
+        RefreshOutcome.offline,
+      ),
+      '逾時': (TimeoutException('x'), RefreshOutcome.offline),
+      'SocketException': (const SocketException('x'), RefreshOutcome.offline),
+      'TLS 交握失敗': (const HandshakeException('x'), RefreshOutcome.offline),
+      'http.ClientException': (
+        http.ClientException('x'),
+        RefreshOutcome.offline,
+      ),
+      'Firebase 換 ID token 時沒網路': (
+        FirebaseAuthException(code: 'network-request-failed'),
+        RefreshOutcome.offline,
+      ),
+      '後端拒絕（帳號狀態不允許）': (AuthException('帳號已停用'), RefreshOutcome.rejected),
+      '取不到 Firebase token': (
+        AuthException('取得 Firebase token 失敗'),
+        RefreshOutcome.rejected,
+      ),
+      'Firebase 帳號已失效': (
+        FirebaseAuthException(code: 'user-token-expired'),
+        RefreshOutcome.rejected,
+      ),
+      '未預期的錯誤': (StateError('x'), RefreshOutcome.rejected),
+    };
+    cases.forEach((name, c) {
+      test('$name → ${c.$2.name}', () {
+        expect(AuthService.refreshOutcomeFor(c.$1), c.$2);
+      });
+    });
+  });
+
+  group('登入端點非 200 → 續期結果', () {
+    http.Response resp(int status) => http.Response(
+      '{"error":{"code":"X","message":"後端訊息"}}',
+      status,
+      headers: {'content-type': 'application/json; charset=utf-8'},
+    );
+    final cases = <int, RefreshOutcome>{
+      500: RefreshOutcome.serverUnavailable,
+      502: RefreshOutcome.serverUnavailable,
+      503: RefreshOutcome.serverUnavailable,
+      504: RefreshOutcome.serverUnavailable,
+      400: RefreshOutcome.rejected,
+      401: RefreshOutcome.rejected,
+      403: RefreshOutcome.rejected,
+      429: RefreshOutcome.rejected,
+      // 不是合法 HTTP 狀態碼：分不出來，維持 rejected。
+      600: RefreshOutcome.rejected,
+    };
+    cases.forEach((status, expected) {
+      test('$status → ${expected.name}', () {
+        final error = AuthService.loginErrorFor(resp(status));
+        expect(AuthService.refreshOutcomeFor(error), expected);
+        // 登入頁顯示的訊息不因分類而改變。
+        expect(error.message, '後端訊息');
+      });
+    });
+
+    test('5xx 回應不是 JSON 時訊息仍是「登入失敗」', () {
+      final error = AuthService.loginErrorFor(
+        http.Response('<html>Bad Gateway</html>', 502),
+      );
+      expect(error.message, '登入失敗');
+      expect(
+        AuthService.refreshOutcomeFor(error),
+        RefreshOutcome.serverUnavailable,
+      );
+    });
   });
 
   group('SessionService.signOut 順序', () {
