@@ -183,7 +183,14 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
 
   Future<void> _selectSuggestion(PlaceSuggestion s) async {
     _searchFocus.unfocus();
-    setState(() => _suggestions = const []);
+    // 詳情回來前下方還是舊位置，先停用確認鈕，免得帶回前一個大頭針的地點。
+    // 同時讓還沒回來的反向地理編碼作廢，它晚回會提早解除停用。
+    final seq = ++_resolveSeq;
+    final hadPendingAddress = _resolving;
+    setState(() {
+      _suggestions = const [];
+      _resolving = true;
+    });
     PickedLocation? place;
     try {
       place = await PlacesService.details(s.placeId);
@@ -191,13 +198,19 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
       debugPrint('EventLocationPickerScreen: 地點詳情失敗：$e');
     }
     _newSession = true;
-    if (!mounted) return;
+    // 等待中又拖了地圖或選了別筆：以後來的為準。
+    if (!mounted || seq != _resolveSeq) return;
     if (place == null) {
       _showMessage('找不到這個地點的位置，請換一個結果或拖曳地圖');
+      if (hadPendingAddress) {
+        // 剛才作廢的那次查詢還沒給出這個位置的地址，重查一次。
+        _resolveAddress(_center);
+      } else {
+        setState(() => _resolving = false);
+      }
       return;
     }
     final target = LatLng(place.latitude, place.longitude);
-    _resolveSeq++; // 讓還沒回來的反向地理編碼作廢
     setState(() {
       _center = target;
       _resolvedAt = target;

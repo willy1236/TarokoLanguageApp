@@ -409,10 +409,16 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ListenableBuilder(
-      listenable: seniorModeController,
-      builder: (context, _) =>
-          _buildScaffold(context, seniorModeController.enabled),
+    // 送出中擋下系統返回鍵、手勢與 AppBackButton（走 maybePop）：活動可能已經
+    // 建立，這時離開會以為沒成功而重發一次。送出結束時 _submit 自己用
+    // Navigator.pop 帶結果返回，不受這裡影響。
+    return PopScope(
+      canPop: !_submitting,
+      child: ListenableBuilder(
+        listenable: seniorModeController,
+        builder: (context, _) =>
+            _buildScaffold(context, seniorModeController.enabled),
+      ),
     );
   }
 
