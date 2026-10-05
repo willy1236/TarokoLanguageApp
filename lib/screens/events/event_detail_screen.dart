@@ -243,17 +243,25 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     } catch (e, st) {
       debugPrint('[EventDetailScreen] _silentRefresh 失敗：$e');
       debugPrint('$st');
-      if (reportFailure && mounted) {
-        // 離線時連點重試會一次次失敗：換掉上一則，不讓同樣的提示排成一串。
-        ScaffoldMessenger.of(context)
-          ..hideCurrentSnackBar()
-          ..showSnackBar(
-            SnackBar(
-              content: Text(apiErrorMessage(e, fallback: '重新整理失敗，請稍後再試')),
-            ),
-          );
+      if (reportFailure) {
+        _showRefreshFailure(apiErrorMessage(e, fallback: '重新整理失敗，請稍後再試'));
       }
     }
+  }
+
+  /// 還沒消失（顯示中或排隊中）的重整失敗提示。
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _refreshFailureSnack;
+
+  /// 離線時連點重試會一次次失敗：前一則重整失敗提示還在就不再排一則，不讓同樣
+  /// 的提示排成一串。不用 hideCurrentSnackBar，那會連照片上傳結果等其他提示一起
+  /// 收掉；也不 close 前一則，它可能還排在別則後面，close 只能用在顯示中的那則。
+  void _showRefreshFailure(String message) {
+    if (_refreshFailureSnack != null) return;
+    final snack = _snack(message);
+    _refreshFailureSnack = snack;
+    snack?.closed.whenComplete(() {
+      if (identical(_refreshFailureSnack, snack)) _refreshFailureSnack = null;
+    });
   }
 
   /// 使用者自己要求的重整（下拉、點照片重試）：失敗要讓人知道。
@@ -378,9 +386,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     }
   }
 
-  void _snack(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _snack(
+    String message,
+  ) {
+    if (!mounted) return null;
+    return ScaffoldMessenger.of(
       context,
     ).showSnackBar(SnackBar(content: Text(message)));
   }

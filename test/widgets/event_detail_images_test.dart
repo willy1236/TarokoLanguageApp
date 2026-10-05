@@ -669,6 +669,38 @@ void main() {
       expect(find.byType(SnackBar), findsNothing);
     });
 
+    testWidgets('上傳失敗提示顯示中又重整失敗：上傳失敗提示不會被收掉', (tester) async {
+      _fakePicker();
+      var offline = false;
+      installMockClient(
+        _routes(_detail(isHost: true, imageIds: [1]), {
+          _uploadPath: errorResponse('UPLOAD_FAILED', message: '照片格式不支援'),
+        }),
+        onRequest: (r) {
+          if (offline && r.url.path == _detailPath) {
+            throw const SocketException('offline');
+          }
+        },
+      );
+      await _open(tester);
+
+      await tester.tap(find.byTooltip('新增照片'));
+      await tester.pumpAndSettle();
+      expect(find.text('照片格式不支援'), findsOneWidget);
+
+      offline = true;
+      await pullToRefresh(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('照片格式不支援'), findsOneWidget);
+      expect(find.text('無法連線到伺服器，請檢查網路'), findsNothing, reason: '排在後面');
+
+      // 上傳失敗提示停完 4 秒才輪到重整失敗。
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+      expect(find.text('照片格式不支援'), findsNothing);
+      expect(find.text('無法連線到伺服器，請檢查網路'), findsOneWidget);
+    });
+
     testWidgets('照片網址過期的自動重取失敗：不提示', (tester) async {
       await failingImageRefetch(tester, (hero) => hero.onImageExpired!);
       expect(find.byType(SnackBar), findsNothing);
