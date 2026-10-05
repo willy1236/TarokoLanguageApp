@@ -4,10 +4,11 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
-import '../../models/page_info.dart';
 import '../../models/video_models.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
+import '../../shared/utils/cursor_pager.dart';
+import '../../shared/widgets/load_more_retry.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'video_detail_screen.dart';
@@ -24,110 +25,78 @@ class VideoLikedBookmarkedList extends StatefulWidget {
 }
 
 class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
-  List<VideoSummary> _videos = [];
   final _scrollController = ScrollController();
-  String? _cursor;
-  bool _loading = true;
-  bool _loadingMore = false;
-  Object? _error;
+  late final _pager = CursorPager<VideoSummary>(
+    fetch: (cursor) async {
+      final res = widget.mode == VideoListMode.liked
+          ? await VideoService.fetchLikedVideos(cursor: cursor)
+          : await VideoService.fetchVideoBookmarks(cursor: cursor);
+      return (res.videos, res.pageInfo);
+    },
+    idOf: (video) => video.id,
+  );
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _load();
+    _pager.refresh();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _pager.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    if (_loadingMore || _cursor == null) return;
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 300) {
-      _loadMore();
-    }
-  }
-
-  Future<VideoListResponse> _fetch(String? cursor) {
-    return widget.mode == VideoListMode.liked
-        ? VideoService.fetchLikedVideos(cursor: cursor)
-        : VideoService.fetchVideoBookmarks(cursor: cursor);
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final res = await _fetch(null);
-      if (!mounted) return;
-      setState(() {
-        _videos = res.videos;
-        _cursor = res.pageInfo.nextCursor;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e;
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _loadMore() async {
-    setState(() => _loadingMore = true);
-    try {
-      final res = await _fetch(_cursor);
-      if (!mounted) return;
-      setState(() {
-        _videos = appendUnique(_videos, res.videos, (e) => e.id);
-        _cursor = res.pageInfo.nextCursor;
-      });
-    } catch (_) {
-      // 翻頁失敗保持原清單，使用者可再滑動觸發重試。
-    } finally {
-      if (mounted) setState(() => _loadingMore = false);
+      _pager.loadMore();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: seniorModeController,
+      listenable: Listenable.merge([seniorModeController, _pager]),
       builder: (context, _) => _buildBody(seniorModeController.enabled),
     );
   }
 
   Widget _buildBody(bool seniorMode) {
-    if (_loading) {
+    final videos = _pager.items;
+    if (_pager.loading) {
       return const TrukuLoadingView();
     }
-    if (_error != null) {
+    if (_pager.error != null) {
       return TrukuErrorView(
-        error: _error,
-        onRetry: _load,
+        error: _pager.error,
+        onRetry: _pager.refresh,
         seniorMode: seniorMode,
       );
     }
-    if (_videos.isEmpty) {
+    if (videos.isEmpty) {
       return _buildEmpty(seniorMode);
     }
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: _pager.refresh,
       color: AppColors.gold,
       child: ListView.separated(
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
-        itemCount: _videos.length + (_cursor != null ? 1 : 0),
+        itemCount: videos.length + (_pager.hasMore ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
-          if (index >= _videos.length) {
+          if (index >= videos.length) {
+            if (_pager.loadMoreFailed) {
+              return LoadMoreRetry(
+                onRetry: _pager.retryLoadMore,
+                color: AppColors.gold,
+                seniorMode: seniorMode,
+              );
+            }
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(
@@ -143,11 +112,11 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
             );
           }
           return _VideoListItem(
-            video: _videos[index],
+            video: videos[index],
             seniorMode: seniorMode,
             // 在詳情頁取消收藏/按讚後返回，清單要重新整理，否則仍看得到
             // 已經取消的項目。
-            onReturn: _load,
+            onReturn: _pager.refresh,
           );
         },
       ),
@@ -159,7 +128,7 @@ class _VideoLikedBookmarkedListState extends State<VideoLikedBookmarkedList> {
         ? '還沒有按讚任何影片'
         : '還沒有收藏任何影片';
     return TrukuRefreshableEmpty(
-      onRefresh: _load,
+      onRefresh: _pager.refresh,
       color: AppColors.gold,
       emptyState: TrukuEmptyState(
         icon: Icons.video_library_outlined,
