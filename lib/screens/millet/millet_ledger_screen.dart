@@ -73,7 +73,7 @@ class _MilletLedgerScreenState extends State<MilletLedgerScreen> {
         ),
       ),
       body: ListenableBuilder(
-        listenable: _pager,
+        listenable: Listenable.merge([seniorModeController, _pager]),
         builder: (context, _) => _buildBody(),
       ),
     );
