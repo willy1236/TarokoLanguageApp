@@ -41,8 +41,12 @@ class _BirthDateScreenState extends State<BirthDateScreen> {
       return;
     }
     _confirming = true;
-    final confirmed = await confirmBirthDate(context, birthDate);
-    _confirming = false;
+    final bool confirmed;
+    try {
+      confirmed = await confirmBirthDate(context, birthDate);
+    } finally {
+      _confirming = false;
+    }
     if (!confirmed || !mounted) return;
     setState(() => _submitting = true);
     try {
