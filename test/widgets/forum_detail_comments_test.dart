@@ -239,6 +239,72 @@ void main() {
       expect(onScreen(tester, '留言1'), isTrue);
     });
 
+    final highlight = find.byKey(const ValueKey('forum_focus_highlight'));
+
+    /// 標示底色目前的透明度；0 代表沒標示。
+    double highlightAlpha(WidgetTester tester) {
+      final box = tester.widget<AnimatedContainer>(highlight);
+      return (box.decoration! as BoxDecoration).color!.a;
+    }
+
+    /// 標示掛在哪一則留言上（底下的留言文字）。
+    String highlightedText(WidgetTester tester) => tester
+        .widget<Text>(
+          find
+              .descendant(of: highlight, matching: find.textContaining('留言'))
+              .first,
+        )
+        .data!;
+
+    testWidgets('捲到那則留言後短暫加底色標示，之後淡掉', (tester) async {
+      final forum = _FakeForum([1, 2, 3, 4, 5, 6]);
+      ApiClient.httpClient = forum.client();
+
+      await open(tester, 5);
+
+      expect(highlightedText(tester), '留言5');
+      expect(highlightAlpha(tester), greaterThan(0));
+
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+      expect(highlightAlpha(tester), 0);
+    });
+
+    testWidgets('頁面開著時換新的留言：標示移到新的那則', (tester) async {
+      final forum = _FakeForum([1, 2, 3, 4, 5, 6]);
+      ApiClient.httpClient = forum.client();
+      await open(tester, 1);
+      await tester.pump(const Duration(seconds: 2));
+      await tester.pumpAndSettle();
+      expect(highlightAlpha(tester), 0);
+
+      ForumDetailScreen.refreshRoute(_detailRoute(tester), focusCommentId: 6);
+      await tester.pumpAndSettle();
+
+      expect(highlight, findsOneWidget);
+      expect(highlightedText(tester), '留言6');
+      expect(highlightAlpha(tester), greaterThan(0));
+    });
+
+    testWidgets('沒有指定留言：不標示；重載沒帶留言時清掉上一則的標示', (tester) async {
+      final forum = _FakeForum([1, 2, 3]);
+      ApiClient.httpClient = forum.client();
+      await tester.pumpWidget(
+        wrapScreen(const ForumDetailScreen(postId: _postId)),
+      );
+      await tester.pumpAndSettle();
+      expect(highlight, findsNothing);
+
+      ForumDetailScreen.refreshRoute(_detailRoute(tester), focusCommentId: 2);
+      await tester.pumpAndSettle();
+      expect(highlight, findsOneWidget);
+
+      ForumDetailScreen.refreshRoute(_detailRoute(tester));
+      await tester.pumpAndSettle();
+      expect(highlight, findsNothing);
+      await tester.pump(const Duration(seconds: 2));
+    });
+
     testWidgets('留言已不存在：載完可載的分頁後停在頂端，不報錯', (tester) async {
       final forum = _FakeForum([1, 2, 3]);
       ApiClient.httpClient = forum.client();

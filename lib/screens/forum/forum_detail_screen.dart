@@ -158,6 +158,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// 掛在要捲去的那則留言上。
   final _focusKey = GlobalKey();
 
+  /// 捲到後短暫加底色標示那則留言；時間到就淡出。
+  bool _focusHighlighted = false;
+  Timer? _focusHighlightTimer;
+  static const _focusHighlightHold = Duration(milliseconds: 1600);
+  static const _focusHighlightFade = Duration(milliseconds: 600);
+
   /// 為了找那則留言已經往後多載了幾頁。
   int _focusPagesLoaded = 0;
   static const _focusMaxPages = 5;
@@ -204,6 +210,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   void dispose() {
     final route = _route;
     if (route != null) ForumDetailScreen._live.remove(route);
+    _focusHighlightTimer?.cancel();
     BlockRefreshNotifier.revision.removeListener(_load);
     _inputController.dispose();
     _scrollController.dispose();
@@ -253,11 +260,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 點回覆通知時人已在本頁：有指定留言就改捲到那一則，再整頁重載。
   void _refreshFromPush(int? focusCommentId) {
-    if (focusCommentId != null) {
-      _focusCommentId = focusCommentId;
-      _pendingFocusId = focusCommentId;
-      _focusPagesLoaded = 0;
-    }
+    // 沒指定留言時也要清掉上一則，重載後才不會把標示掛回舊留言。
+    _focusCommentId = focusCommentId;
+    _pendingFocusId = focusCommentId;
+    _focusPagesLoaded = 0;
+    _focusHighlightTimer?.cancel();
+    _focusHighlighted = false;
     _load();
   }
 
@@ -397,14 +405,38 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           duration: const Duration(milliseconds: 300),
         );
       }
-      if (mounted) setState(() => _pendingFocusId = null);
+      if (!mounted) return;
+      setState(() {
+        _pendingFocusId = null;
+        _focusHighlighted = target != null;
+      });
+      _focusHighlightTimer?.cancel();
+      if (target != null) {
+        _focusHighlightTimer = Timer(_focusHighlightHold, () {
+          if (mounted) setState(() => _focusHighlighted = false);
+        });
+      }
     });
   }
 
-  /// 要捲去的那則留言掛上 [_focusKey]，其他留言原樣回傳。
+  /// 要捲去的那則留言掛上 [_focusKey]，捲到後短暫加底色標示；其他留言原樣回傳。
   Widget _focusable(ForumComment comment, Widget tile) =>
       comment.id == _focusCommentId
-      ? KeyedSubtree(key: _focusKey, child: tile)
+      ? KeyedSubtree(
+          key: _focusKey,
+          child: AnimatedContainer(
+            key: const ValueKey('forum_focus_highlight'),
+            duration: _focusHighlightFade,
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: AppColors.gold.withValues(
+                alpha: _focusHighlighted ? 0.28 : 0,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: tile,
+          ),
+        )
       : tile;
 
   /// 把一批留言併進列表：按 id 去重、按 id 排序（id 越大越新）。
