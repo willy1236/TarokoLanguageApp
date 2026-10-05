@@ -164,6 +164,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   static const _focusHighlightHold = Duration(milliseconds: 1600);
   static const _focusHighlightFade = Duration(milliseconds: 600);
 
+  /// 第幾次尋找：每次換上新的 focus（含同一則被再點一次）加一。捲動途中被
+  /// 換掉的那一輪看到序號變了就作廢，不能清掉新一輪的 pending。
+  int _focusSeekToken = 0;
+
   /// 為了找那則留言已經往後多載了幾頁。
   int _focusPagesLoaded = 0;
   static const _focusMaxPages = 5;
@@ -263,6 +267,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     // 沒指定留言時也要清掉上一則，重載後才不會把標示掛回舊留言。
     _focusCommentId = focusCommentId;
     _pendingFocusId = focusCommentId;
+    _focusSeekToken++;
     _focusPagesLoaded = 0;
     _focusHighlightTimer?.cancel();
     _focusHighlighted = false;
@@ -402,10 +407,13 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       }
       return;
     }
+    final token = _focusSeekToken;
+    bool stale() =>
+        !mounted || _focusSeekToken != token || _pendingFocusId != id;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // 捲動途中點了另一則回覆的通知（refreshRoute 換了 focus）：這一輪作廢，
-      // 不能清掉新的 pending，也不能把標示亮在還沒捲到的新留言上。
-      if (!mounted || _pendingFocusId != id) return;
+      // 捲動途中又點了回覆通知（refreshRoute 換了 focus，或同一則再點一次）：
+      // 這一輪作廢，不能清掉新一輪的 pending，也不能提早亮標示。
+      if (stale()) return;
       final target = _focusKey.currentContext;
       if (target != null) {
         await Scrollable.ensureVisible(
@@ -414,7 +422,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           duration: const Duration(milliseconds: 300),
         );
       }
-      if (!mounted || _pendingFocusId != id) return;
+      if (stale()) return;
       setState(() {
         _pendingFocusId = null;
         _focusHighlighted = target != null;
