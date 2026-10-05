@@ -7,6 +7,11 @@ import 'video_rtc.dart';
 /// Agora 實作。[release] 可能在 [start] 的 await 之間被呼叫（使用者入房途中
 /// 按返回），所以每一步之後都檢查 [_released]，避免對已釋放的引擎呼叫方法。
 class AgoraVideoRtc implements VideoRtc {
+  AgoraVideoRtc({
+    @visibleForTesting RtcEngine Function() createEngine = createAgoraRtcEngine,
+  }) : _createEngine = createEngine;
+
+  final RtcEngine Function() _createEngine;
   RtcEngine? _engine;
   bool _released = false;
 
@@ -15,7 +20,7 @@ class AgoraVideoRtc implements VideoRtc {
     required String appId,
     required RtcCallbacks callbacks,
   }) async {
-    final engine = createAgoraRtcEngine();
+    final engine = _createEngine();
     _engine = engine;
     await engine.initialize(RtcEngineContext(appId: appId));
     if (_released) return;
