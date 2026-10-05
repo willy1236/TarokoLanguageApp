@@ -1,5 +1,6 @@
 // 禁言、髒話詞庫、題目回報三個後台畫面。
 
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
@@ -82,6 +83,39 @@ void main() {
       expect(find.text('禁言不存在或已解除'), findsOneWidget);
       expect(gets, 2);
     });
+  });
+
+  testWidgets('禁言：解除送出中只停用那一筆，連點只送一次；失敗後恢復', (tester) async {
+    final gate = Completer<http.Response>();
+    var posts = 0;
+    ApiClient.httpClient = MockClient((r) async {
+      if (r.method == 'POST') {
+        posts++;
+        return gate.future;
+      }
+      return jsonResponse(loadSpecFixtureMap('get_api_admin_mutes.json'));
+    });
+    await tester.pumpWidget(_app(const AdminMutesScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('解除').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('解除').last);
+    await tester.pumpAndSettle();
+
+    List<TextButton> buttons() => tester
+        .widgetList<TextButton>(find.widgetWithText(TextButton, '解除'))
+        .toList();
+    expect(buttons()[0].onPressed, isNull);
+    expect(buttons()[1].onPressed, isNotNull, reason: '其他筆不受影響');
+    await tester.tap(find.text('解除').first, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.text('解除禁言？'), findsNothing);
+
+    gate.complete(errorResponse('INTERNAL', status: 500));
+    await tester.pumpAndSettle();
+    expect(posts, 1);
+    expect(buttons()[0].onPressed, isNotNull);
   });
 
   group('髒話詞庫', () {
@@ -172,6 +206,46 @@ void main() {
     });
   });
 
+  testWidgets('髒話詞庫：刪除送出中只停用那一列，連點只送一次；完成後恢復', (tester) async {
+    final gate = Completer<http.Response>();
+    var deletes = 0;
+    ApiClient.httpClient = MockClient((r) async {
+      if (r.method == 'DELETE') {
+        deletes++;
+        return gate.future;
+      }
+      return jsonResponse(
+        loadSpecFixtureMap('get_api_admin_banned_words.json'),
+      );
+    });
+    await tester.pumpWidget(_app(const AdminBannedWordsScreen()));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byTooltip('移除').first);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('移除').last);
+    await tester.pumpAndSettle();
+
+    List<IconButton> buttons() => tester
+        .widgetList<IconButton>(
+          find.ancestor(
+            of: find.byIcon(Icons.delete_outline),
+            matching: find.byType(IconButton),
+          ),
+        )
+        .toList();
+    expect(buttons()[0].onPressed, isNull);
+    expect(buttons()[1].onPressed, isNotNull, reason: '其他列不受影響');
+    await tester.tap(find.byTooltip('移除').first, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.text('移除這個詞？'), findsNothing);
+
+    gate.complete(errorResponse('INTERNAL', status: 500));
+    await tester.pumpAndSettle();
+    expect(deletes, 1);
+    expect(buttons()[0].onPressed, isNotNull);
+  });
+
   group('題目回報', () {
     testWidgets('預設「全部」不帶 status；顯示題型、內容、回報人', (tester) async {
       final statuses = <String?>[];
@@ -239,5 +313,43 @@ void main() {
       // 第一張已解決不再有這顆按鈕；第二張（已查看）仍有。
       expect(find.text('標為已解決'), findsOneWidget);
     });
+  });
+
+  testWidgets('題目回報：標記送出中這一筆的標記鈕停用，連點只送一次；失敗後恢復', (tester) async {
+    final gate = Completer<http.Response>();
+    var patches = 0;
+    ApiClient.httpClient = MockClient((r) async {
+      if (r.method == 'PATCH') {
+        patches++;
+        return gate.future;
+      }
+      return jsonResponse(
+        loadSpecFixtureMap('get_api_admin_question_reports.json'),
+      );
+    });
+    await tester.pumpWidget(_app(const AdminQuestionReportsScreen()));
+    await tester.pumpAndSettle();
+
+    TextButton resolveFirst() => tester
+        .widgetList<TextButton>(find.widgetWithText(TextButton, '標為已解決'))
+        .first;
+    await tester.tap(find.text('標為已解決').first);
+    await tester.pump();
+    expect(resolveFirst().onPressed, isNull);
+    expect(
+      tester
+          .widgetList<TextButton>(find.widgetWithText(TextButton, '標為已查看'))
+          .first
+          .onPressed,
+      isNull,
+      reason: '同一筆的另一顆也停用',
+    );
+    await tester.tap(find.text('標為已解決').first, warnIfMissed: false);
+    await tester.pump();
+
+    gate.complete(errorResponse('INTERNAL', status: 500));
+    await tester.pumpAndSettle();
+    expect(patches, 1);
+    expect(resolveFirst().onPressed, isNotNull);
   });
 }

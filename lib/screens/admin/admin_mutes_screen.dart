@@ -23,39 +23,58 @@ class AdminMutesScreen extends StatelessWidget {
     emptyMessage: '目前沒有有效的禁言',
     fetch: (_, _) async =>
         (items: await AdminService.fetchMutes(), pageInfo: PageInfo.end),
-    itemBuilder: (context, mute, senior, reload) =>
-        _MuteCard(mute: mute, seniorMode: senior, reload: reload),
+    itemBuilder: (context, mute, senior, reload) => _MuteCard(
+      key: ValueKey(mute.id),
+      mute: mute,
+      seniorMode: senior,
+      reload: reload,
+    ),
   );
 }
 
-class _MuteCard extends StatelessWidget {
+class _MuteCard extends StatefulWidget {
   final AdminMute mute;
   final bool seniorMode;
   final Future<void> Function() reload;
 
   const _MuteCard({
+    super.key,
     required this.mute,
     required this.seniorMode,
     required this.reload,
   });
 
-  Future<void> _lift(BuildContext context) async {
+  @override
+  State<_MuteCard> createState() => _MuteCardState();
+}
+
+class _MuteCardState extends State<_MuteCard> {
+  /// 解除送出中：「解除」鈕停用，連點只送一次（第二次會 404）。
+  bool _busy = false;
+
+  AdminMute get mute => widget.mute;
+  bool get seniorMode => widget.seniorMode;
+
+  Future<void> _lift() async {
     final confirmed = await showConfirmDialog(
       context,
       title: '解除禁言？',
       message: '「${mute.nickname}」的禁言會立刻解除，尚未到期時會通知對方。',
       confirmText: '解除',
     );
-    if (!confirmed || !context.mounted) return;
+    if (!confirmed || !mounted || _busy) return;
+    setState(() => _busy = true);
     try {
       await AdminService.liftMute(mute.id);
       showAdminMessage('已解除禁言');
-      await reload();
+      await widget.reload();
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       if (handleAdminError(context, e)) return;
       // 已經被別人解除或已不存在：以伺服器最新狀態為準。
-      if (e is ApiException && e.statusCode == 404) await reload();
+      if (e is ApiException && e.statusCode == 404) await widget.reload();
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -95,7 +114,7 @@ class _MuteCard extends StatelessWidget {
         Align(
           alignment: Alignment.centerRight,
           child: TextButton(
-            onPressed: () => _lift(context),
+            onPressed: _busy ? null : _lift,
             child: const Text('解除'),
           ),
         ),

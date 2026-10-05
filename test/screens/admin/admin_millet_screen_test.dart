@@ -36,6 +36,7 @@ void main() {
   List<http.Request> install({
     Map<String, dynamic>? reconcile,
     http.Response? transactionsError,
+    bool Function()? failSecondPage,
   }) {
     final requests = <http.Request>[];
     ApiClient.httpClient = MockClient((r) async {
@@ -52,6 +53,9 @@ void main() {
         default:
           if (transactionsError != null) return transactionsError;
           final second = r.url.queryParameters['cursor'] == 'p2';
+          if (second && (failSecondPage?.call() ?? false)) {
+            return errorResponse('INTERNAL', status: 500);
+          }
           return jsonResponse({
             'transactions': [
               for (var i = 0; i < 10; i++) _tx(second ? 20 + i : 10 + i),
@@ -105,6 +109,31 @@ void main() {
       requests.where((r) => r.url.queryParameters['cursor'] == 'p2'),
       hasLength(1),
     );
+  });
+
+  testWidgets('下一頁載入失敗：顯示重試列，再捲動不自動重打，點重試才重送', (tester) async {
+    var fail = true;
+    final requests = install(failSecondPage: () => fail);
+    await lookUp(tester);
+    int secondPages() =>
+        requests.where((r) => r.url.queryParameters['cursor'] == 'p2').length;
+
+    await tester.drag(find.byType(ListView), const Offset(0, -3000));
+    await tester.pumpAndSettle();
+    expect(secondPages(), 1);
+    expect(find.text('載入失敗，點此重試'), findsOneWidget);
+
+    await tester.drag(find.byType(ListView), const Offset(0, 300));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -3000));
+    await tester.pumpAndSettle();
+    expect(secondPages(), 1, reason: '失敗後捲動不自動重打');
+
+    fail = false;
+    await tester.tap(find.text('載入失敗，點此重試'));
+    await tester.pumpAndSettle();
+    expect(secondPages(), 2);
+    expect(find.text('載入失敗，點此重試'), findsNothing);
   });
 
   testWidgets('USER_NOT_FOUND 顯示後端 message', (tester) async {

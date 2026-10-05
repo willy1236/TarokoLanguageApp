@@ -29,6 +29,9 @@ class _AdminRolesScreenState extends State<AdminRolesScreen> {
   /// 設定完角色後換 key 重建查人元件，清掉顯示舊角色的對象卡與輸入。
   int _lookupKey = 0;
 
+  /// 改角色送出中：所有「改角色」「設定角色」鈕停用，連點只送一次。
+  bool _busy = false;
+
   @override
   void initState() {
     super.initState();
@@ -63,7 +66,8 @@ class _AdminRolesScreenState extends State<AdminRolesScreen> {
       confirmText: '確定',
       maxLength: 200,
     );
-    if (input == null || !mounted) return;
+    if (input == null || !mounted || _busy) return;
+    setState(() => _busy = true);
     try {
       final result = await AdminService.setRole(uid, role, input.reason);
       showAdminMessage(
@@ -79,6 +83,8 @@ class _AdminRolesScreenState extends State<AdminRolesScreen> {
       await _reload();
     } catch (e) {
       if (mounted) handleAdminError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -137,11 +143,13 @@ class _AdminRolesScreenState extends State<AdminRolesScreen> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
               child: FilledButton(
-                onPressed: () => _changeRole(
-                  uid: _found!.uid,
-                  nickname: _found!.nickname,
-                  currentRole: _found!.role,
-                ),
+                onPressed: _busy
+                    ? null
+                    : () => _changeRole(
+                        uid: _found!.uid,
+                        nickname: _found!.nickname,
+                        currentRole: _found!.role,
+                      ),
                 child: const Text('設定角色'),
               ),
             ),
@@ -209,11 +217,13 @@ class _AdminRolesScreenState extends State<AdminRolesScreen> {
               ),
               AdminBadge(adminRoleLabel(user.role), seniorMode: senior),
               TextButton(
-                onPressed: () => _changeRole(
-                  uid: user.uid,
-                  nickname: user.nickname,
-                  currentRole: user.role,
-                ),
+                onPressed: _busy
+                    ? null
+                    : () => _changeRole(
+                        uid: user.uid,
+                        nickname: user.nickname,
+                        currentRole: user.role,
+                      ),
                 child: const Text('改角色'),
               ),
             ],

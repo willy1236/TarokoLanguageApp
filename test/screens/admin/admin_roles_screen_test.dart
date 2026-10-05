@@ -170,6 +170,34 @@ void main() {
     expect(find.text('角色未變更'), findsOneWidget);
   });
 
+  testWidgets('改角色送出中：所有改角色鈕停用，連點只送一次；失敗後恢復可按', (tester) async {
+    final gate = Completer<http.Response>();
+    final requests = <http.Request>[];
+    ApiClient.httpClient = MockClient((r) async {
+      requests.add(r);
+      if (r.method == 'PATCH') return gate.future;
+      return jsonResponse(_roles);
+    });
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('改角色').first);
+    await tester.pumpAndSettle();
+    await pickRoleAndConfirm(tester, '活動發起人');
+
+    Iterable<TextButton> buttons() =>
+        tester.widgetList<TextButton>(find.widgetWithText(TextButton, '改角色'));
+    expect(buttons().every((b) => b.onPressed == null), isTrue);
+    await tester.tap(find.text('改角色').first, warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(find.text('選擇角色'), findsNothing);
+
+    gate.complete(errorResponse('USER_UNAVAILABLE', status: 409));
+    await tester.pumpAndSettle();
+    expect(requests.where((r) => r.method == 'PATCH'), hasLength(1));
+    expect(buttons().every((b) => b.onPressed != null), isTrue);
+  });
+
   for (final (code, status, message) in [
     ('SELF_ROLE_CHANGE', 403, '不能變更自己的角色'),
     ('USER_UNAVAILABLE', 409, '對方帳號目前無法變更角色'),

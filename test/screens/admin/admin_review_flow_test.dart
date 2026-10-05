@@ -2,6 +2,9 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/testing.dart';
+
+import 'package:flutter_application_1/core/network/api_client.dart';
 
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/models/admin_models.dart';
@@ -26,16 +29,17 @@ Widget _host(Widget Function() screen, List<Object?> result) => MaterialApp(
   ),
 );
 
+Map<String, dynamic> _reportJson(int id, {String reason = '理由'}) => {
+  'id': id,
+  'target_type': 'post',
+  'target_id': 1,
+  'reason': reason,
+  'status': 'pending',
+  'reporter_nickname': '檢舉人',
+};
+
 AdminReport _report(String type, {Map<String, dynamic>? extra}) =>
-    AdminReport.fromJson({
-      'id': 5,
-      'target_type': type,
-      'target_id': 1,
-      'reason': '理由',
-      'status': 'pending',
-      'reporter_nickname': '檢舉人',
-      ...?extra,
-    });
+    AdminReport.fromJson({..._reportJson(5), 'target_type': type, ...?extra});
 
 AdminCase _case({String targetType = 'post', bool contentRemoved = true}) =>
     AdminCase.fromJson({
@@ -53,6 +57,11 @@ AdminCase _case({String targetType = 'post', bool contentRemoved = true}) =>
 
 Future<void> _open(WidgetTester tester) async {
   await tester.tap(find.text('開啟'));
+  await tester.pumpAndSettle();
+}
+
+Future<void> _pullToRefresh(WidgetTester tester) async {
+  await tester.fling(find.byType(Scrollable).first, const Offset(0, 400), 1000);
   await tester.pumpAndSettle();
 }
 
@@ -181,6 +190,56 @@ void main() {
 
       expect(find.text('這個案件的當事人是你自己，請交給其他管理員審核'), findsOneWidget);
       expect(find.text('檢舉詳情'), findsOneWidget);
+      expect(result, isEmpty);
+    });
+
+    testWidgets('下拉重整：這筆已不在待處理佇列時提示已被處理並回列表重抓', (tester) async {
+      final result = <Object?>[];
+      installMockClient({
+        '/api/admin/forum/reports': {
+          'reports': [_reportJson(6)],
+          'page_info': {'next_cursor': null, 'has_more': false},
+        },
+      });
+      await tester.pumpWidget(
+        _host(() => AdminReportDetailScreen(report: _report('post')), result),
+      );
+      await _open(tester);
+
+      await _pullToRefresh(tester);
+
+      expect(find.text('這筆已被其他管理員處理'), findsOneWidget);
+      expect(result, [true]);
+    });
+
+    testWidgets('下拉重整：這筆在後頁時沿分頁找到並更新，不回列表', (tester) async {
+      final result = <Object?>[];
+      final cursors = <String?>[];
+      ApiClient.httpClient = MockClient((r) async {
+        final cursor = r.url.queryParameters['cursor'];
+        cursors.add(cursor);
+        return jsonResponse(
+          cursor == null
+              ? {
+                  'reports': [_reportJson(6)],
+                  'page_info': {'next_cursor': 'p2', 'has_more': true},
+                }
+              : {
+                  'reports': [_reportJson(5, reason: '更新後的理由')],
+                  'page_info': {'next_cursor': null, 'has_more': false},
+                },
+        );
+      });
+      await tester.pumpWidget(
+        _host(() => AdminReportDetailScreen(report: _report('post')), result),
+      );
+      await _open(tester);
+
+      await _pullToRefresh(tester);
+
+      expect(cursors, [null, 'p2']);
+      expect(find.text('這筆已被其他管理員處理'), findsNothing);
+      expect(find.textContaining('更新後的理由', findRichText: true), findsWidgets);
       expect(result, isEmpty);
     });
 
@@ -324,6 +383,25 @@ void main() {
         expect(result, isEmpty);
       });
     }
+
+    testWidgets('下拉重整：案件已不在待審列表時提示已被處理並回列表重抓', (tester) async {
+      final result = <Object?>[];
+      installMockClient({
+        '/api/admin/moderation/cases': {
+          'cases': <Object>[],
+          'page_info': {'next_cursor': null, 'has_more': false},
+        },
+      });
+      await tester.pumpWidget(
+        _host(() => AdminCaseDetailScreen(adminCase: _case()), result),
+      );
+      await _open(tester);
+
+      await _pullToRefresh(tester);
+
+      expect(find.text('這筆已被其他管理員處理'), findsOneWidget);
+      expect(result, [true]);
+    });
 
     testWidgets('CASE_ALREADY_REVIEWED：顯示訊息並回列表重抓', (tester) async {
       final result = <Object?>[];

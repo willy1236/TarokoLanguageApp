@@ -108,6 +108,46 @@ void main() {
     expect(find.text('預覽99'), findsOneWidget);
   });
 
+  testWidgets('下一頁載入失敗：顯示重試列，再捲動不自動重打，點重試才重送', (tester) async {
+    final cursors = <String?>[];
+    var failNext = true;
+    ApiClient.httpClient = MockClient((request) async {
+      final cursor = request.url.queryParameters['cursor'];
+      cursors.add(cursor);
+      if (cursor == null) {
+        return jsonResponse({
+          'reports': [for (var i = 1; i <= 12; i++) _report(i)],
+          'page_info': {'next_cursor': 'p2', 'has_more': true},
+        });
+      }
+      if (failNext) return errorResponse('INTERNAL', status: 500);
+      return jsonResponse({
+        'reports': [_report(99)],
+        'page_info': {'next_cursor': null, 'has_more': false},
+      });
+    });
+
+    await tester.pumpWidget(_app(const AdminReportsScreen()));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -5000));
+    await tester.pumpAndSettle();
+    expect(cursors, [null, 'p2']);
+    expect(find.text('載入失敗，點此重試'), findsOneWidget);
+
+    await tester.drag(find.byType(ListView), const Offset(0, 300));
+    await tester.pumpAndSettle();
+    await tester.drag(find.byType(ListView), const Offset(0, -5000));
+    await tester.pumpAndSettle();
+    expect(cursors, [null, 'p2'], reason: '失敗後捲動不自動重打');
+
+    failNext = false;
+    await tester.tap(find.text('載入失敗，點此重試'));
+    await tester.pumpAndSettle();
+    expect(cursors, [null, 'p2', 'p2']);
+    expect(find.text('預覽99'), findsOneWidget);
+    expect(find.text('載入失敗，點此重試'), findsNothing);
+  });
+
   testWidgets('403 ADMIN_ONLY：顯示訊息、重抓 /api/me、退出後台', (tester) async {
     var meFetched = 0;
     installMockClient(
