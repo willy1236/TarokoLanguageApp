@@ -3,6 +3,8 @@
 // 回覆的層級規則：對第二層回覆按「回覆」時，parent 仍指向它所屬的第一層留言。
 // 後端會擋第三層，前端不送出必然失敗的請求。
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import '../../shared/widgets/async_state_view.dart';
@@ -139,6 +141,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// 累積的推播裡有「回覆留言」。回覆掛在各自的留言串下，不一定排在最後。
   bool _pendingIncludesCommentReply = false;
 
+  /// 每收到一則頁內回覆推播加一。「載入更多」發出後才又收到推播時，那一頁
+  /// 可能不含新回覆，不能據此清掉提示。
+  int _replySignal = 0;
+
   /// 正在回覆的第一層留言；null 代表回覆貼文本身。
   ForumComment? _replyTarget;
 
@@ -259,6 +265,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     if (!mounted) return;
     setState(() {
       _pendingReplyCount++;
+      _replySignal++;
       if (type != 'reply_post') _pendingIncludesCommentReply = true;
     });
   }
@@ -272,9 +279,24 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   bool get _newRepliesBelowUnloaded =>
       !_pendingIncludesCommentReply && _nextCursor != null;
 
-  /// 點「有新回覆」提示：整頁重載。游標是後端給的不透明字串，前端不能自己
-  /// 組出「某則之後」的游標，只能從第一頁重新載入。
+  /// 點「有新回覆」提示。新回覆都是第一層留言、且還有舊留言沒載完時，新回覆
+  /// 排在最後：捲到底並載入下一頁，已載入的留言與捲動位置都保留，提示等全部
+  /// 載完（新回覆出現）才消失。其餘情況整頁重載：游標是後端給的不透明字串，
+  /// 前端不能自己組出「某則之後」的游標，只能從第一頁重新載入。
   Future<void> _showNewReplies() async {
+    if (_newRepliesBelowUnloaded) {
+      if (_scrollController.hasClients) {
+        unawaited(
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          ),
+        );
+      }
+      unawaited(_loadMoreComments());
+      return;
+    }
     await _load();
     // 留言數跟著重載變了，回報父層，返回列表時卡片才不會停在舊的留言數。
     final refreshed = _post;
@@ -307,6 +329,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     final cursor = _nextCursor;
     if (cursor == null) return;
     final generation = _generation;
+    final replySignal = _replySignal;
     setState(() => _loadingMore = true);
     try {
       final page = await ForumService.comments(widget.postId, cursor: cursor);
@@ -315,6 +338,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _mergeComments(page, advanceCursor: true);
         _loadingMore = false;
       });
+      if (replySignal == _replySignal) _settleNewRepliesBelow(generation);
       _seekFocusComment();
     } on ApiException catch (e) {
       if (!mounted || generation != _generation) return;
@@ -323,6 +347,29 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _pendingFocusId = null;
       });
       _toast(e.message);
+    }
+  }
+
+  /// 新的第一層回覆排在最後，載完最後一頁就都看得到了：清掉提示，並重抓貼文
+  /// 讓留言數跟上、回報父層（返回列表時卡片才不會停在舊的留言數）。
+  void _settleNewRepliesBelow(int generation) {
+    if (_pendingReplyCount == 0 ||
+        _pendingIncludesCommentReply ||
+        _nextCursor != null) {
+      return;
+    }
+    setState(_clearPendingReplies);
+    unawaited(_refreshPostOnly(generation));
+  }
+
+  Future<void> _refreshPostOnly(int generation) async {
+    try {
+      final post = await ForumService.post(widget.postId);
+      if (!mounted || generation != _generation) return;
+      setState(() => _post = post);
+      widget.onPostChanged?.call(post);
+    } on ApiException catch (e) {
+      debugPrint('ForumDetailScreen: 重抓貼文留言數失敗：$e');
     }
   }
 
