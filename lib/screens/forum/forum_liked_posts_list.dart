@@ -8,6 +8,8 @@ import '../../core/constants/app_typography.dart';
 import '../../models/forum_models.dart';
 import '../../services/forum_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../shared/utils/cursor_pager.dart';
+import '../../shared/widgets/load_more_retry.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'forum_detail_screen.dart';
@@ -20,106 +22,76 @@ class ForumLikedPostsList extends StatefulWidget {
 }
 
 class _ForumLikedPostsListState extends State<ForumLikedPostsList> {
-  final _posts = <ForumPost>[];
   final _scrollController = ScrollController();
-  String? _nextCursor;
-  bool _loading = true;
-  bool _loadingMore = false;
-  Object? _error;
+  final _pager = CursorPager<ForumPost>(
+    fetch: (cursor) async {
+      final page = await ForumService.likedPosts(cursor: cursor);
+      return (page.posts, page.pageInfo);
+    },
+    idOf: (post) => post.id,
+  );
 
   @override
   void initState() {
     super.initState();
     _scrollController.addListener(_onScroll);
-    _load();
+    _pager.refresh();
   }
 
   @override
   void dispose() {
     _scrollController.dispose();
+    _pager.dispose();
     super.dispose();
   }
 
   void _onScroll() {
-    if (_loadingMore || _nextCursor == null) return;
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 300) {
-      _loadMore();
-    }
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final page = await ForumService.likedPosts();
-      if (!mounted) return;
-      setState(() {
-        _posts
-          ..clear()
-          ..addAll(page.posts);
-        _nextCursor = page.pageInfo.nextCursor;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e;
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _loadMore() async {
-    setState(() => _loadingMore = true);
-    try {
-      final page = await ForumService.likedPosts(cursor: _nextCursor);
-      if (!mounted) return;
-      setState(() {
-        _posts.addAll(page.posts);
-        _nextCursor = page.pageInfo.nextCursor;
-      });
-    } catch (_) {
-      // 翻頁失敗保持原清單，使用者可再滑動觸發重試。
-    } finally {
-      if (mounted) setState(() => _loadingMore = false);
+      _pager.loadMore();
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: seniorModeController,
+      listenable: Listenable.merge([seniorModeController, _pager]),
       builder: (context, _) => _buildBody(seniorModeController.enabled),
     );
   }
 
   Widget _buildBody(bool seniorMode) {
-    if (_loading) {
+    final posts = _pager.items;
+    if (_pager.loading) {
       return const TrukuLoadingView();
     }
-    if (_error != null) {
+    if (_pager.error != null) {
       return TrukuErrorView(
-        error: _error,
-        onRetry: _load,
+        error: _pager.error,
+        onRetry: _pager.refresh,
         seniorMode: seniorMode,
       );
     }
-    if (_posts.isEmpty) {
+    if (posts.isEmpty) {
       return _buildEmpty(seniorMode);
     }
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: _pager.refresh,
       color: AppColors.primary,
       child: ListView.separated(
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
-        itemCount: _posts.length + (_nextCursor != null ? 1 : 0),
+        itemCount: posts.length + (_pager.hasMore ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
-          if (index >= _posts.length) {
+          if (index >= posts.length) {
+            if (_pager.loadMoreFailed) {
+              return LoadMoreRetry(
+                onRetry: _pager.retryLoadMore,
+                color: AppColors.primary,
+                seniorMode: seniorMode,
+              );
+            }
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(
@@ -135,10 +107,10 @@ class _ForumLikedPostsListState extends State<ForumLikedPostsList> {
             );
           }
           return _PostListItem(
-            post: _posts[index],
+            post: posts[index],
             seniorMode: seniorMode,
             // 在詳情頁取消按讚後返回，清單要重新整理，否則仍看得到已取消的貼文。
-            onReturn: _load,
+            onReturn: _pager.refresh,
           );
         },
       ),
@@ -147,7 +119,7 @@ class _ForumLikedPostsListState extends State<ForumLikedPostsList> {
 
   Widget _buildEmpty(bool seniorMode) {
     return TrukuRefreshableEmpty(
-      onRefresh: _load,
+      onRefresh: _pager.refresh,
       color: AppColors.primary,
       emptyState: TrukuEmptyState(
         icon: Icons.favorite_border,
