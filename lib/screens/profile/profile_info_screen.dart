@@ -276,7 +276,8 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
       if (mounted) setState(() => _user = updated);
       return null;
     } on ApiException catch (e) {
-      return e.code == 'INVALID_NICKNAME' ? e.message : '更新失敗，請稍後再試';
+      // 暱稱不合法、禁言、唯讀、限流等都是後端給的中文原因，直接顯示。
+      return apiErrorMessage(e, fallback: '更新失敗，請稍後再試');
     } catch (e, st) {
       debugPrint('Failed to update video nickname: $e');
       debugPrintStack(stackTrace: st);
