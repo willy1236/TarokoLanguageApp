@@ -51,10 +51,24 @@ class InboxScreen extends StatefulWidget {
 
   const InboxScreen({super.key, this.initialCategory});
 
+  /// route 名稱：讓公告推播導頁判斷最上層是不是收件匣。
+  static const routeName = 'inbox';
+
+  /// 所有呼叫端都走這個工廠，settings.name 才會一致。
   static Route<void> route({String? initialCategory}) =>
       MaterialPageRoute<void>(
+        settings: const RouteSettings(name: routeName),
         builder: (_) => InboxScreen(initialCategory: initialCategory),
       );
+
+  /// 開著的收件匣，以所在的 route 為 key：開了兩份時各自登記，
+  /// 關掉上層那份不影響下層。
+  static final Map<Route<dynamic>, _InboxScreenState> _live = {};
+
+  /// 點公告推播時人已在 [route] 這份收件匣：切到 [category] 分頁（null 為留在
+  /// 目前分頁）並重新載入。
+  static void refreshRoute(Route<dynamic> route, {String? category}) =>
+      _live[route]?._refreshFromPush(category);
 
   @override
   State<InboxScreen> createState() => _InboxScreenState();
@@ -71,9 +85,38 @@ class _InboxScreenState extends State<InboxScreen>
   /// 論壇回覆者頭像要查商店目錄才知道 avatarId／frameId 對應的圖。
   Map<String, ShopItem> _itemCatalogById = const {};
 
+  /// 推播要求重載目前分頁時加一；分頁看到值變了就重抓第一頁。
+  int _reloadSignal = 0;
+
+  /// 這份收件匣所在的 route，推播重載的登記 key。
+  Route<dynamic>? _route;
+
   int _initialIndex() {
     final i = _tabs.indexWhere((t) => t.category == widget.initialCategory);
     return i < 0 ? 0 : i;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    final route = ModalRoute.of(context);
+    if (route != null && _route == null) {
+      _route = route;
+      InboxScreen._live[route] = this;
+    }
+  }
+
+  /// 切到別的分頁時，分頁本來就會在切過去時重抓；已停在那一頁才要求重載。
+  void _refreshFromPush(String? category) {
+    if (!mounted) return;
+    final i = category == null
+        ? -1
+        : _tabs.indexWhere((t) => t.category == category);
+    if (i >= 0 && i != _tabController.index) {
+      _tabController.animateTo(i);
+    } else {
+      setState(() => _reloadSignal++);
+    }
   }
 
   @override
@@ -85,6 +128,8 @@ class _InboxScreenState extends State<InboxScreen>
 
   @override
   void dispose() {
+    final route = _route;
+    if (route != null) InboxScreen._live.remove(route);
     _tabController.dispose();
     super.dispose();
   }
@@ -171,6 +216,7 @@ class _InboxScreenState extends State<InboxScreen>
             category: tab.category,
             seniorMode: seniorMode,
             itemCatalogById: _itemCatalogById,
+            reloadSignal: _reloadSignal,
           ),
       ],
     ),
@@ -182,11 +228,15 @@ class _InboxTab extends StatefulWidget {
   final bool seniorMode;
   final Map<String, ShopItem> itemCatalogById;
 
+  /// 值變了就重抓第一頁（推播要求重載）。
+  final int reloadSignal;
+
   const _InboxTab({
     super.key,
     required this.category,
     required this.seniorMode,
     required this.itemCatalogById,
+    required this.reloadSignal,
   });
 
   @override
@@ -210,6 +260,12 @@ class _InboxTabState extends State<_InboxTab> {
     super.initState();
     _scrollController.addListener(_onScroll);
     _load();
+  }
+
+  @override
+  void didUpdateWidget(_InboxTab oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.reloadSignal != oldWidget.reloadSignal) _load();
   }
 
   @override

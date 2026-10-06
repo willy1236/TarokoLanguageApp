@@ -293,7 +293,10 @@ class _ChatScreenState extends State<ChatScreen> {
       final message = await FriendService.sendMessage(widget.friendCode, body);
       if (!mounted) return;
       setState(() {
-        _messages.insert(0, message);
+        // 等回應期間重連補抓或推播重載可能已經抓到這一則，依 id 去重。
+        if (!_messages.any((e) => e.id == message.id)) {
+          _messages.insert(0, message);
+        }
         _inputController.clear();
         _sending = false;
       });

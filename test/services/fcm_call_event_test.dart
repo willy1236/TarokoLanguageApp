@@ -1,8 +1,14 @@
 // 通話事件同時從推播與即時連線送出（Truku_backend API/即時連線.md「通話事件」，
 // 內容相同、id 一律字串）：先到的處理、後到的略過。
 
+import 'dart:async';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:http/testing.dart';
+
+import 'package:flutter_application_1/core/network/api_client.dart';
 
 import 'package:flutter_application_1/models/friend_model.dart';
 import 'package:flutter_application_1/services/fcm_service.dart';
@@ -20,6 +26,7 @@ void main() {
   });
 
   tearDown(() {
+    restoreHttp();
     FcmService.onFriendCallEnded = null;
     FcmService.onVideoSessionEnded = null;
     FcmService.onFriendCallIncoming = null;
@@ -98,6 +105,108 @@ void main() {
     await pumpEventQueue();
 
     expect(opened.map((c) => c.callId), [7]);
+  });
+
+  group('即時連線來電查詢失敗', () {
+    const data = {
+      'type': 'friend_call_incoming',
+      'call_id': '7',
+      'caller_friend_code': 'BBBB2345',
+    };
+    final ringing = jsonResponse({
+      'incoming': [
+        {
+          'call_id': 7,
+          'caller_nickname': '小明',
+          'caller_friend_code': 'BBBB2345',
+          'created_at': '2026-10-01T00:00:00Z',
+        },
+      ],
+    });
+
+    /// 依序回 [responses]，每一筆可先等 [holds] 對應的 future；回傳查詢次數。
+    int Function() serve(
+      List<http.Response> responses, {
+      List<Future<void>?> holds = const [],
+    }) {
+      var calls = 0;
+      ApiClient.httpClient = MockClient((request) async {
+        expect(request.url.path, '/api/friends/calls/incoming');
+        final i = calls++;
+        if (i < holds.length) await holds[i];
+        return responses[i < responses.length ? i : responses.length - 1];
+      });
+      return () => calls;
+    }
+
+    test('第一次查詢失敗、隨後的推播查到：響鈴畫面開一次', () async {
+      final calls = serve([errorResponse('INTERNAL', status: 500), ringing]);
+      final opened = <IncomingCall>[];
+      FcmService.onFriendCallIncoming = opened.add;
+
+      FcmService.handleSocketCallEvent(data);
+      await pumpEventQueue();
+      expect(opened, isEmpty);
+
+      FcmService.handleForegroundMessage(_push(data));
+      await pumpEventQueue();
+      FcmService.handleOpenedMessage(_push(data));
+      await pumpEventQueue();
+
+      expect(opened.map((c) => c.callId), [7]);
+      expect(calls(), 2);
+    });
+
+    test('兩個來源同時到、都查得到：只查一次，響鈴畫面開一次', () async {
+      final hold = Completer<void>();
+      final calls = serve([ringing], holds: [hold.future]);
+      final opened = <IncomingCall>[];
+      FcmService.onFriendCallIncoming = opened.add;
+
+      FcmService.handleSocketCallEvent(data);
+      FcmService.handleForegroundMessage(_push(data));
+      hold.complete();
+      await pumpEventQueue();
+
+      expect(opened.map((c) => c.callId), [7]);
+      expect(calls(), 1);
+    });
+
+    test('查詢途中另一個來源也到了、這次查詢失敗：補查一次，響鈴畫面開一次', () async {
+      final hold = Completer<void>();
+      final calls = serve(
+        [errorResponse('INTERNAL', status: 500), ringing],
+        holds: [hold.future],
+      );
+      final opened = <IncomingCall>[];
+      FcmService.onFriendCallIncoming = opened.add;
+
+      FcmService.handleSocketCallEvent(data);
+      FcmService.handleForegroundMessage(_push(data));
+      hold.complete();
+      await pumpEventQueue();
+
+      expect(opened.map((c) => c.callId), [7]);
+      expect(calls(), 2);
+    });
+
+    test('已不在響鈴（查不到這一通）：不開畫面，也不記下', () async {
+      final calls = serve([
+        jsonResponse({'incoming': <dynamic>[]}),
+        ringing,
+      ]);
+      final opened = <IncomingCall>[];
+      FcmService.onFriendCallIncoming = opened.add;
+
+      FcmService.handleSocketCallEvent(data);
+      await pumpEventQueue();
+      expect(opened, isEmpty);
+      FcmService.handleForegroundMessage(_push(data));
+      await pumpEventQueue();
+
+      expect(opened.map((c) => c.callId), [7]);
+      expect(calls(), 2);
+    });
   });
 
   test('撥出中收到接聽、拒接、取消交給對應回呼', () {

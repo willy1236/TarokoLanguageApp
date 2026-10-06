@@ -30,6 +30,7 @@ class AdminQuestionReportsScreen extends StatelessWidget {
         fetch: (status, cursor) =>
             AdminService.fetchQuestionReports(status: status, cursor: cursor),
         itemBuilder: (context, report, senior, reload) => _QuestionReportCard(
+          key: ValueKey(report.id),
           report: report,
           seniorMode: senior,
           reload: reload,
@@ -37,25 +38,41 @@ class AdminQuestionReportsScreen extends StatelessWidget {
       );
 }
 
-class _QuestionReportCard extends StatelessWidget {
+class _QuestionReportCard extends StatefulWidget {
   final AdminQuestionReport report;
   final bool seniorMode;
   final Future<void> Function() reload;
 
   const _QuestionReportCard({
+    super.key,
     required this.report,
     required this.seniorMode,
     required this.reload,
   });
 
-  Future<void> _mark(BuildContext context, String status) async {
+  @override
+  State<_QuestionReportCard> createState() => _QuestionReportCardState();
+}
+
+class _QuestionReportCardState extends State<_QuestionReportCard> {
+  /// 標記送出中：這一筆的兩顆標記鈕都停用，連點只送一次。
+  bool _busy = false;
+
+  AdminQuestionReport get report => widget.report;
+  bool get seniorMode => widget.seniorMode;
+
+  Future<void> _mark(String status) async {
+    if (_busy) return;
+    setState(() => _busy = true);
     try {
       await AdminService.updateQuestionReport(report.id, status);
       showAdminMessage('已標記為${adminQuestionReportStatusLabel(status)}');
-      await reload();
+      await widget.reload();
     } catch (e) {
-      if (!context.mounted) return;
+      if (!mounted) return;
       handleAdminError(context, e);
+    } finally {
+      if (mounted) setState(() => _busy = false);
     }
   }
 
@@ -113,12 +130,12 @@ class _QuestionReportCard extends StatelessWidget {
               children: [
                 if (report.status != 'reviewed')
                   TextButton(
-                    onPressed: () => _mark(context, 'reviewed'),
+                    onPressed: _busy ? null : () => _mark('reviewed'),
                     child: const Text('標為已查看'),
                   ),
                 if (report.status != 'resolved')
                   TextButton(
-                    onPressed: () => _mark(context, 'resolved'),
+                    onPressed: _busy ? null : () => _mark('resolved'),
                     child: const Text('標為已解決'),
                   ),
               ],

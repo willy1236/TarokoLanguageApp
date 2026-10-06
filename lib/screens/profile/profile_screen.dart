@@ -578,9 +578,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   /// 論壇、活動、審核、官方公告的通知；看完回來重抓未讀數。
   Future<void> _openInbox() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const InboxScreen()));
+    await Navigator.of(context).push(InboxScreen.route());
     NotificationSummaryService.refresh();
   }
 

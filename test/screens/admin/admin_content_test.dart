@@ -399,6 +399,47 @@ void main() {
       expect(find.text('已重新發布'), findsOneWidget);
       expect(ArticleRefreshNotifier.revision.value, revision + 2);
     });
+    testWidgets('下架送出中：管理員選單停用，連點只送一次', (tester) async {
+      _login('admin');
+      final calls = <String>[];
+      installMockClient(
+        {
+          '/api/articles/1': _article,
+          '/api/admin/articles/1/archive': {'id': 1},
+        },
+        onRequest: (r) => calls.add('${r.method} ${r.url.path}'),
+        delayFor: (r) =>
+            r.method == 'POST' ? const Duration(seconds: 1) : Duration.zero,
+      );
+      await openDetail(tester);
+
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('下架'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('下架').last);
+      await tester.pump();
+
+      expect(
+        tester
+            .widget<PopupMenuButton<String>>(
+              find.byType(PopupMenuButton<String>),
+            )
+            .enabled,
+        isFalse,
+      );
+      await tester.tap(find.byType(PopupMenuButton<String>));
+      await tester.pump();
+      expect(find.text('編輯'), findsNothing, reason: '停用時點了不會開選單');
+
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(
+        calls.where((c) => c == 'POST /api/admin/articles/1/archive'),
+        hasLength(1),
+      );
+      expect(find.text('開文章'), findsOneWidget, reason: '成功後照舊關閉詳情');
+    });
   });
 
   group('發布條款', () {
@@ -490,6 +531,107 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('第 1 版'), findsOneWidget);
+    });
+
+    testWidgets('讀目前版本失敗（非 404）：確認框不寫推算的版本號，可重試', (tester) async {
+      var gets = 0;
+      installMockClient({
+        '/api/terms/tos': errorResponse('INTERNAL', status: 500),
+      }, onRequest: (_) => gets++);
+      await tester.pumpWidget(
+        _host(() => const AdminTermsPublishScreen(), <Object?>[]),
+      );
+      await _open(tester);
+      expect(find.textContaining('讀取目前版本失敗'), findsOneWidget);
+
+      await tester.enterText(find.widgetWithText(TextField, '標題'), '自填標題');
+      await tester.enterText(
+        find.widgetWithText(TextField, '全文（Markdown，貼上）'),
+        '內容',
+      );
+      await tester.tap(find.text('發布'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('版本號會自動遞增'), findsOneWidget);
+      expect(find.textContaining('第 1 版'), findsNothing);
+      await tester.tap(find.text('取消'));
+      await tester.pumpAndSettle();
+
+      installMockClient({
+        '/api/terms/tos': doc('tos', 4, '服務條款'),
+      }, onRequest: (_) => gets++);
+      await tester.tap(find.text('重試'));
+      await tester.pumpAndSettle();
+      expect(gets, 2);
+      expect(find.textContaining('讀取目前版本失敗'), findsNothing);
+      expect(
+        find.widgetWithText(TextField, '自填標題'),
+        findsOneWidget,
+        reason: '重試不覆寫已填的標題',
+      );
+      await tester.tap(find.text('發布'));
+      await tester.pumpAndSettle();
+      expect(find.textContaining('第 5 版'), findsOneWidget);
+    });
+
+    testWidgets('讀目前版本失敗（非 404）：預覽不顯示推算的版本號', (tester) async {
+      installMockClient({
+        '/api/terms/tos': errorResponse('INTERNAL', status: 500),
+      });
+      await tester.pumpWidget(
+        _host(() => const AdminTermsPublishScreen(), <Object?>[]),
+      );
+      await _open(tester);
+      await tester.enterText(find.widgetWithText(TextField, '標題'), '新標題');
+      await tester.enterText(
+        find.widgetWithText(TextField, '全文（Markdown，貼上）'),
+        '內容',
+      );
+
+      await tester.tap(find.byTooltip('預覽'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('新標題'), findsOneWidget);
+      expect(find.textContaining(RegExp(r'第 \d+ 版')), findsNothing);
+    });
+
+    testWidgets('讀取目前版本中：預覽不顯示推算的版本號，讀完才顯示', (tester) async {
+      installMockClient({
+        '/api/terms/tos': doc('tos', 4, '服務條款'),
+      }, delayFor: (_) => const Duration(seconds: 1));
+      await tester.pumpWidget(
+        _host(() => const AdminTermsPublishScreen(), <Object?>[]),
+      );
+      await tester.tap(find.text('開啟'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      await tester.tap(find.byTooltip('預覽'));
+      await tester.pump();
+      expect(find.textContaining(RegExp(r'第 \d+ 版')), findsNothing);
+
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(find.text('第 5 版'), findsOneWidget);
+    });
+
+    testWidgets('讀取目前版本中：標題欄不可輸入', (tester) async {
+      installMockClient({
+        '/api/terms/tos': doc('tos', 4, '服務條款'),
+      }, delayFor: (_) => const Duration(seconds: 1));
+      await tester.pumpWidget(
+        _host(() => const AdminTermsPublishScreen(), <Object?>[]),
+      );
+      await tester.tap(find.text('開啟'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      TextField title() => tester.widget<TextField>(
+        find.ancestor(of: find.text('標題'), matching: find.byType(TextField)),
+      );
+      expect(title().enabled, isFalse);
+      await tester.pump(const Duration(seconds: 1));
+      await tester.pumpAndSettle();
+      expect(title().enabled, isTrue);
     });
 
     testWidgets('400：顯示後端 message，留在畫面', (tester) async {

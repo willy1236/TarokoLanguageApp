@@ -9,7 +9,10 @@ import '../../../core/constants/app_typography.dart';
 
 class TermsDocumentView extends StatelessWidget {
   final String title;
-  final int version;
+
+  /// 不給（null）時不顯示版本號那一行：後台預覽讀不到目前版本時用，
+  /// 避免寫出推算錯的版本號。條款同意畫面一律傳實際版本。
+  final int? version;
   final String contentMd;
 
   /// 標題已在別處（Tab 標籤）顯示過時傳 false。
@@ -18,7 +21,7 @@ class TermsDocumentView extends StatelessWidget {
   const TermsDocumentView({
     super.key,
     required this.title,
-    required this.version,
+    this.version,
     required this.contentMd,
     this.showTitle = true,
   });
@@ -49,13 +52,14 @@ class TermsDocumentView extends StatelessWidget {
           ),
           const SizedBox(height: 4),
         ],
-        Text(
-          '第 $version 版',
-          style: TextStyle(
-            fontSize: AppTypography.caption,
-            color: AppColors.fog,
+        if (version != null)
+          Text(
+            '第 $version 版',
+            style: TextStyle(
+              fontSize: AppTypography.caption,
+              color: AppColors.fog,
+            ),
           ),
-        ),
         const SizedBox(height: 12),
         MarkdownBody(
           data: stripLeadingTitle(contentMd, title),

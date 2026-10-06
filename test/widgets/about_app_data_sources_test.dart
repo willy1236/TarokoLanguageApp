@@ -5,8 +5,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/testing.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/screens/profile/about_app_screen.dart';
 import 'package:flutter_application_1/services/senior_mode_controller.dart';
 
@@ -115,6 +117,46 @@ void main() {
       expect(find.text(s['name'] as String, skipOffstage: false), findsNothing);
     }
     expect(find.byIcon(Icons.open_in_new), findsNothing);
+  });
+
+  testWidgets('讀取失敗後按「重試」重新載入，成功就顯示內容', (tester) async {
+    var calls = 0;
+    ApiClient.httpClient = MockClient((request) async {
+      if (request.url.path != _path) fail('未預期的 ${request.url.path}');
+      calls++;
+      return calls == 1
+          ? errorResponse('INTERNAL', status: 500)
+          : jsonResponse(json);
+    });
+    await pumpAbout(tester);
+
+    expect(find.text(_failureText), findsOneWidget);
+    await tester.tap(find.widgetWithText(OutlinedButton, '重試'));
+    await tester.pumpAndSettle();
+
+    expect(calls, 2);
+    expect(find.text(_failureText), findsNothing);
+    expect(find.text('重試'), findsNothing);
+    expect(find.text(sources.first['name'] as String), findsOneWidget);
+  });
+
+  testWidgets('重試時先顯示載入指示，不留著舊的失敗文案', (tester) async {
+    var calls = 0;
+    ApiClient.httpClient = MockClient((request) async {
+      calls++;
+      if (calls == 1) return errorResponse('INTERNAL', status: 500);
+      await Future<void>.delayed(const Duration(seconds: 1));
+      return jsonResponse(json);
+    });
+    await pumpAbout(tester);
+
+    await tester.tap(find.widgetWithText(OutlinedButton, '重試'));
+    await tester.pump();
+    expect(find.text(_failureText), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pumpAndSettle();
+    expect(find.text(sources.first['name'] as String), findsOneWidget);
   });
 
   for (final senior in [false, true]) {

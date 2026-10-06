@@ -36,6 +36,7 @@ void main() {
   late List<http.Request> seen;
   late List<int> openedCases;
   late List<int> openedPosts;
+  late List<int?> openedComments;
   late List<String> openedInbox;
 
   setUp(() {
@@ -43,9 +44,13 @@ void main() {
     seen = [];
     openedCases = [];
     openedPosts = [];
+    openedComments = [];
     openedInbox = [];
     FcmService.onModerationCaseTapped = openedCases.add;
-    FcmService.onForumReplyTapped = openedPosts.add;
+    FcmService.onForumReplyTapped = (postId, commentId) {
+      openedPosts.add(postId);
+      openedComments.add(commentId);
+    };
     FcmService.onInboxTapped = openedInbox.add;
     installMockClient({
       '/api/inbox/read': {'ok': true, 'marked': 1},
@@ -209,7 +214,61 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(openedPosts, [13, 14]);
+    // 帶 comment_id 的捲到那則；舊推播沒帶就停在頂端。
+    expect(openedComments, [8, null]);
     expect(readBodies(), isEmpty);
+  });
+
+  test('解析論壇回覆推播：comment_id 是字串，缺少或不是數字為 null', () {
+    expect(
+      FcmService.parseForumPayload({
+        'type': 'reply_comment',
+        'post_id': '13',
+        'comment_id': '8',
+      }),
+      (postId: 13, type: 'reply_comment', commentId: 8),
+    );
+    expect(
+      FcmService.parseForumPayload({'type': 'reply_post', 'post_id': '13'}),
+      (postId: 13, type: 'reply_post', commentId: null),
+    );
+    expect(
+      FcmService.parseForumPayload({'type': 'reply_post', 'post_id': 'x'}),
+      isNull,
+    );
+    expect(FcmService.parseForumPayload({'type': 'announcement'}), isNull);
+  });
+
+  test('論壇本機通知 payload：新格式來回一致，舊格式仍讀得懂', () {
+    for (final (inboxId, commentId) in [
+      (6, 8),
+      (null, 8),
+      (6, null),
+      (null, null),
+    ]) {
+      final payload = FcmService.forumNotificationPayload(
+        13,
+        inboxId: inboxId,
+        commentId: commentId,
+      );
+      expect(FcmService.parseForumNotificationPayload(payload), (
+        postId: 13,
+        inboxId: inboxId,
+        commentId: commentId,
+      ), reason: payload);
+    }
+    expect(FcmService.parseForumNotificationPayload('forum:13'), (
+      postId: 13,
+      inboxId: null,
+      commentId: null,
+    ));
+    expect(FcmService.parseForumNotificationPayload('forum:13:6'), (
+      postId: 13,
+      inboxId: 6,
+      commentId: null,
+    ));
+    expect(FcmService.parseForumNotificationPayload('forum:x:6'), isNull);
+    expect(FcmService.parseForumNotificationPayload('42'), isNull);
   });
 
   testWidgets('點公告推播：開收件匣的公告分頁', (tester) async {

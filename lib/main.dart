@@ -104,9 +104,9 @@ Future<void> main() async {
   // 人正看著該貼文詳情頁時，前景推播不彈通知，改在頁內浮出「有新回覆」提示。
   FcmService.onForumReplyWhileOpen = (postId, type) =>
       showForumReplyInPage(routeStack, postId, type);
-  // 點論壇回覆通知 → 導到該貼文詳情頁。
-  FcmService.onForumReplyTapped = (postId) =>
-      openForumReplyPush(routeStack, postId);
+  // 點論壇回覆通知 → 導到該貼文詳情頁，捲到那則回覆。
+  FcmService.onForumReplyTapped = (postId, commentId) =>
+      openForumReplyPush(routeStack, postId, commentId: commentId);
   // 點帶案件的審核通知 → 處置詳情頁；點官方公告通知 → 收件匣的公告分頁。
   FcmService.onModerationCaseTapped = (caseId) =>
       openModerationCasePush(routeStack, caseId);

@@ -44,6 +44,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   Tribe? _tribe;
   DateTime? _birthDate;
   bool _submitting = false;
+  // 生日確認框開著：同一幀連點完成時擋住第二次，不疊兩個確認框、不送兩次。
+  // 只當守衛用，不必重建畫面（確認框的遮罩已蓋住完成鈕）。
+  bool _confirming = false;
   // 後端 INVALID_NICKNAME 的說明，顯示在公開暱稱欄位下方，一改字就清掉。
   String? _nicknameError;
 
@@ -80,7 +83,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
   }
 
   Future<void> _submit() async {
-    if (_submitting) return;
+    if (_submitting || _confirming) return;
     final displayName = _displayNameController.text.trim();
     if (displayName.isEmpty) {
       _showError('請輸入中文姓名');
@@ -121,6 +124,14 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
       _showError('請選擇出生日期');
       return;
     }
+    _confirming = true;
+    final bool confirmed;
+    try {
+      confirmed = await confirmBirthDate(context, birthDate);
+    } finally {
+      _confirming = false;
+    }
+    if (!confirmed || !mounted) return;
     setState(() => _submitting = true);
     try {
       await UserService.completeProfile(

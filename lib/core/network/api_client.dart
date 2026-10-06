@@ -476,7 +476,7 @@ class ApiClient {
     } else if (error.isConsentRequired &&
         path != '/api/terms' &&
         !path.startsWith('/api/terms/')) {
-      _forceConsent();
+      showConsent();
     }
     throw error;
   }
@@ -525,9 +525,10 @@ class ApiClient {
 
   static bool _showingConsent = false;
 
-  /// CONSENT_REQUIRED（403）時導去強制同意畫面。
-  /// 用 _showingConsent 防止同時多個請求 403 時重複觸發。
-  static void _forceConsent() {
+  /// 未同意新版條款時導去強制同意畫面：REST 的 CONSENT_REQUIRED（403）與
+  /// 即時連線的 close code 4003 共用這個入口。
+  /// 用 _showingConsent 防止多個來源同時觸發時疊出好幾層。
+  static void showConsent() {
     if (_showingConsent) return;
     _showingConsent = true;
     final nav = navigatorKey.currentState;

@@ -60,9 +60,68 @@ void main() {
 
     await tester.tap(find.text('完　成'));
     await tester.pumpAndSettle();
+    expect(requests, isEmpty, reason: '確認前不能送出');
+    await confirmBirthDateDialog(tester);
 
     final body = jsonDecode(requests.single.body) as Map<String, dynamic>;
     expect(body['birth_date'], matches(RegExp(r'^2000-\d{2}-05$')));
     expect(find.text('HOME'), findsOneWidget);
+  });
+
+  testWidgets('確認框蓋上前完成被觸發兩次：只跳一個確認框、只送一次', (tester) async {
+    await open(tester);
+    await pickBirthDate(tester, year: 2000, day: 5);
+
+    // 實體點擊在 push 確認框時會被 Navigator 吸收到下一幀；鍵盤、無障礙
+    // 等直接觸發 onPressed 的路徑沒有這層保護，這裡直接連呼兩次重現。
+    final submit = tester
+        .widget<ElevatedButton>(
+          find.ancestor(
+            of: find.text('完　成'),
+            matching: find.byType(ElevatedButton),
+          ),
+        )
+        .onPressed!;
+    submit();
+    submit();
+    await tester.pumpAndSettle();
+
+    expect(find.text('確認出生日期'), findsOneWidget);
+    await confirmBirthDateDialog(tester);
+    expect(find.text('確認出生日期'), findsNothing);
+    expect(requests, hasLength(1));
+    expect(find.text('HOME'), findsOneWidget);
+  });
+
+  testWidgets('確認框按取消後可以再按完成', (tester) async {
+    await open(tester);
+    await pickBirthDate(tester, year: 2000, day: 5);
+
+    await tester.tap(find.text('完　成'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('完　成'));
+    await tester.pumpAndSettle();
+    await confirmBirthDateDialog(tester);
+
+    expect(requests, hasLength(1));
+    expect(find.text('HOME'), findsOneWidget);
+  });
+
+  testWidgets('確認框按取消不送出，選的日期保留', (tester) async {
+    await open(tester);
+    await pickBirthDate(tester, year: 2000, day: 5);
+    final picked = find.textContaining(RegExp(r'^2000/\d{2}/05$'));
+    expect(picked, findsOneWidget);
+
+    await tester.tap(find.text('完　成'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('取消'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('確認出生日期'), findsNothing);
+    expect(requests, isEmpty);
+    expect(picked, findsOneWidget);
   });
 }

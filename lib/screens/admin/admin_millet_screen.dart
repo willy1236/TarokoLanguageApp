@@ -32,6 +32,9 @@ class _AdminMilletScreenState extends State<AdminMilletScreen> {
   bool _loading = false;
   bool _loadingMore = false;
 
+  /// 下一頁載入失敗：捲動不再自動重打，等使用者點尾端的重試列。
+  bool _loadMoreFailed = false;
+
   /// 換對象時加一：上一位對象晚回來的回應直接丟掉。
   int _generation = 0;
 
@@ -62,6 +65,7 @@ class _AdminMilletScreenState extends State<AdminMilletScreen> {
       _cursor = null;
       _loading = user != null;
       _loadingMore = false;
+      _loadMoreFailed = false;
     });
     if (user != null) _loadFirst(user.uid, generation);
   }
@@ -95,7 +99,13 @@ class _AdminMilletScreenState extends State<AdminMilletScreen> {
   Future<void> _loadMore() async {
     final user = _user;
     final cursor = _cursor;
-    if (user == null || cursor == null || _loading || _loadingMore) return;
+    if (user == null ||
+        cursor == null ||
+        _loading ||
+        _loadingMore ||
+        _loadMoreFailed) {
+      return;
+    }
     final generation = _generation;
     setState(() => _loadingMore = true);
     try {
@@ -111,9 +121,18 @@ class _AdminMilletScreenState extends State<AdminMilletScreen> {
       });
     } catch (e) {
       if (!mounted || generation != _generation) return;
-      setState(() => _loadingMore = false);
-      handleAdminError(context, e);
+      setState(() {
+        _loadingMore = false;
+        _loadMoreFailed = true;
+      });
+      // 尾端重試列已說明失敗，不另跳提示（會蓋住重試列）；ADMIN_ONLY 仍退出後台。
+      handleAdminError(context, e, toast: false);
     }
+  }
+
+  void _retryLoadMore() {
+    setState(() => _loadMoreFailed = false);
+    _loadMore();
   }
 
   @override
@@ -150,7 +169,12 @@ class _AdminMilletScreenState extends State<AdminMilletScreen> {
               ),
               child: MilletTransactionRow(transaction: tx),
             ),
-          if (_loadingMore) _spinner(),
+          if (_loadingMore || _loadMoreFailed)
+            AdminLoadMoreFooter(
+              failed: _loadMoreFailed,
+              onRetry: _retryLoadMore,
+              seniorMode: senior,
+            ),
         ],
       ],
     ),
