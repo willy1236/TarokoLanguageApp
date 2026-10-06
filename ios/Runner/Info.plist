@@ -57,6 +57,8 @@
 	<string>需要使用麥克風以進行語伴視訊通話</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>需要存取相簿以選擇照片作為頭像</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>發布活動選擇地點時，地圖可顯示你目前所在位置以便選點</string>
 	<key>GMSApiKey</key>
 	<string>AIzaSyB7Tuzw_-4cHXqMcEctLkf3iysWgjMpxtE</string>
 	<key>UIBackgroundModes</key>
