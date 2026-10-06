@@ -2,7 +2,7 @@ name: Codemagic iOS CD
 
 # pubspec.yaml 合進 master 後先比對版號，有升版才排隊等核准觸發 Codemagic ios-testflight。
 # 只改套件不改版號時不觸發；同一 build 號重跑會被 App Store Connect 拒收。
-# 需要 repo secret CODEMAGIC_API_TOKEN（Codemagic → Team settings → Integrations → Codemagic API）
+# 需要 repo secret CODEMAGIC_API_TOKEN（Codemagic → Settings → API token）
 # 與 repo variable CODEMAGIC_APP_ID（Codemagic App 網址中的 ID）。
 on:
   push:
