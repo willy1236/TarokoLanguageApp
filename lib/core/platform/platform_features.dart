@@ -22,6 +22,9 @@ class PlatformFeatures {
 
   static const videoCallUnsupportedMessage = '視訊通話目前僅支援手機 App';
 
+  /// add_2_calendar 開系統日曆的新增事件畫面；其餘平台改開 Google Calendar 網址。
+  static bool get supportsNativeCalendar => isMobile;
+
   /// 活動發布的地圖選點（google_maps_flutter＋Places SDK）。桌面版沒有實作；
   /// 該平台還沒設定 Maps 金鑰時也不顯示，發起人照樣手打地址。
   static bool get supportsMapPicker =>

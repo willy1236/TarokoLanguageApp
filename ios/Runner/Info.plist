@@ -57,6 +57,12 @@
 	<string>需要使用麥克風以進行語伴視訊通話</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>需要存取相簿以選擇照片作為頭像</string>
+	<key>NSCalendarsWriteOnlyAccessUsageDescription</key>
+	<string>需要寫入行事曆，才能把活動加入你的行事曆</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>需要存取行事曆，才能把活動加入你的行事曆</string>
+	<key>NSContactsUsageDescription</key>
+	<string>把活動加入行事曆時，系統的地點欄會用聯絡人資料提供建議</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>發布活動選擇地點時，地圖可顯示你目前所在位置以便選點</string>
 	<key>GMSApiKey</key>

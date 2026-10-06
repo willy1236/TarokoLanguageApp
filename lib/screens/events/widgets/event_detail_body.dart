@@ -9,6 +9,7 @@ import '../../../shared/widgets/engagement_icon_button.dart';
 import '../../../services/user_service.dart';
 import '../../../shared/widgets/user_avatar.dart';
 import '../../../core/constants/app_typography.dart';
+import 'add_to_calendar.dart';
 import 'event_map_link.dart';
 
 class EventDetailBody extends StatelessWidget {
@@ -211,7 +212,15 @@ class EventDetailBody extends StatelessWidget {
           ),
           const SizedBox(height: 20),
 
-          _infoRow(Icons.access_time, '時間', timeText, seniorMode),
+          _infoRow(
+            Icons.access_time,
+            '時間',
+            timeText,
+            seniorMode,
+            trailing: canAddToCalendar(e)
+                ? AddToCalendarButton(event: e, seniorMode: seniorMode)
+                : null,
+          ),
           const SizedBox(height: 12),
           ..._buildPlaceRows(e, seniorMode),
           // 刻意寫「相關部落」而非「發起人部落」：標籤由發起人自選。
@@ -366,7 +375,13 @@ class EventDetailBody extends StatelessWidget {
     ];
   }
 
-  Widget _infoRow(IconData icon, String label, String value, bool seniorMode) {
+  Widget _infoRow(
+    IconData icon,
+    String label,
+    String value,
+    bool seniorMode, {
+    Widget? trailing,
+  }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -397,6 +412,7 @@ class EventDetailBody extends StatelessWidget {
             ),
           ),
         ),
+        ?trailing,
       ],
     );
   }

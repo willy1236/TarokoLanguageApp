@@ -386,6 +386,21 @@ void main() {
       expect(find.text('取消理由：颱風 *停班停課*'), findsOneWidget);
     });
 
+    testWidgets('任何人都看得到加入日曆，不必先報名', (tester) async {
+      await pumpDetail(tester, {'is_joined': false});
+      expect(find.text('加入日曆'), findsOneWidget);
+    });
+
+    testWidgets('已取消、已結束的活動不顯示加入日曆', (tester) async {
+      await pumpDetail(tester, {
+        'status': 'cancelled',
+        'effective_status': 'cancelled',
+      });
+      expect(find.text('加入日曆'), findsNothing);
+      await pumpDetail(tester, {'effective_status': 'ended'});
+      expect(find.text('加入日曆'), findsNothing);
+    });
+
     testWidgets('已取消但理由為 null：不顯示理由列', (tester) async {
       await pumpDetail(tester, {
         'status': 'cancelled',
