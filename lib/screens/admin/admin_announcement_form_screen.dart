@@ -10,6 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/network/api_client.dart';
 import '../../services/admin_service.dart';
 import '../../shared/utils/upload_image.dart';
 import '../../shared/utils/utf16_length_limit.dart';
@@ -20,6 +21,15 @@ import 'widgets/admin_widgets.dart';
 const _titleMax = 100;
 const _bodyMax = 5000;
 const _allowedExtensions = {'jpg', 'jpeg', 'png', 'webp'};
+
+/// 送出後結果不明：請求可能已到後端並寫入。後端要等全體推播送完才回應，
+/// 這段時間公告已經 commit。斷線（NETWORK_ERROR、非 ApiException 的連線錯誤）、
+/// 閘道錯誤 502／503 與逾時 504（Cloud Run 在推播途中掛掉或逾時）時不能讓管理員
+/// 直接重送，否則全體會收到兩則收不回的公告。
+bool _outcomeUnknown(Object error) =>
+    error is! ApiException ||
+    error.code == 'NETWORK_ERROR' ||
+    const {502, 503, 504}.contains(error.statusCode);
 
 class AdminAnnouncementFormScreen extends StatefulWidget {
   const AdminAnnouncementFormScreen({super.key});
@@ -107,13 +117,30 @@ class _AdminAnnouncementFormScreenState
       if (mounted) Navigator.of(context).pop(true);
     } catch (e) {
       if (!mounted) return;
+      if (_outcomeUnknown(e)) {
+        // 不解鎖：帶回列表重抓，讓管理員先確認是否已發出。
+        await showAdminInfoDialog(
+          context,
+          title: '無法確認是否已發布',
+          message: '公告可能已經發出，請回列表確認。',
+        );
+        if (mounted) Navigator.of(context).pop(true);
+        return;
+      }
       setState(() => _submitting = false);
       handleAdminError(context, e);
     }
   }
 
   @override
-  Widget build(BuildContext context) => AdminScaffold(
+  Widget build(BuildContext context) => PopScope(
+    // 送出中擋系統返回、手勢與返回鈕（maybePop）：離開後就看不到發布結果。
+    // 成功或結果不明時由 _submit 直接 pop，不受影響。
+    canPop: !_submitting,
+    child: _form(context),
+  );
+
+  Widget _form(BuildContext context) => AdminScaffold(
     title: '新增公告',
     body: (context, senior) => ListView(
       padding: const EdgeInsets.all(AppSpacing.md),

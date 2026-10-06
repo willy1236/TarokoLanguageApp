@@ -45,6 +45,7 @@ void main() {
       await pickBirthDate(tester);
       await tester.tap(find.text('完　成'));
       await tester.pumpAndSettle();
+      await confirmBirthDateDialog(tester);
     }
 
     testWidgets('INVALID_NICKNAME 顯示在暱稱欄位下方，改字就消失', (tester) async {
@@ -125,8 +126,22 @@ void main() {
       expect(find.text(_blocked), findsNothing);
     });
 
-    testWidgets('其他錯誤在對話框內顯示通用訊息，不關閉', (tester) async {
-      install(() => errorResponse('INTERNAL_ERROR', status: 500));
+    testWidgets('禁言等其他後端錯誤在對話框內顯示後端訊息，不關閉', (tester) async {
+      const muted = '你目前被禁言，暫時不能修改';
+      install(() => errorResponse('MUTED', status: 403, message: muted));
+      await openDialog(tester);
+
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text(muted), findsOneWidget);
+      expect(find.text('更新失敗，請稍後再試'), findsNothing);
+    });
+
+    testWidgets('非 API 錯誤在對話框內顯示通用訊息，不關閉', (tester) async {
+      // 200 但內容不是物件：解析時丟 TypeError，不是 ApiException。
+      install(() => jsonResponse(<Object>[]));
       await openDialog(tester);
 
       await tester.tap(find.text('儲存'));

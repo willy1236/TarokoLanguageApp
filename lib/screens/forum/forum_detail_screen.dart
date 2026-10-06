@@ -3,6 +3,8 @@
 // 回覆的層級規則：對第二層回覆按「回覆」時，parent 仍指向它所屬的第一層留言。
 // 後端會擋第三層，前端不送出必然失敗的請求。
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
 import '../../shared/widgets/async_state_view.dart';
@@ -89,8 +91,10 @@ class ForumDetailScreen extends StatefulWidget {
   /// 關掉上層那份不影響下層。
   static final Map<Route<dynamic>, _ForumDetailScreenState> _live = {};
 
-  /// 點回覆通知時人已在 [route] 這份詳情頁：就地重載。
-  static void refreshRoute(Route<dynamic> route) => _live[route]?._load();
+  /// 點回覆通知時人已在 [route] 這份詳情頁：就地重載。帶 [focusCommentId] 時
+  /// 重載後改捲到那則留言（規則同 [ForumDetailScreen.focusCommentId]）。
+  static void refreshRoute(Route<dynamic> route, {int? focusCommentId}) =>
+      _live[route]?._refreshFromPush(focusCommentId);
 
   /// 人正停在 [route] 這份詳情頁時有人回覆了貼文或其中的留言（前景推播）：
   /// 在頁內浮出提示並回傳 true；[route] 已不是開著的詳情頁則回傳 false，由呼叫端
@@ -121,6 +125,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   bool _loading = true;
   bool _loadingMore = false;
   bool _sending = false;
+
+  /// 管理員置頂／取消置頂送出中：選單裡的置頂項停用，連點只送一次。
+  bool _pinning = false;
   String? _error;
 
   /// 圖片過期自動重整每次載入只做一次，避免多張圖同時過期時連環重打 API。
@@ -137,14 +144,32 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// 累積的推播裡有「回覆留言」。回覆掛在各自的留言串下，不一定排在最後。
   bool _pendingIncludesCommentReply = false;
 
+  /// 每收到一則頁內回覆推播加一。「載入更多」發出後才又收到推播時，那一頁
+  /// 可能不含新回覆，不能據此清掉提示。
+  int _replySignal = 0;
+
   /// 正在回覆的第一層留言；null 代表回覆貼文本身。
   ForumComment? _replyTarget;
 
-  /// 還沒捲到的 [ForumDetailScreen.focusCommentId]；捲到或確定找不到後清成 null。
-  late int? _pendingFocusId = widget.focusCommentId;
+  /// 要捲去的留言：一開始是 [ForumDetailScreen.focusCommentId]，頁面開著時點了
+  /// 別則回覆的通知就換成那一則。
+  late int? _focusCommentId = widget.focusCommentId;
+
+  /// 還沒捲到的 [_focusCommentId]；捲到或確定找不到後清成 null。
+  late int? _pendingFocusId = _focusCommentId;
 
   /// 掛在要捲去的那則留言上。
   final _focusKey = GlobalKey();
+
+  /// 捲到後短暫加底色標示那則留言；時間到就淡出。
+  bool _focusHighlighted = false;
+  Timer? _focusHighlightTimer;
+  static const _focusHighlightHold = Duration(milliseconds: 1600);
+  static const _focusHighlightFade = Duration(milliseconds: 600);
+
+  /// 第幾次尋找：每次換上新的 focus（含同一則被再點一次）加一。捲動途中被
+  /// 換掉的那一輪看到序號變了就作廢，不能清掉新一輪的 pending。
+  int _focusSeekToken = 0;
 
   /// 為了找那則留言已經往後多載了幾頁。
   int _focusPagesLoaded = 0;
@@ -192,6 +217,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   void dispose() {
     final route = _route;
     if (route != null) ForumDetailScreen._live.remove(route);
+    _focusHighlightTimer?.cancel();
     BlockRefreshNotifier.revision.removeListener(_load);
     _inputController.dispose();
     _scrollController.dispose();
@@ -239,10 +265,23 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
   }
 
+  /// 點回覆通知時人已在本頁：有指定留言就改捲到那一則，再整頁重載。
+  void _refreshFromPush(int? focusCommentId) {
+    // 沒指定留言時也要清掉上一則，重載後才不會把標示掛回舊留言。
+    _focusCommentId = focusCommentId;
+    _pendingFocusId = focusCommentId;
+    _focusSeekToken++;
+    _focusPagesLoaded = 0;
+    _focusHighlightTimer?.cancel();
+    _focusHighlighted = false;
+    _load();
+  }
+
   void _onNewReply(String type) {
     if (!mounted) return;
     setState(() {
       _pendingReplyCount++;
+      _replySignal++;
       if (type != 'reply_post') _pendingIncludesCommentReply = true;
     });
   }
@@ -256,9 +295,28 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   bool get _newRepliesBelowUnloaded =>
       !_pendingIncludesCommentReply && _nextCursor != null;
 
-  /// 點「有新回覆」提示：整頁重載。游標是後端給的不透明字串，前端不能自己
-  /// 組出「某則之後」的游標，只能從第一頁重新載入。
+  /// 點「有新回覆」提示。新回覆都是第一層留言、且還有舊留言沒載完時，新回覆
+  /// 排在最後：捲到底並載入下一頁，已載入的留言與捲動位置都保留，提示等全部
+  /// 載完（新回覆出現）才消失。其餘情況整頁重載：游標是後端給的不透明字串，
+  /// 前端不能自己組出「某則之後」的游標，只能從第一頁重新載入。
+  ///
+  /// 已知限制：「載入更多」在路上時收到第一層回覆推播，若那一頁已是最後一頁，
+  /// 提示不會自動清掉（那一頁不一定含新回覆，見 [_replySignal]）；之後已沒有
+  /// 下一頁，點提示會退回整頁重載。不另外自動補抓。
   Future<void> _showNewReplies() async {
+    if (_newRepliesBelowUnloaded) {
+      if (_scrollController.hasClients) {
+        unawaited(
+          _scrollController.animateTo(
+            _scrollController.position.maxScrollExtent,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeOut,
+          ),
+        );
+      }
+      unawaited(_loadMoreComments());
+      return;
+    }
     await _load();
     // 留言數跟著重載變了，回報父層，返回列表時卡片才不會停在舊的留言數。
     final refreshed = _post;
@@ -291,6 +349,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     final cursor = _nextCursor;
     if (cursor == null) return;
     final generation = _generation;
+    final replySignal = _replySignal;
     setState(() => _loadingMore = true);
     try {
       final page = await ForumService.comments(widget.postId, cursor: cursor);
@@ -299,6 +358,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _mergeComments(page, advanceCursor: true);
         _loadingMore = false;
       });
+      // 等待期間又收到推播就不清提示；最後一頁時會留到點提示整頁重載（已知限制，
+      // 見 _showNewReplies）。
+      if (replySignal == _replySignal) _settleNewRepliesBelow(generation);
       _seekFocusComment();
     } on ApiException catch (e) {
       if (!mounted || generation != _generation) return;
@@ -307,6 +369,29 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
         _pendingFocusId = null;
       });
       _toast(e.message);
+    }
+  }
+
+  /// 新的第一層回覆排在最後，載完最後一頁就都看得到了：清掉提示，並重抓貼文
+  /// 讓留言數跟上、回報父層（返回列表時卡片才不會停在舊的留言數）。
+  void _settleNewRepliesBelow(int generation) {
+    if (_pendingReplyCount == 0 ||
+        _pendingIncludesCommentReply ||
+        _nextCursor != null) {
+      return;
+    }
+    setState(_clearPendingReplies);
+    unawaited(_refreshPostOnly(generation));
+  }
+
+  Future<void> _refreshPostOnly(int generation) async {
+    try {
+      final post = await ForumService.post(widget.postId);
+      if (!mounted || generation != _generation) return;
+      setState(() => _post = post);
+      widget.onPostChanged?.call(post);
+    } on ApiException catch (e) {
+      debugPrint('ForumDetailScreen: 重抓貼文留言數失敗：$e');
     }
   }
 
@@ -325,7 +410,13 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       }
       return;
     }
+    final token = _focusSeekToken;
+    bool stale() =>
+        !mounted || _focusSeekToken != token || _pendingFocusId != id;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
+      // 捲動途中又點了回覆通知（refreshRoute 換了 focus，或同一則再點一次）：
+      // 這一輪作廢，不能清掉新一輪的 pending，也不能提早亮標示。
+      if (stale()) return;
       final target = _focusKey.currentContext;
       if (target != null) {
         await Scrollable.ensureVisible(
@@ -334,14 +425,38 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           duration: const Duration(milliseconds: 300),
         );
       }
-      if (mounted) setState(() => _pendingFocusId = null);
+      if (stale()) return;
+      setState(() {
+        _pendingFocusId = null;
+        _focusHighlighted = target != null;
+      });
+      _focusHighlightTimer?.cancel();
+      if (target != null) {
+        _focusHighlightTimer = Timer(_focusHighlightHold, () {
+          if (mounted) setState(() => _focusHighlighted = false);
+        });
+      }
     });
   }
 
-  /// 要捲去的那則留言掛上 [_focusKey]，其他留言原樣回傳。
+  /// 要捲去的那則留言掛上 [_focusKey]，捲到後短暫加底色標示；其他留言原樣回傳。
   Widget _focusable(ForumComment comment, Widget tile) =>
-      comment.id == widget.focusCommentId
-      ? KeyedSubtree(key: _focusKey, child: tile)
+      comment.id == _focusCommentId
+      ? KeyedSubtree(
+          key: _focusKey,
+          child: AnimatedContainer(
+            key: const ValueKey('forum_focus_highlight'),
+            duration: _focusHighlightFade,
+            curve: Curves.easeOut,
+            decoration: BoxDecoration(
+              color: AppColors.gold.withValues(
+                alpha: _focusHighlighted ? 0.28 : 0,
+              ),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: tile,
+          ),
+        )
       : tile;
 
   /// 把一批留言併進列表：按 id 去重、按 id 排序（id 越大越新）。
@@ -632,7 +747,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   Future<void> _adminTogglePin() async {
     final post = _post;
-    if (post == null) return;
+    if (post == null || _pinning) return;
+    setState(() => _pinning = true);
     try {
       final pinned = await AdminService.pinPost(
         post.id,
@@ -644,6 +760,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       showAdminMessage(pinned ? '已置頂' : '已取消置頂');
     } catch (e) {
       if (mounted) handleAdminError(context, e);
+    } finally {
+      if (mounted) setState(() => _pinning = false);
     }
   }
 
@@ -737,6 +855,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 if (_isAdmin) ...[
                   PopupMenuItem(
                     value: 'admin_pin',
+                    enabled: !_pinning,
                     child: Text(post.isPinned ? '取消置頂' : '置頂'),
                   ),
                   if (!_isMine)

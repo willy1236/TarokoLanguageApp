@@ -1,0 +1,90 @@
+name: Codemagic iOS CD
+
+# pubspec.yaml 合進 master 後先比對版號，有升版才排隊等核准觸發 Codemagic ios-testflight。
+# 只改套件不改版號時不觸發；同一 build 號重跑會被 App Store Connect 拒收。
+# 需要 repo secret CODEMAGIC_API_TOKEN（Codemagic → Settings → API token）
+# 與 repo variable CODEMAGIC_APP_ID（Codemagic App 網址中的 ID）。
+on:
+  push:
+    branches: [master]
+    paths:
+      - pubspec.yaml
+      - .github/workflows/trigger-codemagic.yml
+  workflow_dispatch:
+
+concurrency:
+  group: trigger-codemagic
+  cancel-in-progress: false
+
+env:
+  CODEMAGIC_WORKFLOW: ios-testflight
+
+jobs:
+  diff:
+    name: 比對版號
+    runs-on: ubuntu-latest
+    outputs:
+      changed: ${{ steps.diff.outputs.changed }}
+      version: ${{ steps.diff.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 比對前後版號
+        id: diff
+        env:
+          BEFORE: ${{ github.event.before }}
+        run: |
+          current=$(grep -m1 '^version:' pubspec.yaml | awk '{print $2}')
+          echo "version=$current" >> "$GITHUB_OUTPUT"
+
+          # 手動觸發一律視為要建置
+          if [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "## 手動觸發 Codemagic（$current）" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          previous=""
+          if [ -n "$BEFORE" ] && git fetch --depth=1 origin "$BEFORE" 2>/dev/null; then
+            previous=$(git show "$BEFORE:pubspec.yaml" | grep -m1 '^version:' | awk '{print $2}')
+          fi
+
+          if [ "$previous" = "$current" ]; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "## 版號未變（$current），不需建置" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "## 版號 ${previous:-（未知）} → $current" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+  trigger:
+    name: 觸發 TestFlight 建置
+    needs: diff
+    if: needs.diff.outputs.changed == 'true'
+    runs-on: ubuntu-latest
+    # 需在 repo Settings → Environments 設定 required reviewers，才會停下來等核准
+    environment: codemagic
+    steps:
+      - name: 呼叫 Codemagic
+        env:
+          TOKEN: ${{ secrets.CODEMAGIC_API_TOKEN }}
+          APP_ID: ${{ vars.CODEMAGIC_APP_ID }}
+          VERSION: ${{ needs.diff.outputs.version }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$APP_ID" ]; then
+            echo "::error::缺少 CODEMAGIC_API_TOKEN secret 或 CODEMAGIC_APP_ID variable"
+            exit 1
+          fi
+
+          response=$(curl -sS --fail-with-body -X POST https://api.codemagic.io/builds \
+            -H "Content-Type: application/json" \
+            -H "x-auth-token: $TOKEN" \
+            -d "$(jq -n --arg app "$APP_ID" --arg wf "$CODEMAGIC_WORKFLOW" --arg branch "$GITHUB_REF_NAME" \
+                  '{appId: $app, workflowId: $wf, branch: $branch}')")
+
+          build_id=$(echo "$response" | jq -r '.buildId')
+          {
+            echo "## 已觸發 Codemagic \`$CODEMAGIC_WORKFLOW\`（$VERSION）"
+            echo
+            echo "https://codemagic.io/app/$APP_ID/build/$build_id"
+          } >> "$GITHUB_STEP_SUMMARY"

@@ -31,6 +31,9 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
   ArticleDetail? _article;
   Object? _error;
   bool _likeBusy = false;
+
+  /// 下架送出中：管理員選單停用，連點只送一次。
+  bool _archiving = false;
   bool _bookmarkBusy = false;
 
   @override
@@ -77,12 +80,15 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
       message: '下架後使用者看不到這篇文章，也無法在 App 內找回。',
       confirmText: '下架',
     );
-    if (!confirmed || !mounted) return;
+    if (!confirmed || !mounted || _archiving) return;
+    setState(() => _archiving = true);
     try {
       await AdminService.archiveArticle(article.id);
     } catch (e) {
       if (mounted) handleAdminError(context, e);
       return;
+    } finally {
+      if (mounted) setState(() => _archiving = false);
     }
     ArticleRefreshNotifier.bump();
     showAdminMessage(
@@ -172,6 +178,7 @@ class _ArticleDetailScreenState extends State<ArticleDetailScreen> {
         actions: [
           if (_isAdmin && _article != null)
             PopupMenuButton<String>(
+              enabled: !_archiving,
               onSelected: (value) {
                 if (value == 'edit') _adminEdit();
                 if (value == 'archive') _adminArchive();

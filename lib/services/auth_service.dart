@@ -4,6 +4,7 @@
 //
 // 規格書對應：API設計/資料交換表_核心.md §2.1 POST /api/auth/login
 
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
@@ -141,16 +142,13 @@ class AuthService {
         ),
       );
     } on SocketException {
-      throw AuthException('無法連線到伺服器，請檢查網路');
+      throw AuthException.network();
     } on http.ClientException {
       if (!kIsWeb) rethrow;
-      throw AuthException('無法連線到伺服器，請檢查網路');
+      throw AuthException.network();
     }
 
-    if (resp.statusCode != 200) {
-      final err = _parseError(resp.body);
-      throw AuthException(err);
-    }
+    if (resp.statusCode != 200) throw loginErrorFor(resp);
 
     final data = jsonDecode(resp.body) as Map<String, dynamic>;
     // 刪除中帳號也會拿到 token：重新啟用端點要用它呼叫（見帳號刪除串接指南 §4）。
@@ -254,10 +252,11 @@ class AuthService {
   static Future<String?> currentToken() => _storage.read(key: _tokenKey);
 
   /// 系統 JWT 自然過期時，用仍登入中的 Firebase user 重新換一張（後端沒有
-  /// refresh 端點，登入端點就是換 token 的唯一途徑）。成功回 true；沒有
-  /// Firebase user 或換 token 失敗回 false，不 throw，由呼叫端決定備援。
+  /// refresh 端點，登入端點就是換 token 的唯一途徑）。不 throw，結果分三種：
+  /// 換到了、被拒絕（沒有 Firebase user、後端不給），或連不上（見
+  /// [refreshOutcomeFor]），由呼叫端決定要登出還是稍後再試。
   /// 每一步限時 10 秒：啟動畫面在等它，弱網路下不能卡到系統 TCP 逾時。
-  static Future<bool> refreshSession() async {
+  static Future<RefreshOutcome> refreshSession() async {
     try {
       // Web 啟動時 Firebase 從 IndexedDB 還原登入是非同步的，currentUser 還沒就緒，
       // 等第一個 auth 狀態再判斷。
@@ -266,14 +265,33 @@ class AuthService {
           await _auth.authStateChanges().first.timeout(
             const Duration(seconds: 5),
           );
-      if (user == null) return false;
+      if (user == null) return RefreshOutcome.rejected;
       await _loginWithFirebaseUser(user, timeout: const Duration(seconds: 10));
-      return true;
+      return RefreshOutcome.ok;
     } catch (e) {
-      debugPrint('AuthService.refreshSession failed: $e');
-      return false;
+      final outcome = refreshOutcomeFor(e);
+      debugPrint('AuthService.refreshSession failed (${outcome.name}): $e');
+      return outcome;
     }
   }
+
+  /// 續期失敗的原因歸類：連線層的失敗（逾時、socket／TLS／HTTP 連線錯誤、
+  /// Firebase 換 ID token 時沒網路）算 offline，伺服器 5xx 算 serverUnavailable，
+  /// 其餘（後端 4xx 拒絕、Firebase 帳號已失效、未預期的錯誤）算 rejected。
+  /// 分不出來的一律當 rejected，維持「換不到就登出」的舊行為，不讓帳號問題
+  /// 被誤當成暫時斷線而一直重試。
+  @visibleForTesting
+  static RefreshOutcome refreshOutcomeFor(Object error) => switch (error) {
+    AuthException(isNetworkError: true) => RefreshOutcome.offline,
+    AuthException(isServerError: true) => RefreshOutcome.serverUnavailable,
+    AuthException() => RefreshOutcome.rejected,
+    TimeoutException() ||
+    IOException() ||
+    http.ClientException() => RefreshOutcome.offline,
+    FirebaseAuthException(code: 'network-request-failed') =>
+      RefreshOutcome.offline,
+    _ => RefreshOutcome.rejected,
+  };
 
   /// 本機有未過期的 JWT。純查詢，過期時的清理交給 SessionService.restore。
   static Future<bool> isLoggedIn() async {
@@ -284,6 +302,18 @@ class AuthService {
     final expiry = DateTime.tryParse(expiresAt);
     if (expiry == null) return true;
     return !DateTime.now().isAfter(expiry);
+  }
+
+  /// 登入端點非 200 的回應轉成 [AuthException]：5xx（502／503／504 等，
+  /// 例如 Cloud Run 暫時不可用）用 [AuthException.serverError] 標成
+  /// `isServerError`，其餘（4xx 等）是後端拒絕。
+  @visibleForTesting
+  static AuthException loginErrorFor(http.Response resp) {
+    final message = _parseError(resp.body);
+    final status = resp.statusCode;
+    return status >= 500 && status < 600
+        ? AuthException.serverError(message)
+        : AuthException(message);
   }
 
   static String _parseError(String body) {
@@ -298,6 +328,21 @@ class AuthService {
       return '登入失敗';
     }
   }
+}
+
+/// [AuthService.refreshSession] 的結果。
+enum RefreshOutcome {
+  /// 已換到新 JWT。
+  ok,
+
+  /// 沒有 Firebase user，或後端／Firebase 不給：再試也沒用，該登出。
+  rejected,
+
+  /// 連不上伺服器：登入狀態保留，等網路恢復再試。
+  offline,
+
+  /// 伺服器暫時不可用（5xx）：登入狀態保留，稍後再試。
+  serverUnavailable,
 }
 
 /// `POST /api/auth/login` 的回應。active 帳號帶 `user`；非 active 帳號
@@ -325,7 +370,26 @@ class LoginResult {
 
 class AuthException implements Exception {
   final String message;
-  AuthException(this.message);
+
+  /// 連不上伺服器（不是被後端拒絕）。
+  final bool isNetworkError;
+
+  /// 伺服器回 5xx（不是被後端拒絕）。
+  /// 啟動續期靠這兩個旗標分辨要登出、還是保留登入等重試。
+  final bool isServerError;
+
+  AuthException(this.message) : isNetworkError = false, isServerError = false;
+
+  AuthException.network()
+    : message = '無法連線到伺服器，請檢查網路',
+      isNetworkError = true,
+      isServerError = false;
+
+  /// 伺服器 5xx：訊息沿用後端（或「登入失敗」），登入頁顯示的文字不變。
+  AuthException.serverError(this.message)
+    : isNetworkError = false,
+      isServerError = true;
+
   @override
   String toString() => message;
 }

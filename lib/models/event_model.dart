@@ -17,6 +17,10 @@ int? asEventInt(dynamic v) {
 
 DateTime? _parseTime(dynamic v) => v is String ? DateTime.tryParse(v) : null;
 
+/// 經緯度：兩個都是數字才算有座標。
+(double, double)? _bothOrNone(dynamic lat, dynamic lng) =>
+    lat is num && lng is num ? (lat.toDouble(), lng.toDouble()) : null;
+
 class EventDetail {
   final int id;
 
@@ -27,6 +31,10 @@ class EventDetail {
   final DateTime startsAt;
   final String? location;
   final String? address; // 詳細地址（前端可一鍵導航）
+
+  /// 發起人在地圖上選的位置；手打地址的活動兩個都是 null。只有詳情回。
+  final double? latitude;
+  final double? longitude;
   final DateTime? registrationDeadline;
   final String? contactEmail;
   final String? contactPhone;
@@ -69,6 +77,8 @@ class EventDetail {
     required this.startsAt,
     this.location,
     this.address,
+    this.latitude,
+    this.longitude,
     this.registrationDeadline,
     this.contactEmail,
     this.contactPhone,
@@ -123,6 +133,9 @@ class EventDetail {
       startsAt: DateTime.parse(json['starts_at'] as String),
       location: json['location'] as String?,
       address: json['address'] as String?,
+      // 後端保證兩個成對；只要缺一個就當作沒有座標。
+      latitude: _bothOrNone(json['latitude'], json['longitude'])?.$1,
+      longitude: _bothOrNone(json['latitude'], json['longitude'])?.$2,
       registrationDeadline: json['registration_deadline'] != null
           ? DateTime.parse(json['registration_deadline'] as String)
           : null,
@@ -184,6 +197,8 @@ class EventDetail {
     startsAt: startsAt,
     location: location,
     address: address,
+    latitude: latitude,
+    longitude: longitude,
     registrationDeadline: registrationDeadline,
     contactEmail: contactEmail,
     contactPhone: contactPhone,

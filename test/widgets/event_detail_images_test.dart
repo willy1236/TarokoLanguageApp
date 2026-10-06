@@ -3,6 +3,7 @@
 // 這支取代的人工測試：用發起人帳號在正式後端上傳、刪除照片，看輪播、頁數指示、
 // 上限、錯誤訊息對不對——每試一次都會在活動上留下或刪掉真的照片。
 
+import 'dart:io' show SocketException;
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
@@ -459,5 +460,285 @@ void main() {
     await tester.pumpAndSettle(const Duration(seconds: 3));
     expect(detailCalls, 2);
     expect(find.text('2／2'), findsOneWidget);
+  });
+
+  group('下拉重整', () {
+    Future<void> pullToRefresh(WidgetTester tester) async {
+      await tester.fling(
+        find.byType(CustomScrollView),
+        const Offset(0, 400),
+        1000,
+      );
+      // 讓 RefreshIndicator 跑完拉下的動畫、送出重取，但不等請求回來。
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+    }
+
+    Finder capacity(int count) =>
+        find.text('$count 人 · 不限名額', skipOffstage: false);
+
+    /// 上傳要 3 秒；進頁之後的詳情重取要 2 秒，重整途中的畫面才看得到。
+    Duration Function(http.Request) slowUploadAndRefetch() {
+      var detailCalls = 0;
+      return (r) {
+        if (r.url.path == _uploadPath) return const Duration(seconds: 3);
+        if (r.url.path == _detailPath && ++detailCalls > 1) {
+          return const Duration(seconds: 2);
+        }
+        return Duration.zero;
+      };
+    }
+
+    testWidgets('上傳中下拉重整：輪播不被卸載，上傳完照片出現在清單裡', (tester) async {
+      _fakePicker();
+      var detailCalls = 0;
+      installMockClient(
+        _routes(_detail(isHost: true, imageIds: [1]), {
+          _uploadPath: jsonResponse({
+            'images': _images([1, 2]),
+          }, status: 201),
+        }),
+        onRequest: (r) {
+          if (r.url.path == _detailPath) detailCalls++;
+        },
+        delayFor: slowUploadAndRefetch(),
+      );
+      await _open(tester);
+
+      await tester.tap(find.byTooltip('新增照片'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await pullToRefresh(tester);
+
+      expect(detailCalls, 2, reason: '下拉有重取詳情');
+      expect(find.byType(EventDetailHero), findsOneWidget, reason: '不換成載入畫面');
+
+      await tester.pumpAndSettle(const Duration(seconds: 3));
+      expect(find.text('2／2'), findsOneWidget);
+    });
+
+    testWidgets('上傳中下拉重整後上傳失敗：仍看得到失敗提示', (tester) async {
+      _fakePicker();
+      installMockClient(
+        _routes(_detail(isHost: true, imageIds: [1]), {
+          _uploadPath: errorResponse('UPLOAD_FAILED', message: '照片格式不支援'),
+        }),
+        delayFor: slowUploadAndRefetch(),
+      );
+      await _open(tester);
+
+      await tester.tap(find.byTooltip('新增照片'));
+      await tester.pump(const Duration(milliseconds: 100));
+      await pullToRefresh(tester);
+
+      await tester.pump(const Duration(seconds: 3));
+      await tester.pump();
+      expect(find.text('照片格式不支援'), findsOneWidget);
+    });
+
+    testWidgets('重整回來的舊照片清單不蓋掉剛上傳的結果', (tester) async {
+      _fakePicker();
+      var detailCalls = 0;
+      installMockClient(
+        _routes(_detail(isHost: true, imageIds: [1]), {
+          _uploadPath: jsonResponse({
+            'images': _images([1, 2]),
+          }, status: 201),
+        }),
+        onRequest: (r) {
+          if (r.url.path == _detailPath) detailCalls++;
+        },
+        // 下拉的重取晚 3 秒才回來，期間完成上傳。
+        delayFor: (r) => r.url.path == _detailPath && detailCalls > 1
+            ? const Duration(seconds: 3)
+            : Duration.zero,
+      );
+      await _open(tester);
+
+      await pullToRefresh(tester);
+      await tester.tap(find.byTooltip('新增照片'));
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('2／2'), findsOneWidget);
+
+      await tester.pumpAndSettle(const Duration(seconds: 3));
+      expect(detailCalls, 2);
+      expect(find.text('2／2'), findsOneWidget);
+    });
+
+    testWidgets('一般下拉重整照常更新報名人數', (tester) async {
+      final routes = _routes(_detail(isHost: false));
+      installMockClient(routes);
+      await _open(tester);
+      expect(capacity(5), findsOneWidget);
+
+      routes[_detailPath] = {..._detail(isHost: false), 'participant_count': 6};
+      await pullToRefresh(tester);
+      await tester.pumpAndSettle();
+
+      expect(capacity(6), findsOneWidget);
+      expect(capacity(5), findsNothing);
+    });
+
+    testWidgets('下拉重整失敗：提示後端訊息，畫面內容保留', (tester) async {
+      final routes = _routes(_detail(isHost: false, imageIds: [1, 2]));
+      installMockClient(routes);
+      await _open(tester);
+
+      routes[_detailPath] = errorResponse(
+        'NOT_FOUND',
+        status: 404,
+        message: '找不到這個活動',
+      );
+      await pullToRefresh(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('找不到這個活動'), findsOneWidget);
+      expect(find.byType(EventDetailHero), findsOneWidget);
+      expect(find.text('1／2'), findsOneWidget);
+      expect(capacity(5), findsOneWidget);
+    });
+
+    testWidgets('下拉重整斷線：提示連不上伺服器', (tester) async {
+      var offline = false;
+      installMockClient(
+        _routes(_detail(isHost: false)),
+        onRequest: (r) {
+          if (offline && r.url.path == _detailPath) {
+            throw const SocketException('offline');
+          }
+        },
+      );
+      await _open(tester);
+
+      offline = true;
+      await pullToRefresh(tester);
+      await tester.pumpAndSettle();
+
+      expect(find.text('無法連線到伺服器，請檢查網路'), findsOneWidget);
+      expect(capacity(5), findsOneWidget);
+    });
+
+    // 照片載不出來時的重取：使用者點的「重試」失敗要提示，網址過期的自動重取不打擾。
+    Future<void> failingImageRefetch(
+      WidgetTester tester,
+      VoidCallback Function(EventDetailHero hero) trigger,
+    ) async {
+      final routes = _routes(_detail(isHost: false, imageIds: [1]));
+      installMockClient(routes);
+      await _open(tester);
+
+      routes[_detailPath] = errorResponse(
+        'NOT_FOUND',
+        status: 404,
+        message: '找不到這個活動',
+      );
+      trigger(tester.widget<EventDetailHero>(find.byType(EventDetailHero)))();
+      await tester.pumpAndSettle();
+      expect(find.byType(EventDetailHero), findsOneWidget, reason: '畫面內容保留');
+    }
+
+    testWidgets('手動點照片重試失敗：提示後端訊息', (tester) async {
+      await failingImageRefetch(tester, (hero) => hero.onImageRetryTap!);
+      expect(find.text('找不到這個活動'), findsOneWidget);
+    });
+
+    testWidgets('離線連點重試：提示只留一則，不會一則接一則排隊', (tester) async {
+      var offline = false;
+      installMockClient(
+        _routes(_detail(isHost: false, imageIds: [1])),
+        onRequest: (r) {
+          if (offline && r.url.path == _detailPath) {
+            throw const SocketException('offline');
+          }
+        },
+      );
+      await _open(tester);
+
+      offline = true;
+      for (var i = 0; i < 3; i++) {
+        tester
+            .widget<EventDetailHero>(find.byType(EventDetailHero))
+            .onImageRetryTap!();
+        await tester.pump(const Duration(milliseconds: 300));
+      }
+      await tester.pumpAndSettle();
+      expect(find.text('無法連線到伺服器，請檢查網路'), findsOneWidget);
+
+      // SnackBar 預設停 4 秒；排隊的話時間到後會換下一則繼續顯示。
+      await tester.pump(const Duration(seconds: 5));
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing);
+    });
+
+    testWidgets('上傳失敗提示顯示中又重整失敗：上傳失敗提示不會被收掉', (tester) async {
+      _fakePicker();
+      var offline = false;
+      installMockClient(
+        _routes(_detail(isHost: true, imageIds: [1]), {
+          _uploadPath: errorResponse('UPLOAD_FAILED', message: '照片格式不支援'),
+        }),
+        onRequest: (r) {
+          if (offline && r.url.path == _detailPath) {
+            throw const SocketException('offline');
+          }
+        },
+      );
+      await _open(tester);
+
+      await tester.tap(find.byTooltip('新增照片'));
+      await tester.pumpAndSettle();
+      expect(find.text('照片格式不支援'), findsOneWidget);
+
+      offline = true;
+      await pullToRefresh(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.text('照片格式不支援'), findsOneWidget);
+      expect(find.text('無法連線到伺服器，請檢查網路'), findsNothing, reason: '排在後面');
+
+      // 上傳失敗提示停完 4 秒才輪到重整失敗。
+      await tester.pump(const Duration(seconds: 4));
+      await tester.pumpAndSettle();
+      expect(find.text('照片格式不支援'), findsNothing);
+      expect(find.text('無法連線到伺服器，請檢查網路'), findsOneWidget);
+    });
+
+    testWidgets('排隊中的重整失敗提示被 clearSnackBars 清掉後，之後的失敗仍會提示', (
+      tester,
+    ) async {
+      _fakePicker();
+      var offline = false;
+      installMockClient(
+        _routes(_detail(isHost: true, imageIds: [1]), {
+          _uploadPath: errorResponse('UPLOAD_FAILED', message: '照片格式不支援'),
+        }),
+        onRequest: (r) {
+          if (offline && r.url.path == _detailPath) {
+            throw const SocketException('offline');
+          }
+        },
+      );
+      await _open(tester);
+
+      // 上傳失敗提示顯示中，重整失敗提示排在它後面。
+      await tester.tap(find.byTooltip('新增照片'));
+      await tester.pumpAndSettle();
+      offline = true;
+      await pullToRefresh(tester);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      // 例如帳號角色變更的推播會清空整個佇列，排隊中那則的 closed 永遠不會完成。
+      scaffoldMessengerKey.currentState!.clearSnackBars();
+      await tester.pumpAndSettle();
+      expect(find.byType(SnackBar), findsNothing);
+
+      await tester.pump(const Duration(seconds: 9));
+      await pullToRefresh(tester);
+      await tester.pumpAndSettle();
+      expect(find.text('無法連線到伺服器，請檢查網路'), findsOneWidget);
+    });
+
+    testWidgets('照片網址過期的自動重取失敗：不提示', (tester) async {
+      await failingImageRefetch(tester, (hero) => hero.onImageExpired!);
+      expect(find.byType(SnackBar), findsNothing);
+    });
   });
 }

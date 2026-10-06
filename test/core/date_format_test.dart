@@ -39,4 +39,45 @@ void main() {
     final local = DateTime(2026, 9, 1, 3, 5);
     expect(formatDateTime(local), '2026/09/01 03:05');
   });
+
+  group('24 小時制邊界', () {
+    test('午夜是 00:00，不是 12:00 或 24:00', () {
+      expect(formatTime(DateTime(2026, 9, 1).toUtc()), '00:00');
+      expect(formatDateTime(DateTime(2026, 9, 1).toUtc()), '2026/09/01 00:00');
+    });
+
+    test('中午是 12:00，下午兩點是 14:05', () {
+      expect(formatTime(DateTime(2026, 9, 1, 12).toUtc()), '12:00');
+      expect(formatTime(DateTime(2026, 9, 1, 14, 5).toUtc()), '14:05');
+      expect(formatTime(DateTime(2026, 9, 1, 23, 59).toUtc()), '23:59');
+    });
+  });
+
+  test('本地跨年凌晨：年份、月份、日都不退回前一天', () {
+    final newYear = DateTime(2027, 1, 1, 0, 30).toUtc();
+    expect(formatDateTime(newYear), '2027/01/01 00:30');
+    expect(monthLabel(newYear), '1月');
+    expect(dayLabel(newYear), '01');
+    expect(weekdayLabel(newYear), '週五');
+  });
+
+  test('月、日、時、分個位數都補零，兩位數不變', () {
+    expect(formatDateTime(DateTime(2026, 1, 2, 3, 4)), '2026/01/02 03:04');
+    expect(formatDateTime(DateTime(2026, 12, 31, 10, 59)), '2026/12/31 10:59');
+  });
+
+  test('日期塊：月份不補零、日補零', () {
+    expect(monthLabel(fromBackend), '9月');
+    expect(dayLabel(fromBackend), '01');
+    expect(dayLabel(DateTime(2026, 9, 30)), '30');
+  });
+
+  test('星期一週七天都對得上，週日是「週日」', () {
+    // 2026/09/06 是週日。
+    final sunday = DateTime(2026, 9, 6);
+    expect(
+      List.generate(7, (i) => weekdayLabel(sunday.add(Duration(days: i)))),
+      ['週日', '週一', '週二', '週三', '週四', '週五', '週六'],
+    );
+  });
 }

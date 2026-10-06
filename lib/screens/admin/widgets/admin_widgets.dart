@@ -292,6 +292,9 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
   String? _cursor;
   bool _loading = true;
   bool _loadingMore = false;
+
+  /// 下一頁載入失敗：捲動不再自動重打，等使用者點尾端的重試列。
+  bool _loadMoreFailed = false;
   Object? _error;
 
   /// 每次重載加一：切換狀態或重新整理時，晚回來的舊回應直接丟掉。
@@ -332,6 +335,7 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
         _cursor = page.pageInfo.nextCursor;
         _loading = false;
         _loadingMore = false;
+        _loadMoreFailed = false;
       });
     } catch (e) {
       if (!mounted || generation != _generation) return;
@@ -345,7 +349,7 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
 
   Future<void> _loadMore() async {
     final cursor = _cursor;
-    if (_loadingMore || _loading || cursor == null) return;
+    if (_loadingMore || _loading || _loadMoreFailed || cursor == null) return;
     final generation = _generation;
     setState(() => _loadingMore = true);
     try {
@@ -358,9 +362,18 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
       });
     } catch (e) {
       if (!mounted || generation != _generation) return;
-      setState(() => _loadingMore = false);
-      handleAdminError(context, e);
+      setState(() {
+        _loadingMore = false;
+        _loadMoreFailed = true;
+      });
+      // 尾端重試列已說明失敗，不另跳提示（會蓋住重試列）；ADMIN_ONLY 仍退出後台。
+      handleAdminError(context, e, toast: false);
     }
+  }
+
+  void _retryLoadMore() {
+    setState(() => _loadMoreFailed = false);
+    _loadMore();
   }
 
   void _selectStatus(String status) {
@@ -369,6 +382,7 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
       _status = status;
       _items.clear();
       _cursor = null;
+      _loadMoreFailed = false;
     });
     _reload();
   }
@@ -445,13 +459,10 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
               itemCount: _items.length + (_cursor != null ? 1 : 0),
               itemBuilder: (context, i) {
                 if (i >= _items.length) {
-                  return const Padding(
-                    padding: EdgeInsets.all(AppSpacing.md),
-                    child: Center(
-                      child: CircularProgressIndicator(
-                        color: AppColors.primary,
-                      ),
-                    ),
+                  return AdminLoadMoreFooter(
+                    failed: _loadMoreFailed,
+                    onRetry: _retryLoadMore,
+                    seniorMode: senior,
                   );
                 }
                 return widget.itemBuilder(context, _items[i], senior, _reload);
@@ -459,6 +470,62 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
             ),
     );
   }
+}
+
+/// 後端沒有查單筆的端點：沿 [fetch] 的分頁找 [matches] 的那一筆。
+///
+/// - 找到：`found` 是伺服器上的最新資料。
+/// - 翻完都沒有：`gone` 為 true，代表這筆已不在這個狀態（通常是被其他管理員處理了）。
+/// - 翻了 [maxPages] 頁還沒找到也沒翻完：兩者皆空，呼叫端維持原狀。
+Future<({T? found, bool gone})> findInAdminPages<T>(
+  Future<AdminPage<T>> Function(String? cursor) fetch,
+  bool Function(T item) matches, {
+  int maxPages = 10,
+}) async {
+  String? cursor;
+  for (var i = 0; i < maxPages; i++) {
+    final page = await fetch(cursor);
+    for (final item in page.items) {
+      if (matches(item)) return (found: item, gone: false);
+    }
+    cursor = page.pageInfo.nextCursor;
+    if (cursor == null) return (found: null, gone: true);
+  }
+  return (found: null, gone: false);
+}
+
+/// 分頁列表的尾端：載入下一頁時轉圈；失敗時顯示「載入失敗，點此重試」，
+/// 點了才重送（列表在失敗後不會因捲動自動重打）。
+class AdminLoadMoreFooter extends StatelessWidget {
+  final bool failed;
+  final VoidCallback onRetry;
+  final bool seniorMode;
+
+  const AdminLoadMoreFooter({
+    super.key,
+    required this.failed,
+    required this.onRetry,
+    this.seniorMode = false,
+  });
+
+  @override
+  Widget build(BuildContext context) => Padding(
+    padding: const EdgeInsets.all(AppSpacing.md),
+    child: Center(
+      child: failed
+          ? TextButton(
+              onPressed: onRetry,
+              child: Text(
+                '載入失敗，點此重試',
+                style: AppTypography.bodyLargeStyle(
+                  seniorMode: seniorMode,
+                  color: AppColors.primary,
+                ),
+              ),
+            )
+          : const CircularProgressIndicator(color: AppColors.primary),
+    ),
+  );
 }
 
 /// 只有一顆「知道了」的結果對話框（審核結果、處置說明）。

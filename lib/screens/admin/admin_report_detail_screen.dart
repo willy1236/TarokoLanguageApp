@@ -40,16 +40,22 @@ class _AdminReportDetailScreenState extends State<AdminReportDetailScreen> {
   late AdminReport _report = widget.report;
   bool get _isProfile => _report.targetType == 'profile';
 
-  /// 後端沒有查單筆檢舉的端點：重抓同一個狀態的佇列，把這筆換成新的。
+  /// 後端沒有查單筆檢舉的端點：沿同一個狀態的佇列找回這筆換成新的；
+  /// 已不在這個狀態（被其他管理員處理了）就提示並回列表重抓。
   Future<void> _refresh() async {
     try {
-      final page = await AdminService.fetchReports(status: _report.status);
+      final result = await findInAdminPages(
+        (cursor) =>
+            AdminService.fetchReports(status: _report.status, cursor: cursor),
+        (fresh) => fresh.id == _report.id,
+      );
       if (!mounted) return;
-      for (final fresh in page.items) {
-        if (fresh.id == _report.id) {
-          setState(() => _report = fresh);
-          return;
-        }
+      final found = result.found;
+      if (found != null) {
+        setState(() => _report = found);
+      } else if (result.gone) {
+        showAdminMessage('這筆已被其他管理員處理');
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) handleAdminError(context, e);

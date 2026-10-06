@@ -2,8 +2,10 @@
 //   friend_request → 好友邀請頁
 //   friend_message → 與對方的聊天室（已在最上層就重載，不重複疊頁）
 //   friend_accepted／羈絆展示 → 對方公開頁
-// payload 只帶好友碼，聊天室要的暱稱、頭像由好友列表查；已不是好友就
-// 導到好友邀請頁，查詢失敗則不導頁、提示稍後再試。
+// payload 只帶好友碼，聊天室要的暱稱、頭像由好友列表查。私訊不論對方是不是
+// 好友都開聊天室：陌生人可以先傳幾則破冰訊息（好友社交串接指南 §87），查不到
+// 或查詢失敗時不帶暱稱頭像，由聊天室從訊息 API 的 partner 補上。
+// 其他類型已不是好友就導到好友邀請頁，查詢失敗則不導頁、提示稍後再試。
 
 import 'package:flutter/material.dart';
 
@@ -40,14 +42,23 @@ Future<void> openFriendPush(
   try {
     friend = await FriendService.findFriend(friendCode);
   } catch (e) {
-    // 查不到好友資料不代表已不是好友，不導到邀請頁，只提示稍後再試。
     debugPrint('openFriendPush: 查詢好友失敗：$e');
+    if (type == 'friend_message') {
+      if (nav.mounted) nav.push(ChatScreen.route(friendCode: friendCode));
+      return;
+    }
+    // 查不到好友資料不代表已不是好友，不導到邀請頁，只提示稍後再試。
     scaffoldMessengerKey.currentState
       ?..clearSnackBars()
       ..showSnackBar(const SnackBar(content: Text('無法開啟，請稍後再試')));
     return;
   }
   if (!nav.mounted) return;
+  if (type == 'friend_message' && friend == null) {
+    // 陌生人的破冰私訊：直接開聊天室才看得到那則訊息。
+    nav.push(ChatScreen.route(friendCode: friendCode));
+    return;
+  }
   if (friend == null) {
     _openRequests(nav);
     return;

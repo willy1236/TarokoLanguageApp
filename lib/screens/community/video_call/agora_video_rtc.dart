@@ -1,4 +1,5 @@
 import 'package:agora_rtc_engine/agora_rtc_engine.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/widgets.dart';
 
 import 'video_rtc.dart';
@@ -6,6 +7,11 @@ import 'video_rtc.dart';
 /// Agora 實作。[release] 可能在 [start] 的 await 之間被呼叫（使用者入房途中
 /// 按返回），所以每一步之後都檢查 [_released]，避免對已釋放的引擎呼叫方法。
 class AgoraVideoRtc implements VideoRtc {
+  AgoraVideoRtc({
+    @visibleForTesting RtcEngine Function() createEngine = createAgoraRtcEngine,
+  }) : _createEngine = createEngine;
+
+  final RtcEngine Function() _createEngine;
   RtcEngine? _engine;
   bool _released = false;
 
@@ -14,7 +20,7 @@ class AgoraVideoRtc implements VideoRtc {
     required String appId,
     required RtcCallbacks callbacks,
   }) async {
-    final engine = createAgoraRtcEngine();
+    final engine = _createEngine();
     _engine = engine;
     await engine.initialize(RtcEngineContext(appId: appId));
     if (_released) return;
@@ -83,9 +89,26 @@ class AgoraVideoRtc implements VideoRtc {
     final engine = _engine;
     _engine = null;
     if (engine == null) return;
-    await engine.leaveChannel();
-    await engine.release();
+    // 還沒入房（例如 initialize 途中就掛斷）時 leaveChannel 可能丟
+    // AgoraRtcException；不論成敗都要 release，否則鏡頭與引擎不會釋放。
+    try {
+      await engine.leaveChannel();
+    } catch (e) {
+      debugPrint('AgoraVideoRtc: leaveChannel 失敗（照常釋放引擎）：$e');
+    } finally {
+      await engine.release();
+    }
   }
+
+  /// iOS 的原生 platform view（AgoraSurfaceView）會蓋掉疊在影像上的 Flutter
+  /// 元件（通話控制列、右上選單），所以 iOS 改走 Flutter 紋理渲染繞過。
+  /// Android 的 platform view 疊層正常，維持原生渲染。升級 agora_rtc_engine
+  /// 後若 iOS platform view 疊層恢復正常，可移除這個分支。
+  ///
+  /// 計時器每秒 rebuild 都會 new 一個 controller，但套件以 `isSame` 比對
+  /// canvas／connection，相同就沿用既有紋理，不會每秒重建。
+  static bool get _useFlutterTexture =>
+      defaultTargetPlatform == TargetPlatform.iOS;
 
   @override
   Widget localView() {
@@ -95,6 +118,7 @@ class AgoraVideoRtc implements VideoRtc {
       controller: VideoViewController(
         rtcEngine: engine,
         canvas: const VideoCanvas(uid: 0),
+        useFlutterTexture: _useFlutterTexture,
       ),
     );
   }
@@ -108,6 +132,7 @@ class AgoraVideoRtc implements VideoRtc {
         rtcEngine: engine,
         canvas: VideoCanvas(uid: uid),
         connection: RtcConnection(channelId: channel),
+        useFlutterTexture: _useFlutterTexture,
       ),
     );
   }

@@ -56,6 +56,9 @@ class QuizFlowView extends StatelessWidget {
   /// 錯誤是否可重試（例如已完成分級測驗就不給重試）。
   final bool Function(Object? error)? retryable;
 
+  /// 錯誤時整頁換成自訂畫面（例如已做過分級測驗）；回 null 走預設錯誤畫面。
+  final Widget? Function(BuildContext context, Object? error)? errorBuilder;
+
   /// phase 為 done 時的畫面；null 則維持轉圈（送出後由畫面導頁）。
   final WidgetBuilder? doneBuilder;
 
@@ -71,6 +74,7 @@ class QuizFlowView extends StatelessWidget {
     required this.onConfirm,
     this.errorMessageOf,
     this.retryable,
+    this.errorBuilder,
     this.doneBuilder,
   });
 
@@ -101,6 +105,8 @@ class QuizFlowView extends StatelessWidget {
 
   Widget _buildError(BuildContext context) {
     final error = controller.error;
+    final custom = errorBuilder?.call(context, error);
+    if (custom != null) return custom;
     final canRetry = retryable?.call(error) ?? true;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,

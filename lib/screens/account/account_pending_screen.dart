@@ -12,6 +12,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/date_format.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/account_service.dart';
 import '../../services/session_service.dart';
@@ -113,9 +114,6 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
     ).showSnackBar(SnackBar(content: Text(message)));
   }
 
-  String _formatDate(DateTime d) =>
-      '${d.year}/${d.month.toString().padLeft(2, '0')}/${d.day.toString().padLeft(2, '0')}';
-
   @override
   Widget build(BuildContext context) {
     final purgeAt = _purgeAt;
@@ -152,7 +150,7 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
               if (purgeAt != null) ...[
                 const SizedBox(height: 6),
                 Text(
-                  '預定刪除日期：${_formatDate(purgeAt)}',
+                  '預定刪除日期：${formatDate(purgeAt)}',
                   textAlign: TextAlign.center,
                   style: AppTypography.bodyStyle(color: AppColors.fog),
                 ),

@@ -430,8 +430,12 @@ class _DataSourcesSection extends StatefulWidget {
 }
 
 class _DataSourcesSectionState extends State<_DataSourcesSection> {
-  // 存在 State 裡，切換長輩模式重建時不會重打。
-  late final Future<DataSources> _future = DataSourceService.fetch();
+  // 存在 State 裡，切換長輩模式重建時不會重打；只有按「重試」才換新的。
+  Future<DataSources> _future = DataSourceService.fetch();
+
+  void _retry() => setState(() {
+    _future = DataSourceService.fetch();
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -455,13 +459,39 @@ class _DataSourcesSectionState extends State<_DataSourcesSection> {
               ),
               child: switch (snapshot) {
                 AsyncSnapshot(hasData: true) => _buildSources(data!.sources),
-                AsyncSnapshot(hasError: true) => Text(
-                  '暫時無法載入資料來源，請稍後再試',
-                  style: AppTypography.bodyStyle(
-                    seniorMode: seniorMode,
-                    color: AppColors.inkSoft,
+                // 重試中 FutureBuilder 會保留上一次的錯誤，要等這次結束才算失敗。
+                AsyncSnapshot(
+                  hasError: true,
+                  connectionState: ConnectionState.done,
+                ) =>
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        '暫時無法載入資料來源，請稍後再試',
+                        style: AppTypography.bodyStyle(
+                          seniorMode: seniorMode,
+                          color: AppColors.inkSoft,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      OutlinedButton(
+                        onPressed: _retry,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: AppColors.primary,
+                          side: const BorderSide(color: AppColors.primary),
+                          minimumSize: seniorMode ? const Size(140, 52) : null,
+                        ),
+                        child: Text(
+                          '重試',
+                          style: AppTypography.bodyStyle(
+                            seniorMode: seniorMode,
+                            color: AppColors.primary,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
-                ),
                 _ => const SizedBox(
                   height: 120,
                   child: Center(

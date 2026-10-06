@@ -113,21 +113,37 @@ class ModuleActionIcons extends StatelessWidget {
               Icon(Icons.notifications_none, color: AppColors.ink, size: size),
               if (hasUnread)
                 Positioned(
-                  right: -2,
-                  top: -2,
-                  child: Container(
-                    width: 8,
-                    height: 8,
-                    decoration: const BoxDecoration(
-                      color: AppColors.primary,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
+                  right: -3,
+                  top: -3,
+                  child: _UnreadDot(seniorMode: seniorMode),
                 ),
             ],
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 鈴鐺右上的未讀點。比照底部分頁徽章：酒紅底加米白外框，外框把圓點跟
+/// 鈴鐺輪廓隔開；原本 8px 純酒紅點貼著深色鈴鐺，在米白頁首上幾乎看不出來。
+class _UnreadDot extends StatelessWidget {
+  final bool seniorMode;
+
+  const _UnreadDot({required this.seniorMode});
+
+  @override
+  Widget build(BuildContext context) {
+    final size = seniorMode ? 14.0 : 12.0;
+    return Container(
+      key: const ValueKey('module-unread-dot'),
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        color: AppColors.primary,
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.creamLight, width: 1.5),
+      ),
     );
   }
 }

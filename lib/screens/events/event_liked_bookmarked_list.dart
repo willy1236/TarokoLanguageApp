@@ -1,206 +1,55 @@
 // 「我按讚的活動」／「我收藏的活動」清單內容。不含 Scaffold/AppBar，
-// 供獨立畫面或 TabBarView 嵌入使用。EventService 回傳 List<EventSummary>
-// （無 total/page 包裝），用「這頁筆數 < pageSize」判斷是否還有下一頁。
+// 供獨立畫面或 TabBarView 嵌入使用。分頁、下拉重整、封面過期重取都交給 PagedEventList。
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/utils/date_format.dart';
 import '../../models/event_model.dart';
-import '../../models/page_info.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
-import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import 'event_detail_screen.dart';
 import 'widgets/event_cover.dart';
+import 'widgets/paged_event_list.dart';
 
 enum EventListMode { liked, bookmarked }
 
-class EventLikedBookmarkedList extends StatefulWidget {
+class EventLikedBookmarkedList extends StatelessWidget {
   final EventListMode mode;
   const EventLikedBookmarkedList({super.key, required this.mode});
 
-  @override
-  State<EventLikedBookmarkedList> createState() =>
-      _EventLikedBookmarkedListState();
-}
-
-class _EventLikedBookmarkedListState extends State<EventLikedBookmarkedList> {
-  final _scrollController = ScrollController();
-  List<EventSummary> _events = [];
-  String? _cursor;
-  bool _loading = true;
-  bool _loadingMore = false;
-  Object? _error;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController.addListener(_onScroll);
-    _load();
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  void _onScroll() {
-    if (_loadingMore || _cursor == null) return;
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300) {
-      _loadMore();
-    }
-  }
-
   Future<EventPage> _fetch(String? cursor) {
-    return widget.mode == EventListMode.liked
+    return mode == EventListMode.liked
         ? EventService.fetchLikedEvents(cursor: cursor)
         : EventService.fetchBookmarkedEvents(cursor: cursor);
-  }
-
-  /// 清單世代：整頁重載或封面重取換掉清單時加一，較早送出的載入更多回來就丟棄，
-  /// 不會把舊清單的下一頁接到新清單後面。
-  int _generation = 0;
-
-  Future<void> _load() async {
-    _generation++;
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final res = await _fetch(null);
-      if (!mounted) return;
-      setState(() {
-        _events = res.events;
-        _cursor = res.pageInfo.nextCursor;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e;
-        _loading = false;
-      });
-    }
-  }
-
-  /// 封面網址過期：安靜地重取第一頁換新網址，不閃載入畫面；失敗就保留原清單。
-  Future<void> _refreshCovers() async {
-    if (_loading) return;
-    final generation = _generation;
-    try {
-      final res = await _fetch(null);
-      if (!mounted || generation != _generation) return;
-      setState(() {
-        _generation++; // 進行中的載入更多是舊清單的下一頁，丟棄
-        _events = res.events;
-        _cursor = res.pageInfo.nextCursor;
-        _loadingMore = false;
-      });
-    } catch (_) {
-      // 換不到新網址就維持原樣，破掉的封面已退回沒有封面的樣子。
-    }
-  }
-
-  Future<void> _loadMore() async {
-    final generation = _generation;
-    setState(() => _loadingMore = true);
-    try {
-      final res = await _fetch(_cursor);
-      if (!mounted || generation != _generation) return;
-      setState(() {
-        _events = appendUnique(_events, res.events, (e) => e.id);
-        _cursor = res.pageInfo.nextCursor;
-      });
-    } catch (_) {
-      // 翻頁失敗保持原清單，使用者可再滑動觸發重試。
-    } finally {
-      if (mounted && generation == _generation) {
-        setState(() => _loadingMore = false);
-      }
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
       listenable: seniorModeController,
-      // 包在載入、空清單判斷外面，重新整理時冷卻狀態才不會跟著清掉。
-      builder: (context, _) => EventCoverRefresher(
-        onRefresh: _refreshCovers,
-        child: _buildBody(seniorModeController.enabled),
-      ),
-    );
-  }
-
-  Widget _buildBody(bool seniorMode) {
-    if (_loading) {
-      return const TrukuLoadingView();
-    }
-    if (_error != null) {
-      return TrukuErrorView(
-        error: _error,
-        onRetry: _load,
-        seniorMode: seniorMode,
-      );
-    }
-    if (_events.isEmpty) {
-      return _buildEmpty(seniorMode);
-    }
-    return RefreshIndicator(
-      onRefresh: _load,
-      color: AppColors.primary,
-      child: ListView.separated(
-        controller: _scrollController,
-        padding: const EdgeInsets.all(16),
-        itemCount: _events.length + (_cursor != null ? 1 : 0),
-        separatorBuilder: (_, _) => const SizedBox(height: 12),
-        itemBuilder: (context, index) {
-          if (index >= _events.length) {
-            return const Padding(
-              padding: EdgeInsets.symmetric(vertical: 16),
-              child: Center(
-                child: SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            );
-          }
-          return _EventListItem(
-            event: _events[index],
+      builder: (context, _) {
+        final seniorMode = seniorModeController.enabled;
+        return PagedEventList(
+          seniorMode: seniorMode,
+          loadPage: _fetch,
+          emptyState: TrukuEmptyState(
+            icon: Icons.event_outlined,
+            message: mode == EventListMode.liked ? '還沒有按讚任何活動' : '還沒有收藏任何活動',
+            subtitle: '下拉重新整理，看看有沒有新活動。',
+            seniorMode: seniorMode,
+            scrollable: false,
+          ),
+          itemBuilder: (event, reload) => _EventListItem(
+            event: event,
             seniorMode: seniorMode,
             // 在詳情頁取消收藏/按讚後返回，清單要重新整理，否則仍看得到
             // 已經取消的項目。
-            onReturn: _load,
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildEmpty(bool seniorMode) {
-    final message = widget.mode == EventListMode.liked
-        ? '還沒有按讚任何活動'
-        : '還沒有收藏任何活動';
-    return TrukuRefreshableEmpty(
-      onRefresh: _load,
-      color: AppColors.primary,
-      emptyState: TrukuEmptyState(
-        icon: Icons.event_outlined,
-        message: message,
-        subtitle: '下拉重新整理，看看有沒有新活動。',
-        seniorMode: seniorMode,
-        scrollable: false,
-      ),
+            onReturn: reload,
+          ),
+        );
+      },
     );
   }
 }

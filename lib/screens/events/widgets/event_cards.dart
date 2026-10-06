@@ -26,7 +26,7 @@ Color _categoryColor(String? category) {
 
 // ── 日期/時間格式（後端時間為 UTC，顯示轉本地）────────────────
 String _mon(DateTime d) => monthLabel(d);
-String _day(DateTime d) => d.day.toString().padLeft(2, '0');
+String _day(DateTime d) => dayLabel(d);
 String _wd(DateTime d) => weekdayLabel(d);
 String _time(DateTime d) => formatTime(d);
 
@@ -227,6 +227,8 @@ class EventFeaturedCard extends StatelessWidget {
                         ),
                         Text(
                           e.location ?? '線上',
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: AppTypography.size(
                               AppTypography.caption,
@@ -515,6 +517,8 @@ class EventList extends StatelessWidget {
                   const SizedBox(height: 3),
                   Text(
                     '${_time(d)} · ${e.location ?? '線上'}',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: AppTypography.size(
                         AppTypography.caption,

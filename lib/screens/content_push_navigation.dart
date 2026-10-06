@@ -28,12 +28,12 @@ void openEventPush(RouteStack routes, int eventId) {
   nav.push(EventDetailScreen.route(eventId));
 }
 
-/// 點論壇回覆通知。
-void openForumReplyPush(RouteStack routes, int postId) {
+/// 點論壇回覆通知：開貼文並捲到 [commentId] 那則留言（舊推播沒帶時停在頂端）。
+void openForumReplyPush(RouteStack routes, int postId, {int? commentId}) {
   final top = routes.topPage;
   if (top != null &&
       top.settings.name == ForumDetailScreen.routeNameFor(postId)) {
-    ForumDetailScreen.refreshRoute(top);
+    ForumDetailScreen.refreshRoute(top, focusCommentId: commentId);
     return;
   }
   final nav = routes.navigator;
@@ -41,7 +41,7 @@ void openForumReplyPush(RouteStack routes, int postId) {
     debugPrint('openForumReplyPush: Navigator 尚未掛上，導頁被忽略');
     return;
   }
-  nav.push(ForumDetailScreen.route(postId: postId));
+  nav.push(ForumDetailScreen.route(postId: postId, focusCommentId: commentId));
 }
 
 /// 點帶 case_id 的審核通知：開處置詳情頁；人已在那一頁就地重載，不再疊一份。
@@ -60,8 +60,14 @@ void openModerationCasePush(RouteStack routes, int caseId) {
   nav.push(ModerationCaseScreen.route(caseId));
 }
 
-/// 點官方公告通知：開收件匣並停在 [category] 分頁。
+/// 點官方公告通知：開收件匣並停在 [category] 分頁。收件匣已在最上層時就地
+/// 切到該分頁並重載，連點幾則公告也只有一層收件匣。
 void openInboxPush(RouteStack routes, String category) {
+  final top = routes.topPage;
+  if (top != null && top.settings.name == InboxScreen.routeName) {
+    InboxScreen.refreshRoute(top, category: category);
+    return;
+  }
   final nav = routes.navigator;
   if (nav == null) {
     debugPrint('openInboxPush: Navigator 尚未掛上，導頁被忽略');

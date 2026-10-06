@@ -25,6 +25,11 @@ void main() {
       expect(formatDisplayDate(DateTime(2001, 7, 4)), '2001/07/04');
     });
 
+    test('後端給的生日顯示同一天，不因時區差一天', () {
+      expect(formatDisplayDate(parseApiDate('2001-01-01')!), '2001/01/01');
+      expect(formatDisplayDate(parseApiDate('1999-12-31')!), '1999/12/31');
+    });
+
     test('解析 YYYY-MM-DD，其他格式或 null 回 null', () {
       expect(parseApiDate('1995-03-15'), DateTime(1995, 3, 15));
       expect(parseApiDate(null), isNull);

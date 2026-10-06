@@ -5,9 +5,11 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/article_models.dart';
-import '../../models/page_info.dart';
 import '../../services/article_service.dart';
 import '../../services/senior_mode_controller.dart';
+import '../../shared/utils/cursor_pager.dart';
+import '../../shared/utils/pager_scroll_loader.dart';
+import '../../shared/widgets/load_more_retry.dart';
 import '../../shared/widgets/article_cover_placeholder.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
@@ -26,110 +28,76 @@ class ArticleLikedBookmarkedList extends StatefulWidget {
 
 class _ArticleLikedBookmarkedListState
     extends State<ArticleLikedBookmarkedList> {
-  List<ArticleSummary> _articles = [];
   final _scrollController = ScrollController();
-  String? _cursor;
-  bool _loading = true;
-  bool _loadingMore = false;
-  Object? _error;
+  late final PagerScrollLoader _scrollLoader;
+  late final _pager = CursorPager<ArticleSummary>(
+    fetch: (cursor) async {
+      final res = widget.mode == ArticleListMode.liked
+          ? await ArticleService.fetchLikedArticles(cursor: cursor)
+          : await ArticleService.fetchArticleBookmarks(cursor: cursor);
+      return (res.articles, res.pageInfo);
+    },
+    idOf: (article) => article.id,
+  );
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(_onScroll);
-    _load();
+    _scrollLoader = PagerScrollLoader(
+      controller: _scrollController,
+      pager: _pager,
+    );
+    _pager.refresh();
   }
 
   @override
   void dispose() {
+    _scrollLoader.dispose();
     _scrollController.dispose();
+    _pager.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (_loadingMore || _cursor == null) return;
-    if (_scrollController.position.pixels >=
-        _scrollController.position.maxScrollExtent - 300) {
-      _loadMore();
-    }
-  }
-
-  Future<ArticleListResponse> _fetch(String? cursor) {
-    return widget.mode == ArticleListMode.liked
-        ? ArticleService.fetchLikedArticles(cursor: cursor)
-        : ArticleService.fetchArticleBookmarks(cursor: cursor);
-  }
-
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
-    try {
-      final res = await _fetch(null);
-      if (!mounted) return;
-      setState(() {
-        _articles = res.articles;
-        _cursor = res.pageInfo.nextCursor;
-        _loading = false;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e;
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _loadMore() async {
-    setState(() => _loadingMore = true);
-    try {
-      final res = await _fetch(_cursor);
-      if (!mounted) return;
-      setState(() {
-        _articles = appendUnique(_articles, res.articles, (e) => e.id);
-        _cursor = res.pageInfo.nextCursor;
-      });
-    } catch (_) {
-      // 翻頁失敗保持原清單，使用者可再滑動觸發重試。
-    } finally {
-      if (mounted) setState(() => _loadingMore = false);
-    }
   }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: seniorModeController,
+      listenable: Listenable.merge([seniorModeController, _pager]),
       builder: (context, _) => _buildBody(seniorModeController.enabled),
     );
   }
 
   Widget _buildBody(bool seniorMode) {
-    if (_loading) {
+    final articles = _pager.items;
+    if (_pager.loading) {
       return const TrukuLoadingView();
     }
-    if (_error != null) {
+    if (_pager.error != null) {
       return TrukuErrorView(
-        error: _error,
-        onRetry: _load,
+        error: _pager.error,
+        onRetry: _pager.refresh,
         seniorMode: seniorMode,
       );
     }
-    if (_articles.isEmpty) {
+    if (articles.isEmpty) {
       return _buildEmpty(seniorMode);
     }
     return RefreshIndicator(
-      onRefresh: _load,
+      onRefresh: _pager.refresh,
       color: AppColors.gold,
       child: ListView.separated(
         controller: _scrollController,
         padding: const EdgeInsets.all(16),
-        itemCount: _articles.length + (_cursor != null ? 1 : 0),
+        itemCount: articles.length + (_pager.hasMore ? 1 : 0),
         separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (context, index) {
-          if (index >= _articles.length) {
+          if (index >= articles.length) {
+            if (_pager.loadMoreFailed) {
+              return LoadMoreRetry(
+                onRetry: _pager.retryLoadMore,
+                color: AppColors.gold,
+                seniorMode: seniorMode,
+              );
+            }
             return const Padding(
               padding: EdgeInsets.symmetric(vertical: 16),
               child: Center(
@@ -145,11 +113,11 @@ class _ArticleLikedBookmarkedListState
             );
           }
           return _ArticleListItem(
-            article: _articles[index],
+            article: articles[index],
             seniorMode: seniorMode,
             // 在詳情頁取消收藏/按讚後返回，清單要重新整理，否則仍看得到
             // 已經取消的項目。
-            onReturn: _load,
+            onReturn: _pager.refresh,
           );
         },
       ),
@@ -161,7 +129,7 @@ class _ArticleLikedBookmarkedListState
         ? '還沒有按讚任何文章'
         : '還沒有收藏任何文章';
     return TrukuRefreshableEmpty(
-      onRefresh: _load,
+      onRefresh: _pager.refresh,
       color: AppColors.gold,
       emptyState: TrukuEmptyState(
         icon: Icons.article_outlined,

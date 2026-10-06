@@ -90,6 +90,23 @@ class EventImagesController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 能不能調整新照片的順序：要有兩張以上、沒在挑圖，而且沒有既有照片。
+  /// 既有照片的順序後端改不了，新照片只能接在它們後面，拖曳也換不了封面，
+  /// 所以編輯有照片的活動時整排都不能拖。
+  bool get canReorder => existing.isEmpty && _pending.length > 1 && !_picking;
+
+  /// 把第 [from] 張新照片移到第 [to] 個位置（[to] 是移完之後的位置）。上傳依
+  /// 這個順序，第一張就是封面。不能排序時不動；位置超出範圍也不動——拖曳中
+  /// 另一指刪掉或新增照片時位置會過期（ReorderableListView 張數一變就取消
+  /// 拖曳，這裡是第二道保險）。
+  void move(int from, int to) {
+    if (!canReorder || from == to) return;
+    final n = _pending.length;
+    if (from < 0 || from >= n || to < 0 || to >= n) return;
+    _pending.insert(to, _pending.removeAt(from));
+    notifyListeners();
+  }
+
   /// 標記或取消標記刪除。取消標記會多佔一張，已滿時不能取消，回 false。
   bool toggleRemoved(EventImage image) {
     if (_removedIds.contains(image.id)) {
@@ -180,6 +197,11 @@ class _EventImagesFieldState extends State<EventImagesField> {
       (existing: null, pendingIndex: i, image: MemoryImage(_c.toUpload[i])),
   ];
 
+  /// 排序清單每格要穩定的 key：既有照片用 id，新照片用那份 bytes 本身。
+  Key _itemKey(_Item item) => item.existing != null
+      ? ValueKey(item.existing!.id)
+      : ObjectKey(_c.toUpload[item.pendingIndex!]);
+
   void _preview(List<_Item> items, int index) {
     Navigator.push(
       context,
@@ -206,18 +228,34 @@ class _EventImagesFieldState extends State<EventImagesField> {
     final coverIndex = items.indexWhere(
       (item) => item.existing == null || !_c.isRemoved(item.existing!),
     );
+    // 挑圖中、送出中、只有一張、或有既有照片（編輯）時不能拖。
+    final canDrag = widget.enabled && _c.canReorder;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
           height: size,
-          child: ListView.separated(
+          child: ReorderableListView.builder(
             scrollDirection: Axis.horizontal,
-            itemCount: items.length + (_c.remaining > 0 ? 1 : 0),
-            separatorBuilder: (_, _) => const SizedBox(width: 8),
-            itemBuilder: (_, i) => i == items.length
-                ? _buildAddTile(size)
-                : _buildThumb(items, i, size, isCover: i == coverIndex),
+            buildDefaultDragHandles: false,
+            itemCount: items.length,
+            onReorderItem: (from, to) {
+              if (widget.enabled) _c.move(from, to);
+            },
+            proxyDecorator: (_, i, animation) =>
+                _buildDragProxy(items, i, size, animation, coverIndex),
+            itemBuilder: (_, i) => Padding(
+              key: _itemKey(items[i]),
+              padding: const EdgeInsets.only(right: 8),
+              // 長按才開始拖，點一下照舊是預覽。
+              child: ReorderableDelayedDragStartListener(
+                index: i,
+                enabled: canDrag,
+                child: _buildThumb(items, i, size, isCover: i == coverIndex),
+              ),
+            ),
+            // 「新增」格不參與排序。
+            footer: _c.remaining > 0 ? _buildAddTile(size) : null,
           ),
         ),
         const SizedBox(height: 6),
@@ -228,9 +266,58 @@ class _EventImagesFieldState extends State<EventImagesField> {
             color: AppColors.fog,
           ),
         ),
+        if (_c.canReorder)
+          Text(
+            '長按照片可拖曳調整順序',
+            style: AppTypography.bodyStyle(
+              seniorMode: seniorMode,
+              color: AppColors.fog,
+            ),
+          ),
       ],
     );
   }
+
+  /// 拖曳中的那張：浮起來加陰影。
+  Widget _buildDragProxy(
+    List<_Item> items,
+    int index,
+    double size,
+    Animation<double> animation,
+    int coverIndex,
+  ) => index >= items.length
+      // 拖曳中另一指刪了照片，這格已經不在清單裡（保險，正常會先取消拖曳）。
+      ? const SizedBox.shrink()
+      : AnimatedBuilder(
+          animation: animation,
+          builder: (_, _) {
+            final t = Curves.easeInOut.transform(animation.value);
+            return Material(
+              type: MaterialType.transparency,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(10),
+                    boxShadow: [
+                      BoxShadow(
+                        color: AppColors.ink.withValues(alpha: 0.35 * t),
+                        blurRadius: 12 * t,
+                        offset: Offset(0, 4 * t),
+                      ),
+                    ],
+                  ),
+                  child: _buildThumb(
+                    items,
+                    index,
+                    size,
+                    isCover: index == coverIndex,
+                  ),
+                ),
+              ),
+            );
+          },
+        );
 
   Widget _buildThumb(
     List<_Item> items,

@@ -412,6 +412,45 @@ void main() {
     });
   });
 
+  group('地點與地址', () {
+    Future<void> pumpPlace(
+      WidgetTester tester, {
+      String? location,
+      String? address,
+    }) async {
+      installMockClient({
+        '/api/events/1': {
+          ..._detail(),
+          'location': location,
+          'address': address,
+        },
+        '/api/events/1/reminders': {'reminders': <dynamic>[]},
+        '/api/me': _me(),
+      });
+      await tester.pumpWidget(_app());
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('地點是從地址截出來的：只顯示一列地址', (tester) async {
+      await pumpPlace(
+        tester,
+        location: '部落活動中心',
+        address: '秀林鄉富世村 12 號／部落活動中心',
+      );
+      expect(find.text('秀林鄉富世村 12 號／部落活動中心'), findsOneWidget);
+      expect(find.text('地點 '), findsNothing);
+      expect(find.text('地址 '), findsOneWidget);
+    });
+
+    testWidgets('舊活動地點與地址互不包含：兩列都顯示', (tester) async {
+      await pumpPlace(tester, location: '部落廣場', address: '秀林鄉中正路 1 號');
+      expect(find.text('部落廣場'), findsOneWidget);
+      expect(find.text('秀林鄉中正路 1 號'), findsOneWidget);
+      expect(find.text('地點 '), findsOneWidget);
+      expect(find.text('地址 '), findsOneWidget);
+    });
+  });
+
   group('前景收到活動被刪除的推播', () {
     Future<void> pumpOpenedDetail(WidgetTester tester) async {
       installMockClient({

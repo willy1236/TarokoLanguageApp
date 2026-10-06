@@ -79,16 +79,22 @@ class _AdminCaseDetailScreenState extends State<AdminCaseDetailScreen> {
     }
   }
 
-  /// 後端沒有查單一案件的端點：重抓同一個狀態的列表，把這個案件換成新的。
+  /// 後端沒有查單一案件的端點：沿同一個狀態的列表找回這個案件換成新的；
+  /// 已不在這個狀態（被其他管理員處理了）就提示並回列表重抓。
   Future<void> _refresh() async {
     try {
-      final page = await AdminService.fetchCases(status: _case.status);
+      final result = await findInAdminPages(
+        (cursor) =>
+            AdminService.fetchCases(status: _case.status, cursor: cursor),
+        (fresh) => fresh.id == _case.id,
+      );
       if (!mounted) return;
-      for (final fresh in page.items) {
-        if (fresh.id == _case.id) {
-          setState(() => _case = fresh);
-          return;
-        }
+      final found = result.found;
+      if (found != null) {
+        setState(() => _case = found);
+      } else if (result.gone) {
+        showAdminMessage('這筆已被其他管理員處理');
+        Navigator.of(context).pop(true);
       }
     } catch (e) {
       if (mounted) handleAdminError(context, e);
