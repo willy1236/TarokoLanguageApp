@@ -96,6 +96,12 @@ class ForumPost {
   final bool isPinned;
   final bool isLiked;
   final bool isBookmarked;
+
+  /// 我自己隱藏了這篇（可取消）。只有詳情與「已隱藏的貼文」清單會帶，其他列表一律 false。
+  final bool isHidden;
+
+  /// 我檢舉過這篇（不能取消）。只有詳情會帶，其他列表一律 false。
+  final bool reportedByMe;
   final List<String> images;
   final List<ForumTag> tags;
 
@@ -115,6 +121,8 @@ class ForumPost {
     required this.isPinned,
     required this.isLiked,
     required this.isBookmarked,
+    this.isHidden = false,
+    this.reportedByMe = false,
     required this.images,
     required this.tags,
     this.tribe,
@@ -134,6 +142,9 @@ class ForumPost {
     isLiked: j['is_liked'] == true,
     // 後端補上書籤端點前不會有這個欄位（規格 §9）。
     isBookmarked: j['is_bookmarked'] == true,
+    // 後端 2026-10-09 起只在詳情帶這兩個欄位（決策紀錄 A47），列表缺席時視為 false。
+    isHidden: j['is_hidden'] == true,
+    reportedByMe: j['reported_by_me'] == true,
     images: (j['images'] as List<dynamic>? ?? const [])
         .whereType<String>()
         .toList(),
@@ -155,6 +166,8 @@ class ForumPost {
     bool? isPinned,
     bool? isLiked,
     bool? isBookmarked,
+    bool? isHidden,
+    bool? reportedByMe,
     String? title,
     String? body,
     List<ForumTag>? tags,
@@ -168,6 +181,8 @@ class ForumPost {
     isPinned: isPinned ?? this.isPinned,
     isLiked: isLiked ?? this.isLiked,
     isBookmarked: isBookmarked ?? this.isBookmarked,
+    isHidden: isHidden ?? this.isHidden,
+    reportedByMe: reportedByMe ?? this.reportedByMe,
     images: images,
     tags: tags ?? this.tags,
     tribe: tribe,

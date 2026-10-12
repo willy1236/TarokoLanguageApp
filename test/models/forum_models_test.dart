@@ -57,6 +57,47 @@ void main() {
 
       expect(ForumPost.fromJson(json).author.displayName, '匿名使用者');
     });
+
+    test('詳情帶 is_hidden、reported_by_me 時解析為 true', () {
+      final post = ForumPost.fromJson(
+        _postJson()
+          ..['is_hidden'] = true
+          ..['reported_by_me'] = true,
+      );
+
+      expect(post.isHidden, isTrue);
+      expect(post.reportedByMe, isTrue);
+    });
+
+    test('列表沒有 is_hidden、reported_by_me，或值不是 true 時都視為 false', () {
+      final missing = ForumPost.fromJson(_postJson());
+      final odd = ForumPost.fromJson(
+        _postJson()
+          ..['is_hidden'] = null
+          ..['reported_by_me'] = 'true',
+      );
+
+      expect(missing.isHidden, isFalse);
+      expect(missing.reportedByMe, isFalse);
+      expect(odd.isHidden, isFalse);
+      expect(odd.reportedByMe, isFalse);
+    });
+
+    test('copyWith 可改 isHidden，沒帶時保留隱藏與檢舉狀態', () {
+      final post = ForumPost.fromJson(
+        _postJson()
+          ..['is_hidden'] = true
+          ..['reported_by_me'] = true,
+      );
+
+      final unhidden = post.copyWith(isHidden: false);
+      final liked = post.copyWith(isLiked: false);
+
+      expect(unhidden.isHidden, isFalse);
+      expect(unhidden.reportedByMe, isTrue);
+      expect(liked.isHidden, isTrue);
+      expect(liked.reportedByMe, isTrue);
+    });
   });
 
   group('ForumPost 樂觀更新', () {
