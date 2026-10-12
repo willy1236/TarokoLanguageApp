@@ -1,0 +1,17 @@
+{
+  "_source": "Truku_backend backend/routes/admin.ts GET /admin/moderation/cases（2026-10-09 起的 video_call，preview 形狀見第 793 行）。違規區還沒有隨機視訊案件，照原始碼手寫。",
+  "cases": [
+    {
+      "id": 40, "target_type": "video_call", "target_id": 900,
+      "offender_uid": 21, "offender_nickname": "被檢舉者", "offender_status": "active",
+      "offender_friend_code": "DDDD2345",
+      "source": "user_report", "report_id": 31,
+      "reason": "不雅行為", "content_removed": false,
+      "opened_by": 1, "opened_by_nickname": "管理員甲", "opened_at": "2026-10-09T12:00:00Z",
+      "status": "pending", "reviewed_by": null, "reviewed_by_nickname": null, "reviewed_at": null,
+      "review_note": null, "strike_number": null, "snapshot": null,
+      "preview": { "uid_a": 20, "uid_b": 21, "started_at": "2026-10-09T10:00:00Z", "ended_at": "2026-10-09T10:05:00Z" },
+      "report_snapshot": null
+    }
+  ]
+}
