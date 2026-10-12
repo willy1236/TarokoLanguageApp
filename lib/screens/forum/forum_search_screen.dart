@@ -174,7 +174,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
                     ),
                   );
                   if (result == null) return;
-                  if (result.deleted) {
+                  if (result.removesFromFeed) {
                     _boardViewKey.currentState?.removePost(post.id);
                   }
                 },

@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/screens/forum/forum_bookmarks_screen.dart';
+import 'package:flutter_application_1/screens/forum/forum_detail_screen.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -105,5 +106,60 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('收藏的貼文'), findsOneWidget);
+  });
+  group('從詳情返回', () {
+    // 詳情頁只需要載得起來；返回結果由測試直接 pop，模擬 T-02／T-03 的選單動作。
+    MockClient client() => MockClient((req) async {
+      final path = req.url.path;
+      if (path == '/api/forum/bookmarks') return bookmarksPage();
+      if (path == '/api/forum/posts/1') {
+        final post = (jsonDecode(bookmarksPage().body)['posts'] as List).first;
+        return http.Response(
+          jsonEncode({'post': post}),
+          200,
+          headers: {'content-type': 'application/json; charset=utf-8'},
+        );
+      }
+      if (path == '/api/forum/posts/1/comments') {
+        return http.Response(
+          jsonEncode({
+            'comments': [],
+            'replies': [],
+            'page_info': {'next_cursor': null, 'has_more': false},
+          }),
+          200,
+        );
+      }
+      return http.Response('{}', 404);
+    });
+
+    Future<void> openAndPop(
+      WidgetTester tester,
+      ForumDetailResult result,
+    ) async {
+      ApiClient.httpClient = client();
+      await tester.pumpWidget(const MaterialApp(home: ForumBookmarksScreen()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('收藏的貼文'));
+      await tester.pumpAndSettle();
+      expect(find.byType(ForumDetailScreen), findsOneWidget);
+
+      tester.state<NavigatorState>(find.byType(Navigator).first).pop(result);
+      await tester.pumpAndSettle();
+      expect(find.byType(ForumDetailScreen), findsNothing);
+    }
+
+    testWidgets('從動態拿掉（檢舉或隱藏）時收藏清單保留該篇', (tester) async {
+      await openAndPop(tester, const ForumDetailResult.removedFromFeed());
+
+      expect(find.text('收藏的貼文'), findsOneWidget);
+    });
+
+    testWidgets('貼文已刪除時收藏清單移除該篇', (tester) async {
+      await openAndPop(tester, const ForumDetailResult(deleted: true));
+
+      expect(find.text('收藏的貼文'), findsNothing);
+    });
   });
 }

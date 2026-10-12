@@ -169,7 +169,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       ),
     );
     if (result == null) return;
-    if (result.deleted) {
+    if (result.removesFromFeed) {
       _boardViewKey.currentState?.removePost(post.id);
     }
   }
