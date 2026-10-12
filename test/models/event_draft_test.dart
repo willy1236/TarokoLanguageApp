@@ -212,6 +212,29 @@ void main() {
         'address': '富世村／活動中心',
       });
     });
+
+    test('沒有座標的舊活動改用地圖選點：送新的地點名稱、地址與座標', () {
+      final e = old('部落', '秀林鄉');
+      final d = EventDraft.fromDetail(e);
+      const pick = PickedLocation(
+        name: '富世部落活動中心',
+        address: '花蓮縣秀林鄉富世村 12 號',
+        latitude: 24.15,
+        longitude: 121.62,
+      );
+      final edited = EventDraft(
+        title: d.title,
+        description: d.description,
+        address: pick.address,
+        picked: pick,
+      );
+      expect(edited.toPatchBody(e), {
+        'location': '富世部落活動中心',
+        'address': '花蓮縣秀林鄉富世村 12 號',
+        'latitude': 24.15,
+        'longitude': 121.62,
+      });
+    });
   });
 
   group('地圖選點', () {
