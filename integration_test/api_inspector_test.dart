@@ -1240,6 +1240,15 @@ Future<void> _inspect(
   Map<String, F>? itemShape,
   Set<String> itemNullable = const {},
   Map<String, F> itemOptional = const {},
+
+  /// 回應把主體包在一個物件 key 底下時（例如 `{post: {...}}`），
+  /// 用 [objectKey] 指定 key、[objectShape] 斷言裡面的欄位；
+  /// [objectNullable]、[objectOptional] 同 [nullable]、[optional]。
+  /// 外層仍需給 [shape]（通常是 `{objectKey: F.object}`），沒給 shape 就不檢查。
+  String? objectKey,
+  Map<String, F>? objectShape,
+  Set<String> objectNullable = const {},
+  Map<String, F> objectOptional = const {},
   int expectStatus = 200,
 
   /// 指定 fixture 檔名。路徑含動態 id（例如 /api/events/123）時必須給，
@@ -1327,6 +1336,16 @@ Future<void> _inspect(
       nullable: itemNullable,
       optional: itemOptional,
       label: '$method $path.$listKey',
+    );
+  }
+
+  if (objectKey != null && objectShape != null) {
+    expectShape(
+      (decoded as Map<String, dynamic>)[objectKey],
+      objectShape,
+      nullable: objectNullable,
+      optional: objectOptional,
+      label: '$method $path.$objectKey',
     );
   }
 }
