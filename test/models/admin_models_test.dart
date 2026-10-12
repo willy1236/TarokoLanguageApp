@@ -2,6 +2,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_application_1/core/utils/date_format.dart';
 import 'package:flutter_application_1/models/admin_models.dart';
 
 import '../helpers/fixtures.dart';
@@ -234,6 +235,24 @@ void main() {
       expect((call.callerUid, call.calleeUid), (20, 21));
       expect(call.createdAt, isNotNull);
       expect(call.endedAt, isNotNull);
+    });
+
+    test('雙方與起訖文字：好友通話用箭頭；跨日結束帶日期；沒有開始時間為 null', () {
+      expect(
+        const AdminCallInfo(callerUid: 6, calleeUid: 7).partiesText,
+        '6 → 7',
+      );
+      expect(
+        const AdminCallInfo(randomMatch: true, callerUid: 20).partiesText,
+        '使用者 A 20／使用者 B ?',
+      );
+      final start = DateTime(2026, 10, 9, 23, 50);
+      final end = DateTime(2026, 10, 10, 0, 10);
+      expect(
+        AdminCallInfo(createdAt: start, endedAt: end).periodText,
+        '${formatDateTime(start)} – ${formatDateTime(end)}',
+      );
+      expect(const AdminCallInfo().periodText, isNull);
     });
 
     test('類型與通話狀態的中文', () {

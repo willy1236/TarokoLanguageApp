@@ -80,11 +80,18 @@ class AdminReportPreview extends StatelessWidget {
         ),
       if (preview != null && preview.isNotEmpty)
         AdminQuote(preview, seniorMode: seniorMode),
-      if (call != null) ...[
+      if (call != null && call.randomMatch) ...[
+        AdminInfoRow(
+          '通話雙方',
+          '${call.partiesText}（${adminCallStatusLabel(call.status)}）',
+          seniorMode: seniorMode,
+        ),
+        if (call.periodText case final period?)
+          AdminInfoRow('通話時間', period, seniorMode: seniorMode),
+      ] else if (call != null) ...[
         AdminInfoRow(
           '通話',
-          '${call.callerUid ?? '?'} → ${call.calleeUid ?? '?'}'
-              '（${call.status ?? '未知'}）',
+          '${call.partiesText}（${adminCallStatusLabel(call.status)}）',
           seniorMode: seniorMode,
         ),
         if (call.createdAt != null)

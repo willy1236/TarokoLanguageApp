@@ -4,6 +4,7 @@
 // 後端的後台回應欄位有過渡期寫法（例如檢舉人暱稱曾叫 reporter_name），
 // 解析一律容許缺欄位，缺了寧可顯示空白也不要讓整頁載入失敗。
 
+import '../core/utils/date_format.dart';
 import '../shared/utils/birth_date.dart';
 
 DateTime? _date(Object? v) =>
@@ -134,6 +135,25 @@ class AdminCallInfo {
         endedAt: _date(j['ended_at']),
         randomMatch: true,
       );
+
+  /// 雙方：好友通話「20 → 21」，隨機視訊「使用者 A 20／使用者 B 21」。
+  String get partiesText {
+    final a = callerUid ?? '?';
+    final b = calleeUid ?? '?';
+    return randomMatch ? '使用者 A $a／使用者 B $b' : '$a → $b';
+  }
+
+  /// 起訖時間「2026/10/09 18:00 – 18:05」（跨日時結束也帶日期）；
+  /// 還沒結束時「2026/10/09 18:00 起（未結束）」；沒有開始時間為 null。
+  String? get periodText {
+    final start = createdAt;
+    if (start == null) return null;
+    final end = endedAt;
+    if (end == null) return '${formatDateTime(start)} 起（未結束）';
+    final sameDay = formatDate(start) == formatDate(end);
+    return '${formatDateTime(start)} – '
+        '${sameDay ? formatTime(end) : formatDateTime(end)}';
+  }
 }
 
 /// 通話狀態的中文。好友通話：ringing／accepted／declined／missed／cancelled／ended；
