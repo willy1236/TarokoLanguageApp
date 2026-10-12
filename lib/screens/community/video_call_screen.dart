@@ -174,7 +174,14 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       cancelText: '取消',
       confirmText: '封鎖',
     );
-    if (confirmed != true || !mounted || _call.leaving) return;
+    if (confirmed != true) return;
+    await _blockPeerNow();
+  }
+
+  /// 不再確認、直接封鎖對方並結束通話。檢查與設定 [_blockInFlight] 之間
+  /// 不能有 await，[_onLeft] 才不會在中間插進來、對剛封鎖的人問檢舉。
+  Future<void> _blockPeerNow() async {
+    if (!mounted || _call.leaving) return;
     _blockInFlight = true;
     try {
       await FriendService.blockUser(widget.session.peerFriendCode);
