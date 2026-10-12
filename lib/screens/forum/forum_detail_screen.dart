@@ -39,11 +39,23 @@ import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 
-/// 詳情頁關閉時回報的結果：貼文是否被刪除。
+/// 詳情頁關閉時回報的結果，交給開啟它的列表決定要不要拿掉這篇。
 class ForumDetailResult {
+  /// 貼文已被刪除或下架：任何列表都該拿掉。
   final bool deleted;
 
-  const ForumDetailResult({this.deleted = false});
+  /// 貼文從「我的動態」拿掉（檢舉或隱藏）：只影響動態類列表，
+  /// 收藏、按讚是使用者自己整理的清單，不因此移除。
+  final bool removedFromFeed;
+
+  const ForumDetailResult({this.deleted = false}) : removedFromFeed = false;
+
+  const ForumDetailResult.removedFromFeed()
+    : deleted = false,
+      removedFromFeed = true;
+
+  /// 廣場、論壇搜尋這類動態列表是否該移除這篇。
+  bool get removesFromFeed => deleted || removedFromFeed;
 }
 
 class ForumDetailScreen extends StatefulWidget {
