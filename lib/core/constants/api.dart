@@ -90,6 +90,7 @@ class ApiConfig {
   static const String videoSessionCurrent = '/api/video/session/current';
   static String videoSessionToken(int id) => '/api/video/session/$id/token';
   static String videoSessionEnd(int id) => '/api/video/session/$id/end';
+  static String videoSessionReport(int id) => '/api/video/session/$id/report';
 
   static const String videos = '/api/videos';
   static String videoDetail(int id) => '/api/videos/$id';
