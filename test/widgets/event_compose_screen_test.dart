@@ -157,7 +157,7 @@ void main() {
     await tester.tap(find.text('儲存'));
     await tester.pumpAndSettle();
     expect(sent, {
-      'location': '富世村 13 號',
+      'location': null,
       'address': '花蓮縣秀林鄉富世村 13 號',
       'latitude': null,
       'longitude': null,

@@ -7,12 +7,12 @@ import 'picked_location.dart';
 /// 文字欄位保留使用者輸入的原樣，trim 在驗證與組 body 時才做；
 /// [maxParticipantsText] 也保留原字串，才能區分「留空＝不限」與「亂填」。
 ///
-/// 地點只有一個 [address] 輸入；後端仍要 location（列表、推播用的短名稱）
-/// 與 address 兩個必填，location 由 [address] 推得，見 [location]。
+/// 地點只有一個 [address] 輸入。location（列表、推播顯示用的地點名稱）只在
+/// 地圖上選到 Google 地點時才送，手打地址不送，後端顯示時改用 address，見 [location]。
 /// 在地圖上選過位置時另外帶座標，見 [picked]。
 ///
 /// 後端契約（PATCH /api/events/:id）：只接受 [editableFields]；省略＝不動，
-/// 文字欄位送空字串或 null 皆為清空（title/location/address 不可清空），
+/// 文字欄位送空字串或 null 皆為清空（title/address 不可清空），
 /// 名額送 null＝不限名額。所有時間欄位（開始、結束、報名開始／截止）不可改。
 class EventDraft {
   final String title;
@@ -94,8 +94,8 @@ class EventDraft {
     'tribe_id',
   };
 
-  /// 有座標的活動，地點名稱是當初選點時的 Google 地點名稱（或截出的短名稱），
-  /// 不是另外填的資訊，地址不跟它合併；名稱原樣保留，沒改地址時才不會被重新截取。
+  /// 有座標的活動，地點名稱是當初選點時的 Google 地點名稱（舊活動可能是截出的短名稱），
+  /// 不是另外填的資訊，地址不跟它合併；名稱原樣保留，沒改地址時才不會被清掉。
   static PickedLocation? _pickedOf(EventDetail e) {
     final lat = e.latitude;
     final lng = e.longitude;
@@ -125,32 +125,15 @@ class EventDraft {
   }
 
   /// 送給後端的地點名稱，列表卡片、搜尋結果、提醒推播都用它：
-  /// 從地圖選到 Google 地點時用地點名稱，否則從地址截出。
-  String get location {
+  /// 從地圖選到 Google 地點時用地點名稱；手打地址或拖曳選的位置沒有名稱時為 null，
+  /// 後端顯示時改用完整地址。
+  String? get location {
     final name = _activePick?.name?.trim() ?? '';
-    return name.isNotEmpty ? name : shortNameOf(address);
+    return name.isNotEmpty ? name : null;
   }
 
   double? get latitude => _activePick?.latitude;
   double? get longitude => _activePick?.longitude;
-
-  /// 從地址截出短名稱：有分隔符（逗號、頓號、斜線）取最後一段；否則去掉開頭的
-  /// 郵遞區號與縣市（及緊接的鄉鎮市區）前綴；截完是空的就用原文。空白不算分隔符，
-  /// 「富世村 12 號」才不會截成「號」。
-  static String shortNameOf(String address) {
-    final text = address.trim();
-    final parts = text.split(RegExp(r'[,，、/／]'));
-    final segments = parts.map((s) => s.trim()).where((s) => s.isNotEmpty);
-    if (parts.length > 1 && segments.isNotEmpty) return segments.last;
-    final stripped = text.replaceFirst(_regionPrefix, '').trim();
-    return stripped.isEmpty ? text : stripped;
-  }
-
-  // 鄉鎮市區只在接著縣市時才算前綴，「光復鄉公所」「富世社區活動中心」這類以地名開頭的
-  // 場地名稱才不會被截掉；「縣立」「市立」是機關名稱的一部分，也不截。
-  static final _regionPrefix = RegExp(
-    r'^(\d{3,6}\s*)?((.{2,3}?[縣市])(?!立)((.{1,3}?[鄉鎮市區])(?!立))?)?',
-  );
 
   /// 名額：留空 = 不限（null）；格式錯誤時也回 null，先呼叫 [validate] 擋掉。
   int? get maxParticipants => int.tryParse(maxParticipantsText.trim());
@@ -213,10 +196,11 @@ class EventDraft {
     final body = <String, dynamic>{
       'title': title.trim(),
       'description': description.trim(),
-      'location': location.trim(),
       'address': address.trim(),
       'starts_at': startsAt!.toUtc().toIso8601String(),
     };
+    final loc = location;
+    if (loc != null) body['location'] = loc;
     if (latitude != null) {
       body['latitude'] = latitude;
       body['longitude'] = longitude;
@@ -257,6 +241,9 @@ class EventDraft {
       for (final key in editableFields)
         if (before[key] != after[key]) key: after[key],
     };
+    // 地點名稱跟著地址走：改了地址就一併送，手打時送 null 清掉舊的名稱，
+    // 列表才不會還顯示改之前的地點。
+    if (body.containsKey('address')) body['location'] = after['location'];
     // 後端要求座標成對：只往正北移動時經度沒變，也要一起送。
     if (body.containsKey('latitude') || body.containsKey('longitude')) {
       body['latitude'] = after['latitude'];
@@ -268,7 +255,7 @@ class EventDraft {
   static Map<String, Object?> _editableValues(EventDraft d) => {
     'title': d.title.trim(),
     'description': d.description.trim(),
-    'location': d.location.trim(),
+    'location': d.location,
     'address': d.address.trim(),
     'latitude': d.latitude,
     'longitude': d.longitude,

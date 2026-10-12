@@ -170,43 +170,14 @@ void main() {
   });
 
   group('地址', () {
-    test('短名稱：有分隔符取最後一段', () {
-      expect(EventDraft.shortNameOf('秀林鄉富世村 12 號／部落活動中心'), '部落活動中心');
-      expect(EventDraft.shortNameOf('花蓮縣秀林鄉, 文蘭部落'), '文蘭部落');
-      expect(EventDraft.shortNameOf('崇德、天祥'), '天祥');
-      expect(EventDraft.shortNameOf('富世村/'), '富世村');
-    });
-
-    test('短名稱：空白不算分隔符，去掉郵遞區號與縣市鄉鎮前綴', () {
-      expect(EventDraft.shortNameOf('花蓮縣秀林鄉富世村 12 號'), '富世村 12 號');
-      expect(EventDraft.shortNameOf('972 花蓮縣秀林鄉富世村'), '富世村');
-      expect(EventDraft.shortNameOf('臺北市信義區市府路 1 號'), '市府路 1 號');
-      expect(EventDraft.shortNameOf('花蓮縣秀林鄉富世村'), '富世村');
-      expect(EventDraft.shortNameOf('花蓮市中山路 1 號'), '中山路 1 號');
-      expect(EventDraft.shortNameOf('部落活動中心'), '部落活動中心');
-    });
-
-    test('短名稱：以地名開頭的場地名稱不截', () {
-      expect(EventDraft.shortNameOf('光復鄉公所'), '光復鄉公所');
-      expect(EventDraft.shortNameOf('富世社區活動中心'), '富世社區活動中心');
-      expect(EventDraft.shortNameOf('花蓮縣立體育館'), '花蓮縣立體育館');
-      expect(EventDraft.shortNameOf('花蓮縣秀林鄉立圖書館'), '秀林鄉立圖書館');
-      expect(EventDraft.shortNameOf('秀林鄉富世村'), '秀林鄉富世村');
-    });
-
-    test('短名稱：截完是空的用原文', () {
-      expect(EventDraft.shortNameOf('花蓮縣秀林鄉'), '花蓮縣秀林鄉');
-      expect(EventDraft.shortNameOf(' 秀林鄉 '), '秀林鄉');
-    });
-
-    test('送出時 location 由地址推得，address 送完整地址', () {
+    test('手打地址：不送 location，address 送完整地址', () {
       final body = EventDraft(
         title: '走讀',
         description: '說明',
         address: ' 秀林鄉富世村 12 號／活動中心 ',
         startsAt: future,
       ).toCreateBody();
-      expect(body['location'], '活動中心');
+      expect(body.containsKey('location'), isFalse);
       expect(body['address'], '秀林鄉富世村 12 號／活動中心');
     });
 
@@ -227,7 +198,7 @@ void main() {
       expect(EventDraft.fromDetail(old('部落', null)).address, '部落');
     });
 
-    test('沒改地址不送地點與地址；改了兩個都送', () {
+    test('沒改地址不送地點與地址；改了地址連同 location: null 一起送', () {
       final e = old('部落', '秀林鄉');
       final d = EventDraft.fromDetail(e);
       expect(d.toPatchBody(e), isEmpty);
@@ -237,7 +208,7 @@ void main() {
         address: '富世村／活動中心',
       );
       expect(edited.toPatchBody(e), {
-        'location': '活動中心',
+        'location': null,
         'address': '富世村／活動中心',
       });
     });
@@ -267,7 +238,7 @@ void main() {
       expect(body['longitude'], 121.62);
     });
 
-    test('拖曳地圖選的沒有名稱：地點名稱照地址截取', () {
+    test('拖曳地圖選的沒有名稱：不送 location，仍帶座標', () {
       final body = EventDraft(
         title: '走讀',
         description: '說明',
@@ -279,15 +250,15 @@ void main() {
         ),
         startsAt: future,
       ).toCreateBody();
-      expect(body['location'], '富世村 12 號');
+      expect(body.containsKey('location'), isFalse);
       expect(body['latitude'], 24.15);
     });
 
-    test('選點後手動改了地址：不帶座標，地點名稱改從地址截', () {
+    test('選點後手動改了地址：不帶座標也不送 location', () {
       final body = draft(address: '花蓮縣秀林鄉富世村 13 號').toCreateBody();
       expect(body.containsKey('latitude'), isFalse);
       expect(body.containsKey('longitude'), isFalse);
-      expect(body['location'], '富世村 13 號');
+      expect(body.containsKey('location'), isFalse);
     });
 
     EventDetail withCoords() => EventDetail(
@@ -325,10 +296,10 @@ void main() {
       expect(d.toPatchBody(e), isEmpty);
     });
 
-    test('編輯時手動改地址：清除座標（兩個都送 null）', () {
+    test('編輯時手動改地址：清除座標與地點名稱（都送 null）', () {
       final e = withCoords();
       expect(edited(e, address: '花蓮縣秀林鄉崇德村').toPatchBody(e), {
-        'location': '崇德村',
+        'location': null,
         'address': '花蓮縣秀林鄉崇德村',
         'latitude': null,
         'longitude': null,

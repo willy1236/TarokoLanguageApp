@@ -30,8 +30,8 @@ import 'widgets/event_images_field.dart';
 /// 清空語意：文字欄位送空字串即清空；名額留空送 null（不限名額）。
 /// 後端只允許編輯未取消、未開始的活動，否則回 409 EVENT_CLOSED / EVENT_ENDED。
 ///
-/// 必填：標題 / 活動介紹 / 地址 / 開始時間（需未來、1 年內）。後端的地點名稱由
-/// 地址推得，見 [EventDraft.location]。
+/// 必填：標題 / 活動介紹 / 地址 / 開始時間（需未來、1 年內）。地點名稱只在地圖上
+/// 選到 Google 地點時送，見 [EventDraft.location]。
 /// 聯絡 email、電話為選填。
 /// 權限：僅 organizer / admin 角色可發起，一般帳號會收到 403，表單會顯示錯誤訊息。
 ///

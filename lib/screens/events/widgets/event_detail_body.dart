@@ -340,8 +340,9 @@ class EventDetailBody extends StatelessWidget {
     );
   }
 
-  /// 地點與地址。新活動只填一個地址、地點是從地址截出來的，同一件事不重複
-  /// 顯示兩列；舊活動兩者分開填、互不包含時維持兩列。
+  /// 地點與地址。新活動只填一個地址，地點是空的、或是地圖選點的名稱、或是
+  /// 舊版 App 從地址截出來的，包含在地址裡時同一件事不重複顯示兩列；
+  /// 舊活動兩者分開填、互不包含時維持兩列。
   static List<(IconData, String, String)> _placeRows(EventDetail e) {
     final location = e.location?.trim() ?? '';
     final address = e.address?.trim() ?? '';
