@@ -509,7 +509,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildOtherSection({required bool seniorMode}) {
     final items = <(String, VoidCallback)>[
-      ('意見回饋', _openContactEmail),
+      ('聯絡我們／回報不當內容', _openContactEmail),
       ('關於語見太魯閣', _openAboutApp),
       ('服務條款與隱私權政策', _openTermsView),
       ('下載我的資料', () => exportMyData(context)),
@@ -606,7 +606,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final uri = Uri(
       scheme: 'mailto',
       path: 'yujiantailuge@gmail.com',
-      query: 'subject=語見太魯閣 App 意見回饋',
+      query: 'subject=【語見太魯閣】回報',
     );
     final launched = await launchUrl(uri);
     if (!launched && mounted) {
