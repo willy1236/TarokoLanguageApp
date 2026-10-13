@@ -19,6 +19,7 @@
 //   POST   /api/forum/reports                     檢舉
 //   POST   / DELETE /api/forum/posts/:id/bookmark 收藏 / 取消
 //   GET    /api/forum/bookmarks                   我的收藏（游標是書籤 id，非貼文 id）
+//   POST   / DELETE /api/forum/posts/:id/hide     隱藏 / 取消隱藏（只影響自己的動態）
 //   GET    /api/forum/posts                       跨看板總覽（board 選填）
 //   GET    /api/forum/posts/likes                 我按讚過的貼文（游標是 liked_at）
 //   GET    /api/forum/comments/likes               我按讚過的留言（游標是 liked_at）
@@ -300,5 +301,18 @@ class ForumService {
       query: PageInfo.query(cursor: cursor),
     );
     return ForumPostPage.fromJson(data);
+  }
+
+  // ── 隱藏 ──────────────────────────────────────────────────
+
+  /// 回傳操作後的隱藏狀態。隱藏只影響自己的動態，作者與其他人照常看得到。
+  /// 重複隱藏或重複取消後端都回 200；隱藏看不到的貼文回 404 `POST_NOT_FOUND`，
+  /// 取消隱藏不會 404。
+  static Future<bool> setHidden(int id, {required bool hidden}) async {
+    final path = ApiConfig.forumPostHide(id);
+    final data = hidden
+        ? await ApiClient.post(path)
+        : await ApiClient.delete(path);
+    return data['is_hidden'] == true;
   }
 }

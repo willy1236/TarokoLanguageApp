@@ -221,4 +221,16 @@ void main() {
     expect(seen.single.url.path, '/api/forum/posts/7/bookmark');
     expect(result, isFalse);
   });
+
+  test('setHidden hidden=true 走 POST、hidden=false 走 DELETE', () async {
+    respondWith({'is_hidden': true});
+    expect(await ForumService.setHidden(7, hidden: true), isTrue);
+    expect(seen.single.method, 'POST');
+    expect(seen.single.url.path, '/api/forum/posts/7/hide');
+
+    respondWith({'is_hidden': false});
+    expect(await ForumService.setHidden(7, hidden: false), isFalse);
+    expect(seen.single.method, 'DELETE');
+    expect(seen.single.url.path, '/api/forum/posts/7/hide');
+  });
 }

@@ -139,6 +139,7 @@ class ApiConfig {
   // 書籤端點由後端另行補上，前端依規格 §9 的約定先行實作。
   static String forumPostBookmark(int id) => '/api/forum/posts/$id/bookmark';
   static const String forumBookmarks = '/api/forum/bookmarks';
+  static String forumPostHide(int id) => '/api/forum/posts/$id/hide';
   static const String forumPostLikes = '/api/forum/posts/likes';
   static const String forumCommentLikes = '/api/forum/comments/likes';
 
