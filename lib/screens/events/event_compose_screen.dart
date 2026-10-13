@@ -344,7 +344,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       if (editing == null) {
         final created = await EventService.createEvent(draft);
         tribeNotifyLimited = draft.notifyTribe && created.tribeNotifyLimited;
-        imageFailure = await _uploadNewImages(created.id);
+        imageFailure = await _images.submit(created.id, creating: true);
       } else {
         // 時間欄位已不能改時後端回 409，照片也就不送，見下方 catch。
         final updated = await EventService.updateEvent(
@@ -353,7 +353,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           editing,
         );
         participantNotifyLimited = updated.notifyLimited;
-        imageFailure = await _syncEditedImages(editing.id);
+        imageFailure = await _images.submit(editing.id, creating: false);
       }
       // 管理員填了新分類：後端已加進分類表，重抓讓下次進發起頁就看得到。
       // 活動分頁的篩選列由 T-11 的 eventsChanged 處理。
@@ -424,44 +424,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       debugPrint('EventComposeScreen: 照片網址更新失敗（忽略）：$e');
     } finally {
       _refreshingImageUrls = false;
-    }
-  }
-
-  /// 建立活動後上傳選好的照片。活動已經建立，照片失敗不能讓整個送出變失敗
-  /// 而留在表單（再按一次會重複建立活動），回傳要告訴發起人的說明。
-  Future<String?> _uploadNewImages(int eventId) async {
-    final images = _images.toUpload;
-    if (images.isEmpty) return null;
-    try {
-      await EventService.uploadImages(eventId, images);
-      return null;
-    } catch (e) {
-      final reason = apiErrorMessage(e, fallback: '網路不穩');
-      return '圖片可以稍後在編輯頁補上（$reason）';
-    }
-  }
-
-  /// 編輯儲存時，文字欄位存好後處理照片：先刪標記的、再傳新的——先刪才不會在
-  /// 已有 6 張時被上限擋下。文字已存、無法回滾，照片失敗只回傳說明。
-  Future<String?> _syncEditedImages(int eventId) async {
-    final uploads = _images.toUpload;
-    try {
-      for (final imageId in _images.toDelete) {
-        await EventService.deleteImage(eventId, imageId);
-      }
-    } catch (e) {
-      final reason = apiErrorMessage(e, fallback: '網路不穩');
-      return uploads.isEmpty
-          ? '有照片沒有刪除（$reason），可到活動頁頂端再刪'
-          : '有照片沒有刪除、新照片也沒有上傳（$reason），可到活動頁頂端調整';
-    }
-    if (uploads.isEmpty) return null;
-    try {
-      await EventService.uploadImages(eventId, uploads);
-      return null;
-    } catch (e) {
-      final reason = apiErrorMessage(e, fallback: '網路不穩');
-      return '新照片沒有上傳（$reason），可到活動頁頂端重新新增';
     }
   }
 
