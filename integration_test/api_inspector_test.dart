@@ -338,6 +338,54 @@ void main() {
         objectOptional: _forumPostOptional,
       );
     });
+    // 隱藏貼文（2026-10-09 前端待辦 T-03，決策紀錄 A47）。錯誤路徑不寫資料；
+    // 成功路徑會真的隱藏一篇別人的貼文，同一個 test 內一定取消隱藏還原
+    // （取消隱藏冪等、必回 200）。activity log 會留一筆 forum.post.hide。
+    test(
+      'POST /api/forum/posts/999999999/hide (測 404 格式，不寫入)',
+      () => _inspect(
+        'POST',
+        ApiConfig.forumPostHide(999999999),
+        fixtureAs: 'post_api_forum_post_hide_404.json',
+        expectStatus: 404,
+        expectError: true,
+        errorCode: 'POST_NOT_FOUND',
+      ),
+    );
+    test(
+      'DELETE /api/forum/posts/999999999/hide (沒隱藏過也回 200，不寫入)',
+      () => _inspect(
+        'DELETE',
+        ApiConfig.forumPostHide(999999999),
+        fixtureAs: 'delete_api_forum_post_hide.json',
+        shape: const {'is_hidden': F.boolean},
+      ),
+    );
+    test('POST /api/forum/posts/:id/hide (挑別人的貼文，測完自動取消隱藏)', () async {
+      if (_token == null) {
+        markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+        return;
+      }
+      final postId = await _findOthersPostId();
+      if (postId == null) {
+        markTestSkipped('動態裡沒有別人的貼文可隱藏');
+        return;
+      }
+      try {
+        await _inspect(
+          'POST',
+          ApiConfig.forumPostHide(postId),
+          fixtureAs: 'post_api_forum_post_hide.json',
+          shape: const {'is_hidden': F.boolean},
+        );
+      } finally {
+        await _inspect(
+          'DELETE',
+          ApiConfig.forumPostHide(postId),
+          shape: const {'is_hidden': F.boolean},
+        );
+      }
+    });
     test(
       'GET /api/forum/bookmarks',
       () => _inspect(
@@ -926,6 +974,38 @@ Future<int?> _findMostCommentedPostId() async {
   return id is int ? id : int.tryParse('$id');
 }
 
+/// 打 /api/forum/posts 找第一篇不是自己發的貼文 id（隱藏自己的貼文後端回 400）。
+/// 動態本來就排除已隱藏的貼文，挑到的一定是還沒隱藏的。
+/// 作者以好友碼比對（好友碼強制後別人的 uid 不再回傳），沒有好友碼才退回 uid。
+Future<int?> _findOthersPostId() async {
+  final me = await _fetchMe();
+  final myCode = me?['friend_code'];
+  final myUid = me?['uid'];
+  if (myCode == null && myUid == null) return null;
+  final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.forumPosts}?limit=50');
+  final response = await http.get(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_token',
+    },
+  );
+  if (response.statusCode != 200) return null;
+  final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+  for (final p
+      in (decoded['posts'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()) {
+    final author = p['author'] as Map<String, dynamic>?;
+    final code = author?['friend_code'];
+    final uid = author?['uid'];
+    if (code == null && uid == null) continue; // 已刪除用戶，判斷不了是不是自己
+    if (code != null ? code == myCode : '$uid' == '$myUid') continue;
+    final id = p['id'];
+    return id is int ? id : int.tryParse('$id');
+  }
+  return null;
+}
+
 /// 打 /api/friends 取第一位好友的好友碼，給私訊歷史用。
 Future<String?> _firstFriendCode() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.friends}');
@@ -1322,6 +1402,12 @@ Future<void> _inspect(
       response = await http.get(uri, headers: headers);
     case 'PATCH':
       response = await http.patch(
+        uri,
+        headers: headers,
+        body: body != null ? jsonEncode(body) : null,
+      );
+    case 'DELETE':
+      response = await http.delete(
         uri,
         headers: headers,
         body: body != null ? jsonEncode(body) : null,
