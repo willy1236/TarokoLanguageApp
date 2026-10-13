@@ -15,12 +15,14 @@ import 'package:flutter_application_1/screens/content_push_navigation.dart';
 import 'package:flutter_application_1/screens/events/event_detail_screen.dart';
 import 'package:flutter_application_1/screens/forum/forum_detail_screen.dart';
 import 'package:flutter_application_1/screens/inbox/inbox_screen.dart';
+import 'package:flutter_application_1/screens/moderation/moderation_case_screen.dart';
 
 import '../helpers/flow_test_helpers.dart';
 import '../helpers/widget_test_helpers.dart';
 
 final _postPath = RegExp(r'^/api/forum/posts/(\d+)$');
 final _eventPath = RegExp(r'^/api/events/\d+$');
+final _casePath = RegExp(r'^/api/me/moderation/cases/\d+$');
 
 Map<String, dynamic> _postJson(int id) => {
   'id': id,
@@ -76,8 +78,8 @@ void main() {
           'next_cursor': null,
         });
       }
-      // 活動詳情只數次數，載入失敗顯示錯誤頁不影響導頁斷言。
-      if (_eventPath.hasMatch(path)) {
+      // 活動與處置詳情只數次數，載入失敗顯示錯誤頁不影響導頁斷言。
+      if (_eventPath.hasMatch(path) || _casePath.hasMatch(path)) {
         hits[path] = (hits[path] ?? 0) + 1;
       }
       return errorResponse('NOT_FOUND', status: 404);
@@ -324,6 +326,48 @@ void main() {
       expect(hits[path], 3);
       await pop(tester);
       expect(find.text('HOME'), findsOneWidget);
+    });
+  });
+
+  group('處置詳情通知', () {
+    const path = '/api/me/moderation/cases/31';
+
+    testWidgets('詳情頁在最上層：就地重載，不疊頁', (tester) async {
+      await start(tester);
+      await push(tester, ModerationCaseScreen.route(31));
+      expect(hits[path], 1);
+
+      openModerationCasePush(routes, 31);
+      await pumpFrames(tester);
+
+      expect(hits[path], 2);
+      expect(find.byType(ModerationCaseScreen), findsOneWidget);
+      await pop(tester);
+      expect(find.text('HOME'), findsOneWidget);
+    });
+
+    testWidgets('詳情頁被通話畫面蓋住：疊一份新的，返回回到通話', (tester) async {
+      await start(tester);
+      await push(tester, ModerationCaseScreen.route(31));
+      await push(tester, callScreen());
+
+      openModerationCasePush(routes, 31);
+      await pumpFrames(tester);
+
+      expect(hits[path], 2);
+      expect(
+        find.byType(ModerationCaseScreen, skipOffstage: false),
+        findsNWidgets(2),
+      );
+      await pop(tester);
+      expect(find.text('CALL'), findsOneWidget);
+    });
+
+    testWidgets('沒開著：開啟詳情頁', (tester) async {
+      await start(tester);
+      openModerationCasePush(routes, 31);
+      await pumpFrames(tester);
+      expect(find.byType(ModerationCaseScreen), findsOneWidget);
     });
   });
 }
