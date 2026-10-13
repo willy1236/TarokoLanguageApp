@@ -65,4 +65,60 @@ void main() {
     expect(FriendCall.listFromJson(null), isEmpty);
     expect(FriendCall.listFromJson({'id': 1}), isEmpty);
   });
+
+  group('對話列表的 last_call、last_activity_at', () {
+    Map<String, dynamic> conversation(Map<String, dynamic> overrides) => {
+      'friend_code': 'BBBB2345',
+      'unread_count': 1,
+      'last_message': {
+        'body': '在嗎',
+        'created_at': '2026-10-12T05:00:00Z',
+        'mine': false,
+      },
+      ...overrides,
+    };
+
+    test('通話比訊息晚：最後活動是通話', () {
+      final c = Conversation.fromJson(
+        conversation({
+          'last_call': call({'created_at': '2026-10-12T06:00:00Z'}),
+          'last_activity_at': '2026-10-12T06:00:00Z',
+        }),
+      );
+      expect(c.lastCall!.id, 123);
+      expect(c.lastIsCall, isTrue);
+      expect(c.activityAt, DateTime.utc(2026, 10, 12, 6));
+    });
+
+    test('同一時間以訊息為準；只有通話沒有訊息時是通話', () {
+      final same = Conversation.fromJson(
+        conversation({
+          'last_call': call({'created_at': '2026-10-12T05:00:00Z'}),
+        }),
+      );
+      expect(same.lastIsCall, isFalse);
+      final onlyCall = Conversation.fromJson(
+        conversation({'last_message': null, 'last_call': call({})}),
+      );
+      expect(onlyCall.lastIsCall, isTrue);
+      expect(onlyCall.activityAt, DateTime.utc(2026, 10, 12, 6));
+    });
+
+    test('舊回應沒有 last_call／last_activity_at：退回最後一則訊息的時間', () {
+      final c = Conversation.fromJson(conversation({}));
+      expect(c.lastCall, isNull);
+      expect(c.lastActivityAt, isNull);
+      expect(c.activityAt, DateTime.utc(2026, 10, 12, 5));
+    });
+
+    test('last_call 的 kind 不認得時當作沒有', () {
+      final c = Conversation.fromJson(
+        conversation({
+          'last_call': call({'kind': 'future_kind'}),
+        }),
+      );
+      expect(c.lastCall, isNull);
+      expect(c.lastIsCall, isFalse);
+    });
+  });
 }
