@@ -93,6 +93,18 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
 
   bool get _isEditing => widget.editing != null;
 
+  /// 管理員可以直接填新分類，送出時後端在同一筆交易加進分類表（T-22）。
+  bool get _isAdmin => UserService.cachedUser?.isAdmin ?? false;
+
+  /// 這次送出的分類不在已載入的清單裡（管理員新增的）。
+  bool get _categoryIsNew {
+    final selected = _category;
+    final options = _categoryOptions;
+    return selected != null &&
+        options != null &&
+        !options.any((c) => c.value == selected);
+  }
+
   @override
   void initState() {
     super.initState();
@@ -323,6 +335,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       return;
     }
 
+    final addedCategory = _categoryIsNew;
     setState(() => _submitting = true);
     try {
       var tribeNotifyLimited = false;
@@ -341,6 +354,14 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         );
         participantNotifyLimited = updated.notifyLimited;
         imageFailure = await _syncEditedImages(editing.id);
+      }
+      // 管理員填了新分類：後端已加進分類表，重抓讓下次進發起頁就看得到。
+      // 活動分頁的篩選列由 T-11 的 eventsChanged 處理。
+      if (addedCategory) {
+        CategoryService.fetch(
+          CategoryModule.events,
+          refresh: true,
+        ).then<void>((_) {}, onError: (_) {});
       }
       if (!mounted) return;
       final notices = [
@@ -1182,8 +1203,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           onTap: () => setState(() => _category = c.value),
           seniorMode: seniorMode,
         ),
-      // 編輯時原本的分類已不在清單上（例如被管理員停用）：補一顆顯示為已選，
-      // 沒改就不送 category；改選其他分類後這顆就消失。
+      // 不在清單上的分類補一顆顯示為已選：編輯時原本的分類已不在清單上
+      // （沒改就不送 category），或管理員剛新增的。改選其他分類後這顆就消失。
       if (selected != null && !options.any((c) => c.value == selected))
         _categoryChip(
           label: selected,
@@ -1191,7 +1212,14 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           onTap: () {},
           seniorMode: seniorMode,
         ),
-      // T-22：管理員的「＋新增」chip 之後接在這裡。
+      if (_isAdmin)
+        _categoryChip(
+          label: '＋新增',
+          prefix: false,
+          selected: false,
+          onTap: _addCategory,
+          seniorMode: seniorMode,
+        ),
     ];
     return Wrap(spacing: 8, runSpacing: 8, children: chips);
   }
@@ -1244,11 +1272,27 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     );
   }
 
+  /// 管理員輸入新分類。和既有分類的 value 或顯示名稱相同時直接選那個，
+  /// 不會在畫面上多一顆重複的。
+  Future<void> _addCategory() async {
+    final input = await showDialog<String>(
+      context: context,
+      builder: (_) =>
+          _NewCategoryDialog(seniorMode: seniorModeController.enabled),
+    );
+    if (input == null || !mounted) return;
+    final existing = _categoryOptions
+        ?.where((c) => c.value == input || c.label == input)
+        .firstOrNull;
+    setState(() => _category = existing?.value ?? input);
+  }
+
   Widget _categoryChip({
     required String label,
     required bool selected,
     required VoidCallback onTap,
     required bool seniorMode,
+    bool prefix = true,
   }) {
     return GestureDetector(
       onTap: onTap,
@@ -1265,7 +1309,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           ),
         ),
         child: Text(
-          '# $label',
+          prefix ? '# $label' : label,
           style: AppTypography.serif(
             fontSize: AppTypography.size(
               AppTypography.body,
@@ -1276,6 +1320,92 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// 管理員新增活動分類的輸入框：1～20 字（後端以 UTF-16 單位計），確定時回傳 trim 後的文字。
+class _NewCategoryDialog extends StatefulWidget {
+  final bool seniorMode;
+
+  const _NewCategoryDialog({required this.seniorMode});
+
+  @override
+  State<_NewCategoryDialog> createState() => _NewCategoryDialogState();
+}
+
+class _NewCategoryDialogState extends State<_NewCategoryDialog> {
+  /// 後端分類名稱上限（categories.ts CATEGORY_LABEL_MAX）。
+  static const _maxLength = 20;
+
+  final _controller = TextEditingController();
+
+  String get _value => _controller.text.trim();
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _confirm() {
+    if (_value.isEmpty) return;
+    Navigator.pop(context, _value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final seniorMode = widget.seniorMode;
+    return AlertDialog(
+      title: Text(
+        '新增分類',
+        style: AppTypography.headlineStyle(
+          seniorMode: seniorMode,
+          color: AppColors.ink,
+        ),
+      ),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        inputFormatters: const [
+          Utf16LengthLimitingTextInputFormatter(_maxLength),
+        ],
+        onChanged: (_) => setState(() {}),
+        onSubmitted: (_) => _confirm(),
+        style: AppTypography.bodyLargeStyle(
+          seniorMode: seniorMode,
+          color: AppColors.ink,
+        ),
+        decoration: InputDecoration(
+          hintText: '分類名稱（1～$_maxLength 字）',
+          hintStyle: AppTypography.bodyLargeStyle(
+            seniorMode: seniorMode,
+            color: AppColors.fog,
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(context),
+          child: Text(
+            '取消',
+            style: AppTypography.bodyLargeStyle(
+              seniorMode: seniorMode,
+              color: AppColors.inkSoft,
+            ),
+          ),
+        ),
+        TextButton(
+          onPressed: _value.isEmpty ? null : _confirm,
+          child: Text(
+            '確定',
+            style: AppTypography.bodyLargeStyle(
+              seniorMode: seniorMode,
+              color: _value.isEmpty ? AppColors.fog : AppColors.primary,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

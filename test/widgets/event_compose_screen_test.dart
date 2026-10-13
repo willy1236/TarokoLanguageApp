@@ -4,17 +4,19 @@
 // 已由 test/models/event_draft_test.dart 覆蓋。這支只測「畫面怎麼反應」：
 // 驗證不過時有沒有顯示錯誤而且不打 API、成功後有沒有回傳 true 讓列表刷新、
 // 編輯途中活動被取消／已開始時會不會把使用者留在存不了的表單裡、
-// 分類清單跟著後端（含載入失敗擋下送出）。
+// 分類清單跟著後端（含載入失敗擋下送出）、管理員可以直接新增分類。
 
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 
 import 'package:flutter_application_1/core/constants/app_colors.dart';
 import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/screens/events/event_compose_screen.dart';
 import 'package:flutter_application_1/services/category_service.dart';
+import 'package:flutter_application_1/services/user_service.dart';
 import 'package:flutter_application_1/shared/widgets/related_tribe_field.dart';
 
 import '../helpers/widget_test_helpers.dart';
@@ -41,6 +43,8 @@ final _categories = {
     {'value': '族語', 'label': '族語', 'sort_order': 10, 'count': 2},
     {'value': '工藝', 'label': '工藝', 'sort_order': 30, 'count': 0},
     {'value': '其他', 'label': '其他', 'sort_order': 1000, 'count': 1},
+    // 顯示名稱與 value 不同的分類，測管理員輸入名稱時對回既有分類。
+    {'value': 'culture', 'label': '文化', 'sort_order': 1100, 'count': 0},
   ],
 };
 
@@ -123,6 +127,7 @@ void main() {
   tearDown(() {
     restoreHttp();
     CategoryService.reset();
+    UserService.clearCache();
   });
 
   testWidgets('新建表單必填未填時顯示錯誤且不打 API', (tester) async {
@@ -545,5 +550,182 @@ void main() {
         expect(_errorSnackBar(message), findsOneWidget);
       });
     }
+  });
+
+  group('管理員新增分類', () {
+    /// 以 [role] 登入（寫進 UserService 快取），並裝上記錄請求的假後端。
+    Future<List<http.Request>> signIn(String role, {Object? save}) async {
+      final requests = <http.Request>[];
+      installMockClient(
+        _routes({
+          '/api/me': {
+            'uid': 1,
+            'created_at': '2026-01-01T00:00:00Z',
+            'role': role,
+          },
+          '/api/events': jsonResponse({'id': 9}, status: 201),
+          '/api/events/1': save ?? <String, dynamic>{},
+        }),
+        onRequest: requests.add,
+      );
+      await UserService.fetchMe(forceRefresh: true);
+      requests.clear();
+      return requests;
+    }
+
+    Future<void> addCategory(WidgetTester tester, String name) async {
+      await tester.tap(find.text('＋新增'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.descendant(
+          of: find.byType(AlertDialog),
+          matching: find.byType(TextField),
+        ),
+        name,
+      );
+      await tester.pump();
+      await tester.tap(find.text('確定'));
+      await tester.pumpAndSettle();
+    }
+
+    int categoryFetches(List<http.Request> requests) =>
+        requests.where((r) => r.url.path == _categoriesPath).length;
+
+    Map<String, dynamic> bodyOf(List<http.Request> requests, String method) =>
+        jsonDecode(requests.singleWhere((r) => r.method == method).body)
+            as Map<String, dynamic>;
+
+    testWidgets('organizer 看不到「＋新增」', (tester) async {
+      await signIn('organizer');
+      await tester.pumpWidget(_host(editing: null, onPop: (_) {}));
+      await _openForm(tester);
+      await _scrollToCategories(tester);
+
+      expect(_categoryChip('族語'), findsOneWidget);
+      expect(find.text('＋新增'), findsNothing);
+    });
+
+    testWidgets('編輯時輸入新分類：顯示為已選，儲存帶上它，成功後重抓分類清單', (tester) async {
+      final requests = await signIn('admin');
+      await tester.pumpWidget(_host(editing: _editing(), onPop: (_) {}));
+      await _openForm(tester);
+      await _scrollToCategories(tester);
+      expect(categoryFetches(requests), 1);
+
+      await addCategory(tester, '  射箭  ');
+
+      expect(_chipSelected(tester, '射箭'), isTrue);
+      expect(_chipSelected(tester, '族語'), isFalse);
+
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+
+      expect(bodyOf(requests, 'PATCH'), {'category': '射箭'});
+      expect(categoryFetches(requests), 2, reason: '後端已加進分類表，重抓讓下次進發起頁看得到');
+    });
+
+    testWidgets('發起時輸入新分類：建立活動帶上它', (tester) async {
+      final requests = await signIn('admin');
+      await tester.pumpWidget(_host(editing: null, onPop: (_) {}));
+      await _openForm(tester);
+
+      Future<void> fill(String hint, String text) async {
+        final field = find.widgetWithText(TextField, hint);
+        await tester.scrollUntilVisible(
+          field,
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.enterText(field, text);
+      }
+
+      await fill('例如：青年族語營', '射箭體驗');
+      await tester.scrollUntilVisible(
+        find.text('選擇日期'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('選擇日期'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('OK'));
+      await tester.pumpAndSettle();
+      await fill('門牌或描述，例如：秀林鄉富世村 12 號／部落活動中心', '秀林鄉中正路 1 號');
+      await fill('介紹活動內容、流程、注意事項…', '一起來射箭');
+      await _scrollToCategories(tester);
+      await addCategory(tester, '射箭');
+
+      await tester.tap(find.text('發布'));
+      await tester.pumpAndSettle();
+
+      expect(bodyOf(requests, 'POST')['category'], '射箭');
+      expect(categoryFetches(requests), 2);
+    });
+
+    testWidgets('輸入既有分類的名稱：直接選那個分類，不多一顆', (tester) async {
+      final requests = await signIn('admin');
+      await tester.pumpWidget(_host(editing: _editing(), onPop: (_) {}));
+      await _openForm(tester);
+      await _scrollToCategories(tester);
+
+      await addCategory(tester, '文化');
+
+      expect(_categoryChip('文化'), findsOneWidget);
+      expect(_chipSelected(tester, '文化'), isTrue);
+
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+
+      expect(bodyOf(requests, 'PATCH'), {'category': 'culture'});
+      expect(categoryFetches(requests), 1, reason: '沒有新增分類就不用重抓');
+    });
+
+    testWidgets('空白不能確定，超過 20 字打不進去（以 UTF-16 計）', (tester) async {
+      await signIn('admin');
+      await tester.pumpWidget(_host(editing: _editing(), onPop: (_) {}));
+      await _openForm(tester);
+      await _scrollToCategories(tester);
+
+      await tester.tap(find.text('＋新增'));
+      await tester.pumpAndSettle();
+      final field = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.byType(TextField),
+      );
+      TextButton confirm() => tester.widget<TextButton>(
+        find.ancestor(of: find.text('確定'), matching: find.byType(TextButton)),
+      );
+
+      expect(confirm().onPressed, isNull);
+      await tester.enterText(field, '   ');
+      await tester.pump();
+      expect(confirm().onPressed, isNull);
+
+      await tester.enterText(field, '射' * 25);
+      await tester.pump();
+      expect(tester.widget<TextField>(field).controller!.text, '射' * 20);
+
+      await tester.enterText(field, '😀' * 11);
+      await tester.pump();
+      expect(tester.widget<TextField>(field).controller!.text, '😀' * 10);
+      expect(confirm().onPressed, isNotNull);
+    });
+
+    testWidgets('新增後改選既有分類：新的那顆消失', (tester) async {
+      await signIn('admin');
+      await tester.pumpWidget(_host(editing: _editing(), onPop: (_) {}));
+      await _openForm(tester);
+      await _scrollToCategories(tester);
+
+      await addCategory(tester, '射箭');
+      expect(_categoryChip('射箭'), findsOneWidget);
+
+      await tester.tap(_categoryChip('工藝'));
+      await tester.pump();
+
+      expect(_chipSelected(tester, '工藝'), isTrue);
+      expect(_categoryChip('射箭'), findsNothing);
+    });
   });
 }
