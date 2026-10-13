@@ -46,6 +46,19 @@ bool isSameLocalDay(DateTime a, DateTime b) {
   return x.year == y.year && x.month == y.month && x.day == y.day;
 }
 
+/// 好友列表的最後活動時間：今天「14:05」、昨天「昨天」，今年更早「10/9」、
+/// 往年「2025/10/9」，月日不補零。[now] 給測試固定今天用。
+String formatActivityTime(DateTime dt, {DateTime? now}) {
+  final local = dt.toLocal();
+  final today = (now ?? DateTime.now()).toLocal();
+  if (isSameLocalDay(local, today)) return formatTime(local);
+  if (isSameLocalDay(local, DateTime(today.year, today.month, today.day - 1))) {
+    return '昨天';
+  }
+  final date = '${local.month}/${local.day}';
+  return local.year == today.year ? date : '${local.year}/$date';
+}
+
 /// 聊天室的日期分隔：「今天」「昨天」，今年更早「10月9日（五）」，往年
 /// 「2025年10月9日（四）」。[now] 給測試固定今天用。
 String chatDayLabel(DateTime dt, {DateTime? now}) {

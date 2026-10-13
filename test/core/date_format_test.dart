@@ -122,4 +122,28 @@ void main() {
       expect(weekdayShortLabel(fromBackend), '二');
     });
   });
+
+  group('好友列表最後活動時間', () {
+    final now = DateTime(2026, 10, 13, 9);
+
+    test('今天顯示時分、昨天顯示「昨天」，以本地日期判斷', () {
+      expect(
+        formatActivityTime(DateTime(2026, 10, 13, 0, 5).toUtc(), now: now),
+        '00:05',
+      );
+      expect(
+        formatActivityTime(DateTime(2026, 10, 12, 23, 59).toUtc(), now: now),
+        '昨天',
+      );
+    });
+
+    test('今年更早「10/9」、往年「2025/10/9」，月日不補零', () {
+      expect(formatActivityTime(DateTime(2026, 10, 9, 15), now: now), '10/9');
+      expect(formatActivityTime(DateTime(2026, 1, 2, 15), now: now), '1/2');
+      expect(
+        formatActivityTime(DateTime(2025, 10, 9, 15), now: now),
+        '2025/10/9',
+      );
+    });
+  });
 }
