@@ -789,6 +789,18 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
   }
 
+  /// 檢舉成功後後端不再把這篇列給我：回上一頁，讓動態列表拿掉它。
+  /// 從通知進來時上一頁是收件匣，照樣回去。
+  Future<void> _reportPost() async {
+    final sent = await showForumReportSheet(
+      context,
+      targetType: 'post',
+      targetId: widget.postId,
+    );
+    if (!sent || !mounted) return;
+    Navigator.pop(context, const ForumDetailResult.removedFromFeed());
+  }
+
   Future<bool> _confirm(String message) =>
       showConfirmDialog(context, message: message, confirmText: '刪除');
 
@@ -847,13 +859,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
               onSelected: (value) {
                 if (value == 'edit') _edit();
                 if (value == 'delete') _deletePost();
-                if (value == 'report') {
-                  showForumReportSheet(
-                    context,
-                    targetType: 'post',
-                    targetId: post.id,
-                  );
-                }
+                if (value == 'report') _reportPost();
                 if (value == 'admin_remove') _adminRemovePost();
                 if (value == 'admin_pin') _adminTogglePin();
               },
@@ -863,7 +869,14 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                     const PopupMenuItem(value: 'edit', child: Text('編輯')),
                   const PopupMenuItem(value: 'delete', child: Text('刪除')),
                 ] else if (!locked)
-                  const PopupMenuItem(value: 'report', child: Text('檢舉')),
+                  // 檢舉過的不能再檢舉、也不能撤回，只標示狀態。
+                  post.reportedByMe
+                      ? const PopupMenuItem(
+                          value: 'reported',
+                          enabled: false,
+                          child: Text('已檢舉'),
+                        )
+                      : const PopupMenuItem(value: 'report', child: Text('檢舉')),
                 if (_isAdmin) ...[
                   PopupMenuItem(
                     value: 'admin_pin',
