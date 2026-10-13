@@ -305,9 +305,9 @@ void main() {
         markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
         return;
       }
-      final postId = await _findMostCommentedPostId();
+      final (postId, failure) = await _findMostCommentedPostId();
       if (postId == null) {
-        markTestSkipped('目前沒有任何有留言的貼文可測');
+        markTestSkipped(failure ?? '目前沒有任何有留言的貼文可測');
         return;
       }
       await _inspect(
@@ -317,12 +317,94 @@ void main() {
         shape: {'comments': F.list, 'replies': F.list, 'page_info': F.object},
       );
     });
+    // 貼文詳情（2026-10-09 前端待辦 T-01）：確認後端帶 is_hidden、reported_by_me（決策紀錄 A47）。
+    test('GET /api/forum/posts/:id (自動挑留言最多的貼文)', () async {
+      if (_token == null) {
+        markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+        return;
+      }
+      final (postId, failure) = await _findMostCommentedPostId();
+      if (postId == null) {
+        markTestSkipped(failure ?? '目前沒有任何有留言的貼文可測');
+        return;
+      }
+      await _inspect(
+        'GET',
+        ApiConfig.forumPost(postId),
+        fixtureAs: 'get_api_forum_post_detail.json',
+        shape: {'post': F.object},
+        objectKey: 'post',
+        objectShape: _forumPostDetailShape,
+        objectOptional: _forumPostOptional,
+      );
+    });
+    // 隱藏貼文（2026-10-09 前端待辦 T-03，決策紀錄 A47）。錯誤路徑不寫資料；
+    // 成功路徑會真的隱藏一篇別人的貼文，同一個 test 內一定取消隱藏還原
+    // （取消隱藏冪等、必回 200）。activity log 會留一筆 forum.post.hide。
+    test(
+      'POST /api/forum/posts/999999999/hide (測 404 格式，不寫入)',
+      () => _inspect(
+        'POST',
+        ApiConfig.forumPostHide(999999999),
+        expectStatus: 404,
+        expectError: true,
+        errorCode: 'POST_NOT_FOUND',
+      ),
+    );
+    test(
+      'DELETE /api/forum/posts/999999999/hide (沒隱藏過也回 200，不寫入)',
+      () => _inspect(
+        'DELETE',
+        ApiConfig.forumPostHide(999999999),
+        fixtureAs: 'delete_api_forum_post_hide.json',
+        shape: const {'is_hidden': F.boolean},
+      ),
+    );
+    test('POST /api/forum/posts/:id/hide (挑別人的貼文，測完自動取消隱藏)', () async {
+      if (_token == null) {
+        markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+        return;
+      }
+      final (postId, failure) = await _findOthersPostId();
+      if (postId == null) {
+        markTestSkipped(failure ?? '動態裡沒有別人的貼文可隱藏');
+        return;
+      }
+      try {
+        await _inspect(
+          'POST',
+          ApiConfig.forumPostHide(postId),
+          fixtureAs: 'post_api_forum_post_hide.json',
+          shape: const {'is_hidden': F.boolean},
+        );
+      } finally {
+        await _inspect(
+          'DELETE',
+          ApiConfig.forumPostHide(postId),
+          shape: const {'is_hidden': F.boolean},
+        );
+      }
+    });
     test(
       'GET /api/forum/bookmarks',
       () => _inspect(
         'GET',
         ApiConfig.forumBookmarks,
         shape: {'posts': F.list, 'page_info': F.object},
+      ),
+    );
+    // 已隱藏的貼文（2026-10-09 前端待辦 T-04）。只讀；帳號沒隱藏任何貼文時清單為空，
+    // 照樣錄（只驗外層欄位，每筆的欄位要清單有資料才驗得到）。
+    test(
+      'GET /api/forum/hidden-posts',
+      () => _inspect(
+        'GET',
+        ApiConfig.forumHiddenPosts,
+        fixtureAs: 'get_api_forum_hidden_posts.json',
+        shape: {'posts': F.list, 'page_info': F.object},
+        listKey: 'posts',
+        itemShape: {'id': F.any, 'is_hidden': F.boolean},
+        itemOptional: {..._forumPostOptional, 'hidden_at': F.string},
       ),
     );
     test(
@@ -346,9 +428,9 @@ void main() {
         markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
         return;
       }
-      final friendCode = await _firstFriendCode();
+      final (friendCode, failure) = await _firstFriendCode();
       if (friendCode == null) {
-        markTestSkipped('目前沒有好友可測私訊歷史');
+        markTestSkipped(failure ?? '目前沒有好友可測私訊歷史');
         return;
       }
       await _inspect(
@@ -463,6 +545,30 @@ void main() {
         expectError: true,
       ),
     );
+    // 隨機配對視訊檢舉只錄錯誤路徑：成功路徑會真的寫一筆檢舉、計入對方的
+    // 自動禁言門檻，且需要一段 inspector 帳號參與過的通話。
+    test(
+      'POST /api/video/session/999999999/report (測 404 格式，不寫入)',
+      () => _inspect(
+        'POST',
+        ApiConfig.videoSessionReport(999999999),
+        body: {'reason': '__inspector__'},
+        expectStatus: 404,
+        expectError: true,
+        errorCode: 'NOT_FOUND',
+      ),
+    );
+    test(
+      'POST /api/video/session/999999999/report (空白 reason 測 400 格式)',
+      () => _inspect(
+        'POST',
+        ApiConfig.videoSessionReport(999999999),
+        body: {'reason': '   '},
+        expectStatus: 400,
+        expectError: true,
+        errorCode: 'INVALID_REQUEST',
+      ),
+    );
 
     test(
       'GET /api/events',
@@ -526,9 +632,9 @@ void main() {
           markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
           return;
         }
-        final endedId = await _findEndedEventId();
+        final (endedId, failure) = await _findEndedEventId();
         if (endedId == null) {
-          markTestSkipped('目前沒有任何 effective_status=ended 的活動可測');
+          markTestSkipped(failure ?? '目前沒有任何 effective_status=ended 的活動可測');
           return;
         }
         print('（挑到已結束活動 id=$endedId）');
@@ -829,8 +935,22 @@ Future<Map<String, dynamic>?> _fetchMe() async {
   return jsonDecode(response.body) as Map<String, dynamic>;
 }
 
+/// 挑資料的請求不是 200 時的 skip 訊息，帶出狀態碼與錯誤 code，
+/// 免得被誤讀成「沒有資料可測」（例如帳號未同意條款時一律 403 CONSENT_REQUIRED）。
+String _pickFailure(String path, http.Response response, String purpose) {
+  String? code;
+  try {
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map && decoded['error'] is Map) {
+      code = (decoded['error'] as Map)['code']?.toString();
+    }
+  } catch (_) {}
+  return '$path 回 ${response.statusCode}${code == null ? '' : ' $code'}，無法$purpose';
+}
+
 /// 打 /api/events?scope=all 找第一筆 effective_status == 'ended' 的活動 id。
-Future<int?> _findEndedEventId() async {
+/// 回傳 (id, 失敗訊息)：請求失敗時 id 為 null 且帶訊息；沒資料時兩者皆 null。
+Future<(int?, String?)> _findEndedEventId() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.events}?scope=all');
   final response = await http.get(
     uri,
@@ -839,21 +959,23 @@ Future<int?> _findEndedEventId() async {
       'Authorization': 'Bearer $_token',
     },
   );
-  if (response.statusCode != 200) return null;
+  if (response.statusCode != 200) {
+    return (null, _pickFailure(ApiConfig.events, response, '挑活動'));
+  }
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   final events = decoded['events'] as List<dynamic>? ?? [];
   for (final e in events) {
     final m = e as Map<String, dynamic>;
     if (m['effective_status'] == 'ended') {
       final id = m['id'];
-      return id is int ? id : int.tryParse(id.toString());
+      return (id is int ? id : int.tryParse(id.toString()), null);
     }
   }
-  return null;
+  return (null, null);
 }
 
 /// 打 /api/forum/posts 找留言數最多的貼文 id，讓留言 fixture 盡量有內容。
-Future<int?> _findMostCommentedPostId() async {
+Future<(int?, String?)> _findMostCommentedPostId() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.forumPosts}?limit=50');
   final response = await http.get(
     uri,
@@ -862,7 +984,9 @@ Future<int?> _findMostCommentedPostId() async {
       'Authorization': 'Bearer $_token',
     },
   );
-  if (response.statusCode != 200) return null;
+  if (response.statusCode != 200) {
+    return (null, _pickFailure(ApiConfig.forumPosts, response, '挑貼文'));
+  }
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   final posts =
       (decoded['posts'] as List<dynamic>? ?? const [])
@@ -874,13 +998,54 @@ Future<int?> _findMostCommentedPostId() async {
             a['comment_count'] as num,
           ),
         );
-  if (posts.isEmpty) return null;
+  if (posts.isEmpty) return (null, null);
   final id = posts.first['id'];
-  return id is int ? id : int.tryParse('$id');
+  return (id is int ? id : int.tryParse('$id'), null);
+}
+
+/// 打 /api/forum/posts 找第一篇不是自己發的貼文 id（隱藏自己的貼文後端回 400）。
+/// 動態本來就排除已隱藏的貼文，挑到的一定是還沒隱藏的。
+/// 作者以好友碼比對（好友碼強制後別人的 uid 不再回傳），沒有好友碼才退回 uid。
+Future<(int?, String?)> _findOthersPostId() async {
+  final headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $_token',
+  };
+  final meResponse = await http.get(
+    Uri.parse('${ApiConfig.baseUrl}${ApiConfig.me}'),
+    headers: headers,
+  );
+  if (meResponse.statusCode != 200) {
+    return (null, _pickFailure(ApiConfig.me, meResponse, '判斷自己的貼文'));
+  }
+  final me = jsonDecode(meResponse.body) as Map<String, dynamic>;
+  final myCode = me['friend_code'];
+  final myUid = me['uid'];
+  if (myCode == null && myUid == null) {
+    return (null, '${ApiConfig.me} 沒有 friend_code 也沒有 uid，無法判斷自己的貼文');
+  }
+  final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.forumPosts}?limit=50');
+  final response = await http.get(uri, headers: headers);
+  if (response.statusCode != 200) {
+    return (null, _pickFailure(ApiConfig.forumPosts, response, '挑貼文'));
+  }
+  final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+  for (final p
+      in (decoded['posts'] as List<dynamic>? ?? const [])
+          .whereType<Map<String, dynamic>>()) {
+    final author = p['author'] as Map<String, dynamic>?;
+    final code = author?['friend_code'];
+    final uid = author?['uid'];
+    if (code == null && uid == null) continue; // 已刪除用戶，判斷不了是不是自己
+    if (code != null ? code == myCode : '$uid' == '$myUid') continue;
+    final id = p['id'];
+    return (id is int ? id : int.tryParse('$id'), null);
+  }
+  return (null, null);
 }
 
 /// 打 /api/friends 取第一位好友的好友碼，給私訊歷史用。
-Future<String?> _firstFriendCode() async {
+Future<(String?, String?)> _firstFriendCode() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.friends}');
   final response = await http.get(
     uri,
@@ -889,11 +1054,16 @@ Future<String?> _firstFriendCode() async {
       'Authorization': 'Bearer $_token',
     },
   );
-  if (response.statusCode != 200) return null;
+  if (response.statusCode != 200) {
+    return (null, _pickFailure(ApiConfig.friends, response, '挑好友'));
+  }
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   final friends = decoded['friends'] as List<dynamic>? ?? const [];
-  if (friends.isEmpty) return null;
-  return (friends.first as Map<String, dynamic>)['friend_code'] as String?;
+  if (friends.isEmpty) return (null, null);
+  return (
+    (friends.first as Map<String, dynamic>)['friend_code'] as String?,
+    null,
+  );
 }
 
 /// 取 /api/levels 的第一個等級代號，給 quiz／listening 的 start 當合法 level 用。
@@ -1240,6 +1410,15 @@ Future<void> _inspect(
   Map<String, F>? itemShape,
   Set<String> itemNullable = const {},
   Map<String, F> itemOptional = const {},
+
+  /// 回應把主體包在一個物件 key 底下時（例如 `{post: {...}}`），
+  /// 用 [objectKey] 指定 key、[objectShape] 斷言裡面的欄位；
+  /// [objectNullable]、[objectOptional] 同 [nullable]、[optional]。
+  /// 外層仍需給 [shape]（通常是 `{objectKey: F.object}`），沒給 shape 就不檢查。
+  String? objectKey,
+  Map<String, F>? objectShape,
+  Set<String> objectNullable = const {},
+  Map<String, F> objectOptional = const {},
   int expectStatus = 200,
 
   /// 指定 fixture 檔名。路徑含動態 id（例如 /api/events/123）時必須給，
@@ -1266,6 +1445,12 @@ Future<void> _inspect(
       response = await http.get(uri, headers: headers);
     case 'PATCH':
       response = await http.patch(
+        uri,
+        headers: headers,
+        body: body != null ? jsonEncode(body) : null,
+      );
+    case 'DELETE':
+      response = await http.delete(
         uri,
         headers: headers,
         body: body != null ? jsonEncode(body) : null,
@@ -1327,6 +1512,16 @@ Future<void> _inspect(
       nullable: itemNullable,
       optional: itemOptional,
       label: '$method $path.$listKey',
+    );
+  }
+
+  if (objectKey != null && objectShape != null) {
+    expectShape(
+      (decoded as Map<String, dynamic>)[objectKey],
+      objectShape,
+      nullable: objectNullable,
+      optional: objectOptional,
+      label: '$method $path.$objectKey',
     );
   }
 }
@@ -1508,6 +1703,29 @@ const Map<String, F> _listeningSessionShape = {
 };
 
 /// GET /api/events/:id → lib/models/event_model.dart EventDetail.fromJson
+/// GET /api/forum/posts/:id 的 post → ForumPost.fromJson（lib/models/forum_models.dart）。
+/// ForumPost 所有欄位缺席都有安全預設，照判準本該全列 optional；
+/// is_hidden、reported_by_me 列為必要，是因為這支測試就是要確認後端詳情一定帶這兩個欄位。
+const Map<String, F> _forumPostDetailShape = {
+  'id': F.any,
+  'is_hidden': F.boolean,
+  'reported_by_me': F.boolean,
+};
+
+const Map<String, F> _forumPostOptional = {
+  'board': F.object,
+  'title': F.string,
+  'body': F.string,
+  'is_pinned': F.boolean,
+  'is_liked': F.boolean,
+  'is_bookmarked': F.boolean,
+  'images': F.list,
+  'tags': F.list,
+  'author': F.object,
+  'created_at': F.string,
+  'updated_at': F.string,
+};
+
 const Map<String, F> _eventDetailShape = {
   'id': F.any,
   'title': F.string,

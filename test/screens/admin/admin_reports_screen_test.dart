@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
 
 import 'package:flutter_application_1/core/network/api_client.dart';
+import 'package:flutter_application_1/core/utils/date_format.dart';
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/screens/admin/admin_error.dart';
 import 'package:flutter_application_1/screens/admin/admin_reports_screen.dart';
@@ -53,9 +54,9 @@ void main() {
     expect(find.text('被檢舉的留言'), findsOneWidget);
     expect(find.text('內容已刪除'), findsOneWidget);
     expect(
-      find.textContaining('6 → 7', findRichText: true),
+      find.textContaining('6 → 7（已結束）', findRichText: true),
       findsOneWidget,
-      reason: '通話用 target_call',
+      reason: '通話用 target_call，狀態顯示中文',
     );
     expect(
       find.textContaining('不雅暱稱', findRichText: true),
@@ -63,6 +64,42 @@ void main() {
       reason: '個人檔案用 target_profile',
     );
     expect(find.textContaining('小明', findRichText: true), findsWidgets);
+  });
+
+  testWidgets('隨機視訊：顯示類型、使用者 A／B 與起訖時間', (tester) async {
+    installMockClient({
+      '/api/admin/forum/reports': loadSpecFixtureMap(
+        'get_api_admin_forum_reports_video_call.json',
+      ),
+    });
+
+    tester.view.physicalSize = const Size(800, 3000);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_app(const AdminReportsScreen()));
+    await tester.pumpAndSettle();
+
+    expect(find.text('隨機視訊'), findsNWidgets(2));
+    expect(
+      find.textContaining('使用者 A 20／使用者 B 21（已結束）', findRichText: true),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('使用者 A 23／使用者 B 22（進行中）', findRichText: true),
+      findsOneWidget,
+    );
+    final start = DateTime.utc(2026, 10, 9, 10);
+    final end = DateTime.utc(2026, 10, 9, 10, 5);
+    expect(
+      find.textContaining(
+        '${formatDateTime(start)} – ${formatTime(end)}',
+        findRichText: true,
+      ),
+      findsOneWidget,
+    );
+    expect(find.textContaining('起（未結束）', findRichText: true), findsOneWidget);
+    expect(find.textContaining('→', findRichText: true), findsNothing);
   });
 
   testWidgets('切換狀態會以新狀態重抓', (tester) async {

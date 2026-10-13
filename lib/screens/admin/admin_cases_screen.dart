@@ -76,12 +76,13 @@ class AdminCasePreviewView extends StatelessWidget {
         if (sentAt != null)
           AdminInfoRow('傳送時間', formatDateTime(sentAt), seniorMode: seniorMode),
       ],
+      CallCasePreview(:final call) when call.randomMatch => [
+        AdminInfoRow('通話雙方', call.partiesText, seniorMode: seniorMode),
+        if (call.periodText case final period?)
+          AdminInfoRow('通話時間', period, seniorMode: seniorMode),
+      ],
       CallCasePreview(:final call) => [
-        AdminInfoRow(
-          '通話雙方',
-          '${call.callerUid ?? '?'} → ${call.calleeUid ?? '?'}',
-          seniorMode: seniorMode,
-        ),
+        AdminInfoRow('通話雙方', call.partiesText, seniorMode: seniorMode),
         if (call.createdAt != null)
           AdminInfoRow(
             '時間',

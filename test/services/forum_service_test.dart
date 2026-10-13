@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/services/forum_service.dart';
+import 'package:flutter_application_1/services/forum_feed_refresh_notifier.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -220,5 +221,75 @@ void main() {
     expect(seen.single.method, 'DELETE');
     expect(seen.single.url.path, '/api/forum/posts/7/bookmark');
     expect(result, isFalse);
+  });
+
+  test('setHidden hidden=true 走 POST、hidden=false 走 DELETE', () async {
+    respondWith({'is_hidden': true});
+    expect(await ForumService.setHidden(7, hidden: true), isTrue);
+    expect(seen.single.method, 'POST');
+    expect(seen.single.url.path, '/api/forum/posts/7/hide');
+
+    respondWith({'is_hidden': false});
+    expect(await ForumService.setHidden(7, hidden: false), isFalse);
+    expect(seen.single.method, 'DELETE');
+    expect(seen.single.url.path, '/api/forum/posts/7/hide');
+  });
+
+  test('hiddenPosts 打 hidden-posts，帶回上一頁的游標並解析貼文', () async {
+    respondWith({
+      'posts': [
+        {...postJson(), 'is_hidden': true, 'hidden_at': '2026-10-09T10:00:00Z'},
+      ],
+      'next_cursor': 12,
+      'page_info': {'next_cursor': '12', 'has_more': true},
+    });
+
+    final page = await ForumService.hiddenPosts(cursor: '30');
+
+    expect(seen.single.method, 'GET');
+    expect(seen.single.url.path, '/api/forum/hidden-posts');
+    expect(seen.single.url.queryParameters['cursor'], '30');
+    expect(page.posts.single.isHidden, isTrue);
+    expect(page.pinned, isEmpty);
+    expect(page.pageInfo.nextCursor, '12');
+  });
+
+  test('hiddenPosts 第一頁不帶 cursor', () async {
+    respondWith({
+      'posts': [],
+      'next_cursor': null,
+      'page_info': {'next_cursor': null, 'has_more': false},
+    });
+
+    final page = await ForumService.hiddenPosts();
+
+    expect(seen.single.url.queryParameters.containsKey('cursor'), isFalse);
+    expect(page.posts, isEmpty);
+    expect(page.pageInfo.hasMore, isFalse);
+  });
+
+  test('取消隱藏成功才通知廣場重載，隱藏不通知', () async {
+    final before = ForumFeedRefreshNotifier.revision.value;
+
+    respondWith({'is_hidden': true});
+    await ForumService.setHidden(7, hidden: true);
+    expect(ForumFeedRefreshNotifier.revision.value, before);
+
+    respondWith({'is_hidden': false});
+    await ForumService.setHidden(7, hidden: false);
+    expect(ForumFeedRefreshNotifier.revision.value, before + 1);
+  });
+
+  test('取消隱藏失敗時不通知', () async {
+    final before = ForumFeedRefreshNotifier.revision.value;
+    respondWith({
+      'error': {'code': 'INTERNAL', 'message': '伺服器錯誤'},
+    }, status: 500);
+
+    await expectLater(
+      ForumService.setHidden(7, hidden: false),
+      throwsA(isA<ApiException>()),
+    );
+    expect(ForumFeedRefreshNotifier.revision.value, before);
   });
 }

@@ -93,6 +93,14 @@ void main() {
     expect(updated.canAppeal, isFalse);
   });
 
+  test('隨機視訊（video_call）：類型「視訊通話」、時間欄標「通話時間」', () {
+    expect(moderationTargetLabel('video_call'), '視訊通話');
+    expect(moderationTargetLabel('call'), '通話');
+    expect(moderationPreviewTimeLabel('video_call'), '通話時間');
+    expect(moderationPreviewTimeLabel('call'), '通話時間');
+    expect(moderationPreviewTimeLabel('message'), '傳送時間');
+  });
+
   test('狀態文案', () {
     expect(moderationCaseStatusLabel('pending'), '待複審');
     expect(moderationCaseStatusLabel('confirmed'), '已確認');

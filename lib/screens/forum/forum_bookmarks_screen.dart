@@ -70,6 +70,7 @@ class _ForumBookmarksScreenState extends State<ForumBookmarksScreen> {
           ),
         );
         if (result == null) return;
+        // 收藏是自己整理的清單，檢舉或隱藏（removedFromFeed）不移除，只有刪除才拿掉。
         if (result.deleted) {
           _viewKey.currentState?.removePost(post.id);
         }

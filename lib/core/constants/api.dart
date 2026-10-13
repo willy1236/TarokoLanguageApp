@@ -90,6 +90,7 @@ class ApiConfig {
   static const String videoSessionCurrent = '/api/video/session/current';
   static String videoSessionToken(int id) => '/api/video/session/$id/token';
   static String videoSessionEnd(int id) => '/api/video/session/$id/end';
+  static String videoSessionReport(int id) => '/api/video/session/$id/report';
 
   static const String videos = '/api/videos';
   static String videoDetail(int id) => '/api/videos/$id';
@@ -138,6 +139,8 @@ class ApiConfig {
   // 書籤端點由後端另行補上，前端依規格 §9 的約定先行實作。
   static String forumPostBookmark(int id) => '/api/forum/posts/$id/bookmark';
   static const String forumBookmarks = '/api/forum/bookmarks';
+  static String forumPostHide(int id) => '/api/forum/posts/$id/hide';
+  static const String forumHiddenPosts = '/api/forum/hidden-posts';
   static const String forumPostLikes = '/api/forum/posts/likes';
   static const String forumCommentLikes = '/api/forum/comments/likes';
 

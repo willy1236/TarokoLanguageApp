@@ -39,11 +39,23 @@ import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 
-/// 詳情頁關閉時回報的結果：貼文是否被刪除。
+/// 詳情頁關閉時回報的結果，交給開啟它的列表決定要不要拿掉這篇。
 class ForumDetailResult {
+  /// 貼文已被刪除或下架：任何列表都該拿掉。
   final bool deleted;
 
-  const ForumDetailResult({this.deleted = false});
+  /// 貼文從「我的動態」拿掉（檢舉或隱藏）：只影響動態類列表，
+  /// 收藏、按讚是使用者自己整理的清單，不因此移除。
+  final bool removedFromFeed;
+
+  const ForumDetailResult({this.deleted = false}) : removedFromFeed = false;
+
+  const ForumDetailResult.removedFromFeed()
+    : deleted = false,
+      removedFromFeed = true;
+
+  /// 廣場、論壇搜尋這類動態列表是否該移除這篇。
+  bool get removesFromFeed => deleted || removedFromFeed;
 }
 
 class ForumDetailScreen extends StatefulWidget {
@@ -128,6 +140,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 管理員置頂／取消置頂送出中：選單裡的置頂項停用，連點只送一次。
   bool _pinning = false;
+
+  /// 隱藏／取消隱藏送出中：選單的隱藏項停用，網路慢時連點不會送兩次、pop 兩次。
+  bool _hiding = false;
   String? _error;
 
   /// 圖片過期自動重整每次載入只做一次，避免多張圖同時過期時連環重打 API。
@@ -660,6 +675,25 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     if (index >= 0) list[index] = comment.asDeletedPlaceholder();
   }
 
+  /// 檢舉成功後後端不再把這則（第一層的話連同底下回覆）列給我
+  /// （決策紀錄 A47）：本地照同樣規則拿掉，不必等重載。
+  /// 留言數不扣：後端的 comment_count 不因檢舉而變，重載後也還是原數字。
+  Future<void> _reportComment(ForumComment comment) async {
+    final sent = await showForumReportSheet(
+      context,
+      targetType: 'comment',
+      targetId: comment.id,
+    );
+    if (!sent || !mounted) return;
+    setState(() {
+      final id = comment.id;
+      _comments.removeWhere((c) => c.id == id);
+      // 回覆的 id 不會等於任何第一層的 id，同一行就涵蓋「檢舉回覆」與「第一層連同回覆」。
+      _replies.removeWhere((c) => c.id == id || c.parentCommentId == id);
+      if (_replyTarget?.id == id) _replyTarget = null;
+    });
+  }
+
   /// 403 BLOCKED：與對方有封鎖關係（畫面還沒重新整理時會發生），提示後重載本頁。
   void _handleBlocked() {
     _toast('無法與此使用者互動');
@@ -777,6 +811,71 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
   }
 
+  /// 檢舉成功後後端不再把這篇列給我：回上一頁，讓動態列表拿掉它。
+  /// 從通知進來時上一頁是收件匣，照樣回去。
+  Future<void> _reportPost() async {
+    final sent = await showForumReportSheet(
+      context,
+      targetType: 'post',
+      targetId: widget.postId,
+    );
+    if (!sent || !mounted) return;
+    Navigator.pop(context, const ForumDetailResult.removedFromFeed());
+  }
+
+  /// 隱藏只影響自己的動態，作者與其他人照常看得到；後端不擋唯讀帳號。
+  /// 成功後回上一頁，讓動態列表拿掉它（收藏頁保留）。
+  ///
+  /// pop 前先以 onPostChanged 回報 isHidden=true：「已隱藏的貼文」頁要靠最後狀態
+  /// 分辨「取消後又重新隱藏」（保留）與「取消後改檢舉」（移除），兩者都回 removedFromFeed。
+  Future<void> _hidePost() async {
+    if (_hiding) return;
+    setState(() => _hiding = true);
+    // 只有成功 pop 才保留 _hiding（本頁正在離開，轉場期間也不該再送一次）；
+    // 其他結果一律解除，包括 ApiClient 在手機上 rethrow 的 ClientException、
+    // 非 JSON 回應的 FormatException，否則選單項會一直停用到重進本頁。
+    var popped = false;
+    try {
+      await ForumService.setHidden(widget.postId, hidden: true);
+      if (!mounted) return;
+      final current = _post;
+      if (current != null) {
+        widget.onPostChanged?.call(current.copyWith(isHidden: true));
+      }
+      popped = true;
+      Navigator.pop(context, const ForumDetailResult.removedFromFeed());
+      _toast('已隱藏，可在個人頁的『已隱藏的貼文』取消');
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _hiding = false);
+      // 貼文已刪除、作者被鎖或與我有封鎖關係時後端一律回 404。
+      if (e.code == 'POST_NOT_FOUND') return _popDeleted('這篇貼文已被刪除');
+      _toast(e.message);
+    } finally {
+      if (!popped && mounted && _hiding) setState(() => _hiding = false);
+    }
+  }
+
+  /// 取消隱藏後留在本頁，並回報開啟它的列表（「已隱藏的貼文」頁據此移除這筆）。
+  Future<void> _unhidePost() async {
+    if (_hiding) return;
+    setState(() => _hiding = true);
+    try {
+      final hidden = await ForumService.setHidden(widget.postId, hidden: false);
+      if (!mounted) return;
+      final current = _post;
+      if (current == null) return;
+      setState(() => _post = current.copyWith(isHidden: hidden));
+      widget.onPostChanged?.call(_post!);
+      // 同「已隱藏的貼文」頁：後端確認已取消才提示。
+      if (!hidden) _toast('已取消隱藏');
+    } on ApiException catch (e) {
+      _toast(e.message);
+    } finally {
+      if (mounted) setState(() => _hiding = false);
+    }
+  }
+
   Future<bool> _confirm(String message) =>
       showConfirmDialog(context, message: message, confirmText: '刪除');
 
@@ -812,7 +911,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   Widget _buildScaffold(BuildContext context, bool seniorMode) {
     final post = _post;
-    // 唯讀帳號：編輯（PATCH）與檢舉會被後端擋，選單直接不給；刪除仍保留。
+    // 唯讀帳號：編輯（PATCH）與檢舉會被後端擋，選單直接不給；刪除、隱藏仍保留。
     final locked = accountLockController.locked;
     return Scaffold(
       backgroundColor: AppColors.creamLight,
@@ -829,19 +928,16 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           ),
         ),
         actions: [
-          if (post != null && (_isMine || !locked || _isAdmin))
+          // 自己的貼文至少有「刪除」，別人的至少有「隱藏」，選單一律出現。
+          if (post != null)
             PopupMenuButton<String>(
               iconSize: seniorMode ? 30 : 24,
               onSelected: (value) {
                 if (value == 'edit') _edit();
                 if (value == 'delete') _deletePost();
-                if (value == 'report') {
-                  showForumReportSheet(
-                    context,
-                    targetType: 'post',
-                    targetId: post.id,
-                  );
-                }
+                if (value == 'report') _reportPost();
+                if (value == 'hide') _hidePost();
+                if (value == 'unhide') _unhidePost();
                 if (value == 'admin_remove') _adminRemovePost();
                 if (value == 'admin_pin') _adminTogglePin();
               },
@@ -850,8 +946,31 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                   if (!locked)
                     const PopupMenuItem(value: 'edit', child: Text('編輯')),
                   const PopupMenuItem(value: 'delete', child: Text('刪除')),
-                ] else if (!locked)
-                  const PopupMenuItem(value: 'report', child: Text('檢舉')),
+                ] else ...[
+                  post.isHidden
+                      ? PopupMenuItem(
+                          value: 'unhide',
+                          enabled: !_hiding,
+                          child: const Text('取消隱藏'),
+                        )
+                      : PopupMenuItem(
+                          value: 'hide',
+                          enabled: !_hiding,
+                          child: const Text('隱藏這篇貼文'),
+                        ),
+                  if (!locked)
+                    // 檢舉過的不能再檢舉、也不能撤回，只標示狀態。
+                    post.reportedByMe
+                        ? const PopupMenuItem(
+                            value: 'reported',
+                            enabled: false,
+                            child: Text('已檢舉'),
+                          )
+                        : const PopupMenuItem(
+                            value: 'report',
+                            child: Text('檢舉'),
+                          ),
+                ],
                 if (_isAdmin) ...[
                   PopupMenuItem(
                     value: 'admin_pin',
@@ -993,13 +1112,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 onAdminRemove: _isAdmin
                     ? () => _adminRemoveComment(thread.root)
                     : null,
-                onReport: locked
-                    ? null
-                    : () => showForumReportSheet(
-                        context,
-                        targetType: 'comment',
-                        targetId: thread.root.id,
-                      ),
+                onReport: locked ? null : () => _reportComment(thread.root),
                 itemCatalogById: _itemCatalogById,
               ),
             ),
@@ -1020,13 +1133,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                       ? () => _adminRemoveComment(reply)
                       : null,
                   itemCatalogById: _itemCatalogById,
-                  onReport: locked
-                      ? null
-                      : () => showForumReportSheet(
-                          context,
-                          targetType: 'comment',
-                          targetId: reply.id,
-                        ),
+                  onReport: locked ? null : () => _reportComment(reply),
                 ),
               ),
           ],

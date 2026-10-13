@@ -29,6 +29,7 @@ import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/joined_events_screen.dart';
 import '../events/my_events_screen.dart';
+import '../forum/forum_hidden_posts_screen.dart';
 import '../history/history_screen.dart';
 import '../inbox/inbox_screen.dart';
 import '../shop/shop_screen.dart';
@@ -509,8 +510,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Widget _buildOtherSection({required bool seniorMode}) {
     final items = <(String, VoidCallback)>[
-      ('意見回饋', _openContactEmail),
+      ('聯絡我們／回報不當內容', _openContactEmail),
       ('關於語見太魯閣', _openAboutApp),
+      ('已隱藏的貼文', _openHiddenPosts),
       ('服務條款與隱私權政策', _openTermsView),
       ('下載我的資料', () => exportMyData(context)),
       ('刪除帳號', _openDeleteAccount),
@@ -594,6 +596,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ).push(MaterialPageRoute(builder: (_) => const AccountDeleteScreen()));
   }
 
+  void _openHiddenPosts() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ForumHiddenPostsScreen()));
+  }
+
   void _openTermsView() {
     Navigator.of(context).push(
       MaterialPageRoute(
@@ -606,7 +614,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final uri = Uri(
       scheme: 'mailto',
       path: 'yujiantailuge@gmail.com',
-      query: 'subject=語見太魯閣 App 意見回饋',
+      query: 'subject=【語見太魯閣】回報',
     );
     final launched = await launchUrl(uri);
     if (!launched && mounted) {
