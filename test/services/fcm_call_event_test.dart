@@ -31,7 +31,6 @@ void main() {
     FcmService.onVideoSessionEnded = null;
     FcmService.onFriendCallIncoming = null;
     FcmService.onFriendCallAccepted = null;
-    FcmService.onFriendCallDeclined = null;
     FcmService.onFriendCallCancelled = null;
   });
 
@@ -209,12 +208,10 @@ void main() {
     });
   });
 
-  test('撥出中收到接聽、拒接、取消交給對應回呼', () {
+  test('撥出中收到接聽、取消交給對應回呼', () {
     final accepted = <int>[];
-    final declined = <int>[];
     final cancelled = <int>[];
     FcmService.onFriendCallAccepted = accepted.add;
-    FcmService.onFriendCallDeclined = declined.add;
     FcmService.onFriendCallCancelled = cancelled.add;
 
     FcmService.handleSocketCallEvent({
@@ -222,16 +219,12 @@ void main() {
       'call_id': '1',
       'session_id': '9',
     });
-    FcmService.handleForegroundMessage(
-      _push({'type': 'friend_call_declined', 'call_id': '2'}),
-    );
     FcmService.handleSocketCallEvent({
       'type': 'friend_call_cancelled',
       'call_id': '3',
     });
 
     expect(accepted, [1]);
-    expect(declined, [2]);
     expect(cancelled, [3]);
   });
 }

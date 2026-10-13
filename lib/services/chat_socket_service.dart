@@ -47,7 +47,6 @@ class ChatSocketEvent {
     'video_session_ended',
     'friend_call_incoming',
     'friend_call_accepted',
-    'friend_call_declined',
     'friend_call_cancelled',
     'friend_call_ended',
   };

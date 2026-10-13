@@ -166,11 +166,10 @@ class FcmService {
   /// 來電狀態，不要直接用 payload 判斷。
   static void Function(int callId)? onFriendCallCancelled;
 
-  /// 撥出中收到 friend_call_accepted／friend_call_declined。由
-  /// DirectedCallWaitingScreen 在 initState/dispose 掛上/清空——收到後立即查詢
-  /// 來電狀態，不直接用 payload 導頁。
+  /// 撥出中收到 friend_call_accepted。由 DirectedCallWaitingScreen 在
+  /// initState/dispose 掛上/清空——收到後立即查詢來電狀態，不直接用 payload 導頁。
+  /// 對方拒接時後端不通知撥出方，撥號畫面照常響到逾時。
   static void Function(int callId)? onFriendCallAccepted;
-  static void Function(int callId)? onFriendCallDeclined;
 
   /// 收到 friend_call_ended（好友通話中對方掛斷或封鎖，前景或點擊通知皆會觸發）。
   /// 由 VideoCallScreen 在好友通話時於 initState/dispose 掛上/清空；沒有訂閱者
@@ -484,7 +483,6 @@ class FcmService {
     'video_session_ended',
     'friend_call_incoming',
     'friend_call_accepted',
-    'friend_call_declined',
     'friend_call_cancelled',
     'friend_call_ended',
   };
@@ -614,8 +612,6 @@ class FcmService {
         return false;
       case 'friend_call_accepted':
         return deliver(onFriendCallAccepted, callId);
-      case 'friend_call_declined':
-        return deliver(onFriendCallDeclined, callId);
       case 'friend_call_cancelled':
         return deliver(onFriendCallCancelled, callId);
       case 'friend_call_ended':
