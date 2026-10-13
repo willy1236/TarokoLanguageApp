@@ -145,6 +145,11 @@ void main() {
         find.text('活動已更新，今天通知次數已達上限，參加者不會再收到推播'),
         findsOneWidget,
       );
+      // 發起人得讀完才知道要另外通知參加者，停留時間同部落推播提示。
+      expect(
+        tester.widget<SnackBar>(find.byType(SnackBar)).duration,
+        const Duration(seconds: 8),
+      );
     });
 
     testWidgets('沒有 notify_limited：只提示活動已更新', (tester) async {

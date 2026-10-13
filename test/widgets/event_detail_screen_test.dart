@@ -497,7 +497,7 @@ void main() {
   });
 
   testWidgets('退出時活動已開始（409 EVENT_STARTED）：顯示後端訊息並重新整理', (tester) async {
-    var started = false;
+    var leaveRequested = false;
     var detailCalls = 0;
     installMockClient(
       {
@@ -512,7 +512,7 @@ void main() {
       },
       onRequest: (req) {
         if (req.url.path == '/api/events/1') detailCalls++;
-        if (req.url.path == '/api/events/1/join') started = true;
+        if (req.url.path == '/api/events/1/join') leaveRequested = true;
       },
     );
 
@@ -521,7 +521,7 @@ void main() {
     await tester.tap(find.text('退出'));
     await tester.pumpAndSettle();
 
-    expect(started, isTrue);
+    expect(leaveRequested, isTrue);
     expect(find.text('活動已開始或已結束，不能退出'), findsOneWidget);
     expect(detailCalls, 2, reason: '畫面狀態過期，要重抓詳情換掉按鈕');
   });
