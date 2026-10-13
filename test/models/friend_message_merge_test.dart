@@ -1,4 +1,4 @@
-// 重連後補抓訊息的合併規則（chat_screen.dart 的 _catchUp）。
+// 重連後補抓訊息與通話的合併規則（chat_screen.dart 的 _catchUp、_loadMore）。
 
 import 'package:flutter_test/flutter_test.dart';
 
@@ -40,5 +40,33 @@ void main() {
 
   test('尚未載入任何訊息時直接用重抓的', () {
     expect(ids(mergeLatestMessages([], [msg(2), msg(1)])), [2, 1]);
+  });
+
+  group('通話', () {
+    FriendCall call(int id, int minute, {bool unread = false}) => FriendCall(
+      id: id,
+      kind: FriendCallKind.missed,
+      mine: false,
+      createdAt: DateTime(2026, 10, 12, 8, minute),
+      isUnread: unread,
+    );
+
+    test('同一通以新抓到的為準，不重複；舊的保留，依時間新到舊', () {
+      final loaded = [call(3, 30, unread: true), call(1, 10)];
+      final latest = [call(4, 40), call(3, 30)];
+
+      final merged = mergeLatestCalls(loaded, latest);
+
+      expect(merged.map((c) => c.id), [4, 3, 1]);
+      expect(merged[1].isUnread, isFalse);
+    });
+
+    test('往上載入的較舊一頁附加在後，與已載入重疊的不重複', () {
+      final merged = mergeLatestCalls(
+        [call(5, 50), call(4, 40)],
+        [call(4, 40), call(2, 20)],
+      );
+      expect(merged.map((c) => c.id), [5, 4, 2]);
+    });
   });
 }

@@ -87,4 +87,67 @@ void main() {
     final page = await FriendService.getMessages('BBBB2345');
     expect(page.partner!.unavailable, isFalse);
   });
+
+  test('解析 calls，不認得的 kind 略過；舊回應沒有 calls 時為空', () async {
+    respondWith({
+      'messages': [_message(15)],
+      'calls': [
+        {
+          'id': 120,
+          'kind': 'missed',
+          'mine': false,
+          'created_at': '2026-10-12T06:00:00Z',
+          'duration_sec': null,
+          'is_unread': true,
+        },
+        {
+          'id': 121,
+          'kind': 'future_kind',
+          'created_at': '2026-10-12T06:00:00Z',
+        },
+      ],
+      'page_info': {'next_cursor': null, 'has_more': false},
+    });
+    final page = await FriendService.getMessages('BBBB2345');
+    expect(page.calls.single.id, 120);
+    expect(page.calls.single.isUnread, isTrue);
+
+    respondWith({
+      'messages': [_message(15)],
+      'page_info': {'next_cursor': null, 'has_more': false},
+    });
+    expect((await FriendService.getMessages('BBBB2345')).calls, isEmpty);
+  });
+
+  group('標已讀後重抓紅點', () {
+    late List<String> paths;
+
+    Future<int> summaryRequests(Map<String, dynamic> read) async {
+      paths = [];
+      ApiClient.httpClient = MockClient((r) async {
+        paths.add(r.url.path);
+        return jsonResponse(
+          r.url.path == '/api/notifications/summary' ? {'total': 0} : read,
+        );
+      });
+      await FriendService.markRead('BBBB2345');
+      await pumpEventQueue();
+      return paths.where((p) => p == '/api/notifications/summary').length;
+    }
+
+    test('只清掉未接來電也重抓', () async {
+      expect(
+        await summaryRequests({'ok': true, 'marked': 0, 'calls_marked': 1}),
+        1,
+      );
+    });
+
+    test('什麼都沒清到不重抓；舊回應沒有 calls_marked 照舊看 marked', () async {
+      expect(
+        await summaryRequests({'ok': true, 'marked': 0, 'calls_marked': 0}),
+        0,
+      );
+      expect(await summaryRequests({'ok': true, 'marked': 2}), 1);
+    });
+  });
 }

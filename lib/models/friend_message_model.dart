@@ -208,3 +208,23 @@ List<FriendMessage>? mergeLatestMessages(
   };
   return byId.values.toList()..sort((a, b) => b.id.compareTo(a.id));
 }
+
+/// 重連或推播後重抓的最新一頁通話 [latest] 併進已載入的 [loaded]：同一通以
+/// [latest] 為準（未讀狀態可能變了），其餘保留，新到舊。訊息接不起來而整頁
+/// 替換時（[mergeLatestMessages] 回 null），通話也改用 [latest] 整份替換。
+List<FriendCall> mergeLatestCalls(
+  List<FriendCall> loaded,
+  List<FriendCall> latest,
+) {
+  final byId = {
+    for (final c in loaded) c.id: c,
+    for (final c in latest) c.id: c,
+  };
+  return byId.values.toList()..sort(compareCallsNewestFirst);
+}
+
+/// 通話新到舊；同一秒依 id。
+int compareCallsNewestFirst(FriendCall a, FriendCall b) {
+  final byTime = b.createdAt.compareTo(a.createdAt);
+  return byTime != 0 ? byTime : b.id.compareTo(a.id);
+}
