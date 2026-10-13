@@ -20,7 +20,53 @@ import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import '../../shared/widgets/report_sheet.dart';
 
-enum _CallMenuAction { addFriend, block }
+enum _CallMenuAction { addFriend, report, block }
+
+/// 通話結束後要怎麼離開。
+@visibleForTesting
+enum AfterCallAction {
+  /// 自己剛封鎖對方：回首頁並提示已封鎖。
+  leaveBlocked,
+
+  /// 封鎖請求還在途中：直接回首頁，結果由封鎖流程自己提示。
+  leaveWhileBlocking,
+
+  /// 問要不要檢舉這通通話，再回首頁。
+  offerReport,
+
+  /// 直接回首頁。
+  leave,
+}
+
+/// 掛斷後的去向。好友通話與隨機配對規則相同：沒接通（[joined] 為 false，
+/// 例如權限被拒）、唯讀帳號（後端擋檢舉）、通話中已檢舉過，都不再問檢舉。
+@visibleForTesting
+AfterCallAction decideAfterCall({
+  required bool blockedPeer,
+  required bool blockInFlight,
+  required bool joined,
+  required bool readOnly,
+  required bool reportedInCall,
+}) {
+  if (blockedPeer) return AfterCallAction.leaveBlocked;
+  if (blockInFlight) return AfterCallAction.leaveWhileBlocking;
+  if (!joined || readOnly || reportedInCall) return AfterCallAction.leave;
+  return AfterCallAction.offerReport;
+}
+
+/// 依通話類型挑檢舉端點：好友通話（[directedCallId] 不為 null）檢舉 call，
+/// 隨機配對檢舉 session。後端對好友通話的 session 會回 400 USE_CALL_REPORT。
+@visibleForTesting
+Future<void> Function(String reason) callReportSubmitter({
+  required int sessionId,
+  required int? directedCallId,
+  Future<void> Function(int callId, String reason) reportCall =
+      DirectedCallService.reportCall,
+  Future<void> Function(int sessionId, String reason) reportSession =
+      VideoCallService.reportSession,
+}) => directedCallId != null
+    ? (reason) => reportCall(directedCallId, reason)
+    : (reason) => reportSession(sessionId, reason);
 
 /// 通話畫面。狀態機在 [VideoCallController]；這裡只負責畫面、導頁、檢舉
 /// 對話框與 FCM 回呼註冊。
@@ -68,6 +114,21 @@ class _VideoCallScreenState extends State<VideoCallScreen>
   /// [_onLeft] 已處理過離開（已導回首頁）。封鎖晚於通話結束才成功時，
   /// 提示要由 [_blockPeer] 自己補上。
   bool _leftHandled = false;
+
+  /// 通話中已送出檢舉：掛斷後不再詢問檢舉。在送出成功當下就設，
+  /// 面板關閉前結束的通話也看得到。
+  bool _reportedInCall = false;
+
+  /// 通話中的檢舉面板還開著。通話在這期間結束時，[_onLeft] 先等它關掉
+  /// 再決定要不要詢問，避免在面板上再疊一個「要檢舉嗎」。
+  Future<bool>? _inCallReportSheet;
+
+  /// 這通通話的檢舉端點，掛斷後詢問與通話中選單共用。
+  late final Future<void> Function(String reason) _submitReport =
+      callReportSubmitter(
+        sessionId: widget.session.id,
+        directedCallId: widget.directedCallId,
+      );
 
   @override
   void initState() {
@@ -144,23 +205,25 @@ class _VideoCallScreenState extends State<VideoCallScreen>
 
   Future<void> _onLeft() async {
     if (!mounted) return;
-    final directedCallId = widget.directedCallId;
-    // 沒接通就結束（例如權限被拒）不需要問檢舉。
-    // 唯讀帳號不能檢舉（後端擋），就不問了。
-    // 自己剛封鎖（或正在封鎖）對方就不再問檢舉，直接離開。
     _leftHandled = true;
-    if (_blockedPeer || _blockInFlight) {
-      Navigator.popUntil(context, (r) => r.isFirst);
-      if (_blockedPeer) _showBlockedNotice();
-      return;
+    final openSheet = _inCallReportSheet;
+    if (openSheet != null) {
+      await openSheet;
+      if (!mounted) return;
     }
-    if (directedCallId != null &&
-        _call.joinError == null &&
-        !accountLockController.locked) {
-      await _offerReport(directedCallId);
+    final action = decideAfterCall(
+      blockedPeer: _blockedPeer,
+      blockInFlight: _blockInFlight,
+      joined: _call.joinError == null,
+      readOnly: accountLockController.locked,
+      reportedInCall: _reportedInCall,
+    );
+    if (action == AfterCallAction.offerReport) {
+      await _offerReport();
+      if (!mounted) return;
     }
-    if (!mounted) return;
     Navigator.popUntil(context, (r) => r.isFirst);
+    if (action == AfterCallAction.leaveBlocked) _showBlockedNotice();
   }
 
   /// 通話中封鎖：後端會結束這通通話並只推播給對方，自己這端要主動離開頻道。
@@ -174,7 +237,15 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       cancelText: '取消',
       confirmText: '封鎖',
     );
-    if (confirmed != true || !mounted || _call.leaving) return;
+    if (confirmed != true) return;
+    await _blockPeerNow();
+  }
+
+  /// 不再確認、直接封鎖對方並結束通話。檢查與設定 [_blockInFlight] 之間
+  /// 不能有 await，[_onLeft] 才不會在中間插進來、對剛封鎖的人問檢舉。
+  Future<void> _blockPeerNow() async {
+    // 已有一筆封鎖在途中（例如檢舉後選封鎖、又從選單點封鎖）就不重送。
+    if (!mounted || _call.leaving || _blockInFlight) return;
     _blockInFlight = true;
     try {
       await FriendService.blockUser(widget.session.peerFriendCode);
@@ -229,7 +300,34 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     );
   }
 
-  Future<void> _offerReport(int callId) async {
+  /// 通話中檢舉；送出成功後問要不要一併封鎖並結束通話，選否通話照常進行。
+  Future<void> _reportInCall() async {
+    if (blockIfReadOnly() || _call.leaving) return;
+    final sheet = _showReportSheet(
+      onSubmit: (reason) async {
+        await _submitReport(reason);
+        _reportedInCall = true;
+      },
+    );
+    _inCallReportSheet = sheet;
+    final sent = await sheet;
+    _inCallReportSheet = null;
+    // 通話在面板開著時結束：交給 _onLeft 回首頁，不再問封鎖。
+    if (!sent || !mounted || _call.leaving) return;
+    final block = await showConfirmDialog(
+      context,
+      title: '要一併封鎖對方並結束通話嗎？',
+      message:
+          '封鎖後會解除好友，並移除你們在彼此貼文上的留言與讚。'
+          '\n\n解除封鎖後，這些都不會恢復，需要重新加好友。',
+      cancelText: '不用，繼續通話',
+      confirmText: '封鎖',
+    );
+    if (block != true) return;
+    await _blockPeerNow();
+  }
+
+  Future<void> _offerReport() async {
     final shouldReport = await showConfirmDialog(
       context,
       title: '通話已結束',
@@ -240,7 +338,13 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     if (shouldReport != true || !mounted) return;
     // 面板關閉（送出或直接關掉）後才回到 _onLeft 回首頁；提示由面板經
     // 送出前取好的 messenger 顯示，本頁在送出途中被關掉也不受影響。
-    await showReportSheet(
+    await _showReportSheet(onSubmit: _submitReport);
+  }
+
+  Future<bool> _showReportSheet({
+    required Future<void> Function(String reason) onSubmit,
+  }) {
+    return showReportSheet(
       context,
       title: '檢舉此通話',
       description: '請說明檢舉的原因，管理員會再確認。',
@@ -248,7 +352,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
       submitLabel: '送出檢舉',
       successMessage: '已送出檢舉',
       maxLength: 500,
-      onSubmit: (reason) => DirectedCallService.reportCall(callId, reason),
+      onSubmit: onSubmit,
       errorMessage: (e) => apiErrorMessage(e, fallback: '檢舉失敗，請稍後再試'),
     );
   }
@@ -500,6 +604,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
             enabled: !_call.leaving,
             onSelected: (action) => switch (action) {
               _CallMenuAction.addFriend => _addPeerAsFriend(),
+              _CallMenuAction.report => _reportInCall(),
               _CallMenuAction.block => _blockPeer(),
             },
             itemBuilder: (context) => [
@@ -510,6 +615,10 @@ class _VideoCallScreenState extends State<VideoCallScreen>
                   value: _CallMenuAction.addFriend,
                   child: Text('加好友'),
                 ),
+              const PopupMenuItem(
+                value: _CallMenuAction.report,
+                child: Text('檢舉'),
+              ),
               const PopupMenuItem(
                 value: _CallMenuAction.block,
                 child: Text('封鎖對方'),

@@ -484,6 +484,32 @@ void main() {
         expectError: true,
       ),
     );
+    // 隨機配對視訊檢舉只錄錯誤路徑：成功路徑會真的寫一筆檢舉、計入對方的
+    // 自動禁言門檻，且需要一段 inspector 帳號參與過的通話。
+    test(
+      'POST /api/video/session/999999999/report (測 404 格式，不寫入)',
+      () => _inspect(
+        'POST',
+        ApiConfig.videoSessionReport(999999999),
+        body: {'reason': '__inspector__'},
+        fixtureAs: 'post_api_video_session_report_404.json',
+        expectStatus: 404,
+        expectError: true,
+        errorCode: 'NOT_FOUND',
+      ),
+    );
+    test(
+      'POST /api/video/session/999999999/report (空白 reason 測 400 格式)',
+      () => _inspect(
+        'POST',
+        ApiConfig.videoSessionReport(999999999),
+        body: {'reason': '   '},
+        fixtureAs: 'post_api_video_session_report_400.json',
+        expectStatus: 400,
+        expectError: true,
+        errorCode: 'INVALID_REQUEST',
+      ),
+    );
 
     test(
       'GET /api/events',

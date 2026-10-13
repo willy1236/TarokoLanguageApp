@@ -13,6 +13,7 @@
 //   GET    /api/video/session/current    查我目前 active 房
 //   POST   /api/video/session/:id/token  （重）取得 Agora token
 //   POST   /api/video/session/:id/end    掛斷/結束（通知對方）
+//   POST   /api/video/session/:id/report 檢舉這段隨機配對視訊
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
@@ -55,5 +56,14 @@ class VideoCallService {
   /// 掛斷/結束通話（冪等）。成功後對方會收到 FCM video_session_ended。
   static Future<void> endSession(int sessionId) async {
     await ApiClient.post(ApiConfig.videoSessionEnd(sessionId));
+  }
+
+  /// 檢舉這段隨機配對視訊（[reason] 1–500 字）。通話進行中或結束後都能送；
+  /// 同一段重送後端仍回成功、不重複記錄。好友通話的 session 後端回 400
+  /// USE_CALL_REPORT，要改用 DirectedCallService.reportCall。
+  static Future<void> reportSession(int sessionId, String reason) async {
+    await ApiClient.post(ApiConfig.videoSessionReport(sessionId), {
+      'reason': reason,
+    });
   }
 }
