@@ -22,8 +22,6 @@ import '../../shared/widgets/truku_empty_state.dart';
 import 'admin_error.dart';
 import 'widgets/admin_widgets.dart';
 
-/// 分類名稱上限（後端 `CATEGORY_LABEL_MAX`，以 UTF-16 單位計）。
-const int adminCategoryLabelMax = 20;
 const int _sortOrderMax = 10000;
 
 const Map<CategoryModule, String> _moduleLabels = {
@@ -307,7 +305,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
   bool get _canSubmit =>
       !_busy &&
       _trimmedLabel.isNotEmpty &&
-      _trimmedLabel.length <= adminCategoryLabelMax &&
+      _trimmedLabel.length <= categoryLabelMax &&
       _sortError == null;
 
   Future<void> _submit() async {
@@ -402,12 +400,9 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                 autofocus: true,
                 style: fieldStyle,
                 inputFormatters: const [
-                  Utf16LengthLimitingTextInputFormatter(adminCategoryLabelMax),
+                  Utf16LengthLimitingTextInputFormatter(categoryLabelMax),
                 ],
-                buildCounter: utf16CounterBuilder(
-                  _label,
-                  adminCategoryLabelMax,
-                ),
+                buildCounter: utf16CounterBuilder(_label, categoryLabelMax),
                 onChanged: (_) => setState(() => _labelError = null),
                 decoration: InputDecoration(
                   labelText: '名稱（必填）',

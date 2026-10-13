@@ -22,7 +22,6 @@ import '../../services/user_service.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import '../culture/widgets/article_markdown.dart';
-import 'admin_categories_screen.dart' show adminCategoryLabelMax;
 import 'admin_error.dart';
 import 'widgets/admin_widgets.dart';
 
@@ -140,8 +139,8 @@ class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
   String? get _newCategoryError {
     if (!_typingNewCategory) return null;
     final typed = _newCategory.text.trim();
-    if (typed.length > adminCategoryLabelMax) {
-      return '分類名稱最多 $adminCategoryLabelMax 字';
+    if (typed.length > categoryLabelMax) {
+      return '分類名稱最多 $categoryLabelMax 字';
     }
     return _submitted && typed.isEmpty ? '分類名稱必填' : null;
   }
@@ -433,12 +432,9 @@ class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
           controller: _newCategory,
           autofocus: categories.isNotEmpty,
           inputFormatters: const [
-            Utf16LengthLimitingTextInputFormatter(adminCategoryLabelMax),
+            Utf16LengthLimitingTextInputFormatter(categoryLabelMax),
           ],
-          buildCounter: utf16CounterBuilder(
-            _newCategory,
-            adminCategoryLabelMax,
-          ),
+          buildCounter: utf16CounterBuilder(_newCategory, categoryLabelMax),
           onChanged: (_) => setState(() {}),
           decoration: InputDecoration(
             labelText: '新分類名稱',

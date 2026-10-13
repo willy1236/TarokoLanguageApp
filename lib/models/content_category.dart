@@ -4,6 +4,10 @@
 
 import '../core/constants/api.dart';
 
+/// 分類名稱上限（後端 categories.ts `CATEGORY_LABEL_MAX`，以 UTF-16 單位計）。
+/// 後台分類管理、文章表單、發起活動頁的新增分類共用。
+const int categoryLabelMax = 20;
+
 /// 分類清單的一筆。[value] 送出（發起、篩選）用，[label] 顯示用。
 class ContentCategory {
   final String value;

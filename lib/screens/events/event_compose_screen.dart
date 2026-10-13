@@ -1336,7 +1336,7 @@ class _NewCategoryDialog extends StatefulWidget {
 
 class _NewCategoryDialogState extends State<_NewCategoryDialog> {
   /// 後端分類名稱上限（categories.ts CATEGORY_LABEL_MAX）。
-  static const _maxLength = 20;
+  static const _maxLength = categoryLabelMax;
 
   final _controller = TextEditingController();
 
