@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:flutter_application_1/models/content_category.dart';
 import 'package:flutter_application_1/services/admin_service.dart';
 
 import '../helpers/fixtures.dart';
@@ -222,5 +223,94 @@ void main() {
     expect(reconcile.ledgerSum, -150);
     expect(reconcile.userMillet, 350);
     expect(reconcile.ok, isFalse);
+  });
+
+  group('分類管理', () {
+    test('fetchCategories：路徑帶模組名，解析全部分類（含 count 0）', () async {
+      final requests = <http.Request>[];
+      installMockClient({
+        '/api/admin/categories/articles': loadFixtureMap(
+          'get_api_admin_categories_articles.json',
+        ),
+        '/api/admin/categories/events': loadFixtureMap(
+          'get_api_admin_categories_events.json',
+        ),
+      }, onRequest: requests.add);
+
+      final articles = await AdminService.fetchCategories(
+        CategoryModule.articles,
+      );
+      await AdminService.fetchCategories(CategoryModule.events);
+
+      expect(requests.map((r) => '${r.method} ${r.url.path}'), [
+        'GET /api/admin/categories/articles',
+        'GET /api/admin/categories/events',
+      ]);
+      expect(articles.first.value, 'tribal_intro');
+      expect(articles.first.label, '部落宣傳');
+      expect(articles.first.count, 0);
+      expect(articles.last.sortOrder, 1000);
+    });
+
+    test('createCategory：label 去空白，sort_order 不填不送；解析 201 回應', () async {
+      final requests = <http.Request>[];
+      installMockClient({
+        '/api/admin/categories/videos': jsonResponse({
+          'category': {
+            'value': '祭儀',
+            'label': '祭儀',
+            'sort_order': 100,
+            'count': 0,
+          },
+        }, status: 201),
+      }, onRequest: requests.add);
+
+      final created = await AdminService.createCategory(
+        CategoryModule.videos,
+        ' 祭儀 ',
+      );
+      await AdminService.createCategory(
+        CategoryModule.videos,
+        '祭儀',
+        sortOrder: 0,
+      );
+
+      expect(requests[0].method, 'POST');
+      expect(jsonDecode(requests[0].body), {'label': '祭儀'});
+      expect(jsonDecode(requests[1].body), {'label': '祭儀', 'sort_order': 0});
+      expect(created.value, '祭儀');
+      expect(created.count, 0);
+    });
+
+    test('updateCategory：value 編碼進路徑（中文、/），只送有給的欄位', () async {
+      final requests = <http.Request>[];
+      final ok = {
+        'category': {'value': 'x', 'label': 'x', 'sort_order': 1},
+      };
+      installMockClient({
+        '/api/admin/categories/articles/cultural': ok,
+        '/api/admin/categories/events/%E9%87%A3%E9%AD%9A%2F%E7%8B%A9%E7%8D%B5':
+            ok,
+      }, onRequest: requests.add);
+
+      await AdminService.updateCategory(
+        CategoryModule.articles,
+        'cultural',
+        label: ' 文化 ',
+      );
+      await AdminService.updateCategory(
+        CategoryModule.events,
+        '釣魚/狩獵',
+        sortOrder: 20,
+      );
+
+      expect(requests[0].method, 'PATCH');
+      expect(jsonDecode(requests[0].body), {'label': '文化'});
+      expect(
+        requests[1].url.path,
+        '/api/admin/categories/events/%E9%87%A3%E9%AD%9A%2F%E7%8B%A9%E7%8D%B5',
+      );
+      expect(jsonDecode(requests[1].body), {'sort_order': 20});
+    });
   });
 }

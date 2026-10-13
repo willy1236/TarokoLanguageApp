@@ -14,8 +14,10 @@ import 'package:flutter_application_1/screens/admin/admin_terms_publish_screen.d
 import 'package:flutter_application_1/screens/culture/article_detail_screen.dart';
 import 'package:flutter_application_1/services/admin_service.dart';
 import 'package:flutter_application_1/services/article_refresh_notifier.dart';
+import 'package:flutter_application_1/services/category_service.dart';
 import 'package:flutter_application_1/services/user_service.dart';
 
+import '../../helpers/fixtures.dart';
 import '../../helpers/widget_test_helpers.dart';
 
 Widget _host(Widget Function() screen, List<Object?> result) => MaterialApp(
@@ -71,6 +73,7 @@ void main() {
   tearDown(() {
     restoreHttp();
     UserService.clearCache();
+    CategoryService.reset();
   });
 
   group('AdminService 文章與條款', () {
@@ -147,21 +150,49 @@ void main() {
   });
 
   group('文章表單', () {
+    const adminCategories = '/api/admin/categories/articles';
+    const appCategories = '/api/articles/categories';
+    Map<String, dynamic> categoryList() =>
+        loadFixtureMap('get_api_admin_categories_articles.json');
+
+    /// 每個請求的 `METHOD path`，用來數前台分類快取有沒有被刷新。
+    late List<String> calls;
+
     void mockCreate({
       void Function(Map<String, dynamic>)? onBody,
       Object? response,
+      Object? categories,
     }) {
+      calls = [];
       installMockClient(
         {
           '/api/tribes': {'tribes': <Object>[]},
           '/api/admin/articles': response ?? {'id': 9},
+          adminCategories: categories ?? categoryList(),
+          appCategories: loadFixtureMap('get_api_articles_categories.json'),
         },
         onRequest: (r) {
+          calls.add('${r.method} ${r.url.path}');
           if (r.method == 'POST') {
             onBody?.call(jsonDecode(r.body) as Map<String, dynamic>);
           }
         },
       );
+    }
+
+    Future<void> fillRequired(WidgetTester tester) async {
+      await tester.enterText(find.widgetWithText(TextField, '標題（必填）'), 't');
+      await tester.enterText(
+        find.widgetWithText(TextField, '內文（Markdown，必填）'),
+        'c',
+      );
+    }
+
+    Future<void> chooseNewCategory(WidgetTester tester) async {
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('＋新增分類').last);
+      await tester.pumpAndSettle();
     }
 
     testWidgets('標題與內文必填；封面只收 https；顯示需先上傳的說明', (tester) async {
@@ -295,9 +326,17 @@ void main() {
       _tall(tester);
       final result = <Object?>[];
       Map<String, dynamic>? sent;
-      installMockClient({
-        '/api/admin/articles/1': {'id': 1},
-      }, onRequest: (r) => sent = jsonDecode(r.body) as Map<String, dynamic>);
+      installMockClient(
+        {
+          '/api/admin/articles/1': {'id': 1},
+          adminCategories: categoryList(),
+        },
+        onRequest: (r) {
+          if (r.method == 'PATCH') {
+            sent = jsonDecode(r.body) as Map<String, dynamic>;
+          }
+        },
+      );
       await tester.pumpWidget(
         _host(
           () =>
@@ -308,6 +347,7 @@ void main() {
       await _open(tester);
       expect(find.text('編輯文章'), findsOneWidget);
       expect(find.text('太魯閣族的織布'), findsOneWidget);
+      expect(find.text('文化紀錄'), findsOneWidget, reason: '原分類照樣選中');
       expect(find.text('作者'), findsNothing, reason: '編輯模式不顯示作者與部落標籤');
 
       await tester.tap(find.text('儲存'));
@@ -322,6 +362,159 @@ void main() {
 
       expect(sent, {'title': '新標題', 'cover_image_url': null});
       expect(result, [true]);
+    });
+
+    testWidgets('分類下拉列出後台全部分類與「＋新增分類」，預設第一筆', (tester) async {
+      _tall(tester);
+      mockCreate();
+      await tester.pumpWidget(
+        _host(() => const AdminArticleFormScreen(), <Object?>[]),
+      );
+      await _open(tester);
+      expect(calls, contains('GET $adminCategories'));
+      expect(find.text('部落宣傳'), findsOneWidget, reason: '預設清單第一筆');
+
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      for (final label in ['文化紀錄', '活動紀錄', '教學延伸', '其他', '＋新增分類']) {
+        expect(find.text(label), findsWidgets, reason: label);
+      }
+    });
+
+    testWidgets('輸入新分類：送出新名稱，成功後刷新前台分類快取', (tester) async {
+      _tall(tester);
+      Map<String, dynamic>? sent;
+      mockCreate(onBody: (b) => sent = b);
+      await tester.pumpWidget(
+        _host(() => const AdminArticleFormScreen(), <Object?>[]),
+      );
+      await _open(tester);
+      await fillRequired(tester);
+      await chooseNewCategory(tester);
+
+      await tester.enterText(find.widgetWithText(TextField, '新分類名稱'), ' 祭儀 ');
+      await tester.tap(find.text('發布'));
+      await tester.pumpAndSettle();
+
+      expect(sent?['category'], '祭儀');
+      expect(calls.where((c) => c == 'GET $appCategories'), hasLength(1));
+    });
+
+    testWidgets('輸入的新分類與既有名稱或代碼相同：送既有 value，不刷新快取', (tester) async {
+      _tall(tester);
+      final sent = <Map<String, dynamic>>[];
+      mockCreate(onBody: sent.add);
+      await tester.pumpWidget(
+        _host(() => const AdminArticleFormScreen(), <Object?>[]),
+      );
+      await _open(tester);
+      await fillRequired(tester);
+      await chooseNewCategory(tester);
+
+      await tester.enterText(find.widgetWithText(TextField, '新分類名稱'), '文化紀錄');
+      await tester.tap(find.text('發布'));
+      await tester.pumpAndSettle();
+
+      expect(sent.single['category'], 'cultural');
+      expect(calls, isNot(contains('GET $appCategories')));
+    });
+
+    testWidgets('新分類空白不能送出；超過 20 字輸入不進去', (tester) async {
+      _tall(tester);
+      var posts = 0;
+      mockCreate(onBody: (_) => posts++);
+      await tester.pumpWidget(
+        _host(() => const AdminArticleFormScreen(), <Object?>[]),
+      );
+      await _open(tester);
+      await fillRequired(tester);
+      await chooseNewCategory(tester);
+
+      await tester.enterText(find.widgetWithText(TextField, '新分類名稱'), '   ');
+      await tester.tap(find.text('發布'));
+      await tester.pumpAndSettle();
+      expect(find.text('分類名稱必填'), findsOneWidget);
+      expect(posts, 0);
+
+      await tester.enterText(
+        find.widgetWithText(TextField, '新分類名稱'),
+        '一二三四五六七八九十一二三四五六七八九十多',
+      );
+      await tester.pump();
+      final field = tester.widget<TextField>(
+        find.widgetWithText(TextField, '新分類名稱'),
+      );
+      expect(field.controller!.text.length, 20);
+    });
+
+    testWidgets('分類清單載入失敗：顯示失敗與重試，成功前擋送出', (tester) async {
+      _tall(tester);
+      var posts = 0;
+      mockCreate(
+        onBody: (_) => posts++,
+        categories: errorResponse('INTERNAL', status: 500),
+      );
+      await tester.pumpWidget(
+        _host(() => const AdminArticleFormScreen(), <Object?>[]),
+      );
+      await _open(tester);
+      expect(find.text('分類載入失敗'), findsOneWidget);
+      await fillRequired(tester);
+
+      await tester.tap(find.text('發布'));
+      await tester.pumpAndSettle();
+      expect(posts, 0);
+      expect(find.text('分類清單載入失敗，請先重試'), findsOneWidget);
+
+      Map<String, dynamic>? sent;
+      mockCreate(onBody: (b) => sent = b);
+      await tester.tap(find.text('重試'));
+      await tester.pumpAndSettle();
+      expect(find.text('分類載入失敗'), findsNothing);
+      expect(find.text('部落宣傳'), findsOneWidget);
+
+      await tester.tap(find.text('發布'));
+      await tester.pumpAndSettle();
+      expect(sent?['category'], 'tribal_intro');
+    });
+
+    testWidgets('編輯：原分類不在清單裡也照樣選中，沒改就不送', (tester) async {
+      _tall(tester);
+      Map<String, dynamic>? sent;
+      installMockClient(
+        {
+          '/api/admin/articles/1': {'id': 1},
+          adminCategories: categoryList(),
+        },
+        onRequest: (r) {
+          if (r.method == 'PATCH') {
+            sent = jsonDecode(r.body) as Map<String, dynamic>;
+          }
+        },
+      );
+      await tester.pumpWidget(
+        _host(
+          () => AdminArticleFormScreen(
+            editing: ArticleDetail.fromJson({..._article, 'category': '舊分類'}),
+          ),
+          <Object?>[],
+        ),
+      );
+      await _open(tester);
+      expect(find.text('舊分類'), findsOneWidget);
+
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+      expect(sent, isNull);
+      expect(find.text('沒有變更'), findsOneWidget);
+
+      await tester.tap(find.byType(DropdownButtonFormField<String>));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('其他').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+      expect(sent, {'category': 'other'});
     });
   });
 
