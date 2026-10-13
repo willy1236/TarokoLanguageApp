@@ -16,11 +16,15 @@ class ChatMessagePage {
   /// 往上翻更舊訊息的游標；null 代表已到最早一則。
   final String? nextCursor;
 
+  /// 這一頁時間範圍內的通話（最後一頁含更早的全部），新到舊。
+  final List<FriendCall> calls;
+
   /// 對話對象；對方不存在或雙方有封鎖關係時為 null。
   final ChatPartner? partner;
 
   const ChatMessagePage({
     required this.messages,
+    this.calls = const [],
     this.nextCursor,
     this.partner,
   });
@@ -144,6 +148,7 @@ class FriendService {
     final partner = data['partner'];
     return ChatMessagePage(
       messages: messages,
+      calls: FriendCall.listFromJson(data['calls']),
       nextCursor: PageInfo.fromResponse(data).nextCursor,
       partner: partner is Map<String, dynamic>
           ? ChatPartner.fromJson(partner)
@@ -151,11 +156,12 @@ class FriendService {
     );
   }
 
-  static Future<int> markRead(String friendCode) async {
+  /// 標已讀，對方打來沒接到的通話也一併清掉；有清到任何一項才重抓紅點。
+  static Future<void> markRead(String friendCode) async {
     final data = await ApiClient.post(ApiConfig.friendMessagesRead(friendCode));
     final marked = (data['marked'] as num?)?.toInt() ?? 0;
-    if (marked > 0) NotificationSummaryService.refresh();
-    return marked;
+    final callsMarked = (data['calls_marked'] as num?)?.toInt() ?? 0;
+    if (marked + callsMarked > 0) NotificationSummaryService.refresh();
   }
 
   static Future<void> reportMessage(int id, String reason) async {

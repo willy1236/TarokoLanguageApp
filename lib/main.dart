@@ -156,7 +156,7 @@ class KariTrukuApp extends StatelessWidget {
   Widget _buildApp(BuildContext context) {
     return MaterialApp(
       navigatorKey: navigatorKey,
-      navigatorObservers: [routeStack],
+      navigatorObservers: [routeStack, routeObserver],
       scaffoldMessengerKey: scaffoldMessengerKey,
       title: 'KARI TRUKU',
       debugShowCheckedModeBanner: false,

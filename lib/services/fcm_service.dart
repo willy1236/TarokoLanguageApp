@@ -169,16 +169,26 @@ class FcmService {
   /// 來電狀態，不要直接用 payload 判斷。
   static void Function(int callId)? onFriendCallCancelled;
 
-  /// 撥出中收到 friend_call_accepted／friend_call_declined。由
-  /// DirectedCallWaitingScreen 在 initState/dispose 掛上/清空——收到後立即查詢
-  /// 來電狀態，不直接用 payload 導頁。
+  /// 撥出中收到 friend_call_accepted。由 DirectedCallWaitingScreen 在
+  /// initState/dispose 掛上/清空——收到後立即查詢來電狀態，不直接用 payload 導頁。
+  /// 對方拒接時後端不通知撥出方，撥號畫面照常響到逾時。
   static void Function(int callId)? onFriendCallAccepted;
-  static void Function(int callId)? onFriendCallDeclined;
 
   /// 收到 friend_call_ended（好友通話中對方掛斷或封鎖，前景或點擊通知皆會觸發）。
   /// 由 VideoCallScreen 在好友通話時於 initState/dispose 掛上/清空；沒有訂閱者
   /// 代表使用者不在通話畫面，直接忽略。
   static void Function(int callId)? onFriendCallEnded;
+
+  /// 好友通話有了結果（接通、取消或未接、結束）時通知：開著的聊天室與好友列表
+  /// 重抓通話紀錄。事件只帶 call_id 看不出是哪位好友，訂閱者一律重抓。
+  static Listenable get friendCallActivity => _friendCallActivity;
+  static final _friendCallActivity = ValueNotifier<int>(0);
+
+  static const _friendCallActivityTypes = {
+    'friend_call_accepted',
+    'friend_call_cancelled',
+    'friend_call_ended',
+  };
 
   /// 點擊好友相關通知（私訊、好友邀請、接受邀請、羈絆展示）。由 UI 層設定導頁；
   /// [friendCode] 是對方的好友碼。
@@ -495,7 +505,6 @@ class FcmService {
     'video_session_ended',
     'friend_call_incoming',
     'friend_call_accepted',
-    'friend_call_declined',
     'friend_call_cancelled',
     'friend_call_ended',
   };
@@ -549,6 +558,11 @@ class FcmService {
         unawaited(_handleIncomingCall(callId, key));
       }
       return true;
+    }
+    if (_friendCallActivityTypes.contains(type)) {
+      // 未接來電算進紅點；推播與即時連線都收到時可能通知兩次，重抓兩次無妨。
+      _friendCallActivity.value++;
+      NotificationSummaryService.refresh();
     }
     final delivered = _dispatchCallEvent(type, data, source);
     if (key != null && (delivered || source != _CallEventSource.socket)) {
@@ -625,8 +639,6 @@ class FcmService {
         return false;
       case 'friend_call_accepted':
         return deliver(onFriendCallAccepted, callId);
-      case 'friend_call_declined':
-        return deliver(onFriendCallDeclined, callId);
       case 'friend_call_cancelled':
         return deliver(onFriendCallCancelled, callId);
       case 'friend_call_ended':

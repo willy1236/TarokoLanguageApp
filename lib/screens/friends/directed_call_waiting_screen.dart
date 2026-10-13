@@ -1,4 +1,4 @@
-// 撥打好友定向通話的「撥出中」畫面。撥號後輪詢來電狀態（收到接聽／拒接事件時
+// 撥打好友定向通話的「撥出中」畫面。撥號後輪詢來電狀態（收到接聽事件時
 // 立即查），接通時用既有 VideoCallService.refreshToken 取得自己的 Agora 憑證再進
 // 通話畫面（見 friendCalls.ts 註解）。
 
@@ -39,10 +39,13 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
   int? _callId;
   bool _navigated = false;
 
+  /// 取消已送出：pop 當下送過，dispose 不再送。
+  bool _cancelSent = false;
+
   /// getCall 回應可能慢於輪詢間隔，上一輪還沒回來就不發下一輪，避免重複導頁。
   bool _polling = false;
 
-  /// 收到接聽／拒接事件時正在輪詢或還沒拿到 call_id：這輪結束（或拿到 id）
+  /// 收到接聽事件時正在輪詢或還沒拿到 call_id：這輪結束（或拿到 id）
   /// 後立刻再查一次，不等下一輪。
   bool _pollAgain = false;
   String? _errorMessage;
@@ -54,9 +57,8 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
       vsync: this,
       duration: const Duration(milliseconds: 1600),
     )..repeat();
-    // 對方接聽／拒接時推播或即時連線會先到，收到就立即查，不等下一輪輪詢。
+    // 對方接聽時推播或即時連線會先到，收到就立即查，不等下一輪輪詢。
     FcmService.onFriendCallAccepted = _onCallAnswered;
-    FcmService.onFriendCallDeclined = _onCallAnswered;
     chatController.connect();
     _startCall();
   }
@@ -73,16 +75,19 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
     if (FcmService.onFriendCallAccepted == _onCallAnswered) {
       FcmService.onFriendCallAccepted = null;
     }
-    if (FcmService.onFriendCallDeclined == _onCallAnswered) {
-      FcmService.onFriendCallDeclined = null;
-    }
     _controller.dispose();
     _pollTimer?.cancel();
-    final id = _callId;
-    if (id != null && !_navigated) {
-      DirectedCallService.cancelCall(id).catchError((_) {});
-    }
+    _cancelIfRinging();
     super.dispose();
+  }
+
+  /// 離開時還沒接通就取消。pop 當下就送（見 build 的 PopScope），不等退場動畫
+  /// 跑完的 dispose：底下的聊天室一回到最上層就會查通話紀錄，要讓取消先送出。
+  void _cancelIfRinging() {
+    final id = _callId;
+    if (id == null || _navigated || _cancelSent) return;
+    _cancelSent = true;
+    DirectedCallService.cancelCall(id).catchError((_) {});
   }
 
   Future<void> _startCall() async {
@@ -120,10 +125,6 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
             status.peerFriendCode,
             status.peerNickname,
           );
-          break;
-        case 'declined':
-          _pollTimer?.cancel();
-          setState(() => _errorMessage = '對方目前無法接聽');
           break;
         case 'cancelled':
         case 'missed':
@@ -200,6 +201,15 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
 
   @override
   Widget build(BuildContext context) {
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) _cancelIfRinging();
+      },
+      child: _buildScaffold(),
+    );
+  }
+
+  Widget _buildScaffold() {
     return Scaffold(
       backgroundColor: AppColors.ink,
       body: Stack(

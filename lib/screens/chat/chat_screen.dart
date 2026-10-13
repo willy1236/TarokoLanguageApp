@@ -1,5 +1,8 @@
 // 一對一聊天對話串。訂閱 ChatController 的 WS 事件即時收訊息/已讀，
-// 開啟時 markRead，往上滑分頁補歷史；陌生人（未加好友）超過 3 則、或任一方
+// 開啟時 markRead（未接來電一併清掉），往上滑分頁補歷史，通話紀錄跟著每頁
+// 的訊息一起帶回、依時間混排，點通話泡泡回撥；疊在上面的畫面（撥號、來電、
+// 通話等）關掉回到聊天室，或停在聊天室時收到好友通話事件，都補抓最新一頁，
+// 讓剛結束的通話出現；陌生人（未加好友）超過 3 則、或任一方
 // 未成年／沒填生日時會收到 NEED_FRIEND，被禁言收到 MUTED，皆用 SnackBar 顯示
 // 後端訊息、不猜測前端狀態。
 // 對象是刪除中或被鎖帳號（歷史訊息回應的 partner.unavailable）時歷史照常顯示，
@@ -10,12 +13,16 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/navigation/route_stack.dart';
 import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
+import '../../core/utils/date_format.dart';
 import '../../models/friend_message_model.dart';
 import '../../models/friend_model.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/chat_socket_service.dart';
+import '../../services/directed_call_service.dart';
+import '../../services/fcm_service.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_empty_state.dart';
@@ -28,6 +35,7 @@ import '../../shared/widgets/app_back_button.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/nickname_text.dart';
 import '../../shared/widgets/report_sheet.dart';
+import 'chat_items.dart';
 
 class ChatScreen extends StatefulWidget {
   /// 對方的好友碼：辨識聊天室、打聊天 API、標題列末碼與點進公開檔案都用它。
@@ -86,11 +94,14 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with RouteAware {
   /// 後端 friendMessages.ts 的訊息長度上限。
   static const _messageMax = 2000;
 
   final List<FriendMessage> _messages = []; // 新到舊排序（index 0 = 最新）
+
+  /// 已載入頁的通話紀錄，新到舊、依 id 不重複。
+  List<FriendCall> _calls = const [];
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
   bool _loading = true;
@@ -126,7 +137,21 @@ class _ChatScreenState extends State<ChatScreen> {
     if (route != null && _route == null) {
       _route = route;
       ChatScreen._live[route] = _refreshFromPush;
+      routeObserver.subscribe(this, route);
     }
+  }
+
+  /// 上面疊的畫面關掉：可能剛打完、取消、拒接或錯過一通電話，自己掛斷的那一方
+  /// 收不到事件，一律補抓。等通話畫面送出的取消／結束請求到了後端再抓。
+  @override
+  void didPopNext() async {
+    await DirectedCallService.settled();
+    if (mounted) _catchUp();
+  }
+
+  /// 有疊畫面時不抓，關掉回來時 [didPopNext] 會抓。
+  void _onFriendCallActivity() {
+    if (_route?.isCurrent ?? false) _catchUp();
   }
 
   @override
@@ -134,6 +159,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     chatController.connect();
     chatController.addListener(_onChatEvent);
+    FcmService.friendCallActivity.addListener(_onFriendCallActivity);
     _scrollController.addListener(_onScroll);
     _load();
     _markRead();
@@ -156,6 +182,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     final route = _route;
     if (route != null) ChatScreen._live.remove(route);
+    routeObserver.unsubscribe(this);
+    FcmService.friendCallActivity.removeListener(_onFriendCallActivity);
     chatController.removeListener(_onChatEvent);
     _scrollController.dispose();
     _inputController.dispose();
@@ -207,6 +235,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _messages
           ..clear()
           ..addAll(page.messages);
+        _calls = page.calls;
         _nextCursor = page.nextCursor;
         _partner = page.partner;
         _loading = false;
@@ -234,12 +263,17 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final page = await FriendService.getMessages(widget.friendCode);
       if (!mounted) return;
-      final hadUnread = page.messages.any((m) => !m.mine && m.readAt == null);
+      final hadUnread =
+          page.messages.any((m) => !m.mine && m.readAt == null) ||
+          page.calls.any((c) => c.isUnread);
       final merged = mergeLatestMessages(_messages, page.messages);
       setState(() {
         _messages
           ..clear()
           ..addAll(merged ?? page.messages);
+        _calls = merged == null
+            ? page.calls
+            : mergeLatestCalls(_calls, page.calls);
         if (merged == null) _nextCursor = page.nextCursor;
         _partner = page.partner;
       });
@@ -266,6 +300,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
       setState(() {
         _messages.addAll(page.messages);
+        _calls = mergeLatestCalls(_calls, page.calls);
         _nextCursor = page.nextCursor;
         _loadingMore = false;
       });
@@ -461,7 +496,7 @@ class _ChatScreenState extends State<ChatScreen> {
         child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
-    if (_messages.isEmpty) {
+    if (_messages.isEmpty && _calls.isEmpty) {
       return TrukuEmptyState(
         icon: Icons.chat_bubble_outline,
         message: '還沒有訊息',
@@ -469,13 +504,18 @@ class _ChatScreenState extends State<ChatScreen> {
         seniorMode: seniorMode,
       );
     }
+    final items = buildChatItems(
+      _messages,
+      _calls,
+      reachedOldest: _nextCursor == null,
+    );
     return ListView.builder(
       controller: _scrollController,
       reverse: true,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      itemCount: _messages.length + (_nextCursor != null ? 1 : 0),
+      itemCount: items.length + (_nextCursor != null ? 1 : 0),
       itemBuilder: (context, i) {
-        if (i >= _messages.length) {
+        if (i >= items.length) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Center(
@@ -483,55 +523,166 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           );
         }
-        final isLastMine = i == _messages.indexWhere((m) => m.mine);
-        return _bubble(_messages[i], seniorMode, showStatus: isLastMine);
+        return switch (items[i]) {
+          ChatMessageItem(:final message) => _messageBubble(
+            message,
+            seniorMode,
+          ),
+          ChatCallItem(:final call) => _callBubble(call, seniorMode),
+          ChatDayDivider(:final day) => _dayDivider(day, seniorMode),
+        };
       },
     );
   }
 
-  Widget _bubble(FriendMessage m, bool seniorMode, {required bool showStatus}) {
+  Widget _dayDivider(DateTime day, bool seniorMode) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 10),
+    child: Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.creamDeep,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          chatDayLabel(day),
+          style: AppTypography.captionStyle(
+            seniorMode: seniorMode,
+            color: AppColors.inkSoft,
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _messageBubble(FriendMessage m, bool seniorMode) {
     final mine = m.mine;
-    return Align(
-      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
+    return _bubbleRow(
+      mine: mine,
+      at: m.createdAt,
+      read: mine && m.isRead,
+      seniorMode: seniorMode,
+      bubble: GestureDetector(
         onLongPress: mine || accountLockController.locked
             ? null
             : () => _reportMessage(m),
         child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.72,
-          ),
           decoration: BoxDecoration(
             color: mine ? AppColors.primary : AppColors.cream,
             borderRadius: BorderRadius.circular(16),
             border: mine ? null : Border.all(color: AppColors.creamDeep),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
+          child: Text(
+            m.body,
+            style: AppTypography.bodyLargeStyle(
+              seniorMode: seniorMode,
+              color: mine ? Colors.white : AppColors.ink,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 點一下回撥，與右上角視訊鈕同一個流程；不能檢舉，長按沒有動作。
+  Widget _callBubble(FriendCall call, bool seniorMode) {
+    final mine = call.mine;
+    final missed = call.kind == FriendCallKind.missed;
+    final color = mine
+        ? Colors.white
+        : missed
+        ? AppColors.dangerDark
+        : AppColors.ink;
+    return _bubbleRow(
+      mine: mine,
+      at: call.createdAt,
+      read: false,
+      seniorMode: seniorMode,
+      bubble: GestureDetector(
+        onTap: _startVideoCall,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: mine ? AppColors.primary : AppColors.cream,
+            borderRadius: BorderRadius.circular(16),
+            border: mine ? null : Border.all(color: AppColors.creamDeep),
+          ),
+          child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Text(
-                m.body,
-                style: AppTypography.bodyLargeStyle(
-                  seniorMode: seniorMode,
-                  color: mine ? Colors.white : AppColors.ink,
-                ),
+              Icon(
+                Icons.videocam_outlined,
+                color: color,
+                size: AppIconSize.inline(seniorMode),
               ),
-              if (mine && showStatus) ...[
-                const SizedBox(height: 2),
-                Text(
-                  m.isRead ? '已讀' : '已送出',
-                  style: AppTypography.captionStyle(
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  callLabel(call),
+                  style: AppTypography.bodyLargeStyle(
                     seniorMode: seniorMode,
-                    color: Colors.white70,
+                    color: color,
                   ),
                 ),
-              ],
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  /// 泡泡＋旁欄（已讀、時間），旁欄貼齊泡泡底部：自己的泡泡靠右、旁欄在左，
+  /// 對方的相反（同 LINE）。
+  Widget _bubbleRow({
+    required bool mine,
+    required DateTime at,
+    required bool read,
+    required bool seniorMode,
+    required Widget bubble,
+  }) {
+    final side = Column(
+      crossAxisAlignment: mine
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (read)
+          Text(
+            '已讀',
+            style: AppTypography.captionStyle(
+              seniorMode: seniorMode,
+              color: AppColors.fog,
+            ),
+          ),
+        Text(
+          formatTime(at),
+          style: AppTypography.captionStyle(
+            seniorMode: seniorMode,
+            color: AppColors.fog,
+          ),
+        ),
+      ],
+    );
+    final constrained = Flexible(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.72,
+        ),
+        child: bubble,
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: mine
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: mine
+            ? [side, const SizedBox(width: 6), constrained]
+            : [constrained, const SizedBox(width: 6), side],
       ),
     );
   }

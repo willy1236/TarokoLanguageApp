@@ -80,4 +80,70 @@ void main() {
       ['週日', '週一', '週二', '週三', '週四', '週五', '週六'],
     );
   });
+
+  group('聊天室日期分隔', () {
+    // 今天是本地 2026/10/13（週二）上午 9 點。
+    final now = DateTime(2026, 10, 13, 9);
+
+    test('今天、昨天以本地日期判斷，凌晨的 UTC 時間不算成前一天', () {
+      expect(
+        chatDayLabel(DateTime(2026, 10, 13, 0, 5).toUtc(), now: now),
+        '今天',
+      );
+      expect(
+        chatDayLabel(DateTime(2026, 10, 12, 23, 59).toUtc(), now: now),
+        '昨天',
+      );
+      expect(
+        chatDayLabel(DateTime(2026, 10, 12, 0, 1).toUtc(), now: now),
+        '昨天',
+      );
+    });
+
+    test('今年更早顯示月日與單字星期，往年加年份', () {
+      expect(chatDayLabel(DateTime(2026, 10, 9, 15), now: now), '10月9日（五）');
+      expect(
+        chatDayLabel(DateTime(2025, 10, 9, 15), now: now),
+        '2025年10月9日（四）',
+      );
+    });
+
+    test('元旦的昨天是前一年的 12/31', () {
+      final newYear = DateTime(2027, 1, 1, 9);
+      expect(chatDayLabel(DateTime(2026, 12, 31, 20), now: newYear), '昨天');
+      expect(
+        chatDayLabel(DateTime(2026, 12, 30, 20), now: newYear),
+        '2026年12月30日（三）',
+      );
+    });
+
+    test('單字星期', () {
+      expect(weekdayShortLabel(DateTime(2026, 9, 6)), '日');
+      expect(weekdayShortLabel(fromBackend), '二');
+    });
+  });
+
+  group('好友列表最後活動時間', () {
+    final now = DateTime(2026, 10, 13, 9);
+
+    test('今天顯示時分、昨天顯示「昨天」，以本地日期判斷', () {
+      expect(
+        formatActivityTime(DateTime(2026, 10, 13, 0, 5).toUtc(), now: now),
+        '00:05',
+      );
+      expect(
+        formatActivityTime(DateTime(2026, 10, 12, 23, 59).toUtc(), now: now),
+        '昨天',
+      );
+    });
+
+    test('今年更早「10/9」、往年「2025/10/9」，月日不補零', () {
+      expect(formatActivityTime(DateTime(2026, 10, 9, 15), now: now), '10/9');
+      expect(formatActivityTime(DateTime(2026, 1, 2, 15), now: now), '1/2');
+      expect(
+        formatActivityTime(DateTime(2025, 10, 9, 15), now: now),
+        '2025/10/9',
+      );
+    });
+  });
 }

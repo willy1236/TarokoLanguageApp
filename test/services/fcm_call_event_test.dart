@@ -31,7 +31,6 @@ void main() {
     FcmService.onVideoSessionEnded = null;
     FcmService.onFriendCallIncoming = null;
     FcmService.onFriendCallAccepted = null;
-    FcmService.onFriendCallDeclined = null;
     FcmService.onFriendCallCancelled = null;
   });
 
@@ -209,12 +208,10 @@ void main() {
     });
   });
 
-  test('撥出中收到接聽、拒接、取消交給對應回呼', () {
+  test('撥出中收到接聽、取消交給對應回呼', () {
     final accepted = <int>[];
-    final declined = <int>[];
     final cancelled = <int>[];
     FcmService.onFriendCallAccepted = accepted.add;
-    FcmService.onFriendCallDeclined = declined.add;
     FcmService.onFriendCallCancelled = cancelled.add;
 
     FcmService.handleSocketCallEvent({
@@ -222,16 +219,39 @@ void main() {
       'call_id': '1',
       'session_id': '9',
     });
-    FcmService.handleForegroundMessage(
-      _push({'type': 'friend_call_declined', 'call_id': '2'}),
-    );
     FcmService.handleSocketCallEvent({
       'type': 'friend_call_cancelled',
       'call_id': '3',
     });
 
     expect(accepted, [1]);
-    expect(declined, [2]);
     expect(cancelled, [3]);
+  });
+
+  test('通話有結果的事件通知 friendCallActivity，來電與同一則重複不通知', () {
+    var count = 0;
+    void listener() => count++;
+    FcmService.friendCallActivity.addListener(listener);
+    addTearDown(() => FcmService.friendCallActivity.removeListener(listener));
+    installMockClient({
+      '/api/notifications/summary': {'total': 0},
+    });
+
+    for (final type in [
+      'friend_call_accepted',
+      'friend_call_cancelled',
+      'friend_call_ended',
+    ]) {
+      FcmService.handleForegroundMessage(_push({'type': type, 'call_id': '8'}));
+    }
+    FcmService.handleForegroundMessage(
+      _push({'type': 'friend_call_ended', 'call_id': '8'}),
+    );
+    FcmService.handleSocketCallEvent({
+      'type': 'video_session_ended',
+      'session_id': '8',
+    });
+
+    expect(count, 3);
   });
 }

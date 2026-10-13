@@ -4,6 +4,7 @@ import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_application_1/core/utils/date_format.dart';
 import 'package:flutter_application_1/screens/chat/chat_screen.dart';
 import 'package:flutter_application_1/services/chat_socket_service.dart';
 
@@ -31,6 +32,13 @@ void main() {
             'created_at': '2026-09-29T03:00:00Z',
             'read_at': '2026-09-29T03:00:30Z',
             'mine': false,
+          },
+          {
+            'id': 14,
+            'body': '我先前傳的',
+            'created_at': '2026-09-28T15:59:00Z',
+            'read_at': '2026-09-29T02:00:00Z',
+            'mine': true,
           },
         ],
         'page_info': {'next_cursor': null, 'has_more': false},
@@ -65,24 +73,42 @@ void main() {
     await pumpFrames(tester);
   }
 
-  testWidgets('別人的已讀與訊息不影響這個聊天室', (tester) async {
+  testWidgets('每則訊息旁有本地時間；跨日插日期分隔，已到最早時最舊一則上方也有', (tester) async {
     await open(tester);
-    expect(find.text('已送出'), findsOneWidget);
+
+    // 03:01Z、03:00Z 是台灣 11:01、11:00；15:59Z 是 9/28 的 23:59。
+    expect(find.text('11:01'), findsOneWidget);
+    expect(find.text('11:00'), findsOneWidget);
+    expect(find.text('23:59'), findsOneWidget);
+    expect(
+      find.text(chatDayLabel(DateTime.utc(2026, 9, 29, 3))),
+      findsOneWidget,
+    );
+    expect(
+      find.text(chatDayLabel(DateTime.utc(2026, 9, 28, 15, 59))),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('別人的已讀與訊息不影響這個聊天室；未讀的不顯示「已送出」', (tester) async {
+    await open(tester);
+    expect(find.text('已讀'), findsOneWidget);
+    expect(find.text('已送出'), findsNothing);
 
     emit({'type': 'read', 'by_friend_code': 'CCCC2345', 'count': 1});
     emit(message(20, '別人的訊息', 'CCCC2345'));
     await pumpFrames(tester);
 
-    expect(find.text('已送出'), findsOneWidget);
+    expect(find.text('已讀'), findsOneWidget);
     expect(find.text('別人的訊息'), findsNothing);
   });
 
-  testWidgets('這位對象的已讀讓我最後一則顯示已讀；訊息接到最下面', (tester) async {
+  testWidgets('這位對象的已讀讓我每一則都顯示已讀，對方的不標；訊息接到最下面', (tester) async {
     await open(tester);
 
     emit({'type': 'read', 'by_friend_code': 'bbbb2345', 'count': 1});
     await pumpFrames(tester);
-    expect(find.text('已讀'), findsOneWidget);
+    expect(find.text('已讀'), findsNWidgets(2));
 
     emit(message(21, '晚安', 'BBBB2345'));
     await pumpFrames(tester);

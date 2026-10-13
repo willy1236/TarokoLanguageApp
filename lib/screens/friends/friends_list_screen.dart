@@ -1,5 +1,7 @@
 // 好友列表。入口：profile_screen「好友」卡片。
-// 每列顯示暱稱/自我介紹，右上角提供「加好友」「邀請」「已封鎖名單」的入口。
+// 每列顯示暱稱/自我介紹、最後一則訊息或通話預覽與時間，右上角提供「加好友」
+// 「邀請」「已封鎖名單」的入口。有聊過或打過電話的好友依最後活動新到舊排在
+// 前面，其餘維持成為好友的順序。
 
 import 'package:flutter/material.dart';
 
@@ -7,11 +9,13 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../core/utils/date_format.dart';
 import '../../models/friend_message_model.dart';
 import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/chat_socket_service.dart';
+import '../../services/fcm_service.dart';
 import '../../services/friend_service.dart';
 import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -27,6 +31,25 @@ import 'widgets/showcase_chip.dart';
 import '../../shared/widgets/app_back_button.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import '../../shared/widgets/nickname_text.dart';
+
+/// 有活動的好友依 [Conversation.activityAt] 新到舊排在前面，沒有活動的排在後面、
+/// 維持 [friends] 原本的順序（後端依成為好友時間新到舊）。不改動 [friends]。
+List<Friendship> sortFriendsByActivity(
+  List<Friendship> friends,
+  Map<String, Conversation> conversationsByCode,
+) {
+  DateTime? at(Friendship f) =>
+      conversationsByCode[f.friendCode.toUpperCase()]?.activityAt;
+  final indexed = friends.indexed.toList()
+    ..sort((a, b) {
+      final x = at(a.$2), y = at(b.$2);
+      if (x != null && y != null && x != y) return y.compareTo(x);
+      if (x != null && y == null) return -1;
+      if (x == null && y != null) return 1;
+      return a.$1.compareTo(b.$1);
+    });
+  return [for (final (_, f) in indexed) f];
+}
 
 class FriendsListScreen extends StatefulWidget {
   /// 作為底部導航分頁時傳 false：沒有上一頁可回，不顯示返回鍵。
@@ -49,6 +72,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     super.initState();
     chatController.connect();
     chatController.addListener(_onChatEvent);
+    // 通話有了結果：更新最後活動、預覽與未讀數（紅點由 FcmService 重抓）。
+    FcmService.friendCallActivity.addListener(_loadConversations);
     _load();
     _loadItemCatalog();
   }
@@ -56,6 +81,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   @override
   void dispose() {
     chatController.removeListener(_onChatEvent);
+    FcmService.friendCallActivity.removeListener(_loadConversations);
     super.dispose();
   }
 
@@ -70,10 +96,15 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     }
   }
 
+  /// 推播、即時連線與返回都可能同時觸發重抓，只採用最後發出的那次回應，
+  /// 免得較早發出、較晚回來的舊資料蓋掉新的。
+  int _conversationsRequest = 0;
+
   Future<void> _loadConversations() async {
+    final request = ++_conversationsRequest;
     try {
       final conversations = await FriendService.getConversations();
-      if (!mounted) return;
+      if (!mounted || request != _conversationsRequest) return;
       setState(() {
         _conversationsByCode = {
           for (final c in conversations) c.friendCode.toUpperCase(): c,
@@ -310,7 +341,10 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
-    final friends = _friends ?? const [];
+    final friends = sortFriendsByActivity(
+      _friends ?? const [],
+      _conversationsByCode,
+    );
     if (friends.isEmpty) {
       return TrukuEmptyState(
         icon: Icons.people_outline,
@@ -340,7 +374,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         seniorMode,
         // 只有對話列表說不能用時，好友列表的暱稱還是本名，改用對話列表給的替代文字。
         nickname: f.unavailable ? f.nickname : conversation?.nickname,
-        hasHistory: conversation?.lastMessage != null,
+        hasHistory:
+            conversation?.lastMessage != null || conversation?.lastCall != null,
       );
     }
     // 整列點擊直接進聊天室（原本是進公開檔案，另有一顆聊天鈕，兩者重複且
@@ -394,27 +429,12 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                       ),
                     ],
                   ),
-                  if (conversation?.lastMessage != null) ...[
-                    const SizedBox(height: 4),
-                    Text(
-                      conversation!.lastMessage!.mine
-                          ? '你：${conversation.lastMessage!.body}'
-                          : conversation.lastMessage!.body,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.bodyStyle(
-                        seniorMode: seniorMode,
-                        color: AppColors.fog,
-                      ),
-                    ),
-                  ],
+                  if (conversation != null)
+                    ..._preview(conversation, seniorMode),
                 ],
               ),
             ),
-            if ((conversation?.unreadCount ?? 0) > 0) ...[
-              _unreadBadge(conversation!.unreadCount, seniorMode),
-              const SizedBox(width: 4),
-            ],
+            if (conversation != null) ..._activity(conversation, seniorMode),
             Icon(
               Icons.chevron_right,
               color: AppColors.fog,
@@ -424,6 +444,59 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         ),
       ),
     );
+  }
+
+  /// 最後一則的預覽：通話「[視訊通話]」、未接來電「未接視訊通話」紅字，
+  /// 訊息照舊（自己的加「你：」）。
+  List<Widget> _preview(Conversation c, bool seniorMode) {
+    final message = c.lastMessage;
+    final String text;
+    var color = AppColors.fog;
+    if (c.lastIsCall) {
+      final missed = c.lastCall!.kind == FriendCallKind.missed;
+      text = missed ? '未接視訊通話' : '[視訊通話]';
+      if (missed) color = AppColors.dangerDark;
+    } else if (message != null) {
+      text = message.mine ? '你：${message.body}' : message.body;
+    } else {
+      return const [];
+    }
+    return [
+      const SizedBox(height: 4),
+      Text(
+        text,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: AppTypography.bodyStyle(seniorMode: seniorMode, color: color),
+      ),
+    ];
+  }
+
+  /// 右側的最後活動時間與其下的未讀數。
+  List<Widget> _activity(Conversation c, bool seniorMode) {
+    final at = c.activityAt;
+    if (at == null && c.unreadCount <= 0) return const [];
+    return [
+      Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          if (at != null)
+            Text(
+              formatActivityTime(at),
+              style: AppTypography.captionStyle(
+                seniorMode: seniorMode,
+                color: AppColors.fog,
+              ),
+            ),
+          if (c.unreadCount > 0) ...[
+            const SizedBox(height: 4),
+            _unreadBadge(c.unreadCount, seniorMode),
+          ],
+        ],
+      ),
+      const SizedBox(width: 4),
+    ];
   }
 
   /// 帳號刪除中／被鎖的好友：灰階顯示、不能開檔案／傳訊／切換羈絆展示，

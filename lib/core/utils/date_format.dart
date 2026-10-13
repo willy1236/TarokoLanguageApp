@@ -36,6 +36,42 @@ const _weekdays = ['週一', '週二', '週三', '週四', '週五', '週六', '
 /// 「週四」。
 String weekdayLabel(DateTime dt) => _weekdays[dt.toLocal().weekday - 1];
 
+/// 單字星期「四」，用在括號裡。
+String weekdayShortLabel(DateTime dt) =>
+    _weekdays[dt.toLocal().weekday - 1].substring(1);
+
+/// 本地日期是否同一天。
+bool isSameLocalDay(DateTime a, DateTime b) {
+  final x = a.toLocal(), y = b.toLocal();
+  return x.year == y.year && x.month == y.month && x.day == y.day;
+}
+
+/// 好友列表的最後活動時間：今天「14:05」、昨天「昨天」，今年更早「10/9」、
+/// 往年「2025/10/9」，月日不補零。[now] 給測試固定今天用。
+String formatActivityTime(DateTime dt, {DateTime? now}) {
+  final local = dt.toLocal();
+  final today = (now ?? DateTime.now()).toLocal();
+  if (isSameLocalDay(local, today)) return formatTime(local);
+  if (isSameLocalDay(local, DateTime(today.year, today.month, today.day - 1))) {
+    return '昨天';
+  }
+  final date = '${local.month}/${local.day}';
+  return local.year == today.year ? date : '${local.year}/$date';
+}
+
+/// 聊天室的日期分隔：「今天」「昨天」，今年更早「10月9日（五）」，往年
+/// 「2025年10月9日（四）」。[now] 給測試固定今天用。
+String chatDayLabel(DateTime dt, {DateTime? now}) {
+  final local = dt.toLocal();
+  final today = (now ?? DateTime.now()).toLocal();
+  if (isSameLocalDay(local, today)) return '今天';
+  if (isSameLocalDay(local, DateTime(today.year, today.month, today.day - 1))) {
+    return '昨天';
+  }
+  final date = '${local.month}月${local.day}日（${weekdayShortLabel(local)}）';
+  return local.year == today.year ? date : '${local.year}年$date';
+}
+
 /// 論壇、通知的時間標示：7 天內顯示「剛剛／N 分鐘前／N 小時前／N 天前」，
 /// 超過改顯示本地日期，格式同 [formatDate]。
 String formatRelativeTime(DateTime time) {
