@@ -1,0 +1,8 @@
+{
+  "posts": [],
+  "next_cursor": null,
+  "page_info": {
+    "next_cursor": null,
+    "has_more": false
+  }
+}
