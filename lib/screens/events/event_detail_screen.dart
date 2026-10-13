@@ -144,13 +144,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     super.dispose();
   }
 
-  /// 前景收到本活動的新提醒推播時觸發，即時刷新提醒紀錄區塊。
+  /// 前景收到本活動的提醒／取消／更新推播時觸發：活動資料（地點、地址、狀態）
+  /// 與提醒紀錄都可能變了，整頁靜默重抓。
   void _onForegroundReminder(int? eventId) {
     if (eventId != widget.eventId || !mounted) return;
-    _fetchRemindersSafe().then((reminders) {
-      if (!mounted) return;
-      setState(() => _reminders = reminders);
-    });
+    _silentRefresh();
   }
 
   bool _deletedNoticeShown = false;
@@ -360,8 +358,9 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     } on ApiException catch (e) {
       if (e.isBlocked) return _handleBlocked();
       _snack(e.message);
-      // 報名尚未開始：畫面狀態過期，重抓讓按鈕換成「報名將於 X 開始」。
-      if (e.isRegistrationNotOpen) await _silentRefresh();
+      // 畫面狀態過期：報名尚未開始時重抓讓按鈕換成「報名將於 X 開始」；
+      // 退出時活動已開始則換成「已報名 · 活動進行中」。
+      if (e.isRegistrationNotOpen || e.isEventStarted) await _silentRefresh();
     } catch (e) {
       _snack('$failurePrefix：$e');
     } finally {

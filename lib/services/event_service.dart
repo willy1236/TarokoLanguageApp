@@ -142,14 +142,19 @@ class EventService {
   /// 空字串，名額留空送 null（不限名額）。starts_at / registration_deadline 不可改。
   /// **title/location/address 不可為空**（後端回 400），[EventDraft.validate] 已擋住。
   /// 活動已取消或已開始時後端回 409 EVENT_CLOSED / EVENT_ENDED。
-  static Future<void> updateEvent(
+  ///
+  /// 回傳這次參加者是否因同一場活動 24 小時內已推滿 3 次而沒收到推播
+  /// （`notify_limited`，回應沒有此欄位或沒送 PATCH 時視為 false）。
+  static Future<({bool notifyLimited})> updateEvent(
     int eventId,
     EventDraft draft,
     EventDetail original,
   ) async {
     final body = draft.toPatchBody(original);
-    if (body.isEmpty) return; // 後端對空 body 回 400，沒有變更就不必送出
-    await ApiClient.patch(ApiConfig.eventDetail(eventId), body);
+    // 後端對空 body 回 400，沒有變更就不必送出
+    if (body.isEmpty) return (notifyLimited: false);
+    final data = await ApiClient.patch(ApiConfig.eventDetail(eventId), body);
+    return (notifyLimited: data['notify_limited'] == true);
   }
 
   /// 軟刪除活動（僅發起人；後端限未開始的活動才可刪除）。

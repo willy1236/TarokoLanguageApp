@@ -330,5 +330,12 @@ void main() {
     );
     await tester.pumpAndSettle();
     expect(summaryRequests(), 1);
+
+    // 活動有更新也進收件匣（背景點擊路徑，不必準備本機通知外掛）。
+    FcmService.handleOpenedMessage(
+      const RemoteMessage(data: {'type': 'event_updated', 'event_id': '7'}),
+    );
+    await tester.pumpAndSettle();
+    expect(summaryRequests(), 2);
   });
 }

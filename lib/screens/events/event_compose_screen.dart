@@ -297,6 +297,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     setState(() => _submitting = true);
     try {
       var tribeNotifyLimited = false;
+      var participantNotifyLimited = false;
       String? imageFailure;
       if (editing == null) {
         final created = await EventService.createEvent(draft);
@@ -304,12 +305,18 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         imageFailure = await _uploadNewImages(created.id);
       } else {
         // 時間欄位已不能改時後端回 409，照片也就不送，見下方 catch。
-        await EventService.updateEvent(editing.id, draft, editing);
+        final updated = await EventService.updateEvent(
+          editing.id,
+          draft,
+          editing,
+        );
+        participantNotifyLimited = updated.notifyLimited;
         imageFailure = await _syncEditedImages(editing.id);
       }
       if (!mounted) return;
       final notices = [
         if (tribeNotifyLimited) '今天的部落推播次數已用完，這次沒有通知部落成員',
+        if (participantNotifyLimited) '今天通知次數已達上限，參加者不會再收到推播',
         ?imageFailure,
       ];
       final done = editing == null ? '活動已建立' : '活動已更新';

@@ -137,6 +137,9 @@ class ApiException implements Exception {
   bool get isRegistrationNotOpen => code == 'REGISTRATION_NOT_OPEN';
   bool get isBelowCurrentParticipants => code == 'BELOW_CURRENT_PARTICIPANTS';
 
+  /// 退出時活動已開始或已結束（409）。
+  bool get isEventStarted => code == 'EVENT_STARTED';
+
   @override
   String toString() => message;
 }

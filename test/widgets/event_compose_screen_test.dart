@@ -124,6 +124,41 @@ void main() {
     expect(popped, isTrue);
   });
 
+  group('編輯後的參加者通知提示', () {
+    Future<void> saveEdit(WidgetTester tester, Object? response) async {
+      installMockClient({'/api/events/1': response});
+      await tester.pumpWidget(_host(editing: _editing(), onPop: (_) {}));
+      await _openForm(tester);
+      await tester.enterText(find.text('部落豐年祭').first, '部落豐年祭（改地點）');
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('通知次數達上限：提示參加者不會再收到推播', (tester) async {
+      await saveEdit(tester, {
+        'ok': true,
+        'notified': 0,
+        'notify_limited': true,
+      });
+
+      expect(
+        find.text('活動已更新，今天通知次數已達上限，參加者不會再收到推播'),
+        findsOneWidget,
+      );
+      // 發起人得讀完才知道要另外通知參加者，停留時間同部落推播提示。
+      expect(
+        tester.widget<SnackBar>(find.byType(SnackBar)).duration,
+        const Duration(seconds: 8),
+      );
+    });
+
+    testWidgets('沒有 notify_limited：只提示活動已更新', (tester) async {
+      await saveEdit(tester, {'ok': true, 'notified': 0});
+
+      expect(find.text('活動已更新'), findsOneWidget);
+    });
+  });
+
   testWidgets('有地圖座標的活動：手動改地址後提示，儲存時清除座標', (tester) async {
     Map<String, dynamic>? sent;
     installMockClient(
