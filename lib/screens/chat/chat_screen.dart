@@ -1,5 +1,6 @@
 // 一對一聊天對話串。訂閱 ChatController 的 WS 事件即時收訊息/已讀，
-// 開啟時 markRead，往上滑分頁補歷史；陌生人（未加好友）超過 3 則、或任一方
+// 開啟時 markRead（未接來電一併清掉），往上滑分頁補歷史，通話紀錄跟著每頁
+// 的訊息一起帶回、依時間混排，點通話泡泡回撥；陌生人（未加好友）超過 3 則、或任一方
 // 未成年／沒填生日時會收到 NEED_FRIEND，被禁言收到 MUTED，皆用 SnackBar 顯示
 // 後端訊息、不猜測前端狀態。
 // 對象是刪除中或被鎖帳號（歷史訊息回應的 partner.unavailable）時歷史照常顯示，
@@ -93,6 +94,9 @@ class _ChatScreenState extends State<ChatScreen> {
   static const _messageMax = 2000;
 
   final List<FriendMessage> _messages = []; // 新到舊排序（index 0 = 最新）
+
+  /// 已載入頁的通話紀錄，新到舊、依 id 不重複。
+  List<FriendCall> _calls = const [];
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
   bool _loading = true;
@@ -209,6 +213,7 @@ class _ChatScreenState extends State<ChatScreen> {
         _messages
           ..clear()
           ..addAll(page.messages);
+        _calls = page.calls;
         _nextCursor = page.nextCursor;
         _partner = page.partner;
         _loading = false;
@@ -236,12 +241,17 @@ class _ChatScreenState extends State<ChatScreen> {
     try {
       final page = await FriendService.getMessages(widget.friendCode);
       if (!mounted) return;
-      final hadUnread = page.messages.any((m) => !m.mine && m.readAt == null);
+      final hadUnread =
+          page.messages.any((m) => !m.mine && m.readAt == null) ||
+          page.calls.any((c) => c.isUnread);
       final merged = mergeLatestMessages(_messages, page.messages);
       setState(() {
         _messages
           ..clear()
           ..addAll(merged ?? page.messages);
+        _calls = merged == null
+            ? page.calls
+            : mergeLatestCalls(_calls, page.calls);
         if (merged == null) _nextCursor = page.nextCursor;
         _partner = page.partner;
       });
@@ -268,6 +278,7 @@ class _ChatScreenState extends State<ChatScreen> {
       }
       setState(() {
         _messages.addAll(page.messages);
+        _calls = mergeLatestCalls(_calls, page.calls);
         _nextCursor = page.nextCursor;
         _loadingMore = false;
       });
@@ -463,7 +474,7 @@ class _ChatScreenState extends State<ChatScreen> {
         child: CircularProgressIndicator(color: AppColors.primary),
       );
     }
-    if (_messages.isEmpty) {
+    if (_messages.isEmpty && _calls.isEmpty) {
       return TrukuEmptyState(
         icon: Icons.chat_bubble_outline,
         message: '還沒有訊息',
@@ -471,7 +482,11 @@ class _ChatScreenState extends State<ChatScreen> {
         seniorMode: seniorMode,
       );
     }
-    final items = buildChatItems(_messages, reachedOldest: _nextCursor == null);
+    final items = buildChatItems(
+      _messages,
+      _calls,
+      reachedOldest: _nextCursor == null,
+    );
     return ListView.builder(
       controller: _scrollController,
       reverse: true,
@@ -491,6 +506,7 @@ class _ChatScreenState extends State<ChatScreen> {
             message,
             seniorMode,
           ),
+          ChatCallItem(:final call) => _callBubble(call, seniorMode),
           ChatDayDivider(:final day) => _dayDivider(day, seniorMode),
         };
       },
@@ -541,6 +557,54 @@ class _ChatScreenState extends State<ChatScreen> {
               seniorMode: seniorMode,
               color: mine ? Colors.white : AppColors.ink,
             ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 點一下回撥，與右上角視訊鈕同一個流程；不能檢舉，長按沒有動作。
+  Widget _callBubble(FriendCall call, bool seniorMode) {
+    final mine = call.mine;
+    final missed = call.kind == FriendCallKind.missed;
+    final color = mine
+        ? Colors.white
+        : missed
+        ? AppColors.dangerDark
+        : AppColors.ink;
+    return _bubbleRow(
+      mine: mine,
+      at: call.createdAt,
+      read: false,
+      seniorMode: seniorMode,
+      bubble: GestureDetector(
+        onTap: _startVideoCall,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+          decoration: BoxDecoration(
+            color: mine ? AppColors.primary : AppColors.cream,
+            borderRadius: BorderRadius.circular(16),
+            border: mine ? null : Border.all(color: AppColors.creamDeep),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.videocam_outlined,
+                color: color,
+                size: AppIconSize.inline(seniorMode),
+              ),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  callLabel(call),
+                  style: AppTypography.bodyLargeStyle(
+                    seniorMode: seniorMode,
+                    color: color,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
