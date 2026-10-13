@@ -26,7 +26,7 @@
 //   POST   /api/events/:id/images         上傳活動圖片（僅發起人，multipart）
 //   DELETE /api/events/:id/images/:imgId  刪除一張活動圖片（僅發起人）
 
-import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
@@ -37,10 +37,22 @@ import '../models/page_info.dart';
 /// 活動列表的一頁。只要第一頁的呼叫端（首頁、廣場）取 [events] 即可。
 typedef EventPage = ({List<EventSummary> events, PageInfo pageInfo});
 
+class _EventsChangedSignal extends ChangeNotifier {
+  void fire() => notifyListeners();
+}
+
 class EventService {
   /// 每場活動最多幾張圖片、每張多大（後端同樣限制）。
   static const int imageMaxCount = 6;
   static const int imageMaxBytes = 5 * 1024 * 1024;
+
+  static final _eventsChanged = _EventsChangedSignal();
+
+  /// 活動本身有異動時通知：發起、編輯、刪除、取消，以及照片上傳或刪除成功。
+  /// 活動分頁與廣場動態監聽它重抓列表（活動分頁一併重抓分類，count 才會跟上）。
+  /// 由這裡發出，呼叫端不用記得通知；不論詳情頁是從哪裡打開的都會同步。
+  /// 報名、退出、按讚、收藏不在內，那些由詳情頁的返回結果處理。
+  static Listenable get eventsChanged => _eventsChanged;
 
   // ── 活動 ────────────────────────────────────────────────────
 
@@ -109,6 +121,7 @@ class EventService {
     EventDraft draft,
   ) async {
     final data = await ApiClient.post(ApiConfig.events, draft.toCreateBody());
+    _eventsChanged.fire();
     return (
       id: asEventInt(data['id'])!,
       tribeNotifyLimited: data['tribe_notify_limited'] == true,
@@ -144,6 +157,7 @@ class EventService {
   /// 取消活動（僅發起人；須填理由，後端會推播通知所有參加者）。
   static Future<void> cancelEvent(int eventId, String reason) async {
     await ApiClient.post(ApiConfig.eventCancel(eventId), {'reason': reason});
+    _eventsChanged.fire();
   }
 
   /// 編輯活動（僅發起人）。
@@ -164,6 +178,7 @@ class EventService {
     // 後端對空 body 回 400，沒有變更就不必送出
     if (body.isEmpty) return (notifyLimited: false);
     final data = await ApiClient.patch(ApiConfig.eventDetail(eventId), body);
+    _eventsChanged.fire();
     return (notifyLimited: data['notify_limited'] == true);
   }
 
@@ -171,6 +186,7 @@ class EventService {
   /// 回傳後端推播通知了幾位報名者（`notified`）；欄位缺少時視為 0。
   static Future<int> deleteEvent(int eventId) async {
     final data = await ApiClient.delete(ApiConfig.eventDetail(eventId));
+    _eventsChanged.fire();
     return int.tryParse(data['notified']?.toString() ?? '') ?? 0;
   }
 
@@ -195,21 +211,25 @@ class EventService {
           ),
       ],
     );
+    _eventsChanged.fire();
     return EventImage.listFromJson(data['images']);
   }
 
   /// 刪除一張圖片，回傳剩下的全部圖片。那張已經不在（IMAGE_NOT_FOUND，例如在
   /// 別台裝置刪過）也算成功，改從活動詳情取目前的圖片。
   static Future<List<EventImage>> deleteImage(int eventId, int imageId) async {
+    List<EventImage> images;
     try {
       final data = await ApiClient.delete(
         ApiConfig.eventImage(eventId, imageId),
       );
-      return EventImage.listFromJson(data['images']);
+      images = EventImage.listFromJson(data['images']);
     } on ApiException catch (e) {
       if (e.code != 'IMAGE_NOT_FOUND') rethrow;
-      return (await fetchEventDetail(eventId)).images;
+      images = (await fetchEventDetail(eventId)).images;
     }
+    _eventsChanged.fire();
+    return images;
   }
 
   // ── 按讚／收藏 ──────────────────────────────────────────────
