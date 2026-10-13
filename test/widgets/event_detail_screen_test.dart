@@ -27,6 +27,7 @@ const int _eventId = 1;
 const int _myUid = 1;
 
 Map<String, dynamic> _detail({
+  String? location,
   bool isHost = false,
   bool isJoined = false,
   bool isLiked = false,
@@ -37,7 +38,9 @@ Map<String, dynamic> _detail({
   'is_host': isHost,
   'title': '部落豐年祭',
   'description': '一起來跳舞',
-  'starts_at': '2026-12-01T10:00:00Z',
+  // 遠在未來：已開始的活動參加者看不到報名／退出鈕，寫死近期日期會過期。
+  'starts_at': '2099-12-01T10:00:00Z',
+  'location': ?location,
   'status': 'active',
   'effective_status': effectiveStatus,
   'registration_open': true,
@@ -491,6 +494,56 @@ void main() {
       expect(find.text('地點 '), findsOneWidget);
       expect(find.text('地址 '), findsOneWidget);
     });
+  });
+
+  testWidgets('退出時活動已開始（409 EVENT_STARTED）：顯示後端訊息並重新整理', (tester) async {
+    var started = false;
+    var detailCalls = 0;
+    installMockClient(
+      {
+        '/api/events/1': _detail(isJoined: true),
+        '/api/events/1/reminders': {'reminders': <dynamic>[]},
+        '/api/me': _me(),
+        '/api/events/1/join': errorResponse(
+          'EVENT_STARTED',
+          status: 409,
+          message: '活動已開始或已結束，不能退出',
+        ),
+      },
+      onRequest: (req) {
+        if (req.url.path == '/api/events/1') detailCalls++;
+        if (req.url.path == '/api/events/1/join') started = true;
+      },
+    );
+
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('退出'));
+    await tester.pumpAndSettle();
+
+    expect(started, isTrue);
+    expect(find.text('活動已開始或已結束，不能退出'), findsOneWidget);
+    expect(detailCalls, 2, reason: '畫面狀態過期，要重抓詳情換掉按鈕');
+  });
+
+  testWidgets('前景收到本活動的更新推播：重抓詳情，顯示新地點', (tester) async {
+    final routes = <String, Object?>{
+      '/api/events/1': _detail(isJoined: true, location: '部落廣場'),
+      '/api/events/1/reminders': {'reminders': <dynamic>[]},
+      '/api/me': _me(),
+    };
+    installMockClient(routes);
+
+    await tester.pumpWidget(_app());
+    await tester.pumpAndSettle();
+    expect(find.textContaining('部落廣場'), findsWidgets);
+
+    routes['/api/events/1'] = _detail(isJoined: true, location: '活動中心');
+    FcmService.onReminderReceivedForOpenScreen?.call(_eventId);
+    await tester.pumpAndSettle();
+
+    expect(find.textContaining('活動中心'), findsWidgets);
+    expect(find.textContaining('部落廣場'), findsNothing);
   });
 
   group('前景收到活動被刪除的推播', () {
