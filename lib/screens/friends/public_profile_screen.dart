@@ -231,6 +231,8 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
         context,
         targetType: 'profile',
         targetId: profile.friendCode,
+        // 後端不會因檢舉就不再顯示個人檔案，不能用預設的「不會再顯示給你」。
+        successMessage: '已收到檢舉',
       );
       return;
     }

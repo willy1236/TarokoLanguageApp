@@ -58,7 +58,106 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(sent, {'target_type': 'comment', 'target_id': 11, 'reason': '廣告'});
+    expect(find.text('已收到檢舉，這則內容不會再顯示給你'), findsOneWidget);
+  });
+
+  /// 開出面板；送出或關掉後的回傳值交給 [onResult]。
+  Future<void> openSheet(
+    WidgetTester tester, {
+    String targetType = 'post',
+    Object targetId = 1,
+    String? successMessage,
+    ValueChanged<bool>? onResult,
+  }) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Builder(
+            builder: (context) => ElevatedButton(
+              onPressed: () async {
+                final sent = successMessage == null
+                    ? await showForumReportSheet(
+                        context,
+                        targetType: targetType,
+                        targetId: targetId,
+                      )
+                    : await showForumReportSheet(
+                        context,
+                        targetType: targetType,
+                        targetId: targetId,
+                        successMessage: successMessage,
+                      );
+                onResult?.call(sent);
+              },
+              child: const Text('open'),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> submit(WidgetTester tester) async {
+    await tester.enterText(find.byType(TextField), '廣告');
+    await tester.pump();
+    await tester.tap(find.text('送出檢舉'));
+    await tester.pumpAndSettle();
+  }
+
+  testWidgets('送出成功回傳 true', (tester) async {
+    ApiClient.httpClient = MockClient(
+      (_) async => http.Response(jsonEncode({'ok': true}), 201),
+    );
+    bool? result;
+    await openSheet(tester, onResult: (v) => result = v);
+    await submit(tester);
+
+    expect(result, isTrue);
+  });
+
+  testWidgets('送出失敗留在面板，不回傳結果', (tester) async {
+    ApiClient.httpClient = MockClient(
+      (_) async => http.Response(
+        jsonEncode({
+          'error': {'code': 'INTERNAL', 'message': 'boom'},
+        }),
+        500,
+      ),
+    );
+    bool? result;
+    await openSheet(tester, onResult: (v) => result = v);
+    await submit(tester);
+
+    expect(result, isNull);
+    expect(find.text('送出檢舉'), findsOneWidget);
+  });
+
+  testWidgets('沒送出就關掉面板回傳 false', (tester) async {
+    bool? result;
+    await openSheet(tester, onResult: (v) => result = v);
+    // 點面板外的遮罩關掉。
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+
+    expect(result, isFalse);
+  });
+
+  testWidgets('呼叫端給 successMessage 時改用它（個人檔案）', (tester) async {
+    ApiClient.httpClient = MockClient(
+      (_) async => http.Response(jsonEncode({'ok': true}), 201),
+    );
+    await openSheet(
+      tester,
+      targetType: 'profile',
+      targetId: 'ABC123',
+      successMessage: '已收到檢舉',
+    );
+    await submit(tester);
+
     expect(find.text('已收到檢舉'), findsOneWidget);
+    expect(find.text('已收到檢舉，這則內容不會再顯示給你'), findsNothing);
   });
 
   testWidgets('理由留空時送出鈕不可按', (tester) async {
