@@ -96,10 +96,15 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     }
   }
 
+  /// 推播、即時連線與返回都可能同時觸發重抓，只採用最後發出的那次回應，
+  /// 免得較早發出、較晚回來的舊資料蓋掉新的。
+  int _conversationsRequest = 0;
+
   Future<void> _loadConversations() async {
+    final request = ++_conversationsRequest;
     try {
       final conversations = await FriendService.getConversations();
-      if (!mounted) return;
+      if (!mounted || request != _conversationsRequest) return;
       setState(() {
         _conversationsByCode = {
           for (final c in conversations) c.friendCode.toUpperCase(): c,
