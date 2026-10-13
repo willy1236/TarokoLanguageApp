@@ -100,11 +100,6 @@ class ForumDetailScreen extends StatefulWidget {
     ),
   );
 
-  /// 點回覆通知時人已在 [route] 這份詳情頁：就地重載。帶 [focusCommentId] 時
-  /// 重載後改捲到那則留言（規則同 [ForumDetailScreen.focusCommentId]）。
-  static void refreshRoute(Route<dynamic> route, {int? focusCommentId}) =>
-      RefreshableRouteMixin.refresh(route, focusCommentId);
-
   /// 人正停在 [route] 這份詳情頁時有人回覆了貼文或其中的留言（前景推播）：
   /// 在頁內浮出提示並回傳 true；[route] 已不是開著的詳情頁則回傳 false，由呼叫端
   /// 照常通知。[type] 是推播的 'reply_post' 或 'reply_comment'。
@@ -415,7 +410,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen>
     bool stale() =>
         !mounted || _focusSeekToken != token || _pendingFocusId != id;
     WidgetsBinding.instance.addPostFrameCallback((_) async {
-      // 捲動途中又點了回覆通知（refreshRoute 換了 focus，或同一則再點一次）：
+      // 捲動途中又點了回覆通知（onRouteRefresh 換了 focus，或同一則再點一次）：
       // 這一輪作廢，不能清掉新一輪的 pending，也不能提早亮標示。
       if (stale()) return;
       final target = _focusKey.currentContext;

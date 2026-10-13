@@ -84,10 +84,6 @@ class ChatScreen extends StatefulWidget {
     ),
   );
 
-  /// 點私訊通知時人已在 [route] 這個聊天室：重抓背景期間漏掉的訊息並標成已讀。
-  static void refreshRoute(Route<dynamic> route) =>
-      RefreshableRouteMixin.refresh(route);
-
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }

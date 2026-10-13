@@ -9,6 +9,7 @@
 
 import 'package:flutter/material.dart';
 
+import '../../core/navigation/refreshable_route.dart';
 import '../../core/navigation/route_stack.dart';
 import '../../main.dart' show scaffoldMessengerKey;
 import '../../models/friend_model.dart';
@@ -26,11 +27,8 @@ Future<void> openFriendPush(
   if (nav == null) return;
   // 只有聊天室是最上層的整頁才算「已開著」（上面只蓋著 dialog 也算）。它可能
   // 被通話、響鈴畫面蓋住，那時 pop 回聊天室會拆掉通話，改為照常疊一頁。
-  final top = routes.topPage;
   if (type == 'friend_message' &&
-      top != null &&
-      top.settings.name == ChatScreen.routeNameFor(friendCode)) {
-    ChatScreen.refreshRoute(top);
+      refreshIfTop(routes, name: ChatScreen.routeNameFor(friendCode))) {
     return;
   }
   if (type == 'friend_request') {

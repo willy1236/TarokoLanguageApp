@@ -50,10 +50,6 @@ class EventDetailScreen extends StatefulWidget {
     builder: (_) => EventDetailScreen(eventId: eventId),
   );
 
-  /// 點提醒通知時人已在 [route] 這份詳情頁：就地重載。
-  static void refreshRoute(Route<dynamic> route) =>
-      RefreshableRouteMixin.refresh(route);
-
   @override
   State<EventDetailScreen> createState() => _EventDetailScreenState();
 }

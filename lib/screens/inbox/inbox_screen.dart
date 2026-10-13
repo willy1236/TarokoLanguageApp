@@ -62,11 +62,6 @@ class InboxScreen extends StatefulWidget {
         builder: (_) => InboxScreen(initialCategory: initialCategory),
       );
 
-  /// 點公告推播時人已在 [route] 這份收件匣：切到 [category] 分頁（null 為留在
-  /// 目前分頁）並重新載入。
-  static void refreshRoute(Route<dynamic> route, {String? category}) =>
-      RefreshableRouteMixin.refresh(route, category);
-
   @override
   State<InboxScreen> createState() => _InboxScreenState();
 }

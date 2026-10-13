@@ -44,10 +44,6 @@ class ModerationCaseScreen extends StatefulWidget {
     builder: (_) => ModerationCaseScreen(caseId: caseId),
   );
 
-  /// 點審核通知時人已在 [route] 這份詳情頁：就地重載（例如申訴結果出來了）。
-  static void refreshRoute(Route<dynamic> route) =>
-      RefreshableRouteMixin.refresh(route);
-
   @override
   State<ModerationCaseScreen> createState() => _ModerationCaseScreenState();
 }
