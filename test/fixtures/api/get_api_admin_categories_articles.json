@@ -1,0 +1,34 @@
+{
+  "categories": [
+    {
+      "value": "tribal_intro",
+      "label": "部落宣傳",
+      "sort_order": 10,
+      "count": 0
+    },
+    {
+      "value": "cultural",
+      "label": "文化紀錄",
+      "sort_order": 20,
+      "count": 12
+    },
+    {
+      "value": "event",
+      "label": "活動紀錄",
+      "sort_order": 30,
+      "count": 4
+    },
+    {
+      "value": "education",
+      "label": "教學延伸",
+      "sort_order": 40,
+      "count": 11
+    },
+    {
+      "value": "other",
+      "label": "其他",
+      "sort_order": 1000,
+      "count": 2
+    }
+  ]
+}
