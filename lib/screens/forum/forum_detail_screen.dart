@@ -831,6 +831,10 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   Future<void> _hidePost() async {
     if (_hiding) return;
     setState(() => _hiding = true);
+    // 只有成功 pop 才保留 _hiding（本頁正在離開，轉場期間也不該再送一次）；
+    // 其他結果一律解除，包括 ApiClient 在手機上 rethrow 的 ClientException、
+    // 非 JSON 回應的 FormatException，否則選單項會一直停用到重進本頁。
+    var popped = false;
     try {
       await ForumService.setHidden(widget.postId, hidden: true);
       if (!mounted) return;
@@ -838,7 +842,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       if (current != null) {
         widget.onPostChanged?.call(current.copyWith(isHidden: true));
       }
-      // 成功後不解除 _hiding：本頁正在離開，轉場期間也不該再送一次。
+      popped = true;
       Navigator.pop(context, const ForumDetailResult.removedFromFeed());
       _toast('已隱藏，可在個人頁的『已隱藏的貼文』取消');
     } on ApiException catch (e) {
@@ -847,6 +851,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       // 貼文已刪除、作者被鎖或與我有封鎖關係時後端一律回 404。
       if (e.code == 'POST_NOT_FOUND') return _popDeleted('這篇貼文已被刪除');
       _toast(e.message);
+    } finally {
+      if (!popped && mounted && _hiding) setState(() => _hiding = false);
     }
   }
 

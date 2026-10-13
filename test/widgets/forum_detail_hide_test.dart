@@ -50,6 +50,9 @@ class _FakeApi {
 
   bool isHidden;
   int hideStatus = 200;
+
+  /// 為 true 時隱藏請求丟 http.ClientException（手機上 ApiClient 會原樣 rethrow）。
+  bool hideThrows = false;
   final List<String> hideCalls = [];
 
   /// 不為 null 時，隱藏請求要等它完成才回應，模擬網路慢。
@@ -60,6 +63,9 @@ class _FakeApi {
     if (path == '/api/forum/posts/$_postId/hide') {
       hideCalls.add(request.method);
       await hideGate?.future;
+      if (hideThrows && request.method == 'POST') {
+        throw http.ClientException('connection reset');
+      }
       if (request.method == 'DELETE') {
         isHidden = false;
         return jsonResponse({'is_hidden': false});
@@ -193,6 +199,36 @@ void main() {
     await _tapMenuItem(tester, '隱藏這篇貼文');
 
     expect(changed.last.isHidden, isTrue);
+  });
+
+  testWidgets('非 ApiException 的失敗：例外照常往外丟，選單的隱藏項恢復可點', (tester) async {
+    final api = _FakeApi()..hideThrows = true;
+    ApiClient.httpClient = api.client();
+    final popped = <Object?>[];
+    await _openDetail(tester, popped);
+
+    // 選單在這個 zone 裡開，onSelected 與 _hidePost 也跑在這裡，
+    // 逸出的例外才接得到（不接的話測試框架會直接判失敗）。
+    final uncaught = <Object>[];
+    await runZonedGuarded(
+      () => _tapMenuItem(tester, '隱藏這篇貼文'),
+      (error, _) => uncaught.add(error),
+    );
+    await tester.pumpAndSettle();
+    expect(uncaught.single, isA<http.ClientException>());
+    expect(find.byType(ForumDetailScreen), findsOneWidget);
+
+    api.hideThrows = false;
+    await _openMenu(tester);
+    final item = tester.widget<PopupMenuItem<String>>(
+      find.widgetWithText(PopupMenuItem<String>, '隱藏這篇貼文'),
+    );
+    expect(item.enabled, isTrue);
+    await tester.tap(find.text('隱藏這篇貼文'));
+    await tester.pumpAndSettle();
+
+    expect(api.hideCalls, ['POST', 'POST']);
+    expect(popped, hasLength(1));
   });
 
   testWidgets('隱藏送出中：選單的隱藏項停用，只送一次、只 pop 一次', (tester) async {
