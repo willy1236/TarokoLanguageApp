@@ -4,6 +4,8 @@
 //   - 登入後把 token 上傳 POST /api/devices（req 需帶 JWT，故必須登入後才呼叫）
 //   - 登出前 DELETE /api/devices 移除
 //   - 提醒推播的 data payload：{ type: 'event_reminder', event_id, reminder_id }
+//   - 活動有更新（發起人改了地點、地址或提醒事項）：{ type: 'event_updated', event_id }，
+//     標題與內文在 notification；處理方式同提醒，點擊開活動詳情。
 //   - 活動被刪除：{ type: 'event_deleted', event_id }，說明文字在 notification
 //     的 title／body（「您參加的{活動名稱}已被發起人刪除」）；活動已不存在，
 //     點擊不導頁，只跳提示（見 onEventDeletedTapped）。
@@ -141,6 +143,7 @@ class FcmService {
     'reply_comment',
     'event_reminder',
     'event_cancelled',
+    'event_updated',
     'event_deleted',
     'tribe_event',
     'moderation',
@@ -339,12 +342,20 @@ class FcmService {
     }
   }
 
-  /// 解析提醒/取消通知的 payload，非提醒相關類型回傳 null。
-  static (String type, int? eventId)? _parseReminderPayload(
+  /// 點下去開活動詳情的活動類推播。
+  static const _eventDetailPushTypes = {
+    'event_reminder',
+    'event_cancelled',
+    'event_updated',
+  };
+
+  /// 解析提醒／取消／活動更新通知的 payload，其他類型回傳 null。
+  @visibleForTesting
+  static (String type, int? eventId)? parseReminderPayload(
     Map<String, dynamic> data,
   ) {
     final type = data['type'];
-    if (type != 'event_reminder' && type != 'event_cancelled') return null;
+    if (!_eventDetailPushTypes.contains(type)) return null;
     final eventId = int.tryParse(data['event_id']?.toString() ?? '');
     if (eventId == null) {
       debugPrint('FcmService: event_id 缺失或無法解析，忽略：${data['event_id']}');
@@ -715,7 +726,7 @@ class FcmService {
       return;
     }
 
-    final parsed = _parseReminderPayload(message.data);
+    final parsed = parseReminderPayload(message.data);
     if (parsed == null) return;
     final (_, eventId) = parsed;
 
@@ -949,7 +960,7 @@ class FcmService {
       onEventDeletedTapped?.call(_eventDeletedText(deleted));
       return;
     }
-    final parsed = _parseReminderPayload(message.data);
+    final parsed = parseReminderPayload(message.data);
     if (parsed == null) return;
     final (_, eventId) = parsed;
     onReminderTapped?.call(eventId);
