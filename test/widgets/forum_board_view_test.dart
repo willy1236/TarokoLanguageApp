@@ -420,4 +420,37 @@ void main() {
 
     expect(calls, greaterThan(1), reason: '錯誤畫面也要能下拉重試');
   });
+
+  testWidgets('reloadListenable 通知時整份重載，不只補新貼文', (tester) async {
+    final reload = ValueNotifier(0);
+    addTearDown(reload.dispose);
+    final requests = <({String? cursor, int? after})>[];
+    await tester.pumpWidget(
+      wrap(
+        ForumBoardView(
+          reloadListenable: reload,
+          loadPage: ({cursor, after}) async {
+            requests.add((cursor: cursor, after: after));
+            return ForumPostPage(
+              pinned: const [],
+              posts: [post(requests.length == 1 ? 5 : 3), post(1)],
+              pageInfo: PageInfo.end,
+            );
+          },
+          toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
+          toggleBookmark: (_, {required add}) async => add,
+          onOpenPost: (_, {imageIndex}) {},
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('標題 5'), findsOneWidget);
+
+    reload.value++;
+    await tester.pumpAndSettle();
+
+    expect(requests.last, (cursor: null, after: null));
+    expect(find.text('標題 3'), findsOneWidget);
+    expect(find.text('標題 5'), findsNothing);
+  });
 }

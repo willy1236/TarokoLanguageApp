@@ -53,6 +53,11 @@ class ForumBoardView extends StatefulWidget {
   /// 不論載入中／失敗／空清單都會顯示，避免捲動內容忽有忽無。
   final Widget? header;
 
+  /// 通知時整份重載。下拉刷新只補比第一篇更新的貼文，舊貼文重新變得可見
+  /// （例如在別頁取消隱藏）時不會回來，得靠這條訂閱；廣場活在 IndexedStack 內，
+  /// 不會自己重抓。null 代表不需要。
+  final Listenable? reloadListenable;
+
   const ForumBoardView({
     super.key,
     required this.loadPage,
@@ -64,6 +69,7 @@ class ForumBoardView extends StatefulWidget {
     this.reloadKey,
     this.onRefresh,
     this.header,
+    this.reloadListenable,
   });
 
   @override
@@ -92,6 +98,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
     _load();
     _loadItemCatalog();
     BlockRefreshNotifier.revision.addListener(_load);
+    widget.reloadListenable?.addListener(_load);
   }
 
   Future<void> _loadItemCatalog() async {
@@ -110,11 +117,16 @@ class ForumBoardViewState extends State<ForumBoardView> {
     // reloadKey 代表資料來源的身分；closure 本身即使程式碼相同也永遠不相等，
     // 比較它會在無關的 setState（例如父層更新未讀數）時誤觸發整份重載。
     if (oldWidget.reloadKey != widget.reloadKey) _load();
+    if (oldWidget.reloadListenable != widget.reloadListenable) {
+      oldWidget.reloadListenable?.removeListener(_load);
+      widget.reloadListenable?.addListener(_load);
+    }
   }
 
   @override
   void dispose() {
     BlockRefreshNotifier.revision.removeListener(_load);
+    widget.reloadListenable?.removeListener(_load);
     _scrollController.dispose();
     super.dispose();
   }
