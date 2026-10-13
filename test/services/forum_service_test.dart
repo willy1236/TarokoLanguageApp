@@ -233,4 +233,37 @@ void main() {
     expect(seen.single.method, 'DELETE');
     expect(seen.single.url.path, '/api/forum/posts/7/hide');
   });
+
+  test('hiddenPosts 打 hidden-posts，帶回上一頁的游標並解析貼文', () async {
+    respondWith({
+      'posts': [
+        {...postJson(), 'is_hidden': true, 'hidden_at': '2026-10-09T10:00:00Z'},
+      ],
+      'next_cursor': 12,
+      'page_info': {'next_cursor': '12', 'has_more': true},
+    });
+
+    final page = await ForumService.hiddenPosts(cursor: '30');
+
+    expect(seen.single.method, 'GET');
+    expect(seen.single.url.path, '/api/forum/hidden-posts');
+    expect(seen.single.url.queryParameters['cursor'], '30');
+    expect(page.posts.single.isHidden, isTrue);
+    expect(page.pinned, isEmpty);
+    expect(page.pageInfo.nextCursor, '12');
+  });
+
+  test('hiddenPosts 第一頁不帶 cursor', () async {
+    respondWith({
+      'posts': [],
+      'next_cursor': null,
+      'page_info': {'next_cursor': null, 'has_more': false},
+    });
+
+    final page = await ForumService.hiddenPosts();
+
+    expect(seen.single.url.queryParameters.containsKey('cursor'), isFalse);
+    expect(page.posts, isEmpty);
+    expect(page.pageInfo.hasMore, isFalse);
+  });
 }

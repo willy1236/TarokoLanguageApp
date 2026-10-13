@@ -20,6 +20,7 @@
 //   POST   / DELETE /api/forum/posts/:id/bookmark 收藏 / 取消
 //   GET    /api/forum/bookmarks                   我的收藏（游標是書籤 id，非貼文 id）
 //   POST   / DELETE /api/forum/posts/:id/hide     隱藏 / 取消隱藏（只影響自己的動態）
+//   GET    /api/forum/hidden-posts               我隱藏的貼文（游標是隱藏紀錄 id，非貼文 id）
 //   GET    /api/forum/posts                       跨看板總覽（board 選填）
 //   GET    /api/forum/posts/likes                 我按讚過的貼文（游標是 liked_at）
 //   GET    /api/forum/comments/likes               我按讚過的留言（游標是 liked_at）
@@ -314,5 +315,15 @@ class ForumService {
         ? await ApiClient.post(path)
         : await ApiClient.delete(path);
     return data['is_hidden'] == true;
+  }
+
+  /// 我隱藏的貼文，最近隱藏的在前。每筆都帶 `is_hidden: true`；
+  /// 已刪除、作者被鎖、與我有封鎖關係的貼文後端不列出。
+  static Future<ForumPostPage> hiddenPosts({String? cursor}) async {
+    final data = await ApiClient.get(
+      ApiConfig.forumHiddenPosts,
+      query: PageInfo.query(cursor: cursor),
+    );
+    return ForumPostPage.fromJson(data);
   }
 }

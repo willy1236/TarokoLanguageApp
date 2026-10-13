@@ -140,6 +140,7 @@ class ApiConfig {
   static String forumPostBookmark(int id) => '/api/forum/posts/$id/bookmark';
   static const String forumBookmarks = '/api/forum/bookmarks';
   static String forumPostHide(int id) => '/api/forum/posts/$id/hide';
+  static const String forumHiddenPosts = '/api/forum/hidden-posts';
   static const String forumPostLikes = '/api/forum/posts/likes';
   static const String forumCommentLikes = '/api/forum/comments/likes';
 
