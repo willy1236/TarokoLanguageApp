@@ -90,6 +90,7 @@ class _CultureScreenState extends State<CultureScreen> {
     // 切進文化分頁時讀分類快取（沒有快取才打 API），不強制重抓。
     if (!oldWidget.active && widget.active) {
       _loadVideoCategories();
+      _articleSectionKey.currentState?.loadCategories();
     }
     // 影音與文章共用同一條捲動，切分頁時回到頂部，不要停在另一頁的捲動位置。
     if (oldWidget.cultureTabIndex != widget.cultureTabIndex &&
@@ -156,6 +157,7 @@ class _CultureScreenState extends State<CultureScreen> {
         sort: 'weekly_popular',
         limit: _featuredCount,
       );
+      await _articleSectionKey.currentState?.categoriesLoad;
       if (mounted) {
         setState(
           () => _featuredArticles = res.articles
