@@ -11,6 +11,7 @@ import '../../shared/widgets/async_state_view.dart';
 
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/navigation/refreshable_route.dart';
 import '../../models/shop_item.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/block_refresh_notifier.dart';
@@ -99,21 +100,17 @@ class ForumDetailScreen extends StatefulWidget {
     ),
   );
 
-  /// 開著的詳情頁，以所在的 route 為 key：同一篇貼文開了兩份時各自登記，
-  /// 關掉上層那份不影響下層。
-  static final Map<Route<dynamic>, _ForumDetailScreenState> _live = {};
-
   /// 點回覆通知時人已在 [route] 這份詳情頁：就地重載。帶 [focusCommentId] 時
   /// 重載後改捲到那則留言（規則同 [ForumDetailScreen.focusCommentId]）。
   static void refreshRoute(Route<dynamic> route, {int? focusCommentId}) =>
-      _live[route]?._refreshFromPush(focusCommentId);
+      RefreshableRouteMixin.refresh(route, focusCommentId);
 
   /// 人正停在 [route] 這份詳情頁時有人回覆了貼文或其中的留言（前景推播）：
   /// 在頁內浮出提示並回傳 true；[route] 已不是開著的詳情頁則回傳 false，由呼叫端
   /// 照常通知。[type] 是推播的 'reply_post' 或 'reply_comment'。
   static bool notifyNewReply(Route<dynamic> route, String type) {
-    final state = _live[route];
-    if (state == null) return false;
+    final state = RefreshableRouteMixin.lookup(route);
+    if (state is! _ForumDetailScreenState) return false;
     state._onNewReply(type);
     return true;
   }
@@ -122,7 +119,8 @@ class ForumDetailScreen extends StatefulWidget {
   State<ForumDetailScreen> createState() => _ForumDetailScreenState();
 }
 
-class _ForumDetailScreenState extends State<ForumDetailScreen> {
+class _ForumDetailScreenState extends State<ForumDetailScreen>
+    with RefreshableRouteMixin {
   final _inputController = TextEditingController();
   final _scrollController = ScrollController();
 
@@ -207,19 +205,6 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
   }
 
-  /// 這份詳情頁所在的 route，通知重載與頁內提示的登記 key。
-  Route<dynamic>? _route;
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final route = ModalRoute.of(context);
-    if (route != null && _route == null) {
-      _route = route;
-      ForumDetailScreen._live[route] = this;
-    }
-  }
-
   @override
   void initState() {
     super.initState();
@@ -230,8 +215,6 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   @override
   void dispose() {
-    final route = _route;
-    if (route != null) ForumDetailScreen._live.remove(route);
     _focusHighlightTimer?.cancel();
     BlockRefreshNotifier.revision.removeListener(_load);
     _inputController.dispose();
@@ -280,8 +263,11 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     }
   }
 
-  /// 點回覆通知時人已在本頁：有指定留言就改捲到那一則，再整頁重載。
-  void _refreshFromPush(int? focusCommentId) {
+  /// 點回覆通知時人已在本頁：有指定留言（[args] 是留言 id）就改捲到那一則，
+  /// 再整頁重載。
+  @override
+  Future<void> onRouteRefresh(Object? args) async {
+    final focusCommentId = args as int?;
     // 沒指定留言時也要清掉上一則，重載後才不會把標示掛回舊留言。
     _focusCommentId = focusCommentId;
     _pendingFocusId = focusCommentId;
