@@ -317,6 +317,27 @@ void main() {
         shape: {'comments': F.list, 'replies': F.list, 'page_info': F.object},
       );
     });
+    // 貼文詳情（2026-10-09 前端待辦 T-01）：確認後端帶 is_hidden、reported_by_me（決策紀錄 A47）。
+    test('GET /api/forum/posts/:id (自動挑留言最多的貼文)', () async {
+      if (_token == null) {
+        markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+        return;
+      }
+      final postId = await _findMostCommentedPostId();
+      if (postId == null) {
+        markTestSkipped('目前沒有任何有留言的貼文可測');
+        return;
+      }
+      await _inspect(
+        'GET',
+        ApiConfig.forumPost(postId),
+        fixtureAs: 'get_api_forum_post_detail.json',
+        shape: {'post': F.object},
+        objectKey: 'post',
+        objectShape: _forumPostDetailShape,
+        objectOptional: _forumPostOptional,
+      );
+    });
     test(
       'GET /api/forum/bookmarks',
       () => _inspect(
@@ -1527,6 +1548,29 @@ const Map<String, F> _listeningSessionShape = {
 };
 
 /// GET /api/events/:id → lib/models/event_model.dart EventDetail.fromJson
+/// GET /api/forum/posts/:id 的 post → ForumPost.fromJson（lib/models/forum_models.dart）。
+/// ForumPost 所有欄位缺席都有安全預設，照判準本該全列 optional；
+/// is_hidden、reported_by_me 列為必要，是因為這支測試就是要確認後端詳情一定帶這兩個欄位。
+const Map<String, F> _forumPostDetailShape = {
+  'id': F.any,
+  'is_hidden': F.boolean,
+  'reported_by_me': F.boolean,
+};
+
+const Map<String, F> _forumPostOptional = {
+  'board': F.object,
+  'title': F.string,
+  'body': F.string,
+  'is_pinned': F.boolean,
+  'is_liked': F.boolean,
+  'is_bookmarked': F.boolean,
+  'images': F.list,
+  'tags': F.list,
+  'author': F.object,
+  'created_at': F.string,
+  'updated_at': F.string,
+};
+
 const Map<String, F> _eventDetailShape = {
   'id': F.any,
   'title': F.string,
