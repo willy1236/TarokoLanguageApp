@@ -9,7 +9,7 @@ DateTime? _date(Object? v) =>
 int? _int(Object? v) => v == null ? null : int.tryParse('$v');
 
 /// 被處置的內容。各類型給的欄位不同，沒有的留 null：
-/// 貼文（標題、內文）、留言／私訊（內文、私訊另有傳送時間）、通話（開始時間）、
+/// 貼文（標題、內文）、留言／私訊（內文、私訊另有傳送時間）、通話與隨機視訊（開始時間）、
 /// 活動（標題、說明）、個人檔案（被重設前的值）、自動禁言（都沒有）。
 class MyCasePreview {
   final String? title;
@@ -102,7 +102,7 @@ class MyAppeal {
 class MyModerationCase {
   final int id;
 
-  /// post／comment／message／call／event／profile／mute。
+  /// post／comment／message／call／video_call／event／profile／mute。
   final String targetType;
 
   /// pending（待複審）／confirmed（已確認違規）／overturned（已撤銷）。
@@ -176,10 +176,17 @@ String moderationTargetLabel(String type) => switch (type) {
   'comment' => '留言',
   'message' => '私訊',
   'call' => '通話',
+  'video_call' => '視訊通話',
   'event' => '活動',
   'profile' => '個人檔案',
   'mute' => '禁言',
   _ => '內容',
+};
+
+/// 被處置內容的時間欄標籤：好友通話與隨機視訊是「通話時間」，私訊是「傳送時間」。
+String moderationPreviewTimeLabel(String type) => switch (type) {
+  'call' || 'video_call' => '通話時間',
+  _ => '傳送時間',
 };
 
 String moderationCaseStatusLabel(String status) => switch (status) {

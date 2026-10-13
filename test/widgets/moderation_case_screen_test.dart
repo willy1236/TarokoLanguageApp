@@ -66,6 +66,25 @@ void main() {
   FilledButton submitButton(WidgetTester tester) =>
       tester.widget<FilledButton>(find.widgetWithText(FilledButton, '送出申訴'));
 
+  testWidgets('隨機視訊案件：對象「視訊通話」、時間欄「通話時間」', (tester) async {
+    final json = caseJson();
+    install(
+      caseResponse: {
+        ...json,
+        'case': {
+          ...json['case'] as Map<String, dynamic>,
+          'target_type': 'video_call',
+          'preview': {'started_at': '2026-10-09T10:00:00Z'},
+        },
+      },
+    );
+    await open(tester);
+
+    expect(find.textContaining('對象：視訊通話', findRichText: true), findsOneWidget);
+    expect(find.textContaining('通話時間', findRichText: true), findsOneWidget);
+    expect(find.textContaining('傳送時間', findRichText: true), findsNothing);
+  });
+
   testWidgets('顯示被處置的內容、理由、狀態與處罰', (tester) async {
     install();
     await open(tester);

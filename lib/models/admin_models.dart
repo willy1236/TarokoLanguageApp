@@ -4,6 +4,7 @@
 // 後端的後台回應欄位有過渡期寫法（例如檢舉人暱稱曾叫 reporter_name），
 // 解析一律容許缺欄位，缺了寧可顯示空白也不要讓整頁載入失敗。
 
+import '../core/utils/date_format.dart';
 import '../shared/utils/birth_date.dart';
 
 DateTime? _date(Object? v) =>
@@ -90,6 +91,10 @@ class AdminReportSnapshot {
 }
 
 /// 通話檢舉／案件的通話資訊（沒有內容，只有雙方與時間）。
+///
+/// 好友通話（call）有方向：[callerUid] 發起、[calleeUid] 接聽。
+/// 隨機視訊（video_call）沒有方向，後端給 uid_a／uid_b，照順序放進這兩欄，
+/// 並以 [randomMatch] 標示；畫面依它決定要畫箭頭還是「使用者 A／B」。
 class AdminCallInfo {
   final int? callerUid;
   final int? calleeUid;
@@ -98,6 +103,9 @@ class AdminCallInfo {
   final DateTime? answeredAt;
   final DateTime? endedAt;
 
+  /// 隨機配對視訊：雙方沒有發起、接聽之分。
+  final bool randomMatch;
+
   const AdminCallInfo({
     this.callerUid,
     this.calleeUid,
@@ -105,6 +113,7 @@ class AdminCallInfo {
     this.createdAt,
     this.answeredAt,
     this.endedAt,
+    this.randomMatch = false,
   });
 
   factory AdminCallInfo.fromJson(Map<String, dynamic> j) => AdminCallInfo(
@@ -115,13 +124,56 @@ class AdminCallInfo {
     answeredAt: _date(j['answered_at']),
     endedAt: _date(j['ended_at']),
   );
+
+  /// 隨機視訊：檢舉佇列的 `target_video_call`、違規區 video_call 案件的 `preview`。
+  factory AdminCallInfo.fromVideoCallJson(Map<String, dynamic> j) =>
+      AdminCallInfo(
+        callerUid: _int(j['uid_a']),
+        calleeUid: _int(j['uid_b']),
+        status: j['status'] as String?,
+        createdAt: _date(j['created_at'] ?? j['started_at']),
+        endedAt: _date(j['ended_at']),
+        randomMatch: true,
+      );
+
+  /// 雙方：好友通話「20 → 21」，隨機視訊「使用者 A 20／使用者 B 21」。
+  String get partiesText {
+    final a = callerUid ?? '?';
+    final b = calleeUid ?? '?';
+    return randomMatch ? '使用者 A $a／使用者 B $b' : '$a → $b';
+  }
+
+  /// 起訖時間「2026/10/09 18:00 – 18:05」（跨日時結束也帶日期）；
+  /// 還沒結束時「2026/10/09 18:00 起（未結束）」；沒有開始時間為 null。
+  String? get periodText {
+    final start = createdAt;
+    if (start == null) return null;
+    final end = endedAt;
+    if (end == null) return '${formatDateTime(start)} 起（未結束）';
+    final sameDay = formatDate(start) == formatDate(end);
+    return '${formatDateTime(start)} – '
+        '${sameDay ? formatTime(end) : formatDateTime(end)}';
+  }
 }
+
+/// 通話狀態的中文。好友通話：ringing／accepted／declined／missed／cancelled／ended；
+/// 隨機視訊：active／ended。不認得的值顯示原字，缺值顯示「未知」。
+String adminCallStatusLabel(String? status) => switch (status) {
+  null => '未知',
+  'ringing' => '響鈴中',
+  'accepted' || 'active' => '進行中',
+  'declined' => '已拒接',
+  'missed' => '未接',
+  'cancelled' => '已取消',
+  'ended' => '已結束',
+  _ => status,
+};
 
 /// 檢舉佇列的一筆（GET /api/admin/forum/reports）。
 class AdminReport {
   final int id;
 
-  /// post／comment／message／call／profile／event。
+  /// post／comment／message／call／video_call／profile／event。
   final String targetType;
   final int targetId;
   final String reason;
@@ -138,6 +190,8 @@ class AdminReport {
   /// 貼文標題、留言／私訊內文、活動「標題＋換行＋說明」；通話與個人檔案為 null。
   final String? targetPreview;
   final bool targetDeleted;
+
+  /// 好友通話（`target_call`）或隨機視訊（`target_video_call`）的雙方與時間。
   final AdminCallInfo? targetCall;
   final AdminProfileSnapshot? targetProfile;
 
@@ -168,11 +222,13 @@ class AdminReport {
   });
 
   factory AdminReport.fromJson(Map<String, dynamic> j) {
+    final type = j['target_type'] as String? ?? '';
     final call = j['target_call'];
+    final videoCall = j['target_video_call'];
     final profile = j['target_profile'];
     return AdminReport(
       id: _int(j['id']) ?? 0,
-      targetType: j['target_type'] as String? ?? '',
+      targetType: type,
       targetId: _int(j['target_id']) ?? 0,
       reason: j['reason'] as String? ?? '',
       status: j['status'] as String? ?? 'pending',
@@ -186,9 +242,13 @@ class AdminReport {
       reporterFriendCode: j['reporter_friend_code'] as String?,
       targetPreview: j['target_preview'] as String?,
       targetDeleted: j['target_deleted'] == true,
-      targetCall: call is Map<String, dynamic>
-          ? AdminCallInfo.fromJson(call)
-          : null,
+      targetCall: type == 'video_call'
+          ? (videoCall is Map<String, dynamic>
+                ? AdminCallInfo.fromVideoCallJson(videoCall)
+                : null)
+          : (call is Map<String, dynamic>
+                ? AdminCallInfo.fromJson(call)
+                : null),
       targetProfile: profile is Map<String, dynamic>
           ? AdminProfileSnapshot.fromJson(profile)
           : null,
@@ -204,6 +264,7 @@ String adminTargetTypeLabel(String type) => switch (type) {
   'comment' => '留言',
   'message' => '私訊',
   'call' => '通話',
+  'video_call' => '隨機視訊',
   'profile' => '個人檔案',
   'event' => '活動',
   'mute' => '自動禁言',
@@ -251,6 +312,7 @@ sealed class AdminCasePreview {
               )
             : null,
       ),
+      'video_call' => CallCasePreview(AdminCallInfo.fromVideoCallJson(j)),
       // call，以及日後新增而這版不認得的類型：照通話欄位盡量解析。
       _ => CallCasePreview(AdminCallInfo.fromJson(j)),
     };

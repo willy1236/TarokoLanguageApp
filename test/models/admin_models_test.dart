@@ -2,6 +2,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_application_1/core/utils/date_format.dart';
 import 'package:flutter_application_1/models/admin_models.dart';
 
 import '../helpers/fixtures.dart';
@@ -172,6 +173,105 @@ void main() {
       expect(cases[2].reviewedByNickname, '管理員乙');
       expect(cases[2].strikeNumber, 3);
       expect(cases[2].offenderStatus, 'locked');
+    });
+  });
+
+  group('隨機視訊（video_call）', () {
+    final reports = [
+      for (final r
+          in loadSpecFixtureMap(
+                'get_api_admin_forum_reports_video_call.json',
+              )['reports']
+              as List)
+        AdminReport.fromJson(r as Map<String, dynamic>),
+    ];
+
+    test('檢舉佇列：讀 target_video_call 的雙方與起訖，標為隨機配對', () {
+      final call = reports[0].targetCall!;
+      expect(reports[0].targetType, 'video_call');
+      expect(call.randomMatch, isTrue);
+      expect((call.callerUid, call.calleeUid), (20, 21));
+      expect(call.status, 'ended');
+      expect(call.createdAt, DateTime.utc(2026, 10, 9, 10).toLocal());
+      expect(call.endedAt, DateTime.utc(2026, 10, 9, 10, 5).toLocal());
+      expect(reports[1].targetCall?.endedAt, isNull, reason: '通話中被檢舉還沒結束');
+    });
+
+    test('target_type 是 video_call 時不讀 target_call；好友通話仍不是隨機配對', () {
+      final r = AdminReport.fromJson({
+        'id': 1,
+        'target_type': 'video_call',
+        'target_id': 1,
+        'reason': 'x',
+        'status': 'pending',
+        'target_call': {'caller_uid': 1, 'callee_uid': 2},
+        'target_video_call': null,
+      });
+      expect(r.targetCall, isNull);
+
+      final friendCall = AdminReport.fromJson({
+        'id': 2,
+        'target_type': 'call',
+        'target_id': 2,
+        'reason': 'x',
+        'status': 'pending',
+        'target_call': {'caller_uid': 6, 'callee_uid': 7},
+      });
+      expect(friendCall.targetCall?.randomMatch, isFalse);
+      expect(friendCall.targetCall?.calleeUid, 7);
+    });
+
+    test('違規區案件：preview 的 uid_a／uid_b、started_at／ended_at', () {
+      final c = AdminCase.fromJson(
+        (loadSpecFixtureMap(
+                      'get_api_admin_moderation_cases_video_call.json',
+                    )['cases']
+                    as List)
+                .single
+            as Map<String, dynamic>,
+      );
+      final call = (c.preview as CallCasePreview).call;
+      expect(call.randomMatch, isTrue);
+      expect((call.callerUid, call.calleeUid), (20, 21));
+      expect(call.createdAt, isNotNull);
+      expect(call.endedAt, isNotNull);
+    });
+
+    test('雙方與起訖文字：好友通話用箭頭；跨日結束帶日期；沒有開始時間為 null', () {
+      expect(
+        const AdminCallInfo(callerUid: 6, calleeUid: 7).partiesText,
+        '6 → 7',
+      );
+      expect(
+        const AdminCallInfo(randomMatch: true, callerUid: 20).partiesText,
+        '使用者 A 20／使用者 B ?',
+      );
+      final start = DateTime(2026, 10, 9, 23, 50);
+      final end = DateTime(2026, 10, 10, 0, 10);
+      expect(
+        AdminCallInfo(createdAt: start, endedAt: end).periodText,
+        '${formatDateTime(start)} – ${formatDateTime(end)}',
+      );
+      expect(const AdminCallInfo().periodText, isNull);
+    });
+
+    test('類型與通話狀態的中文', () {
+      expect(adminTargetTypeLabel('video_call'), '隨機視訊');
+      expect(adminTargetTypeLabel('call'), '通話');
+      expect(
+        [
+          'ringing',
+          'accepted',
+          'declined',
+          'missed',
+          'cancelled',
+          'ended',
+          'active',
+        ].map(adminCallStatusLabel),
+        ['響鈴中', '進行中', '已拒接', '未接', '已取消', '已結束', '進行中'],
+      );
+      expect(adminCallStatusLabel('weird'), 'weird');
+      expect(adminCallStatusLabel(null), '未知');
     });
   });
 
