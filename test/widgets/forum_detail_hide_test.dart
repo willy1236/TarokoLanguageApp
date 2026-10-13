@@ -15,7 +15,7 @@ import '../helpers/widget_test_helpers.dart';
 
 const _postId = 7;
 const _authorCode = 'AUTH2345';
-const _hiddenText = '已隱藏，可在設定的『已隱藏的貼文』取消';
+const _hiddenText = '已隱藏，可在個人頁的『已隱藏的貼文』取消';
 
 Map<String, dynamic> _postJson({required bool isHidden}) => {
   'id': _postId,

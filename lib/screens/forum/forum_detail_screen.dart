@@ -827,7 +827,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       await ForumService.setHidden(widget.postId, hidden: true);
       if (!mounted) return;
       Navigator.pop(context, const ForumDetailResult.removedFromFeed());
-      _toast('已隱藏，可在設定的『已隱藏的貼文』取消');
+      _toast('已隱藏，可在個人頁的『已隱藏的貼文』取消');
     } on ApiException catch (e) {
       // 貼文已刪除、作者被鎖或與我有封鎖關係時後端一律回 404。
       if (e.code == 'POST_NOT_FOUND') return _popDeleted('這篇貼文已被刪除');
