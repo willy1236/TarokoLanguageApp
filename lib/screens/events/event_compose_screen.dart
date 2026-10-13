@@ -4,10 +4,12 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
 import '../../core/utils/date_format.dart';
+import '../../models/content_category.dart';
 import '../../models/event_draft.dart';
 import '../../models/event_model.dart';
 import '../../models/picked_location.dart';
 import '../../models/tribe_model.dart';
+import '../../services/category_service.dart';
 import '../../services/event_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/user_service.dart';
@@ -30,7 +32,7 @@ import 'widgets/event_images_field.dart';
 /// 清空語意：文字欄位送空字串即清空；名額留空送 null（不限名額）。
 /// 後端只允許編輯未取消、未開始的活動，否則回 409 EVENT_CLOSED / EVENT_ENDED。
 ///
-/// 必填：標題 / 活動介紹 / 地址 / 開始時間（需未來、1 年內）。地點名稱只在地圖上
+/// 必填：標題 / 活動介紹 / 地址 / 分類 / 開始時間（需未來、1 年內）。地點名稱只在地圖上
 /// 選到 Google 地點時送，見 [EventDraft.location]。
 /// 聯絡 email、電話為選填。
 /// 權限：僅 organizer / admin 角色可發起，一般帳號會收到 403，表單會顯示錯誤訊息。
@@ -67,7 +69,15 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
   DateTime? _registrationDeadline;
   DateTime? _registrationStartsAt;
   DateTime? _endsAt;
-  String? _category; // 選填，null = 不分類
+
+  /// 選中的分類 value；必填，送出時由 EventDraft.validate 擋空白。
+  String? _category;
+
+  /// 後端分類清單（含 count 0，全部列出讓人選）。null = 還沒載入成功。
+  List<ContentCategory>? _categoryOptions;
+
+  /// 分類清單載入失敗：顯示重試，成功前不能送出（編輯模式也一樣）。
+  bool _categoryLoadFailed = false;
 
   /// 相關部落，預設不選；不可預設帶發起人自己的部落。
   TribeTag? _tribe;
@@ -81,14 +91,12 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     widget.editing?.images ?? const [],
   );
 
-  // 常用分類（對應活動列表的篩選標籤）；點一下切換，可不選。
-  static const _categories = ['族語', '走讀', '工藝', '線上', '音樂', '其他'];
-
   bool get _isEditing => widget.editing != null;
 
   @override
   void initState() {
     super.initState();
+    _loadCategories();
     final e = widget.editing;
     if (e == null) return;
     final d = EventDraft.fromDetail(e);
@@ -120,6 +128,22 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       setState(() => _tribe = TribeTag(id: id, name: name));
     } catch (e) {
       debugPrint('EventComposeScreen: 部落名稱載入失敗（忽略）：$e');
+    }
+  }
+
+  /// 分類清單跟活動分頁共用 CategoryService 的快取（活動分頁進場與下拉時已抓過新的）。
+  Future<void> _loadCategories() async {
+    if (_categoryLoadFailed) {
+      setState(() => _categoryLoadFailed = false);
+    }
+    try {
+      final list = await CategoryService.fetch(CategoryModule.events);
+      if (!mounted) return;
+      setState(() => _categoryOptions = list);
+    } catch (e) {
+      debugPrint('EventComposeScreen: 分類清單載入失敗：$e');
+      if (!mounted) return;
+      setState(() => _categoryLoadFailed = true);
     }
   }
 
@@ -288,6 +312,11 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       _showError(invalid);
       return;
     }
+    // 編輯舊活動時分類已有值、validate 會過，仍要等清單載入成功才能存。
+    if (_categoryOptions == null) {
+      _showError(_categoryLoadFailed ? '活動分類載入失敗，請按重試後再送出' : '活動分類載入中，請稍候再送出');
+      return;
+    }
 
     if (_images.picking) {
       _showError('照片還在處理中，請稍候再送出');
@@ -348,8 +377,9 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         _showError('請先選擇相關部落');
         return;
       }
-      // 後端訊息，例如「需要活動主辦權限（organizer / admin）」
-      _showError(e.toString());
+      // 後端訊息，例如「需要活動主辦權限（organizer / admin）」、
+      // 分類被管理員停用時的 INVALID_CATEGORY。
+      _showError(apiErrorMessage(e, fallback: '送出失敗，請稍後再試'));
     }
   }
 
@@ -513,7 +543,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     seniorMode: seniorMode,
                   ),
                   const SizedBox(height: 18),
-                  _label('標籤', required: false, seniorMode: seniorMode),
+                  _label('標籤', required: true, seniorMode: seniorMode),
                   _buildCategoryChips(seniorMode),
                   const SizedBox(height: 18),
                   RelatedTribeField(
@@ -1135,40 +1165,117 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     );
   }
 
+  /// 分類區塊三種狀態：載入中、載入失敗（可重試）、清單。
   Widget _buildCategoryChips(bool seniorMode) {
-    return Wrap(
-      spacing: 8,
-      runSpacing: 8,
-      children: _categories.map((c) {
-        final selected = _category == c;
-        return GestureDetector(
-          onTap: () => setState(() => _category = selected ? null : c),
-          child: Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: seniorMode ? 14 : 10,
-            ),
-            decoration: BoxDecoration(
-              color: selected ? AppColors.primary : AppColors.creamLight,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: selected ? AppColors.primary : AppColors.creamDeep,
-              ),
-            ),
-            child: Text(
-              '# $c',
-              style: AppTypography.serif(
-                fontSize: AppTypography.size(
-                  AppTypography.body,
-                  seniorMode: seniorMode,
-                ),
-                color: selected ? AppColors.creamLight : AppColors.inkSoft,
-                fontWeight: FontWeight.w600,
-              ),
+    final options = _categoryOptions;
+    if (options == null) {
+      return _categoryLoadFailed
+          ? _buildCategoryLoadFailed(seniorMode)
+          : _buildCategoryLoading(seniorMode);
+    }
+    final selected = _category;
+    final chips = <Widget>[
+      for (final c in options)
+        _categoryChip(
+          label: c.label,
+          selected: c.value == selected,
+          onTap: () => setState(() => _category = c.value),
+          seniorMode: seniorMode,
+        ),
+      // 編輯時原本的分類已不在清單上（例如被管理員停用）：補一顆顯示為已選，
+      // 沒改就不送 category；改選其他分類後這顆就消失。
+      if (selected != null && !options.any((c) => c.value == selected))
+        _categoryChip(
+          label: selected,
+          selected: true,
+          onTap: () {},
+          seniorMode: seniorMode,
+        ),
+      // T-22：管理員的「＋新增」chip 之後接在這裡。
+    ];
+    return Wrap(spacing: 8, runSpacing: 8, children: chips);
+  }
+
+  Widget _buildCategoryLoading(bool seniorMode) {
+    return Row(
+      children: [
+        const SizedBox(
+          width: 16,
+          height: 16,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.primary,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Text(
+          '載入分類中…',
+          style: AppTypography.bodyStyle(
+            seniorMode: seniorMode,
+            color: AppColors.fog,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCategoryLoadFailed(bool seniorMode) {
+    return Row(
+      children: [
+        Text(
+          '分類載入失敗',
+          style: AppTypography.bodyStyle(
+            seniorMode: seniorMode,
+            color: AppColors.inkSoft,
+          ),
+        ),
+        const SizedBox(width: 8),
+        TextButton(
+          onPressed: _loadCategories,
+          child: Text(
+            '重試',
+            style: AppTypography.bodyStyle(
+              seniorMode: seniorMode,
+              color: AppColors.primary,
             ),
           ),
-        );
-      }).toList(),
+        ),
+      ],
+    );
+  }
+
+  Widget _categoryChip({
+    required String label,
+    required bool selected,
+    required VoidCallback onTap,
+    required bool seniorMode,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: seniorMode ? 14 : 10,
+        ),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.creamLight,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.creamDeep,
+          ),
+        ),
+        child: Text(
+          '# $label',
+          style: AppTypography.serif(
+            fontSize: AppTypography.size(
+              AppTypography.body,
+              seniorMode: seniorMode,
+            ),
+            color: selected ? AppColors.creamLight : AppColors.inkSoft,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
     );
   }
 }

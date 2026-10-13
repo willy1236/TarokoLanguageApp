@@ -3,30 +3,75 @@
 // 這裡不重測欄位驗證規則——那是 EventDraft.validate 的職責，
 // 已由 test/models/event_draft_test.dart 覆蓋。這支只測「畫面怎麼反應」：
 // 驗證不過時有沒有顯示錯誤而且不打 API、成功後有沒有回傳 true 讓列表刷新、
-// 編輯途中活動被取消／已開始時會不會把使用者留在存不了的表單裡。
+// 編輯途中活動被取消／已開始時會不會把使用者留在存不了的表單裡、
+// 分類清單跟著後端（含載入失敗擋下送出）。
 
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_application_1/core/constants/app_colors.dart';
 import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/screens/events/event_compose_screen.dart';
+import 'package:flutter_application_1/services/category_service.dart';
+import 'package:flutter_application_1/shared/widgets/related_tribe_field.dart';
 
 import '../helpers/widget_test_helpers.dart';
 
 /// 編輯模式會用既有活動預填表單，省去在測試裡操作日期／時間選擇器。
-EventDetail _editing() => EventDetail(
+EventDetail _editing({String category = '族語'}) => EventDetail(
   id: 1,
   title: '部落豐年祭',
   description: '一起來跳舞',
   startsAt: DateTime.now().add(const Duration(days: 30)),
   location: '花蓮縣秀林鄉',
   address: '秀林鄉中正路 1 號',
+  category: category,
   status: 'active',
   effectiveStatus: 'active',
   registrationOpen: true,
 );
+
+const _categoriesPath = '/api/events/categories';
+
+/// 後端分類清單：工藝目前沒有活動（count 0），發起時仍要列出來。
+final _categories = {
+  'categories': [
+    {'value': '族語', 'label': '族語', 'sort_order': 10, 'count': 2},
+    {'value': '工藝', 'label': '工藝', 'sort_order': 30, 'count': 0},
+    {'value': '其他', 'label': '其他', 'sort_order': 1000, 'count': 1},
+  ],
+};
+
+/// 各測試的路由一律帶上分類清單。
+Map<String, Object?> _routes([Map<String, Object?> extra = const {}]) => {
+  _categoriesPath: _categories,
+  ...extra,
+};
+
+/// 分類 chip（表單上顯示為「# 名稱」）。
+Finder _categoryChip(String label) => find.text('# $label');
+
+/// 分類區塊在表單中段，ListView 沒捲到不會建出來；捲到它下方的相關部落欄位為止。
+Future<void> _scrollToCategories(WidgetTester tester) async {
+  await tester.scrollUntilVisible(
+    find.byType(RelatedTribeField),
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.pumpAndSettle();
+}
+
+/// 選中的 chip 底色是主色。
+bool _chipSelected(WidgetTester tester, String label) {
+  final box = tester.widget<Container>(
+    find
+        .ancestor(of: _categoryChip(label), matching: find.byType(Container))
+        .first,
+  );
+  return (box.decoration as BoxDecoration).color == AppColors.primary;
+}
 
 /// 用一顆按鈕把表單 push 起來，才能接到 Navigator.pop 的回傳值。
 Widget _host({
@@ -70,14 +115,24 @@ Finder _errorSnackBar(String contains) => find.descendant(
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(stubCommonChannels);
-  tearDown(restoreHttp);
+  setUp(() {
+    stubCommonChannels();
+    CategoryService.reset();
+    installMockClient(_routes());
+  });
+  tearDown(() {
+    restoreHttp();
+    CategoryService.reset();
+  });
 
   testWidgets('新建表單必填未填時顯示錯誤且不打 API', (tester) async {
     var calls = 0;
-    installMockClient({
-      '/api/events': <String, dynamic>{},
-    }, onRequest: (_) => calls++);
+    installMockClient(
+      _routes({'/api/events': <String, dynamic>{}}),
+      onRequest: (r) {
+        if (r.url.path != _categoriesPath) calls++;
+      },
+    );
 
     await tester.pumpWidget(_host(editing: null, onPop: (_) {}));
     await _openForm(tester);
@@ -110,7 +165,7 @@ void main() {
 
   testWidgets('編輯儲存成功後回傳 true 讓呼叫端刷新', (tester) async {
     Object? popped;
-    installMockClient({'/api/events/1': <String, dynamic>{}});
+    installMockClient(_routes({'/api/events/1': <String, dynamic>{}}));
 
     await tester.pumpWidget(
       _host(editing: _editing(), onPop: (r) => popped = r),
@@ -126,7 +181,7 @@ void main() {
 
   group('編輯後的參加者通知提示', () {
     Future<void> saveEdit(WidgetTester tester, Object? response) async {
-      installMockClient({'/api/events/1': response});
+      installMockClient(_routes({'/api/events/1': response}));
       await tester.pumpWidget(_host(editing: _editing(), onPop: (_) {}));
       await _openForm(tester);
       await tester.enterText(find.text('部落豐年祭').first, '部落豐年祭（改地點）');
@@ -141,10 +196,7 @@ void main() {
         'notify_limited': true,
       });
 
-      expect(
-        find.text('活動已更新，今天通知次數已達上限，參加者不會再收到推播'),
-        findsOneWidget,
-      );
+      expect(find.text('活動已更新，今天通知次數已達上限，參加者不會再收到推播'), findsOneWidget);
       // 發起人得讀完才知道要另外通知參加者，停留時間同部落推播提示。
       expect(
         tester.widget<SnackBar>(find.byType(SnackBar)).duration,
@@ -162,7 +214,7 @@ void main() {
   testWidgets('有地圖座標的活動：手動改地址後提示，儲存時清除座標', (tester) async {
     Map<String, dynamic>? sent;
     installMockClient(
-      {'/api/events/1': <String, dynamic>{}},
+      _routes({'/api/events/1': <String, dynamic>{}}),
       onRequest: (r) {
         if (r.method == 'PATCH') sent = jsonDecode(r.body);
       },
@@ -176,6 +228,7 @@ void main() {
       address: '花蓮縣秀林鄉富世村 12 號',
       latitude: 24.15,
       longitude: 121.62,
+      category: '族語',
       status: 'active',
       effectiveStatus: 'active',
     );
@@ -201,13 +254,15 @@ void main() {
 
   testWidgets('沒有發起權限時顯示後端錯誤，留在表單', (tester) async {
     Object? popped;
-    installMockClient({
-      '/api/events/1': errorResponse(
-        'FORBIDDEN',
-        status: 403,
-        message: '需要活動主辦權限（organizer / admin）',
-      ),
-    });
+    installMockClient(
+      _routes({
+        '/api/events/1': errorResponse(
+          'FORBIDDEN',
+          status: 403,
+          message: '需要活動主辦權限（organizer / admin）',
+        ),
+      }),
+    );
 
     await tester.pumpWidget(
       _host(editing: _editing(), onPop: (r) => popped = r),
@@ -224,9 +279,9 @@ void main() {
 
   testWidgets('編輯途中活動已被取消時退回上一頁，不讓使用者卡在存不了的表單', (tester) async {
     Object? popped;
-    installMockClient({
-      '/api/events/1': errorResponse('EVENT_CLOSED', status: 409),
-    });
+    installMockClient(
+      _routes({'/api/events/1': errorResponse('EVENT_CLOSED', status: 409)}),
+    );
 
     await tester.pumpWidget(
       _host(editing: _editing(), onPop: (r) => popped = r),
@@ -243,9 +298,9 @@ void main() {
 
   testWidgets('編輯途中活動已開始時同樣退回上一頁', (tester) async {
     Object? popped;
-    installMockClient({
-      '/api/events/1': errorResponse('EVENT_ENDED', status: 409),
-    });
+    installMockClient(
+      _routes({'/api/events/1': errorResponse('EVENT_ENDED', status: 409)}),
+    );
 
     await tester.pumpWidget(
       _host(editing: _editing(), onPop: (r) => popped = r),
@@ -277,7 +332,7 @@ void main() {
       Object? popped;
       var returned = false;
       installMockClient(
-        {'/api/events/1': <String, dynamic>{}},
+        _routes({'/api/events/1': <String, dynamic>{}}),
         delayFor: (r) => r.method == 'PATCH' ? slow : Duration.zero,
       );
 
@@ -316,13 +371,13 @@ void main() {
     testWidgets('送出失敗後恢復可以返回', (tester) async {
       var returned = false;
       installMockClient(
-        {
+        _routes({
           '/api/events/1': errorResponse(
             'FORBIDDEN',
             status: 403,
             message: '需要活動主辦權限（organizer / admin）',
           ),
-        },
+        }),
         delayFor: (r) => r.method == 'PATCH' ? slow : Duration.zero,
       );
 
@@ -344,5 +399,151 @@ void main() {
       expect(returned, isTrue);
       expect(find.text('OPEN'), findsOneWidget);
     });
+  });
+
+  group('分類', () {
+    testWidgets('發起時列出後端全部分類（含目前沒有活動的）', (tester) async {
+      await tester.pumpWidget(_host(editing: null, onPop: (_) {}));
+      await _openForm(tester);
+      await _scrollToCategories(tester);
+
+      for (final label in ['族語', '工藝', '其他']) {
+        expect(_categoryChip(label), findsOneWidget);
+      }
+      expect(_categoryChip('走讀'), findsNothing, reason: '不再寫死前端清單');
+    });
+
+    testWidgets('點已選的分類不會取消選取', (tester) async {
+      await tester.pumpWidget(_host(editing: null, onPop: (_) {}));
+      await _openForm(tester);
+      await _scrollToCategories(tester);
+
+      await tester.ensureVisible(_categoryChip('工藝'));
+      await tester.tap(_categoryChip('工藝'));
+      await tester.pump();
+      expect(_chipSelected(tester, '工藝'), isTrue);
+
+      await tester.tap(_categoryChip('工藝'));
+      await tester.pump();
+      expect(_chipSelected(tester, '工藝'), isTrue);
+    });
+
+    testWidgets('沒選分類就送出：提示選分類且不打 API', (tester) async {
+      var calls = 0;
+      installMockClient(
+        _routes({'/api/events': <String, dynamic>{}}),
+        onRequest: (r) {
+          if (r.url.path != _categoriesPath) calls++;
+        },
+      );
+      await tester.pumpWidget(_host(editing: null, onPop: (_) {}));
+      await _openForm(tester);
+
+      // 名稱、說明、地址都填了，只差分類。
+      Future<void> fill(String hint, String text) async {
+        final field = find.widgetWithText(TextField, hint);
+        await tester.scrollUntilVisible(
+          field,
+          200,
+          scrollable: find.byType(Scrollable).first,
+        );
+        await tester.enterText(field, text);
+      }
+
+      await fill('例如：青年族語營', '族語共學');
+      await fill('門牌或描述，例如：秀林鄉富世村 12 號／部落活動中心', '秀林鄉富世村 12 號');
+      await fill('介紹活動內容、流程、注意事項…', '一起學族語');
+      await tester.pump();
+      await tester.tap(find.text('發布'));
+      await tester.pumpAndSettle();
+
+      expect(calls, 0);
+      expect(_errorSnackBar('請選擇活動分類'), findsOneWidget);
+    });
+
+    testWidgets('分類清單載入失敗：顯示重試、擋下送出；重試成功後可選', (tester) async {
+      var fail = true;
+      installMockClient(
+        {
+          _categoriesPath: errorResponse('SERVER_ERROR', status: 500),
+          '/api/events/1': <String, dynamic>{},
+        },
+        onRequest: (r) {
+          if (r.method == 'PATCH') fail = false;
+        },
+      );
+
+      await tester.pumpWidget(_host(editing: _editing(), onPop: (_) {}));
+      await _openForm(tester);
+      await tester.enterText(find.text('部落豐年祭').first, '部落豐年祭（改期）');
+      await _scrollToCategories(tester);
+
+      expect(find.text('分類載入失敗'), findsOneWidget);
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+      expect(fail, isTrue, reason: '分類清單沒載入成功前不能送出');
+      expect(_errorSnackBar('活動分類載入失敗'), findsOneWidget);
+
+      installMockClient(_routes({'/api/events/1': <String, dynamic>{}}));
+      await tester.ensureVisible(find.text('重試'));
+      await tester.tap(find.text('重試'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('分類載入失敗'), findsNothing);
+      expect(_categoryChip('工藝'), findsOneWidget);
+      expect(_chipSelected(tester, '族語'), isTrue);
+    });
+
+    testWidgets('編輯時原分類不在清單：補一顆顯示為已選，沒改就不送 category', (tester) async {
+      Map<String, dynamic>? sent;
+      installMockClient(
+        _routes({'/api/events/1': <String, dynamic>{}}),
+        onRequest: (r) {
+          if (r.method == 'PATCH') sent = jsonDecode(r.body);
+        },
+      );
+
+      await tester.pumpWidget(
+        _host(
+          editing: _editing(category: '走讀'),
+          onPop: (_) {},
+        ),
+      );
+      await _openForm(tester);
+      await tester.enterText(find.text('部落豐年祭').first, '部落豐年祭（改期）');
+      await _scrollToCategories(tester);
+
+      expect(_categoryChip('走讀'), findsOneWidget);
+      expect(_chipSelected(tester, '走讀'), isTrue);
+
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+
+      expect(sent, {'title': '部落豐年祭（改期）'});
+    });
+
+    for (final (code, message) in [
+      ('CATEGORY_REQUIRED', '請選擇活動分類'),
+      ('INVALID_CATEGORY', '這個分類已停用，請改選其他分類'),
+    ]) {
+      testWidgets('後端回 400 $code：顯示後端訊息、留在表單', (tester) async {
+        Object? popped;
+        installMockClient(
+          _routes({'/api/events/1': errorResponse(code, message: message)}),
+        );
+
+        await tester.pumpWidget(
+          _host(editing: _editing(), onPop: (r) => popped = r),
+        );
+        await _openForm(tester);
+
+        await tester.enterText(find.text('部落豐年祭').first, '改個名字');
+        await tester.tap(find.text('儲存'));
+        await tester.pumpAndSettle();
+
+        expect(popped, isNull);
+        expect(_errorSnackBar(message), findsOneWidget);
+      });
+    }
   });
 }

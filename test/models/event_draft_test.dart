@@ -15,6 +15,7 @@ void main() {
         startsAt: startsAt ?? future,
         registrationDeadline: deadline,
         maxParticipantsText: max,
+        category: '走讀',
       );
 
   EventDetail detail() => EventDetail(
@@ -59,6 +60,7 @@ void main() {
         address: address,
         reminderNote: reminderNote,
         startsAt: future,
+        category: '走讀',
       ).validate(creating: false, now: now);
 
       expect(check(title: 'a' * 100), isNull);
@@ -86,6 +88,7 @@ void main() {
           title: 't',
           description: 'd',
           address: 'a',
+          category: '族語',
         ).validate(creating: true, now: now),
         '請選擇活動開始時間',
       );
@@ -109,6 +112,7 @@ void main() {
         startsAt: future,
         endsAt: ends,
         registrationStartsAt: regStart,
+        category: '走讀',
       );
       expect(
         withTimes(ends: future).validate(creating: true, now: now),
@@ -146,6 +150,45 @@ void main() {
 
     test('編輯模式不驗唯讀的時間欄位', () {
       expect(valid(startsAt: now).validate(creating: false, now: now), isNull);
+    });
+
+    test('分類必填：建立與編輯都擋空白', () {
+      EventDraft withCategory(String? category) => EventDraft(
+        title: '走讀',
+        description: '說明',
+        address: '秀林鄉',
+        startsAt: future,
+        category: category,
+      );
+      for (final creating in [true, false]) {
+        expect(
+          withCategory(null).validate(creating: creating, now: now),
+          '請選擇活動分類',
+        );
+        expect(
+          withCategory('  ').validate(creating: creating, now: now),
+          '請選擇活動分類',
+        );
+        expect(
+          withCategory('族語').validate(creating: creating, now: now),
+          isNull,
+        );
+      }
+    });
+
+    test('分類的檢查排在必填文字之後、時間之前', () {
+      expect(
+        const EventDraft(title: ' ').validate(creating: true, now: now),
+        '請填寫所有必填欄位',
+      );
+      expect(
+        const EventDraft(
+          title: '走讀',
+          description: '說明',
+          address: '秀林鄉',
+        ).validate(creating: true, now: now),
+        '請選擇活動分類',
+      );
     });
   });
 
@@ -207,10 +250,7 @@ void main() {
         description: d.description,
         address: '富世村／活動中心',
       );
-      expect(edited.toPatchBody(e), {
-        'location': null,
-        'address': '富世村／活動中心',
-      });
+      expect(edited.toPatchBody(e), {'location': null, 'address': '富世村／活動中心'});
     });
 
     test('沒有座標的舊活動改用地圖選點：送新的地點名稱、地址與座標', () {
