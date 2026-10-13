@@ -672,6 +672,25 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     if (index >= 0) list[index] = comment.asDeletedPlaceholder();
   }
 
+  /// 檢舉成功後後端不再把這則（第一層的話連同底下回覆）列給我
+  /// （決策紀錄 A47）：本地照同樣規則拿掉，不必等重載。
+  /// 留言數不扣：後端的 comment_count 不因檢舉而變，重載後也還是原數字。
+  Future<void> _reportComment(ForumComment comment) async {
+    final sent = await showForumReportSheet(
+      context,
+      targetType: 'comment',
+      targetId: comment.id,
+    );
+    if (!sent || !mounted) return;
+    setState(() {
+      final id = comment.id;
+      _comments.removeWhere((c) => c.id == id);
+      // 回覆的 id 不會等於任何第一層的 id，同一行就涵蓋「檢舉回覆」與「第一層連同回覆」。
+      _replies.removeWhere((c) => c.id == id || c.parentCommentId == id);
+      if (_replyTarget?.id == id) _replyTarget = null;
+    });
+  }
+
   /// 403 BLOCKED：與對方有封鎖關係（畫面還沒重新整理時會發生），提示後重載本頁。
   void _handleBlocked() {
     _toast('無法與此使用者互動');
@@ -1018,13 +1037,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                 onAdminRemove: _isAdmin
                     ? () => _adminRemoveComment(thread.root)
                     : null,
-                onReport: locked
-                    ? null
-                    : () => showForumReportSheet(
-                        context,
-                        targetType: 'comment',
-                        targetId: thread.root.id,
-                      ),
+                onReport: locked ? null : () => _reportComment(thread.root),
                 itemCatalogById: _itemCatalogById,
               ),
             ),
@@ -1045,13 +1058,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                       ? () => _adminRemoveComment(reply)
                       : null,
                   itemCatalogById: _itemCatalogById,
-                  onReport: locked
-                      ? null
-                      : () => showForumReportSheet(
-                          context,
-                          targetType: 'comment',
-                          targetId: reply.id,
-                        ),
+                  onReport: locked ? null : () => _reportComment(reply),
                 ),
               ),
           ],

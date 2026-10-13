@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/screens/forum/forum_detail_screen.dart';
+import 'package:flutter_application_1/screens/forum/widgets/forum_comment_tile.dart';
 
 import '../helpers/widget_test_helpers.dart';
 
@@ -33,12 +34,30 @@ Map<String, dynamic> _postJson({bool reportedByMe = false}) => {
   'author': {'uid': 8, 'display_name': 'Pisaw', 'avatar_url': null},
 };
 
+Map<String, dynamic> _commentJson(int id, {int? parent}) => {
+  'id': id,
+  'post_id': _postId,
+  'parent_comment_id': parent,
+  'body': '留言$id',
+  'like_count': 0,
+  'is_liked': false,
+  'is_deleted': false,
+  'created_at': '2026-08-01T11:00:00.000Z',
+  'author': {'uid': 9, 'display_name': 'Yudaw', 'avatar_url': null},
+};
+
 /// 假後端：貼文、留言列表、檢舉。[reportStatus] 決定檢舉的回應碼，
 /// [reports] 記下送出的檢舉內容。
 class _FakeApi {
-  _FakeApi({this.reportedByMe = false});
+  _FakeApi({
+    this.reportedByMe = false,
+    this.comments = const [],
+    this.replies = const [],
+  });
 
   final bool reportedByMe;
+  final List<Map<String, dynamic>> comments;
+  final List<Map<String, dynamic>> replies;
   int reportStatus = 201;
   final List<Map<String, dynamic>> reports = [];
 
@@ -52,8 +71,8 @@ class _FakeApi {
     }
     if (path.endsWith('/posts/$_postId/comments')) {
       return jsonResponse({
-        'comments': <Map<String, dynamic>>[],
-        'replies': <Map<String, dynamic>>[],
+        'comments': comments,
+        'replies': replies,
         'page_info': {'next_cursor': null, 'has_more': false},
       });
     }
@@ -101,6 +120,43 @@ Future<void> _fillAndSubmit(WidgetTester tester) async {
   await tester.pump();
   await tester.tap(find.text('送出檢舉'));
   await tester.pumpAndSettle();
+}
+
+/// 第一層 1（底下回覆 11、12）、第一層 2（底下回覆 21）。
+_FakeApi _threadApi() => _FakeApi(
+  comments: [_commentJson(1), _commentJson(2)],
+  replies: [
+    _commentJson(11, parent: 1),
+    _commentJson(12, parent: 1),
+    _commentJson(21, parent: 2),
+  ],
+);
+
+/// 畫面上看得到的留言（只看「留言N」文字）。
+List<String> _visibleComments(WidgetTester tester) => tester
+    .widgetList<Text>(find.byType(Text))
+    .map((t) => t.data ?? '')
+    .where((s) => RegExp(r'^留言\d+$').hasMatch(s))
+    .toList();
+
+/// 點某則留言上的「檢舉」並送出（或關掉面板）。
+Future<void> _reportComment(
+  WidgetTester tester,
+  int id, {
+  bool submit = true,
+}) async {
+  final tile = find.ancestor(
+    of: find.text('留言$id'),
+    matching: find.byType(ForumCommentTile),
+  );
+  await tester.tap(find.descendant(of: tile, matching: find.text('檢舉')));
+  await tester.pumpAndSettle();
+  if (submit) {
+    await _fillAndSubmit(tester);
+  } else {
+    await tester.tapAt(const Offset(10, 10));
+    await tester.pumpAndSettle();
+  }
 }
 
 void main() {
@@ -190,6 +246,63 @@ void main() {
       expect(find.text('送出檢舉'), findsNothing);
       expect(api.reports, isEmpty);
       expect(popped, isEmpty);
+    });
+  });
+
+  group('檢舉留言', () {
+    testWidgets('檢舉第一層留言：那則與底下回覆一起消失，其他留言還在', (tester) async {
+      final api = _threadApi();
+      ApiClient.httpClient = api.client();
+      final popped = <Object?>[];
+      await _openDetail(tester, popped);
+      expect(_visibleComments(tester), ['留言1', '留言11', '留言12', '留言2', '留言21']);
+
+      await _reportComment(tester, 1);
+
+      expect(api.reports, [
+        {'target_type': 'comment', 'target_id': 1, 'reason': '廣告'},
+      ]);
+      expect(_visibleComments(tester), ['留言2', '留言21']);
+      expect(find.text(_successText), findsOneWidget);
+      // 留在詳情頁，留言數照後端的數字不扣。
+      expect(find.byType(ForumDetailScreen), findsOneWidget);
+      expect(popped, isEmpty);
+    });
+
+    testWidgets('檢舉回覆：只少那一則', (tester) async {
+      final api = _threadApi();
+      ApiClient.httpClient = api.client();
+      await _openDetail(tester, []);
+
+      await _reportComment(tester, 11);
+
+      expect(api.reports.single['target_id'], 11);
+      expect(_visibleComments(tester), ['留言1', '留言12', '留言2', '留言21']);
+    });
+
+    testWidgets('沒送出就關掉面板：留言都還在', (tester) async {
+      final api = _threadApi();
+      ApiClient.httpClient = api.client();
+      await _openDetail(tester, []);
+
+      await _reportComment(tester, 1, submit: false);
+
+      expect(api.reports, isEmpty);
+      expect(_visibleComments(tester), ['留言1', '留言11', '留言12', '留言2', '留言21']);
+    });
+
+    testWidgets('送出失敗：留在面板，關掉後留言都還在', (tester) async {
+      final api = _threadApi()..reportStatus = 500;
+      ApiClient.httpClient = api.client();
+      await _openDetail(tester, []);
+
+      await _reportComment(tester, 1);
+
+      expect(api.reports, hasLength(1));
+      expect(find.text('送出檢舉'), findsOneWidget);
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      expect(_visibleComments(tester), ['留言1', '留言11', '留言12', '留言2', '留言21']);
     });
   });
 }
