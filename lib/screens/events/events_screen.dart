@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../shared/widgets/truku_empty_state.dart';
+import '../../models/content_category.dart';
 import '../../models/event_model.dart';
 import '../../models/inbox_models.dart';
 import '../../services/account_lock_controller.dart';
+import '../../services/category_service.dart';
 import '../../services/event_service.dart';
 import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -17,9 +19,13 @@ import '../inbox/inbox_screen.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/module_header_actions.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/utils/cursor_pager.dart';
+import '../../shared/utils/pager_scroll_loader.dart';
+import '../../shared/widgets/load_more_retry.dart';
 
-/// 活動列表 —— 真資料版（GET /api/events）。
-/// 發起活動返回後自動刷新；下拉可重新整理。需登入（未登入 API 會 401 導回登入）。
+/// 活動列表 —— 真資料版（GET /api/events，往下捲帶游標翻頁）。
+/// 活動有異動（[EventService.eventsChanged]）或從詳情帶著變動返回時安靜重抓；
+/// 下拉可重新整理。需登入（未登入 API 會 401 導回登入）。
 class EventsScreen extends StatefulWidget {
   /// 由外層（合併分頁的膠囊切換）注入，顯示在標題與篩選 chips 之間。
   final Widget? topToggle;
@@ -32,13 +38,29 @@ class EventsScreen extends StatefulWidget {
 
 class _EventsScreenState extends State<EventsScreen> {
   // 後端列表只回尚未開始的活動、依開始時間升冪（Truku_backend 決策 A22），前端不重排。
-  // 「全部」之外為分類篩選（對應發起活動表單的分類清單），在已載入的資料上做前端篩選。
-  static const _filters = ['全部', '族語', '走讀', '工藝', '線上', '音樂', '其他'];
-  int _filterIndex = 0;
+  // 「全部」之外的篩選是後端分類表（GET /api/events/categories）裡目前有活動的分類，
+  // 選了就帶 category 從第一頁重查，由後端篩選、可一路翻頁到底。
 
-  bool _loading = true;
-  Object? _error;
-  List<EventSummary> _events = [];
+  /// 選中的分類 value；null = 全部。
+  String? _category;
+
+  /// 最近一次抓到的分類清單（含 count 0，顯示時才濾掉）。
+  /// 重抓失敗時保留上一次的；第一次就沒抓到則只顯示「全部」。
+  List<ContentCategory> _categories = const [];
+
+  final _scrollController = ScrollController();
+  late final PagerScrollLoader _scrollLoader;
+  late final _pager = CursorPager<EventSummary>(
+    fetch: (cursor) async {
+      final page = await EventService.fetchEvents(
+        category: _category,
+        cursor: cursor,
+      );
+      return (page.events, page.pageInfo);
+    },
+    idOf: (e) => e.id,
+  );
+
   int get _unread => NotificationSummaryService.notifier.value.inbox.event;
 
   // 是否可發起活動（organizer/admin）。跟著 userNotifier 走：角色被管理員改掉時
@@ -46,12 +68,24 @@ class _EventsScreenState extends State<EventsScreen> {
   bool get _canCreateEvent =>
       UserService.userNotifier.value?.canCreateEvent ?? false;
 
+  /// 篩選列上的分類：只列目前有活動的，順序照後端。
+  List<ContentCategory> get _filterCategories => [
+    for (final c in _categories)
+      if (c.count > 0) c,
+  ];
+
   @override
   void initState() {
     super.initState();
     NotificationSummaryService.notifier.addListener(_rebuild);
     UserService.userNotifier.addListener(_rebuild);
-    _load();
+    EventService.eventsChanged.addListener(_onEventsChanged);
+    _scrollLoader = PagerScrollLoader(
+      controller: _scrollController,
+      pager: _pager,
+    );
+    _pager.refresh();
+    _loadCategories();
     _loadRole();
   }
 
@@ -59,6 +93,10 @@ class _EventsScreenState extends State<EventsScreen> {
   void dispose() {
     NotificationSummaryService.notifier.removeListener(_rebuild);
     UserService.userNotifier.removeListener(_rebuild);
+    EventService.eventsChanged.removeListener(_onEventsChanged);
+    _scrollLoader.dispose();
+    _scrollController.dispose();
+    _pager.dispose();
     super.dispose();
   }
 
@@ -75,69 +113,75 @@ class _EventsScreenState extends State<EventsScreen> {
     }
   }
 
-  Future<void> _load() async {
-    setState(() {
-      _loading = true;
-      _error = null;
-    });
+  /// 抓分類清單（每次都向後端要新的，count 才會是最新的）。
+  /// 選中的分類已經沒有活動、不在篩選列上時，切回「全部」重載。
+  Future<void> _loadCategories() async {
     try {
-      final (:events, pageInfo: _) = await EventService.fetchEvents();
+      final list = await CategoryService.fetch(
+        CategoryModule.events,
+        refresh: true,
+      );
       if (!mounted) return;
-      setState(() {
-        _events = events;
-        _loading = false;
-      });
+      setState(() => _categories = list);
+      final selected = _category;
+      if (selected != null &&
+          !_filterCategories.any((c) => c.value == selected)) {
+        _selectCategory(null);
+      }
     } catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _error = e;
-        _loading = false;
-      });
+      // 保留上一次的篩選列與選擇；第一次就失敗則只有「全部」。
+      debugPrint('EventsScreen: 分類清單載入失敗：$e');
     }
   }
 
-  /// 封面網址過期：安靜地重取換新網址，不閃載入畫面；失敗就保留原清單。
-  Future<void> _refreshCovers() async {
-    if (_loading) return;
-    try {
-      final (:events, pageInfo: _) = await EventService.fetchEvents();
-      if (!mounted || _loading) return;
-      setState(() => _events = events);
-    } catch (_) {
-      // 換不到新網址就維持原樣，破掉的封面已退回沒有封面的樣子。
-    }
+  /// 下拉重新整理：列表與分類清單一起重抓。
+  Future<void> _reload() async {
+    await Future.wait([_pager.refresh(), _loadCategories()]);
   }
 
-  void _onFilterTap(int i) => setState(() => _filterIndex = i);
+  /// 不換成載入畫面、不跳回頂端地重抓第一頁。正停在錯誤畫面時安靜重抓
+  /// 清不掉錯誤，改走一般重整。
+  Future<void> _quietReload() =>
+      _pager.error != null ? _pager.refresh() : _pager.silentRefresh();
 
-  List<EventSummary> get _filteredEvents {
-    final filter = _filters[_filterIndex];
-    if (filter == '全部') return _events;
-    return _events.where((e) => e.category == filter).toList();
+  /// 活動被發起、編輯、刪除、取消或換了照片（不論在哪一頁做的）：列表與分類
+  /// 一起重抓，剛有活動的分類出現在篩選列，變成沒有活動的消失。
+  void _onEventsChanged() {
+    if (!mounted) return;
+    _quietReload();
+    _loadCategories();
+  }
+
+  void _selectCategory(String? value) {
+    if (value == _category) return;
+    setState(() => _category = value);
+    _pager.refresh();
   }
 
   void _openCompose() {
     if (blockIfReadOnly()) return;
+    // 發起成功與上傳照片都會發出 eventsChanged，列表由 _onEventsChanged 更新。
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const EventComposeScreen()),
-    ).then((created) {
-      if (created == true) _load(); // 成功發起才刷新列表
-    });
+    );
   }
 
   void _openDetail(EventSummary e) {
     // 詳情頁自行以 eventId 打 GET /api/events/:id 取真資料（含發起人姓名、
-    // isHost 判斷、報名狀態）。回來後刷新清單，反映報名/退出。
-    Navigator.push(context, EventDetailScreen.route(e.id)).then((_) {
-      if (mounted) _load();
+    // isHost 判斷、報名狀態）。報名、退出、按讚等有變動才安靜重抓；
+    // 只看不改就返回時不重載，停在原本捲到的位置。
+    Navigator.push<bool>(context, EventDetailScreen.route<bool>(e.id)).then((
+      changed,
+    ) {
+      if (changed == true && mounted) _quietReload();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return ListenableBuilder(
-      listenable: seniorModeController,
+      listenable: Listenable.merge([seniorModeController, _pager]),
       builder: (context, _) => _buildScaffold(seniorModeController.enabled),
     );
   }
@@ -146,11 +190,12 @@ class _EventsScreenState extends State<EventsScreen> {
     return ColoredBox(
       color: AppColors.creamLight,
       child: EventCoverRefresher(
-        onRefresh: _refreshCovers,
+        onRefresh: _pager.silentRefresh,
         child: RefreshIndicator(
-          onRefresh: _load,
+          onRefresh: _reload,
           color: AppColors.primary,
           child: CustomScrollView(
+            controller: _scrollController,
             slivers: [
               SliverToBoxAdapter(child: _buildHeader(seniorMode)),
               if (widget.topToggle != null)
@@ -171,17 +216,17 @@ class _EventsScreenState extends State<EventsScreen> {
   }
 
   List<Widget> _buildContentSlivers(bool seniorMode) {
-    if (_loading) {
+    if (_pager.loading) {
       return [
         const SliverToBoxAdapter(child: TrukuLoadingView(topPadding: 80)),
       ];
     }
-    if (_error != null) {
+    if (_pager.error != null) {
       return [
         SliverToBoxAdapter(
           child: TrukuErrorView(
-            error: _error,
-            onRetry: _load,
+            error: _pager.error,
+            onRetry: _pager.refresh,
             seniorMode: seniorMode,
             fallback: '載入活動失敗，請稍後再試',
             topPadding: 80,
@@ -189,7 +234,7 @@ class _EventsScreenState extends State<EventsScreen> {
         ),
       ];
     }
-    final events = _filteredEvents;
+    final events = _pager.items;
     if (events.isEmpty) {
       return [SliverToBoxAdapter(child: _buildEmpty(seniorMode))];
     }
@@ -209,7 +254,24 @@ class _EventsScreenState extends State<EventsScreen> {
           onTap: _openDetail,
         ),
       ),
+      SliverToBoxAdapter(child: _buildLoadMoreFooter(seniorMode)),
     ];
+  }
+
+  /// 清單底部：翻頁中轉圈、翻頁失敗顯示重試，其餘不佔位置。
+  Widget _buildLoadMoreFooter(bool seniorMode) {
+    if (_pager.loadMoreFailed) {
+      return LoadMoreRetry(
+        onRetry: _pager.retryLoadMore,
+        color: AppColors.primary,
+        seniorMode: seniorMode,
+      );
+    }
+    if (!_pager.loadingMore) return const SizedBox.shrink();
+    return const Padding(
+      padding: EdgeInsets.symmetric(vertical: 16),
+      child: Center(child: CircularProgressIndicator(color: AppColors.primary)),
+    );
   }
 
   Widget _buildEmpty(bool seniorMode) {
@@ -301,6 +363,11 @@ class _EventsScreenState extends State<EventsScreen> {
   );
 
   Widget _buildFilterChips(bool seniorMode) {
+    // 第一顆固定是「全部」（value null），其後照後端順序列出目前有活動的分類。
+    final chips = <(String?, String)>[
+      (null, '全部'),
+      for (final c in _filterCategories) (c.value, c.label),
+    ];
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
       child: SizedBox(
@@ -308,12 +375,13 @@ class _EventsScreenState extends State<EventsScreen> {
         child: ListView.separated(
           scrollDirection: Axis.horizontal,
           padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: _filters.length,
+          itemCount: chips.length,
           separatorBuilder: (context, i) => const SizedBox(width: 8),
           itemBuilder: (_, i) {
-            final active = _filterIndex == i;
+            final (value, label) = chips[i];
+            final active = _category == value;
             return GestureDetector(
-              onTap: () => _onFilterTap(i),
+              onTap: () => _selectCategory(value),
               child: Container(
                 padding: EdgeInsets.symmetric(
                   horizontal: seniorMode ? 18 : 14,
@@ -327,7 +395,7 @@ class _EventsScreenState extends State<EventsScreen> {
                       : Border.all(color: AppColors.creamDeep),
                 ),
                 child: Text(
-                  _filters[i],
+                  label,
                   style: TextStyle(
                     fontSize: AppTypography.size(
                       AppTypography.caption,

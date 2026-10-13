@@ -42,7 +42,7 @@ class EventDetailScreen extends StatefulWidget {
 
   /// 所有呼叫端都走這個工廠，settings.name 才會一致。
   ///
-  /// 頁面上報名、退出、取消、編輯或刪除過活動時，返回的結果為 true（含返回鍵
+  /// 頁面上報名、退出、取消、編輯、刪除過活動或按讚／收藏成功時，返回的結果為 true（含返回鍵
   /// 與滑動返回），列表可以只在有變動時才重載。要拿結果時 [T] 給 bool。
   static Route<T> route<T>(int eventId) => _EventDetailRoute<T>(
     settings: RouteSettings(name: routeNameFor(eventId)),
@@ -435,6 +435,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         like: !event.isLiked,
       );
       if (!mounted) return;
+      _markChanged(); // 「我按讚」列表返回時要重載，取消的那則才會消失
       setState(() {
         _event = _event!.withLikeResult(
           liked: result.liked,
@@ -462,6 +463,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
         widget.eventId,
         add: !event.isBookmarked,
       );
+      if (mounted) _markChanged(); // 「我收藏」列表返回時要重載
     } catch (e) {
       if (!mounted) return;
       setState(() => _event = event);

@@ -5,7 +5,9 @@ import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/article_models.dart';
+import '../../../models/content_category.dart';
 import '../../../services/article_service.dart';
+import '../../../services/category_service.dart';
 import '../../../shared/widgets/async_state_view.dart';
 import '../article_detail_screen.dart';
 import 'culture_cards.dart';
@@ -20,27 +22,26 @@ class CultureArticleSection extends StatefulWidget {
 }
 
 class CultureArticleSectionState extends State<CultureArticleSection> {
-  int _articleChipIndex = 0;
+  /// 選中的文章分類 value，null 是「全部」。
+  String? _selectedArticleCategory;
+
+  /// 後端的文章分類清單；還沒抓到（或第一次就失敗）時是 null，篩選列只有「全部」。
+  List<ContentCategory>? _articleCategories;
+
+  /// 最近一次載入分類的工作，外層精選輪播組 subtitle 前等它；不會失敗。
+  Future<void> categoriesLoad = Future.value();
   String _articleSort = 'latest'; // latest | popular | weekly_popular
   late Future<ArticleListResponse> _articlesFuture;
-
-  static final _articleChipLabels = [
-    '全部',
-    ...ArticleCategory.all.map(ArticleCategory.label),
-  ];
 
   @override
   void initState() {
     super.initState();
     _articlesFuture = _fetchArticles();
+    loadCategories(refresh: true);
   }
 
   @override
   Widget build(BuildContext context) => _buildArticleSection(widget.seniorMode);
-
-  String? get _selectedArticleCategory => _articleChipIndex == 0
-      ? null
-      : ArticleCategory.all[_articleChipIndex - 1];
 
   Future<ArticleListResponse> _fetchArticles() {
     return ArticleService.fetchArticles(
@@ -49,8 +50,47 @@ class CultureArticleSectionState extends State<CultureArticleSection> {
     );
   }
 
-  /// 外層（再次點擊底部分頁）要求重新整理時呼叫。
-  void reload() => _reloadArticles();
+  /// 外層（再次點擊底部分頁、管理員改了文章）要求重新整理時呼叫，分類一起重抓。
+  void reload() {
+    loadCategories(refresh: true);
+    _reloadArticles();
+  }
+
+  /// 載入文章分類清單。[refresh] 為 false 時有快取就用快取（切進文化分頁時）。
+  /// 失敗時保留上次的篩選列與選擇；回傳的 Future 不會失敗。
+  Future<void> loadCategories({bool refresh = false}) {
+    return categoriesLoad = _doLoadCategories(refresh);
+  }
+
+  Future<void> _doLoadCategories(bool refresh) async {
+    final List<ContentCategory> list;
+    try {
+      list = await CategoryService.fetch(
+        CategoryModule.articles,
+        refresh: refresh,
+      );
+    } catch (e) {
+      debugPrint('CultureArticleSection.loadCategories failed: $e');
+      return;
+    }
+    if (!mounted) return;
+    // 選中的分類已不在篩選列（被刪或沒有文章了）：切回「全部」並重查。
+    final selected = _selectedArticleCategory;
+    final dropped =
+        selected != null &&
+        !_visibleCategories(list).any((c) => c.value == selected);
+    setState(() {
+      _articleCategories = list;
+      if (dropped) {
+        _selectedArticleCategory = null;
+        _articlesFuture = _fetchArticles();
+      }
+    });
+  }
+
+  /// 篩選列只顯示有文章的分類，照後端順序。
+  static List<ContentCategory> _visibleCategories(List<ContentCategory> list) =>
+      list.where((c) => c.count > 0).toList();
 
   void _reloadArticles() {
     setState(() {
@@ -126,18 +166,23 @@ class CultureArticleSectionState extends State<CultureArticleSection> {
   }
 
   Widget _buildArticleChips(bool seniorMode) {
+    // 第一顆固定是「全部」（value null），其後照後端順序。
+    final chips = <(String?, String)>[
+      (null, '全部'),
+      for (final c in _visibleCategories(_articleCategories ?? const []))
+        (c.value, c.label),
+    ];
     return CultureChipsRow(
       chips: Row(
-        children: List.generate(_articleChipLabels.length, (i) {
-          final active = _articleChipIndex == i;
+        children: List.generate(chips.length, (i) {
+          final (value, label) = chips[i];
+          final active = _selectedArticleCategory == value;
           return Padding(
-            padding: EdgeInsets.only(
-              right: i < _articleChipLabels.length - 1 ? 8 : 0,
-            ),
+            padding: EdgeInsets.only(right: i < chips.length - 1 ? 8 : 0),
             child: GestureDetector(
               onTap: () {
                 setState(() {
-                  _articleChipIndex = i;
+                  _selectedArticleCategory = value;
                   _articlesFuture = _fetchArticles();
                 });
               },
@@ -156,7 +201,7 @@ class CultureArticleSectionState extends State<CultureArticleSection> {
                         ),
                 ),
                 child: Text(
-                  _articleChipLabels[i],
+                  label,
                   style: TextStyle(
                     fontSize: AppTypography.size(
                       AppTypography.body,

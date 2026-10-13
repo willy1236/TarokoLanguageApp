@@ -33,7 +33,10 @@ class EventDraft {
   final String contactEmail;
   final String contactPhone;
   final String maxParticipantsText;
-  final String? category; // null = 不分類
+
+  /// 分類的 value（後端分類表，見 CategoryService）。必填，[validate] 會擋空白；
+  /// 2026-10-13 前的舊活動後端已補成「其他」。
+  final String? category;
   final String reminderNote;
 
   /// 發起人自選的相關部落，null = 不標註；不可預設帶發起人自己的部落。
@@ -167,6 +170,8 @@ class EventDraft {
       final n = maxParticipants;
       if (n == null || n < 1) return '名額上限需為正整數，或留空表示不限';
     }
+    // 建立、編輯都必填（後端 400 CATEGORY_REQUIRED）。
+    if ((category?.trim() ?? '').isEmpty) return '請選擇活動分類';
     if (!creating) return null;
     final starts = startsAt;
     if (starts == null) return '請選擇活動開始時間';

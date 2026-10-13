@@ -1,6 +1,8 @@
 // 對應文章模組 API：GET /api/articles、GET /api/articles/:id
 // 規格：Truku_backend/說明文件/API/文章模組.md
 
+import '../services/category_service.dart';
+import 'content_category.dart';
 import 'page_info.dart';
 
 class ArticleCategory {
@@ -10,22 +12,10 @@ class ArticleCategory {
   static const education = 'education';
   static const other = 'other';
 
-  static const all = [tribalIntro, cultural, event, education, other];
-
-  static String label(String category) {
-    switch (category) {
-      case tribalIntro:
-        return '部落宣傳';
-      case cultural:
-        return '文化紀錄';
-      case event:
-        return '活動紀錄';
-      case education:
-        return '教學延伸';
-      default:
-        return '其他';
-    }
-  }
+  /// 顯示名稱：後端分類清單抓回來後用後端的 label，之前用內建對照，
+  /// 都沒有就顯示 value 本身（T-23）。
+  static String label(String category) =>
+      CategoryService.labelOf(CategoryModule.articles, category);
 }
 
 class ArticleSummary {

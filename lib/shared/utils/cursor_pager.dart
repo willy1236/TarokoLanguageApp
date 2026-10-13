@@ -31,6 +31,10 @@ class CursorPager<T> extends ChangeNotifier {
   /// 不會把舊清單的下一頁接到新清單後面。
   int _generation = 0;
 
+  /// 每次 [silentRefresh] 加一。好幾個安靜重抓同時在路上時（例如連刪兩張照片
+  /// 各觸發一次），只採用最後送出的那個，不論誰先回來。
+  int _silentSeq = 0;
+
   List<T> get items => _items;
 
   /// 正在抓第一頁（初次載入或下拉重整）。
@@ -63,6 +67,29 @@ class CursorPager<T> extends ChangeNotifier {
       _error = e;
     }
     _loading = false;
+    _notify();
+  }
+
+  /// 安靜地重抓第一頁換掉清單（例如封面網址過期），不顯示載入中；失敗就保留原清單。
+  /// 捲得比第一頁深時清單會縮回第一頁，之後照常續載。
+  /// 第一頁正在抓時不動；送出後若有人重整、或又送出了較新的安靜重抓，回來的結果丟棄。
+  Future<void> silentRefresh() async {
+    if (_loading) return;
+    final generation = _generation;
+    final seq = ++_silentSeq;
+    try {
+      final (page, info) = await _fetch(null);
+      if (_disposed || generation != _generation || seq != _silentSeq) return;
+      // 進行中的載入更多是舊清單的下一頁，換世代丟棄，旗標一併清掉。
+      _generation++;
+      _items = appendUnique(const [], page, _idOf);
+      _cursor = info.nextCursor;
+      _loadingMore = false;
+      _loadMoreFailed = false;
+    } catch (e) {
+      debugPrint('CursorPager.silentRefresh failed: $e');
+      return;
+    }
     _notify();
   }
 

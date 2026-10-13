@@ -12,10 +12,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:flutter_application_1/models/content_category.dart';
 import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/screens/events/event_compose_screen.dart';
 import 'package:flutter_application_1/screens/forum/widgets/forum_image_grid.dart';
 import 'package:flutter_application_1/screens/events/widgets/event_images_field.dart';
+import 'package:flutter_application_1/services/category_service.dart';
 import 'package:flutter_application_1/shared/utils/pick_images.dart';
 import 'package:flutter_application_1/shared/widgets/signed_network_image.dart';
 
@@ -51,7 +53,7 @@ Future<void> _openForm(WidgetTester tester) async {
   await tester.pumpAndSettle();
 }
 
-/// 填好建立活動的四個必填欄位；日期時間用選擇器的預設值（明天、一小時後）。
+/// 填好建立活動的必填欄位；日期時間用選擇器的預設值（明天、一小時後）。
 Future<void> _fillRequired(WidgetTester tester) async {
   await tester.enterText(find.widgetWithText(TextField, '例如：青年族語營'), '豐年祭');
   await tester.enterText(
@@ -65,6 +67,14 @@ Future<void> _fillRequired(WidgetTester tester) async {
   await tester.tap(find.text('OK'));
   await tester.pumpAndSettle();
   await _enterBelow(tester, '介紹活動內容、流程、注意事項…', '一起來跳舞');
+  final category = find.text('# 族語');
+  await tester.scrollUntilVisible(
+    category,
+    200,
+    scrollable: find.byType(Scrollable).first,
+  );
+  await tester.tap(category);
+  await tester.pump();
 }
 
 Future<void> _enterBelow(WidgetTester tester, String hint, String text) async {
@@ -145,9 +155,22 @@ Future<void> _dragThumbLeft(WidgetTester tester, int from, int slots) async {
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  setUp(stubCommonChannels);
+  setUp(() async {
+    stubCommonChannels();
+    // 先把分類清單放進快取，表單就不再打分類 API，各測試記下的請求只有活動與照片。
+    CategoryService.reset();
+    installMockClient({
+      CategoryModule.events.path: {
+        'categories': [
+          {'value': '族語', 'label': '族語', 'sort_order': 10, 'count': 0},
+        ],
+      },
+    });
+    await CategoryService.fetch(CategoryModule.events);
+  });
   tearDown(() {
     restoreHttp();
+    CategoryService.reset();
     pickImagesForUpload = _originalPicker;
   });
 
@@ -482,6 +505,7 @@ void main() {
       startsAt: DateTime.now().add(const Duration(days: 30)),
       location: '花蓮縣秀林鄉',
       address: '秀林鄉中正路 1 號',
+      category: '族語',
       status: 'active',
       effectiveStatus: 'active',
       registrationOpen: true,

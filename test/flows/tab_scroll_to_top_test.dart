@@ -12,6 +12,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/screens/learn/learn_culture_screen.dart';
 import 'package:flutter_application_1/screens/profile/profile_video_screen.dart';
+import 'package:flutter_application_1/services/category_service.dart';
 import 'package:flutter_application_1/shared/widgets/truku_bottom_tab.dart';
 
 import '../helpers/flow_test_helpers.dart';
@@ -23,6 +24,7 @@ void main() {
   setUp(() {
     stubCommonChannels(token: 'test-token');
     resetGlobals();
+    CategoryService.reset();
   });
 
   tearDown(() {
@@ -59,6 +61,9 @@ void main() {
     '/api/friends/requests': {'requests': <dynamic>[]},
     '/api/friends/messages': {'conversations': <dynamic>[]},
     '/api/forum/posts': {'posts': <dynamic>[], 'total': 0},
+    '/api/events/categories': {'categories': <dynamic>[]},
+    '/api/articles/categories': {'categories': <dynamic>[]},
+    '/api/videos/categories': {'categories': <dynamic>[]},
   };
 
   Future<void> tapTab(WidgetTester tester, String label) async {

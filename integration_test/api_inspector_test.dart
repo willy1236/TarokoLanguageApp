@@ -648,6 +648,46 @@ void main() {
       },
     );
 
+    // 分類清單（T-21，決策紀錄 A53）：三個模組格式相同，回全部分類（含 count 0）。
+    for (final (name, path) in [
+      ('events', ApiConfig.eventCategories),
+      ('articles', ApiConfig.articleCategories),
+      ('videos', ApiConfig.videoCategories),
+    ]) {
+      test(
+        'GET /api/$name/categories',
+        () => _inspect(
+          'GET',
+          path,
+          shape: {'categories': F.list},
+          listKey: 'categories',
+          itemShape: _categoryShape,
+        ),
+      );
+    }
+    // 依分類篩選活動（T-09）：挑第一個 count > 0 的分類，確認 category 參數有效。
+    test('GET /api/events?category= (自動挑有活動的分類)', () async {
+      if (_token == null) {
+        markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
+        return;
+      }
+      final (value, failure) = await _firstEventCategoryWithItems();
+      if (value == null) {
+        markTestSkipped(failure ?? '目前沒有任何 count > 0 的活動分類可測');
+        return;
+      }
+      print('（挑到活動分類 $value）');
+      await _inspect(
+        'GET',
+        '${ApiConfig.events}?category=${Uri.encodeQueryComponent(value)}',
+        fixtureAs: 'get_api_events_category.json',
+        shape: {'events': F.list, 'page_info': F.object},
+        listKey: 'events',
+        itemShape: _eventSummaryShape,
+        itemOptional: _eventSummaryOptional,
+      );
+    });
+
     // 我參加的活動（T-16）：確認 total、is_host、joined_at 的實際格式。
     for (final tab in ['active', 'ended']) {
       test(
@@ -910,6 +950,19 @@ void main() {
       (_) =>
           _inspect('GET', ApiConfig.adminAppeals, shape: {'appeals': F.list}),
     );
+    // 分類管理（T-24）：只錄 GET；POST／PATCH 會真的新增或改名分類。
+    for (final module in ['articles', 'videos', 'events']) {
+      adminTest(
+        'GET /api/admin/categories/$module',
+        (_) => _inspect(
+          'GET',
+          ApiConfig.adminCategories(module),
+          shape: {'categories': F.list},
+          listKey: 'categories',
+          itemShape: _categoryShape,
+        ),
+      );
+    }
     // 只錄列表；POST 會真的發給所有使用者。
     adminTest(
       'GET /api/admin/announcements',
@@ -969,6 +1022,30 @@ Future<(int?, String?)> _findEndedEventId() async {
     if (m['effective_status'] == 'ended') {
       final id = m['id'];
       return (id is int ? id : int.tryParse(id.toString()), null);
+    }
+  }
+  return (null, null);
+}
+
+/// 打 /api/events/categories 找第一個 count > 0 的分類 value，讓篩選 fixture 有內容。
+Future<(String?, String?)> _firstEventCategoryWithItems() async {
+  final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.eventCategories}');
+  final response = await http.get(
+    uri,
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_token',
+    },
+  );
+  if (response.statusCode != 200) {
+    return (null, _pickFailure(ApiConfig.eventCategories, response, '挑分類'));
+  }
+  final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+  for (final c in decoded['categories'] as List<dynamic>? ?? []) {
+    final m = c as Map<String, dynamic>;
+    final count = m['count'];
+    if (count is num && count > 0 && m['value'] is String) {
+      return (m['value'] as String, null);
     }
   }
   return (null, null);
@@ -1639,6 +1716,15 @@ const Map<String, F> _articleSummaryOptional = {
   'is_liked': F.boolean,
   'is_bookmarked': F.boolean,
   'published_at': F.string,
+};
+
+/// GET /api/{events,articles,videos}/categories 與 /api/admin/categories/:module 的每一筆
+/// → lib/models/content_category.dart ContentCategory.fromJson（T-21）
+const Map<String, F> _categoryShape = {
+  'value': F.string,
+  'label': F.string,
+  'sort_order': F.number,
+  'count': F.number,
 };
 
 /// GET /api/events → lib/models/event_model.dart EventSummary.fromJson

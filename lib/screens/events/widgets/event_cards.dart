@@ -3,7 +3,9 @@
 import 'package:flutter/material.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/date_format.dart';
+import '../../../models/content_category.dart';
 import '../../../models/event_model.dart';
+import '../../../services/category_service.dart';
 import '../../../shared/widgets/truku_painters.dart';
 import '../../../core/constants/app_typography.dart';
 import 'event_cover.dart';
@@ -492,7 +494,11 @@ class EventList extends StatelessWidget {
                         borderRadius: BorderRadius.circular(3),
                       ),
                       child: Text(
-                        e.category!,
+                        // 顯示後端分類表的名稱；管理員改名後 value 不變、名稱會變。
+                        CategoryService.labelOf(
+                          CategoryModule.events,
+                          e.category!,
+                        ),
                         style: TextStyle(
                           fontSize: AppTypography.micro,
                           color: color,

@@ -8,6 +8,7 @@
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/admin_models.dart';
+import '../models/content_category.dart';
 import '../models/millet_transaction.dart';
 import '../models/page_info.dart';
 import '../shared/utils/birth_date.dart';
@@ -388,6 +389,45 @@ class AdminService {
 
   static Future<void> archiveArticle(int id) async {
     await ApiClient.post(ApiConfig.adminArticleArchive(id));
+  }
+
+  // ── 分類管理（內部管理.md §6.1）──────────────────────────────
+  //
+  // `count` 算全部狀態（含草稿、下架、已結束）。新增與改名的回應都不能直接拿來更新
+  // 清單：PATCH 回的分類沒有 count，畫面成功後一律重抓 [fetchCategories]。
+
+  /// 某模組的全部分類，照後端排序。
+  static Future<List<ContentCategory>> fetchCategories(CategoryModule m) async {
+    final json = await ApiClient.get(ApiConfig.adminCategories(m.name));
+    return _list(json, 'categories', ContentCategory.fromJson);
+  }
+
+  /// 新增分類，`value` 由後端設成 [label]。[sortOrder] 不填由後端給預設值。
+  /// 與既有分類同名回 409 `CATEGORY_EXISTS`。
+  static Future<ContentCategory> createCategory(
+    CategoryModule m,
+    String label, {
+    int? sortOrder,
+  }) async {
+    final json = await ApiClient.post(ApiConfig.adminCategories(m.name), {
+      'label': label.trim(),
+      'sort_order': ?sortOrder,
+    });
+    return ContentCategory.fromJson(json['category'] as Map<String, dynamic>);
+  }
+
+  /// 改顯示名稱或排序，`value` 不變。[value] 可能是中文或含 `/`，放進路徑前先編碼。
+  /// 改成別的分類的名稱回 409 `CATEGORY_EXISTS`，分類不存在回 404 `CATEGORY_NOT_FOUND`。
+  static Future<void> updateCategory(
+    CategoryModule m,
+    String value, {
+    String? label,
+    int? sortOrder,
+  }) async {
+    await ApiClient.patch(
+      '${ApiConfig.adminCategories(m.name)}/${Uri.encodeComponent(value)}',
+      {'label': ?label?.trim(), 'sort_order': ?sortOrder},
+    );
   }
 
   // ── 條款（同意條款.md §3）─────────────────────────────────────

@@ -2,6 +2,7 @@
 // （尚未簽到）不能蓋掉簽到成功的畫面。
 
 import 'package:flutter/widgets.dart';
+import 'package:flutter_application_1/services/category_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import '../helpers/flow_test_helpers.dart';
@@ -13,6 +14,7 @@ void main() {
   setUp(() {
     stubCommonChannels(token: 'test-token');
     resetGlobals();
+    CategoryService.reset();
   });
 
   tearDown(() {
@@ -55,6 +57,9 @@ void main() {
     '/api/friends/requests': {'requests': <dynamic>[]},
     '/api/friends/messages': {'conversations': <dynamic>[]},
     '/api/forum/posts': {'posts': <dynamic>[], 'total': 0},
+    '/api/events/categories': {'categories': <dynamic>[]},
+    '/api/articles/categories': {'categories': <dynamic>[]},
+    '/api/videos/categories': {'categories': <dynamic>[]},
   };
 
   testWidgets('回前景的狀態查詢較晚回來，不會蓋掉簽到成功', (tester) async {

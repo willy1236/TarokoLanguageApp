@@ -79,6 +79,7 @@ class ApiConfig {
   static const String articleBookmarks = '/api/articles/bookmarks';
   static const String articleLikes = '/api/articles/likes';
   static const String articleSearch = '/api/articles/search';
+  static const String articleCategories = '/api/articles/categories';
 
   // 頭像商店（issue #12，頭像／頭像框合併目錄，見 頭像商店.md v2.0）
   static const String shopItems = '/api/shop/items';
@@ -99,6 +100,7 @@ class ApiConfig {
   static const String videoBookmarks = '/api/videos/bookmarks';
   static const String videoLikes = '/api/videos/likes';
   static const String videoSearch = '/api/videos/search';
+  static const String videoCategories = '/api/videos/categories';
 
   // 活動 + 提醒 + 裝置推播（見 Truku_backend backend/routes/events.ts）
   static const String events = '/api/events';
@@ -118,6 +120,7 @@ class ApiConfig {
   static const String eventLikes = '/api/events/likes';
   static const String eventBookmarks = '/api/events/bookmarks';
   static const String eventSearch = '/api/events/search';
+  static const String eventCategories = '/api/events/categories';
   static const String devices = '/api/devices';
 
   // 每日簽到（issue #24，見 每日簽到.md）
@@ -225,6 +228,9 @@ class ApiConfig {
   static const String adminMilletTransactions =
       '/api/admin/millet/transactions';
   static const String adminMilletReconcile = '/api/admin/millet/reconcile';
+  // 分類管理（內部管理.md §6.1）：module 是 articles｜videos｜events
+  static String adminCategories(String module) =>
+      '/api/admin/categories/$module';
   static const String adminArticles = '/api/admin/articles';
   static String adminArticle(int id) => '/api/admin/articles/$id';
   static String adminArticlePublish(int id) =>

@@ -33,12 +33,18 @@ class PlazaScreen extends StatefulWidget {
 }
 
 // MainContainer 用 IndexedStack，廣場的 State 建立一次就一直活著——切到別的
-// 分頁再切回來不會重跑 initState。因此除了首次載入，另外掛兩個更新時機：
-// 下拉刷新與 App 回到前景。沒有這兩個，剛建立的活動要等重開 App 才看得到。
+// 分頁再切回來不會重跑 initState。因此除了首次載入，另外掛幾個更新時機：
+// 下拉刷新、App 回到前景、活動有異動（EventService.eventsChanged，例如在活動分頁
+// 發起或刪除活動）、從詳情帶著變動返回。沒有這些，剛建立的活動要等重開 App 才看得到，
+// 刪掉的活動還點得進去。
 class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   bool _eventsLoading = true;
   List<EventSummary> _events = [];
   String? _eventsError;
+
+  /// 每次抓活動小卡加一，只採用最後送出的那次：活動異動、回前景、下拉、
+  /// 從詳情返回可能同時觸發，較早送出、較晚回來的舊結果不能蓋掉新的。
+  int _eventsSeq = 0;
 
   List<ForumBoard> _boards = [];
 
@@ -60,6 +66,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
     NotificationSummaryService.notifier.addListener(_onSummaryChanged);
+    EventService.eventsChanged.addListener(_onEventsChanged);
     _loadEvents();
     _loadBoards();
   }
@@ -68,11 +75,17 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     NotificationSummaryService.notifier.removeListener(_onSummaryChanged);
+    EventService.eventsChanged.removeListener(_onEventsChanged);
     super.dispose();
   }
 
   void _onSummaryChanged() {
     if (mounted) setState(() {});
+  }
+
+  /// 活動被發起、編輯、刪除、取消或換了照片：重抓頁首的活動小卡。
+  void _onEventsChanged() {
+    if (mounted) _loadEvents();
   }
 
   @override
@@ -90,9 +103,10 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
 
   /// 活動封面網址過期：安靜地重取換新網址；失敗就保留原清單，不換成錯誤卡。
   Future<void> _refreshEventCovers() async {
+    final seq = ++_eventsSeq;
     try {
       final (:events, pageInfo: _) = await EventService.fetchEvents();
-      if (!mounted) return;
+      if (!mounted || seq != _eventsSeq) return;
       setState(() => _events = events);
     } catch (_) {
       // 換不到新網址就維持原樣，破掉的封面已退回沒有封面的樣子。
@@ -100,9 +114,10 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _loadEvents() async {
+    final seq = ++_eventsSeq;
     try {
       final (:events, pageInfo: _) = await EventService.fetchEvents();
-      if (!mounted) return;
+      if (!mounted || seq != _eventsSeq) return;
       setState(() {
         _events = events;
         _eventsError = null;
@@ -110,7 +125,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       });
     } on ApiException catch (e) {
       debugPrint('[PlazaScreen] _loadEvents ApiException: ${e.message}');
-      if (!mounted) return;
+      if (!mounted || seq != _eventsSeq) return;
       setState(() {
         _events = [];
         _eventsError = e.message;
@@ -118,7 +133,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
       });
     } catch (e) {
       debugPrint('[PlazaScreen] _loadEvents error: $e');
-      if (!mounted) return;
+      if (!mounted || seq != _eventsSeq) return;
       setState(() {
         _events = [];
         _eventsError = '活動載入失敗，請稍後再試';
@@ -148,9 +163,12 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     }
   }
 
+  /// 只看不改就返回不重抓；報名、按讚等有變動才更新小卡。
   void _openEventDetail(EventSummary e) {
-    Navigator.push(context, EventDetailScreen.route(e.id)).then((_) {
-      if (mounted) _loadEvents();
+    Navigator.push<bool>(context, EventDetailScreen.route<bool>(e.id)).then((
+      changed,
+    ) {
+      if (changed == true && mounted) _loadEvents();
     });
   }
 

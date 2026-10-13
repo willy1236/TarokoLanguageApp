@@ -1,0 +1,40 @@
+{
+  "categories": [
+    {
+      "value": "族語",
+      "label": "族語",
+      "sort_order": 10,
+      "count": 0
+    },
+    {
+      "value": "走讀",
+      "label": "走讀",
+      "sort_order": 20,
+      "count": 0
+    },
+    {
+      "value": "工藝",
+      "label": "工藝",
+      "sort_order": 30,
+      "count": 0
+    },
+    {
+      "value": "線上",
+      "label": "線上",
+      "sort_order": 40,
+      "count": 0
+    },
+    {
+      "value": "音樂",
+      "label": "音樂",
+      "sort_order": 50,
+      "count": 0
+    },
+    {
+      "value": "其他",
+      "label": "其他",
+      "sort_order": 1000,
+      "count": 0
+    }
+  ]
+}
