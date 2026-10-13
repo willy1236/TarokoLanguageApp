@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/models/admin_models.dart';
 import 'package:flutter_application_1/models/article_models.dart';
+import 'package:flutter_application_1/models/content_category.dart';
 import 'package:flutter_application_1/models/data_source_models.dart';
 import 'package:flutter_application_1/models/event_model.dart';
 import 'package:flutter_application_1/models/friend_message_model.dart';
@@ -68,6 +69,13 @@ void Function(Map<String, dynamic>) _paged(
     );
     parse(json);
   };
+}
+
+/// 分類清單：先確認真的有 `categories`，再逐筆解析。
+/// CategoryService 少了這個 key 會丟例外；契約這裡也不讓它默默當成空清單通過。
+void _categories(Map<String, dynamic> json) {
+  expect(json['categories'], isA<List<dynamic>>(), reason: '應該帶 categories');
+  _each('categories', ContentCategory.fromJson)(json);
 }
 
 /// 部分端點包了 {data: {...}} 信封（service 端用 ApiClient.unwrapData 拆）。
@@ -173,6 +181,21 @@ final List<_Contract> _contracts = [
     'EventSummary(list)',
     _paged(_each('events', EventSummary.fromJson)),
   ),
+  _Contract(
+    'get_api_events_category.json',
+    'EventSummary(category)',
+    _paged(_each('events', EventSummary.fromJson)),
+  ),
+  // 分類清單（T-21）：一般使用者與後台的格式相同，只是後台 count 算全部狀態。
+  for (final f in [
+    'get_api_events_categories.json',
+    'get_api_articles_categories.json',
+    'get_api_videos_categories.json',
+    'get_api_admin_categories_events.json',
+    'get_api_admin_categories_articles.json',
+    'get_api_admin_categories_videos.json',
+  ])
+    _Contract(f, 'ContentCategory', _categories),
   _Contract(
     'get_api_events_mine.json',
     'EventSummary(mine)',
