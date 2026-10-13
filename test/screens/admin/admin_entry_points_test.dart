@@ -141,14 +141,17 @@ void main() {
     );
   }
 
-  testWidgets('一般使用者：選單只有檢舉，沒有置頂與管理員下架', (tester) async {
+  testWidgets('一般使用者：選單只有隱藏與檢舉，沒有置頂與管理員下架', (tester) async {
     _login('user');
     mockForum();
     await tester.pumpWidget(_app());
     await _openPost(tester);
     await _openMenu(tester);
 
-    expect(find.byType(PopupMenuItem<String>), findsOneWidget);
+    final items = tester
+        .widgetList<PopupMenuItem<String>>(find.byType(PopupMenuItem<String>))
+        .map((item) => item.value);
+    expect(items, ['hide', 'report']);
     expect(find.text('置頂'), findsNothing);
     expect(find.text('管理員下架'), findsNothing);
   });

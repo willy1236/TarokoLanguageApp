@@ -820,6 +820,36 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
     Navigator.pop(context, const ForumDetailResult.removedFromFeed());
   }
 
+  /// 隱藏只影響自己的動態，作者與其他人照常看得到；後端不擋唯讀帳號。
+  /// 成功後回上一頁，讓動態列表拿掉它（收藏頁保留）。
+  Future<void> _hidePost() async {
+    try {
+      await ForumService.setHidden(widget.postId, hidden: true);
+      if (!mounted) return;
+      Navigator.pop(context, const ForumDetailResult.removedFromFeed());
+      _toast('已隱藏，可在設定的『已隱藏的貼文』取消');
+    } on ApiException catch (e) {
+      // 貼文已刪除、作者被鎖或與我有封鎖關係時後端一律回 404。
+      if (e.code == 'POST_NOT_FOUND') return _popDeleted('這篇貼文已被刪除');
+      _toast(e.message);
+    }
+  }
+
+  /// 取消隱藏後留在本頁，並回報開啟它的列表（「已隱藏的貼文」頁據此移除這筆）。
+  Future<void> _unhidePost() async {
+    try {
+      final hidden = await ForumService.setHidden(widget.postId, hidden: false);
+      if (!mounted) return;
+      final current = _post;
+      if (current == null) return;
+      setState(() => _post = current.copyWith(isHidden: hidden));
+      widget.onPostChanged?.call(_post!);
+      _toast('已取消隱藏');
+    } on ApiException catch (e) {
+      _toast(e.message);
+    }
+  }
+
   Future<bool> _confirm(String message) =>
       showConfirmDialog(context, message: message, confirmText: '刪除');
 
@@ -855,7 +885,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   Widget _buildScaffold(BuildContext context, bool seniorMode) {
     final post = _post;
-    // 唯讀帳號：編輯（PATCH）與檢舉會被後端擋，選單直接不給；刪除仍保留。
+    // 唯讀帳號：編輯（PATCH）與檢舉會被後端擋，選單直接不給；刪除、隱藏仍保留。
     final locked = accountLockController.locked;
     return Scaffold(
       backgroundColor: AppColors.creamLight,
@@ -872,13 +902,16 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
           ),
         ),
         actions: [
-          if (post != null && (_isMine || !locked || _isAdmin))
+          // 自己的貼文至少有「刪除」，別人的至少有「隱藏」，選單一律出現。
+          if (post != null)
             PopupMenuButton<String>(
               iconSize: seniorMode ? 30 : 24,
               onSelected: (value) {
                 if (value == 'edit') _edit();
                 if (value == 'delete') _deletePost();
                 if (value == 'report') _reportPost();
+                if (value == 'hide') _hidePost();
+                if (value == 'unhide') _unhidePost();
                 if (value == 'admin_remove') _adminRemovePost();
                 if (value == 'admin_pin') _adminTogglePin();
               },
@@ -887,15 +920,29 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                   if (!locked)
                     const PopupMenuItem(value: 'edit', child: Text('編輯')),
                   const PopupMenuItem(value: 'delete', child: Text('刪除')),
-                ] else if (!locked)
-                  // 檢舉過的不能再檢舉、也不能撤回，只標示狀態。
-                  post.reportedByMe
+                ] else ...[
+                  post.isHidden
                       ? const PopupMenuItem(
-                          value: 'reported',
-                          enabled: false,
-                          child: Text('已檢舉'),
+                          value: 'unhide',
+                          child: Text('取消隱藏'),
                         )
-                      : const PopupMenuItem(value: 'report', child: Text('檢舉')),
+                      : const PopupMenuItem(
+                          value: 'hide',
+                          child: Text('隱藏這篇貼文'),
+                        ),
+                  if (!locked)
+                    // 檢舉過的不能再檢舉、也不能撤回，只標示狀態。
+                    post.reportedByMe
+                        ? const PopupMenuItem(
+                            value: 'reported',
+                            enabled: false,
+                            child: Text('已檢舉'),
+                          )
+                        : const PopupMenuItem(
+                            value: 'report',
+                            child: Text('檢舉'),
+                          ),
+                ],
                 if (_isAdmin) ...[
                   PopupMenuItem(
                     value: 'admin_pin',
