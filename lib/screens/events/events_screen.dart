@@ -24,7 +24,8 @@ import '../../shared/utils/pager_scroll_loader.dart';
 import '../../shared/widgets/load_more_retry.dart';
 
 /// 活動列表 —— 真資料版（GET /api/events，往下捲帶游標翻頁）。
-/// 發起活動返回後自動刷新；下拉可重新整理。需登入（未登入 API 會 401 導回登入）。
+/// 活動有異動（[EventService.eventsChanged]）或從詳情帶著變動返回時安靜重抓；
+/// 下拉可重新整理。需登入（未登入 API 會 401 導回登入）。
 class EventsScreen extends StatefulWidget {
   /// 由外層（合併分頁的膠囊切換）注入，顯示在標題與篩選 chips 之間。
   final Widget? topToggle;
@@ -78,6 +79,7 @@ class _EventsScreenState extends State<EventsScreen> {
     super.initState();
     NotificationSummaryService.notifier.addListener(_rebuild);
     UserService.userNotifier.addListener(_rebuild);
+    EventService.eventsChanged.addListener(_onEventsChanged);
     _scrollLoader = PagerScrollLoader(
       controller: _scrollController,
       pager: _pager,
@@ -91,6 +93,7 @@ class _EventsScreenState extends State<EventsScreen> {
   void dispose() {
     NotificationSummaryService.notifier.removeListener(_rebuild);
     UserService.userNotifier.removeListener(_rebuild);
+    EventService.eventsChanged.removeListener(_onEventsChanged);
     _scrollLoader.dispose();
     _scrollController.dispose();
     _pager.dispose();
@@ -136,6 +139,19 @@ class _EventsScreenState extends State<EventsScreen> {
     await Future.wait([_pager.refresh(), _loadCategories()]);
   }
 
+  /// 不換成載入畫面、不跳回頂端地重抓第一頁。正停在錯誤畫面時安靜重抓
+  /// 清不掉錯誤，改走一般重整。
+  Future<void> _quietReload() =>
+      _pager.error != null ? _pager.refresh() : _pager.silentRefresh();
+
+  /// 活動被發起、編輯、刪除、取消或換了照片（不論在哪一頁做的）：列表與分類
+  /// 一起重抓，剛有活動的分類出現在篩選列，變成沒有活動的消失。
+  void _onEventsChanged() {
+    if (!mounted) return;
+    _quietReload();
+    _loadCategories();
+  }
+
   void _selectCategory(String? value) {
     if (value == _category) return;
     setState(() => _category = value);
@@ -144,19 +160,21 @@ class _EventsScreenState extends State<EventsScreen> {
 
   void _openCompose() {
     if (blockIfReadOnly()) return;
+    // 發起成功與上傳照片都會發出 eventsChanged，列表由 _onEventsChanged 更新。
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const EventComposeScreen()),
-    ).then((created) {
-      if (created == true) _pager.refresh(); // 成功發起才刷新列表
-    });
+    );
   }
 
   void _openDetail(EventSummary e) {
     // 詳情頁自行以 eventId 打 GET /api/events/:id 取真資料（含發起人姓名、
-    // isHost 判斷、報名狀態）。回來後刷新清單，反映報名/退出。
-    Navigator.push(context, EventDetailScreen.route(e.id)).then((_) {
-      if (mounted) _pager.refresh();
+    // isHost 判斷、報名狀態）。報名、退出、按讚等有變動才安靜重抓；
+    // 只看不改就返回時不重載，停在原本捲到的位置。
+    Navigator.push<bool>(context, EventDetailScreen.route<bool>(e.id)).then((
+      changed,
+    ) {
+      if (changed == true && mounted) _quietReload();
     });
   }
 

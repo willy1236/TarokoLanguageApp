@@ -44,9 +44,9 @@ class EventLikedBookmarkedList extends StatelessWidget {
           itemBuilder: (event, reload) => _EventListItem(
             event: event,
             seniorMode: seniorMode,
-            // 在詳情頁取消收藏/按讚後返回，清單要重新整理，否則仍看得到
-            // 已經取消的項目。
-            onReturn: reload,
+            // 在詳情頁取消收藏/按讚（或其他變動）後返回，清單要重新整理，
+            // 否則仍看得到已經取消的項目；沒動就留在原本捲到的位置。
+            onChanged: reload,
           ),
         );
       },
@@ -58,13 +58,13 @@ class _EventListItem extends StatelessWidget {
   final EventSummary event;
   final bool seniorMode;
 
-  /// 從詳情頁返回時呼叫，讓清單重新整理。
-  final VoidCallback onReturn;
+  /// 從詳情頁帶著變動返回時呼叫，讓清單重新整理。
+  final VoidCallback onChanged;
 
   const _EventListItem({
     required this.event,
     required this.seniorMode,
-    required this.onReturn,
+    required this.onChanged,
   });
 
   @override
@@ -72,8 +72,11 @@ class _EventListItem extends StatelessWidget {
     return InkWell(
       borderRadius: BorderRadius.circular(12),
       onTap: () async {
-        await Navigator.push(context, EventDetailScreen.route(event.id));
-        onReturn();
+        final changed = await Navigator.push<bool>(
+          context,
+          EventDetailScreen.route<bool>(event.id),
+        );
+        if (changed == true) onChanged();
       },
       child: Container(
         padding: const EdgeInsets.all(14),

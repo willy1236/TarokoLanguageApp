@@ -205,6 +205,51 @@ void main() {
       expect(await result, isTrue);
     });
 
+    testWidgets('按讚成功後返回：結果為 true', (tester) async {
+      installMockClient({
+        ...routes(),
+        '/api/events/1/like': {'liked': true, 'like_count': 4},
+      });
+      final result = await openDetail(tester);
+
+      await tester.tap(find.byIcon(Icons.favorite_border));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(await result, isTrue);
+    });
+
+    testWidgets('按讚失敗後返回：結果不是 true', (tester) async {
+      installMockClient({
+        ...routes(),
+        '/api/events/1/like': errorResponse('SERVER_ERROR', status: 500),
+      });
+      final result = await openDetail(tester);
+
+      await tester.tap(find.byIcon(Icons.favorite_border));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(await result, isNot(true));
+    });
+
+    testWidgets('收藏成功後返回：結果為 true', (tester) async {
+      installMockClient({
+        ...routes(),
+        '/api/events/1/bookmark': {'bookmarked': true},
+      });
+      final result = await openDetail(tester);
+
+      await tester.tap(find.byIcon(Icons.bookmark_border));
+      await tester.pumpAndSettle();
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+
+      expect(await result, isTrue);
+    });
+
     Future<void> openReportSheet(WidgetTester tester) async {
       await tester.ensureVisible(find.text('檢舉此活動'));
       await tester.pumpAndSettle();
