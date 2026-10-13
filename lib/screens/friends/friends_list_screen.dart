@@ -15,6 +15,7 @@ import '../../models/friend_model.dart';
 import '../../models/shop_item.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/chat_socket_service.dart';
+import '../../services/fcm_service.dart';
 import '../../services/friend_service.dart';
 import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -71,6 +72,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
     super.initState();
     chatController.connect();
     chatController.addListener(_onChatEvent);
+    // 通話有了結果：更新最後活動、預覽與未讀數（紅點由 FcmService 重抓）。
+    FcmService.friendCallActivity.addListener(_loadConversations);
     _load();
     _loadItemCatalog();
   }
@@ -78,6 +81,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   @override
   void dispose() {
     chatController.removeListener(_onChatEvent);
+    FcmService.friendCallActivity.removeListener(_loadConversations);
     super.dispose();
   }
 

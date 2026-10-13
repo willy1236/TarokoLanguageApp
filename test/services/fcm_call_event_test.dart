@@ -227,4 +227,31 @@ void main() {
     expect(accepted, [1]);
     expect(cancelled, [3]);
   });
+
+  test('通話有結果的事件通知 friendCallActivity，來電與同一則重複不通知', () {
+    var count = 0;
+    void listener() => count++;
+    FcmService.friendCallActivity.addListener(listener);
+    addTearDown(() => FcmService.friendCallActivity.removeListener(listener));
+    installMockClient({
+      '/api/notifications/summary': {'total': 0},
+    });
+
+    for (final type in [
+      'friend_call_accepted',
+      'friend_call_cancelled',
+      'friend_call_ended',
+    ]) {
+      FcmService.handleForegroundMessage(_push({'type': type, 'call_id': '8'}));
+    }
+    FcmService.handleForegroundMessage(
+      _push({'type': 'friend_call_ended', 'call_id': '8'}),
+    );
+    FcmService.handleSocketCallEvent({
+      'type': 'video_session_ended',
+      'session_id': '8',
+    });
+
+    expect(count, 3);
+  });
 }

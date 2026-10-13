@@ -1,6 +1,8 @@
 // 一對一聊天對話串。訂閱 ChatController 的 WS 事件即時收訊息/已讀，
 // 開啟時 markRead（未接來電一併清掉），往上滑分頁補歷史，通話紀錄跟著每頁
-// 的訊息一起帶回、依時間混排，點通話泡泡回撥；陌生人（未加好友）超過 3 則、或任一方
+// 的訊息一起帶回、依時間混排，點通話泡泡回撥；疊在上面的畫面（撥號、來電、
+// 通話等）關掉回到聊天室，或停在聊天室時收到好友通話事件，都補抓最新一頁，
+// 讓剛結束的通話出現；陌生人（未加好友）超過 3 則、或任一方
 // 未成年／沒填生日時會收到 NEED_FRIEND，被禁言收到 MUTED，皆用 SnackBar 顯示
 // 後端訊息、不猜測前端狀態。
 // 對象是刪除中或被鎖帳號（歷史訊息回應的 partner.unavailable）時歷史照常顯示，
@@ -11,6 +13,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/navigation/route_stack.dart';
 import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
 import '../../core/utils/date_format.dart';
@@ -18,6 +21,8 @@ import '../../models/friend_message_model.dart';
 import '../../models/friend_model.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/chat_socket_service.dart';
+import '../../services/directed_call_service.dart';
+import '../../services/fcm_service.dart';
 import '../../services/friend_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_empty_state.dart';
@@ -89,7 +94,7 @@ class ChatScreen extends StatefulWidget {
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> {
+class _ChatScreenState extends State<ChatScreen> with RouteAware {
   /// 後端 friendMessages.ts 的訊息長度上限。
   static const _messageMax = 2000;
 
@@ -132,7 +137,21 @@ class _ChatScreenState extends State<ChatScreen> {
     if (route != null && _route == null) {
       _route = route;
       ChatScreen._live[route] = _refreshFromPush;
+      routeObserver.subscribe(this, route);
     }
+  }
+
+  /// 上面疊的畫面關掉：可能剛打完、取消、拒接或錯過一通電話，自己掛斷的那一方
+  /// 收不到事件，一律補抓。等通話畫面送出的取消／結束請求到了後端再抓。
+  @override
+  void didPopNext() async {
+    await DirectedCallService.settled();
+    if (mounted) _catchUp();
+  }
+
+  /// 有疊畫面時不抓，關掉回來時 [didPopNext] 會抓。
+  void _onFriendCallActivity() {
+    if (_route?.isCurrent ?? false) _catchUp();
   }
 
   @override
@@ -140,6 +159,7 @@ class _ChatScreenState extends State<ChatScreen> {
     super.initState();
     chatController.connect();
     chatController.addListener(_onChatEvent);
+    FcmService.friendCallActivity.addListener(_onFriendCallActivity);
     _scrollController.addListener(_onScroll);
     _load();
     _markRead();
@@ -162,6 +182,8 @@ class _ChatScreenState extends State<ChatScreen> {
   void dispose() {
     final route = _route;
     if (route != null) ChatScreen._live.remove(route);
+    routeObserver.unsubscribe(this);
+    FcmService.friendCallActivity.removeListener(_onFriendCallActivity);
     chatController.removeListener(_onChatEvent);
     _scrollController.dispose();
     _inputController.dispose();
