@@ -29,6 +29,7 @@ import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/forum_models.dart';
 import '../models/page_info.dart';
+import 'forum_feed_refresh_notifier.dart';
 
 class ForumService {
   // 後端硬性限制，畫面層據此在送出前擋下必然失敗的請求。
@@ -309,12 +310,16 @@ class ForumService {
   /// 回傳操作後的隱藏狀態。隱藏只影響自己的動態，作者與其他人照常看得到。
   /// 重複隱藏或重複取消後端都回 200；隱藏看不到的貼文回 404 `POST_NOT_FOUND`，
   /// 取消隱藏不會 404。
+  ///
+  /// 取消隱藏成功後通知廣場整份重載，讓這篇回到動態（不論從哪個畫面取消）。
   static Future<bool> setHidden(int id, {required bool hidden}) async {
     final path = ApiConfig.forumPostHide(id);
     final data = hidden
         ? await ApiClient.post(path)
         : await ApiClient.delete(path);
-    return data['is_hidden'] == true;
+    final isHidden = data['is_hidden'] == true;
+    if (!hidden && !isHidden) ForumFeedRefreshNotifier.bump();
+    return isHidden;
   }
 
   /// 我隱藏的貼文，最近隱藏的在前。每筆都帶 `is_hidden: true`；

@@ -6,6 +6,7 @@ import '../../models/forum_models.dart';
 import '../../models/inbox_models.dart';
 import '../../services/account_lock_controller.dart';
 import '../../services/event_service.dart';
+import '../../services/forum_feed_refresh_notifier.dart';
 import '../../services/forum_service.dart';
 import '../../services/notification_summary_service.dart';
 import '../../services/senior_mode_controller.dart';
@@ -455,6 +456,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
         toggleBookmark: ForumService.bookmarkPost,
         onOpenPost: _openPost,
         onRefresh: _refreshHeader,
+        reloadListenable: ForumFeedRefreshNotifier.revision,
       ),
     );
   }

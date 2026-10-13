@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/services/forum_service.dart';
+import 'package:flutter_application_1/services/forum_feed_refresh_notifier.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -265,5 +266,30 @@ void main() {
     expect(seen.single.url.queryParameters.containsKey('cursor'), isFalse);
     expect(page.posts, isEmpty);
     expect(page.pageInfo.hasMore, isFalse);
+  });
+
+  test('取消隱藏成功才通知廣場重載，隱藏不通知', () async {
+    final before = ForumFeedRefreshNotifier.revision.value;
+
+    respondWith({'is_hidden': true});
+    await ForumService.setHidden(7, hidden: true);
+    expect(ForumFeedRefreshNotifier.revision.value, before);
+
+    respondWith({'is_hidden': false});
+    await ForumService.setHidden(7, hidden: false);
+    expect(ForumFeedRefreshNotifier.revision.value, before + 1);
+  });
+
+  test('取消隱藏失敗時不通知', () async {
+    final before = ForumFeedRefreshNotifier.revision.value;
+    respondWith({
+      'error': {'code': 'INTERNAL', 'message': '伺服器錯誤'},
+    }, status: 500);
+
+    await expectLater(
+      ForumService.setHidden(7, hidden: false),
+      throwsA(isA<ApiException>()),
+    );
+    expect(ForumFeedRefreshNotifier.revision.value, before);
   });
 }
