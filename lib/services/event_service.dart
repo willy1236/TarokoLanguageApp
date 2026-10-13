@@ -46,8 +46,18 @@ class EventService {
 
   /// 活動列表：只含尚未開始的活動，依開始時間升冪（後端已不分 scope）。
   /// 回傳 events[]（含 participantCount / isJoined / 即時狀態）。
-  static Future<EventPage> fetchEvents({String? cursor, int limit = 20}) =>
-      _fetchPage(ApiConfig.events, cursor: cursor, limit: limit);
+  /// [category] 為分類的 value（見 CategoryService），由後端篩選、可一路翻頁到底；
+  /// 不在分類表裡時後端回 400 INVALID_CATEGORY。
+  static Future<EventPage> fetchEvents({
+    String? category,
+    String? cursor,
+    int limit = 20,
+  }) => _fetchPage(
+    ApiConfig.events,
+    cursor: cursor,
+    limit: limit,
+    filters: {'category': ?category},
+  );
 
   /// 關鍵字／時間區間／部落搜尋，三個維度皆選填、可任意組合。range 篩「未來 N 內
   /// 即將舉辦」（跟 videos/articles 篩「最近發布」語意相反，見後端 events.ts）。

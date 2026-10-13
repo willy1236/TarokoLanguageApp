@@ -83,4 +83,32 @@ void main() {
     });
     expect(seen[1].url.queryParameters, {'tab': 'ended', 'limit': '20'});
   });
+
+  test('活動列表選了分類就帶 category，翻頁時連同 cursor 一起帶', () async {
+    respondWith({
+      'events': <dynamic>[],
+      'page_info': {'next_cursor': null, 'has_more': false},
+    });
+
+    await EventService.fetchEvents(category: '族語');
+    await EventService.fetchEvents(category: '族語', cursor: '20');
+
+    expect(seen[0].url.queryParameters, {'category': '族語', 'limit': '20'});
+    expect(seen[1].url.queryParameters, {
+      'category': '族語',
+      'cursor': '20',
+      'limit': '20',
+    });
+  });
+
+  test('活動列表沒給分類就不帶 category', () async {
+    respondWith({
+      'events': <dynamic>[],
+      'page_info': {'next_cursor': null, 'has_more': false},
+    });
+
+    await EventService.fetchEvents();
+
+    expect(seen.single.url.queryParameters, {'limit': '20'});
+  });
 }
