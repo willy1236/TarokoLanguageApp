@@ -1,5 +1,7 @@
 // 在貼文詳情隱藏、取消隱藏貼文（決策紀錄 A47）：隱藏後回上一頁並從動態拿掉；
 // 取消隱藏留在本頁並回報列表。隱藏只影響自己，後端不擋唯讀帳號，前端也不擋。
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -50,10 +52,14 @@ class _FakeApi {
   int hideStatus = 200;
   final List<String> hideCalls = [];
 
+  /// 不為 null 時，隱藏請求要等它完成才回應，模擬網路慢。
+  Completer<void>? hideGate;
+
   MockClient client() => MockClient((request) async {
     final path = request.url.path;
     if (path == '/api/forum/posts/$_postId/hide') {
       hideCalls.add(request.method);
+      await hideGate?.future;
       if (request.method == 'DELETE') {
         isHidden = false;
         return jsonResponse({'is_hidden': false});
@@ -176,6 +182,35 @@ void main() {
     final result = popped.single as ForumDetailResult;
     expect(result.removedFromFeed, isTrue);
     expect(result.deleted, isFalse);
+    expect(find.text(_hiddenText), findsOneWidget);
+  });
+
+  testWidgets('隱藏送出中：選單的隱藏項停用，只送一次、只 pop 一次', (tester) async {
+    final api = _FakeApi()..hideGate = Completer<void>();
+    ApiClient.httpClient = api.client();
+    final popped = <Object?>[];
+    await _openDetail(tester, popped);
+
+    await _tapMenuItem(tester, '隱藏這篇貼文');
+    expect(api.hideCalls, ['POST']);
+
+    await _openMenu(tester);
+    final item = tester.widget<PopupMenuItem<String>>(
+      find.widgetWithText(PopupMenuItem<String>, '隱藏這篇貼文'),
+    );
+    expect(item.enabled, isFalse);
+    await tester.tap(find.text('隱藏這篇貼文'), warnIfMissed: false);
+    await tester.pumpAndSettle();
+    expect(api.hideCalls, ['POST']);
+    // 停用的項目點了不會關選單，手動關掉再放行請求。
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+
+    api.hideGate!.complete();
+    await tester.pumpAndSettle();
+
+    expect(popped, hasLength(1));
+    expect(find.text('開貼文'), findsOneWidget);
     expect(find.text(_hiddenText), findsOneWidget);
   });
 

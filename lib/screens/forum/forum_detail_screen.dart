@@ -140,6 +140,9 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 管理員置頂／取消置頂送出中：選單裡的置頂項停用，連點只送一次。
   bool _pinning = false;
+
+  /// 隱藏／取消隱藏送出中：選單的隱藏項停用，網路慢時連點不會送兩次、pop 兩次。
+  bool _hiding = false;
   String? _error;
 
   /// 圖片過期自動重整每次載入只做一次，避免多張圖同時過期時連環重打 API。
@@ -823,12 +826,17 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
   /// 隱藏只影響自己的動態，作者與其他人照常看得到；後端不擋唯讀帳號。
   /// 成功後回上一頁，讓動態列表拿掉它（收藏頁保留）。
   Future<void> _hidePost() async {
+    if (_hiding) return;
+    setState(() => _hiding = true);
     try {
       await ForumService.setHidden(widget.postId, hidden: true);
       if (!mounted) return;
+      // 成功後不解除 _hiding：本頁正在離開，轉場期間也不該再送一次。
       Navigator.pop(context, const ForumDetailResult.removedFromFeed());
       _toast('已隱藏，可在個人頁的『已隱藏的貼文』取消');
     } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() => _hiding = false);
       // 貼文已刪除、作者被鎖或與我有封鎖關係時後端一律回 404。
       if (e.code == 'POST_NOT_FOUND') return _popDeleted('這篇貼文已被刪除');
       _toast(e.message);
@@ -837,6 +845,8 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 取消隱藏後留在本頁，並回報開啟它的列表（「已隱藏的貼文」頁據此移除這筆）。
   Future<void> _unhidePost() async {
+    if (_hiding) return;
+    setState(() => _hiding = true);
     try {
       final hidden = await ForumService.setHidden(widget.postId, hidden: false);
       if (!mounted) return;
@@ -844,9 +854,12 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
       if (current == null) return;
       setState(() => _post = current.copyWith(isHidden: hidden));
       widget.onPostChanged?.call(_post!);
-      _toast('已取消隱藏');
+      // 同「已隱藏的貼文」頁：後端確認已取消才提示。
+      if (!hidden) _toast('已取消隱藏');
     } on ApiException catch (e) {
       _toast(e.message);
+    } finally {
+      if (mounted) setState(() => _hiding = false);
     }
   }
 
@@ -922,13 +935,15 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
                   const PopupMenuItem(value: 'delete', child: Text('刪除')),
                 ] else ...[
                   post.isHidden
-                      ? const PopupMenuItem(
+                      ? PopupMenuItem(
                           value: 'unhide',
-                          child: Text('取消隱藏'),
+                          enabled: !_hiding,
+                          child: const Text('取消隱藏'),
                         )
-                      : const PopupMenuItem(
+                      : PopupMenuItem(
                           value: 'hide',
-                          child: Text('隱藏這篇貼文'),
+                          enabled: !_hiding,
+                          child: const Text('隱藏這篇貼文'),
                         ),
                   if (!locked)
                     // 檢舉過的不能再檢舉、也不能撤回，只標示狀態。
