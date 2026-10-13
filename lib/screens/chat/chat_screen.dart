@@ -12,6 +12,7 @@ import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
+import '../../core/utils/date_format.dart';
 import '../../models/friend_message_model.dart';
 import '../../models/friend_model.dart';
 import '../../services/account_lock_controller.dart';
@@ -28,6 +29,7 @@ import '../../shared/widgets/app_back_button.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/nickname_text.dart';
 import '../../shared/widgets/report_sheet.dart';
+import 'chat_items.dart';
 
 class ChatScreen extends StatefulWidget {
   /// 對方的好友碼：辨識聊天室、打聊天 API、標題列末碼與點進公開檔案都用它。
@@ -469,13 +471,14 @@ class _ChatScreenState extends State<ChatScreen> {
         seniorMode: seniorMode,
       );
     }
+    final items = buildChatItems(_messages, reachedOldest: _nextCursor == null);
     return ListView.builder(
       controller: _scrollController,
       reverse: true,
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-      itemCount: _messages.length + (_nextCursor != null ? 1 : 0),
+      itemCount: items.length + (_nextCursor != null ? 1 : 0),
       itemBuilder: (context, i) {
-        if (i >= _messages.length) {
+        if (i >= items.length) {
           return const Padding(
             padding: EdgeInsets.symmetric(vertical: 12),
             child: Center(
@@ -483,55 +486,117 @@ class _ChatScreenState extends State<ChatScreen> {
             ),
           );
         }
-        final isLastMine = i == _messages.indexWhere((m) => m.mine);
-        return _bubble(_messages[i], seniorMode, showStatus: isLastMine);
+        return switch (items[i]) {
+          ChatMessageItem(:final message) => _messageBubble(
+            message,
+            seniorMode,
+          ),
+          ChatDayDivider(:final day) => _dayDivider(day, seniorMode),
+        };
       },
     );
   }
 
-  Widget _bubble(FriendMessage m, bool seniorMode, {required bool showStatus}) {
+  Widget _dayDivider(DateTime day, bool seniorMode) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: 10),
+    child: Center(
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+        decoration: BoxDecoration(
+          color: AppColors.creamDeep,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Text(
+          chatDayLabel(day),
+          style: AppTypography.captionStyle(
+            seniorMode: seniorMode,
+            color: AppColors.inkSoft,
+          ),
+        ),
+      ),
+    ),
+  );
+
+  Widget _messageBubble(FriendMessage m, bool seniorMode) {
     final mine = m.mine;
-    return Align(
-      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: GestureDetector(
+    return _bubbleRow(
+      mine: mine,
+      at: m.createdAt,
+      read: mine && m.isRead,
+      seniorMode: seniorMode,
+      bubble: GestureDetector(
         onLongPress: mine || accountLockController.locked
             ? null
             : () => _reportMessage(m),
         child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 4),
           padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-          constraints: BoxConstraints(
-            maxWidth: MediaQuery.of(context).size.width * 0.72,
-          ),
           decoration: BoxDecoration(
             color: mine ? AppColors.primary : AppColors.cream,
             borderRadius: BorderRadius.circular(16),
             border: mine ? null : Border.all(color: AppColors.creamDeep),
           ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                m.body,
-                style: AppTypography.bodyLargeStyle(
-                  seniorMode: seniorMode,
-                  color: mine ? Colors.white : AppColors.ink,
-                ),
-              ),
-              if (mine && showStatus) ...[
-                const SizedBox(height: 2),
-                Text(
-                  m.isRead ? '已讀' : '已送出',
-                  style: AppTypography.captionStyle(
-                    seniorMode: seniorMode,
-                    color: Colors.white70,
-                  ),
-                ),
-              ],
-            ],
+          child: Text(
+            m.body,
+            style: AppTypography.bodyLargeStyle(
+              seniorMode: seniorMode,
+              color: mine ? Colors.white : AppColors.ink,
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  /// 泡泡＋旁欄（已讀、時間），旁欄貼齊泡泡底部：自己的泡泡靠右、旁欄在左，
+  /// 對方的相反（同 LINE）。
+  Widget _bubbleRow({
+    required bool mine,
+    required DateTime at,
+    required bool read,
+    required bool seniorMode,
+    required Widget bubble,
+  }) {
+    final side = Column(
+      crossAxisAlignment: mine
+          ? CrossAxisAlignment.end
+          : CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (read)
+          Text(
+            '已讀',
+            style: AppTypography.captionStyle(
+              seniorMode: seniorMode,
+              color: AppColors.fog,
+            ),
+          ),
+        Text(
+          formatTime(at),
+          style: AppTypography.captionStyle(
+            seniorMode: seniorMode,
+            color: AppColors.fog,
+          ),
+        ),
+      ],
+    );
+    final constrained = Flexible(
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxWidth: MediaQuery.of(context).size.width * 0.72,
+        ),
+        child: bubble,
+      ),
+    );
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4),
+      child: Row(
+        mainAxisAlignment: mine
+            ? MainAxisAlignment.end
+            : MainAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: mine
+            ? [side, const SizedBox(width: 6), constrained]
+            : [constrained, const SizedBox(width: 6), side],
       ),
     );
   }
