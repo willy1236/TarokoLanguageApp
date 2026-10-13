@@ -38,17 +38,29 @@ class DirectedCallService {
     return (session, credentials);
   }
 
-  static Future<void> declineCall(int callId) async {
-    await ApiClient.post(ApiConfig.friendCallDecline(callId));
+  static Future<void> declineCall(int callId) =>
+      _track(ApiClient.post(ApiConfig.friendCallDecline(callId)));
+
+  static Future<void> cancelCall(int callId) =>
+      _track(ApiClient.post(ApiConfig.friendCallCancel(callId)));
+
+  static Future<void> endCall(int callId) =>
+      _track(ApiClient.post(ApiConfig.friendCallEnd(callId)));
+
+  /// 還在路上的取消、拒接、結束請求。撥號、來電、通話畫面關掉時才送出，
+  /// 有的不等回應就離開。
+  static final Set<Future<void>> _pending = {};
+
+  static Future<void> _track(Future<Object?> request) {
+    final done = request.then<void>((_) {}, onError: (_) {});
+    _pending.add(done);
+    done.whenComplete(() => _pending.remove(done));
+    return request.then<void>((_) {});
   }
 
-  static Future<void> cancelCall(int callId) async {
-    await ApiClient.post(ApiConfig.friendCallCancel(callId));
-  }
-
-  static Future<void> endCall(int callId) async {
-    await ApiClient.post(ApiConfig.friendCallEnd(callId));
-  }
+  /// 等上述請求都完成（成功或失敗）。通話畫面關掉後馬上查通話紀錄時先等它：
+  /// 請求沒到後端前那一通還是響鈴中或通話中，紀錄裡不會有。
+  static Future<void> settled() => Future.wait(_pending.toList());
 
   /// 檢舉一通我參與過的通話，reason 為 1-500 字的檢舉原因。
   static Future<void> reportCall(int callId, String reason) async {
