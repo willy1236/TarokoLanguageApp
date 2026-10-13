@@ -305,9 +305,9 @@ void main() {
         markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
         return;
       }
-      final postId = await _findMostCommentedPostId();
+      final (postId, failure) = await _findMostCommentedPostId();
       if (postId == null) {
-        markTestSkipped('目前沒有任何有留言的貼文可測');
+        markTestSkipped(failure ?? '目前沒有任何有留言的貼文可測');
         return;
       }
       await _inspect(
@@ -323,9 +323,9 @@ void main() {
         markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
         return;
       }
-      final postId = await _findMostCommentedPostId();
+      final (postId, failure) = await _findMostCommentedPostId();
       if (postId == null) {
-        markTestSkipped('目前沒有任何有留言的貼文可測');
+        markTestSkipped(failure ?? '目前沒有任何有留言的貼文可測');
         return;
       }
       await _inspect(
@@ -366,9 +366,9 @@ void main() {
         markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
         return;
       }
-      final postId = await _findOthersPostId();
+      final (postId, failure) = await _findOthersPostId();
       if (postId == null) {
-        markTestSkipped('動態裡沒有別人的貼文可隱藏');
+        markTestSkipped(failure ?? '動態裡沒有別人的貼文可隱藏');
         return;
       }
       try {
@@ -429,9 +429,9 @@ void main() {
         markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
         return;
       }
-      final friendCode = await _firstFriendCode();
+      final (friendCode, failure) = await _firstFriendCode();
       if (friendCode == null) {
-        markTestSkipped('目前沒有好友可測私訊歷史');
+        markTestSkipped(failure ?? '目前沒有好友可測私訊歷史');
         return;
       }
       await _inspect(
@@ -635,9 +635,9 @@ void main() {
           markTestSkipped('未登入 — 請先開 app 完成 Google 登入');
           return;
         }
-        final endedId = await _findEndedEventId();
+        final (endedId, failure) = await _findEndedEventId();
         if (endedId == null) {
-          markTestSkipped('目前沒有任何 effective_status=ended 的活動可測');
+          markTestSkipped(failure ?? '目前沒有任何 effective_status=ended 的活動可測');
           return;
         }
         print('（挑到已結束活動 id=$endedId）');
@@ -938,8 +938,22 @@ Future<Map<String, dynamic>?> _fetchMe() async {
   return jsonDecode(response.body) as Map<String, dynamic>;
 }
 
+/// 挑資料的請求不是 200 時的 skip 訊息，帶出狀態碼與錯誤 code，
+/// 免得被誤讀成「沒有資料可測」（例如帳號未同意條款時一律 403 CONSENT_REQUIRED）。
+String _pickFailure(String path, http.Response response, String purpose) {
+  String? code;
+  try {
+    final decoded = jsonDecode(response.body);
+    if (decoded is Map && decoded['error'] is Map) {
+      code = (decoded['error'] as Map)['code']?.toString();
+    }
+  } catch (_) {}
+  return '$path 回 ${response.statusCode}${code == null ? '' : ' $code'}，無法$purpose';
+}
+
 /// 打 /api/events?scope=all 找第一筆 effective_status == 'ended' 的活動 id。
-Future<int?> _findEndedEventId() async {
+/// 回傳 (id, 失敗訊息)：請求失敗時 id 為 null 且帶訊息；沒資料時兩者皆 null。
+Future<(int?, String?)> _findEndedEventId() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.events}?scope=all');
   final response = await http.get(
     uri,
@@ -948,21 +962,23 @@ Future<int?> _findEndedEventId() async {
       'Authorization': 'Bearer $_token',
     },
   );
-  if (response.statusCode != 200) return null;
+  if (response.statusCode != 200) {
+    return (null, _pickFailure(ApiConfig.events, response, '挑活動'));
+  }
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   final events = decoded['events'] as List<dynamic>? ?? [];
   for (final e in events) {
     final m = e as Map<String, dynamic>;
     if (m['effective_status'] == 'ended') {
       final id = m['id'];
-      return id is int ? id : int.tryParse(id.toString());
+      return (id is int ? id : int.tryParse(id.toString()), null);
     }
   }
-  return null;
+  return (null, null);
 }
 
 /// 打 /api/forum/posts 找留言數最多的貼文 id，讓留言 fixture 盡量有內容。
-Future<int?> _findMostCommentedPostId() async {
+Future<(int?, String?)> _findMostCommentedPostId() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.forumPosts}?limit=50');
   final response = await http.get(
     uri,
@@ -971,7 +987,9 @@ Future<int?> _findMostCommentedPostId() async {
       'Authorization': 'Bearer $_token',
     },
   );
-  if (response.statusCode != 200) return null;
+  if (response.statusCode != 200) {
+    return (null, _pickFailure(ApiConfig.forumPosts, response, '挑貼文'));
+  }
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   final posts =
       (decoded['posts'] as List<dynamic>? ?? const [])
@@ -983,28 +1001,37 @@ Future<int?> _findMostCommentedPostId() async {
             a['comment_count'] as num,
           ),
         );
-  if (posts.isEmpty) return null;
+  if (posts.isEmpty) return (null, null);
   final id = posts.first['id'];
-  return id is int ? id : int.tryParse('$id');
+  return (id is int ? id : int.tryParse('$id'), null);
 }
 
 /// 打 /api/forum/posts 找第一篇不是自己發的貼文 id（隱藏自己的貼文後端回 400）。
 /// 動態本來就排除已隱藏的貼文，挑到的一定是還沒隱藏的。
 /// 作者以好友碼比對（好友碼強制後別人的 uid 不再回傳），沒有好友碼才退回 uid。
-Future<int?> _findOthersPostId() async {
-  final me = await _fetchMe();
-  final myCode = me?['friend_code'];
-  final myUid = me?['uid'];
-  if (myCode == null && myUid == null) return null;
-  final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.forumPosts}?limit=50');
-  final response = await http.get(
-    uri,
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': 'Bearer $_token',
-    },
+Future<(int?, String?)> _findOthersPostId() async {
+  final headers = {
+    'Content-Type': 'application/json',
+    'Authorization': 'Bearer $_token',
+  };
+  final meResponse = await http.get(
+    Uri.parse('${ApiConfig.baseUrl}${ApiConfig.me}'),
+    headers: headers,
   );
-  if (response.statusCode != 200) return null;
+  if (meResponse.statusCode != 200) {
+    return (null, _pickFailure(ApiConfig.me, meResponse, '判斷自己的貼文'));
+  }
+  final me = jsonDecode(meResponse.body) as Map<String, dynamic>;
+  final myCode = me['friend_code'];
+  final myUid = me['uid'];
+  if (myCode == null && myUid == null) {
+    return (null, '${ApiConfig.me} 沒有 friend_code 也沒有 uid，無法判斷自己的貼文');
+  }
+  final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.forumPosts}?limit=50');
+  final response = await http.get(uri, headers: headers);
+  if (response.statusCode != 200) {
+    return (null, _pickFailure(ApiConfig.forumPosts, response, '挑貼文'));
+  }
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   for (final p
       in (decoded['posts'] as List<dynamic>? ?? const [])
@@ -1015,13 +1042,13 @@ Future<int?> _findOthersPostId() async {
     if (code == null && uid == null) continue; // 已刪除用戶，判斷不了是不是自己
     if (code != null ? code == myCode : '$uid' == '$myUid') continue;
     final id = p['id'];
-    return id is int ? id : int.tryParse('$id');
+    return (id is int ? id : int.tryParse('$id'), null);
   }
-  return null;
+  return (null, null);
 }
 
 /// 打 /api/friends 取第一位好友的好友碼，給私訊歷史用。
-Future<String?> _firstFriendCode() async {
+Future<(String?, String?)> _firstFriendCode() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.friends}');
   final response = await http.get(
     uri,
@@ -1030,11 +1057,16 @@ Future<String?> _firstFriendCode() async {
       'Authorization': 'Bearer $_token',
     },
   );
-  if (response.statusCode != 200) return null;
+  if (response.statusCode != 200) {
+    return (null, _pickFailure(ApiConfig.friends, response, '挑好友'));
+  }
   final decoded = jsonDecode(response.body) as Map<String, dynamic>;
   final friends = decoded['friends'] as List<dynamic>? ?? const [];
-  if (friends.isEmpty) return null;
-  return (friends.first as Map<String, dynamic>)['friend_code'] as String?;
+  if (friends.isEmpty) return (null, null);
+  return (
+    (friends.first as Map<String, dynamic>)['friend_code'] as String?,
+    null,
+  );
 }
 
 /// 取 /api/levels 的第一個等級代號，給 quiz／listening 的 start 當合法 level 用。
