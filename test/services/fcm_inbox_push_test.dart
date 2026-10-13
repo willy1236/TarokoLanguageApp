@@ -315,7 +315,7 @@ void main() {
     expect(seen.where((r) => r.url.path == '/api/me'), isEmpty);
   });
 
-  testWidgets('收件匣類推播一到就重抓未讀數；好友來電這類不屬於收件匣的不重抓', (tester) async {
+  testWidgets('收件匣類推播一到就重抓未讀數；配對通話結束這類不屬於收件匣的不重抓', (tester) async {
     await tester.pumpWidget(_app());
 
     FcmService.handleForegroundMessage(
@@ -325,8 +325,13 @@ void main() {
     expect(summaryRequests(), 1);
     expect(NotificationSummaryService.notifier.value.inbox.moderation, 1);
 
+    // 通話畫面開著，交給它處理，不彈本地通知。
+    FcmService.onVideoSessionEnded = (_) {};
+    addTearDown(() => FcmService.onVideoSessionEnded = null);
     FcmService.handleForegroundMessage(
-      const RemoteMessage(data: {'type': 'friend_call_ended', 'call_id': '1'}),
+      const RemoteMessage(
+        data: {'type': 'video_session_ended', 'session_id': '1'},
+      ),
     );
     await tester.pumpAndSettle();
     expect(summaryRequests(), 1);
