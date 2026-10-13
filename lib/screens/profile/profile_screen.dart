@@ -29,6 +29,7 @@ import 'avatar_crop_screen.dart';
 import '../backpack/backpack_screen.dart';
 import '../events/joined_events_screen.dart';
 import '../events/my_events_screen.dart';
+import '../forum/forum_hidden_posts_screen.dart';
 import '../history/history_screen.dart';
 import '../inbox/inbox_screen.dart';
 import '../shop/shop_screen.dart';
@@ -511,6 +512,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     final items = <(String, VoidCallback)>[
       ('聯絡我們／回報不當內容', _openContactEmail),
       ('關於語見太魯閣', _openAboutApp),
+      ('已隱藏的貼文', _openHiddenPosts),
       ('服務條款與隱私權政策', _openTermsView),
       ('下載我的資料', () => exportMyData(context)),
       ('刪除帳號', _openDeleteAccount),
@@ -592,6 +594,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
     Navigator.of(
       context,
     ).push(MaterialPageRoute(builder: (_) => const AccountDeleteScreen()));
+  }
+
+  void _openHiddenPosts() {
+    Navigator.of(
+      context,
+    ).push(MaterialPageRoute(builder: (_) => const ForumHiddenPostsScreen()));
   }
 
   void _openTermsView() {
