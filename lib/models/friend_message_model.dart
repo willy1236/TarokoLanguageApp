@@ -75,17 +75,17 @@ class FriendCall {
     this.isUnread = false,
   });
 
-  /// `kind` 不認得（後端日後新增的結果）回 null，呼叫端略過不顯示。
+  /// `kind` 不認得（後端日後新增的結果）或 `created_at` 解析不了回 null，
+  /// 呼叫端略過不顯示：沒有時間就排不進聊天室與列表。
   static FriendCall? fromJson(Map<String, dynamic> j) {
     final kind = FriendCallKind.values.asNameMap()[j['kind']];
-    if (kind == null) return null;
+    final createdAt = DateTime.tryParse(j['created_at']?.toString() ?? '');
+    if (kind == null || createdAt == null) return null;
     return FriendCall(
       id: FriendMessage._toInt(j['id']),
       kind: kind,
       mine: j['mine'] as bool? ?? false,
-      createdAt:
-          DateTime.tryParse(j['created_at']?.toString() ?? '') ??
-          DateTime.now(),
+      createdAt: createdAt,
       durationSec: (j['duration_sec'] as num?)?.toInt(),
       isUnread: j['is_unread'] == true,
     );

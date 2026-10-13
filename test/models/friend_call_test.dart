@@ -21,6 +21,11 @@ void main() {
     }
   });
 
+  test('created_at 解析不了回 null：沒有時間排不進清單', () {
+    expect(FriendCall.fromJson(call({'created_at': 'not a date'})), isNull);
+    expect(FriendCall.fromJson(call({'created_at': null})), isNull);
+  });
+
   test('不認得的 kind 回 null，列表解析時略過', () {
     expect(FriendCall.fromJson(call({'kind': 'ringing'})), isNull);
     expect(FriendCall.fromJson(call({'kind': null})), isNull);
