@@ -91,7 +91,8 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   Route<dynamic>? _route;
 
   /// 還沒消失（顯示中或排隊中）的重整失敗提示，見 [_showRefreshFailure]。
-  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>? _refreshFailureSnack;
+  ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
+  _refreshFailureSnack;
 
   /// [_refreshFailureSnack] 的失效計時：排隊中被 clearSnackBars 清掉時 closed
   /// 永遠不會完成，超過這段時間就不再當它還在。
@@ -375,13 +376,18 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     _load();
   }
 
-  void _report() {
+  /// 檢舉成功後後端不再把這個活動列給我（決策紀錄 A47）：回上一頁，
+  /// 結果為 true 讓活動列表重抓。
+  Future<void> _report() async {
     if (blockIfReadOnly()) return;
-    showForumReportSheet(
+    final sent = await showForumReportSheet(
       context,
       targetType: 'event',
       targetId: widget.eventId,
     );
+    if (!sent || !mounted) return;
+    _markChanged();
+    Navigator.pop(context, true); // 通知活動列表刷新
   }
 
   /// 管理員直接下架他人的活動：活動隱藏並送進違規區等另一位管理員二審。

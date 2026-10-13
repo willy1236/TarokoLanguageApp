@@ -164,7 +164,7 @@ void main() {
           home: Builder(
             builder: (c) {
               home = c;
-              return const SizedBox();
+              return const Scaffold(); // 返回後的提示要有 Scaffold 才顯示
             },
           ),
         ),
@@ -200,6 +200,48 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(await result, isTrue);
+    });
+
+    Future<void> openReportSheet(WidgetTester tester) async {
+      await tester.ensureVisible(find.text('檢舉此活動'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('檢舉此活動'));
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('檢舉送出成功：提示並回上一頁，結果為 true', (tester) async {
+      final sent = <String>[];
+      installMockClient({
+        ...routes(),
+        '/api/forum/reports': jsonResponse({'ok': true}, status: 201),
+      }, onRequest: (r) => sent.add(r.body));
+      final result = await openDetail(tester);
+
+      await openReportSheet(tester);
+      await tester.enterText(find.byType(TextField).last, '詐騙');
+      await tester.pump();
+      await tester.tap(find.text('送出檢舉'));
+      await tester.pumpAndSettle();
+
+      expect(
+        sent,
+        contains('{"target_type":"event","target_id":1,"reason":"詐騙"}'),
+      );
+      expect(find.byType(EventDetailScreen), findsNothing);
+      expect(await result, isTrue);
+      expect(find.text('已收到檢舉，這則內容不會再顯示給你'), findsOneWidget);
+    });
+
+    testWidgets('沒送出就關掉檢舉面板：留在詳情頁', (tester) async {
+      installMockClient(routes());
+      await openDetail(tester);
+
+      await openReportSheet(tester);
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(EventDetailScreen), findsOneWidget);
+      expect(find.text('部落豐年祭'), findsWidgets);
     });
   });
 
