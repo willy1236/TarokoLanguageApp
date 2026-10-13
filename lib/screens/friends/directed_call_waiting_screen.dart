@@ -39,6 +39,9 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
   int? _callId;
   bool _navigated = false;
 
+  /// 取消已送出：pop 當下送過，dispose 不再送。
+  bool _cancelSent = false;
+
   /// getCall 回應可能慢於輪詢間隔，上一輪還沒回來就不發下一輪，避免重複導頁。
   bool _polling = false;
 
@@ -77,8 +80,6 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
     _cancelIfRinging();
     super.dispose();
   }
-
-  bool _cancelSent = false;
 
   /// 離開時還沒接通就取消。pop 當下就送（見 build 的 PopScope），不等退場動畫
   /// 跑完的 dispose：底下的聊天室一回到最上層就會查通話紀錄，要讓取消先送出。
