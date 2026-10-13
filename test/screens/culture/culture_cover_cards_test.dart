@@ -37,7 +37,7 @@ VideoSummary _video({
   id: 1,
   title: title,
   description: description,
-  category: VideoCategory.all.first,
+  category: VideoCategory.tribalIntro,
   source: source ?? VideoSource.hls,
   durationSec: durationSec,
   viewCount: 1234,

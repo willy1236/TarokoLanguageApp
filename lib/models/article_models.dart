@@ -12,8 +12,6 @@ class ArticleCategory {
   static const education = 'education';
   static const other = 'other';
 
-  static const all = [tribalIntro, cultural, event, education, other];
-
   /// 顯示名稱：後端分類清單抓回來後用後端的 label，之前用內建對照，
   /// 都沒有就顯示 value 本身（T-23）。
   static String label(String category) =>
