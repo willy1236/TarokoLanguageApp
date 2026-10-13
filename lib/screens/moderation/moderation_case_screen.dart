@@ -218,7 +218,7 @@ class _ModerationCaseScreenState extends State<ModerationCaseScreen> {
       if (preview.time != null)
         _row(
           seniorMode,
-          c.targetType == 'call' ? '通話時間' : '傳送時間',
+          moderationPreviewTimeLabel(c.targetType),
           formatDateTime(preview.time!),
         ),
       if (preview.profileBefore.isNotEmpty) ...[
