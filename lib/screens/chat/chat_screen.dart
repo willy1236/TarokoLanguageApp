@@ -13,6 +13,7 @@ import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/navigation/refreshable_route.dart';
 import '../../core/navigation/route_stack.dart';
 import '../../core/network/api_client.dart';
 import '../../core/platform/platform_features.dart';
@@ -83,18 +84,12 @@ class ChatScreen extends StatefulWidget {
     ),
   );
 
-  /// 開著的聊天室的重載函式，以所在的 route 為 key：同一人開了兩個聊天室時
-  /// 各自登記，關掉上層那個不影響下層。
-  static final Map<Route<dynamic>, VoidCallback> _live = {};
-
-  /// 點私訊通知時人已在 [route] 這個聊天室：重抓背景期間漏掉的訊息並標成已讀。
-  static void refreshRoute(Route<dynamic> route) => _live[route]?.call();
-
   @override
   State<ChatScreen> createState() => _ChatScreenState();
 }
 
-class _ChatScreenState extends State<ChatScreen> with RouteAware {
+class _ChatScreenState extends State<ChatScreen>
+    with RouteAware, RefreshableRouteMixin {
   /// 後端 friendMessages.ts 的訊息長度上限。
   static const _messageMax = 2000;
 
@@ -127,16 +122,15 @@ class _ChatScreenState extends State<ChatScreen> with RouteAware {
       _partner == null ? widget.avatarId : _partner!.avatarId;
   String? get _frameId => _partner == null ? widget.frameId : _partner!.frameId;
 
-  /// 這個聊天室所在的 route，推播重載的登記 key。
-  Route<dynamic>? _route;
+  /// 已向 [routeObserver] 訂閱過；route 換不了，只訂一次。
+  bool _routeSubscribed = false;
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
     final route = ModalRoute.of(context);
-    if (route != null && _route == null) {
-      _route = route;
-      ChatScreen._live[route] = _refreshFromPush;
+    if (route != null && !_routeSubscribed) {
+      _routeSubscribed = true;
       routeObserver.subscribe(this, route);
     }
   }
@@ -151,7 +145,7 @@ class _ChatScreenState extends State<ChatScreen> with RouteAware {
 
   /// 有疊畫面時不抓，關掉回來時 [didPopNext] 會抓。
   void _onFriendCallActivity() {
-    if (_route?.isCurrent ?? false) _catchUp();
+    if (registeredRoute?.isCurrent ?? false) _catchUp();
   }
 
   @override
@@ -180,8 +174,6 @@ class _ChatScreenState extends State<ChatScreen> with RouteAware {
 
   @override
   void dispose() {
-    final route = _route;
-    if (route != null) ChatScreen._live.remove(route);
     routeObserver.unsubscribe(this);
     FcmService.friendCallActivity.removeListener(_onFriendCallActivity);
     chatController.removeListener(_onChatEvent);
@@ -222,7 +214,9 @@ class _ChatScreenState extends State<ChatScreen> with RouteAware {
     }
   }
 
-  void _refreshFromPush() {
+  /// 點私訊通知時人已在本聊天室：重抓背景期間漏掉的訊息並標成已讀。
+  @override
+  Future<void> onRouteRefresh(Object? args) async {
     _load();
     _markRead();
   }

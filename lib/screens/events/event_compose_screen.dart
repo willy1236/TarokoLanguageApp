@@ -222,12 +222,31 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
     });
   }
 
-  Future<void> _pickDateTime() async {
+  /// 開日期時間選擇器；選了且頁面還在時用 [onPicked] 寫回欄位。
+  Future<void> _pickTime({
+    required DateTime initial,
+    required DateTime firstDate,
+    required DateTime lastDate,
+    required String dateHelp,
+    required String timeHelp,
+    required void Function(DateTime picked) onPicked,
+  }) async {
+    final picked = await pickDateTime(
+      context,
+      initial: initial,
+      firstDate: firstDate,
+      lastDate: lastDate,
+      dateHelp: dateHelp,
+      timeHelp: timeHelp,
+    );
+    if (picked != null && mounted) setState(() => onPicked(picked));
+  }
+
+  Future<void> _pickDateTime() {
     final now = DateTime.now();
     final tomorrow = now.add(const Duration(days: 1));
     final hourLater = now.add(const Duration(hours: 1));
-    final picked = await pickDateTime(
-      context,
+    return _pickTime(
       // 沒選過時，日期預設明天、時間預設一小時後。
       initial:
           _startsAt ??
@@ -242,12 +261,11 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       lastDate: now.add(const Duration(days: 365)),
       dateHelp: '選擇活動日期',
       timeHelp: '選擇活動時間',
+      onPicked: (picked) => _startsAt = picked,
     );
-    if (picked == null || !mounted) return;
-    setState(() => _startsAt = picked);
   }
 
-  Future<void> _pickRegistrationDeadline() async {
+  Future<void> _pickRegistrationDeadline() {
     final now = DateTime.now();
     final lastDate = _startsAt ?? now.add(const Duration(days: 365));
     // 預設帶入「活動開始前兩小時」（對應後端預設值），方便使用者直接微調
@@ -256,16 +274,14 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         (_startsAt != null
             ? _startsAt!.subtract(const Duration(hours: 2))
             : now);
-    final picked = await pickDateTime(
-      context,
+    return _pickTime(
       initial: defaultDeadline,
       firstDate: now,
       lastDate: lastDate.isAfter(now) ? lastDate : now,
       dateHelp: '選擇報名截止日期',
       timeHelp: '選擇報名截止時間',
+      onPicked: (picked) => _registrationDeadline = picked,
     );
-    if (picked == null || !mounted) return;
-    setState(() => _registrationDeadline = picked);
   }
 
   Future<void> _pickEndsAt() async {
@@ -274,22 +290,20 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       _showError('請先選擇活動開始時間');
       return;
     }
-    final picked = await pickDateTime(
-      context,
+    await _pickTime(
       initial: _endsAt ?? starts.add(const Duration(hours: 3)),
       firstDate: DateTime(starts.year, starts.month, starts.day),
       lastDate: starts.add(EventDraft.maxDuration),
       dateHelp: '選擇活動結束日期',
       timeHelp: '選擇活動結束時間',
+      onPicked: (picked) => _endsAt = picked,
     );
-    if (picked != null && mounted) setState(() => _endsAt = picked);
   }
 
-  Future<void> _pickRegistrationStartsAt() async {
+  Future<void> _pickRegistrationStartsAt() {
     final now = DateTime.now();
     final last = _registrationDeadline ?? _startsAt;
-    final picked = await pickDateTime(
-      context,
+    return _pickTime(
       initial: _registrationStartsAt ?? now.add(const Duration(hours: 1)),
       firstDate: DateTime(now.year, now.month, now.day),
       lastDate: last != null && last.isAfter(now)
@@ -297,10 +311,8 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           : now.add(const Duration(days: 365)),
       dateHelp: '選擇報名開始日期',
       timeHelp: '選擇報名開始時間',
+      onPicked: (picked) => _registrationStartsAt = picked,
     );
-    if (picked != null && mounted) {
-      setState(() => _registrationStartsAt = picked);
-    }
   }
 
   // 送出失敗一律用 SnackBar：送出按鈕在固定的 header，錯誤訊息若渲染在表單裡，
@@ -344,7 +356,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       if (editing == null) {
         final created = await EventService.createEvent(draft);
         tribeNotifyLimited = draft.notifyTribe && created.tribeNotifyLimited;
-        imageFailure = await _uploadNewImages(created.id);
+        imageFailure = await _images.submit(created.id, creating: true);
       } else {
         // 時間欄位已不能改時後端回 409，照片也就不送，見下方 catch。
         final updated = await EventService.updateEvent(
@@ -353,7 +365,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           editing,
         );
         participantNotifyLimited = updated.notifyLimited;
-        imageFailure = await _syncEditedImages(editing.id);
+        imageFailure = await _images.submit(editing.id, creating: false);
       }
       // 管理員填了新分類：後端已加進分類表，重抓讓下次進發起頁就看得到。
       // 活動分頁的篩選列由 T-11 的 eventsChanged 處理。
@@ -424,44 +436,6 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       debugPrint('EventComposeScreen: 照片網址更新失敗（忽略）：$e');
     } finally {
       _refreshingImageUrls = false;
-    }
-  }
-
-  /// 建立活動後上傳選好的照片。活動已經建立，照片失敗不能讓整個送出變失敗
-  /// 而留在表單（再按一次會重複建立活動），回傳要告訴發起人的說明。
-  Future<String?> _uploadNewImages(int eventId) async {
-    final images = _images.toUpload;
-    if (images.isEmpty) return null;
-    try {
-      await EventService.uploadImages(eventId, images);
-      return null;
-    } catch (e) {
-      final reason = apiErrorMessage(e, fallback: '網路不穩');
-      return '圖片可以稍後在編輯頁補上（$reason）';
-    }
-  }
-
-  /// 編輯儲存時，文字欄位存好後處理照片：先刪標記的、再傳新的——先刪才不會在
-  /// 已有 6 張時被上限擋下。文字已存、無法回滾，照片失敗只回傳說明。
-  Future<String?> _syncEditedImages(int eventId) async {
-    final uploads = _images.toUpload;
-    try {
-      for (final imageId in _images.toDelete) {
-        await EventService.deleteImage(eventId, imageId);
-      }
-    } catch (e) {
-      final reason = apiErrorMessage(e, fallback: '網路不穩');
-      return uploads.isEmpty
-          ? '有照片沒有刪除（$reason），可到活動頁頂端再刪'
-          : '有照片沒有刪除、新照片也沒有上傳（$reason），可到活動頁頂端調整';
-    }
-    if (uploads.isEmpty) return null;
-    try {
-      await EventService.uploadImages(eventId, uploads);
-      return null;
-    } catch (e) {
-      final reason = apiErrorMessage(e, fallback: '網路不穩');
-      return '新照片沒有上傳（$reason），可到活動頁頂端重新新增';
     }
   }
 

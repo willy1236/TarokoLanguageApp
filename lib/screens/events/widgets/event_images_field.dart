@@ -7,6 +7,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/network/api_client.dart';
 import '../../../models/event_model.dart';
 import '../../../services/event_service.dart';
 import '../../../shared/utils/pick_images.dart';
@@ -117,6 +118,42 @@ class EventImagesController extends ChangeNotifier {
     }
     notifyListeners();
     return true;
+  }
+
+  /// 活動文字存好後送出照片：先刪標記的、再傳新的——先刪才不會在已有 6 張時
+  /// 被上限擋下。全部成功回 null；失敗時活動已建立或文字已存、無法回滾，不能讓
+  /// 整個送出變失敗而留在表單（建立時再按一次會重複建立活動），改回傳要告訴
+  /// 發起人的說明。[creating] 為剛建立的活動，提示改說到編輯頁補上。
+  Future<String?> submit(int eventId, {required bool creating}) async {
+    final uploads = toUpload;
+    if (creating) {
+      if (uploads.isEmpty) return null;
+      try {
+        await EventService.uploadImages(eventId, uploads);
+        return null;
+      } catch (e) {
+        final reason = apiErrorMessage(e, fallback: '網路不穩');
+        return '圖片可以稍後在編輯頁補上（$reason）';
+      }
+    }
+    try {
+      for (final imageId in toDelete) {
+        await EventService.deleteImage(eventId, imageId);
+      }
+    } catch (e) {
+      final reason = apiErrorMessage(e, fallback: '網路不穩');
+      return uploads.isEmpty
+          ? '有照片沒有刪除（$reason），可到活動頁頂端再刪'
+          : '有照片沒有刪除、新照片也沒有上傳（$reason），可到活動頁頂端調整';
+    }
+    if (uploads.isEmpty) return null;
+    try {
+      await EventService.uploadImages(eventId, uploads);
+      return null;
+    } catch (e) {
+      final reason = apiErrorMessage(e, fallback: '網路不穩');
+      return '新照片沒有上傳（$reason），可到活動頁頂端重新新增';
+    }
   }
 }
 

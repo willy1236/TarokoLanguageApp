@@ -4,6 +4,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/navigation/refreshable_route.dart';
 import '../../core/network/api_client.dart';
 import '../../models/event_model.dart';
 import '../../models/shop_item.dart';
@@ -49,13 +50,6 @@ class EventDetailScreen extends StatefulWidget {
     builder: (_) => EventDetailScreen(eventId: eventId),
   );
 
-  /// 開著的詳情頁的重載函式，以所在的 route 為 key：同一場活動開了兩份時
-  /// 各自登記，關掉上層那份不影響下層。
-  static final Map<Route<dynamic>, VoidCallback> _live = {};
-
-  /// 點提醒通知時人已在 [route] 這份詳情頁：就地重載。
-  static void refreshRoute(Route<dynamic> route) => _live[route]?.call();
-
   @override
   State<EventDetailScreen> createState() => _EventDetailScreenState();
 }
@@ -71,7 +65,8 @@ class _EventDetailRoute<T> extends MaterialPageRoute<T> {
       changed && true is T ? true as T : super.currentResult;
 }
 
-class _EventDetailScreenState extends State<EventDetailScreen> {
+class _EventDetailScreenState extends State<EventDetailScreen>
+    with RefreshableRouteMixin {
   EventDetail? _event;
 
   /// 活動只回 tribe_id，名稱另外對照；查不到就不顯示相關部落列。
@@ -87,9 +82,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   /// 商店目錄（頭像＋頭像框，id → item），渲染發起人頭像用。
   Map<String, ShopItem> _itemCatalogById = const {};
 
-  /// 這份詳情頁所在的 route，通知重載的登記 key。
-  Route<dynamic>? _route;
-
   /// 還沒消失（顯示中或排隊中）的重整失敗提示，見 [_showRefreshFailure]。
   ScaffoldFeatureController<SnackBar, SnackBarClosedReason>?
   _refreshFailureSnack;
@@ -98,16 +90,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
   /// 永遠不會完成，超過這段時間就不再當它還在。
   Timer? _refreshFailureExpiry;
   static const _refreshFailureTtl = Duration(seconds: 8);
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final route = ModalRoute.of(context);
-    if (route != null && _route == null) {
-      _route = route;
-      EventDetailScreen._live[route] = _load;
-    }
-  }
 
   @override
   void initState() {
@@ -131,8 +113,6 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
 
   @override
   void dispose() {
-    final route = _route;
-    if (route != null) EventDetailScreen._live.remove(route);
     FcmService.removeEventDeletedListener(_onEventDeleted);
     if (identical(
       FcmService.onReminderReceivedForOpenScreen,
@@ -164,7 +144,7 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     );
     if (!mounted) return;
     _markChanged();
-    final route = _route;
+    final route = registeredRoute;
     if (route == null || !route.isActive) return;
     final navigator = Navigator.of(context);
     // 詳情頁上面還蓋著別的頁面時，只移除這一頁，不動到上面的頁面。
@@ -188,6 +168,10 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
       debugPrint('[EventDetailScreen] 部落名稱載入失敗（忽略）：$e');
     }
   }
+
+  /// 點提醒通知時人已在本頁：就地重載。
+  @override
+  Future<void> onRouteRefresh(Object? args) => _load();
 
   Future<void> _load() async {
     setState(() {

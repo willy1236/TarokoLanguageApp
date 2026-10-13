@@ -12,6 +12,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/navigation/refreshable_route.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/date_format.dart';
 import '../../models/inbox_models.dart';
@@ -61,21 +62,12 @@ class InboxScreen extends StatefulWidget {
         builder: (_) => InboxScreen(initialCategory: initialCategory),
       );
 
-  /// 開著的收件匣，以所在的 route 為 key：開了兩份時各自登記，
-  /// 關掉上層那份不影響下層。
-  static final Map<Route<dynamic>, _InboxScreenState> _live = {};
-
-  /// 點公告推播時人已在 [route] 這份收件匣：切到 [category] 分頁（null 為留在
-  /// 目前分頁）並重新載入。
-  static void refreshRoute(Route<dynamic> route, {String? category}) =>
-      _live[route]?._refreshFromPush(category);
-
   @override
   State<InboxScreen> createState() => _InboxScreenState();
 }
 
 class _InboxScreenState extends State<InboxScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, RefreshableRouteMixin {
   late final TabController _tabController = TabController(
     length: _tabs.length,
     vsync: this,
@@ -88,26 +80,16 @@ class _InboxScreenState extends State<InboxScreen>
   /// 推播要求重載目前分頁時加一；分頁看到值變了就重抓第一頁。
   int _reloadSignal = 0;
 
-  /// 這份收件匣所在的 route，推播重載的登記 key。
-  Route<dynamic>? _route;
-
   int _initialIndex() {
     final i = _tabs.indexWhere((t) => t.category == widget.initialCategory);
     return i < 0 ? 0 : i;
   }
 
+  /// 點公告推播時人已在本頁：切到 [args]（分類）分頁；切到別的分頁時，分頁
+  /// 本來就會在切過去時重抓，已停在那一頁才要求重載。
   @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-    final route = ModalRoute.of(context);
-    if (route != null && _route == null) {
-      _route = route;
-      InboxScreen._live[route] = this;
-    }
-  }
-
-  /// 切到別的分頁時，分頁本來就會在切過去時重抓；已停在那一頁才要求重載。
-  void _refreshFromPush(String? category) {
+  Future<void> onRouteRefresh(Object? args) async {
+    final category = args as String?;
     if (!mounted) return;
     final i = category == null
         ? -1
@@ -128,8 +110,6 @@ class _InboxScreenState extends State<InboxScreen>
 
   @override
   void dispose() {
-    final route = _route;
-    if (route != null) InboxScreen._live.remove(route);
     _tabController.dispose();
     super.dispose();
   }
