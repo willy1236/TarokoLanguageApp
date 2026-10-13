@@ -37,6 +37,9 @@ class ForumBoardView extends StatefulWidget {
   /// 詳情頁會直接疊上全螢幕圖片檢視，返回時剛好落在內文頁。
   final void Function(ForumPost post, {int? imageIndex}) onOpenPost;
   final String emptyMessage;
+
+  /// 空狀態的副標。預設引導發文，不適合發文的清單（例如已隱藏的貼文）自行換掉。
+  final String emptySubtitle;
   final bool prependOnRefresh;
 
   /// 資料來源的身分識別。closure 之間永遠不會相等（即使程式碼相同），
@@ -58,6 +61,10 @@ class ForumBoardView extends StatefulWidget {
   /// 不會自己重抓。null 代表不需要。
   final Listenable? reloadListenable;
 
+  /// 每張卡片 footer 的額外動作，交給 [ForumPostCard.footerAction]。
+  /// 回傳 null 代表這張卡片不需要。
+  final Widget? Function(ForumPost post)? cardAction;
+
   const ForumBoardView({
     super.key,
     required this.loadPage,
@@ -65,11 +72,13 @@ class ForumBoardView extends StatefulWidget {
     required this.toggleBookmark,
     required this.onOpenPost,
     this.emptyMessage = '這個看板還沒有貼文',
+    this.emptySubtitle = '下拉重新整理，或成為第一位分享的人。',
     this.prependOnRefresh = true,
     this.reloadKey,
     this.onRefresh,
     this.header,
     this.reloadListenable,
+    this.cardAction,
   });
 
   @override
@@ -351,7 +360,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
   Widget _buildEmptyState(bool seniorMode) => TrukuEmptyState(
     icon: Icons.forum_outlined,
     message: widget.emptyMessage,
-    subtitle: '下拉重新整理，或成為第一位分享的人。',
+    subtitle: widget.emptySubtitle,
     seniorMode: seniorMode,
     scrollable: false,
   );
@@ -398,6 +407,7 @@ class ForumBoardViewState extends State<ForumBoardView> {
             onBookmark: () => _bookmark(post),
             itemCatalogById: _itemCatalogById,
             onAuthorProfileReturn: _load,
+            footerAction: widget.cardAction?.call(post),
           ),
         ),
       if (_loadingMore)

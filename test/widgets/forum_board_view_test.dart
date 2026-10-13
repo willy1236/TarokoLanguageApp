@@ -453,4 +453,68 @@ void main() {
     expect(find.text('標題 3'), findsOneWidget);
     expect(find.text('標題 5'), findsNothing);
   });
+
+  testWidgets('cardAction 有給才在每張卡片出現，沒給維持原樣', (tester) async {
+    Widget board({Widget? Function(ForumPost)? cardAction}) => wrap(
+      ForumBoardView(
+        cardAction: cardAction,
+        loadPage: ({cursor, after}) async => ForumPostPage(
+          pinned: const [],
+          posts: [post(1), post(2)],
+          pageInfo: PageInfo.end,
+        ),
+        toggleLike: (_, {required like}) async => (liked: like, likeCount: 0),
+        toggleBookmark: (_, {required add}) async => add,
+        onOpenPost: (_, {imageIndex}) {},
+      ),
+    );
+
+    await tester.pumpWidget(board());
+    await tester.pumpAndSettle();
+    expect(find.textContaining('動作'), findsNothing);
+
+    await tester.pumpWidget(
+      board(cardAction: (p) => p.id == 1 ? Text('動作 ${p.id}') : null),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('動作 1'), findsOneWidget);
+    expect(find.text('動作 2'), findsNothing);
+  });
+
+  testWidgets('空清單顯示呼叫端給的副標，沒給時用預設', (tester) async {
+    Widget board({String? subtitle}) => wrap(
+      subtitle == null
+          ? ForumBoardView(
+              loadPage: ({cursor, after}) async => const ForumPostPage(
+                pinned: [],
+                posts: [],
+                pageInfo: PageInfo.end,
+              ),
+              toggleLike: (_, {required like}) async =>
+                  (liked: like, likeCount: 0),
+              toggleBookmark: (_, {required add}) async => add,
+              onOpenPost: (_, {imageIndex}) {},
+            )
+          : ForumBoardView(
+              emptySubtitle: subtitle,
+              loadPage: ({cursor, after}) async => const ForumPostPage(
+                pinned: [],
+                posts: [],
+                pageInfo: PageInfo.end,
+              ),
+              toggleLike: (_, {required like}) async =>
+                  (liked: like, likeCount: 0),
+              toggleBookmark: (_, {required add}) async => add,
+              onOpenPost: (_, {imageIndex}) {},
+            ),
+    );
+
+    await tester.pumpWidget(board());
+    await tester.pumpAndSettle();
+    expect(find.text('下拉重新整理，或成為第一位分享的人。'), findsOneWidget);
+
+    await tester.pumpWidget(board(subtitle: '自訂副標'));
+    await tester.pumpAndSettle();
+    expect(find.text('自訂副標'), findsOneWidget);
+  });
 }

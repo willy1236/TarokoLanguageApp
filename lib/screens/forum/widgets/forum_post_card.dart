@@ -35,6 +35,10 @@ class ForumPostCard extends StatelessWidget {
   /// 貼文，不重載的話被封鎖者的貼文還留在畫面上。
   final VoidCallback? onAuthorProfileReturn;
 
+  /// 放在 footer 收藏按鈕左邊的額外動作（例如「已隱藏的貼文」頁的「取消隱藏」）。
+  /// 由呼叫端組好並處理點擊，本元件只負責擺放。
+  final Widget? footerAction;
+
   const ForumPostCard({
     super.key,
     required this.post,
@@ -44,6 +48,7 @@ class ForumPostCard extends StatelessWidget {
     required this.onBookmark,
     this.itemCatalogById = const {},
     this.onAuthorProfileReturn,
+    this.footerAction,
   });
 
   @override
@@ -293,6 +298,7 @@ class ForumPostCard extends StatelessWidget {
         seniorMode: seniorMode,
       ),
       const Spacer(),
+      ?footerAction,
       IconButton(
         key: const ValueKey('forum-post-bookmark'),
         onPressed: onBookmark,
