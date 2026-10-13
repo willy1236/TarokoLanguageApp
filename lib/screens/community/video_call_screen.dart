@@ -22,6 +22,11 @@ import '../../shared/widgets/report_sheet.dart';
 
 enum _CallMenuAction { addFriend, report, block }
 
+/// 通話中封鎖的後果說明；直接封鎖與檢舉後一併封鎖兩個確認框共用。
+const _blockInCallConsequences =
+    '通話會立即結束。封鎖後會解除好友，並移除你們在彼此貼文上的留言與讚。'
+    '\n\n解除封鎖後，這些都不會恢復，需要重新加好友。';
+
 /// 通話結束後要怎麼離開。
 @visibleForTesting
 enum AfterCallAction {
@@ -231,9 +236,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     final confirmed = await showConfirmDialog(
       context,
       title: '封鎖對方？',
-      message:
-          '通話會立即結束。封鎖後會解除好友，並移除你們在彼此貼文上的留言與讚。'
-          '\n\n解除封鎖後，這些都不會恢復，需要重新加好友。',
+      message: _blockInCallConsequences,
       cancelText: '取消',
       confirmText: '封鎖',
     );
@@ -317,9 +320,7 @@ class _VideoCallScreenState extends State<VideoCallScreen>
     final block = await showConfirmDialog(
       context,
       title: '要一併封鎖對方並結束通話嗎？',
-      message:
-          '封鎖後會解除好友，並移除你們在彼此貼文上的留言與讚。'
-          '\n\n解除封鎖後，這些都不會恢復，需要重新加好友。',
+      message: _blockInCallConsequences,
       cancelText: '不用，繼續通話',
       confirmText: '封鎖',
     );
