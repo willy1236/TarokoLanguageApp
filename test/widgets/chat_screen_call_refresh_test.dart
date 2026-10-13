@@ -134,16 +134,25 @@ void main() {
     expect(seen.where((p) => p == '/api/friends/calls/5/cancel'), hasLength(1));
   });
 
-  testWidgets('關掉 dialog 不重抓：只有整頁畫面關掉才算回到聊天室', (tester) async {
+  testWidgets('開著 sheet 時疊上來電畫面：來電畫面與 sheet 都關掉後補抓', (tester) async {
     final navigator = await open(tester);
-    showDialog<void>(
+    showModalBottomSheet<void>(
       context: navigator.context,
-      builder: (_) => const AlertDialog(content: Text('對話框')),
+      builder: (_) => const Text('檢舉'),
     );
+    await pumpFrames(tester);
+    navigator.push(overlay());
+    await pumpFrames(tester);
+
+    FcmService.handleSocketCallEvent({
+      'type': 'friend_call_cancelled',
+      'call_id': '7',
+    });
+    navigator.pop();
     await pumpFrames(tester);
     navigator.pop();
     await pumpFrames(tester);
 
-    expect(historyRequests(), 1);
+    expect(historyRequests(), greaterThanOrEqualTo(2));
   });
 }
