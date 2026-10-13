@@ -24,6 +24,7 @@ import 'package:flutter_application_1/screens/events/event_detail_screen.dart';
 import 'package:flutter_application_1/screens/events/event_search_screen.dart';
 import 'package:flutter_application_1/screens/events/my_events_screen.dart';
 import 'package:flutter_application_1/screens/shop/shop_screen.dart';
+import 'package:flutter_application_1/services/category_service.dart';
 import 'package:flutter_application_1/services/senior_mode_controller.dart';
 import 'package:flutter_application_1/shared/widgets/truku_bottom_tab.dart';
 
@@ -45,6 +46,7 @@ void main() {
     SharedPreferences.setMockInitialValues({});
     stubCommonChannels(token: 'test-token');
     resetGlobals();
+    CategoryService.reset();
     await seniorModeController.setEnabled(false);
   });
 
@@ -96,6 +98,12 @@ void main() {
       '/api/friends/requests': {'requests': <dynamic>[]},
       '/api/friends/messages': {'conversations': <dynamic>[]},
       '/api/forum/posts': {'posts': <dynamic>[], 'total': 0},
+      '/api/articles/categories': loadFixtureMap(
+        'get_api_articles_categories.json',
+      ),
+      '/api/videos/categories': loadFixtureMap(
+        'get_api_videos_categories.json',
+      ),
     };
   }
 

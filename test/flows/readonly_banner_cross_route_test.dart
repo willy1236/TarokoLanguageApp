@@ -15,6 +15,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/main.dart' show navigatorKey;
 import 'package:flutter_application_1/screens/events/event_detail_screen.dart';
 import 'package:flutter_application_1/services/account_lock_controller.dart';
+import 'package:flutter_application_1/services/category_service.dart';
 
 import '../helpers/flow_test_helpers.dart';
 import '../helpers/widget_test_helpers.dart';
@@ -42,6 +43,7 @@ void main() {
   setUp(() {
     stubCommonChannels(token: 'test-token');
     resetGlobals();
+    CategoryService.reset();
   });
 
   tearDown(() {
@@ -81,6 +83,8 @@ void main() {
     '/api/friends/messages': {'conversations': <dynamic>[]},
     '/api/events/$_eventId': _eventDetail(),
     '/api/events/$_eventId/reminders': {'reminders': <dynamic>[]},
+    '/api/articles/categories': {'categories': <dynamic>[]},
+    '/api/videos/categories': {'categories': <dynamic>[]},
   };
 
   Future<void> pumpLockedHome(WidgetTester tester) async {

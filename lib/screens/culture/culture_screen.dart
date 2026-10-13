@@ -3,9 +3,11 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/article_models.dart';
+import '../../models/content_category.dart';
 import '../../models/video_models.dart';
 import '../../services/article_refresh_notifier.dart';
 import '../../services/article_service.dart';
+import '../../services/category_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../services/video_service.dart';
 import 'article_detail_screen.dart';
@@ -43,7 +45,15 @@ class _CultureScreenState extends State<CultureScreen> {
 
   // 0=影音, 1=文章——切換權在外層膠囊，本頁只跟著 widget 走。
   int get _tabIndex => widget.cultureTabIndex;
-  int _chipIndex = 0;
+
+  /// 選中的影音分類 value，null 是「全部」。
+  String? _selectedCategory;
+
+  /// 後端的影音分類清單；還沒抓到（或第一次就失敗）時是 null，篩選列只有「全部」。
+  List<ContentCategory>? _videoCategories;
+
+  /// 最近一次載入分類的工作，精選輪播組 subtitle 前等它，名稱才會是後端的。
+  Future<void> _videoCategoriesLoad = Future.value();
   String _sort = 'latest'; // latest | popular | weekly_popular
   late Future<VideoListResponse> _videosFuture;
   // 精選輪播的項目在資料抓回來時就組好存著：每次 build 重組會是新清單，
@@ -52,8 +62,6 @@ class _CultureScreenState extends State<CultureScreen> {
   List<CultureFeaturedItem>? _featuredArticles;
   final _scrollController = ScrollController();
   final _articleSectionKey = GlobalKey<CultureArticleSectionState>();
-
-  static final _chips = ['全部', ...VideoCategory.all.map(VideoCategory.label)];
 
   static const _videoSortOptions = [
     ('latest', '最新影片', '最新'),
@@ -65,6 +73,7 @@ class _CultureScreenState extends State<CultureScreen> {
   void initState() {
     super.initState();
     _videosFuture = _fetchVideos();
+    _loadVideoCategories(refresh: true);
     _loadFeaturedVideos();
     _loadFeaturedArticles();
     widget.reselectSignal?.addListener(_onReselect);
@@ -77,6 +86,11 @@ class _CultureScreenState extends State<CultureScreen> {
     if (oldWidget.reselectSignal != widget.reselectSignal) {
       oldWidget.reselectSignal?.removeListener(_onReselect);
       widget.reselectSignal?.addListener(_onReselect);
+    }
+    // 切進文化分頁時讀分類快取（沒有快取才打 API），不強制重抓。
+    if (!oldWidget.active && widget.active) {
+      _loadVideoCategories();
+      _articleSectionKey.currentState?.loadCategories();
     }
     // 影音與文章共用同一條捲動，切分頁時回到頂部，不要停在另一頁的捲動位置。
     if (oldWidget.cultureTabIndex != widget.cultureTabIndex &&
@@ -108,6 +122,7 @@ class _CultureScreenState extends State<CultureScreen> {
       );
     }
     if (_tabIndex == 0) {
+      _loadVideoCategories(refresh: true);
       _loadFeaturedVideos();
       _reloadVideos();
     } else {
@@ -123,6 +138,8 @@ class _CultureScreenState extends State<CultureScreen> {
         sort: 'weekly_popular',
         limit: _featuredCount,
       );
+      // 等分類名稱回來再組 subtitle：組好的清單之後不再重組，免得輪播跳回第一張。
+      await _videoCategoriesLoad;
       if (mounted) {
         setState(
           () => _featuredVideos = res.videos.map(_featuredVideoItem).toList(),
@@ -140,6 +157,7 @@ class _CultureScreenState extends State<CultureScreen> {
         sort: 'weekly_popular',
         limit: _featuredCount,
       );
+      await _articleSectionKey.currentState?.categoriesLoad;
       if (mounted) {
         setState(
           () => _featuredArticles = res.articles
@@ -153,8 +171,38 @@ class _CultureScreenState extends State<CultureScreen> {
     }
   }
 
-  String? get _selectedCategory =>
-      _chipIndex == 0 ? null : VideoCategory.all[_chipIndex - 1];
+  /// 載入影音分類清單。失敗時保留上次的篩選列與選擇；回傳的 Future 不會失敗。
+  Future<void> _loadVideoCategories({bool refresh = false}) {
+    return _videoCategoriesLoad = _doLoadVideoCategories(refresh);
+  }
+
+  Future<void> _doLoadVideoCategories(bool refresh) async {
+    final List<ContentCategory> list;
+    try {
+      list = await CategoryService.fetch(
+        CategoryModule.videos,
+        refresh: refresh,
+      );
+    } catch (e) {
+      debugPrint('CultureScreen._loadVideoCategories failed: $e');
+      return;
+    }
+    if (!mounted) return;
+    // 選中的分類已不在篩選列（被刪或沒有影片了）：切回「全部」並重查。
+    final selected = _selectedCategory;
+    final dropped =
+        selected != null &&
+        !_visibleCategories(list).any((c) => c.value == selected);
+    setState(() {
+      _videoCategories = list;
+      if (dropped) _selectedCategory = null;
+    });
+    if (dropped) _reloadVideos();
+  }
+
+  /// 篩選列只顯示有影片的分類，照後端順序。
+  static List<ContentCategory> _visibleCategories(List<ContentCategory> list) =>
+      list.where((c) => c.count > 0).toList();
 
   Future<VideoListResponse> _fetchVideos() {
     return VideoService.fetchVideos(category: _selectedCategory, sort: _sort);
@@ -271,15 +319,22 @@ class _CultureScreenState extends State<CultureScreen> {
   // ── Category Chips ────────────────────────────────────────────────────────
 
   Widget _buildChips(bool seniorMode) {
+    // 第一顆固定是「全部」（value null），其後照後端順序。
+    final chips = <(String?, String)>[
+      (null, '全部'),
+      for (final c in _visibleCategories(_videoCategories ?? const []))
+        (c.value, c.label),
+    ];
     return CultureChipsRow(
       chips: Row(
-        children: List.generate(_chips.length, (i) {
-          final active = _chipIndex == i;
+        children: List.generate(chips.length, (i) {
+          final (value, label) = chips[i];
+          final active = _selectedCategory == value;
           return Padding(
-            padding: EdgeInsets.only(right: i < _chips.length - 1 ? 8 : 0),
+            padding: EdgeInsets.only(right: i < chips.length - 1 ? 8 : 0),
             child: GestureDetector(
               onTap: () {
-                setState(() => _chipIndex = i);
+                setState(() => _selectedCategory = value);
                 _reloadVideos();
               },
               child: Container(
@@ -297,7 +352,7 @@ class _CultureScreenState extends State<CultureScreen> {
                         ),
                 ),
                 child: Text(
-                  _chips[i],
+                  label,
                   style: TextStyle(
                     fontSize: AppTypography.size(
                       AppTypography.body,

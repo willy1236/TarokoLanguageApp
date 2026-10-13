@@ -16,6 +16,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/screens/culture/article_detail_screen.dart';
 import 'package:flutter_application_1/screens/culture/widgets/culture_article_section.dart';
+import 'package:flutter_application_1/services/category_service.dart';
+import '../helpers/fixtures.dart';
 
 import '../helpers/flow_test_helpers.dart';
 import '../helpers/widget_test_helpers.dart';
@@ -78,6 +80,7 @@ void main() {
   setUp(() {
     stubCommonChannels();
     resetGlobals();
+    CategoryService.reset();
   });
 
   tearDown(() {
@@ -88,7 +91,13 @@ void main() {
   testWidgets('清單 → 詳情 → 返回，清單不會重新載入', (tester) async {
     var listCalls = 0;
     installMockClient(
-      {'/api/articles': _list(), '/api/articles/1': _detail()},
+      {
+        '/api/articles': _list(),
+        '/api/articles/1': _detail(),
+        '/api/articles/categories': loadFixtureMap(
+          'get_api_articles_categories.json',
+        ),
+      },
       onRequest: (r) {
         if (r.url.path == '/api/articles') listCalls++;
       },
@@ -122,7 +131,13 @@ void main() {
   testWidgets('先切分類再進詳情再返回，選中的分類不會被重設', (tester) async {
     final requestedCategories = <String?>[];
     installMockClient(
-      {'/api/articles': _list(), '/api/articles/1': _detail()},
+      {
+        '/api/articles': _list(),
+        '/api/articles/1': _detail(),
+        '/api/articles/categories': loadFixtureMap(
+          'get_api_articles_categories.json',
+        ),
+      },
       onRequest: (r) {
         if (r.url.path == '/api/articles') {
           requestedCategories.add(r.url.queryParameters['category']);

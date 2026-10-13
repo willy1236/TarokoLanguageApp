@@ -9,6 +9,7 @@ import 'package:flutter_application_1/models/video_models.dart';
 import 'package:flutter_application_1/screens/culture/widgets/culture_article_section.dart';
 import 'package:flutter_application_1/screens/culture/widgets/culture_cards.dart';
 import 'package:flutter_application_1/screens/culture/widgets/culture_icons.dart';
+import 'package:flutter_application_1/services/category_service.dart';
 
 import '../../helpers/flow_test_helpers.dart';
 import '../../helpers/widget_test_helpers.dart';
@@ -49,6 +50,7 @@ void main() {
   setUp(() {
     stubCommonChannels();
     resetGlobals();
+    CategoryService.reset();
   });
 
   tearDown(() {
@@ -71,6 +73,7 @@ void main() {
             _article(4, summary: '   '), // 只有空白也算沒有摘要
           ],
         },
+        '/api/articles/categories': {'categories': <dynamic>[]},
       });
       usePhoneSurface(tester, size: const Size(414, 3000));
       await tester.pumpWidget(
