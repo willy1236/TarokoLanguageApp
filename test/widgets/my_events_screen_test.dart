@@ -140,4 +140,65 @@ void main() {
       expect(find.text('活動 25', skipOffstage: false), findsOneWidget);
     });
   });
+
+  group('MyEventsScreen 從詳情返回', () {
+    late int listCalls;
+
+    void installBackend() {
+      listCalls = 0;
+      ApiClient.httpClient = MockClient((r) async {
+        final Object body = switch (r.url.path) {
+          '/api/events/mine' => () {
+            listCalls++;
+            return {
+              'events': [_event(id: 1, title: '我的活動')],
+            };
+          }(),
+          '/api/events/1' => {
+            ..._event(id: 1, title: '我的活動'),
+            'description': '說明',
+            'registration_open': true,
+            'like_count': 0,
+            'is_liked': false,
+          },
+          '/api/events/1/reminders' => {'reminders': <dynamic>[]},
+          '/api/events/1/like' => {'liked': true, 'like_count': 1},
+          '/api/me' => {'uid': 1, 'created_at': '2026-01-01T00:00:00Z'},
+          '/api/shop/items' => {'items': <dynamic>[]},
+          _ => fail('沒準備 ${r.url.path}'),
+        };
+        return jsonResponse(body);
+      });
+    }
+
+    Future<void> openDetail(WidgetTester tester) async {
+      await tester.pumpWidget(const MaterialApp(home: MyEventsScreen()));
+      await pumpFrames(tester);
+      await tester.tap(find.text('我的活動'));
+      await pumpFrames(tester, times: 10);
+    }
+
+    testWidgets('只看不改就返回：不重載', (tester) async {
+      installBackend();
+      await openDetail(tester);
+
+      await tester.binding.handlePopRoute();
+      await pumpFrames(tester, times: 10);
+
+      expect(listCalls, 1);
+      expect(find.text('我的活動'), findsOneWidget);
+    });
+
+    testWidgets('詳情有變動（按讚）後返回：重載', (tester) async {
+      installBackend();
+      await openDetail(tester);
+
+      await tester.tap(find.byIcon(Icons.favorite_border));
+      await pumpFrames(tester);
+      await tester.binding.handlePopRoute();
+      await pumpFrames(tester, times: 10);
+
+      expect(listCalls, 2);
+    });
+  });
 }

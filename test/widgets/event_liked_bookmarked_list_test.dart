@@ -90,4 +90,76 @@ void main() {
     expect(calls, 1);
     expect(find.byType(CircularProgressIndicator), findsNothing);
   });
+
+  group('從詳情返回', () {
+    /// 我按讚的活動清單後端：[liked] 決定清單裡有沒有活動 1。
+    ({int listCalls}) Function() install({required bool Function() liked}) {
+      var listCalls = 0;
+      ApiClient.httpClient = MockClient((r) async {
+        final Object body = switch (r.url.path) {
+          '/api/events/likes' => () {
+            listCalls++;
+            return {
+              'events': [if (liked()) _event(1), _event(2)],
+              'page_info': {'next_cursor': null, 'has_more': false},
+            };
+          }(),
+          '/api/events/1' => {
+            ..._event(1),
+            'description': '說明',
+            'registration_open': true,
+            'like_count': 1,
+            'is_liked': true,
+          },
+          '/api/events/1/reminders' => {'reminders': <dynamic>[]},
+          '/api/events/1/like' => {'liked': false, 'like_count': 0},
+          '/api/me' => {'uid': 1, 'created_at': '2026-01-01T00:00:00Z'},
+          '/api/shop/items' => {'items': <dynamic>[]},
+          _ => fail('沒準備 ${r.url.path}'),
+        };
+        return jsonResponse(body);
+      });
+      return () => (listCalls: listCalls);
+    }
+
+    Future<void> openFirst(WidgetTester tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: EventLikedBookmarkedList(mode: EventListMode.liked),
+          ),
+        ),
+      );
+      await pumpFrames(tester);
+      await tester.tap(find.text('活動 1'));
+      await pumpFrames(tester, times: 10);
+    }
+
+    testWidgets('只看不改就返回：不重抓', (tester) async {
+      final stats = install(liked: () => true);
+      await openFirst(tester);
+
+      await tester.binding.handlePopRoute();
+      await pumpFrames(tester, times: 10);
+
+      expect(stats().listCalls, 1);
+      expect(find.text('活動 1'), findsOneWidget);
+    });
+
+    testWidgets('在詳情取消按讚後返回：重抓，那則活動從列表移除', (tester) async {
+      var liked = true;
+      final stats = install(liked: () => liked);
+      await openFirst(tester);
+
+      await tester.tap(find.byIcon(Icons.favorite));
+      await pumpFrames(tester);
+      liked = false;
+      await tester.binding.handlePopRoute();
+      await pumpFrames(tester, times: 10);
+
+      expect(stats().listCalls, 2);
+      expect(find.text('活動 1'), findsNothing);
+      expect(find.text('活動 2'), findsOneWidget);
+    });
+  });
 }

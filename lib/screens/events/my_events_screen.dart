@@ -59,8 +59,12 @@ class MyEventsScreen extends StatelessWidget {
             event: event,
             seniorMode: seniorMode,
             onTap: () async {
-              await Navigator.push(context, EventDetailScreen.route(event.id));
-              reload(); // 從詳情頁回來（可能剛取消）刷新
+              final changed = await Navigator.push<bool>(
+                context,
+                EventDetailScreen.route<bool>(event.id),
+              );
+              // 在詳情頁取消、刪除或編輯過才重載；沒動就留在原本捲到的位置。
+              if (changed == true) reload();
             },
           ),
         ),
