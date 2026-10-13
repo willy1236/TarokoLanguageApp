@@ -394,6 +394,20 @@ void main() {
         shape: {'posts': F.list, 'page_info': F.object},
       ),
     );
+    // 已隱藏的貼文（2026-10-09 前端待辦 T-04）。只讀；帳號沒隱藏任何貼文時清單為空，
+    // 照樣錄（只驗外層欄位，每筆的欄位要清單有資料才驗得到）。
+    test(
+      'GET /api/forum/hidden-posts',
+      () => _inspect(
+        'GET',
+        ApiConfig.forumHiddenPosts,
+        fixtureAs: 'get_api_forum_hidden_posts.json',
+        shape: {'posts': F.list, 'page_info': F.object},
+        listKey: 'posts',
+        itemShape: {'id': F.any, 'is_hidden': F.boolean},
+        itemOptional: {..._forumPostOptional, 'hidden_at': F.string},
+      ),
+    );
     test(
       'GET /api/forum/posts/likes',
       () => _inspect(

@@ -215,6 +215,11 @@ final List<_Contract> _contracts = [
     _paged(ForumPostPage.fromJson),
   ),
   _Contract(
+    'get_api_forum_hidden_posts.json',
+    'ForumPostPage(hidden)',
+    _paged(ForumPostPage.fromJson),
+  ),
+  _Contract(
     'get_api_forum_post_detail.json',
     'ForumPost(detail)',
     (j) => ForumPost.fromJson(j['post'] as Map<String, dynamic>),
