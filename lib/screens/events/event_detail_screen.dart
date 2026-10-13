@@ -144,13 +144,11 @@ class _EventDetailScreenState extends State<EventDetailScreen> {
     super.dispose();
   }
 
-  /// 前景收到本活動的新提醒推播時觸發，即時刷新提醒紀錄區塊。
+  /// 前景收到本活動的提醒／取消／更新推播時觸發：活動資料（地點、地址、狀態）
+  /// 與提醒紀錄都可能變了，整頁靜默重抓。
   void _onForegroundReminder(int? eventId) {
     if (eventId != widget.eventId || !mounted) return;
-    _fetchRemindersSafe().then((reminders) {
-      if (!mounted) return;
-      setState(() => _reminders = reminders);
-    });
+    _silentRefresh();
   }
 
   bool _deletedNoticeShown = false;

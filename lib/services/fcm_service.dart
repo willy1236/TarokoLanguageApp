@@ -81,7 +81,7 @@ class FcmService {
   /// 參數為 payload 裡的 event_id（可能為 null）。
   static void Function(int? eventId)? onReminderTapped;
 
-  /// 前景收到「目前正開著的活動」的新提醒推播時觸發，讓該頁即時刷新提醒紀錄。
+  /// 前景收到「目前正開著的活動」的提醒／取消／更新推播時觸發，讓該頁即時重抓。
   /// 由 EventDetailScreen 在 initState/dispose 掛上/清空。
   static void Function(int? eventId)? onReminderReceivedForOpenScreen;
 
