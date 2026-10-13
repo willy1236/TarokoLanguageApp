@@ -66,6 +66,28 @@ class CursorPager<T> extends ChangeNotifier {
     _notify();
   }
 
+  /// 安靜地重抓第一頁換掉清單（例如封面網址過期），不顯示載入中；失敗就保留原清單。
+  /// 捲得比第一頁深時清單會縮回第一頁，之後照常續載。
+  /// 第一頁正在抓時不動；送出後若有人重整，回來的結果丟棄。
+  Future<void> silentRefresh() async {
+    if (_loading) return;
+    final generation = _generation;
+    try {
+      final (page, info) = await _fetch(null);
+      if (_disposed || generation != _generation) return;
+      // 進行中的載入更多是舊清單的下一頁，換世代丟棄，旗標一併清掉。
+      _generation++;
+      _items = appendUnique(const [], page, _idOf);
+      _cursor = info.nextCursor;
+      _loadingMore = false;
+      _loadMoreFailed = false;
+    } catch (e) {
+      debugPrint('CursorPager.silentRefresh failed: $e');
+      return;
+    }
+    _notify();
+  }
+
   /// 抓下一頁接在後面。載入中、上次翻頁失敗、或沒有下一頁時不動。
   ///
   /// PagerScrollLoader 在每次 notify 後、清單接近底部時會呼叫這裡（包含 loadMore

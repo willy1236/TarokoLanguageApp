@@ -168,6 +168,97 @@ void main() {
     expect(notified, 1);
   });
 
+  group('silentRefresh', () {
+    test('不顯示載入中，換掉清單與游標', () async {
+      await loadFirstPage();
+      final more = pager.loadMore();
+      source.reply(1, [4], 'c2');
+      await more;
+
+      final silent = pager.silentRefresh();
+      expect(pager.loading, isFalse);
+      expect(source.cursors.last, isNull);
+      source.reply(2, [7, 8], 'n1');
+      await silent;
+
+      expect(pager.items, [7, 8]);
+      expect(pager.loading, isFalse);
+
+      final next = pager.loadMore();
+      source.reply(3, [9]);
+      await next;
+      expect(source.cursors.last, 'n1');
+      expect(pager.items, [7, 8, 9]);
+    });
+
+    test('失敗時保留原清單、游標與錯誤狀態', () async {
+      await loadFirstPage();
+      var notified = 0;
+      pager.addListener(() => notified++);
+
+      final silent = pager.silentRefresh();
+      source.fail(1);
+      await silent;
+
+      expect(pager.items, [1, 2, 3]);
+      expect(pager.hasMore, isTrue);
+      expect(pager.error, isNull);
+      expect(notified, 0);
+    });
+
+    test('翻頁進行中：舊清單的下一頁回來時丟棄，旗標清掉', () async {
+      await loadFirstPage();
+      final staleMore = pager.loadMore();
+      final silent = pager.silentRefresh();
+      source.reply(2, [10], 'n1');
+      await silent;
+      expect(pager.loadingMore, isFalse);
+
+      source.reply(1, [4, 5], 'old');
+      await staleMore;
+      expect(pager.items, [10]);
+
+      final more = pager.loadMore();
+      source.reply(3, [11]);
+      await more;
+      expect(source.cursors.last, 'n1');
+      expect(pager.items, [10, 11]);
+    });
+
+    test('清掉翻頁失敗狀態，之後可自動續載', () async {
+      await loadFirstPage();
+      final failed = pager.loadMore();
+      source.fail(1);
+      await failed;
+      expect(pager.loadMoreFailed, isTrue);
+
+      final silent = pager.silentRefresh();
+      source.reply(2, [1, 2], 'n1');
+      await silent;
+
+      expect(pager.loadMoreFailed, isFalse);
+    });
+
+    test('第一頁還在抓時不送請求', () async {
+      pager.refresh();
+      await pager.silentRefresh();
+      expect(source.requests, hasLength(1));
+    });
+
+    test('送出後有人重整：晚回來的結果丟棄', () async {
+      await loadFirstPage();
+      final silent = pager.silentRefresh();
+      final refreshed = pager.refresh();
+      source.reply(2, [20], null);
+      await refreshed;
+      source.reply(1, [99], 'old');
+      await silent;
+
+      expect(pager.items, [20]);
+      expect(pager.hasMore, isFalse);
+    });
+  });
+
   test('dispose 後請求才回來不會丟錯', () async {
     final done = pager.refresh();
     pager.dispose();
