@@ -245,6 +245,36 @@ void main() {
       expect(source.requests, hasLength(1));
     });
 
+    group('兩個安靜重抓同時在路上：只採用晚送出的那個', () {
+      test('晚送出的先回來：早送出的晚回來時丟棄', () async {
+        await loadFirstPage();
+
+        final a = pager.silentRefresh();
+        final b = pager.silentRefresh();
+        source.reply(2, [20]); // b
+        await b;
+        source.reply(1, [10]); // a
+        await a;
+
+        expect(pager.items, [20]);
+      });
+
+      test('晚送出的後回來：早送出的先回來也不套用，最後是晚送出的結果', () async {
+        await loadFirstPage();
+
+        final a = pager.silentRefresh();
+        final b = pager.silentRefresh();
+        source.reply(1, [10]); // a
+        await a;
+        expect(pager.items, [1, 2, 3]);
+        source.reply(2, [20], 'c2'); // b
+        await b;
+
+        expect(pager.items, [20]);
+        expect(pager.hasMore, isTrue);
+      });
+    });
+
     test('送出後有人重整：晚回來的結果丟棄', () async {
       await loadFirstPage();
       final silent = pager.silentRefresh();

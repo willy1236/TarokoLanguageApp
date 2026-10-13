@@ -3,6 +3,8 @@
 // 這支取代的人工測試：在活動分頁發起或刪除活動後切回廣場，看小卡有沒有跟著變；
 // 點小卡進詳情只看不改就返回，小卡不該重抓；在詳情報名或按讚後返回才重抓。
 
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -37,8 +39,17 @@ class _Backend {
   List<Map<String, dynamic>> Function() events;
   var eventListCalls = 0;
 
+  /// 設定後，列表請求要等測試完成對應的 Completer 才回（依送出順序排隊）。
+  List<Completer<List<Map<String, dynamic>>>>? held;
+
   void install() {
     ApiClient.httpClient = MockClient((r) async {
+      if (r.url.path == '/api/events' && held != null) {
+        eventListCalls++;
+        final completer = Completer<List<Map<String, dynamic>>>();
+        held!.add(completer);
+        return jsonResponse({'events': await completer.future});
+      }
       final Object body = switch (r.url.path) {
         '/api/events' => () {
           eventListCalls++;
@@ -95,6 +106,47 @@ void main() {
     expect(backend.eventListCalls, 2);
     expect(find.text('要刪的活動'), findsNothing);
     expect(find.text('部落豐年祭'), findsOneWidget);
+  });
+
+  group('兩次重抓同時在路上：只採用晚送出的那次', () {
+    Future<List<Completer<List<Map<String, dynamic>>>>> twoInFlight(
+      WidgetTester tester,
+    ) async {
+      final backend = _Backend(() => [_event(title: '最初')])..install();
+      await tester.pumpWidget(_app());
+      await pumpFrames(tester);
+      final held = backend.held = [];
+      // 例如連刪兩張照片，各觸發一次 eventsChanged。
+      await EventService.deleteEvent(9);
+      await EventService.deleteEvent(9);
+      await pumpFrames(tester, times: 2);
+      expect(held, hasLength(2));
+      return held;
+    }
+
+    testWidgets('晚送出的先回來：早送出的晚回來時不蓋掉', (tester) async {
+      final held = await twoInFlight(tester);
+
+      held[1].complete([_event(title: '較新')]);
+      await pumpFrames(tester, times: 2);
+      held[0].complete([_event(title: '較舊')]);
+      await pumpFrames(tester, times: 2);
+
+      expect(find.text('較新'), findsOneWidget);
+      expect(find.text('較舊'), findsNothing);
+    });
+
+    testWidgets('晚送出的後回來：最後顯示晚送出的結果', (tester) async {
+      final held = await twoInFlight(tester);
+
+      held[0].complete([_event(title: '較舊')]);
+      await pumpFrames(tester, times: 2);
+      held[1].complete([_event(title: '較新')]);
+      await pumpFrames(tester, times: 2);
+
+      expect(find.text('較新'), findsOneWidget);
+      expect(find.text('較舊'), findsNothing);
+    });
   });
 
   testWidgets('點小卡進詳情只看不改就返回：不重抓', (tester) async {
