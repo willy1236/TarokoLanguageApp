@@ -45,6 +45,60 @@ class FriendMessage {
   );
 }
 
+/// 通話結果，後端依「誰在看」算好（Truku_backend backend/callLog.ts）：
+/// 撥出方沒接通一律是 [cancelled]（含被拒接），被打的人是 [missed] 或自己按的 [declined]。
+enum FriendCallKind { completed, cancelled, missed, declined }
+
+/// 聊天室的 `calls` 與對話列表的 `last_call`。
+class FriendCall {
+  final int id;
+  final FriendCallKind kind;
+
+  /// 我是撥出方：泡泡靠右。
+  final bool mine;
+
+  /// 撥出時間，與訊息一起依時間排序。
+  final DateTime createdAt;
+
+  /// 通話秒數，只有 [FriendCallKind.completed] 有值。
+  final int? durationSec;
+
+  /// 還沒看過的未接來電，只有 [FriendCallKind.missed] 可能為 true。
+  final bool isUnread;
+
+  const FriendCall({
+    required this.id,
+    required this.kind,
+    required this.mine,
+    required this.createdAt,
+    this.durationSec,
+    this.isUnread = false,
+  });
+
+  /// `kind` 不認得（後端日後新增的結果）回 null，呼叫端略過不顯示。
+  static FriendCall? fromJson(Map<String, dynamic> j) {
+    final kind = FriendCallKind.values.asNameMap()[j['kind']];
+    if (kind == null) return null;
+    return FriendCall(
+      id: FriendMessage._toInt(j['id']),
+      kind: kind,
+      mine: j['mine'] as bool? ?? false,
+      createdAt:
+          DateTime.tryParse(j['created_at']?.toString() ?? '') ??
+          DateTime.now(),
+      durationSec: (j['duration_sec'] as num?)?.toInt(),
+      isUnread: j['is_unread'] == true,
+    );
+  }
+
+  /// 解析 `calls` 陣列，略過格式不對與不認得的。
+  static List<FriendCall> listFromJson(dynamic list) => [
+    if (list is List)
+      for (final e in list)
+        if (e is Map<String, dynamic>) ?FriendCall.fromJson(e),
+  ];
+}
+
 /// GET /api/friends/messages 每筆對話的最後一則訊息預覽。
 class ConversationPreview {
   final String body;
