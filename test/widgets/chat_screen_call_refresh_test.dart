@@ -1,8 +1,6 @@
 // 聊天室開著時通話紀錄的即時更新：疊在上面的畫面關掉回來、或停在聊天室時收到
 // 好友通話事件，都重抓第一頁；有疊畫面時收到事件不抓，回來再抓。
-// 關掉通話畫面時送出的取消請求要先到後端，才抓得到那一通。
-
-import 'dart:async';
+// 在撥號畫面按取消時，取消請求要先送出，補抓才抓得到那一通。
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,8 +8,8 @@ import 'package:http/http.dart' as http;
 
 import 'package:flutter_application_1/core/navigation/route_stack.dart';
 import 'package:flutter_application_1/screens/chat/chat_screen.dart';
+import 'package:flutter_application_1/screens/friends/directed_call_waiting_screen.dart';
 import 'package:flutter_application_1/services/chat_socket_service.dart';
-import 'package:flutter_application_1/services/directed_call_service.dart';
 import 'package:flutter_application_1/services/fcm_service.dart';
 
 import '../helpers/flow_test_helpers.dart';
@@ -40,6 +38,13 @@ void main() {
         },
         '/api/notifications/summary': {'total': 0},
         '/api/friends/calls/5/cancel': {'ok': true},
+        '/api/friends/BBBB2345/call': {'call_id': 5, 'status': 'ringing'},
+        '/api/friends/calls/5': {
+          'call_id': 5,
+          'status': 'ringing',
+          'is_caller': true,
+          'peer_friend_code': 'BBBB2345',
+        },
       },
       onRequest: (http.Request r) => seen.add(r.url.path),
       delayFor: (r) => r.url.path.endsWith('/cancel')
@@ -100,24 +105,45 @@ void main() {
     expect(historyRequests(), 2);
   });
 
-  testWidgets('關掉撥號畫面時的取消請求到後端後才重抓', (tester) async {
+  testWidgets('在撥號畫面按取消回到聊天室：取消請求先送出，之後才重抓', (tester) async {
     final navigator = await open(tester);
-    navigator.push(overlay());
+    navigator.push(
+      MaterialPageRoute<void>(
+        builder: (_) => const DirectedCallWaitingScreen(
+          calleeFriendCode: 'BBBB2345',
+          calleeNickname: '阿華',
+        ),
+      ),
+    );
     await pumpFrames(tester);
+    expect(seen, contains('/api/friends/BBBB2345/call'));
 
-    // 撥號畫面 dispose 時送出取消、不等回應。
-    unawaited(DirectedCallService.cancelCall(5));
-    navigator.pop();
+    await tester.tap(find.text('取消'));
+    // 取消請求在路上（300ms）時還不重抓。
     await tester.pump(const Duration(milliseconds: 100));
+    final cancelAt = seen.indexOf('/api/friends/calls/5/cancel');
+    expect(cancelAt, isNonNegative);
     expect(historyRequests(), 1);
 
     await pumpFrames(tester);
-    final cancelAt = seen.indexOf('/api/friends/calls/5/cancel');
-    expect(cancelAt, isNonNegative);
     expect(
       seen.lastIndexOf('/api/friends/BBBB2345/messages'),
       greaterThan(cancelAt),
     );
     expect(historyRequests(), 2);
+    expect(seen.where((p) => p == '/api/friends/calls/5/cancel'), hasLength(1));
+  });
+
+  testWidgets('關掉 dialog 不重抓：只有整頁畫面關掉才算回到聊天室', (tester) async {
+    final navigator = await open(tester);
+    showDialog<void>(
+      context: navigator.context,
+      builder: (_) => const AlertDialog(content: Text('對話框')),
+    );
+    await pumpFrames(tester);
+    navigator.pop();
+    await pumpFrames(tester);
+
+    expect(historyRequests(), 1);
   });
 }

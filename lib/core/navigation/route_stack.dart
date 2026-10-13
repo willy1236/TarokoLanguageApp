@@ -44,5 +44,6 @@ class RouteStack extends NavigatorObserver {
 final routeStack = RouteStack();
 
 /// 掛在根 MaterialApp 的 navigatorObservers，讓頁面（RouteAware）知道上面
-/// 疊的畫面關掉、自己回到最上層。
-final routeObserver = RouteObserver<ModalRoute<dynamic>>();
+/// 疊的整頁畫面關掉、自己回到最上層。dialog、bottom sheet 不是 PageRoute，
+/// 開關它們不通知。
+final routeObserver = RouteObserver<PageRoute<dynamic>>();

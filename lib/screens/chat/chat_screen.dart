@@ -137,7 +137,7 @@ class _ChatScreenState extends State<ChatScreen> with RouteAware {
     if (route != null && _route == null) {
       _route = route;
       ChatScreen._live[route] = _refreshFromPush;
-      routeObserver.subscribe(this, route);
+      if (route is PageRoute) routeObserver.subscribe(this, route);
     }
   }
 

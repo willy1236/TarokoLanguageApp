@@ -74,11 +74,19 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
     }
     _controller.dispose();
     _pollTimer?.cancel();
-    final id = _callId;
-    if (id != null && !_navigated) {
-      DirectedCallService.cancelCall(id).catchError((_) {});
-    }
+    _cancelIfRinging();
     super.dispose();
+  }
+
+  bool _cancelSent = false;
+
+  /// 離開時還沒接通就取消。pop 當下就送（見 build 的 PopScope），不等退場動畫
+  /// 跑完的 dispose：底下的聊天室一回到最上層就會查通話紀錄，要讓取消先送出。
+  void _cancelIfRinging() {
+    final id = _callId;
+    if (id == null || _navigated || _cancelSent) return;
+    _cancelSent = true;
+    DirectedCallService.cancelCall(id).catchError((_) {});
   }
 
   Future<void> _startCall() async {
@@ -192,6 +200,15 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
 
   @override
   Widget build(BuildContext context) {
+    return PopScope(
+      onPopInvokedWithResult: (didPop, _) {
+        if (didPop) _cancelIfRinging();
+      },
+      child: _buildScaffold(),
+    );
+  }
+
+  Widget _buildScaffold() {
     return Scaffold(
       backgroundColor: AppColors.ink,
       body: Stack(
