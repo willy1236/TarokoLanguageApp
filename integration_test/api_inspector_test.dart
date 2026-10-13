@@ -346,7 +346,6 @@ void main() {
       () => _inspect(
         'POST',
         ApiConfig.forumPostHide(999999999),
-        fixtureAs: 'post_api_forum_post_hide_404.json',
         expectStatus: 404,
         expectError: true,
         errorCode: 'POST_NOT_FOUND',
@@ -554,7 +553,6 @@ void main() {
         'POST',
         ApiConfig.videoSessionReport(999999999),
         body: {'reason': '__inspector__'},
-        fixtureAs: 'post_api_video_session_report_404.json',
         expectStatus: 404,
         expectError: true,
         errorCode: 'NOT_FOUND',
@@ -566,7 +564,6 @@ void main() {
         'POST',
         ApiConfig.videoSessionReport(999999999),
         body: {'reason': '   '},
-        fixtureAs: 'post_api_video_session_report_400.json',
         expectStatus: 400,
         expectError: true,
         errorCode: 'INVALID_REQUEST',
