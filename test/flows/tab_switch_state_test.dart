@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/main.dart' show MainContainer;
 import 'package:flutter_application_1/screens/plaza/plaza_event_screen.dart';
+import 'package:flutter_application_1/services/category_service.dart';
 import 'package:flutter_application_1/shared/widgets/truku_bottom_tab.dart';
 
 import '../helpers/flow_test_helpers.dart';
@@ -24,6 +25,7 @@ void main() {
   setUp(() {
     stubCommonChannels(token: 'test-token');
     resetGlobals();
+    CategoryService.reset();
   });
 
   tearDown(() {
@@ -63,6 +65,8 @@ void main() {
     '/api/friends/requests': {'requests': <dynamic>[]},
     '/api/friends/messages': {'conversations': <dynamic>[]},
     '/api/forum/posts': {'posts': <dynamic>[], 'total': 0},
+    '/api/articles/categories': {'categories': <dynamic>[]},
+    '/api/videos/categories': {'categories': <dynamic>[]},
   };
 
   /// 底部分頁沒有 widget Key，只能用標籤文字點。
