@@ -23,11 +23,12 @@ EventDetail _event({
   int participantCount = 0,
   bool isJoined = false,
   bool isHost = false,
+  DateTime? startsAt,
 }) => EventDetail(
   id: 1,
   isHost: isHost,
   title: '部落豐年祭',
-  startsAt: DateTime(2026, 12, 1),
+  startsAt: startsAt ?? DateTime.now().add(const Duration(days: 30)),
   status: status,
   effectiveStatus: effectiveStatus,
   registrationOpen: registrationOpen,
@@ -99,6 +100,42 @@ void main() {
     expect(find.text('活動已取消'), findsOneWidget);
     // 已取消的活動，發起人也不該還看得到發送提醒。
     expect(find.text('發送提醒'), findsNothing);
+  });
+
+  testWidgets('已報名的參加者看已開始的活動，沒有「退出」', (tester) async {
+    await tester.pumpWidget(
+      _app(_bar(_event(effectiveStatus: 'ongoing', isJoined: true))),
+    );
+
+    expect(find.text('已報名 · 活動進行中'), findsOneWidget);
+    expect(find.text('退出'), findsNothing);
+  });
+
+  testWidgets('頁面停留跨過開始時間：後端狀態仍是 active，也不再顯示「退出」', (
+    tester,
+  ) async {
+    final started = DateTime.now().subtract(const Duration(minutes: 1));
+    await tester.pumpWidget(
+      _app(_bar(_event(isJoined: true, startsAt: started))),
+    );
+
+    expect(find.text('已報名 · 活動進行中'), findsOneWidget);
+    expect(find.text('退出'), findsNothing);
+  });
+
+  testWidgets('還沒開始的活動，已報名的參加者看得到「退出」', (tester) async {
+    await tester.pumpWidget(_app(_bar(_event(isJoined: true))));
+
+    expect(find.text('退出'), findsOneWidget);
+  });
+
+  testWidgets('發起人不受開始時間影響，照樣看到發送提醒', (tester) async {
+    final started = DateTime.now().subtract(const Duration(minutes: 1));
+    await tester.pumpWidget(
+      _app(_bar(_event(isHost: true, startsAt: started))),
+    );
+
+    expect(find.text('發送提醒'), findsOneWidget);
   });
 
   testWidgets('發起人看到發送提醒', (tester) async {

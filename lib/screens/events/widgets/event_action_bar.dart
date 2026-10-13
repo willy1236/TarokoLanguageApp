@@ -47,6 +47,9 @@ class EventActionBar extends StatelessWidget {
     final isHost = e.isHost;
     final isJoined = e.isJoined;
     final status = e.displayStatus;
+    // displayStatus 是載入當下後端算的；頁面停留跨過開始時間時，參加者這邊
+    // 先自己當成進行中，免得按了「退出」才被後端拒絕。只在 build 時判斷。
+    final started = !isHost && e.startsAt.isBefore(DateTime.now());
 
     Widget content;
     if (status == 'cancelled') {
@@ -55,7 +58,7 @@ class EventActionBar extends StatelessWidget {
       content = _disabledButton('活動已結束', seniorMode);
     } else if (isHost) {
       content = _hostActions(context, e, seniorMode);
-    } else if (status == 'ongoing') {
+    } else if (status == 'ongoing' || started) {
       content = _disabledButton(isJoined ? '已報名 · 活動進行中' : '活動進行中', seniorMode);
     } else if (isJoined) {
       content = _joinedActions(seniorMode);
