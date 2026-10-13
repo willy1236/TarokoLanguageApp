@@ -825,12 +825,19 @@ class _ForumDetailScreenState extends State<ForumDetailScreen> {
 
   /// 隱藏只影響自己的動態，作者與其他人照常看得到；後端不擋唯讀帳號。
   /// 成功後回上一頁，讓動態列表拿掉它（收藏頁保留）。
+  ///
+  /// pop 前先以 onPostChanged 回報 isHidden=true：「已隱藏的貼文」頁要靠最後狀態
+  /// 分辨「取消後又重新隱藏」（保留）與「取消後改檢舉」（移除），兩者都回 removedFromFeed。
   Future<void> _hidePost() async {
     if (_hiding) return;
     setState(() => _hiding = true);
     try {
       await ForumService.setHidden(widget.postId, hidden: true);
       if (!mounted) return;
+      final current = _post;
+      if (current != null) {
+        widget.onPostChanged?.call(current.copyWith(isHidden: true));
+      }
       // 成功後不解除 _hiding：本頁正在離開，轉場期間也不該再送一次。
       Navigator.pop(context, const ForumDetailResult.removedFromFeed());
       _toast('已隱藏，可在個人頁的『已隱藏的貼文』取消');

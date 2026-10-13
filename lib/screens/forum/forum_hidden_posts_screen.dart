@@ -108,11 +108,8 @@ class _ForumHiddenPostsScreenState extends State<ForumHiddenPostsScreen> {
     final view = _viewKey.currentState;
     if (view == null) return;
     if (result?.deleted == true) return view.removePost(postId);
-    // 重新隱藏或檢舉：這篇仍在隱藏清單（檢舉不會解除隱藏），保留並帶回最新計數。
-    if (result?.removedFromFeed == true) {
-      if (latest != null) view.replacePost(latest.copyWith(isHidden: true));
-      return;
-    }
+    // removedFromFeed 可能是重新隱藏，也可能是檢舉；詳情頁隱藏成功時會先回報
+    // isHidden=true，所以統一看最後狀態：取消隱藏後才檢舉的，隱藏紀錄已刪，要移除。
     if (latest == null) return;
     if (!latest.isHidden) return view.removePost(postId);
     view.replacePost(latest);

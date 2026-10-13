@@ -236,6 +236,18 @@ void main() {
       expect(find.text('隱藏的貼文 1'), findsOneWidget);
     });
 
+    testWidgets('詳情取消隱藏後改檢舉，返回時移除該筆（隱藏紀錄已刪）', (tester) async {
+      await _pumpScreen(tester, _FakeApi(ids: [1, 2]));
+
+      await _openDetail(tester, '隱藏的貼文 1');
+      await _tapDetailMenu(tester, '取消隱藏');
+      // 檢舉成功同樣以 removedFromFeed 返回，這裡直接模擬，不走檢舉面板。
+      await _popDetail(tester, const ForumDetailResult.removedFromFeed());
+
+      expect(find.text('隱藏的貼文 1'), findsNothing);
+      expect(find.text('隱藏的貼文 2'), findsOneWidget);
+    });
+
     testWidgets('什麼都沒改直接返回，清單不變', (tester) async {
       await _pumpScreen(tester, _FakeApi(ids: [1, 2]));
 

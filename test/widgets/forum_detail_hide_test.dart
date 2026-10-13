@@ -185,6 +185,16 @@ void main() {
     expect(find.text(_hiddenText), findsOneWidget);
   });
 
+  testWidgets('隱藏成功：pop 前回報 isHidden=true，列表才分得出重新隱藏', (tester) async {
+    ApiClient.httpClient = _FakeApi().client();
+    final changed = <ForumPost>[];
+    await _openDetail(tester, [], changed: changed);
+
+    await _tapMenuItem(tester, '隱藏這篇貼文');
+
+    expect(changed.last.isHidden, isTrue);
+  });
+
   testWidgets('隱藏送出中：選單的隱藏項停用，只送一次、只 pop 一次', (tester) async {
     final api = _FakeApi()..hideGate = Completer<void>();
     ApiClient.httpClient = api.client();
