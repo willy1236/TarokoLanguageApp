@@ -96,6 +96,9 @@ void main() {
       '/api/friends/requests': {'requests': <dynamic>[]},
       '/api/friends/messages': {'conversations': <dynamic>[]},
       '/api/forum/posts': {'posts': <dynamic>[], 'total': 0},
+      '/api/events/categories': loadFixtureMap(
+        'get_api_events_categories.json',
+      ),
     };
   }
 

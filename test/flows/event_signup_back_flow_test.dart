@@ -96,6 +96,7 @@ void main() {
         '/api/events/$_eventId/reminders': {'reminders': <dynamic>[]},
         '/api/events/$_eventId/join': {'ok': true},
         '/api/me': _me(),
+        '/api/events/categories': {'categories': <dynamic>[]},
       };
 
       installMockClient(

@@ -63,6 +63,7 @@ void main() {
     '/api/friends/requests': {'requests': <dynamic>[]},
     '/api/friends/messages': {'conversations': <dynamic>[]},
     '/api/forum/posts': {'posts': <dynamic>[], 'total': 0},
+    '/api/events/categories': {'categories': <dynamic>[]},
   };
 
   /// 底部分頁沒有 widget Key，只能用標籤文字點。

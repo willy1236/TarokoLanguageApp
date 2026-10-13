@@ -59,6 +59,7 @@ void main() {
     '/api/friends/requests': {'requests': <dynamic>[]},
     '/api/friends/messages': {'conversations': <dynamic>[]},
     '/api/forum/posts': {'posts': <dynamic>[], 'total': 0},
+    '/api/events/categories': {'categories': <dynamic>[]},
   };
 
   Future<void> tapTab(WidgetTester tester, String label) async {

@@ -81,6 +81,7 @@ void main() {
     '/api/friends/messages': {'conversations': <dynamic>[]},
     '/api/events/$_eventId': _eventDetail(),
     '/api/events/$_eventId/reminders': {'reminders': <dynamic>[]},
+    '/api/events/categories': {'categories': <dynamic>[]},
   };
 
   Future<void> pumpLockedHome(WidgetTester tester) async {

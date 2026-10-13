@@ -55,6 +55,7 @@ void main() {
     '/api/friends/requests': {'requests': <dynamic>[]},
     '/api/friends/messages': {'conversations': <dynamic>[]},
     '/api/forum/posts': {'posts': <dynamic>[], 'total': 0},
+    '/api/events/categories': {'categories': <dynamic>[]},
   };
 
   testWidgets('回前景的狀態查詢較晚回來，不會蓋掉簽到成功', (tester) async {
