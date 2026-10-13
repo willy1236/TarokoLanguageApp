@@ -7,6 +7,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/testing.dart';
+import 'package:flutter_application_1/core/navigation/refreshable_route.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/screens/forum/forum_detail_screen.dart';
 
@@ -214,7 +215,7 @@ void main() {
       await open(tester, 1);
       expect(onScreen(tester, '留言6'), isFalse);
 
-      ForumDetailScreen.refreshRoute(_detailRoute(tester), focusCommentId: 6);
+      RefreshableRouteMixin.refresh(_detailRoute(tester), 6);
       await tester.pumpAndSettle();
 
       expect(onScreen(tester, '留言6'), isTrue);
@@ -232,7 +233,7 @@ void main() {
       await tester.pumpAndSettle();
       final requests = forum.commentRequests.length;
 
-      ForumDetailScreen.refreshRoute(_detailRoute(tester));
+      RefreshableRouteMixin.refresh(_detailRoute(tester));
       await tester.pumpAndSettle();
 
       expect(forum.commentRequests, hasLength(requests + 1));
@@ -278,7 +279,7 @@ void main() {
       await tester.pumpAndSettle();
       expect(highlightAlpha(tester), 0);
 
-      ForumDetailScreen.refreshRoute(_detailRoute(tester), focusCommentId: 6);
+      RefreshableRouteMixin.refresh(_detailRoute(tester), 6);
       await tester.pumpAndSettle();
 
       expect(highlight, findsOneWidget);
@@ -317,10 +318,7 @@ void main() {
       final reload = Completer<void>();
       forum.holdFor = (url) =>
           url.queryParameters['cursor'] == null ? reload.future : null;
-      ForumDetailScreen.refreshRoute(
-        _detailRoute(tester),
-        focusCommentId: second,
-      );
+      RefreshableRouteMixin.refresh(_detailRoute(tester), second);
       // 載入中轉圈不會停，不能 pumpAndSettle；推進到舊的捲動結束。
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
@@ -351,11 +349,11 @@ void main() {
       await tester.pumpAndSettle();
       expect(highlight, findsNothing);
 
-      ForumDetailScreen.refreshRoute(_detailRoute(tester), focusCommentId: 2);
+      RefreshableRouteMixin.refresh(_detailRoute(tester), 2);
       await tester.pumpAndSettle();
       expect(highlight, findsOneWidget);
 
-      ForumDetailScreen.refreshRoute(_detailRoute(tester));
+      RefreshableRouteMixin.refresh(_detailRoute(tester));
       await tester.pumpAndSettle();
       expect(highlight, findsNothing);
       await tester.pump(const Duration(seconds: 2));
@@ -418,7 +416,7 @@ void main() {
     expect(forum.commentRequests.last.queryParameters['cursor'], 'after:2');
 
     forum.holdFor = null;
-    ForumDetailScreen.refreshRoute(_detailRoute(tester));
+    RefreshableRouteMixin.refresh(_detailRoute(tester));
     await tester.pumpAndSettle();
     expect(_visibleComments(tester), ['留言1', '留言2']);
 
