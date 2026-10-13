@@ -11,6 +11,7 @@ import 'admin_article_form_screen.dart';
 import 'admin_banned_words_screen.dart';
 import 'admin_birth_date_screen.dart';
 import 'admin_cases_screen.dart';
+import 'admin_categories_screen.dart';
 import 'admin_error.dart';
 import 'admin_identity_screen.dart';
 import 'admin_millet_screen.dart';
@@ -84,6 +85,11 @@ final List<_Entry> _entries = [
     icon: Icons.post_add_outlined,
     label: '新增文章',
     screen: () => const AdminArticleFormScreen(),
+  ),
+  (
+    icon: Icons.label_outline,
+    label: '分類管理',
+    screen: () => const AdminCategoriesScreen(),
   ),
   (
     icon: Icons.description_outlined,
