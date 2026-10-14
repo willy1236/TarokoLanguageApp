@@ -118,6 +118,7 @@ class _Harness {
     http: httpTransport,
     fallbackChunkSize: 300,
     cancelWait: const Duration(milliseconds: 50),
+    requeueRecheck: const Duration(milliseconds: 20),
   );
 }
 
@@ -408,7 +409,25 @@ void main() {
       expect(h.engine.cancelled, hasLength(1));
     });
 
-    test('查進度有前進 → 不取消', () async {
+    test('查進度有前進 → 先不取消；隔一段時間再查沒有再前進 → 取消', () async {
+      final h = _Harness();
+      h.httpTransport.offset = 500;
+      final result = h.transport
+          .send(0, 1000)
+          .then<Object?>((v) => v, onError: (Object e) => e);
+      await _settle();
+      final id = h.engine.lastId;
+      h.engine.emit(BackgroundEvent.status(id, BackgroundTaskStatus.running));
+      h.engine.emit(BackgroundEvent.status(id, BackgroundTaskStatus.enqueued));
+      await _settle();
+      expect(h.engine.cancelled, isEmpty);
+
+      expect(await result, retryableInterruption);
+      expect(h.engine.cancelled, [id]);
+      expect(h.httpTransport.queries, 2);
+    });
+
+    test('查進度有前進後又開始跑 → 不再檢查', () async {
       final h = _Harness();
       h.httpTransport.offset = 500;
       final result = h.transport.send(0, 1000);
@@ -417,7 +436,10 @@ void main() {
       h.engine.emit(BackgroundEvent.status(id, BackgroundTaskStatus.running));
       h.engine.emit(BackgroundEvent.status(id, BackgroundTaskStatus.enqueued));
       await _settle();
+      h.engine.emit(BackgroundEvent.status(id, BackgroundTaskStatus.running));
+      await Future<void>.delayed(const Duration(milliseconds: 50));
       expect(h.engine.cancelled, isEmpty);
+      expect(h.httpTransport.queries, 1);
 
       h.engine.emit(BackgroundEvent.status(id, BackgroundTaskStatus.complete));
       expect(await result, 1000);

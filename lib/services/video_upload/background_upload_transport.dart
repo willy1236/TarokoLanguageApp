@@ -11,7 +11,8 @@
 // 先取消同一支影片所有殘留的 task（例如 App 被滑掉前排的），等它們真的結束才繼續。
 //
 // 排程失敗退回 WorkManager（Android UIDT 排不進去）時，套件會在 2 分鐘後把 task 改回 enqueued 重排。
-// App 在前景時發現 task 停在 enqueued 且查進度沒有前進，就取消它，交給上傳器重排。
+// App 在前景時發現 task 停在 enqueued 且查進度沒有前進（沒超過 task 起點，或和
+// [BackgroundUploadTransport.requeueRecheck] 前查的一樣），就取消它，交給上傳器重排。
 //
 // 系統不支援背景上傳（Android 13 以下、[BackgroundUploadEngine.available] 為 false）時，
 // 改用前景 http 一段一段送，與網頁版相同（2026-10-14 決定 E）。
@@ -167,6 +168,9 @@ class BackgroundUploadTransport implements UploadTransport {
   /// 取消 task 後最多等多久它真的結束。
   final Duration cancelWait;
 
+  /// task 停在 enqueued 但查進度有前進時，隔多久再查一次。
+  final Duration requeueRecheck;
+
   /// 前景送法：查進度、不支援背景時一段一段送。
   final UploadTransport _http;
   final DateTime Function() _now;
@@ -189,6 +193,7 @@ class BackgroundUploadTransport implements UploadTransport {
     required this.fallbackChunkSize,
     this.contentType,
     this.cancelWait = const Duration(seconds: 10),
+    this.requeueRecheck = const Duration(minutes: 1),
     @visibleForTesting DateTime Function()? clock,
   }) : _http = http,
        _now = clock ?? DateTime.now;
@@ -266,6 +271,7 @@ class BackgroundUploadTransport implements UploadTransport {
       return await task.result.future;
     } finally {
       foreground.removeListener(onForeground);
+      task.recheck?.cancel();
       // 不等：取消廣播串流的訂閱沒有要收尾的事。
       unawaited(subscription.cancel());
       if (identical(_task, task)) _task = null;
@@ -287,6 +293,8 @@ class BackgroundUploadTransport implements UploadTransport {
       case BackgroundTaskStatus.running:
         task.ran = true;
         task.requeued = false;
+        task.requeuedOffset = null;
+        task.recheck?.cancel();
       case BackgroundTaskStatus.enqueued:
         // 跑過又回到 enqueued：排程失敗退回 WorkManager 後被套件重排。
         if (task.ran) {
@@ -349,14 +357,22 @@ class BackgroundUploadTransport implements UploadTransport {
     if (task.requeued) _checkRequeued(task);
   }
 
-  /// task 停在 enqueued：查進度沒有前進就取消，交給上傳器重排。
+  /// task 停在 enqueued：查進度沒有前進就取消，交給上傳器重排；有前進就記下來，
+  /// [requeueRecheck] 後（App 仍在前景時）再查一次。
   Future<void> _checkRequeued(_Task task) async {
     if (task.checking || task.result.isCompleted) return;
     task.checking = true;
+    task.recheck?.cancel();
     try {
       final offset = await _http.query();
       if (!task.requeued || task.result.isCompleted || _cancelled) return;
-      if (offset > task.start) return;
+      if (offset > (task.requeuedOffset ?? task.start)) {
+        task.requeuedOffset = offset;
+        task.recheck = Timer(requeueRecheck, () {
+          if (foreground.value && task.requeued) _checkRequeued(task);
+        });
+        return;
+      }
       debugPrint('BackgroundUploadTransport: ${task.id} 停在重排沒有前進，取消後重排');
       task.cancelledToRequeue = true;
       await _cancelAndWait(engine, task.id, cancelWait);
@@ -429,6 +445,12 @@ class _Task {
 
   /// 正在檢查重排的 task 有沒有前進。
   bool checking = false;
+
+  /// 停在 enqueued 後上次查到的雲端進度；還沒查過是 null（以 [start] 比）。
+  int? requeuedOffset;
+
+  /// 停在 enqueued 但有前進時，下一次檢查。
+  Timer? recheck;
 
   /// 因為停在重排而由這裡取消（取消事件當作可重試的中斷）。
   bool cancelledToRequeue = false;
