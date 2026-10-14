@@ -11,12 +11,18 @@ import '../../../core/constants/app_typography.dart';
 import 'event_cover.dart';
 
 // 依分類配色，純視覺區隔用。先用後端分類表設定的顏色（決策紀錄 A56）；
-// 清單還沒抓到、抓取失敗或沒設顏色時，退回這份與後端預設值相同的對照。
+// 清單還沒抓到、抓取失敗或沒設顏色時，退回 [eventCategoryFallbackColor]。
 Color _categoryColor(String? category) {
   if (category != null) {
     final fromServer = CategoryService.colorOf(CategoryModule.events, category);
     if (fromServer != null) return fromServer;
   }
+  return eventCategoryFallbackColor(category);
+}
+
+/// 分類沒設顏色時的內建對照，與後端預設分類的顏色相同；其他分類一律 inkSoft。
+/// 後台選色的「不指定」預覽也用它。
+Color eventCategoryFallbackColor(String? category) {
   switch (category) {
     case '走讀':
     case '線上':
@@ -434,55 +440,7 @@ class EventList extends StatelessWidget {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            SizedBox(
-              width: seniorMode ? 88 : 56,
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 10),
-                decoration: BoxDecoration(
-                  color: color,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      _mon(d),
-                      style: TextStyle(
-                        fontSize: AppTypography.size(
-                          AppTypography.micro,
-                          seniorMode: seniorMode,
-                        ),
-                        color: AppColors.gold,
-                        letterSpacing: 0.5,
-                      ),
-                    ),
-                    Text(
-                      _day(d),
-                      style: AppTypography.serif(
-                        fontSize: AppTypography.size(
-                          AppTypography.headline,
-                          seniorMode: seniorMode,
-                        ),
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.creamLight,
-                        height: 1,
-                      ),
-                    ),
-                    Text(
-                      _wd(d),
-                      style: TextStyle(
-                        fontSize: AppTypography.size(
-                          AppTypography.micro,
-                          seniorMode: seniorMode,
-                        ),
-                        color: AppColors.creamLight.withValues(alpha: 0.7),
-                        letterSpacing: 1.5,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+            EventDateBox(date: d, color: color, seniorMode: seniorMode),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -569,6 +527,74 @@ class EventList extends StatelessWidget {
               ),
             ),
             EventCoverThumb(url: e.coverImageUrl, seniorMode: seniorMode),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 活動列表一般列左邊的日期方塊：分類色底，金色月份、米白日期與星期。
+/// 後台分類選色的預覽也用它，確保看到的跟列表一樣。
+class EventDateBox extends StatelessWidget {
+  final DateTime date;
+  final Color color;
+  final bool seniorMode;
+
+  const EventDateBox({
+    super.key,
+    required this.date,
+    required this.color,
+    required this.seniorMode,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: seniorMode ? 88 : 56,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        decoration: BoxDecoration(
+          color: color,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              _mon(date),
+              style: TextStyle(
+                fontSize: AppTypography.size(
+                  AppTypography.micro,
+                  seniorMode: seniorMode,
+                ),
+                color: AppColors.gold,
+                letterSpacing: 0.5,
+              ),
+            ),
+            Text(
+              _day(date),
+              style: AppTypography.serif(
+                fontSize: AppTypography.size(
+                  AppTypography.headline,
+                  seniorMode: seniorMode,
+                ),
+                fontWeight: FontWeight.w700,
+                color: AppColors.creamLight,
+                height: 1,
+              ),
+            ),
+            Text(
+              _wd(date),
+              style: TextStyle(
+                fontSize: AppTypography.size(
+                  AppTypography.micro,
+                  seniorMode: seniorMode,
+                ),
+                color: AppColors.creamLight.withValues(alpha: 0.7),
+                letterSpacing: 1.5,
+              ),
+            ),
           ],
         ),
       ),
