@@ -159,12 +159,15 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
     }
   }
 
-  /// 下架前先確認；處理中的影片轉檔可能晚於下架完成，多提醒一句。
+  /// 下架前先確認。YouTube 沒有播放檔，後端只改狀態；
+  /// 處理中的影片轉檔可能晚於下架完成，多提醒一句。
   Future<void> _archive(AdminVideo video) async {
     final confirmed = await showConfirmDialog(
       context,
       title: '下架這支影片？',
-      message: video.status == 'processing'
+      message: video.isYouTube
+          ? '下架後 App 不再顯示這支影片。'
+          : video.status == 'processing'
           ? '下架會刪除播放檔，無法復原。轉檔中的影片之後可能仍有殘留檔案。'
           : '下架會刪除播放檔，無法復原。',
       confirmText: '下架',

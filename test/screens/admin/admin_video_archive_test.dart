@@ -1,5 +1,5 @@
 // 下架影片（後台影片 T-08）：archiveVideo 的端點與回傳值（規格範例，不打正式 API）；
-// 列選單「下架」先確認、取消不送出、成功就地改成已下架、處理中多一句提醒、
+// 列選單「下架」先確認、取消不送出、成功就地改成已下架、處理中多一句提醒、YouTube 用專用文字、
 // 檔案沒刪乾淨提示並提供「再刪一次檔案」（不再確認）、送出中選單停用、
 // 請求期間列表更新過以新資料為底、404 重抓列表、非管理員退出後台。
 
@@ -27,12 +27,16 @@ const _archivePath = '/api/admin/videos/7/archive';
 const _archived = 'post_api_admin_videos_archive.json';
 const _notDeleted = 'post_api_admin_videos_archive_files_not_deleted.json';
 
-Map<String, dynamic> _video({String status = 'ready', String title = '織布'}) => {
+Map<String, dynamic> _video({
+  String status = 'ready',
+  String title = '織布',
+  String source = 'hls',
+}) => {
   'id': 7,
   'title': title,
   'description': null,
   'category': 'cultural',
-  'source': 'hls',
+  'source': source,
   'status': status,
   'fail_reason': null,
   'duration_sec': 60,
@@ -87,7 +91,11 @@ void main() {
 
     /// 列表回一筆 [status] 的影片；下架依序回 [archive]（fixture 檔名、http.Response，
     /// 或 Completer<String>：完成前請求停在送出中，完成值是 fixture 檔名）。
-    void mock({String status = 'ready', required List<Object> archive}) {
+    void mock({
+      String status = 'ready',
+      String source = 'hls',
+      required List<Object> archive,
+    }) {
       listCalls = 0;
       archiveCalls = 0;
       listTitle = '織布';
@@ -96,7 +104,9 @@ void main() {
           case _videosPath:
             listCalls++;
             return jsonResponse({
-              'videos': [_video(status: status, title: listTitle)],
+              'videos': [
+                _video(status: status, title: listTitle, source: source),
+              ],
               'page_info': {'next_cursor': null, 'has_more': false},
             });
           case _archivePath:
@@ -196,6 +206,19 @@ void main() {
       await tester.tap(confirmButton());
       await tester.pumpAndSettle();
       expect(archiveCalls, 1);
+    });
+
+    testWidgets('YouTube 影片的確認框用專用文字（沒有播放檔可刪）', (tester) async {
+      mock(source: 'youtube', archive: [_archived]);
+      await openList(tester);
+      await chooseArchive(tester);
+
+      expect(find.text('下架後 App 不再顯示這支影片。'), findsOneWidget);
+      expect(find.textContaining('刪除播放檔'), findsNothing);
+      await tester.tap(confirmButton());
+      await tester.pumpAndSettle();
+      expect(archiveCalls, 1);
+      expect(rowStatus('已下架'), findsOneWidget);
     });
 
     testWidgets('已下架的影片沒有下架選項', (tester) async {
