@@ -163,9 +163,27 @@ void main() {
     await tester.tap(find.widgetWithText(ChoiceChip, '全部來源'));
     await tester.pumpAndSettle();
     expect(listRequests.last.queryParameters, {'q': '織布'});
+  });
 
-    final field = tester.widget<TextField>(find.byType(TextField));
-    expect(field.maxLength, 80);
+  testWidgets('搜尋上限以 UTF-16 單位計（同後端），emoji 不會被放行成 400', (tester) async {
+    mock((_) => _page([_video(1)], null));
+    await _open(tester);
+
+    // 79 個中文字＋1 個 emoji：字形叢集是 80，UTF-16 是 81。
+    await tester.enterText(find.byType(TextField), '${'織' * 79}😀');
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.pumpAndSettle();
+
+    final text = tester
+        .widget<TextField>(find.byType(TextField))
+        .controller!
+        .text;
+    expect(text, '織' * 79, reason: '放不下的 emoji 整個不收，不切成半個');
+    expect(listRequests.last.queryParameters['q'], '織' * 79);
+    expect(
+      listRequests.last.queryParameters['q']!.length,
+      lessThanOrEqualTo(80),
+    );
   });
 
   testWidgets('捲到底載入下一頁', (tester) async {

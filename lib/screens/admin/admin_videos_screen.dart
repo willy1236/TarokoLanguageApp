@@ -16,11 +16,12 @@ import '../../models/admin_models.dart';
 import '../../models/content_category.dart';
 import '../../services/admin_service.dart';
 import '../../services/category_service.dart';
+import '../../shared/utils/utf16_length_limit.dart';
 import 'admin_error.dart';
 import 'widgets/admin_paged_list.dart';
 import 'widgets/admin_widgets.dart';
 
-/// 標題搜尋上限，同後端 `q`。
+/// 標題搜尋上限，同後端 `q`（UTF-16 單位）。
 const adminVideoSearchMax = 80;
 
 /// 停止輸入多久後送出搜尋。
@@ -112,7 +113,8 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
 
   void _applySearch(String text) {
     _debounce?.cancel();
-    final query = text.trim();
+    // 輸入法組字中 formatter 不截，停止輸入時可能仍超過上限，送出前再截一次。
+    final query = truncateUtf16(text.trim(), adminVideoSearchMax);
     if (query == _query) return;
     setState(() => _query = query);
     _list.reset();
@@ -156,7 +158,10 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
     ),
     child: TextField(
       controller: _search,
-      maxLength: adminVideoSearchMax,
+      // 後端以 UTF-16 單位計 80 字，maxLength 數字形叢集，emoji 會被放行後回 400。
+      inputFormatters: const [
+        Utf16LengthLimitingTextInputFormatter(adminVideoSearchMax),
+      ],
       onChanged: _onSearchChanged,
       onSubmitted: _applySearch,
       textInputAction: TextInputAction.search,
