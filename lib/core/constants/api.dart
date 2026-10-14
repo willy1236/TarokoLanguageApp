@@ -242,4 +242,6 @@ class ApiConfig {
   static const String adminAppeals = '/api/admin/appeals';
   static String adminAppealResolve(int id) => '/api/admin/appeals/$id/resolve';
   static const String adminAnnouncements = '/api/admin/announcements';
+  // 影片管理（內部管理.md §6.2）
+  static const String adminVideos = '/api/admin/videos';
 }

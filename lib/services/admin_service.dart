@@ -318,6 +318,33 @@ class AdminService {
     });
   }
 
+  // ── 影片管理（內部管理.md §6.2）──────────────────────────────
+
+  /// 後台影片列表，新的在前。[status]（processing／ready／failed／archived）、
+  /// [source]（hls／youtube）為 null 或空字串代表全部；[q] 比對標題，
+  /// 前後空白去掉後為空就不送（後端上限 80 字）。
+  static Future<AdminPage<AdminVideo>> fetchVideos({
+    String? status,
+    String? source,
+    String? q,
+    String? cursor,
+  }) async {
+    final keyword = q?.trim() ?? '';
+    final json = await ApiClient.get(
+      ApiConfig.adminVideos,
+      query: {
+        if (status != null && status.isNotEmpty) 'status': status,
+        if (source != null && source.isNotEmpty) 'source': source,
+        if (keyword.isNotEmpty) 'q': keyword,
+        ...PageInfo.query(cursor: cursor),
+      },
+    );
+    return (
+      items: _list(json, 'videos', AdminVideo.fromJson),
+      pageInfo: PageInfo.fromResponse(json),
+    );
+  }
+
   // ── 小米幣查帳（內部管理.md §4、§5）唯讀，不寫操作紀錄 ─────────────────
 
   /// 任一使用者的小米幣明細，形狀同使用者自己的明細。

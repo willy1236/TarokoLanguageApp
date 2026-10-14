@@ -1,0 +1,14 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §6.2 GET /api/admin/videos；欄位取自 backend/routes/admin-videos.ts 的 VIDEO_COLUMNS 與 說明文件/SQL/videos.md。正式資料不一定有處理中、失敗、已下架的影片，照實作手寫各一筆；錄到真實回應後改用 test/fixtures/api/get_api_admin_videos*.json。",
+  "total": 5,
+  "page": 1,
+  "page_size": 20,
+  "page_info": { "next_cursor": null, "has_more": false },
+  "videos": [
+    { "id": 105, "title": "上傳中的教學影片", "description": null, "category": "education", "source": "hls", "status": "processing", "fail_reason": null, "duration_sec": null, "thumbnail_url": null, "youtube_video_id": null, "embeddable": null, "tribe_id": null, "view_count": 0, "like_count": 0, "original_size_mb": 820, "uploaded_by": "admin:20", "published_at": null, "created_at": "2026-10-13T09:30:00.000Z", "updated_at": "2026-10-13T09:30:00.000Z" },
+    { "id": 104, "title": "轉檔失敗的部落宣傳", "description": "說明文字", "category": "tribal_intro", "source": "hls", "status": "failed", "fail_reason": "ffmpeg exit 1: moov atom not found", "duration_sec": null, "thumbnail_url": null, "youtube_video_id": null, "embeddable": null, "tribe_id": 3, "view_count": 0, "like_count": 0, "original_size_mb": 410, "uploaded_by": "admin:20", "published_at": null, "created_at": "2026-10-12T08:00:00.000Z", "updated_at": "2026-10-12T14:00:00.000Z" },
+    { "id": 103, "title": "不允許嵌入的 YouTube 影片", "description": null, "category": "cultural", "source": "youtube", "status": "ready", "fail_reason": null, "duration_sec": null, "thumbnail_url": "https://i.ytimg.com/vi/abcdefghijk/hqdefault.jpg", "youtube_video_id": "abcdefghijk", "embeddable": false, "tribe_id": null, "view_count": 3, "like_count": 0, "original_size_mb": null, "uploaded_by": "admin:20", "published_at": "2026-10-11T10:00:00.000Z", "created_at": "2026-10-11T10:00:00.000Z", "updated_at": "2026-10-11T10:00:00.000Z" },
+    { "id": 102, "title": "已下架的活動紀錄", "description": "舊活動", "category": "event", "source": "hls", "status": "archived", "fail_reason": null, "duration_sec": 623, "thumbnail_url": "https://cdn.example.com/videos/102/thumb.jpg", "youtube_video_id": null, "embeddable": null, "tribe_id": null, "view_count": 41, "like_count": 2, "original_size_mb": 300, "uploaded_by": "video-upload", "published_at": "2026-09-01T00:00:00.000Z", "created_at": "2026-09-01T00:00:00.000Z", "updated_at": "2026-10-10T00:00:00.000Z" },
+    { "id": 101, "title": "太魯閣族織布", "description": null, "category": "new_cat", "source": "youtube", "status": "ready", "fail_reason": null, "duration_sec": 300, "thumbnail_url": "https://i.ytimg.com/vi/zyxwvutsrqp/hqdefault.jpg", "youtube_video_id": "zyxwvutsrqp", "embeddable": true, "tribe_id": 1, "view_count": 120, "like_count": 8, "original_size_mb": null, "uploaded_by": "youtube-import", "published_at": "2026-08-20T00:00:00.000Z", "created_at": "2026-08-20T00:00:00.000Z", "updated_at": "2026-08-20T00:00:00.000Z" }
+  ]
+}
