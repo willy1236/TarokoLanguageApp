@@ -486,6 +486,43 @@ void main() {
       expect(progress.last, UploadProgress(sent: size, total: size));
     });
 
+    test('重新 start 時查進度失敗：retrying 進度沿用上次確認的位置，不掉回 0', () async {
+      final size = _multiple * 4;
+      var offline = false;
+      final uploader = ResumableUploader(
+        _session(size),
+        _FakeSource(size),
+        chunkSize: _multiple * 2,
+        retryDelays: const [Duration.zero],
+        client: MockClient((request) async {
+          if (offline) throw http.ClientException('offline');
+          if (request.headers['Content-Range']!.startsWith('bytes */')) {
+            return http.Response(
+              '',
+              308,
+              headers: {'range': 'bytes=0-${_multiple * 2 - 1}'},
+            );
+          }
+          return http.Response('', 503);
+        }),
+      );
+      await expectLater(
+        uploader.start().drain<void>(),
+        throwsA(isA<UploadInterrupted>()),
+      );
+
+      offline = true;
+      final events = <UploadProgress>[];
+      await expectLater(
+        uploader.start().forEach(events.add),
+        throwsA(isA<UploadInterrupted>()),
+      );
+      expect(
+        events.first,
+        UploadProgress(sent: _multiple * 2, total: size, retrying: true),
+      );
+    });
+
     test('404／410、其他 4xx、讀檔失敗不重試', () async {
       for (final (status, matcher) in [
         (404, isA<UploadSessionExpired>()),

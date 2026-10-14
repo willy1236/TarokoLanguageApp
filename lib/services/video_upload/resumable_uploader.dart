@@ -123,6 +123,9 @@ class ResumableUploader {
   final http.Client _client;
   bool _cancelled = false;
 
+  /// 雲端最近一次確認收到的位置。
+  int _confirmed = 0;
+
   /// 進行中的請求：[cancel] 時立刻中止並讓它以錯誤結束。
   void Function()? _stopRequest;
 
@@ -157,7 +160,8 @@ class ResumableUploader {
   /// 完成時關閉串流並關掉 http.Client（之後不能再用）。重試用完丟 [UploadInterrupted]，
   /// 工作階段失效丟 [UploadSessionExpired]；[cancel] 後安靜關閉。
   Stream<UploadProgress> start() async* {
-    var offset = 0;
+    // 從上次確認過的位置算起：重新 start 時查進度失敗，進度也不會掉回 0。
+    var offset = _confirmed;
     var failures = 0;
     DateTime? failingSince;
     try {
@@ -170,7 +174,7 @@ class ResumableUploader {
             failures = 0;
             failingSince = null;
           }
-          offset = confirmed;
+          offset = _confirmed = confirmed;
           yield UploadProgress(sent: offset, total: _total);
           while (offset < _total) {
             final end = offset + chunkSize < _total
@@ -183,7 +187,7 @@ class ResumableUploader {
               bytes,
             );
             if (_cancelled) return;
-            offset = _offsetFrom(response);
+            offset = _confirmed = _offsetFrom(response);
             failures = 0;
             failingSince = null;
             yield UploadProgress(sent: offset, total: _total);

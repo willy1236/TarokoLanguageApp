@@ -227,6 +227,28 @@ void main() {
     expect(gcs.received, _multiple * 3);
   });
 
+  test('自動重試用完而中斷後手動重試：不沿用「自動重試中」的狀態', () async {
+    VideoUploadManager.uploaderFactory = (session, source) => ResumableUploader(
+      session,
+      source,
+      client: MockClient((_) async => http.Response('', 503)),
+      retryDelays: const [Duration.zero],
+    );
+    manager.start(
+      _video,
+      _session(_multiple),
+      _FakeSource(_multiple),
+      fileName: _fileName,
+    );
+    await settle();
+    expect(manager.active.value!.state, UploadState.interrupted);
+    expect(manager.active.value!.progress.retrying, isTrue);
+
+    manager.retry();
+    expect(manager.active.value!.state, UploadState.uploading);
+    expect(manager.active.value!.progress.retrying, isFalse);
+  });
+
   test('工作階段失效（404）→ interrupted 且 sessionExpired', () async {
     VideoUploadManager.uploaderFactory = (session, source) => ResumableUploader(
       session,

@@ -192,7 +192,12 @@ class VideoUploadManager {
   void retry() {
     final current = _active.value;
     if (current == null || current.state != UploadState.interrupted) return;
-    _active.value = current.copyWith(state: UploadState.uploading);
+    // 手動重試不是自動重試：清掉中斷前留下的 retrying，不閃「自動重試中」。
+    final progress = current.progress;
+    _active.value = current.copyWith(
+      state: UploadState.uploading,
+      progress: UploadProgress(sent: progress.sent, total: progress.total),
+    );
     _run();
   }
 
