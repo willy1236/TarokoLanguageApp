@@ -33,7 +33,8 @@ final class AdminVideoReuploaded extends AdminVideoReuploadResult {
   const AdminVideoReuploaded(this.video);
 }
 
-/// 影片狀態已改變（409 VIDEO_NOT_FAILED）或已不存在（404 VIDEO_NOT_FOUND），列表要重抓。
+/// 影片狀態已改變（409 VIDEO_NOT_FAILED）、已不存在（404 VIDEO_NOT_FOUND），
+/// 或後端已改成處理中但這裡沒能開始上傳（送出期間別支先開始了），列表要重抓。
 final class AdminVideoReuploadStale extends AdminVideoReuploadResult {
   const AdminVideoReuploadStale();
 }
@@ -99,7 +100,9 @@ class _AdminVideoReuploadScreenState extends State<AdminVideoReuploadScreen> {
       if (!mounted) return;
       setState(() => _busy = false);
       if (e is UploadBusy) {
+        // 後端已把影片改成處理中（只是這裡沒能開始傳）：回列表重抓，不再顯示成失敗。
         blockedByActiveUpload(context);
+        Navigator.of(context).pop(const AdminVideoReuploadStale());
         return;
       }
       final stale = _staleMessage(e);

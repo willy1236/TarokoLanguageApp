@@ -82,7 +82,7 @@ void main() {
   late AdminVideoReuploadResult? result;
   late bool closed;
 
-  /// retry 回 [retry]（Map 為 200，http.Response 原樣）。
+  /// retry 回 [retry]（Map 為 200，http.Response 原樣，Completer 等它完成）。
   void mock({Object? retry}) {
     requests = [];
     ApiClient.httpClient = MockClient((r) async {
@@ -90,6 +90,7 @@ void main() {
       if (r.url.path == _retryPath) {
         final res =
             retry ?? loadSpecFixtureMap('post_api_admin_videos_retry.json');
+        if (res is Completer<http.Response>) return res.future;
         return res is http.Response ? res : jsonResponse(res);
       }
       if (r.url.path == '/api/me') {
@@ -317,6 +318,32 @@ void main() {
     expect(find.text('已有一支影片正在上傳，請等它傳完再上傳下一支'), findsOneWidget);
     expect(find.byType(AdminVideoReuploadScreen), findsOneWidget);
     expect(VideoUploadManager.instance.active.value!.video.id, 99);
+    await VideoUploadManager.instance.cancel();
+  });
+
+  testWidgets('retry 成功後才發現別支已開始上傳：提示並回列表重抓（影片已是處理中）', (tester) async {
+    final response = Completer<http.Response>();
+    mock(retry: response);
+    fakePicker();
+    await open(tester);
+    await pickFromGallery(tester);
+    await tester.tap(submitButton());
+    await tester.pump();
+    expect(retryCalls(), hasLength(1));
+
+    // 請求期間別支先開始上傳。
+    startOtherUpload();
+    response.complete(
+      jsonResponse(loadSpecFixtureMap('post_api_admin_videos_retry.json')),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('已有一支影片正在上傳，請等它傳完再上傳下一支'), findsOneWidget);
+    expect(find.byType(AdminVideoReuploadScreen), findsNothing);
+    expect(find.byType(AdminVideoUploadProgressScreen), findsNothing);
+    expect(result, isA<AdminVideoReuploadStale>());
+    expect(VideoUploadManager.instance.active.value!.video.id, 99);
+    expect(source.discarded, 1, reason: '沒交給上傳服務的暫存複本要刪');
     await VideoUploadManager.instance.cancel();
   });
 
