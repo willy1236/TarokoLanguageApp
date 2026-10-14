@@ -125,7 +125,7 @@ class ResumableUploader {
     http.Client? client,
     UploadTransport? transport,
     @visibleForTesting DateTime Function()? clock,
-  }) : chunkSize = _alignChunk(chunkSize, session.chunkMultiple),
+  }) : chunkSize = alignChunk(chunkSize, session.chunkMultiple),
        retryDelays = retryDelays ?? defaultRetryDelays,
        _transport =
            transport ??
@@ -138,7 +138,8 @@ class ResumableUploader {
            ),
        _now = clock ?? DateTime.now;
 
-  static int _alignChunk(int size, int multiple) {
+  /// [size] 向下取到 [multiple] 的倍數（至少一倍）。
+  static int alignChunk(int size, int multiple) {
     if (multiple <= 0) return size;
     final aligned = size - size % multiple;
     return aligned < multiple ? multiple : aligned;

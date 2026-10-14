@@ -16,6 +16,7 @@ import 'package:flutter_application_1/services/video_upload/chunk_source.dart';
 import 'package:flutter_application_1/services/video_upload/pending_uploads.dart';
 import 'package:flutter_application_1/services/video_upload/resumable_uploader.dart';
 import 'package:flutter_application_1/services/video_upload/upload_files_io.dart';
+import 'package:flutter_application_1/services/video_upload/upload_transport.dart';
 import 'package:flutter_application_1/services/video_upload/video_file_picker.dart';
 import 'package:flutter_application_1/services/video_upload/video_upload_manager.dart';
 
@@ -42,6 +43,33 @@ class _FakeSource implements ChunkSource {
 
   @override
   Future<void> discard() async => discarded++;
+}
+
+/// 查進度回 0，送的時候說手機空間不足。
+class _StorageShortTransport implements UploadTransport {
+  final int size;
+
+  _StorageShortTransport(this.size);
+
+  @override
+  bool get sendsWholeRemainder => true;
+
+  @override
+  Future<int> query() async => 0;
+
+  @override
+  Future<int?> send(
+    int start,
+    int end, {
+    void Function(int sent)? onProgress,
+    void Function()? onPreparing,
+  }) async => throw const UploadStorageInsufficient(1234);
+
+  @override
+  void cancel() {}
+
+  @override
+  void close() {}
 }
 
 /// 讀檔卡在 [gate]，記下刪檔時是否還在讀。
@@ -264,6 +292,28 @@ void main() {
     await settle();
     expect(manager.active.value!.state, UploadState.interrupted);
     expect(manager.active.value!.sessionExpired, isTrue);
+  });
+
+  test('手機空間不足 → interrupted 並帶需要的空間；重試清掉', () async {
+    VideoUploadManager.uploaderFactory = (session, source) => ResumableUploader(
+      session,
+      source,
+      transport: _StorageShortTransport(session.size),
+    );
+    manager.start(
+      _video,
+      _session(_multiple),
+      _FakeSource(_multiple),
+      fileName: _fileName,
+    );
+    await settle();
+    final interrupted = manager.active.value!;
+    expect(interrupted.state, UploadState.interrupted);
+    expect(interrupted.storageNeeded, 1234);
+    expect(interrupted.sessionExpired, isFalse);
+
+    manager.retry();
+    expect(manager.active.value!.storageNeeded, isNull);
   });
 
   test('放棄：清空狀態、刪暫存檔，之後可以開始新的', () async {
