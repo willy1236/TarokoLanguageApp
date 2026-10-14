@@ -244,4 +244,6 @@ class ApiConfig {
   static const String adminAnnouncements = '/api/admin/announcements';
   // 影片管理（內部管理.md §6.2）
   static const String adminVideos = '/api/admin/videos';
+  static const String adminVideoYouTubePreview =
+      '/api/admin/videos/youtube/preview';
 }
