@@ -19,6 +19,9 @@ abstract class ChunkSource {
   /// 本機檔案路徑；網頁版沒有路徑，是 null。未完成上傳的紀錄靠它在 App 重開後找回檔案。
   String? get path;
 
+  /// 檔案是選檔時複製出來的 App 暫存複本，[discard] 時會刪掉；網頁版與桌面版原檔是 false。
+  bool get temporary;
+
   /// 檔案總大小（bytes）。
   int get size;
 

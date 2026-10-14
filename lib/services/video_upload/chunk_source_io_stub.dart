@@ -13,6 +13,9 @@ class IoChunkSource implements ChunkSource {
   String? get path => throw UnsupportedError('ChunkSource.io');
 
   @override
+  bool get temporary => false;
+
+  @override
   int get size => throw UnsupportedError('ChunkSource.io');
 
   @override

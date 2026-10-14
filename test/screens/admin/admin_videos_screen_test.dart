@@ -81,6 +81,9 @@ class _FakeSource implements ChunkSource {
   String? get path => null;
 
   @override
+  bool get temporary => false;
+
+  @override
   final int size;
 
   _FakeSource(this.size);

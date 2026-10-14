@@ -17,6 +17,9 @@ class WebChunkSource implements ChunkSource {
   String? get path => null;
 
   @override
+  bool get temporary => false;
+
+  @override
   int get size => file.size;
 
   @override

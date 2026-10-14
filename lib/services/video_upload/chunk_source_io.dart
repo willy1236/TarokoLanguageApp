@@ -8,6 +8,7 @@ import 'chunk_source.dart';
 class IoChunkSource implements ChunkSource {
   @override
   final String path;
+  @override
   final bool temporary;
 
   @override
