@@ -137,8 +137,8 @@ class VideoUploadManager {
       state: UploadState.uploading,
     );
     final path = source.path;
-    _writePending(
-      () => _pending.save(
+    _writePending(() async {
+      final replaced = await _pending.save(
         PendingUpload(
           userId: currentUserId(),
           videoId: video.id,
@@ -150,8 +150,16 @@ class VideoUploadManager {
           temporaryFile: path != null && source.temporary,
           createdAt: DateTime.now(),
         ),
-      ),
-    );
+      );
+      // 同一支影片的舊紀錄（例如沒傳完、後來轉失敗再重新上傳）換了檔案：舊的暫存複本沒人用了。
+      final oldPath = replaced?.filePath;
+      if (replaced != null &&
+          replaced.temporaryFile &&
+          oldPath != null &&
+          oldPath != path) {
+        await deleteUploadFile(oldPath);
+      }
+    });
     _run();
   }
 

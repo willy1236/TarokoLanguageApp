@@ -172,7 +172,8 @@ class PendingUploads {
   }
 
   /// 新增或更新一支（同一支影片只留一筆）。同一個工作階段續傳時保留原本的建立時間。
-  Future<void> save(PendingUpload upload) async {
+  /// 回傳被取代的舊紀錄（沒有就是 null）；舊紀錄的暫存複本由呼叫端決定要不要刪。
+  Future<PendingUpload?> save(PendingUpload upload) async {
     await _ensureLoaded();
     final existing = _items.value.where((p) => p.videoId == upload.videoId);
     final keepCreatedAt =
@@ -186,6 +187,7 @@ class PendingUploads {
         if (p.videoId != upload.videoId) p,
       record,
     ]);
+    return existing.firstOrNull;
   }
 
   /// 刪掉這支的紀錄（檔案不動，由上傳服務的讀檔來源負責）。

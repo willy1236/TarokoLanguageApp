@@ -548,6 +548,78 @@ void main() {
       gcs.gate!.complete();
     });
 
+    test('同一支影片用新檔重新上傳（新工作階段）：取代舊紀錄，舊暫存複本刪掉', () async {
+      final oldFile = tempFile('1_old.mov', 1);
+      await pending.save(record(filePath: oldFile.path, size: _multiple));
+      useGcs(_multiple);
+      gcs.gate = Completer<void>();
+      final newFile = tempFile('2_IMG_0001.MOV', _multiple);
+      manager.start(
+        _video,
+        UploadSession(
+          sessionUrl: Uri.parse(
+            'https://storage.googleapis.com/upload?upload_id=retry',
+          ),
+          size: _multiple,
+          chunkMultiple: _multiple,
+        ),
+        ChunkSource.io(newFile.path, temporary: true),
+        fileName: _fileName,
+      );
+      await manager.pendingWrites;
+
+      final p = pending.items.value.single;
+      expect(p.filePath, newFile.path);
+      expect(p.session.sessionUrl.queryParameters['upload_id'], 'retry');
+      expect(oldFile.existsSync(), isFalse, reason: '舊暫存複本沒人用了');
+      expect(newFile.existsSync(), isTrue);
+      gcs.gate!.complete();
+    });
+
+    test('取代的舊紀錄不是暫存複本、或和新的同一個檔案：不刪', () async {
+      final kept = tempFile('1_kept.mov', _multiple);
+      await pending.save(
+        PendingUpload(
+          userId: 20,
+          videoId: 107,
+          title: '部落祭典紀錄',
+          category: 'cultural',
+          session: _session(_multiple),
+          fileName: _fileName,
+          filePath: kept.path,
+          temporaryFile: false,
+          createdAt: DateTime(2026, 10, 14, 9),
+        ),
+      );
+      useGcs(_multiple);
+      gcs.gate = Completer<void>();
+      manager.start(
+        _video,
+        _session(_multiple),
+        _FakeSource(_multiple),
+        fileName: _fileName,
+      );
+      await manager.pendingWrites;
+      expect(kept.existsSync(), isTrue, reason: '不是 App 的暫存複本');
+      gcs.gate!.complete();
+      await manager.cancel();
+      await manager.pendingWrites;
+
+      final same = tempFile('2_same.mov', _multiple);
+      await pending.save(record(filePath: same.path, size: _multiple));
+      useGcs(_multiple);
+      gcs.gate = Completer<void>();
+      manager.start(
+        _video,
+        _session(_multiple),
+        ChunkSource.io(same.path, temporary: true),
+        fileName: _fileName,
+      );
+      await manager.pendingWrites;
+      expect(same.existsSync(), isTrue, reason: '續傳同一個檔案');
+      gcs.gate!.complete();
+    });
+
     test('重選的檔案檔名或大小不符 → PendingFileMismatch，重選的暫存複本刪掉', () async {
       final p = record(size: _multiple);
       for (final (name, size) in [('other.mov', _multiple), (_fileName, 99)]) {
