@@ -78,6 +78,9 @@ final _categories = {
 
 class _FakeSource implements ChunkSource {
   @override
+  String? get path => null;
+
+  @override
   final int size;
 
   _FakeSource(this.size);

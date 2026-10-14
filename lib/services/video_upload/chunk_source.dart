@@ -16,6 +16,9 @@ abstract class ChunkSource {
   factory ChunkSource.io(String path, {bool temporary}) =
       platform.IoChunkSource;
 
+  /// 本機檔案路徑；網頁版沒有路徑，是 null。未完成上傳的紀錄靠它在 App 重開後找回檔案。
+  String? get path;
+
   /// 檔案總大小（bytes）。
   int get size;
 

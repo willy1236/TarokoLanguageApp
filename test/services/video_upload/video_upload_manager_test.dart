@@ -17,6 +17,9 @@ const _multiple = 256 * 1024;
 
 class _FakeSource implements ChunkSource {
   @override
+  String? get path => null;
+
+  @override
   final int size;
   int discarded = 0;
 

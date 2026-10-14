@@ -6,6 +6,7 @@ import 'dart:typed_data';
 import 'chunk_source.dart';
 
 class IoChunkSource implements ChunkSource {
+  @override
   final String path;
   final bool temporary;
 

@@ -19,6 +19,9 @@ final _url = Uri.parse(
 /// 記憶體裡的檔案，記下每次讀了哪一段。
 class _FakeSource implements ChunkSource {
   @override
+  String? get path => null;
+
+  @override
   final int size;
   final reads = <(int, int)>[];
   int closed = 0;

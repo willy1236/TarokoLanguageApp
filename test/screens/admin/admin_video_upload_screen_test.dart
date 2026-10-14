@@ -48,6 +48,9 @@ const _movInfo = UploadFileInfo(
 /// 選檔回傳的讀檔來源；只記有沒有被刪暫存。
 class _FakeSource implements ChunkSource {
   @override
+  String? get path => null;
+
+  @override
   final int size;
   int discarded = 0;
 
