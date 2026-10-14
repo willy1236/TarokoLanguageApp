@@ -25,6 +25,19 @@ Future<T?> pushAdmin<T>(BuildContext context, Widget screen) =>
       ),
     );
 
+/// 用另一個後台畫面取代目前這頁（例如上傳頁送出後換成進度頁），[result] 交給開目前這頁的人。
+Future<T?> replaceWithAdmin<T, R>(
+  BuildContext context,
+  Widget screen, {
+  R? result,
+}) => Navigator.of(context).pushReplacement<T, R>(
+  MaterialPageRoute(
+    settings: RouteSettings(name: '$_adminRoutePrefix${screen.runtimeType}'),
+    builder: (_) => screen,
+  ),
+  result: result,
+);
+
 /// 是不是「非管理員」錯誤（403 ADMIN_ONLY）。
 bool isAdminOnlyError(Object? error) =>
     error is ApiException && error.code == 'ADMIN_ONLY';

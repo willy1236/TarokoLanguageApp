@@ -3,7 +3,11 @@
 //
 // YouTube：網址停止輸入約 500ms（貼上時立刻）先預覽，預覽成功才能上架；
 // 已上架過的不能再上架；不允許嵌入的影片標題必填（後端拿不到標題）。
-// 選擇影片檔由後台影片 T-04 接上，目前只顯示「即將開放」。
+//
+// 影片檔（後台影片 T-04）：手機「從相簿」「從檔案」，網頁只有「選擇影片檔」；選完檢查
+// mp4／mov 與 2GB，標題必填。送出後建立影片，交給 App 層級的 VideoUploadManager 分段上傳，
+// 這頁換成進度頁（列表同時重抓，看得到這支「處理中」）。一次只傳一支，未傳完時再選檔會提示。
+// 手機選完檔常駐「建議使用 Wi-Fi」提醒。選了但沒送出就離開，刪掉手機上的暫存複本。
 
 import 'dart:async';
 
@@ -14,11 +18,15 @@ import '../../core/constants/app_radius.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../core/platform/platform_features.dart';
 import '../../models/admin_models.dart';
 import '../../models/content_category.dart';
 import '../../services/admin_service.dart';
 import '../../services/category_service.dart';
+import '../../services/video_upload/video_file_picker.dart';
+import '../../services/video_upload/video_upload_manager.dart';
 import 'admin_error.dart';
+import 'admin_video_upload_progress_screen.dart';
 import 'widgets/admin_video_meta_fields.dart';
 import 'widgets/admin_widgets.dart';
 
@@ -28,7 +36,7 @@ const _previewDebounce = Duration(milliseconds: 500);
 /// 影片來源。
 enum AdminVideoUploadSource { youtube, file }
 
-/// 送出成功時 pop(true)，列表據此重抓。
+/// 送出成功時以 true 結束這頁（YouTube 直接回列表；影片檔換成進度頁），列表據此重抓。
 class AdminVideoUploadScreen extends StatefulWidget {
   const AdminVideoUploadScreen({super.key});
 
@@ -45,8 +53,17 @@ class _AdminVideoUploadScreenState extends State<AdminVideoUploadScreen> {
   )..addListener(_onPreviewChanged);
   bool _busy = false;
 
+  /// 選好、還沒送出的影片檔。
+  PickedVideoFile? _picked;
+
+  /// 選好後系統還在複製檔案（Android 大檔要等）。
+  bool _preparing = false;
+  String? _pickError;
+
   @override
   void dispose() {
+    // 選了但沒送出：手機上的暫存複本用不到了。
+    _picked?.source.discard();
     _previewer.dispose();
     _url.dispose();
     _meta.dispose();
@@ -89,6 +106,101 @@ class _AdminVideoUploadScreenState extends State<AdminVideoUploadScreen> {
       }
       handleAdminError(context, e);
     }
+  }
+
+  /// 一次只傳一支：還有一支沒傳完（傳送中或中斷待處理）時提示，回 true 代表擋下。
+  bool _blockedByActiveUpload() {
+    if (!VideoUploadManager.instance.isBusy) return false;
+    showAdminMessage(
+      '已有一支影片正在上傳，請等它傳完再上傳下一支',
+      action: (label: '查看進度', onPressed: _openProgress),
+    );
+    return true;
+  }
+
+  void _openProgress() {
+    if (mounted) {
+      pushAdmin<void>(context, const AdminVideoUploadProgressScreen());
+    }
+  }
+
+  Future<void> _pick(VideoPickSource from) async {
+    if (_busy || _preparing || _blockedByActiveUpload()) return;
+    setState(() => _pickError = null);
+    try {
+      final picked = await pickAdminVideoFile(
+        from,
+        onPreparing: () {
+          if (mounted) setState(() => _preparing = true);
+        },
+      );
+      if (!mounted) {
+        await picked?.source.discard();
+        return;
+      }
+      if (picked == null) return;
+      await _picked?.source.discard();
+      setState(() => _picked = picked);
+    } on VideoFileRejected catch (e) {
+      if (mounted) setState(() => _pickError = e.message);
+    } catch (e) {
+      debugPrint('AdminVideoUploadScreen: 選檔失敗：$e');
+      if (mounted) setState(() => _pickError = '無法讀取這個檔案，請重新選擇');
+    } finally {
+      if (mounted) setState(() => _preparing = false);
+    }
+  }
+
+  Future<void> _submitFile() async {
+    final picked = _picked;
+    if (picked == null || _busy) return;
+    if (!_meta.validate()) return;
+    if (_blockedByActiveUpload()) return;
+    final meta = _meta.value;
+    final isNewCategory = _meta.isNewCategory;
+    setState(() => _busy = true);
+    try {
+      final created = await AdminService.createUploadVideo(picked.info, meta);
+      VideoUploadManager.instance.start(
+        created.video,
+        created.session,
+        picked.source,
+      );
+      // 交給上傳服務了，離開這頁時不能刪。
+      _picked = null;
+      if (isNewCategory) _refreshVideoCategories();
+      if (mounted) {
+        await replaceWithAdmin<void, bool>(
+          context,
+          const AdminVideoUploadProgressScreen(),
+          result: true,
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _busy = false);
+      if (e is UploadBusy) {
+        _blockedByActiveUpload();
+        return;
+      }
+      final message = _createErrorMessage(e);
+      if (message != null) {
+        showAdminMessage(message);
+      } else {
+        handleAdminError(context, e);
+      }
+    }
+  }
+
+  /// 建立上傳的錯誤；其他錯誤（含非管理員）交給 [handleAdminError]。
+  static String? _createErrorMessage(Object e) {
+    if (e is! ApiException) return null;
+    return switch (e.code) {
+      'UPLOAD_SESSION_FAILED' => '暫時無法建立上傳，請稍後再試',
+      'UNSUPPORTED_VIDEO_TYPE' => '只能上傳 mp4、mov 影片檔',
+      'VIDEO_TOO_LARGE' => '影片檔最大 2GB，請壓縮或剪短後再上傳',
+      _ => null,
+    };
   }
 
   /// 後端已把新分類加進影音分類表：刷新快取，列表與影音頁才拿得到名稱。失敗不影響上架結果。
@@ -139,27 +251,37 @@ class _AdminVideoUploadScreenState extends State<AdminVideoUploadScreen> {
                   seniorMode: senior,
                 ),
               ],
-              AdminVideoUploadSource.file => [_fileComingSoon(senior)],
+              AdminVideoUploadSource.file => [
+                _fileSection(senior),
+                const SizedBox(height: AppSpacing.md),
+                AdminVideoMetaFields(
+                  controller: _meta,
+                  titleRequired: true,
+                  seniorMode: senior,
+                ),
+              ],
             },
           ],
         ),
       ),
-      bottom: (context, senior) => _source == AdminVideoUploadSource.youtube
-          ? AdminActionBar(
-              children: [
-                FilledButton(
-                  onPressed: _busy || !_previewer.canSubmit
-                      ? null
-                      : _submitYouTube,
-                  style: FilledButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.creamLight,
-                  ),
-                  child: Text(_busy ? '上架中…' : '上架'),
-                ),
-              ],
-            )
-          : const SizedBox.shrink(),
+      bottom: (context, senior) => AdminActionBar(
+        children: [
+          switch (_source) {
+            AdminVideoUploadSource.youtube => FilledButton(
+              onPressed: _busy || !_previewer.canSubmit ? null : _submitYouTube,
+              style: _submitStyle,
+              child: Text(_busy ? '上架中…' : '上架'),
+            ),
+            AdminVideoUploadSource.file => FilledButton(
+              onPressed: _busy || _preparing || _picked == null
+                  ? null
+                  : _submitFile,
+              style: _submitStyle,
+              child: Text(_busy ? '建立中…' : '上傳'),
+            ),
+          },
+        ],
+      ),
     ),
   );
 
@@ -271,24 +393,162 @@ class _AdminVideoUploadScreenState extends State<AdminVideoUploadScreen> {
     ),
   );
 
-  // 後台影片 T-04 換成選檔流程。
-  Widget _fileComingSoon(bool senior) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-    child: Column(
+  static final _submitStyle = FilledButton.styleFrom(
+    backgroundColor: AppColors.primary,
+    foregroundColor: AppColors.creamLight,
+  );
+
+  /// 選檔按鈕、準備中、選好的檔案與 Wi-Fi 提醒、選檔錯誤。
+  Widget _fileSection(bool senior) {
+    final picked = _picked;
+    final enabled = !_busy && !_preparing;
+    final error = _pickError;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        const Icon(Icons.video_file_outlined, size: 48, color: AppColors.fog),
-        const SizedBox(height: AppSpacing.sm),
+        Row(
+          children: [
+            if (PlatformFeatures.isMobile) ...[
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: enabled
+                      ? () => _pick(VideoPickSource.gallery)
+                      : null,
+                  icon: const Icon(Icons.photo_library_outlined),
+                  label: const Text('從相簿'),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: enabled
+                      ? () => _pick(VideoPickSource.files)
+                      : null,
+                  icon: const Icon(Icons.folder_open_outlined),
+                  label: const Text('從檔案'),
+                ),
+              ),
+            ] else
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: enabled
+                      ? () => _pick(VideoPickSource.files)
+                      : null,
+                  icon: const Icon(Icons.video_file_outlined),
+                  label: const Text('選擇影片檔'),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(height: AppSpacing.xs),
         Text(
-          '選擇影片檔即將開放，目前請先用 YouTube 網址上架。',
-          textAlign: TextAlign.center,
-          style: AppTypography.bodyStyle(
+          '只能上傳 mp4、mov，最大 2GB',
+          style: AppTypography.captionStyle(
             seniorMode: senior,
             color: AppColors.inkSoft,
           ),
         ),
+        if (_preparing)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: Row(
+              children: [
+                const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                const SizedBox(width: AppSpacing.sm),
+                Expanded(
+                  child: Text(
+                    '準備檔案中…大檔案需要一點時間',
+                    style: AppTypography.bodyStyle(
+                      seniorMode: senior,
+                      color: AppColors.inkSoft,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        if (error != null)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.sm),
+            child: Text(
+              error,
+              key: const ValueKey('admin-video-file-error'),
+              style: AppTypography.bodyStyle(
+                seniorMode: senior,
+                color: AppColors.dangerDark,
+              ),
+            ),
+          ),
+        if (picked != null && !_preparing)
+          Padding(
+            padding: const EdgeInsets.only(top: AppSpacing.md),
+            child: AdminCard(
+              seniorMode: senior,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.movie_outlined,
+                        color: AppColors.inkSoft,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      Expanded(
+                        child: Text(
+                          picked.info.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodyLargeStyle(
+                            seniorMode: senior,
+                            color: AppColors.ink,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    formatUploadBytes(picked.info.size),
+                    style: AppTypography.bodyStyle(
+                      seniorMode: senior,
+                      color: AppColors.inkSoft,
+                    ),
+                  ),
+                  if (PlatformFeatures.isMobile)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.sm),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.wifi,
+                            size: 18,
+                            color: AppColors.goldDeep,
+                          ),
+                          const SizedBox(width: AppSpacing.xs),
+                          Expanded(
+                            child: Text(
+                              '影片較大，建議使用 Wi-Fi',
+                              style: AppTypography.bodyStyle(
+                                seniorMode: senior,
+                                color: AppColors.goldDeep,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ),
       ],
-    ),
-  );
+    );
+  }
 }
 
 /// YouTube 網址預覽：停止輸入後送出、貼上立刻送出、晚回來的舊結果丟掉、錯誤轉成提示。

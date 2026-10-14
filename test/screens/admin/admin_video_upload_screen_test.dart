@@ -1,9 +1,13 @@
 // 上傳影片頁（後台影片 T-03）：貼 YouTube 網址預覽後上架。
 // 預覽帶入標題、已上架與不允許嵌入的提示、各種錯誤提示、舊預覽丟棄、上架送出與錯誤、
-// 新分類刷新、選擇影片檔尚未開放。
+// 新分類刷新。
+// 選擇影片檔（後台影片 T-04）：手機兩種來源、準備中、格式大小擋下、Wi-Fi 提醒（只有手機）、
+// 標題必填、送出後換成進度頁、一次一支、建立錯誤提示、沒送出就刪暫存複本。
 
+import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -11,11 +15,18 @@ import 'package:http/testing.dart';
 
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
+import 'package:flutter_application_1/models/admin_models.dart';
+import 'package:flutter_application_1/models/video_upload.dart';
 import 'package:flutter_application_1/screens/admin/admin_error.dart';
+import 'package:flutter_application_1/screens/admin/admin_video_upload_progress_screen.dart';
 import 'package:flutter_application_1/screens/admin/admin_video_upload_screen.dart';
 import 'package:flutter_application_1/screens/admin/widgets/admin_widgets.dart';
 import 'package:flutter_application_1/services/category_service.dart';
 import 'package:flutter_application_1/services/user_service.dart';
+import 'package:flutter_application_1/services/video_upload/chunk_source.dart';
+import 'package:flutter_application_1/services/video_upload/resumable_uploader.dart';
+import 'package:flutter_application_1/services/video_upload/video_file_picker.dart';
+import 'package:flutter_application_1/services/video_upload/video_upload_manager.dart';
 
 import '../../helpers/fixtures.dart';
 import '../../helpers/widget_test_helpers.dart';
@@ -27,6 +38,30 @@ const _appCategoriesPath = '/api/videos/categories';
 
 const _zooUrl = 'https://youtu.be/jNQXAC9IVRw';
 const _otherUrl = 'https://www.youtube.com/watch?v=abcdefghijk';
+
+const _movInfo = UploadFileInfo(
+  name: 'IMG_0001.MOV',
+  size: 431864320,
+  contentType: 'video/quicktime',
+);
+
+/// 選檔回傳的讀檔來源；只記有沒有被刪暫存。
+class _FakeSource implements ChunkSource {
+  @override
+  final int size;
+  int discarded = 0;
+
+  _FakeSource(this.size);
+
+  @override
+  Future<Uint8List> read(int start, int end) async => Uint8List(end - start);
+
+  @override
+  Future<void> close() async {}
+
+  @override
+  Future<void> discard() async => discarded++;
+}
 
 Map<String, dynamic> _preview({
   String id = 'jNQXAC9IVRw',
@@ -379,14 +414,228 @@ void main() {
     expect(calls(_appCategoriesPath), isNotEmpty);
   });
 
-  testWidgets('選擇影片檔：顯示即將開放，沒有上架鍵', (tester) async {
-    mock();
-    await open(tester);
-    await tester.tap(find.text('選擇影片檔'));
-    await tester.pumpAndSettle();
-    expect(find.text('選擇影片檔即將開放，目前請先用 YouTube 網址上架。'), findsOneWidget);
-    expect(submitButton(), findsNothing);
-    expect(urlField(), findsNothing);
+  group('選擇影片檔', () {
+    late List<VideoPickSource> pickedFrom;
+    late _FakeSource source;
+
+    /// 選檔回 [info]（null＝取消）；[onPick] 可在回傳前做事（例如觸發準備中）。
+    void fakePicker({
+      UploadFileInfo? info = _movInfo,
+      Object? error,
+      Future<void> Function(VoidCallback? onPreparing)? onPick,
+    }) {
+      pickedFrom = [];
+      source = _FakeSource(info?.size ?? 0);
+      adminVideoPickerOverride = (from, {onPreparing}) async {
+        pickedFrom.add(from);
+        await onPick?.call(onPreparing);
+        if (error != null) throw error;
+        return info == null
+            ? null
+            : PickedVideoFile(info: info, source: source);
+      };
+    }
+
+    setUp(() {
+      // 上傳器卡住不連網路；進度頁只看狀態。
+      VideoUploadManager.uploaderFactory = (session, src) => ResumableUploader(
+        session,
+        src,
+        client: MockClient((_) => Completer<http.Response>().future),
+      );
+    });
+    tearDown(() async {
+      adminVideoPickerOverride = null;
+      debugDefaultTargetPlatformOverride = null;
+      await VideoUploadManager.instance.resetForTest();
+    });
+
+    Future<void> openFileTab(WidgetTester tester) async {
+      await open(tester);
+      await tester.tap(find.text('選擇影片檔'));
+      await tester.pumpAndSettle();
+    }
+
+    Finder uploadButton() => find.widgetWithText(FilledButton, '上傳');
+
+    bool uploadEnabled(WidgetTester tester) =>
+        tester.widget<FilledButton>(uploadButton()).onPressed != null;
+
+    testWidgets('手機：從相簿、從檔案；選好顯示檔名大小與 Wi-Fi 提醒，標題必填，送出後換成進度頁', (tester) async {
+      mock(create: loadSpecFixtureMap('post_api_admin_videos_upload.json'));
+      fakePicker();
+      await openFileTab(tester);
+
+      expect(find.text('從相簿'), findsOneWidget);
+      expect(find.text('從檔案'), findsOneWidget);
+      expect(urlField(), findsNothing);
+      expect(uploadEnabled(tester), isFalse, reason: '還沒選檔不能上傳');
+      expect(find.text('影片較大，建議使用 Wi-Fi'), findsNothing);
+
+      await tester.tap(find.text('從相簿'));
+      await tester.pumpAndSettle();
+      expect(pickedFrom, [VideoPickSource.gallery]);
+      expect(find.text('IMG_0001.MOV'), findsOneWidget);
+      expect(find.text('411.9 MB'), findsOneWidget);
+      expect(find.text('影片較大，建議使用 Wi-Fi'), findsOneWidget);
+      expect(uploadEnabled(tester), isTrue);
+
+      await chooseCategory(tester, '文化紀錄');
+      await tester.tap(uploadButton());
+      await tester.pumpAndSettle();
+      expect(find.text('標題必填'), findsOneWidget);
+      expect(calls(_createPath), isEmpty);
+
+      await tester.enterText(find.byType(TextField).first, '部落祭典紀錄');
+      await tester.tap(uploadButton());
+      await tester.pumpAndSettle();
+
+      expect(jsonDecode(calls(_createPath).single.body), {
+        'source': 'upload',
+        'file_name': 'IMG_0001.MOV',
+        'file_size': _movInfo.size,
+        'content_type': 'video/quicktime',
+        'title': '部落祭典紀錄',
+        'category': 'cultural',
+      });
+      expect(find.byType(AdminVideoUploadProgressScreen), findsOneWidget);
+      expect(find.byType(AdminVideoUploadScreen), findsNothing);
+      expect(popped, isTrue, reason: '列表重抓，看得到這支處理中');
+      final active = VideoUploadManager.instance.active.value!;
+      expect(active.video.id, 107);
+      expect(active.state, UploadState.uploading);
+      expect(source.discarded, 0, reason: '交給上傳服務了，不能刪');
+    });
+
+    testWidgets('從檔案：選檔中顯示「準備檔案中」，複製完才顯示檔案', (tester) async {
+      mock();
+      final copying = Completer<void>();
+      fakePicker(
+        onPick: (onPreparing) async {
+          onPreparing?.call();
+          await copying.future;
+        },
+      );
+      await openFileTab(tester);
+
+      await tester.tap(find.text('從檔案'));
+      await tester.pump();
+      expect(pickedFrom, [VideoPickSource.files]);
+      expect(find.text('準備檔案中…大檔案需要一點時間'), findsOneWidget);
+      expect(uploadEnabled(tester), isFalse);
+
+      copying.complete();
+      await tester.pumpAndSettle();
+      expect(find.text('準備檔案中…大檔案需要一點時間'), findsNothing);
+      expect(find.text('IMG_0001.MOV'), findsOneWidget);
+    });
+
+    testWidgets('格式或大小不符：顯示原因，不能上傳', (tester) async {
+      mock();
+      fakePicker(error: const VideoFileRejected('影片檔最大 2GB，請壓縮或剪短後再上傳'));
+      await openFileTab(tester);
+      await tester.tap(find.text('從檔案'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.byKey(const ValueKey('admin-video-file-error')),
+        findsOneWidget,
+      );
+      expect(find.text('影片檔最大 2GB，請壓縮或剪短後再上傳'), findsOneWidget);
+      expect(uploadEnabled(tester), isFalse);
+    });
+
+    testWidgets('取消選檔：維持原樣', (tester) async {
+      mock();
+      fakePicker(info: null);
+      await openFileTab(tester);
+      await tester.tap(find.text('從相簿'));
+      await tester.pumpAndSettle();
+      expect(uploadEnabled(tester), isFalse);
+      expect(
+        find.byKey(const ValueKey('admin-video-file-error')),
+        findsNothing,
+      );
+    });
+
+    testWidgets('已有一支在上傳：選檔時提示等它傳完，不開挑選器', (tester) async {
+      mock();
+      fakePicker();
+      VideoUploadManager.instance.start(
+        const AdminVideo(
+          id: 99,
+          title: '上一支',
+          category: 'cultural',
+          source: 'hls',
+          status: 'processing',
+        ),
+        UploadSession(
+          sessionUrl: Uri.parse('https://storage.googleapis.com/u'),
+          size: 1024,
+          chunkMultiple: 262144,
+        ),
+        _FakeSource(1024),
+      );
+      await openFileTab(tester);
+      await tester.tap(find.text('從檔案'));
+      await tester.pumpAndSettle();
+
+      expect(pickedFrom, isEmpty);
+      expect(find.text('已有一支影片正在上傳，請等它傳完再上傳下一支'), findsOneWidget);
+    });
+
+    for (final (code, status, message) in [
+      ('UPLOAD_SESSION_FAILED', 502, '暫時無法建立上傳，請稍後再試'),
+      ('UNSUPPORTED_VIDEO_TYPE', 400, '只能上傳 mp4、mov 影片檔'),
+      ('VIDEO_TOO_LARGE', 413, '影片檔最大 2GB，請壓縮或剪短後再上傳'),
+    ]) {
+      testWidgets('建立回 $status $code：提示並停在上傳頁', (tester) async {
+        mock(create: errorResponse(code, status: status));
+        fakePicker();
+        await openFileTab(tester);
+        await tester.tap(find.text('從相簿'));
+        await tester.pumpAndSettle();
+        await tester.enterText(find.byType(TextField).first, '部落祭典紀錄');
+        await chooseCategory(tester, '文化紀錄');
+        await tester.tap(uploadButton());
+        await tester.pumpAndSettle();
+
+        expect(find.text(message), findsOneWidget);
+        expect(find.byType(AdminVideoUploadScreen), findsOneWidget);
+        expect(uploadEnabled(tester), isTrue, reason: '可以再試一次');
+        expect(VideoUploadManager.instance.active.value, isNull);
+        expect(popped, isNull);
+      });
+    }
+
+    testWidgets('選了沒送出就離開：刪掉暫存複本', (tester) async {
+      mock();
+      fakePicker();
+      await openFileTab(tester);
+      await tester.tap(find.text('從相簿'));
+      await tester.pumpAndSettle();
+      await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();
+      await tester.pumpAndSettle();
+      expect(source.discarded, 1);
+    });
+
+    testWidgets('網頁與桌面：只有一個選檔按鈕，不顯示 Wi-Fi 提醒', (tester) async {
+      debugDefaultTargetPlatformOverride = TargetPlatform.windows;
+      mock();
+      fakePicker();
+      await openFileTab(tester);
+
+      expect(find.text('從相簿'), findsNothing);
+      expect(find.text('從檔案'), findsNothing);
+      final pickButton = find.widgetWithText(OutlinedButton, '選擇影片檔');
+      expect(pickButton, findsOneWidget);
+      await tester.tap(pickButton);
+      await tester.pumpAndSettle();
+      expect(pickedFrom, [VideoPickSource.files]);
+      expect(find.text('IMG_0001.MOV'), findsOneWidget);
+      expect(find.text('影片較大，建議使用 Wi-Fi'), findsNothing);
+      debugDefaultTargetPlatformOverride = null;
+    });
   });
 
   testWidgets('403 ADMIN_ONLY：退出後台', (tester) async {
