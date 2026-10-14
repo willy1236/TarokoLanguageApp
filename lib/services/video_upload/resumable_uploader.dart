@@ -21,7 +21,8 @@ import '../../models/video_upload.dart';
 import 'chunk_source.dart';
 import 'upload_transport.dart';
 
-export 'upload_transport.dart' show UploadInterrupted, UploadSessionExpired;
+export 'upload_transport.dart'
+    show UploadInterrupted, UploadSessionExpired, UploadStorageInsufficient;
 
 /// 已傳／總大小（bytes）。
 class UploadProgress {
@@ -31,10 +32,14 @@ class UploadProgress {
   /// 網路中斷，正在等待自動重試（[sent] 是中斷前雲端確認收到的位置）。
   final bool retrying;
 
+  /// 開始送之前正在準備（iOS 背景從斷點續傳時複製剩下的部分）。
+  final bool preparing;
+
   const UploadProgress({
     required this.sent,
     required this.total,
     this.retrying = false,
+    this.preparing = false,
   });
 
   int get remaining => total - sent;
@@ -47,14 +52,16 @@ class UploadProgress {
       other is UploadProgress &&
       other.sent == sent &&
       other.total == total &&
-      other.retrying == retrying;
+      other.retrying == retrying &&
+      other.preparing == preparing;
 
   @override
-  int get hashCode => Object.hash(sent, total, retrying);
+  int get hashCode => Object.hash(sent, total, retrying, preparing);
 
   @override
   String toString() =>
-      'UploadProgress($sent/$total${retrying ? ', retrying' : ''})';
+      'UploadProgress($sent/$total${retrying ? ', retrying' : ''}'
+      '${preparing ? ', preparing' : ''})';
 }
 
 class ResumableUploader {
@@ -142,7 +149,7 @@ class ResumableUploader {
   /// 從雲端已收到的位置接著傳到完成。先查進度再傳，所以中斷後重新呼叫即是續傳。
   /// 每傳完一段送一次進度；網路中斷時送 `retrying: true` 的進度並自動重試。
   /// 完成時關閉串流並釋放送法的資源（之後不能再用）。重試用完丟 [UploadInterrupted]，
-  /// 工作階段失效丟 [UploadSessionExpired]；[cancel] 後安靜關閉。
+  /// 工作階段失效丟 [UploadSessionExpired]，手機空間不足丟 [UploadStorageInsufficient]；[cancel] 後安靜關閉。
   Stream<UploadProgress> start() async* {
     // 從上次確認過的位置算起：重新 start 時查進度失敗，進度也不會掉回 0。
     var offset = _confirmed;
@@ -166,14 +173,17 @@ class ResumableUploader {
                 _transport.sendsWholeRemainder || from + chunkSize >= _total
                 ? _total
                 : from + chunkSize;
-            // 送的同時轉發段內進度（背景送法一次送完剩下全部，要靠它更新進度條）。
-            final inRequest = StreamController<int>();
+            // 送的同時轉發段內進度（背景送法一次送完剩下全部，要靠它更新進度條）；null 代表準備中。
+            final inRequest = StreamController<int?>();
             final sending = _transport
                 .send(
                   from,
                   end,
                   onProgress: (sent) {
                     if (!inRequest.isClosed) inRequest.add(sent);
+                  },
+                  onPreparing: () {
+                    if (!inRequest.isClosed) inRequest.add(null);
                   },
                 )
                 .then<_SendResult>(
@@ -184,10 +194,22 @@ class ResumableUploader {
                 .whenComplete(inRequest.close);
             // 段內進度只用來顯示；[offset] 仍是雲端確認過的位置（重試、查進度都以它為準）。
             var shown = from;
+            var preparing = false;
             await for (final sent in inRequest.stream) {
               if (_cancelled) return;
+              if (sent == null) {
+                preparing = true;
+                yield UploadProgress(
+                  sent: from,
+                  total: _total,
+                  preparing: true,
+                );
+                continue;
+              }
               final at = from + sent.clamp(0, end - from);
-              if (at > shown) {
+              // 準備完的第一次進度即使還是 0 也送出，畫面才離開「準備中」。
+              if (at > shown || preparing) {
+                preparing = false;
                 shown = at;
                 yield UploadProgress(sent: at, total: _total);
               }
@@ -216,7 +238,9 @@ class ResumableUploader {
           return;
         } catch (e) {
           if (_cancelled) return;
-          if (e is UploadSessionExpired) rethrow;
+          if (e is UploadSessionExpired || e is UploadStorageInsufficient) {
+            rethrow;
+          }
           final interrupted = e is UploadInterrupted
               ? e
               : UploadInterrupted(cause: e);

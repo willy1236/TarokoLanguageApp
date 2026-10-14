@@ -129,10 +129,18 @@ class _FakeTransport implements UploadTransport {
   /// 第 n 次送（從 0 起）雲端只收下這麼多位元組。
   final Map<int, int> partial;
 
+  /// 送之前先回報準備中。
+  final bool prepares;
+
+  /// 送的時候丟這個錯誤。
+  final Object? sendError;
+
   _FakeTransport(
     this.size, {
     this.unknownOffset = false,
     this.partial = const {},
+    this.prepares = false,
+    this.sendError,
   });
 
   @override
@@ -143,10 +151,17 @@ class _FakeTransport implements UploadTransport {
     int start,
     int end, {
     void Function(int sent)? onProgress,
+    void Function()? onPreparing,
   }) async {
     final index = sends.length;
     sends.add((start, end));
     expect(start, received, reason: '要從雲端已收到的位置開始');
+    final error = sendError;
+    if (error != null) throw error;
+    if (prepares) {
+      onPreparing?.call();
+      await Future<void>.delayed(Duration.zero);
+    }
     final keep = partial[index] ?? end - start;
     for (var sent = 0; sent < keep; sent += 10) {
       onProgress?.call(sent);
@@ -746,15 +761,54 @@ void main() {
         ResumableUploader(
           _session(100),
           _FakeSource(100),
-          transport: _FakeTransport(
-            100,
-            unknownOffset: true,
-            partial: {0: 0},
-          ),
+          transport: _FakeTransport(100, unknownOffset: true, partial: {0: 0}),
           retryDelays: const [],
         ).start(),
         emitsThrough(emitsError(isA<UploadInterrupted>())),
       );
+    });
+
+    test('準備中：先送一筆 preparing（停在斷點），之後第一筆進度即使是 0 也送出', () async {
+      final transport = _FakeTransport(30, prepares: true);
+      final progress = await ResumableUploader(
+        _session(30),
+        _FakeSource(30),
+        transport: transport,
+      ).start().toList();
+
+      expect(progress.map((p) => (p.sent, p.preparing)), [
+        (0, false),
+        (0, true),
+        (0, false),
+        (10, false),
+        (20, false),
+        (30, false),
+      ]);
+    });
+
+    test('空間不足 → 不重試，原樣丟 UploadStorageInsufficient', () async {
+      final transport = _FakeTransport(
+        100,
+        sendError: const UploadStorageInsufficient(500),
+      );
+      await expectLater(
+        ResumableUploader(
+          _session(100),
+          _FakeSource(100),
+          transport: transport,
+          retryDelays: const [Duration.zero],
+        ).start(),
+        emitsThrough(
+          emitsError(
+            isA<UploadStorageInsufficient>().having(
+              (e) => e.requiredBytes,
+              'requiredBytes',
+              500,
+            ),
+          ),
+        ),
+      );
+      expect(transport.sends, hasLength(1));
     });
   });
 }
