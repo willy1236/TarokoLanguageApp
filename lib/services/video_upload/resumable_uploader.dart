@@ -103,7 +103,7 @@ class ResumableUploader {
   int get _total => session.size;
 
   /// 從雲端已收到的位置接著傳到完成。先查進度再傳，所以中斷後重新呼叫即是續傳。
-  /// 每傳完一段送一次進度；完成時關閉。失敗丟 [UploadInterrupted]／[UploadSessionExpired]；
+  /// 每傳完一段送一次進度；完成時關閉串流並關掉 http.Client（之後不能再用）。失敗丟 [UploadInterrupted]／[UploadSessionExpired]；
   /// [cancel] 後安靜關閉。
   Stream<UploadProgress> start() async* {
     try {
@@ -119,6 +119,8 @@ class ResumableUploader {
         offset = _offsetFrom(response);
         yield UploadProgress(sent: offset, total: _total);
       }
+      // 傳完了，這個上傳器不會再送請求，釋放連線。
+      _client.close();
     } catch (e) {
       if (_cancelled) return;
       if (e is UploadInterrupted || e is UploadSessionExpired) rethrow;

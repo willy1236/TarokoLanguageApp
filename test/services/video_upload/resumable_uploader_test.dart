@@ -85,6 +85,21 @@ class _FakeGcs {
   }
 }
 
+/// 記下 close 次數的 http.Client。
+class _CountingClient extends http.BaseClient {
+  final http.Client inner;
+  int closed = 0;
+
+  _CountingClient(this.inner);
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) =>
+      inner.send(request);
+
+  @override
+  void close() => closed++;
+}
+
 UploadSession _session(int size) =>
     UploadSession(sessionUrl: _url, size: size, chunkMultiple: _multiple);
 
@@ -118,6 +133,22 @@ void main() {
     ]);
     expect(progress.last.total, size);
     expect(source.closed, 1);
+  });
+
+  test('傳完關掉 http.Client；中斷時不關，之後可以接著傳', () async {
+    final size = _multiple * 2;
+    final gcs = _FakeGcs(size, failAt: {2: 503});
+    final client = _CountingClient(gcs.client);
+    final uploader = ResumableUploader(
+      _session(size),
+      _FakeSource(size),
+      chunkSize: _multiple,
+      client: client,
+    );
+    await expectLater(uploader.start().drain<void>(), throwsA(anything));
+    expect(client.closed, 0);
+    await uploader.start().drain<void>();
+    expect(client.closed, 1);
   });
 
   test('一次只讀一段，讀取範圍連續且不超過每段大小（記憶體不隨檔案成長）', () async {
