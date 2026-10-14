@@ -43,6 +43,15 @@ Future<bool> uploadFileMatches(String path, int size) async {
   }
 }
 
+Future<void> deleteUploadFile(String path) async {
+  try {
+    final file = File(path);
+    if (await file.exists()) await file.delete();
+  } catch (e) {
+    debugPrint('upload_files: 刪除影片暫存檔失敗（忽略）：$e');
+  }
+}
+
 Future<void> deleteOrphanUploadFiles(Set<String> keep) async {
   try {
     final dir = await _uploadDir();

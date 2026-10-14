@@ -4,4 +4,6 @@ Future<String> moveIntoUploadDir(String path) async => path;
 
 Future<bool> uploadFileMatches(String path, int size) async => false;
 
+Future<void> deleteUploadFile(String path) async {}
+
 Future<void> deleteOrphanUploadFiles(Set<String> keep) async {}

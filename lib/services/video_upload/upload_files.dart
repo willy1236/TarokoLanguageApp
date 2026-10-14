@@ -18,6 +18,9 @@ Future<String> moveIntoUploadDir(String path) =>
 Future<bool> uploadFileMatches(String path, int size) =>
     platform.uploadFileMatches(path, size);
 
+/// 刪掉一個暫存複本（不存在就算了）。
+Future<void> deleteUploadFile(String path) => platform.deleteUploadFile(path);
+
 /// 刪掉上傳暫存目錄裡不在 [keep] 的檔案（App 被關掉、紀錄已清掉留下的孤兒檔）。
 Future<void> deleteOrphanUploadFiles(Set<String> keep) =>
     platform.deleteOrphanUploadFiles(keep);
