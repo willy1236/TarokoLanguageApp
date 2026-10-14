@@ -284,4 +284,53 @@ void main() {
     expect(controller.value.category, '已刪除的分類');
     expect(controller.isNewCategory, isTrue);
   });
+
+  group('suggestTitle', () {
+    String title(WidgetTester tester) => tester
+        .widget<TextField>(find.widgetWithText(TextField, '標題（必填）'))
+        .controller!
+        .text;
+
+    Future<void> suggest(WidgetTester tester, String? value) async {
+      controller.suggestTitle(value);
+      await tester.pumpAndSettle();
+    }
+
+    testWidgets('沒改過標題：帶入建議，換影片換成新標題，給 null 清掉', (tester) async {
+      await pump(tester);
+      await suggest(tester, '織布');
+      expect(title(tester), '織布');
+      await suggest(tester, '口簧琴');
+      expect(title(tester), '口簧琴');
+      await suggest(tester, null);
+      expect(title(tester), '');
+      await suggest(tester, '祭儀');
+      expect(title(tester), '祭儀');
+    });
+
+    testWidgets('手動改過標題後不再覆寫', (tester) async {
+      await pump(tester);
+      await suggest(tester, '織布');
+      await tester.enterText(find.widgetWithText(TextField, '標題（必填）'), '織布教學');
+      await suggest(tester, '口簧琴');
+      expect(title(tester), '織布教學');
+      await suggest(tester, null);
+      expect(title(tester), '織布教學');
+    });
+
+    testWidgets('一開始就自己填了標題：不覆寫', (tester) async {
+      await pump(tester);
+      await tester.enterText(find.widgetWithText(TextField, '標題（必填）'), '自己的標題');
+      await suggest(tester, '織布');
+      expect(title(tester), '自己的標題');
+    });
+
+    testWidgets('超過上限的建議標題以 UTF-16 單位截斷', (tester) async {
+      await pump(tester);
+      await suggest(tester, '${'織' * 99}😀');
+      expect(title(tester), '織' * 99);
+      await submit(tester);
+      expect(find.text('標題最多 $adminVideoTitleMax 字'), findsNothing);
+    });
+  });
 }

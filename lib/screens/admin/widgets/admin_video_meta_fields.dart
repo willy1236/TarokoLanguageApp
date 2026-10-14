@@ -3,6 +3,7 @@
 //
 // 呼叫端只做三件事：建立並 dispose [AdminVideoMetaController]、送出前呼叫
 // [AdminVideoMetaController.validate]、通過後讀 [AdminVideoMetaController.value]。
+// YouTube 預覽拿到標題時可用 [AdminVideoMetaController.suggestTitle] 預先填入。
 // 送出成功且 [AdminVideoMetaController.isNewCategory] 為 true 時，由呼叫端刷新
 // `CategoryService.fetch(CategoryModule.videos, refresh: true)`。
 
@@ -57,6 +58,21 @@ class AdminVideoMetaController extends ChangeNotifier {
 
   /// 選的分類是新輸入、不在清單裡的（送出成功後呼叫端要刷新影音分類快取）。
   bool get isNewCategory => _category.isNew;
+
+  /// 上一次 [suggestTitle] 帶入的標題；標題欄仍是它（或空白）代表使用者沒手動改過。
+  String? _suggestedTitle;
+
+  /// 帶入建議標題（例如 YouTube 預覽的標題）。使用者還沒手動改過標題時才覆寫；
+  /// 換一支影片再呼叫會換成新標題，給 null 則清掉先前帶入的標題。
+  /// 超過 [adminVideoTitleMax] 的部分截掉。
+  void suggestTitle(String? title) {
+    if (_disposed || _title.text != (_suggestedTitle ?? '')) return;
+    final next = truncateUtf16(title?.trim() ?? '', adminVideoTitleMax);
+    _suggestedTitle = next;
+    if (_title.text == next) return;
+    _title.text = next;
+    notifyListeners();
+  }
 
   String? get _titleError {
     final title = _title.text.trim();
