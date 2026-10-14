@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
 
 import 'chunk_source.dart';
+import 'upload_files.dart';
 import 'video_file_picker.dart';
 
 /// 手機上兩種挑選器都會把檔案複製成 App 自己的暫存複本；桌面版 file_picker 回原檔路徑，不能刪。
@@ -40,6 +41,9 @@ Future<RawPickedVideo?> pickRawVideo(
       name = picked.name;
   }
   if (path == null) return null;
-  final source = ChunkSource.io(path, temporary: _isTemporaryCopy);
+  // 暫存複本搬進上傳暫存目錄，App 重開後還找得到（續傳，後台影片 T-05）。
+  final temporary = _isTemporaryCopy;
+  final kept = temporary ? await moveIntoUploadDir(path) : path;
+  final source = ChunkSource.io(kept, temporary: temporary);
   return (name: name, size: source.size, source: source);
 }

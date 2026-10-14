@@ -5,7 +5,8 @@
 //   Android 會先把整個檔案複製到 App 快取，2GB 要等一下。
 // - 從檔案：file_picker（FileType.custom）。Android 一樣先複製到快取，iOS 由系統複製到 tmp。
 // - 網頁：只有一種來源，用 File.slice 分段讀（見 chunk_source_web.dart）。
-// 手機上兩種來源拿到的都是 App 自己的暫存複本，完成或放棄時由上傳服務刪掉。
+// 手機上兩種來源拿到的都是 App 自己的暫存複本，搬進上傳暫存目錄（見 upload_files.dart），
+// 完成或放棄時由上傳服務刪掉。
 
 import 'package:flutter/foundation.dart';
 
