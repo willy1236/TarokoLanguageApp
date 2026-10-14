@@ -1,5 +1,5 @@
 // 影片管理列表：各狀態與來源的呈現、篩選與搜尋送出的參數、下一頁、下拉重整、
-// 非管理員退出後台、後台首頁入口。
+// 非管理員退出後台、後台首頁入口、上傳影片按鈕。
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +10,7 @@ import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/screens/admin/admin_error.dart';
 import 'package:flutter_application_1/screens/admin/admin_home_screen.dart';
+import 'package:flutter_application_1/screens/admin/admin_video_upload_screen.dart';
 import 'package:flutter_application_1/screens/admin/admin_videos_screen.dart';
 import 'package:flutter_application_1/services/category_service.dart';
 import 'package:flutter_application_1/services/user_service.dart';
@@ -218,6 +219,29 @@ void main() {
       find.descendant(of: find.byType(ListView), matching: find.text('已上架')),
       findsOneWidget,
     );
+  });
+
+  testWidgets('右上角上傳影片：上架成功回來重抓第一頁並保留篩選，取消回來不重抓', (tester) async {
+    mock((_) => _page([_video(1)], null));
+    await _open(tester);
+    await tester.tap(find.widgetWithText(ChoiceChip, 'YouTube'));
+    await tester.pumpAndSettle();
+    expect(listRequests, hasLength(2));
+
+    await tester.tap(find.byTooltip('上傳影片'));
+    await tester.pumpAndSettle();
+    expect(find.byType(AdminVideoUploadScreen), findsOneWidget);
+    Navigator.of(tester.element(find.byType(AdminVideoUploadScreen))).pop();
+    await tester.pumpAndSettle();
+    expect(listRequests, hasLength(2), reason: '沒上架不重抓');
+
+    await tester.tap(find.byTooltip('上傳影片'));
+    await tester.pumpAndSettle();
+    Navigator.of(tester.element(find.byType(AdminVideoUploadScreen))).pop(true);
+    await tester.pumpAndSettle();
+    expect(listRequests, hasLength(3));
+    expect(listRequests.last.queryParameters, {'source': 'youtube'});
+    expect(find.text('影片1'), findsOneWidget);
   });
 
   testWidgets('403 ADMIN_ONLY：退出後台', (tester) async {

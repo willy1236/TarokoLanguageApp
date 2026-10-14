@@ -2,6 +2,7 @@
 // 規格：Truku_backend 說明文件/API/內部管理.md §6.2。
 //
 // 處理中的影片靠下拉重新整理看狀態，不自動輪詢。
+// 右上角「上傳影片」開上傳頁，上架成功回來重抓第一頁。
 // 列尾選單由之後的功能加項目（編輯、下架、重新上傳），見 _rowActions。
 
 import 'dart:async';
@@ -18,6 +19,7 @@ import '../../services/admin_service.dart';
 import '../../services/category_service.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 import 'admin_error.dart';
+import 'admin_video_upload_screen.dart';
 import 'widgets/admin_paged_list.dart';
 import 'widgets/admin_widgets.dart';
 
@@ -120,12 +122,28 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
     _list.reset();
   }
 
+  /// 上架成功回來時重抓第一頁（保留目前的篩選）。
+  Future<void> _upload() async {
+    final created = await pushAdmin<bool>(
+      context,
+      const AdminVideoUploadScreen(),
+    );
+    if ((created ?? false) && mounted) await _list.reload();
+  }
+
   /// 每一列的選單項目；沒有項目時不顯示選單鈕。
   List<_RowAction> _rowActions(AdminVideo video) => const [];
 
   @override
   Widget build(BuildContext context) => AdminScaffold(
     title: '影片管理',
+    actions: [
+      IconButton(
+        tooltip: '上傳影片',
+        onPressed: _upload,
+        icon: const Icon(Icons.add, color: AppColors.primary),
+      ),
+    ],
     body: (context, senior) => Column(
       children: [
         _searchField(senior),
