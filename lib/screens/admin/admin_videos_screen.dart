@@ -4,6 +4,7 @@
 // 處理中的影片靠下拉重新整理看狀態，不自動輪詢。
 // 右上角「上傳影片」開上傳頁，上架成功回來重抓第一頁。
 // 列尾選單由之後的功能加項目（編輯、下架、重新上傳），見 _rowActions。
+// 下架回 files_deleted: false 時，「再刪一次檔案」只記在本次畫面（後端沒有欄位記錄）。
 
 import 'dart:async';
 
@@ -13,11 +14,13 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_radius.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
+import '../../core/network/api_client.dart';
 import '../../models/admin_models.dart';
 import '../../models/content_category.dart';
 import '../../services/admin_service.dart';
 import '../../services/category_service.dart';
 import '../../shared/utils/utf16_length_limit.dart';
+import '../../shared/widgets/confirm_dialog.dart';
 import 'admin_error.dart';
 import 'admin_video_edit_screen.dart';
 import 'admin_video_upload_screen.dart';
@@ -61,6 +64,12 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
   String _query = '';
   final _search = TextEditingController();
   Timer? _debounce;
+
+  /// 下架了但檔案沒刪乾淨的影片 id，這些列提供「再刪一次檔案」。重開列表就看不到。
+  final Set<int> _filesPending = {};
+
+  /// 下架請求送出中的影片 id，避免連點重送。
+  final Set<int> _archiving = {};
 
   late final AdminPagedListController<AdminVideo> _list =
       AdminPagedListController<AdminVideo>(
@@ -150,9 +159,55 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
     }
   }
 
+  /// 下架前先確認；處理中的影片轉檔可能晚於下架完成，多提醒一句。
+  Future<void> _archive(AdminVideo video) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '下架這支影片？',
+      message: video.status == 'processing'
+          ? '下架會刪除播放檔，無法復原。轉檔中的影片之後可能仍有殘留檔案。'
+          : '下架會刪除播放檔，無法復原。',
+      confirmText: '下架',
+    );
+    if (confirmed && mounted) await _sendArchive(video);
+  }
+
+  /// 送出下架，成功後就地改成已下架（不再符合篩選也先留著，下拉重整後才消失）。
+  /// 已下架的影片再送一次，後端只重試刪檔（「再刪一次檔案」走這裡，不再確認）。
+  Future<void> _sendArchive(AdminVideo video) async {
+    if (!_archiving.add(video.id)) return;
+    try {
+      final filesDeleted = await AdminService.archiveVideo(video.id);
+      if (!mounted) return;
+      setState(() {
+        if (filesDeleted) {
+          _filesPending.remove(video.id);
+        } else {
+          _filesPending.add(video.id);
+        }
+      });
+      _list.replace((v) => v.id == video.id, video.withStatus('archived'));
+      showAdminMessage(filesDeleted ? '已下架' : '已下架，但檔案沒刪乾淨，請再按一次');
+    } catch (e) {
+      if (!mounted) return;
+      if (e is ApiException && e.code == 'VIDEO_NOT_FOUND') {
+        showAdminMessage('這支影片已不存在');
+        await _list.reload();
+        return;
+      }
+      handleAdminError(context, e);
+    } finally {
+      _archiving.remove(video.id);
+    }
+  }
+
   /// 每一列的選單項目；沒有項目時不顯示選單鈕。編輯不分狀態都能用（後端不限制）。
+  /// 處理中的影片也能下架（後端不限制）。
   List<_RowAction> _rowActions(AdminVideo video) => [
     (label: '編輯', onSelected: () => _edit(video)),
+    if (!video.isArchived) (label: '下架', onSelected: () => _archive(video)),
+    if (video.isArchived && _filesPending.contains(video.id))
+      (label: '再刪一次檔案', onSelected: () => _sendArchive(video)),
   ];
 
   @override
