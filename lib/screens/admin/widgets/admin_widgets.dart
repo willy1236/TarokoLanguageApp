@@ -9,10 +9,9 @@ import '../../../core/constants/app_typography.dart';
 import '../../../services/admin_service.dart';
 import '../../../services/senior_mode_controller.dart';
 import '../../../shared/widgets/app_back_button.dart';
-import '../../../shared/widgets/async_state_view.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
-import '../../../shared/widgets/truku_empty_state.dart';
 import '../admin_error.dart';
+import 'admin_paged_list.dart';
 
 /// 後台畫面骨架：返回鍵、標題、精簡模式連動。[body] 拿到目前是否精簡模式。
 class AdminScaffold extends StatelessWidget {
@@ -253,7 +252,8 @@ class AdminQuote extends StatelessWidget {
 
 typedef AdminStatusOption = ({String label, String value});
 
-/// 「上方狀態切換＋下方分頁列表」的後台畫面，檢舉、違規區、題目回報共用。
+/// 「上方狀態切換＋下方分頁列表」的後台畫面，檢舉、違規區、申訴、禁言、題目回報共用；
+/// 翻頁狀態在 [AdminPagedListController]。
 ///
 /// [fetch] 每次以狀態與游標取一頁；捲到底時用 `pageInfo.nextCursor` 載下一頁，
 /// 下拉重新整理回到第一頁。[itemBuilder] 拿到 `reload`：子畫面處理完一筆回來後
@@ -286,105 +286,28 @@ class AdminStatusListScreen<T> extends StatefulWidget {
 }
 
 class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
-  final _scroll = ScrollController();
   late String _status = widget.statuses.first.value;
-  final List<T> _items = [];
-  String? _cursor;
-  bool _loading = true;
-  bool _loadingMore = false;
-
-  /// 下一頁載入失敗：捲動不再自動重打，等使用者點尾端的重試列。
-  bool _loadMoreFailed = false;
-  Object? _error;
-
-  /// 每次重載加一：切換狀態或重新整理時，晚回來的舊回應直接丟掉。
-  int _generation = 0;
+  late final AdminPagedListController<T> _list = AdminPagedListController<T>(
+    fetch: (cursor) => widget.fetch(_status, cursor),
+    onError: (e) => mounted && handleAdminError(context, e, toast: false),
+  );
 
   @override
   void initState() {
     super.initState();
-    _scroll.addListener(_onScroll);
-    _reload();
+    _list.reload();
   }
 
   @override
   void dispose() {
-    _scroll.dispose();
+    _list.dispose();
     super.dispose();
-  }
-
-  void _onScroll() {
-    if (_scroll.position.pixels >= _scroll.position.maxScrollExtent - 200) {
-      _loadMore();
-    }
-  }
-
-  Future<void> _reload() async {
-    final generation = ++_generation;
-    setState(() {
-      _loading = _items.isEmpty;
-      _error = null;
-    });
-    try {
-      final page = await widget.fetch(_status, null);
-      if (!mounted || generation != _generation) return;
-      setState(() {
-        _items
-          ..clear()
-          ..addAll(page.items);
-        _cursor = page.pageInfo.nextCursor;
-        _loading = false;
-        _loadingMore = false;
-        _loadMoreFailed = false;
-      });
-    } catch (e) {
-      if (!mounted || generation != _generation) return;
-      if (handleAdminError(context, e, toast: false)) return;
-      setState(() {
-        _error = e;
-        _loading = false;
-      });
-    }
-  }
-
-  Future<void> _loadMore() async {
-    final cursor = _cursor;
-    if (_loadingMore || _loading || _loadMoreFailed || cursor == null) return;
-    final generation = _generation;
-    setState(() => _loadingMore = true);
-    try {
-      final page = await widget.fetch(_status, cursor);
-      if (!mounted || generation != _generation) return;
-      setState(() {
-        _items.addAll(page.items);
-        _cursor = page.pageInfo.nextCursor;
-        _loadingMore = false;
-      });
-    } catch (e) {
-      if (!mounted || generation != _generation) return;
-      setState(() {
-        _loadingMore = false;
-        _loadMoreFailed = true;
-      });
-      // 尾端重試列已說明失敗，不另跳提示（會蓋住重試列）；ADMIN_ONLY 仍退出後台。
-      handleAdminError(context, e, toast: false);
-    }
-  }
-
-  void _retryLoadMore() {
-    setState(() => _loadMoreFailed = false);
-    _loadMore();
   }
 
   void _selectStatus(String status) {
     if (status == _status) return;
-    setState(() {
-      _status = status;
-      _items.clear();
-      _cursor = null;
-      _loadMoreFailed = false;
-    });
-    _reload();
+    setState(() => _status = status);
+    _list.reset();
   }
 
   @override
@@ -394,7 +317,15 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
       children: [
         // 只有一種狀態（例如禁言列表）就不必顯示切換列。
         if (widget.statuses.length > 1) _statusBar(senior),
-        Expanded(child: _content(senior)),
+        Expanded(
+          child: AdminPagedListView<T>(
+            controller: _list,
+            seniorMode: senior,
+            emptyMessage: widget.emptyMessage,
+            itemBuilder: (context, item) =>
+                widget.itemBuilder(context, item, senior, _list.reload),
+          ),
+        ),
       ],
     ),
   );
@@ -425,51 +356,6 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
       ),
     ),
   );
-
-  Widget _content(bool senior) {
-    if (_loading) return const TrukuLoadingView();
-    if (_error != null) {
-      return TrukuErrorView(
-        error: _error,
-        onRetry: _reload,
-        seniorMode: senior,
-      );
-    }
-    return RefreshIndicator(
-      color: AppColors.primary,
-      onRefresh: _reload,
-      child: _items.isEmpty
-          ? ListView(
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.only(top: AppSpacing.xl),
-              children: [
-                TrukuEmptyState(
-                  icon: Icons.inbox_outlined,
-                  message: widget.emptyMessage,
-                  subtitle: '',
-                  seniorMode: senior,
-                  scrollable: false,
-                ),
-              ],
-            )
-          : ListView.builder(
-              controller: _scroll,
-              physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-              itemCount: _items.length + (_cursor != null ? 1 : 0),
-              itemBuilder: (context, i) {
-                if (i >= _items.length) {
-                  return AdminLoadMoreFooter(
-                    failed: _loadMoreFailed,
-                    onRetry: _retryLoadMore,
-                    seniorMode: senior,
-                  );
-                }
-                return widget.itemBuilder(context, _items[i], senior, _reload);
-              },
-            ),
-    );
-  }
 }
 
 /// 後端沒有查單筆的端點：沿 [fetch] 的分頁找 [matches] 的那一筆。
