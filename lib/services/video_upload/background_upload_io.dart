@@ -7,8 +7,10 @@
 //   （`TaskRunner.kt` determineRunInForeground、expedited 逾時）。UIDT 下「前景」是
 //   `JobService.setNotification`，不是前景服務。UIDT 排程失敗退回 WorkManager 時套件會呼叫
 //   WorkManager setForeground(dataSync)；AndroidManifest 停用了 WorkManager 的 SystemForegroundService，
-//   setForeground 因此什麼都不做，不開前景服務（2026-10-14 決定 A）。這時 task 照樣跑，
-//   直到系統停掉 expedited job，套件回報 failed，回前景後由上傳器查進度重排。
+//   setForeground 因此什麼都不做，不開前景服務（2026-10-14 決定 A）。這時 runInForeground 仍是 true，
+//   套件不會 2 分鐘中止，WorkManager 也會略過系統的 stop（worker 已在它的 foreground map），
+//   task 一直是 running：App 在背景時 process 可能被凍結或結束，上傳停住；回前景後連線多半已斷而回報
+//   failed，由上傳器查進度重排，或網路還通就直接傳完。這條路徑不會回報 enqueued。
 // - Android 13 以下：[BackgroundUploadEngine.available] 為 false，送法改用前景 http 分段（決定 E）。
 // - iOS 不設通知（不碰推播用的通知設定）；單一請求最久 24 小時，請求逾時用系統預設。
 // - FileDownloader 等到第一次上傳才初始化，App 啟動時不做事。

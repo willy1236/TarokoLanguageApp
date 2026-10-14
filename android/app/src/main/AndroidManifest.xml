@@ -75,7 +75,8 @@
         <!-- 背景上傳設了 Config.runInForeground（UIDT 才不會 2 分鐘就被套件中止）。UIDT 排程失敗退回
              WorkManager 時，套件會呼叫 WorkManager setForeground(dataSync)，由這個服務 startForeground；
              App 沒有 dataSync 權限、服務也沒宣告 type，會在服務裡出錯，套件接不到。停用它讓 setForeground
-             什麼都不做（啟動停用的服務不會丟例外），App 不開前景服務。App 其他地方沒有用 WorkManager 前景工作。 -->
+             什麼都不做（啟動停用的服務不會丟例外），App 不開前景服務。App 其他地方沒有用 WorkManager 前景工作。
+             副作用：WorkManager 仍會為這個 worker 拿 partial wakelock 到上傳結束（只在 UIDT 排不進去時發生）。 -->
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"
             android:enabled="false"

@@ -441,7 +441,8 @@ void main() {
       expect(h.httpTransport.queries, 1);
 
       h.httpTransport.offset = 700;
-      await Future<void>.delayed(const Duration(milliseconds: 40));
+      // 夾在第一次重查（20ms）與第二次重查（約 40ms）之間。
+      await Future<void>.delayed(const Duration(milliseconds: 30));
       expect(h.httpTransport.queries, 2);
       expect(h.engine.cancelled, isEmpty, reason: '500 → 700 有前進');
 
