@@ -370,6 +370,17 @@ class AdminService {
     return AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
   }
 
+  /// 修改影片的標題、說明、分類、部落，回傳修改後的影片。[fields] 只放有改的欄位
+  /// （`title`／`description`／`category`／`tribe_id`），說明、部落清除傳 null 值；
+  /// 不能是空的（後端回 400）。不存在 404 VIDEO_NOT_FOUND；新分類後端會自動加進分類表。
+  static Future<AdminVideo> updateVideo(
+    int id,
+    Map<String, Object?> fields,
+  ) async {
+    final json = await ApiClient.patch(ApiConfig.adminVideo(id), fields);
+    return AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
+  }
+
   // ── 小米幣查帳（內部管理.md §4、§5）唯讀，不寫操作紀錄 ─────────────────
 
   /// 任一使用者的小米幣明細，形狀同使用者自己的明細。

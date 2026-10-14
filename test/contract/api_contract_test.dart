@@ -443,6 +443,18 @@ void main() {
     },
   );
 
+  // 修改影片會寫正式資料，不錄製，用規格範例確認解析得了。
+  test('api_spec/patch_api_admin_video.json → AdminVideo（規格範例，修改影片）', () {
+    final json = loadSpecFixtureMap('patch_api_admin_video.json');
+    final video = AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
+    expect(video.id, 104);
+    expect(video.title, '轉檔失敗的部落宣傳（已改名）');
+    expect(video.description, isNull);
+    expect(video.category, 'cultural');
+    expect(video.tribeId, isNull);
+    expect(video.isFailed, isTrue);
+  });
+
   // 正式資料不一定有處理中、失敗、已下架的影片，錄不到的狀態先用規格範例確認解析得了。
   test('api_spec/get_api_admin_videos.json → AdminVideo（規格範例，各狀態與來源）', () {
     final json = loadSpecFixtureMap('get_api_admin_videos.json');
