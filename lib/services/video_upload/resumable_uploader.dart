@@ -10,7 +10,8 @@
 //
 // 用獨立的 http.Client，不經 ApiClient：目標是雲端網址，不能帶 App 的 token。
 // 網路錯誤、逾時、雲端 5xx／408／429 時自動退避重試（[ResumableUploader.retryDelays]，
-// 預設 1、2、4、8、16 秒後每 30 秒一次），每次重試都先查進度再接著傳；有一段傳成功就重新計算。
+// 預設 1、2、4、8、16 秒後每 30 秒一次），每次重試都先查進度再接著傳；有一段傳成功、
+// 或查進度發現雲端收到的比上次多（慢網路逾時前已傳一部分），就重新計算。
 // 從第一次失敗起超過 [ResumableUploader.retryWindow]（預設 10 分鐘）就不再等下一次，
 // 丟 [UploadInterrupted]（等待期間加上最後一次嘗試的逾時，最久約 12 分鐘）。
 // 每個請求有逾時：送一段 [ResumableUploader.requestTimeout]、查進度 [ResumableUploader.queryTimeout]。
@@ -162,8 +163,14 @@ class ResumableUploader {
     try {
       while (true) {
         try {
-          offset = await queryOffset();
+          final confirmed = await queryOffset();
           if (_cancelled) return;
+          // 慢網路時一段可能傳到一半就逾時，但雲端有收到部分資料：有前進就重新計算重試。
+          if (confirmed > offset) {
+            failures = 0;
+            failingSince = null;
+          }
+          offset = confirmed;
           yield UploadProgress(sent: offset, total: _total);
           while (offset < _total) {
             final end = offset + chunkSize < _total

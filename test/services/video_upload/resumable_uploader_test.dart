@@ -455,6 +455,37 @@ void main() {
       expect(requests, 4, reason: '第一次＋重試 3 次');
     });
 
+    test('慢網路：每段都逾時但雲端有收到一部分 → 查進度有前進就重新計算，最後傳得完', () async {
+      final size = _multiple * 4;
+      var received = 0;
+      var chunkRequests = 0;
+      final progress = await ResumableUploader(
+        _session(size),
+        _FakeSource(size),
+        chunkSize: size,
+        retryDelays: const [Duration.zero, Duration.zero],
+        client: MockClient((request) async {
+          final range = request.headers['Content-Range']!;
+          if (range.startsWith('bytes */')) {
+            return http.Response(
+              '',
+              308,
+              headers: received == 0
+                  ? {}
+                  : {'range': 'bytes=0-${received - 1}'},
+            );
+          }
+          chunkRequests++;
+          received += _multiple; // 逾時前只傳到一部分
+          if (received >= size) return http.Response('{}', 200);
+          throw TimeoutException('雲端沒有回應');
+        }),
+      ).start().toList();
+
+      expect(chunkRequests, 4, reason: '連續失敗 3 次，超過重試上限 2 次，但每次都有前進');
+      expect(progress.last, UploadProgress(sent: size, total: size));
+    });
+
     test('404／410、其他 4xx、讀檔失敗不重試', () async {
       for (final (status, matcher) in [
         (404, isA<UploadSessionExpired>()),
