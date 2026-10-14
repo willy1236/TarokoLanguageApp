@@ -63,6 +63,12 @@
         <service
             android:name="io.agora.rtc2.extensions.MediaProjectionMgr$LocalScreenSharingService"
             tools:node="remove" />
+        <!-- background_downloader 的 UIDT JobService 自帶 foregroundServiceType="dataSync"。
+             UIDT（Android 14+）用 JobService.setNotification 掛通知，不需要前景服務類型；
+             移除以免 Play 視為宣告 dataSync 前景服務而要求申報。 -->
+        <service
+            android:name="com.bbflight.background_downloader.UIDTJobService"
+            tools:remove="android:foregroundServiceType" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and
