@@ -1,13 +1,16 @@
 // 影片管理列表：各狀態與來源的呈現、篩選與搜尋送出的參數、下一頁、下拉重整、
-// 非管理員退出後台、後台首頁入口、上傳影片按鈕。
+// 非管理員退出後台、後台首頁入口、上傳影片按鈕、上方的上傳進度與還沒傳完的上傳。
 
 import 'dart:async';
+import 'dart:convert';
+import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
@@ -21,7 +24,9 @@ import 'package:flutter_application_1/screens/admin/admin_videos_screen.dart';
 import 'package:flutter_application_1/services/category_service.dart';
 import 'package:flutter_application_1/services/user_service.dart';
 import 'package:flutter_application_1/services/video_upload/chunk_source.dart';
+import 'package:flutter_application_1/services/video_upload/pending_uploads.dart';
 import 'package:flutter_application_1/services/video_upload/resumable_uploader.dart';
+import 'package:flutter_application_1/services/video_upload/video_file_picker.dart';
 import 'package:flutter_application_1/services/video_upload/video_upload_manager.dart';
 
 import '../../helpers/fixtures.dart';
@@ -362,6 +367,202 @@ void main() {
       );
       await _open(tester);
       expect(find.textContaining('網路中斷，自動重試中'), findsOneWidget);
+      await VideoUploadManager.instance.cancel();
+    });
+  });
+
+  group('還沒傳完的上傳（App 重開後）', () {
+    late Directory dir;
+    final pending = PendingUploads.instance;
+
+    setUp(() async {
+      dir = Directory.systemTemp.createTempSync('admin_videos_pending');
+      UserService.currentUid = 20;
+      VideoUploadManager.uploaderFactory = (session, source) =>
+          ResumableUploader(
+            session,
+            source,
+            client: MockClient((_) => Completer<http.Response>().future),
+            retryDelays: const [],
+          );
+    });
+    tearDown(() async {
+      adminVideoPickerOverride = null;
+      await VideoUploadManager.instance.resetForTest();
+      pending.resetForTest();
+      dir.deleteSync(recursive: true);
+    });
+
+    PendingUpload record({
+      int videoId = 107,
+      int? userId = 20,
+      String? filePath,
+      int size = 1024,
+      DateTime? createdAt,
+    }) => PendingUpload(
+      userId: userId,
+      videoId: videoId,
+      title: '部落祭典紀錄$videoId',
+      category: 'cultural',
+      session: UploadSession(
+        sessionUrl: Uri.parse('https://storage.googleapis.com/u?upload_id=x'),
+        size: size,
+        chunkMultiple: 262144,
+      ),
+      fileName: 'IMG_0001.MOV',
+      filePath: filePath,
+      temporaryFile: true,
+      createdAt: createdAt ?? DateTime.now(),
+    );
+
+    /// 本機已有這些紀錄（App 重開前寫下的）。
+    void stored(List<PendingUpload> records) {
+      SharedPreferences.setMockInitialValues({
+        'admin_video_pending_uploads': jsonEncode([
+          for (final r in records) r.toJson(),
+        ]),
+      });
+      pending.resetForTest();
+    }
+
+    PickedVideoFile picked(String name, int size, _FakeSource source) =>
+        PickedVideoFile(
+          info: UploadFileInfo(
+            name: name,
+            size: size,
+            contentType: 'video/quicktime',
+          ),
+          source: source,
+        );
+
+    testWidgets('顯示自己還沒傳完的影片數與標題；別人的、正在傳的不列', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      stored([
+        record(videoId: 1),
+        record(videoId: 2),
+        record(videoId: 3, userId: 21),
+        record(videoId: 107),
+      ]);
+      _startUpload(); // 正在傳 107
+      await _open(tester);
+
+      expect(find.text('有 2 支影片還沒傳完'), findsOneWidget);
+      expect(find.text('部落祭典紀錄1'), findsOneWidget);
+      expect(find.text('部落祭典紀錄2'), findsOneWidget);
+      expect(find.text('部落祭典紀錄3'), findsNothing);
+      expect(find.text('繼續上傳'), findsNWidgets(2));
+      await VideoUploadManager.instance.cancel();
+    });
+
+    testWidgets('沒有紀錄時不顯示', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      stored([]);
+      await _open(tester);
+      expect(find.byKey(const ValueKey('admin-pending-uploads')), findsNothing);
+    });
+
+    testWidgets('手機：檔案還在 → 繼續上傳從斷點接著傳，換到進度頁', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      final file = File('${dir.path}/1_IMG_0001.MOV')
+        ..writeAsBytesSync(Uint8List(1024));
+      stored([record(filePath: file.path)]);
+      await _open(tester);
+
+      await tester.runAsync(() async {
+        await tester.tap(find.text('繼續上傳'));
+        await Future<void>.delayed(const Duration(milliseconds: 200));
+      });
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AdminVideoUploadProgressScreen), findsOneWidget);
+      final active = VideoUploadManager.instance.active.value!;
+      expect(active.video.id, 107);
+      expect(active.state, UploadState.uploading);
+      // 上傳是在 runAsync 裡開始的（真的讀檔），停也要在 runAsync 裡停。
+      await tester.runAsync(VideoUploadManager.instance.cancel);
+    });
+
+    testWidgets('手機：檔案不見 → 提示重選；選同一個檔案就接著傳', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      // 檔案不見的判斷（真的查檔案）在上傳服務的單元測試；這裡用沒有路徑的紀錄走同一條路。
+      stored([record()]);
+      final source = _FakeSource(1024);
+      adminVideoPickerOverride = (from, {onPreparing}) async =>
+          picked('IMG_0001.MOV', 1024, source);
+      await _open(tester);
+
+      await tester.tap(find.text('繼續上傳'));
+      await tester.pumpAndSettle();
+      expect(find.text('找不到原本的影片檔'), findsOneWidget);
+      expect(find.textContaining('重新選擇同一個檔案（IMG_0001.MOV，'), findsOneWidget);
+      expect(find.textContaining('超過 6 小時後會在每日維護時標成失敗'), findsOneWidget);
+
+      await tester.tap(find.text('重新選擇檔案'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('從檔案'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AdminVideoUploadProgressScreen), findsOneWidget);
+      expect(VideoUploadManager.instance.active.value!.video.id, 107);
+      await VideoUploadManager.instance.cancel();
+    });
+
+    testWidgets('重選的檔案和原本的不同 → 擋下並提示要選哪個檔案', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      stored([record()]); // 沒有路徑：直接要求重選
+      final source = _FakeSource(2048);
+      adminVideoPickerOverride = (from, {onPreparing}) async =>
+          picked('IMG_0001.MOV', 2048, source);
+      await _open(tester);
+
+      await tester.tap(find.text('繼續上傳'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('重新選擇檔案'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('從相簿'));
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('選的檔案和原本的不同，請選 IMG_0001.MOV'), findsOneWidget);
+      expect(find.byType(AdminVideoUploadProgressScreen), findsNothing);
+      expect(VideoUploadManager.instance.active.value, isNull);
+    });
+
+    testWidgets('放棄：確認後清掉這筆，列表上方不再顯示', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      stored([record()]);
+      await _open(tester);
+
+      await tester.tap(find.text('放棄'));
+      await tester.pumpAndSettle();
+      expect(find.text('放棄這次上傳？'), findsOneWidget);
+      await tester.tap(find.text('放棄').last);
+      await tester.pumpAndSettle();
+
+      expect(find.byKey(const ValueKey('admin-pending-uploads')), findsNothing);
+      expect(pending.items.value, isEmpty);
+    });
+
+    testWidgets('超過一週：提示連結失效，只能放棄', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      stored([
+        record(createdAt: DateTime.now().subtract(const Duration(days: 8))),
+      ]);
+      await _open(tester);
+
+      expect(find.textContaining('上傳連結已超過一週失效'), findsOneWidget);
+      expect(find.text('繼續上傳'), findsNothing);
+      expect(find.text('放棄'), findsOneWidget);
+    });
+
+    testWidgets('已有一支在傳時按繼續 → 提示等它傳完', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      stored([record(videoId: 1)]);
+      _startUpload();
+      await _open(tester);
+
+      await tester.tap(find.text('繼續上傳'));
+      await tester.pump();
+      expect(find.text('已有一支影片正在上傳，請等它傳完再繼續'), findsOneWidget);
       await VideoUploadManager.instance.cancel();
     });
   });

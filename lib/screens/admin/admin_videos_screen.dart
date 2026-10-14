@@ -6,6 +6,9 @@
 // 列尾選單由之後的功能加項目（編輯、下架、重新上傳），見 _rowActions。
 // 下架回 files_deleted: false 時，「再刪一次檔案」只記在本次畫面（後端沒有欄位記錄）。
 // 上方顯示 App 正在傳的影片檔（VideoUploadManager），點它回進度頁；看過完成畫面後就移除。
+// 再下面是還沒傳完的影片（App 被關掉、網頁重新整理前沒傳完，PendingUploads）：手機按「繼續上傳」
+// 用原本的檔案接著傳，檔案不見時請管理員重選同一個檔案；網頁一律重選，檔名與大小相符才接著傳
+// （後台影片 T-05）。App 啟動時不自動續傳。
 
 import 'dart:async';
 
@@ -16,10 +19,14 @@ import '../../core/constants/app_radius.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
+import '../../core/platform/platform_features.dart';
 import '../../models/admin_models.dart';
 import '../../models/content_category.dart';
 import '../../services/admin_service.dart';
 import '../../services/category_service.dart';
+import '../../services/user_service.dart';
+import '../../services/video_upload/pending_uploads.dart';
+import '../../services/video_upload/video_file_picker.dart';
 import '../../services/video_upload/video_upload_manager.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/confirm_dialog.dart';
@@ -74,6 +81,9 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
   /// 下架請求送出中的影片 id：選單項目停用並顯示進行中，避免連點重送。
   final Set<int> _archiving = {};
 
+  /// 正在準備續傳（檢查檔案、重選檔案），避免連點。
+  bool _resuming = false;
+
   late final AdminPagedListController<AdminVideo> _list =
       AdminPagedListController<AdminVideo>(
         fetch: (cursor) => AdminService.fetchVideos(
@@ -90,6 +100,7 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
     super.initState();
     _list.reload();
     _loadCategoryLabels();
+    PendingUploads.instance.load();
   }
 
   @override
@@ -142,6 +153,125 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
       const AdminVideoUploadScreen(),
     );
     if ((created ?? false) && mounted) await _list.reload();
+  }
+
+  void _openProgress() {
+    if (mounted) {
+      pushAdmin<void>(context, const AdminVideoUploadProgressScreen());
+    }
+  }
+
+  void _showBusy() => showAdminMessage(
+    '已有一支影片正在上傳，請等它傳完再繼續',
+    action: (label: '查看進度', onPressed: _openProgress),
+  );
+
+  /// 繼續一支沒傳完的：手機用原本的檔案，網頁（或手機檔案不見時）請管理員重選同一個檔案。
+  /// 開始後換到進度頁。
+  Future<void> _resumePending(PendingUpload upload) async {
+    if (_resuming) return;
+    if (VideoUploadManager.instance.isBusy) {
+      _showBusy();
+      return;
+    }
+    setState(() => _resuming = true);
+    try {
+      final started = PlatformFeatures.hasFileSystem
+          ? await _resumeFromFile(upload)
+          : await _resumeWithRepick(upload);
+      if (started) _openProgress();
+    } on UploadBusy {
+      _showBusy();
+    } catch (e) {
+      debugPrint('AdminVideosScreen: 續傳失敗：$e');
+      showAdminMessage('無法繼續上傳，請稍後再試');
+    } finally {
+      if (mounted) setState(() => _resuming = false);
+    }
+  }
+
+  /// 手機：用紀錄的檔案接著傳；檔案不見就問要不要重選。回 true 代表已開始上傳。
+  Future<bool> _resumeFromFile(PendingUpload upload) async {
+    try {
+      await VideoUploadManager.instance.resume(upload);
+      return true;
+    } on PendingFileMissing {
+      if (!mounted) return false;
+      final repick = await showConfirmDialog(
+        context,
+        title: '找不到原本的影片檔',
+        message:
+            '檔案可能被刪除、搬走或被系統清掉。可以重新選擇同一個檔案'
+            '（${upload.fileName}，${formatUploadBytes(upload.size)}）從中斷的地方接著傳；'
+            '不想傳了就按「放棄」。\n'
+            '放棄後影片會停在「處理中」，超過 6 小時後會在每日維護時標成失敗，'
+            '之後可以用「重新上傳」補傳。',
+        confirmText: '重新選擇檔案',
+      );
+      if (!repick || !mounted) return false;
+      return _resumeWithRepick(upload);
+    }
+  }
+
+  /// 重選同一個檔案接著傳；檔名或大小不符就提示重選。回 true 代表已開始上傳。
+  Future<bool> _resumeWithRepick(PendingUpload upload) async {
+    final from = PlatformFeatures.isMobile
+        ? await _choosePickSource()
+        : VideoPickSource.files;
+    if (from == null || !mounted) return false;
+    try {
+      final picked = await pickAdminVideoFile(from);
+      if (picked == null) return false;
+      if (!mounted) {
+        await picked.source.discard();
+        return false;
+      }
+      await VideoUploadManager.instance.resume(upload, repicked: picked);
+      return true;
+    } on VideoFileRejected catch (e) {
+      showAdminMessage(e.message);
+    } on PendingFileMismatch {
+      showAdminMessage(
+        '選的檔案和原本的不同，請選 ${upload.fileName}'
+        '（${formatUploadBytes(upload.size)}）',
+      );
+    }
+    return false;
+  }
+
+  /// 手機重選檔案：從相簿或從檔案。
+  Future<VideoPickSource?> _choosePickSource() =>
+      showModalBottomSheet<VideoPickSource>(
+        context: context,
+        builder: (context) => SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: const Icon(Icons.photo_library_outlined),
+                title: const Text('從相簿'),
+                onTap: () => Navigator.pop(context, VideoPickSource.gallery),
+              ),
+              ListTile(
+                leading: const Icon(Icons.folder_open_outlined),
+                title: const Text('從檔案'),
+                onTap: () => Navigator.pop(context, VideoPickSource.files),
+              ),
+            ],
+          ),
+        ),
+      );
+
+  /// 放棄一支沒傳完的：刪本機紀錄與暫存檔；影片本身留給後端標失敗。
+  Future<void> _discardPending(PendingUpload upload) async {
+    final confirmed = await showConfirmDialog(
+      context,
+      title: '放棄這次上傳？',
+      message: '影片會停在「處理中」，超過 6 小時後會在每日維護時標成失敗，之後可以用「重新上傳」補傳。',
+      confirmText: '放棄',
+    );
+    if (!confirmed) return;
+    await PendingUploads.instance.discard(upload);
   }
 
   /// 編輯完回來：已更新就地換掉那一列（不再符合篩選也先留著，下拉重整後才消失），
@@ -242,10 +372,11 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
     ],
     body: (context, senior) => Column(
       children: [
-        _ActiveUploadBanner(
+        _ActiveUploadBanner(seniorMode: senior, onTap: _openProgress),
+        _PendingUploadsBanner(
           seniorMode: senior,
-          onTap: () =>
-              pushAdmin<void>(context, const AdminVideoUploadProgressScreen()),
+          onResume: _resumePending,
+          onDiscard: _discardPending,
         ),
         _searchField(senior),
         _chips(_statuses, _status, _selectStatus, senior),
@@ -407,6 +538,147 @@ class _ActiveUploadBanner extends StatelessWidget {
       );
     },
   );
+}
+
+/// 還沒傳完的影片（App 被關掉、網頁重新整理前沒傳完的）；正在傳的那支不重複列。沒有時不佔空間。
+class _PendingUploadsBanner extends StatelessWidget {
+  final bool seniorMode;
+  final void Function(PendingUpload upload) onResume;
+  final void Function(PendingUpload upload) onDiscard;
+
+  const _PendingUploadsBanner({
+    required this.seniorMode,
+    required this.onResume,
+    required this.onDiscard,
+  });
+
+  @override
+  Widget build(BuildContext context) => ListenableBuilder(
+    listenable: Listenable.merge([
+      PendingUploads.instance.items,
+      VideoUploadManager.instance.active,
+    ]),
+    builder: (context, _) {
+      final activeId = VideoUploadManager.instance.active.value?.video.id;
+      final uploads = PendingUploads.instance
+          .visibleTo(UserService.currentUid)
+          .where((p) => p.videoId != activeId)
+          .toList();
+      if (uploads.isEmpty) return const SizedBox.shrink();
+      final now = DateTime.now();
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.md,
+          0,
+        ),
+        child: AdminCard(
+          key: const ValueKey('admin-pending-uploads'),
+          seniorMode: seniorMode,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.cloud_off_outlined,
+                    color: AppColors.goldDeep,
+                  ),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      '有 ${uploads.length} 支影片還沒傳完',
+                      style: AppTypography.bodyLargeStyle(
+                        seniorMode: seniorMode,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              for (final upload in uploads)
+                _PendingUploadRow(
+                  upload: upload,
+                  expired: upload.isExpiredAt(now),
+                  seniorMode: seniorMode,
+                  onResume: () => onResume(upload),
+                  onDiscard: () => onDiscard(upload),
+                ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
+}
+
+class _PendingUploadRow extends StatelessWidget {
+  final PendingUpload upload;
+  final bool expired;
+  final bool seniorMode;
+  final VoidCallback onResume;
+  final VoidCallback onDiscard;
+
+  const _PendingUploadRow({
+    required this.upload,
+    required this.expired,
+    required this.seniorMode,
+    required this.onResume,
+    required this.onDiscard,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hint = expired
+        ? '上傳連結已超過一週失效，請放棄，再用「重新上傳」補傳。'
+        : PlatformFeatures.hasFileSystem
+        ? '${upload.fileName}・${formatUploadBytes(upload.size)}'
+        : '請重新選擇同一個檔案（${upload.fileName}，${formatUploadBytes(upload.size)}），會從中斷的地方接著傳。';
+    return Padding(
+      key: ValueKey('admin-pending-upload-${upload.videoId}'),
+      padding: const EdgeInsets.only(top: AppSpacing.sm),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            upload.title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.bodyStyle(
+              seniorMode: seniorMode,
+              color: AppColors.ink,
+            ),
+          ),
+          Text(
+            hint,
+            style: AppTypography.captionStyle(
+              seniorMode: seniorMode,
+              color: expired ? AppColors.dangerDark : AppColors.inkSoft,
+            ),
+          ),
+          Wrap(
+            alignment: WrapAlignment.end,
+            spacing: AppSpacing.sm,
+            children: [
+              TextButton(onPressed: onDiscard, child: const Text('放棄')),
+              if (!expired)
+                FilledButton(
+                  onPressed: onResume,
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: AppColors.creamLight,
+                  ),
+                  child: Text(
+                    PlatformFeatures.hasFileSystem ? '繼續上傳' : '選擇檔案繼續上傳',
+                  ),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
 }
 
 Color _statusColor(String status) => switch (status) {
