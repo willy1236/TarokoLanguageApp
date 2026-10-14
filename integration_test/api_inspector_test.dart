@@ -972,8 +972,102 @@ void main() {
         shape: {'announcements': F.list},
       ),
     );
+    // 影片管理（後台影片 T-02）：只錄列表；POST／PATCH／archive 會真的上架、改資料或刪檔。
+    // 全部一支拿各種狀態；另外四支看正式資料有沒有處理中、失敗、下架、YouTube 的影片。
+    adminTest(
+      'GET /api/admin/videos',
+      (_) => _inspectAdminVideos('?limit=50', 'get_api_admin_videos.json'),
+    );
+    for (final filter in [
+      'status=processing',
+      'status=failed',
+      'status=archived',
+      'source=youtube',
+    ]) {
+      adminTest(
+        'GET /api/admin/videos?$filter',
+        (_) => _inspectAdminVideos('?$filter', null),
+      );
+    }
+    // YouTube 預覽（後台影片 T-03）：後端只查 videos 表與 YouTube oEmbed，不寫資料，可以錄。
+    // 上架（POST /api/admin/videos）會真的建立影片，不錄，回應用 api_spec 規格範例。
+    adminTest('POST /api/admin/videos/youtube/preview（已上架的影片）', (_) async {
+      final (youtubeId, failure) = await _firstAdminYouTubeId();
+      if (youtubeId == null) {
+        markTestSkipped(failure ?? '正式資料沒有 YouTube 影片，無法預覽已上架的影片');
+        return;
+      }
+      await _inspectYouTubePreview(
+        'https://www.youtube.com/watch?v=$youtubeId',
+        'post_api_admin_videos_youtube_preview.json',
+        existsNullable: false,
+      );
+    });
+    adminTest(
+      'POST /api/admin/videos/youtube/preview（未上架的公開影片）',
+      // YouTube 第一支影片（Me at the zoo）：公開、允許嵌入，正式資料沒有它。
+      (_) => _inspectYouTubePreview(
+        'https://youtu.be/jNQXAC9IVRw',
+        'post_api_admin_videos_youtube_preview_new.json',
+        existsNullable: true,
+      ),
+    );
+    adminTest(
+      'POST /api/admin/videos/youtube/preview（不是 YouTube 網址）',
+      (_) => _inspect(
+        'POST',
+        ApiConfig.adminVideoYouTubePreview,
+        body: {'url': 'https://example.com/clip.mp4'},
+        expectStatus: 400,
+        expectError: true,
+        errorCode: 'INVALID_YOUTUBE_URL',
+      ),
+    );
   });
 }
+
+/// 打後台影片列表（只看 YouTube）拿第一支的 youtube_video_id。
+/// 回傳 (id, 失敗訊息)：請求失敗時 id 為 null 且帶訊息；沒資料時兩者皆 null。
+Future<(String?, String?)> _firstAdminYouTubeId() async {
+  final path = '${ApiConfig.adminVideos}?source=youtube&limit=1';
+  final response = await http.get(
+    Uri.parse('${ApiConfig.baseUrl}$path'),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer $_token',
+    },
+  );
+  if (response.statusCode != 200) {
+    return (null, _pickFailure(path, response, '挑 YouTube 影片'));
+  }
+  final decoded = jsonDecode(response.body) as Map<String, dynamic>;
+  for (final v in decoded['videos'] as List<dynamic>? ?? []) {
+    final id = (v as Map<String, dynamic>)['youtube_video_id'];
+    if (id is String && id.isNotEmpty) return (id, null);
+  }
+  return (null, null);
+}
+
+/// POST /api/admin/videos/youtube/preview → AdminYouTubePreview.fromJson。
+/// [existsNullable] 為 false 時要求 exists_video_id 是數字（預覽已上架的影片）。
+Future<void> _inspectYouTubePreview(
+  String url,
+  String fixtureAs, {
+  required bool existsNullable,
+}) => _inspect(
+  'POST',
+  ApiConfig.adminVideoYouTubePreview,
+  body: {'url': url},
+  shape: const {
+    'youtube_video_id': F.string,
+    'title': F.string,
+    'thumbnail_url': F.string,
+    'embeddable': F.boolean,
+    'exists_video_id': F.number,
+  },
+  nullable: {'title', if (existsNullable) 'exists_video_id'},
+  fixtureAs: fixtureAs,
+);
 
 Future<Map<String, dynamic>?> _fetchMe() async {
   final uri = Uri.parse('${ApiConfig.baseUrl}${ApiConfig.me}');
@@ -1720,6 +1814,39 @@ const Map<String, F> _articleSummaryOptional = {
 
 /// GET /api/{events,articles,videos}/categories 與 /api/admin/categories/:module 的每一筆
 /// → lib/models/content_category.dart ContentCategory.fromJson（T-21）
+/// GET /api/admin/videos → lib/models/admin_models.dart AdminVideo.fromJson
+Future<void> _inspectAdminVideos(String query, String? fixtureAs) => _inspect(
+  'GET',
+  '${ApiConfig.adminVideos}$query',
+  shape: const {'videos': F.list, 'page_info': F.object},
+  listKey: 'videos',
+  itemShape: const {
+    'id': F.number,
+    'title': F.string,
+    'description': F.string,
+    'category': F.string,
+    'source': F.string,
+    'status': F.string,
+    'fail_reason': F.string,
+    'duration_sec': F.number,
+    'thumbnail_url': F.string,
+    'youtube_video_id': F.string,
+    'embeddable': F.boolean,
+    'tribe_id': F.number,
+    'created_at': F.string,
+  },
+  itemNullable: const {
+    'description',
+    'fail_reason',
+    'duration_sec',
+    'thumbnail_url',
+    'youtube_video_id',
+    'embeddable',
+    'tribe_id',
+  },
+  fixtureAs: fixtureAs,
+);
+
 const Map<String, F> _categoryShape = {
   'value': F.string,
   'label': F.string,

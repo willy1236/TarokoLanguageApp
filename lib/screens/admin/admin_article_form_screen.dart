@@ -4,8 +4,8 @@
 // 封面只收已在雲端儲存的 HTTPS 網址，沒有上傳；文章詳情不回作者與部落標籤，
 // 編輯模式因此不顯示這兩欄（建立時才能填）。
 //
-// 分類清單讀 `GET /api/admin/categories/articles`（內部管理.md §6.1），也可以直接輸入
-// 新分類，後端會在同一個交易內加進分類表。清單載入成功前不能送出。
+// 分類欄位用共用的 [AdminCategoryField]（清單、新增分類、載入失敗重試都在元件內）；
+// 清單載入成功前不能送出。
 
 import 'package:flutter/material.dart';
 
@@ -23,6 +23,7 @@ import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import '../culture/widgets/article_markdown.dart';
 import 'admin_error.dart';
+import 'widgets/admin_category_field.dart';
 import 'widgets/admin_widgets.dart';
 
 class AdminArticleFormScreen extends StatefulWidget {
@@ -36,9 +37,6 @@ class AdminArticleFormScreen extends StatefulWidget {
 }
 
 class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
-  /// 下拉選單裡「＋新增分類」的值，含控制字元，不會和後端的分類 value 撞名。
-  static const _newCategoryOption = '\u0000new';
-
   late final _title = TextEditingController(text: widget.editing?.title);
   late final _summary = TextEditingController(text: widget.editing?.summary);
   late final _content = TextEditingController(text: widget.editing?.contentMd);
@@ -46,17 +44,9 @@ class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
     text: widget.editing?.coverImageUrl,
   );
   final _author = TextEditingController();
-  final _newCategory = TextEditingController();
 
-  /// 下拉選中的既有分類 value；新增時等清單載入後預設第一筆。
-  late String? _category = widget.editing?.category;
-
-  /// 後台分類清單；null 代表還沒載入成功（載入中或失敗），這時不能送出。
-  List<ContentCategory>? _categories;
-  Object? _categoriesError;
-
-  /// 選了「＋新增分類」，分類改由 [_newCategory] 輸入。
-  bool _typingNewCategory = false;
+  /// 分類；新增時等清單載入後預設第一筆。
+  final _category = AdminCategoryController();
 
   int? _tribeId;
   List<Tribe> _tribes = const [];
@@ -71,22 +61,15 @@ class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
   @override
   void initState() {
     super.initState();
-    _loadCategories();
     if (!_isEdit) _loadTribes();
   }
 
   @override
   void dispose() {
-    for (final c in [
-      _title,
-      _summary,
-      _content,
-      _cover,
-      _author,
-      _newCategory,
-    ]) {
+    for (final c in [_title, _summary, _content, _cover, _author]) {
       c.dispose();
     }
+    _category.dispose();
     super.dispose();
   }
 
@@ -98,51 +81,6 @@ class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
     } catch (e) {
       debugPrint('AdminArticleFormScreen: 部落清單載入失敗：$e');
     }
-  }
-
-  Future<void> _loadCategories() async {
-    setState(() => _categoriesError = null);
-    try {
-      final list = await AdminService.fetchCategories(CategoryModule.articles);
-      if (!mounted) return;
-      setState(() {
-        _categories = list;
-        if (_category == null && list.isNotEmpty) _category = list.first.value;
-        // 一個分類都沒有時只能輸入新分類。
-        if (list.isEmpty && _category == null) _typingNewCategory = true;
-      });
-    } catch (e) {
-      if (!mounted) return;
-      if (handleAdminError(context, e, toast: false)) return;
-      setState(() => _categoriesError = e);
-    }
-  }
-
-  /// 實際要送出的分類 value。輸入的新分類與既有分類的 value 或名稱相同時，用那一筆的 value。
-  String? get _selectedCategory {
-    if (!_typingNewCategory) return _category;
-    final typed = _newCategory.text.trim();
-    if (typed.isEmpty) return null;
-    for (final c in _categories ?? const <ContentCategory>[]) {
-      if (c.value == typed || c.label == typed) return c.value;
-    }
-    return typed;
-  }
-
-  /// 送出的分類不在後台清單裡（後端會自動加進分類表）。
-  bool get _isNewCategory {
-    final value = _selectedCategory;
-    final list = _categories ?? const <ContentCategory>[];
-    return value != null && !list.any((c) => c.value == value);
-  }
-
-  String? get _newCategoryError {
-    if (!_typingNewCategory) return null;
-    final typed = _newCategory.text.trim();
-    if (typed.length > categoryLabelMax) {
-      return '分類名稱最多 $categoryLabelMax 字';
-    }
-    return _submitted && typed.isEmpty ? '分類名稱必填' : null;
   }
 
   String? get _titleError =>
@@ -158,19 +96,16 @@ class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
   bool get _valid =>
       _title.text.trim().isNotEmpty &&
       _content.text.trim().isNotEmpty &&
-      _coverError == null &&
-      _selectedCategory != null &&
-      _newCategoryError == null;
+      _coverError == null;
 
   Future<void> _save({required bool publish}) async {
     setState(() => _submitted = true);
-    if (_categories == null) {
-      showAdminMessage(
-        _categoriesError == null ? '分類清單載入中，請稍候' : '分類清單載入失敗，請先重試',
-      );
+    final categoryError = _category.validate();
+    if (!_category.isLoaded) {
+      showAdminMessage(categoryError!);
       return;
     }
-    if (!_valid) return;
+    if (!_valid || categoryError != null) return;
     if (_isEdit) return _saveEdit();
     if (!publish) {
       final ok = await showConfirmDialog(
@@ -181,12 +116,12 @@ class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
       );
       if (!ok || !mounted) return;
     }
-    final isNewCategory = _isNewCategory;
+    final isNewCategory = _category.isNew;
     setState(() => _busy = true);
     try {
       await AdminService.createArticle(
         title: _title.text,
-        category: _selectedCategory!,
+        category: _category.value!,
         contentMd: _content.text,
         summary: _summary.text,
         coverImageUrl: _cover.text,
@@ -209,7 +144,7 @@ class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
   /// 編輯只送有改的欄位；摘要、封面清空時送 null 讓後端清掉。
   Future<void> _saveEdit() async {
     final original = widget.editing!;
-    final category = _selectedCategory!;
+    final category = _category.value!;
     String? nullIfBlank(String v) => v.trim().isEmpty ? null : v.trim();
     final fields = <String, Object?>{
       if (_title.text.trim() != original.title) 'title': _title.text.trim(),
@@ -224,7 +159,7 @@ class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
       showAdminMessage('沒有變更');
       return;
     }
-    final isNewCategory = _isNewCategory;
+    final isNewCategory = _category.isNew;
     setState(() => _busy = true);
     try {
       await AdminService.updateArticle(original.id, fields);
@@ -323,7 +258,12 @@ class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
         ),
       ),
       const SizedBox(height: AppSpacing.md),
-      ..._categoryFields(senior),
+      AdminCategoryField(
+        module: CategoryModule.articles,
+        initial: widget.editing?.category,
+        controller: _category,
+        seniorMode: senior,
+      ),
       const SizedBox(height: AppSpacing.md),
       TextField(
         controller: _summary,
@@ -387,96 +327,4 @@ class _AdminArticleFormScreenState extends State<AdminArticleFormScreen> {
       ],
     ],
   );
-
-  /// 分類：下拉列出後台清單，最後一項「＋新增分類」切成文字輸入。
-  List<Widget> _categoryFields(bool senior) {
-    final categories = _categories;
-    if (categories == null) return [_categoryStatus(senior)];
-    final original = widget.editing?.category;
-    final originalMissing =
-        original != null && !categories.any((c) => c.value == original);
-    return [
-      DropdownButtonFormField<String>(
-        initialValue: _typingNewCategory ? _newCategoryOption : _category,
-        decoration: const InputDecoration(
-          labelText: '分類（必填）',
-          border: OutlineInputBorder(),
-        ),
-        items: [
-          for (final c in categories)
-            DropdownMenuItem(value: c.value, child: Text(c.label)),
-          // 編輯時原分類不在清單裡也照樣選中，不默默換掉。
-          if (originalMissing)
-            DropdownMenuItem(
-              value: original,
-              child: Text(
-                CategoryService.labelOf(CategoryModule.articles, original),
-              ),
-            ),
-          const DropdownMenuItem(
-            value: _newCategoryOption,
-            child: Text('＋新增分類'),
-          ),
-        ],
-        onChanged: (v) {
-          if (v == null) return;
-          setState(() {
-            _typingNewCategory = v == _newCategoryOption;
-            if (!_typingNewCategory) _category = v;
-          });
-        },
-      ),
-      if (_typingNewCategory) ...[
-        const SizedBox(height: AppSpacing.sm),
-        TextField(
-          controller: _newCategory,
-          autofocus: categories.isNotEmpty,
-          inputFormatters: const [
-            Utf16LengthLimitingTextInputFormatter(categoryLabelMax),
-          ],
-          buildCounter: utf16CounterBuilder(_newCategory, categoryLabelMax),
-          onChanged: (_) => setState(() {}),
-          decoration: InputDecoration(
-            labelText: '新分類名稱',
-            helperText: '送出後會加進分類清單',
-            errorText: _newCategoryError,
-            border: const OutlineInputBorder(),
-          ),
-        ),
-      ],
-    ];
-  }
-
-  /// 分類清單還沒拿到：載入中，或失敗＋重試。
-  Widget _categoryStatus(bool senior) {
-    final failed = _categoriesError != null;
-    return InputDecorator(
-      decoration: InputDecoration(
-        labelText: '分類（必填）',
-        errorText: failed ? '分類載入失敗' : null,
-        border: const OutlineInputBorder(),
-      ),
-      child: failed
-          ? Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: _loadCategories,
-                child: Text(
-                  '重試',
-                  style: AppTypography.bodyLargeStyle(
-                    seniorMode: senior,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            )
-          : Text(
-              '分類載入中…',
-              style: AppTypography.bodyStyle(
-                seniorMode: senior,
-                color: AppColors.fog,
-              ),
-            ),
-    );
-  }
 }

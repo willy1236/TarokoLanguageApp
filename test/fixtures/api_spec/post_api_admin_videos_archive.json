@@ -1,0 +1,5 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §6.2 POST /api/admin/videos/:id/archive 回 200 { ok, files_deleted }；形狀取自 backend/routes/admin-videos.ts L287–308。下架會刪正式播放檔，不錄製，照實作手寫；檔案刪乾淨（YouTube 沒有檔案也是 true）。",
+  "ok": true,
+  "files_deleted": true
+}

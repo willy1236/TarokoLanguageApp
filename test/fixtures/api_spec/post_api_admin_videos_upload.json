@@ -1,0 +1,5 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §6.2 POST /api/admin/videos（source: upload）回 201 { video, upload: { session_url, method, content_type, size, chunk_size_multiple } }；video 欄位取自 backend/routes/admin-videos.ts 的 VIDEO_COLUMNS（L149–150、INSERT … RETURNING L222–225），upload 取自 uploadInfo（L132–137）。建立會在正式環境寫入影片並開 GCS 上傳工作階段，不錄製，照實作手寫；session_url 是 GCS resumable 網址的形狀，upload_id 為假值。",
+  "video": { "id": 107, "title": "部落祭典紀錄", "description": null, "category": "cultural", "source": "hls", "status": "processing", "fail_reason": null, "duration_sec": null, "thumbnail_url": null, "youtube_video_id": null, "embeddable": null, "tribe_id": null, "view_count": 0, "like_count": 0, "original_size_mb": 412, "uploaded_by": "admin:20", "published_at": null, "created_at": "2026-10-14T06:00:00.000Z", "updated_at": "2026-10-14T06:00:00.000Z" },
+  "upload": { "session_url": "https://storage.googleapis.com/upload/storage/v1/b/truku-video-private/o?uploadType=resumable&name=uploads%2F1760421600000_107.mov&upload_id=FAKE_UPLOAD_ID", "method": "PUT", "content_type": "video/quicktime", "size": 431864320, "chunk_size_multiple": 262144 }
+}

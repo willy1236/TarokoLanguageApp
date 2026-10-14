@@ -703,6 +703,140 @@ String adminQuestionReportStatusLabel(String status) => switch (status) {
   _ => status,
 };
 
+// ── 影片管理（內部管理.md §6.2）──────────────────────────────────
+
+/// 後台影片列表的一筆（GET /api/admin/videos），含處理中、失敗、已下架。
+///
+/// 分類只有 value，顯示名稱用 `CategoryService.labelOf(CategoryModule.videos, …)`。
+class AdminVideo {
+  final int id;
+  final String title;
+  final String? description;
+  final String category;
+
+  /// `hls`（自家影片）或 `youtube`。
+  final String source;
+
+  /// `processing`／`ready`／`failed`／`archived`。
+  final String status;
+  final String? failReason;
+  final int? durationSec;
+
+  /// 自家影片轉檔完成前是 null。
+  final String? thumbnailUrl;
+  final String? youtubeVideoId;
+
+  /// 僅 YouTube：擁有者是否允許嵌入。
+  final bool? embeddable;
+  final int? tribeId;
+  final DateTime? createdAt;
+
+  const AdminVideo({
+    required this.id,
+    required this.title,
+    this.description,
+    required this.category,
+    required this.source,
+    required this.status,
+    this.failReason,
+    this.durationSec,
+    this.thumbnailUrl,
+    this.youtubeVideoId,
+    this.embeddable,
+    this.tribeId,
+    this.createdAt,
+  });
+
+  bool get isYouTube => source == 'youtube';
+
+  /// 自家影片（上傳的影片檔，轉成 HLS 播放）。
+  bool get isHls => source == 'hls';
+  bool get isFailed => status == 'failed';
+  bool get isArchived => status == 'archived';
+
+  /// 只換狀態的複本。下架 API 不回影片資料，列表用它就地改成已下架。
+  AdminVideo withStatus(String status) => AdminVideo(
+    id: id,
+    title: title,
+    description: description,
+    category: category,
+    source: source,
+    status: status,
+    failReason: failReason,
+    durationSec: durationSec,
+    thumbnailUrl: thumbnailUrl,
+    youtubeVideoId: youtubeVideoId,
+    embeddable: embeddable,
+    tribeId: tribeId,
+    createdAt: createdAt,
+  );
+
+  factory AdminVideo.fromJson(Map<String, dynamic> j) => AdminVideo(
+    id: _int(j['id']) ?? 0,
+    title: j['title'] as String? ?? '',
+    description: j['description'] as String?,
+    category: j['category'] as String? ?? '',
+    source: j['source'] as String? ?? 'hls',
+    status: j['status'] as String? ?? 'processing',
+    failReason: j['fail_reason'] as String?,
+    durationSec: _int(j['duration_sec']),
+    thumbnailUrl: j['thumbnail_url'] as String?,
+    youtubeVideoId: j['youtube_video_id'] as String?,
+    embeddable: j['embeddable'] as bool?,
+    tribeId: _int(j['tribe_id']),
+    createdAt: _date(j['created_at']),
+  );
+}
+
+/// 貼上 YouTube 網址後的預覽（`POST /api/admin/videos/youtube/preview`）。
+/// 私人、不存在、查不到的影片後端直接回錯誤，不會走到這裡。
+class AdminYouTubePreview {
+  final String youtubeVideoId;
+
+  /// 擁有者關閉嵌入時是 null（oEmbed 不給標題），可嵌入時也可能缺。
+  final String? title;
+  final String thumbnailUrl;
+
+  /// false：不允許在 App 內播放，上架後改開 YouTube，標題必須自己填。
+  final bool embeddable;
+
+  /// 已經上架過時是那支影片的 id。
+  final int? existsVideoId;
+
+  const AdminYouTubePreview({
+    required this.youtubeVideoId,
+    this.title,
+    required this.thumbnailUrl,
+    required this.embeddable,
+    this.existsVideoId,
+  });
+
+  bool get alreadyExists => existsVideoId != null;
+
+  factory AdminYouTubePreview.fromJson(Map<String, dynamic> j) =>
+      AdminYouTubePreview(
+        youtubeVideoId: j['youtube_video_id'] as String,
+        title: j['title'] as String?,
+        thumbnailUrl: j['thumbnail_url'] as String? ?? '',
+        embeddable: j['embeddable'] as bool? ?? false,
+        existsVideoId: _int(j['exists_video_id']),
+      );
+}
+
+String adminVideoStatusLabel(String status) => switch (status) {
+  'processing' => '處理中',
+  'ready' => '已上架',
+  'failed' => '失敗',
+  'archived' => '已下架',
+  _ => status,
+};
+
+String adminVideoSourceLabel(String source) => switch (source) {
+  'hls' => '自家',
+  'youtube' => 'YouTube',
+  _ => source,
+};
+
 /// 個人檔案可重設的欄位（後端 `reset_fields`／`fields` 的值與畫面標籤）。
 const adminProfileFields = <({String key, String label})>[
   (key: 'video_nickname', label: '暱稱'),

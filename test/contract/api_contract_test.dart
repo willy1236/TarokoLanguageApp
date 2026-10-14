@@ -28,6 +28,7 @@ import 'package:flutter_application_1/models/shop_item.dart';
 import 'package:flutter_application_1/models/terms_models.dart';
 import 'package:flutter_application_1/models/user_model.dart';
 import 'package:flutter_application_1/models/video_models.dart';
+import 'package:flutter_application_1/models/video_upload.dart';
 import 'package:flutter_application_1/services/account_service.dart';
 import 'package:flutter_application_1/services/notification_summary_service.dart';
 
@@ -295,6 +296,19 @@ final List<_Contract> _contracts = [
 
 /// 後台端點一律用 uid 指定使用者，開關開啟後照舊回 uid，不做剝除回放。
 final List<_Contract> _adminContracts = [
+  for (final f in [
+    'get_api_admin_videos.json',
+    'get_api_admin_videos_status_processing.json',
+    'get_api_admin_videos_status_failed.json',
+    'get_api_admin_videos_status_archived.json',
+    'get_api_admin_videos_source_youtube.json',
+  ])
+    _Contract(f, 'AdminVideo', _paged(_each('videos', AdminVideo.fromJson))),
+  for (final f in [
+    'post_api_admin_videos_youtube_preview.json',
+    'post_api_admin_videos_youtube_preview_new.json',
+  ])
+    _Contract(f, 'AdminYouTubePreview', AdminYouTubePreview.fromJson),
   _Contract(
     'get_api_admin_forum_reports.json',
     'AdminReport',
@@ -415,5 +429,69 @@ void main() {
       return;
     }
     expect(recorded, greaterThan(0));
+  });
+
+  // 上架 YouTube 會寫正式資料，不錄製，用規格範例確認解析得了。
+  test(
+    'api_spec/post_api_admin_videos_youtube.json → AdminVideo（規格範例，上架 YouTube）',
+    () {
+      final json = loadSpecFixtureMap('post_api_admin_videos_youtube.json');
+      final video = AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
+      expect(video.isYouTube, isTrue);
+      expect(video.status, 'ready');
+      expect(video.youtubeVideoId, isNotEmpty);
+      expect(video.embeddable, isTrue);
+    },
+  );
+
+  // 建立上傳會在正式環境寫入影片並開雲端工作階段，不錄製，用規格範例確認解析得了。
+  test(
+    'api_spec/post_api_admin_videos_upload.json → AdminVideo＋UploadSession（規格範例，上傳影片檔）',
+    () {
+      final json = loadSpecFixtureMap('post_api_admin_videos_upload.json');
+      final video = AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
+      expect(video.source, 'hls');
+      expect(video.status, 'processing');
+      final session = UploadSession.fromJson(
+        json['upload'] as Map<String, dynamic>,
+      );
+      expect(session.sessionUrl.scheme, 'https');
+      expect(session.size, greaterThan(0));
+      expect(session.chunkMultiple, 262144);
+    },
+  );
+
+  // 修改影片會寫正式資料，不錄製，用規格範例確認解析得了。
+  test('api_spec/patch_api_admin_video.json → AdminVideo（規格範例，修改影片）', () {
+    final json = loadSpecFixtureMap('patch_api_admin_video.json');
+    final video = AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
+    expect(video.id, 104);
+    expect(video.title, '轉檔失敗的部落宣傳（已改名）');
+    expect(video.description, isNull);
+    expect(video.category, 'cultural');
+    expect(video.tribeId, isNull);
+    expect(video.isFailed, isTrue);
+  });
+
+  // 正式資料不一定有處理中、失敗、已下架的影片，錄不到的狀態先用規格範例確認解析得了。
+  test('api_spec/get_api_admin_videos.json → AdminVideo（規格範例，各狀態與來源）', () {
+    final json = loadSpecFixtureMap('get_api_admin_videos.json');
+    _paged(_each('videos', AdminVideo.fromJson))(json);
+    final videos = [
+      for (final v in json['videos'] as List<dynamic>)
+        AdminVideo.fromJson(v as Map<String, dynamic>),
+    ];
+    expect(
+      videos.map((v) => v.status).toSet(),
+      containsAll(['processing', 'ready', 'failed', 'archived']),
+    );
+    expect(videos.where((v) => v.isYouTube), isNotEmpty);
+    final failed = videos.firstWhere((v) => v.isFailed);
+    expect(failed.failReason, isNotEmpty);
+    expect(
+      videos.firstWhere((v) => v.status == 'processing').thumbnailUrl,
+      isNull,
+    );
+    expect(videos.firstWhere((v) => v.isYouTube).embeddable, isNotNull);
   });
 }

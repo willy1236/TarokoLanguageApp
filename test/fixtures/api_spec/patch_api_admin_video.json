@@ -1,0 +1,4 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §6.2 PATCH /api/admin/videos/:id 回 200 { video }；欄位取自 backend/routes/admin-videos.ts 的 VIDEO_COLUMNS（L149–150、UPDATE … RETURNING L258–282）。修改會寫正式資料，不錄製，照實作手寫；範例是把 get_api_admin_videos.json 的 104 改標題、清掉說明與部落、換分類。",
+  "video": { "id": 104, "title": "轉檔失敗的部落宣傳（已改名）", "description": null, "category": "cultural", "source": "hls", "status": "failed", "fail_reason": "ffmpeg exit 1: moov atom not found", "duration_sec": null, "thumbnail_url": null, "youtube_video_id": null, "embeddable": null, "tribe_id": null, "view_count": 0, "like_count": 0, "original_size_mb": 410, "uploaded_by": "admin:20", "published_at": null, "created_at": "2026-10-12T08:00:00.000Z", "updated_at": "2026-10-14T05:00:00.000Z" }
+}

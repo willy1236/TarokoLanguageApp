@@ -242,4 +242,11 @@ class ApiConfig {
   static const String adminAppeals = '/api/admin/appeals';
   static String adminAppealResolve(int id) => '/api/admin/appeals/$id/resolve';
   static const String adminAnnouncements = '/api/admin/announcements';
+  // 影片管理（內部管理.md §6.2）
+  static const String adminVideos = '/api/admin/videos';
+  static const String adminVideoYouTubePreview =
+      '/api/admin/videos/youtube/preview';
+  static String adminVideo(int id) => '/api/admin/videos/$id';
+  static String adminVideoArchive(int id) => '/api/admin/videos/$id/archive';
+  static String adminVideoRetry(int id) => '/api/admin/videos/$id/retry';
 }

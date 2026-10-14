@@ -8,9 +8,11 @@
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/admin_models.dart';
+import '../models/admin_video_meta.dart';
 import '../models/content_category.dart';
 import '../models/millet_transaction.dart';
 import '../models/page_info.dart';
+import '../models/video_upload.dart';
 import '../shared/utils/birth_date.dart';
 
 typedef AdminPage<T> = ({List<T> items, PageInfo pageInfo});
@@ -316,6 +318,114 @@ class AdminService {
     await ApiClient.patch(ApiConfig.adminQuestionReport(id), {
       'status': status,
     });
+  }
+
+  // ── 影片管理（內部管理.md §6.2）──────────────────────────────
+
+  /// 後台影片列表，新的在前。[status]（processing／ready／failed／archived）、
+  /// [source]（hls／youtube）為 null 或空字串代表全部；[q] 比對標題，
+  /// 前後空白去掉後為空就不送（後端上限 80 字）。
+  static Future<AdminPage<AdminVideo>> fetchVideos({
+    String? status,
+    String? source,
+    String? q,
+    String? cursor,
+  }) async {
+    final keyword = q?.trim() ?? '';
+    final json = await ApiClient.get(
+      ApiConfig.adminVideos,
+      query: {
+        if (status != null && status.isNotEmpty) 'status': status,
+        if (source != null && source.isNotEmpty) 'source': source,
+        if (keyword.isNotEmpty) 'q': keyword,
+        ...PageInfo.query(cursor: cursor),
+      },
+    );
+    return (
+      items: _list(json, 'videos', AdminVideo.fromJson),
+      pageInfo: PageInfo.fromResponse(json),
+    );
+  }
+
+  /// 貼上 YouTube 網址先預覽：標題、縮圖、能不能嵌入、是否已上架。
+  /// 不是 YouTube 網址 400 INVALID_YOUTUBE_URL；私人或受限 422 YOUTUBE_UNAVAILABLE；
+  /// 不存在 422 YOUTUBE_NOT_FOUND；YouTube 暫時查不到 502 YOUTUBE_CHECK_FAILED。
+  static Future<AdminYouTubePreview> previewYouTube(String url) async {
+    final json = await ApiClient.post(ApiConfig.adminVideoYouTubePreview, {
+      'url': url,
+    });
+    return AdminYouTubePreview.fromJson(json);
+  }
+
+  /// 上架 YouTube 影片，直接是「已上架」。[meta] 沒填標題時後端用 YouTube 的標題。
+  /// 錯誤同 [previewYouTube]，另有已上架 409 VIDEO_EXISTS。
+  static Future<AdminVideo> createYouTubeVideo(
+    String url,
+    AdminVideoMeta meta,
+  ) async {
+    final json = await ApiClient.post(ApiConfig.adminVideos, {
+      'source': 'youtube',
+      'url': url,
+      ...meta.toJson(),
+    });
+    return AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
+  }
+
+  /// 建立自家影片（影片是「處理中」），回傳影片與雲端上傳工作階段；之後由
+  /// `ResumableUploader` 對 `session_url` 分段上傳，檔案不經過主服務。[meta] 的標題必填。
+  /// 不是 mp4／mov 400 UNSUPPORTED_VIDEO_TYPE；超過 2GB 413 VIDEO_TOO_LARGE；
+  /// 雲端工作階段建不起來 502 UPLOAD_SESSION_FAILED（整筆不寫入）。
+  static Future<({AdminVideo video, UploadSession session})> createUploadVideo(
+    UploadFileInfo file,
+    AdminVideoMeta meta,
+  ) async {
+    final json = await ApiClient.post(ApiConfig.adminVideos, {
+      'source': 'upload',
+      ...file.toJson(),
+      ...meta.toJson(),
+    });
+    return _uploadCreated(json);
+  }
+
+  /// 失敗（`failed`）的自家影片重新拿上傳網址：影片改回「處理中」，回傳影片與新的雲端上傳工作階段，
+  /// 標題、分類等資訊不變。不是失敗的自家影片 409 VIDEO_NOT_FAILED；不存在 404 VIDEO_NOT_FOUND；
+  /// 檔案錯誤同 [createUploadVideo]；工作階段建不起來 502 UPLOAD_SESSION_FAILED（影片維持失敗）。
+  static Future<({AdminVideo video, UploadSession session})> retryVideo(
+    int id,
+    UploadFileInfo file,
+  ) async {
+    final json = await ApiClient.post(
+      ApiConfig.adminVideoRetry(id),
+      file.toJson(),
+    );
+    return _uploadCreated(json);
+  }
+
+  /// 建立、重新上傳共用的回應 `{ video, upload }`。
+  static ({AdminVideo video, UploadSession session}) _uploadCreated(
+    Map<String, dynamic> json,
+  ) => (
+    video: AdminVideo.fromJson(json['video'] as Map<String, dynamic>),
+    session: UploadSession.fromJson(json['upload'] as Map<String, dynamic>),
+  );
+
+  /// 修改影片的標題、說明、分類、部落，回傳修改後的影片。[fields] 只放有改的欄位
+  /// （`title`／`description`／`category`／`tribe_id`），說明、部落清除傳 null 值；
+  /// 不能是空的（後端回 400）。不存在 404 VIDEO_NOT_FOUND；新分類後端會自動加進分類表。
+  static Future<AdminVideo> updateVideo(
+    int id,
+    Map<String, Object?> fields,
+  ) async {
+    final json = await ApiClient.patch(ApiConfig.adminVideo(id), fields);
+    return AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
+  }
+
+  /// 下架影片（沒有 body），回傳檔案是否刪乾淨。自家影片連播放檔、母帶一起刪；
+  /// YouTube 只改狀態，永遠是 true。false＝狀態已是下架但刪檔失敗，
+  /// 再呼叫一次會重試刪檔（已下架的不改狀態、不重複記紀錄）。不存在 404 VIDEO_NOT_FOUND。
+  static Future<bool> archiveVideo(int id) async {
+    final json = await ApiClient.post(ApiConfig.adminVideoArchive(id));
+    return json['files_deleted'] as bool? ?? false;
   }
 
   // ── 小米幣查帳（內部管理.md §4、§5）唯讀，不寫操作紀錄 ─────────────────
