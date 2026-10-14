@@ -2,9 +2,12 @@
 // 由 background_upload.dart 條件匯入；桌面版沒有背景送法（回 null）。
 //
 // - task 用 PUT、binary、不自動重試（重試由上傳器回前景查進度後重排）。
-// - Android 14 以上：priority 0＋進行中通知 → 套件排 UIDT（`UIDTJobService` 寫死 runInForeground，
-//   沒有 9 分鐘上限）。不設定 `Config.runInForeground`：UIDT 排程失敗退回 WorkManager 時，
-//   套件不會呼叫 setForeground 開前景服務（2026-10-14 決定 A）。
+// - Android 14 以上：priority 0＋進行中通知 → 套件排 UIDT。要設 `Config.runInForeground`：
+//   套件每個 task 開始時依它重算 runInForeground，沒設就是 false，priority 0 的 task 2 分鐘就被中止
+//   （`TaskRunner.kt` determineRunInForeground、expedited 逾時）。UIDT 下「前景」是
+//   `JobService.setNotification`，不是前景服務；UIDT 排程失敗退回 WorkManager 時套件會呼叫
+//   setForeground(dataSync)，App 沒宣告前景服務權限會失敗，套件 catch 後退回 2 分鐘限制
+//   （`Notifications.kt`），不會真的開前景服務（2026-10-14 決定 A）。
 // - Android 13 以下：[BackgroundUploadEngine.available] 為 false，送法改用前景 http 分段（決定 E）。
 // - iOS 不設通知（不碰推播用的通知設定）；單一請求最久 24 小時，請求逾時用系統預設。
 // - FileDownloader 等到第一次上傳才初始化，App 啟動時不做事。
@@ -145,6 +148,9 @@ class FileDownloaderEngine implements BackgroundUploadEngine {
       taskProgressCallback: _onProgress,
     );
     if (Platform.isAndroid) {
+      await _downloader.configure(
+        androidConfig: [(Config.runInForeground, Config.always)],
+      );
       _downloader.configureNotificationForGroup(
         group,
         running: const TaskNotification('影片上傳中', '{displayName}'),
