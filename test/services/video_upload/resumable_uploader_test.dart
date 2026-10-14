@@ -327,25 +327,50 @@ void main() {
     );
   });
 
-  test('雲端一直沒回應 → 逾時丟 UploadInterrupted（原因是 TimeoutException）', () async {
-    final uploader = ResumableUploader(
-      _session(100),
-      _FakeSource(100),
-      requestTimeout: const Duration(milliseconds: 20),
-      retryDelays: const [],
-      client: MockClient((_) => Completer<http.Response>().future),
-    );
-    await expectLater(
-      uploader.queryOffset(),
-      throwsA(
+  test(
+    '雲端一直沒回應 → 逾時丟 UploadInterrupted；查進度用較短的 queryTimeout，送段用 requestTimeout',
+    () async {
+      Matcher timedOut(Duration limit) => throwsA(
         isA<UploadInterrupted>().having(
-          (e) => e.cause,
-          'cause',
-          isA<TimeoutException>(),
+          (e) => (e.cause as TimeoutException).duration,
+          'timeout',
+          limit,
         ),
-      ),
-    );
-  });
+      );
+      final uploader = ResumableUploader(
+        _session(_multiple),
+        _FakeSource(_multiple),
+        requestTimeout: const Duration(milliseconds: 60),
+        queryTimeout: const Duration(milliseconds: 20),
+        retryDelays: const [],
+        client: MockClient((_) => Completer<http.Response>().future),
+      );
+      await expectLater(
+        uploader.queryOffset(),
+        timedOut(const Duration(milliseconds: 20)),
+      );
+
+      var queried = false;
+      final chunkUploader = ResumableUploader(
+        _session(_multiple),
+        _FakeSource(_multiple),
+        requestTimeout: const Duration(milliseconds: 60),
+        queryTimeout: const Duration(milliseconds: 20),
+        retryDelays: const [],
+        client: MockClient((request) async {
+          if (!queried) {
+            queried = true;
+            return http.Response('', 308);
+          }
+          return Completer<http.Response>().future;
+        }),
+      );
+      await expectLater(
+        chunkUploader.start().last,
+        timedOut(const Duration(milliseconds: 60)),
+      );
+    },
+  );
 
   test('請求卡住時 cancel → 串流安靜結束，讀檔來源已關閉', () async {
     final source = _FakeSource(100);
@@ -476,6 +501,7 @@ void main() {
         _FakeSource(100),
         client: MockClient((_) async => http.Response('', 503)),
         retryDelays: const [Duration(hours: 1)],
+        retryWindow: const Duration(days: 1),
       );
       final events = <UploadProgress>[];
       final done = uploader.start().forEach(events.add);
@@ -485,7 +511,7 @@ void main() {
       await done;
     });
 
-    test('預設重試間隔：1、2、4、8、16 秒後每 30 秒，合計約 10 分鐘', () {
+    test('預設：1、2、4、8、16 秒後每 30 秒，次數撐得滿 10 分鐘的時限', () {
       final delays = ResumableUploader.defaultRetryDelays;
       expect(delays.take(6), const [
         Duration(seconds: 1),
@@ -496,7 +522,33 @@ void main() {
         Duration(seconds: 30),
       ]);
       final total = delays.fold(Duration.zero, (a, b) => a + b);
-      expect(total.inMinutes, 10);
+      expect(total, greaterThan(ResumableUploader.defaultRetryWindow));
+      expect(ResumableUploader.defaultRetryWindow, const Duration(minutes: 10));
+      expect(
+        ResumableUploader.defaultQueryTimeout,
+        const Duration(seconds: 30),
+      );
+    });
+
+    test('以總時間為限：每次嘗試都要等逾時（不報錯也不回應），從第一次失敗起約 10 分鐘就停', () async {
+      var now = DateTime(2026, 10, 14, 9);
+      var requests = 0;
+      await expectLater(
+        ResumableUploader(
+          _session(100),
+          _FakeSource(100),
+          retryDelays: List.filled(100, Duration.zero),
+          clock: () => now,
+          client: MockClient((_) async {
+            requests++;
+            now = now.add(const Duration(minutes: 2)); // 等到逾時
+            throw TimeoutException('雲端沒有回應');
+          }),
+        ).start().where((p) => !p.retrying),
+        emitsError(isA<UploadInterrupted>()),
+      );
+      // 第一次失敗在 2 分，之後每 2 分一次；超過 10 分鐘（第 14 分那次）就停。
+      expect(requests, 7);
     });
   });
 
