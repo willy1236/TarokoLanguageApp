@@ -54,14 +54,6 @@ class _AdminVideoReuploadScreenState extends State<AdminVideoReuploadScreen> {
   bool _busy = false;
 
   @override
-  void initState() {
-    super.initState();
-    _file.addListener(_onFileChanged);
-  }
-
-  void _onFileChanged() => setState(() {});
-
-  @override
   void dispose() {
     _file.dispose();
     super.dispose();
@@ -146,15 +138,19 @@ class _AdminVideoReuploadScreenState extends State<AdminVideoReuploadScreen> {
       ),
       bottom: (context, senior) => AdminActionBar(
         children: [
-          FilledButton(
-            onPressed: _busy || _file.preparing || _file.picked == null
-                ? null
-                : _submit,
-            style: FilledButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.creamLight,
+          // 只有這顆跟著選檔狀態變，整頁不必重建。
+          ListenableBuilder(
+            listenable: _file,
+            builder: (context, _) => FilledButton(
+              onPressed: _busy || _file.preparing || _file.picked == null
+                  ? null
+                  : _submit,
+              style: FilledButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.creamLight,
+              ),
+              child: Text(_busy ? '建立中…' : '重新上傳'),
             ),
-            child: Text(_busy ? '建立中…' : '重新上傳'),
           ),
         ],
       ),

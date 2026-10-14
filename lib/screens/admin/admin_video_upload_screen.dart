@@ -57,14 +57,6 @@ class _AdminVideoUploadScreenState extends State<AdminVideoUploadScreen> {
   final _file = AdminVideoFileController();
 
   @override
-  void initState() {
-    super.initState();
-    _file.addListener(_onFileChanged);
-  }
-
-  void _onFileChanged() => setState(() {});
-
-  @override
   void dispose() {
     _file.dispose();
     _previewer.dispose();
@@ -226,12 +218,16 @@ class _AdminVideoUploadScreenState extends State<AdminVideoUploadScreen> {
               style: _submitStyle,
               child: Text(_busy ? '上架中…' : '上架'),
             ),
-            AdminVideoUploadSource.file => FilledButton(
-              onPressed: _busy || _file.preparing || _file.picked == null
-                  ? null
-                  : _submitFile,
-              style: _submitStyle,
-              child: Text(_busy ? '建立中…' : '上傳'),
+            // 只有這顆跟著選檔狀態變，整頁不必重建。
+            AdminVideoUploadSource.file => ListenableBuilder(
+              listenable: _file,
+              builder: (context, _) => FilledButton(
+                onPressed: _busy || _file.preparing || _file.picked == null
+                    ? null
+                    : _submitFile,
+                style: _submitStyle,
+                child: Text(_busy ? '建立中…' : '上傳'),
+              ),
             ),
           },
         ],
