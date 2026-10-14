@@ -66,6 +66,9 @@ class PendingUpload {
   bool isExpiredAt(DateTime now) =>
       now.difference(createdAt) >= uploadSessionLifetime;
 
+  /// 存進本機的內容。`session_url` 本身就是寫入權限（GCS resumable 的網址帶著憑證，
+  /// 拿到就能對這支影片的上傳寫入，一週後失效）；有意存放，續傳少不了它，
+  /// 且只存在這台裝置的 App 資料（網頁版是這個網域的 localStorage）。
   Map<String, Object?> toJson() => {
     'user_id': userId,
     'video_id': videoId,
@@ -116,6 +119,9 @@ class PendingUploads {
   Future<void>? _loading;
   bool _cleanedOrphans = false;
 
+  /// 讀取時有紀錄讀不出來（整份或其中幾筆）。
+  bool _readIncomplete = false;
+
   /// 所有未完成的上傳（含其他帳號的；畫面用 [visibleTo] 過濾）。[load] 之前是空的。
   ValueListenable<List<PendingUpload>> get items => _items;
 
@@ -126,10 +132,15 @@ class PendingUploads {
   /// 讀出本機紀錄（只讀一次）。App 啟動後第一次由畫面呼叫時，順便刪掉上傳暫存目錄裡
   /// 沒有紀錄的檔案（App 在選檔後、送出前被關掉留下的）。上傳服務寫紀錄時只讀不清，
   /// 免得清掉正要寫進紀錄的檔案。
+  ///
+  /// 前提：影片管理是選檔與上傳的唯一入口，它第一次呼叫這裡時，這次啟動還沒有任何
+  /// 選好但未寫進紀錄的檔案。T-06 若讓背景工作在 App 啟動時就接手上傳，要重新檢查這個前提。
   Future<void> load() async {
     await _ensureLoaded();
     if (_cleanedOrphans) return;
     _cleanedOrphans = true;
+    // 有紀錄讀不出來時不清：不知道它用哪個檔案，清了可能刪掉還能續傳的暫存檔。
+    if (_readIncomplete) return;
     await deleteOrphanUploadFiles({
       for (final p in _items.value)
         if (p.filePath != null) p.filePath!,
@@ -138,17 +149,24 @@ class PendingUploads {
 
   Future<void> _ensureLoaded() => _loading ??= _read();
 
+  /// 每筆各自解析，壞掉的跳過，不連累其他紀錄。
   Future<void> _read() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_prefsKey);
-      if (raw != null) {
-        _items.value = List.unmodifiable([
-          for (final j in jsonDecode(raw) as List)
-            PendingUpload.fromJson(j as Map<String, dynamic>),
-        ]);
+      if (raw == null) return;
+      final items = <PendingUpload>[];
+      for (final j in jsonDecode(raw) as List) {
+        try {
+          items.add(PendingUpload.fromJson(j as Map<String, dynamic>));
+        } catch (e) {
+          _readIncomplete = true;
+          debugPrint('PendingUploads: 跳過讀不出來的未完成上傳：$e');
+        }
       }
+      _items.value = List.unmodifiable(items);
     } catch (e) {
+      _readIncomplete = true;
       debugPrint('PendingUploads: 讀取未完成上傳失敗，當作沒有：$e');
     }
   }
@@ -206,5 +224,6 @@ class PendingUploads {
     _items.value = const [];
     _loading = null;
     _cleanedOrphans = false;
+    _readIncomplete = false;
   }
 }
