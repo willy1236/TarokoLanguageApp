@@ -1,6 +1,9 @@
 // 下架影片（後台影片 T-08）：archiveVideo 的端點與回傳值（規格範例，不打正式 API）；
 // 列選單「下架」先確認、取消不送出、成功就地改成已下架、處理中多一句提醒、
-// 檔案沒刪乾淨提示並提供「再刪一次檔案」（不再確認）、404 重抓列表、非管理員退出後台。
+// 檔案沒刪乾淨提示並提供「再刪一次檔案」（不再確認）、送出中選單停用、
+// 請求期間列表更新過以新資料為底、404 重抓列表、非管理員退出後台。
+
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,9 +27,9 @@ const _archivePath = '/api/admin/videos/7/archive';
 const _archived = 'post_api_admin_videos_archive.json';
 const _notDeleted = 'post_api_admin_videos_archive_files_not_deleted.json';
 
-Map<String, dynamic> _video({String status = 'ready'}) => {
+Map<String, dynamic> _video({String status = 'ready', String title = '織布'}) => {
   'id': 7,
-  'title': '織布',
+  'title': title,
   'description': null,
   'category': 'cultural',
   'source': 'hls',
@@ -79,20 +82,26 @@ void main() {
     late int listCalls;
     late int archiveCalls;
 
-    /// 列表回一筆 [status] 的影片；下架依序回 [archive]（fixture 檔名或 http.Response）。
+    /// 列表回的標題；測試中途改它，模擬請求期間列表被重整成新資料。
+    late String listTitle;
+
+    /// 列表回一筆 [status] 的影片；下架依序回 [archive]（fixture 檔名、http.Response，
+    /// 或 Completer<String>：完成前請求停在送出中，完成值是 fixture 檔名）。
     void mock({String status = 'ready', required List<Object> archive}) {
       listCalls = 0;
       archiveCalls = 0;
+      listTitle = '織布';
       ApiClient.httpClient = MockClient((r) async {
         switch (r.url.path) {
           case _videosPath:
             listCalls++;
             return jsonResponse({
-              'videos': [_video(status: status)],
+              'videos': [_video(status: status, title: listTitle)],
               'page_info': {'next_cursor': null, 'has_more': false},
             });
           case _archivePath:
-            final res = archive[archiveCalls++];
+            var res = archive[archiveCalls++];
+            if (res is Completer<String>) res = await res.future;
             return res is http.Response
                 ? res
                 : jsonResponse(loadSpecFixtureMap(res as String));
@@ -216,6 +225,55 @@ void main() {
       expect(rowStatus('已下架'), findsOneWidget);
       await openMenu(tester);
       expect(find.text('再刪一次檔案'), findsNothing);
+    });
+
+    testWidgets('送出中：選單項目停用並顯示下架中，點了也不重送', (tester) async {
+      final pending = Completer<String>();
+      mock(archive: [pending]);
+      await openList(tester);
+      await chooseArchive(tester);
+      await tester.tap(confirmButton());
+      await tester.pumpAndSettle();
+
+      await openMenu(tester);
+      final item = tester.widget<PopupMenuItem<int>>(
+        find.widgetWithText(PopupMenuItem<int>, '下架中…'),
+      );
+      expect(item.enabled, isFalse);
+      expect(find.text('下架'), findsNothing);
+      await tester.tap(find.text('下架中…'), warnIfMissed: false);
+      await tester.pumpAndSettle();
+      expect(archiveCalls, 1);
+      expect(find.byType(AlertDialog), findsNothing);
+      await tester.tapAt(const Offset(5, 5));
+      await tester.pumpAndSettle();
+
+      pending.complete(_archived);
+      await tester.pumpAndSettle();
+      expect(rowStatus('已下架'), findsOneWidget);
+      await openMenu(tester);
+      expect(find.text('下架中…'), findsNothing);
+    });
+
+    testWidgets('送出期間下拉重整過：以重整後的那筆為底改成已下架，不蓋回舊資料', (tester) async {
+      final pending = Completer<String>();
+      mock(archive: [pending]);
+      await openList(tester);
+      await chooseArchive(tester);
+      await tester.tap(confirmButton());
+      await tester.pumpAndSettle();
+
+      listTitle = '織布（改名）';
+      tester.state<RefreshIndicatorState>(find.byType(RefreshIndicator)).show();
+      await tester.pumpAndSettle();
+      expect(listCalls, 2);
+      expect(find.text('織布（改名）'), findsOneWidget);
+
+      pending.complete(_archived);
+      await tester.pumpAndSettle();
+      expect(find.text('織布（改名）'), findsOneWidget);
+      expect(find.text('織布'), findsNothing);
+      expect(rowStatus('已下架'), findsOneWidget);
     });
 
     testWidgets('404 VIDEO_NOT_FOUND：提示影片不存在並重抓列表', (tester) async {

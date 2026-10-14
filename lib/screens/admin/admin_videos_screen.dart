@@ -48,8 +48,8 @@ const _sources = <AdminStatusOption>[
   (label: 'YouTube', value: 'youtube'),
 ];
 
-/// 列尾選單的一個項目。
-typedef _RowAction = ({String label, VoidCallback onSelected});
+/// 列尾選單的一個項目；[onSelected] 為 null 時顯示但停用（例如請求進行中）。
+typedef _RowAction = ({String label, VoidCallback? onSelected});
 
 class AdminVideosScreen extends StatefulWidget {
   const AdminVideosScreen({super.key});
@@ -68,7 +68,7 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
   /// 下架了但檔案沒刪乾淨的影片 id，這些列提供「再刪一次檔案」。重開列表就看不到。
   final Set<int> _filesPending = {};
 
-  /// 下架請求送出中的影片 id，避免連點重送。
+  /// 下架請求送出中的影片 id：選單項目停用並顯示進行中，避免連點重送。
   final Set<int> _archiving = {};
 
   late final AdminPagedListController<AdminVideo> _list =
@@ -175,7 +175,8 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
   /// 送出下架，成功後就地改成已下架（不再符合篩選也先留著，下拉重整後才消失）。
   /// 已下架的影片再送一次，後端只重試刪檔（「再刪一次檔案」走這裡，不再確認）。
   Future<void> _sendArchive(AdminVideo video) async {
-    if (!_archiving.add(video.id)) return;
+    if (_archiving.contains(video.id)) return;
+    setState(() => _archiving.add(video.id));
     try {
       final filesDeleted = await AdminService.archiveVideo(video.id);
       if (!mounted) return;
@@ -186,7 +187,12 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
           _filesPending.add(video.id);
         }
       });
-      _list.replace((v) => v.id == video.id, video.withStatus('archived'));
+      // 以列表裡現在那筆為底：請求期間可能已下拉重整或編輯過，送出前的快照已過時；
+      // 換了篩選而那筆已不在列表上就不動。
+      final current = _list.items.where((v) => v.id == video.id).firstOrNull;
+      if (current != null) {
+        _list.replace((v) => v.id == video.id, current.withStatus('archived'));
+      }
       showAdminMessage(filesDeleted ? '已下架' : '已下架，但檔案沒刪乾淨，請再按一次');
     } catch (e) {
       if (!mounted) return;
@@ -197,18 +203,26 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
       }
       handleAdminError(context, e);
     } finally {
-      _archiving.remove(video.id);
+      if (mounted) setState(() => _archiving.remove(video.id));
     }
   }
 
   /// 每一列的選單項目；沒有項目時不顯示選單鈕。編輯不分狀態都能用（後端不限制）。
   /// 處理中的影片也能下架（後端不限制）。
-  List<_RowAction> _rowActions(AdminVideo video) => [
-    (label: '編輯', onSelected: () => _edit(video)),
-    if (!video.isArchived) (label: '下架', onSelected: () => _archive(video)),
-    if (video.isArchived && _filesPending.contains(video.id))
-      (label: '再刪一次檔案', onSelected: () => _sendArchive(video)),
-  ];
+  List<_RowAction> _rowActions(AdminVideo video) {
+    final busy = _archiving.contains(video.id);
+    return [
+      (label: '編輯', onSelected: () => _edit(video)),
+      if (!video.isArchived)
+        busy
+            ? (label: '下架中…', onSelected: null)
+            : (label: '下架', onSelected: () => _archive(video)),
+      if (video.isArchived && _filesPending.contains(video.id))
+        busy
+            ? (label: '刪除檔案中…', onSelected: null)
+            : (label: '再刪一次檔案', onSelected: () => _sendArchive(video)),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) => AdminScaffold(
@@ -390,10 +404,14 @@ class _AdminVideoTile extends StatelessWidget {
             PopupMenuButton<int>(
               tooltip: '更多操作',
               icon: const Icon(Icons.more_vert, color: AppColors.inkSoft),
-              onSelected: (i) => actions[i].onSelected(),
+              onSelected: (i) => actions[i].onSelected?.call(),
               itemBuilder: (context) => [
                 for (var i = 0; i < actions.length; i++)
-                  PopupMenuItem(value: i, child: Text(actions[i].label)),
+                  PopupMenuItem(
+                    value: i,
+                    enabled: actions[i].onSelected != null,
+                    child: Text(actions[i].label),
+                  ),
               ],
             ),
         ],
