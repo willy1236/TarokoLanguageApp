@@ -59,6 +59,9 @@ dependencies:
   web: ^1.1.0 # Web 版影音以 <video> + hls.js 內嵌播放（better_player_plus 無 Web 實作）
   image_picker: ^1.2.3
   file_picker: ^13.1.0 # 後台上傳影片「從檔案」選 mp4／mov（image_picker 只開相簿）
+  # 後台上傳影片切到背景或鎖螢幕時繼續傳（iOS 背景 URLSession、Android UIDT／WorkManager）。
+  # 鎖 9.5.9：9.6 起要求 Flutter 3.47 以上。
+  background_downloader: 9.5.9
   crop_your_image: ^2.0.0
   image: ^4.10.1 # 頭像裁切後縮圖、旋轉（純 Dart，Web 也能用）
 
