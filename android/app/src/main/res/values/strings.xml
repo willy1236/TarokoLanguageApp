@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 後台影片背景上傳（background_downloader）的通知頻道與按鈕文字，覆寫套件預設的英文。 -->
+    <string name="bg_downloader_cancel">取消</string>
+    <string name="bg_downloader_pause">暫停</string>
+    <string name="bg_downloader_resume">繼續</string>
+    <string name="bg_downloader_notification_channel_name">影片上傳</string>
+    <string name="bg_downloader_notification_channel_description">後台影片上傳的進度與完成通知</string>
+</resources>

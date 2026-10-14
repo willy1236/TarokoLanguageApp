@@ -14,6 +14,9 @@
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <!-- 後台影片背景上傳（background_downloader）：Android 14+ 以使用者發起的資料傳輸（UIDT）執行，
+         沒有 WorkManager 的 9 分鐘上限。不用前景服務（dataSync），免得 Play 要求申報前景服務用途。 -->
+    <uses-permission android:name="android.permission.RUN_USER_INITIATED_JOBS"/>
     <!-- Places SDK 自帶定位權限；地圖選點不用 GPS，移除以免 Play 要求申報定位用途。 -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove"/>
