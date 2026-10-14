@@ -320,6 +320,8 @@ void main() {
       await tester.tap(banner);
       await tester.pumpAndSettle();
       expect(find.byType(AdminVideoUploadProgressScreen), findsOneWidget);
+      // 雲端卡住不回：停掉上傳，請求逾時的計時器才不會留到測試結束。
+      await VideoUploadManager.instance.cancel();
     });
 
     testWidgets('傳完：顯示完成，看過進度頁回來就移除', (tester) async {

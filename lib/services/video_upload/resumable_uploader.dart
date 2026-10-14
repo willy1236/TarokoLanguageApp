@@ -9,6 +9,8 @@
 // - 一次只讀一段、傳一段，記憶體不隨檔案大小成長。
 //
 // 用獨立的 http.Client，不經 ApiClient：目標是雲端網址，不能帶 App 的 token。
+// 每個請求有逾時（[ResumableUploader.requestTimeout]）：手機切網路時連線可能不報錯也不回應，
+// 逾時就中止請求、丟 [UploadInterrupted]，不會一直卡在上傳中。
 // 不要改 followRedirects：網頁版 fetch 設成 false 會把 308 當網路錯誤；
 // 維持預設時 308 沒有 Location 會照原樣回來。dart:io 對 PUT 本來就不跟隨轉址。
 
@@ -65,19 +67,29 @@ class ResumableUploader {
   /// 預設每段 8MiB。
   static const defaultChunkSize = 8 * 1024 * 1024;
 
+  /// 預設每個請求最多等 2 分鐘（8MiB 在約 0.5Mbps 的慢速網路也傳得完）。
+  static const defaultRequestTimeout = Duration(minutes: 2);
+
   final UploadSession session;
   final ChunkSource source;
 
   /// 實際每段大小：[defaultChunkSize] 或指定值，向下取到 chunk_size_multiple 的倍數。
   final int chunkSize;
 
+  /// 一個請求（送出一段到收到回應）最多等多久，超過就中止、丟 [UploadInterrupted]。
+  final Duration requestTimeout;
+
   final http.Client _client;
   bool _cancelled = false;
+
+  /// 進行中的請求：[cancel] 時立刻中止並讓它以錯誤結束。
+  void Function()? _stopRequest;
 
   ResumableUploader(
     this.session,
     this.source, {
     int chunkSize = defaultChunkSize,
+    this.requestTimeout = defaultRequestTimeout,
     http.Client? client,
   }) : chunkSize = _alignChunk(chunkSize, session.chunkMultiple),
        _client = client ?? http.Client();
@@ -134,16 +146,54 @@ class ResumableUploader {
   /// 停止上傳並中止進行中的請求。工作階段本身不動（一週後自然失效）。
   void cancel() {
     _cancelled = true;
+    _stopRequest?.call();
     _client.close();
   }
 
   Future<http.Response> _put(String contentRange, List<int> body) async {
-    final request = http.Request('PUT', session.sessionUrl)
-      ..headers['Content-Range'] = contentRange
-      ..bodyBytes = body;
-    final response = await http.Response.fromStream(
-      await _client.send(request),
+    final abort = Completer<void>();
+    final request =
+        http.AbortableRequest(
+            'PUT',
+            session.sessionUrl,
+            abortTrigger: abort.future,
+          )
+          ..headers['Content-Range'] = contentRange
+          ..bodyBytes = body;
+    final result = Completer<http.Response>();
+    void stop(Object error) {
+      if (!result.isCompleted) result.completeError(error);
+      if (!abort.isCompleted) abort.complete();
+    }
+
+    final timer = Timer(
+      requestTimeout,
+      () => stop(
+        UploadInterrupted(cause: TimeoutException('雲端沒有回應', requestTimeout)),
+      ),
     );
+    _stopRequest = () {
+      timer.cancel();
+      stop(const UploadInterrupted(cause: 'cancelled'));
+    };
+    _client
+        .send(request)
+        .then(http.Response.fromStream)
+        .then(
+          (response) {
+            if (!result.isCompleted) result.complete(response);
+          },
+          onError: (Object e, StackTrace st) {
+            if (!result.isCompleted) result.completeError(e, st);
+          },
+        );
+    final http.Response response;
+    try {
+      response = await result.future;
+    } finally {
+      timer.cancel();
+      _stopRequest = null;
+    }
     final status = response.statusCode;
     if (status == 404 || status == 410) throw const UploadSessionExpired();
     if (status != 308 && status != 200 && status != 201) {

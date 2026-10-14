@@ -508,6 +508,8 @@ void main() {
       expect(active.video.id, 107);
       expect(active.state, UploadState.uploading);
       expect(source.discarded, 0, reason: '交給上傳服務了，不能刪');
+      // 雲端卡住不回：停掉上傳，請求逾時的計時器才不會留到測試結束。
+      await VideoUploadManager.instance.cancel();
     });
 
     testWidgets('從檔案：選檔中顯示「準備檔案中」，複製完才顯示檔案', (tester) async {
@@ -585,6 +587,8 @@ void main() {
 
       expect(pickedFrom, isEmpty);
       expect(find.text('已有一支影片正在上傳，請等它傳完再上傳下一支'), findsOneWidget);
+      // 雲端卡住不回：停掉上傳，請求逾時的計時器才不會留到測試結束。
+      await VideoUploadManager.instance.cancel();
     });
 
     for (final (code, status, message) in [

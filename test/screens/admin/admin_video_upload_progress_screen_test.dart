@@ -140,6 +140,8 @@ void main() {
     expect(find.text('重試'), findsNothing);
     expect(find.text('放棄'), findsNothing);
     expect(find.textContaining('可以離開這頁'), findsOneWidget);
+    // 雲端卡住不回：停掉上傳，請求逾時的計時器才不會留到測試結束。
+    await manager.cancel();
   });
 
   testWidgets('中斷：顯示重試與放棄，重試後接著傳完並顯示完成提示', (tester) async {

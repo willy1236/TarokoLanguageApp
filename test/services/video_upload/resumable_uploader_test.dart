@@ -1,5 +1,6 @@
 // 分段上傳器：分段大小、Content-Range、308／200 處理、查進度解析 Range、錯誤分類、讀檔不超過一段。
 
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -275,6 +276,39 @@ void main() {
         ),
       ),
     );
+  });
+
+  test('雲端一直沒回應 → 逾時丟 UploadInterrupted（原因是 TimeoutException）', () async {
+    final uploader = ResumableUploader(
+      _session(100),
+      _FakeSource(100),
+      requestTimeout: const Duration(milliseconds: 20),
+      client: MockClient((_) => Completer<http.Response>().future),
+    );
+    await expectLater(
+      uploader.queryOffset(),
+      throwsA(
+        isA<UploadInterrupted>().having(
+          (e) => e.cause,
+          'cause',
+          isA<TimeoutException>(),
+        ),
+      ),
+    );
+  });
+
+  test('請求卡住時 cancel → 串流安靜結束，讀檔來源已關閉', () async {
+    final source = _FakeSource(100);
+    final uploader = ResumableUploader(
+      _session(100),
+      source,
+      client: MockClient((_) => Completer<http.Response>().future),
+    );
+    final done = uploader.start().toList();
+    await Future<void>.delayed(Duration.zero);
+    uploader.cancel();
+    expect(await done, isEmpty);
+    expect(source.closed, 1);
   });
 
   test('ChunkSource.io 依位移讀檔案的一段', () async {
