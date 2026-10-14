@@ -10,8 +10,13 @@ import '../../../shared/widgets/truku_painters.dart';
 import '../../../core/constants/app_typography.dart';
 import 'event_cover.dart';
 
-// 依分類配色（呼應發起活動表單的分類清單），純視覺區隔用。
+// 依分類配色，純視覺區隔用。先用後端分類表設定的顏色（決策紀錄 A56）；
+// 清單還沒抓到、抓取失敗或沒設顏色時，退回這份與後端預設值相同的對照。
 Color _categoryColor(String? category) {
+  if (category != null) {
+    final fromServer = CategoryService.colorOf(CategoryModule.events, category);
+    if (fromServer != null) return fromServer;
+  }
   switch (category) {
     case '走讀':
     case '線上':

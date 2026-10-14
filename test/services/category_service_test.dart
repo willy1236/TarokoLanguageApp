@@ -1,6 +1,7 @@
 // CategoryService（T-21）：分類清單的快取、共用進行中的請求、失敗重試，以及 labelOf 的查找順序。
 
 import 'dart:async';
+import 'dart:ui' show Color;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -245,6 +246,36 @@ void main() {
         CategoryService.labelOf(CategoryModule.events, 'cultural'),
         'cultural',
         reason: '活動沒有內建對照',
+      );
+    });
+  });
+
+  group('colorOf', () {
+    test('只查快取：有設顏色回該色，沒設、格式不對、清單沒有、沒抓過都回 null', () async {
+      expect(CategoryService.colorOf(CategoryModule.events, '族語'), isNull);
+
+      respondWith(
+        () => jsonResponse({
+          'categories': [
+            {..._cat('族語', '族語', 10, 3), 'color': '#7A1F1A'},
+            {..._cat('打獵', '打獵', 100, 1), 'color': null},
+            {..._cat('壞色', '壞色', 100, 1), 'color': 'red'},
+          ],
+        }),
+      );
+      await CategoryService.fetch(CategoryModule.events);
+
+      expect(
+        CategoryService.colorOf(CategoryModule.events, '族語'),
+        const Color(0xFF7A1F1A),
+      );
+      expect(CategoryService.colorOf(CategoryModule.events, '打獵'), isNull);
+      expect(CategoryService.colorOf(CategoryModule.events, '壞色'), isNull);
+      expect(CategoryService.colorOf(CategoryModule.events, '工藝'), isNull);
+      expect(
+        CategoryService.colorOf(CategoryModule.articles, '族語'),
+        isNull,
+        reason: '模組之間不共用快取',
       );
     });
   });
