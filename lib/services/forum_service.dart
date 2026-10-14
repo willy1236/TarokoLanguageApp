@@ -15,7 +15,6 @@
 //   POST   / DELETE /api/forum/posts/:id/like     貼文按讚 / 取消
 //   POST   / DELETE /api/forum/comments/:id/like  留言按讚 / 取消
 //   GET    /api/forum/search                      關鍵字搜尋
-//   GET    /api/forum/tags                        標籤列表
 //   POST   /api/forum/reports                     檢舉
 //   POST   / DELETE /api/forum/posts/:id/bookmark 收藏 / 取消
 //   GET    /api/forum/bookmarks                   我的收藏（游標是書籤 id，非貼文 id）
@@ -37,8 +36,6 @@ class ForumService {
   static const int bodyMax = 5000;
   static const int commentMax = 2000;
   static const int reasonMax = 1000;
-  static const int tagMaxCount = 5;
-  static const int tagNameMax = 20;
   static const int imageMaxCount = 4;
   static const int imageMaxBytes = 5 * 1024 * 1024;
   static const int searchMin = 1;
@@ -110,7 +107,6 @@ class ForumService {
     required int boardId,
     required String title,
     required String body,
-    List<String> tags = const [],
     List<MultipartFileData> images = const [],
     int? tribeId,
   }) async {
@@ -120,7 +116,6 @@ class ForumService {
         'board_id': boardId,
         'title': title,
         'body': body,
-        if (tags.isNotEmpty) 'tags': tags,
         'tribe_id': ?tribeId,
       });
     } else {
@@ -130,9 +125,6 @@ class ForumService {
           'board_id': '$boardId',
           'title': title,
           'body': body,
-          // multipart 的欄位值只能是字串，後端在此格式下以逗號分隔解析
-          // （後端 API 文件 §3.1），不是 JSON。
-          if (tags.isNotEmpty) 'tags': tags.join(','),
           if (tribeId != null) 'tribe_id': '$tribeId',
         },
         files: images,
@@ -142,7 +134,7 @@ class ForumService {
   }
 
   /// 編輯。後端接受 title、body、tribe_id，至少要給一個，否則回 400；
-  /// board_id、tags、images 一律不可變更（後端 API 文件 §3.3）。
+  /// board_id、images 一律不可變更（後端 API 文件 §3.3）。
   /// [tribe] 為 null 表示不改相關部落；`(id: null)` 表示清除標籤。
   static Future<ForumPost> updatePost(
     int id, {
@@ -236,15 +228,7 @@ class ForumService {
     return ForumLikedCommentPage.fromJson(data);
   }
 
-  // ── 標籤與搜尋 ────────────────────────────────────────────
-
-  static Future<List<ForumTagStat>> tags() async {
-    final data = await ApiClient.get(ApiConfig.forumTags);
-    return (data['tags'] as List<dynamic>? ?? const [])
-        .whereType<Map<String, dynamic>>()
-        .map(ForumTagStat.fromJson)
-        .toList();
-  }
+  // ── 搜尋 ────────────────────────────────────────────────
 
   /// 後端限制關鍵字 1-80 字，未達長度直接擋下，不送出必然失敗的請求。
   /// [range]／[tribeId] 與 [board] 一樣皆選填、可任意組合。

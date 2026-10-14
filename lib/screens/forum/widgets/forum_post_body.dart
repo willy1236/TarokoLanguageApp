@@ -98,26 +98,6 @@ class ForumPostBody extends StatelessWidget {
         const SizedBox(height: 12),
         RelatedTribeLabel(name: tribe.name, seniorMode: seniorMode),
       ],
-      if (post.tags.isNotEmpty) ...[
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 6,
-          children: [
-            for (final tag in post.tags)
-              Text(
-                '#${tag.name}',
-                style: AppTypography.latin(
-                  fontStyle: FontStyle.italic,
-                  fontSize: AppTypography.size(
-                    AppTypography.caption,
-                    seniorMode: seniorMode,
-                  ),
-                  color: AppColors.primary,
-                ),
-              ),
-          ],
-        ),
-      ],
       const SizedBox(height: 12),
       Row(
         children: [

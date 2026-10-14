@@ -12,9 +12,6 @@ Map<String, dynamic> _postJson() => {
   'is_pinned': false,
   'is_liked': true,
   'images': ['https://storage.googleapis.com/truku-media/forum/a.jpg'],
-  'tags': [
-    {'name': '族語', 'slug': 'yuyan'},
-  ],
   'created_at': '2026-08-01T10:00:00.000Z',
   'updated_at': '2026-08-01T10:00:00.000Z',
   'author': {'uid': 7, 'display_name': 'Sayun', 'avatar_url': null},
@@ -34,19 +31,15 @@ void main() {
       expect(post.isLiked, isTrue);
       expect(post.isPinned, isFalse);
       expect(post.images, hasLength(1));
-      expect(post.tags.single.name, '族語');
       expect(post.author.displayName, 'Sayun');
     });
 
-    test('images / tags 缺失視為空陣列，is_bookmarked 缺失視為 false', () {
-      final json = _postJson()
-        ..remove('images')
-        ..remove('tags');
+    test('images 缺失視為空陣列，is_bookmarked 缺失視為 false', () {
+      final json = _postJson()..remove('images');
 
       final post = ForumPost.fromJson(json);
 
       expect(post.images, isEmpty);
-      expect(post.tags, isEmpty);
       // 後端補上書籤端點前不會有這個欄位（規格 §9）。
       expect(post.isBookmarked, isFalse);
     });

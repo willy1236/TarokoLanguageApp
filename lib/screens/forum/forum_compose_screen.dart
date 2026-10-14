@@ -35,7 +35,6 @@ String? forumComposeError({
   required int? boardId,
   required String title,
   required String body,
-  required List<String> tags,
 }) {
   if (boardId == null) return '請選擇看板';
   if (title.trim().isEmpty) return '請填寫標題';
@@ -45,12 +44,6 @@ String? forumComposeError({
   if (body.trim().isEmpty) return '請填寫內文';
   if (body.trim().length > ForumService.bodyMax) {
     return '內文不能超過 ${ForumService.bodyMax} 字';
-  }
-  if (tags.length > ForumService.tagMaxCount) {
-    return '標籤最多 ${ForumService.tagMaxCount} 個';
-  }
-  if (tags.any((t) => t.length > ForumService.tagNameMax)) {
-    return '每個標籤不能超過 ${ForumService.tagNameMax} 字';
   }
   return null;
 }
@@ -75,8 +68,6 @@ class _PickedImage {
 class _ForumComposeScreenState extends State<ForumComposeScreen> {
   final _titleController = TextEditingController();
   final _bodyController = TextEditingController();
-  final _tagController = TextEditingController();
-  final List<String> _tags = [];
   final List<_PickedImage> _images = [];
 
   int? _boardId;
@@ -84,7 +75,6 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
   /// 相關部落，預設不選；不可預設帶作者自己的部落（見 [RelatedTribeField]）。
   TribeTag? _tribe;
   bool _saving = false;
-  List<ForumTagStat> _hotTags = [];
   UserModel? _user;
   Map<String, ShopItem> _itemCatalogById = const {};
 
@@ -97,13 +87,11 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     if (editing != null) {
       _titleController.text = editing.title;
       _bodyController.text = editing.body;
-      _tags.addAll(editing.tags.map((t) => t.name));
       _boardId = editing.board.id;
       _tribe = editing.tribe;
     } else {
       _boardId = widget.boards.isEmpty ? null : widget.boards.first.id;
     }
-    _loadHotTags();
     _loadUser();
     _loadItemCatalog();
   }
@@ -132,18 +120,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
   void dispose() {
     _titleController.dispose();
     _bodyController.dispose();
-    _tagController.dispose();
     super.dispose();
-  }
-
-  Future<void> _loadHotTags() async {
-    try {
-      final tags = await ForumService.tags();
-      if (!mounted) return;
-      setState(() => _hotTags = tags.take(10).toList());
-    } on ApiException {
-      // 熱門標籤只是輔助輸入，拿不到就不顯示。
-    }
   }
 
   void _toast(String message) {
@@ -200,38 +177,12 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     );
   }
 
-  void _addTag() {
-    final name = _tagController.text.trim();
-    if (name.isEmpty) return;
-    if (!withinUtf16Limit(
-      context,
-      name,
-      ForumService.tagNameMax,
-      label: '標籤',
-    )) {
-      return;
-    }
-    if (_tags.contains(name)) {
-      _tagController.clear();
-      return;
-    }
-    if (_tags.length >= ForumService.tagMaxCount) {
-      _toast('標籤最多 ${ForumService.tagMaxCount} 個');
-      return;
-    }
-    setState(() {
-      _tags.add(name);
-      _tagController.clear();
-    });
-  }
-
   Future<void> _save() async {
     if (_saving) return;
     final error = forumComposeError(
       boardId: _boardId,
       title: _titleController.text,
       body: _bodyController.text,
-      tags: _tags,
     );
     if (error != null) {
       _toast(error);
@@ -242,7 +193,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     try {
       final editing = widget.editing;
       if (editing != null) {
-        // 後端 PATCH 只吃 title、body、tribe_id，標籤與附圖都不可變更。
+        // 後端 PATCH 只吃 title、body、tribe_id，附圖不可變更。
         // 相關部落沒動就不送，避免無謂覆寫。
         await ForumService.updatePost(
           editing.id,
@@ -255,7 +206,6 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           boardId: _boardId!,
           title: _titleController.text.trim(),
           body: _bodyController.text.trim(),
-          tags: _tags,
           tribeId: _tribe?.id,
           images: [
             for (final image in _images)
@@ -409,8 +359,6 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        _tagSection(seniorMode),
-        const SizedBox(height: 12),
         RelatedTribeField(
           tribe: _tribe,
           seniorMode: seniorMode,
@@ -540,144 +488,6 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
     );
   }
 
-  /// 編輯模式的標籤唯讀：後端 PATCH 不接受 tags，讓使用者以為改得動
-  /// 但實際不會存，比不給改更糟（與附圖同理）。
-  Widget _tagSection(bool seniorMode) {
-    if (_isEditing) {
-      if (_tags.isEmpty) return const SizedBox.shrink();
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [
-              for (final tag in _tags)
-                _TagPill(label: tag, seniorMode: seniorMode),
-            ],
-          ),
-          const SizedBox(height: 6),
-          Text(
-            '標籤無法在編輯時變更',
-            style: TextStyle(
-              fontSize: AppTypography.size(
-                AppTypography.caption,
-                seniorMode: seniorMode,
-              ),
-              color: AppColors.fog,
-            ),
-          ),
-        ],
-      );
-    }
-    return _tagEditor(seniorMode);
-  }
-
-  Widget _tagEditor(bool seniorMode) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(
-        'HANGAN · 標籤',
-        style: AppTypography.latin(
-          fontStyle: FontStyle.italic,
-          fontSize: AppTypography.size(
-            AppTypography.micro,
-            seniorMode: seniorMode,
-          ),
-          color: AppColors.fog,
-          letterSpacing: 3.0,
-        ),
-      ),
-      const SizedBox(height: 8),
-      Row(
-        children: [
-          Expanded(
-            child: TextField(
-              controller: _tagController,
-              inputFormatters: const [
-                Utf16LengthLimitingTextInputFormatter(ForumService.tagNameMax),
-              ],
-              onSubmitted: (_) => _addTag(),
-              style: TextStyle(
-                fontSize: seniorMode
-                    ? AppTypography.bodyLarge + AppTypography.seniorStep
-                    : null,
-              ),
-              decoration: InputDecoration(
-                hintText: '加入標籤',
-                hintStyle: seniorMode
-                    ? const TextStyle(
-                        fontSize:
-                            AppTypography.bodyLarge + AppTypography.seniorStep,
-                      )
-                    : null,
-                counterText: '',
-                isDense: true,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: _addTag,
-            style: seniorMode
-                ? TextButton.styleFrom(
-                    minimumSize: const Size(64, 44),
-                    textStyle: const TextStyle(
-                      fontSize:
-                          AppTypography.bodyLarge + AppTypography.seniorStep,
-                    ),
-                  )
-                : null,
-            child: const Text('加入'),
-          ),
-        ],
-      ),
-      Wrap(
-        spacing: 6,
-        runSpacing: 6,
-        children: [
-          for (final tag in _tags)
-            _TagPill(
-              label: tag,
-              seniorMode: seniorMode,
-              onDeleted: () => setState(() => _tags.remove(tag)),
-            ),
-        ],
-      ),
-      if (_hotTags.isNotEmpty) ...[
-        const SizedBox(height: 8),
-        Text(
-          'HOT · 熱門標籤',
-          style: AppTypography.latin(
-            fontStyle: FontStyle.italic,
-            fontSize: AppTypography.size(
-              AppTypography.micro,
-              seniorMode: seniorMode,
-            ),
-            color: AppColors.fog,
-            letterSpacing: 3.0,
-          ),
-        ),
-        const SizedBox(height: 6),
-        Wrap(
-          spacing: 6,
-          runSpacing: 6,
-          children: [
-            for (final stat in _hotTags)
-              _TagPill(
-                label: stat.tag.name,
-                filled: false,
-                seniorMode: seniorMode,
-                onTap: () {
-                  _tagController.text = stat.tag.name;
-                  _addTag();
-                },
-              ),
-          ],
-        ),
-      ],
-    ],
-  );
-
   Widget _imageSection(bool seniorMode) => _isEditing
       ? ForumComposeEditImages(
           urls: widget.editing!.images,
@@ -690,69 +500,4 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
           onRemove: (i) => setState(() => _images.removeAt(i)),
           onAdd: _pickImages,
         );
-}
-
-/// 標籤 pill：已加入的標籤填色顯示為「已選中」，熱門標籤建議則是外框樣式。
-class _TagPill extends StatelessWidget {
-  final String label;
-  final bool filled;
-  final bool seniorMode;
-  final VoidCallback? onTap;
-  final VoidCallback? onDeleted;
-
-  const _TagPill({
-    required this.label,
-    this.filled = true,
-    this.seniorMode = false,
-    this.onTap,
-    this.onDeleted,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final pill = Container(
-      padding: EdgeInsets.only(
-        left: seniorMode ? 16 : 12,
-        right: onDeleted != null
-            ? (seniorMode ? 8 : 6)
-            : (seniorMode ? 16 : 12),
-        top: seniorMode ? 10 : 6,
-        bottom: seniorMode ? 10 : 6,
-      ),
-      decoration: BoxDecoration(
-        color: filled ? AppColors.primary : Colors.transparent,
-        borderRadius: BorderRadius.circular(14),
-        border: filled ? null : Border.all(color: AppColors.creamDeep),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            '#$label',
-            style: AppTypography.latin(
-              fontStyle: FontStyle.italic,
-              fontSize: AppTypography.size(
-                AppTypography.caption,
-                seniorMode: seniorMode,
-              ),
-              color: filled ? AppColors.creamLight : AppColors.inkSoft,
-              letterSpacing: 1.2,
-            ),
-          ),
-          if (onDeleted != null) ...[
-            const SizedBox(width: 4),
-            GestureDetector(
-              onTap: onDeleted,
-              child: Icon(
-                Icons.close,
-                size: seniorMode ? 20 : 14,
-                color: filled ? AppColors.creamLight : AppColors.inkSoft,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-    return onTap == null ? pill : GestureDetector(onTap: onTap, child: pill);
-  }
 }

@@ -1933,7 +1933,6 @@ const Map<String, F> _forumPostOptional = {
   'is_liked': F.boolean,
   'is_bookmarked': F.boolean,
   'images': F.list,
-  'tags': F.list,
   'author': F.object,
   'created_at': F.string,
   'updated_at': F.string,

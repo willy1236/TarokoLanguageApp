@@ -18,7 +18,6 @@ ForumPost post(int id, {int likeCount = 0, bool isLiked = false}) => ForumPost(
   isLiked: isLiked,
   isBookmarked: false,
   images: const [],
-  tags: const [],
   createdAt: DateTime.now(),
   updatedAt: DateTime.now(),
   author: const ForumAuthor(displayName: 'Sayun'),

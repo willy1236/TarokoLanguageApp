@@ -61,31 +61,6 @@ class ForumAuthor {
   );
 }
 
-class ForumTag {
-  final String name;
-  final String slug;
-
-  const ForumTag({required this.name, required this.slug});
-
-  factory ForumTag.fromJson(Map<String, dynamic> j) => ForumTag(
-    name: j['name'] as String? ?? '',
-    slug: j['slug'] as String? ?? '',
-  );
-}
-
-/// `/forum/tags` 額外回傳貼文數，供「熱門標籤」排序。
-class ForumTagStat {
-  final ForumTag tag;
-  final int postCount;
-
-  const ForumTagStat({required this.tag, required this.postCount});
-
-  factory ForumTagStat.fromJson(Map<String, dynamic> j) => ForumTagStat(
-    tag: ForumTag.fromJson(j),
-    postCount: _asInt(j['post_count']),
-  );
-}
-
 class ForumPost {
   final int id;
   final ForumBoard board;
@@ -103,7 +78,6 @@ class ForumPost {
   /// 我檢舉過這篇（不能取消）。只有詳情會帶，其他列表一律 false。
   final bool reportedByMe;
   final List<String> images;
-  final List<ForumTag> tags;
 
   /// 作者自選的「相關部落」標籤，未標為 null。與作者本人的部落無關。
   final TribeTag? tribe;
@@ -124,7 +98,6 @@ class ForumPost {
     this.isHidden = false,
     this.reportedByMe = false,
     required this.images,
-    required this.tags,
     this.tribe,
     required this.createdAt,
     required this.updatedAt,
@@ -148,10 +121,6 @@ class ForumPost {
     images: (j['images'] as List<dynamic>? ?? const [])
         .whereType<String>()
         .toList(),
-    tags: (j['tags'] as List<dynamic>? ?? const [])
-        .whereType<Map<String, dynamic>>()
-        .map(ForumTag.fromJson)
-        .toList(),
     tribe: TribeTag.fromJson(j['tribe']),
     createdAt: _asDate(j['created_at']),
     updatedAt: _asDate(j['updated_at']),
@@ -170,7 +139,6 @@ class ForumPost {
     bool? reportedByMe,
     String? title,
     String? body,
-    List<ForumTag>? tags,
   }) => ForumPost(
     id: id,
     board: board,
@@ -184,7 +152,6 @@ class ForumPost {
     isHidden: isHidden ?? this.isHidden,
     reportedByMe: reportedByMe ?? this.reportedByMe,
     images: images,
-    tags: tags ?? this.tags,
     tribe: tribe,
     createdAt: createdAt,
     updatedAt: updatedAt,
