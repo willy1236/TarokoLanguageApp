@@ -59,7 +59,8 @@ class AdminVideoMetaController extends ChangeNotifier {
   /// 選的分類是新輸入、不在清單裡的（送出成功後呼叫端要刷新影音分類快取）。
   bool get isNewCategory => _category.isNew;
 
-  /// 上一次 [suggestTitle] 帶入的標題；標題欄仍是它（或空白）代表使用者沒手動改過。
+  /// 上一次 [suggestTitle] 帶入的標題；標題欄仍等於它代表使用者沒手動改過
+  /// （還沒帶入過時是 null，標題欄空白即視為沒改過）。帶入後使用者刻意清空也算手動改過。
   String? _suggestedTitle;
 
   /// 帶入建議標題（例如 YouTube 預覽的標題）。使用者還沒手動改過標題時才覆寫；

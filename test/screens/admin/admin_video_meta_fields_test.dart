@@ -318,6 +318,14 @@ void main() {
       expect(title(tester), '織布教學');
     });
 
+    testWidgets('帶入後刻意清空：視同手動改過，不再覆寫', (tester) async {
+      await pump(tester);
+      await suggest(tester, '織布');
+      await tester.enterText(find.widgetWithText(TextField, '標題（必填）'), '');
+      await suggest(tester, '口簧琴');
+      expect(title(tester), '');
+    });
+
     testWidgets('一開始就自己填了標題：不覆寫', (tester) async {
       await pump(tester);
       await tester.enterText(find.widgetWithText(TextField, '標題（必填）'), '自己的標題');
