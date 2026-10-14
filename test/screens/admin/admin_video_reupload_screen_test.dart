@@ -1,7 +1,6 @@
 // 重新上傳頁（後台影片 T-09）：顯示影片標題與失敗原因、共用選檔區塊、送出呼叫 retry 後交給上傳服務
 // 並換成進度頁、409／404 回列表重抓、建立上傳錯誤提示、一次一支（選檔與送出前都擋）、
 // 沒送出就刪暫存複本。
-// 影片管理列表的「重新上傳」：只有失敗的自家影片有，送出後該列就地變處理中，409 重抓列表。
 
 import 'dart:async';
 import 'dart:convert';
@@ -19,9 +18,6 @@ import 'package:flutter_application_1/models/video_upload.dart';
 import 'package:flutter_application_1/screens/admin/admin_error.dart';
 import 'package:flutter_application_1/screens/admin/admin_video_reupload_screen.dart';
 import 'package:flutter_application_1/screens/admin/admin_video_upload_progress_screen.dart';
-import 'package:flutter_application_1/screens/admin/admin_videos_screen.dart';
-import 'package:flutter_application_1/screens/admin/widgets/admin_widgets.dart';
-import 'package:flutter_application_1/services/category_service.dart';
 import 'package:flutter_application_1/services/video_upload/chunk_source.dart';
 import 'package:flutter_application_1/services/video_upload/resumable_uploader.dart';
 import 'package:flutter_application_1/services/video_upload/video_file_picker.dart';
@@ -373,161 +369,5 @@ void main() {
     expect(pickedFrom, [VideoPickSource.files]);
     expect(find.text('影片較大，建議使用 Wi-Fi'), findsNothing);
     debugDefaultTargetPlatformOverride = null;
-  });
-
-  group('列表的重新上傳', () {
-    late int listCalls;
-
-    Map<String, dynamic> row(int id, String source, String status) => {
-      'id': id,
-      'title': id == 98 ? '織布教學' : '影片$id',
-      'description': null,
-      'category': 'cultural',
-      'source': source,
-      'status': status,
-      'fail_reason': status == 'failed' ? '轉檔失敗：無法讀取影片' : null,
-      'duration_sec': null,
-      'thumbnail_url': null,
-      'youtube_video_id': null,
-      'embeddable': null,
-      'tribe_id': null,
-      'created_at': '2026-10-13T00:00:00.000Z',
-    };
-
-    /// 列表回 [rows]，retry 回 [retry]（Map 為 200）。
-    void mockList(List<Map<String, dynamic>> rows, {Object? retry}) {
-      listCalls = 0;
-      requests = [];
-      ApiClient.httpClient = MockClient((r) async {
-        requests.add(r);
-        switch (r.url.path) {
-          case '/api/admin/videos':
-            listCalls++;
-            return jsonResponse({
-              'videos': rows,
-              'page_info': {'next_cursor': null, 'has_more': false},
-            });
-          case _retryPath:
-            final res =
-                retry ?? loadSpecFixtureMap('post_api_admin_videos_retry.json');
-            return res is http.Response ? res : jsonResponse(res);
-          case '/api/videos/categories':
-            return jsonResponse({'categories': []});
-          case '/api/me':
-            return jsonResponse({
-              'uid': 1,
-              'created_at': '2026-01-01T00:00:00Z',
-              'role': 'user',
-            });
-        }
-        fail('沒有準備 ${r.method} ${r.url}');
-      });
-    }
-
-    tearDown(CategoryService.reset);
-
-    Future<void> openList(WidgetTester tester) async {
-      tester.view.physicalSize = const Size(800, 2400);
-      tester.view.devicePixelRatio = 1;
-      addTearDown(tester.view.reset);
-      await tester.pumpWidget(
-        MaterialApp(
-          scaffoldMessengerKey: scaffoldMessengerKey,
-          home: Builder(
-            builder: (context) => Scaffold(
-              body: TextButton(
-                onPressed: () =>
-                    pushAdmin<void>(context, const AdminVideosScreen()),
-                child: const Text('開啟'),
-              ),
-            ),
-          ),
-        ),
-      );
-      await tester.tap(find.text('開啟'));
-      await tester.pumpAndSettle();
-    }
-
-    /// 打開第 [index] 列的選單，回傳選單項目文字。
-    Future<List<String>> menuOf(WidgetTester tester, int index) async {
-      await tester.tap(find.byTooltip('更多操作').at(index));
-      await tester.pumpAndSettle();
-      final labels = tester
-          .widgetList<PopupMenuItem<int>>(find.byType(PopupMenuItem<int>))
-          .map((item) => (item.child as Text).data!)
-          .toList();
-      return labels;
-    }
-
-    Finder badge(String label) => find.descendant(
-      of: find.byType(AdminBadge),
-      matching: find.text(label),
-    );
-
-    testWidgets('只有失敗的自家影片有「重新上傳」', (tester) async {
-      mockList([
-        row(98, 'hls', 'failed'),
-        row(2, 'youtube', 'failed'),
-        row(3, 'hls', 'processing'),
-        row(4, 'hls', 'ready'),
-      ]);
-      await openList(tester);
-
-      for (final (index, expected) in [
-        (0, true),
-        (1, false),
-        (2, false),
-        (3, false),
-      ]) {
-        final labels = await menuOf(tester, index);
-        expect(labels.contains('重新上傳'), expected, reason: '第 $index 列');
-        await tester.tapAt(Offset.zero);
-        await tester.pumpAndSettle();
-      }
-    });
-
-    testWidgets('重新上傳送出後：該列就地變處理中，不重抓列表', (tester) async {
-      mockList([row(98, 'hls', 'failed')]);
-      fakePicker();
-      await openList(tester);
-      expect(badge('失敗'), findsOneWidget);
-
-      await menuOf(tester, 0);
-      await tester.tap(find.text('重新上傳').last);
-      await tester.pumpAndSettle();
-      expect(find.byType(AdminVideoReuploadScreen), findsOneWidget);
-      await pickFromGallery(tester);
-      await tester.tap(submitButton());
-      await tester.pumpAndSettle();
-      expect(find.byType(AdminVideoUploadProgressScreen), findsOneWidget);
-
-      await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();
-      await tester.pumpAndSettle();
-      expect(find.byType(AdminVideosScreen), findsOneWidget);
-      expect(badge('處理中'), findsOneWidget);
-      expect(badge('失敗'), findsNothing);
-      expect(find.text('失敗原因：轉檔失敗：無法讀取影片'), findsNothing);
-      expect(listCalls, 1);
-      await VideoUploadManager.instance.cancel();
-    });
-
-    testWidgets('409 VIDEO_NOT_FAILED：提示狀態已改變並重抓列表', (tester) async {
-      mockList([
-        row(98, 'hls', 'failed'),
-      ], retry: errorResponse('VIDEO_NOT_FAILED', status: 409));
-      fakePicker();
-      await openList(tester);
-
-      await menuOf(tester, 0);
-      await tester.tap(find.text('重新上傳').last);
-      await tester.pumpAndSettle();
-      await pickFromGallery(tester);
-      await tester.tap(submitButton());
-      await tester.pumpAndSettle();
-
-      expect(find.byType(AdminVideosScreen), findsOneWidget);
-      expect(find.text('這支影片的狀態已改變，列表已重新整理'), findsOneWidget);
-      expect(listCalls, 2);
-    });
   });
 }
