@@ -20,6 +20,7 @@ import 'admin_question_reports_screen.dart';
 import 'admin_reports_screen.dart';
 import 'admin_roles_screen.dart';
 import 'admin_terms_publish_screen.dart';
+import 'admin_videos_screen.dart';
 import 'widgets/admin_widgets.dart';
 
 typedef _Entry = ({IconData icon, String label, Widget Function() screen});
@@ -85,6 +86,11 @@ final List<_Entry> _entries = [
     icon: Icons.post_add_outlined,
     label: '新增文章',
     screen: () => const AdminArticleFormScreen(),
+  ),
+  (
+    icon: Icons.video_library_outlined,
+    label: '影片管理',
+    screen: () => const AdminVideosScreen(),
   ),
   (
     icon: Icons.label_outline,
