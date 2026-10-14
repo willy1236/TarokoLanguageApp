@@ -1,6 +1,9 @@
 // 影片管理列表：各狀態與來源的呈現、篩選與搜尋送出的參數、下一頁、下拉重整、
 // 非管理員退出後台、後台首頁入口、上傳影片按鈕。
 
+import 'dart:async';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -8,12 +11,18 @@ import 'package:http/testing.dart';
 
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
+import 'package:flutter_application_1/models/admin_models.dart';
+import 'package:flutter_application_1/models/video_upload.dart';
 import 'package:flutter_application_1/screens/admin/admin_error.dart';
 import 'package:flutter_application_1/screens/admin/admin_home_screen.dart';
+import 'package:flutter_application_1/screens/admin/admin_video_upload_progress_screen.dart';
 import 'package:flutter_application_1/screens/admin/admin_video_upload_screen.dart';
 import 'package:flutter_application_1/screens/admin/admin_videos_screen.dart';
 import 'package:flutter_application_1/services/category_service.dart';
 import 'package:flutter_application_1/services/user_service.dart';
+import 'package:flutter_application_1/services/video_upload/chunk_source.dart';
+import 'package:flutter_application_1/services/video_upload/resumable_uploader.dart';
+import 'package:flutter_application_1/services/video_upload/video_upload_manager.dart';
 
 import '../../helpers/fixtures.dart';
 import '../../helpers/widget_test_helpers.dart';
@@ -66,6 +75,48 @@ final _categories = {
     {'value': 'new_cat', 'label': '新分類', 'sort_order': 100, 'count': 1},
   ],
 };
+
+class _FakeSource implements ChunkSource {
+  @override
+  final int size;
+
+  _FakeSource(this.size);
+
+  @override
+  Future<Uint8List> read(int start, int end) async => Uint8List(end - start);
+
+  @override
+  Future<void> close() async {}
+
+  @override
+  Future<void> discard() async {}
+}
+
+/// 讓 App 層級上傳服務開始傳一支；雲端照 [respond] 回應（預設卡住不回）。
+void _startUpload({Future<http.Response> Function()? respond}) {
+  VideoUploadManager.uploaderFactory = (session, source) => ResumableUploader(
+    session,
+    source,
+    client: MockClient(
+      (_) => respond?.call() ?? Completer<http.Response>().future,
+    ),
+  );
+  VideoUploadManager.instance.start(
+    const AdminVideo(
+      id: 107,
+      title: '部落祭典紀錄',
+      category: 'cultural',
+      source: 'hls',
+      status: 'processing',
+    ),
+    UploadSession(
+      sessionUrl: Uri.parse('https://storage.googleapis.com/u?upload_id=x'),
+      size: 8 * 1024 * 1024,
+      chunkMultiple: 256 * 1024,
+    ),
+    _FakeSource(8 * 1024 * 1024),
+  );
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -242,6 +293,53 @@ void main() {
     expect(listRequests, hasLength(3));
     expect(listRequests.last.queryParameters, {'source': 'youtube'});
     expect(find.text('影片1'), findsOneWidget);
+  });
+
+  group('上方的上傳進度', () {
+    tearDown(() => VideoUploadManager.instance.resetForTest());
+
+    testWidgets('沒有上傳時不顯示', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      await _open(tester);
+      expect(find.byKey(const ValueKey('admin-active-upload')), findsNothing);
+    });
+
+    testWidgets('上傳中：顯示標題與進度，點它回進度頁', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      _startUpload();
+      await _open(tester);
+
+      final banner = find.byKey(const ValueKey('admin-active-upload'));
+      expect(banner, findsOneWidget);
+      expect(find.text('部落祭典紀錄'), findsOneWidget);
+      expect(find.text('上傳中・0.0 MB／8.0 MB'), findsOneWidget);
+
+      await tester.tap(banner);
+      await tester.pumpAndSettle();
+      expect(find.byType(AdminVideoUploadProgressScreen), findsOneWidget);
+    });
+
+    testWidgets('傳完：顯示完成，看過進度頁回來就移除', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      _startUpload(respond: () async => http.Response('{}', 200));
+      await _open(tester);
+
+      expect(find.text('上傳完成，轉檔後會自動上架・8.0 MB／8.0 MB'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('admin-active-upload')));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('回影片管理'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(AdminVideosScreen), findsOneWidget);
+      expect(find.byKey(const ValueKey('admin-active-upload')), findsNothing);
+    });
+
+    testWidgets('中斷：提示點進去處理', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      _startUpload(respond: () async => http.Response('', 503));
+      await _open(tester);
+      expect(find.textContaining('上傳中斷，點這裡重試或放棄'), findsOneWidget);
+    });
   });
 
   testWidgets('403 ADMIN_ONLY：退出後台', (tester) async {

@@ -5,6 +5,7 @@
 // 右上角「上傳影片」開上傳頁，上架成功回來重抓第一頁。
 // 列尾選單由之後的功能加項目（編輯、下架、重新上傳），見 _rowActions。
 // 下架回 files_deleted: false 時，「再刪一次檔案」只記在本次畫面（後端沒有欄位記錄）。
+// 上方顯示 App 正在傳的影片檔（VideoUploadManager），點它回進度頁；看過完成畫面後就移除。
 
 import 'dart:async';
 
@@ -19,10 +20,12 @@ import '../../models/admin_models.dart';
 import '../../models/content_category.dart';
 import '../../services/admin_service.dart';
 import '../../services/category_service.dart';
+import '../../services/video_upload/video_upload_manager.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import 'admin_error.dart';
 import 'admin_video_edit_screen.dart';
+import 'admin_video_upload_progress_screen.dart';
 import 'admin_video_upload_screen.dart';
 import 'widgets/admin_paged_list.dart';
 import 'widgets/admin_widgets.dart';
@@ -239,6 +242,11 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
     ],
     body: (context, senior) => Column(
       children: [
+        _ActiveUploadBanner(
+          seniorMode: senior,
+          onTap: () =>
+              pushAdmin<void>(context, const AdminVideoUploadProgressScreen()),
+        ),
         _searchField(senior),
         _chips(_statuses, _status, _selectStatus, senior),
         const SizedBox(height: AppSpacing.xs),
@@ -320,6 +328,80 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
         ],
       ),
     ),
+  );
+}
+
+/// 進行中的上傳（傳送中、中斷、剛傳完）；沒有時不佔空間。
+class _ActiveUploadBanner extends StatelessWidget {
+  final bool seniorMode;
+  final VoidCallback onTap;
+
+  const _ActiveUploadBanner({required this.seniorMode, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) => ValueListenableBuilder<ActiveUpload?>(
+    valueListenable: VideoUploadManager.instance.active,
+    builder: (context, upload, _) {
+      if (upload == null) return const SizedBox.shrink();
+      final progress = upload.progress;
+      final (label, color) = switch (upload.state) {
+        UploadState.uploading => ('上傳中', AppColors.goldDeep),
+        UploadState.interrupted => ('上傳中斷，點這裡重試或放棄', AppColors.dangerDark),
+        UploadState.done => ('上傳完成，轉檔後會自動上架', AppColors.moss),
+      };
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(
+          AppSpacing.md,
+          AppSpacing.sm,
+          AppSpacing.md,
+          0,
+        ),
+        child: AdminCard(
+          key: const ValueKey('admin-active-upload'),
+          seniorMode: seniorMode,
+          onTap: onTap,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.cloud_upload_outlined, color: color),
+                  const SizedBox(width: AppSpacing.sm),
+                  Expanded(
+                    child: Text(
+                      upload.video.title,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.bodyLargeStyle(
+                        seniorMode: seniorMode,
+                        color: AppColors.ink,
+                      ),
+                    ),
+                  ),
+                  const Icon(Icons.chevron_right, color: AppColors.inkSoft),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.xs),
+              LinearProgressIndicator(
+                value: progress.fraction,
+                minHeight: 6,
+                color: color,
+                backgroundColor: AppColors.creamDeep,
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '$label・${formatUploadBytes(progress.sent)}／'
+                '${formatUploadBytes(progress.total)}',
+                style: AppTypography.captionStyle(
+                  seniorMode: seniorMode,
+                  color: color,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
   );
 }
 
