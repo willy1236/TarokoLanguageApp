@@ -84,8 +84,11 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
   /// 下架請求送出中的影片 id：選單項目停用並顯示進行中，避免連點重送。
   final Set<int> _archiving = {};
 
-  /// 正在準備續傳（檢查檔案、重選檔案），避免連點。
-  bool _resuming = false;
+  /// 正在準備續傳的那支（檢查檔案、重選檔案）；期間所有「繼續上傳」停用，避免連點。
+  int? _resumingId;
+
+  /// 重選的檔案還在複製（Android 大檔要等），那支的按鈕顯示「準備檔案中…」。
+  bool _preparingFile = false;
 
   late final AdminPagedListController<AdminVideo> _list =
       AdminPagedListController<AdminVideo>(
@@ -172,12 +175,12 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
   /// 繼續一支沒傳完的：手機用原本的檔案，網頁（或手機檔案不見時）請管理員重選同一個檔案。
   /// 開始後換到進度頁。
   Future<void> _resumePending(PendingUpload upload) async {
-    if (_resuming) return;
+    if (_resumingId != null) return;
     if (VideoUploadManager.instance.isBusy) {
       _showBusy();
       return;
     }
-    setState(() => _resuming = true);
+    setState(() => _resumingId = upload.videoId);
     try {
       final started = PlatformFeatures.hasFileSystem
           ? await _resumeFromFile(upload)
@@ -189,7 +192,12 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
       debugPrint('AdminVideosScreen: 續傳失敗：$e');
       showAdminMessage('無法繼續上傳，請稍後再試');
     } finally {
-      if (mounted) setState(() => _resuming = false);
+      if (mounted) {
+        setState(() {
+          _resumingId = null;
+          _preparingFile = false;
+        });
+      }
     }
   }
 
@@ -237,7 +245,12 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
         : VideoPickSource.files;
     if (from == null || !mounted) return false;
     try {
-      final picked = await pickAdminVideoFile(from);
+      final picked = await pickAdminVideoFile(
+        from,
+        onPreparing: () {
+          if (mounted) setState(() => _preparingFile = true);
+        },
+      );
       if (picked == null) return false;
       if (!mounted) {
         await picked.source.discard();
@@ -392,6 +405,8 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
         _ActiveUploadBanner(seniorMode: senior, onTap: _openProgress),
         _PendingUploadsBanner(
           seniorMode: senior,
+          resumingId: _resumingId,
+          preparingFile: _preparingFile,
           onResume: _resumePending,
           onDiscard: _discardPending,
         ),
@@ -560,11 +575,17 @@ class _ActiveUploadBanner extends StatelessWidget {
 /// 還沒傳完的影片（App 被關掉、網頁重新整理前沒傳完的）；正在傳的那支不重複列。沒有時不佔空間。
 class _PendingUploadsBanner extends StatelessWidget {
   final bool seniorMode;
+
+  /// 正在準備續傳的那支；不是 null 時所有「繼續上傳」停用。
+  final int? resumingId;
+  final bool preparingFile;
   final void Function(PendingUpload upload) onResume;
   final void Function(PendingUpload upload) onDiscard;
 
   const _PendingUploadsBanner({
     required this.seniorMode,
+    required this.resumingId,
+    required this.preparingFile,
     required this.onResume,
     required this.onDiscard,
   });
@@ -619,7 +640,12 @@ class _PendingUploadsBanner extends StatelessWidget {
                   upload: upload,
                   expired: upload.isExpiredAt(now),
                   seniorMode: seniorMode,
-                  onResume: () => onResume(upload),
+                  resumeLabel: upload.videoId != resumingId
+                      ? null
+                      : preparingFile
+                      ? '準備檔案中…'
+                      : '處理中…',
+                  onResume: resumingId == null ? () => onResume(upload) : null,
                   onDiscard: () => onDiscard(upload),
                 ),
             ],
@@ -634,13 +660,19 @@ class _PendingUploadRow extends StatelessWidget {
   final PendingUpload upload;
   final bool expired;
   final bool seniorMode;
-  final VoidCallback onResume;
+
+  /// 進行中時取代「繼續上傳」的文字（處理中、準備檔案中）。
+  final String? resumeLabel;
+
+  /// null：停用（有一支正在準備續傳）。
+  final VoidCallback? onResume;
   final VoidCallback onDiscard;
 
   const _PendingUploadRow({
     required this.upload,
     required this.expired,
     required this.seniorMode,
+    required this.resumeLabel,
     required this.onResume,
     required this.onDiscard,
   });
@@ -678,7 +710,10 @@ class _PendingUploadRow extends StatelessWidget {
             alignment: WrapAlignment.end,
             spacing: AppSpacing.sm,
             children: [
-              TextButton(onPressed: onDiscard, child: const Text('放棄')),
+              TextButton(
+                onPressed: resumeLabel == null ? onDiscard : null,
+                child: const Text('放棄'),
+              ),
               if (!expired)
                 FilledButton(
                   onPressed: onResume,
@@ -687,7 +722,8 @@ class _PendingUploadRow extends StatelessWidget {
                     foregroundColor: AppColors.creamLight,
                   ),
                   child: Text(
-                    PlatformFeatures.hasFileSystem ? '繼續上傳' : '選擇檔案繼續上傳',
+                    resumeLabel ??
+                        (PlatformFeatures.hasFileSystem ? '繼續上傳' : '選擇檔案繼續上傳'),
                   ),
                 ),
             ],

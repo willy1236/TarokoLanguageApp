@@ -527,6 +527,37 @@ void main() {
       expect(VideoUploadManager.instance.active.value, isNull);
     });
 
+    testWidgets('重選檔案時：準備中顯示「準備檔案中…」，期間其他「繼續上傳」停用', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      stored([record(videoId: 1), record(videoId: 2)]);
+      final copying = Completer<void>();
+      final source = _FakeSource(1024);
+      adminVideoPickerOverride = (from, {onPreparing}) async {
+        onPreparing?.call();
+        await copying.future;
+        return picked('IMG_0001.MOV', 1024, source);
+      };
+      await _open(tester);
+
+      await tester.tap(find.text('繼續上傳').first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('重新選擇檔案'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('從檔案'));
+      await tester.pump();
+
+      expect(find.text('準備檔案中…'), findsOneWidget);
+      final others = tester.widget<FilledButton>(
+        find.widgetWithText(FilledButton, '繼續上傳'),
+      );
+      expect(others.onPressed, isNull, reason: '另一支的繼續上傳停用');
+
+      copying.complete();
+      await tester.pumpAndSettle();
+      expect(find.byType(AdminVideoUploadProgressScreen), findsOneWidget);
+      await VideoUploadManager.instance.cancel();
+    });
+
     testWidgets('重選的檔案和原本的不同 → 擋下並提示要選哪個檔案', (tester) async {
       mock((_) => _page([_video(1)], null));
       stored([record()]); // 沒有路徑：直接要求重選
