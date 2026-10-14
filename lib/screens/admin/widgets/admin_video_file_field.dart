@@ -4,7 +4,8 @@
 //
 // 選檔狀態放在 [AdminVideoFileController]：選好、還沒交給上傳服務的檔案在換檔或 dispose 時
 // 刪掉手機上的暫存複本；交給上傳服務時用 [AdminVideoFileController.handOver] 取走，之後不再刪。
-// 一次只傳一支：選檔與送出前都用 [blockedByActiveUpload] 檢查。
+// 一次只傳一支：選檔時由 [AdminVideoFileField] 用 [blockedByActiveUpload] 檢查（呼叫端不必自己擋），
+// 送出前由畫面再檢查一次。
 
 import 'package:flutter/material.dart';
 
@@ -117,20 +118,24 @@ class AdminVideoFileController extends ChangeNotifier {
 }
 
 /// 選檔按鈕、準備中、選好的檔案與 Wi-Fi 提醒、選檔錯誤。
-/// [onPick] 由畫面決定能不能選（送出中、已有上傳時擋下），再呼叫 controller 的 [AdminVideoFileController.pick]。
+/// [enabled] 為 false（畫面送出中）、準備中時按鈕停用；已有一支在上傳時按了只提示、不開挑選器。
 class AdminVideoFileField extends StatelessWidget {
   final AdminVideoFileController controller;
   final bool enabled;
-  final ValueChanged<VideoPickSource> onPick;
   final bool seniorMode;
 
   const AdminVideoFileField({
     super.key,
     required this.controller,
     required this.enabled,
-    required this.onPick,
     required this.seniorMode,
   });
+
+  void _pick(BuildContext context, VideoPickSource from) {
+    if (!enabled || controller.preparing) return;
+    if (blockedByActiveUpload(context)) return;
+    controller.pick(from);
+  }
 
   @override
   Widget build(BuildContext context) => ListenableBuilder(
@@ -153,7 +158,7 @@ class AdminVideoFileField extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: canPick
-                      ? () => onPick(VideoPickSource.gallery)
+                      ? () => _pick(context, VideoPickSource.gallery)
                       : null,
                   icon: const Icon(Icons.photo_library_outlined),
                   label: const Text('從相簿'),
@@ -163,7 +168,7 @@ class AdminVideoFileField extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: canPick
-                      ? () => onPick(VideoPickSource.files)
+                      ? () => _pick(context, VideoPickSource.files)
                       : null,
                   icon: const Icon(Icons.folder_open_outlined),
                   label: const Text('從檔案'),
@@ -173,7 +178,7 @@ class AdminVideoFileField extends StatelessWidget {
               Expanded(
                 child: OutlinedButton.icon(
                   onPressed: canPick
-                      ? () => onPick(VideoPickSource.files)
+                      ? () => _pick(context, VideoPickSource.files)
                       : null,
                   icon: const Icon(Icons.video_file_outlined),
                   label: const Text('選擇影片檔'),

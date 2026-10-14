@@ -15,7 +15,6 @@ import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
 import '../../models/admin_models.dart';
 import '../../services/admin_service.dart';
-import '../../services/video_upload/video_file_picker.dart';
 import '../../services/video_upload/video_upload_manager.dart';
 import 'admin_error.dart';
 import 'admin_video_upload_progress_screen.dart';
@@ -66,11 +65,6 @@ class _AdminVideoReuploadScreenState extends State<AdminVideoReuploadScreen> {
   void dispose() {
     _file.dispose();
     super.dispose();
-  }
-
-  Future<void> _pick(VideoPickSource from) async {
-    if (_busy || _file.preparing || blockedByActiveUpload(context)) return;
-    await _file.pick(from);
   }
 
   Future<void> _submit() async {
@@ -145,7 +139,6 @@ class _AdminVideoReuploadScreenState extends State<AdminVideoReuploadScreen> {
             AdminVideoFileField(
               controller: _file,
               enabled: !_busy,
-              onPick: _pick,
               seniorMode: senior,
             ),
           ],
