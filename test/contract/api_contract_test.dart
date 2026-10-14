@@ -28,6 +28,7 @@ import 'package:flutter_application_1/models/shop_item.dart';
 import 'package:flutter_application_1/models/terms_models.dart';
 import 'package:flutter_application_1/models/user_model.dart';
 import 'package:flutter_application_1/models/video_models.dart';
+import 'package:flutter_application_1/models/video_upload.dart';
 import 'package:flutter_application_1/services/account_service.dart';
 import 'package:flutter_application_1/services/notification_summary_service.dart';
 
@@ -440,6 +441,23 @@ void main() {
       expect(video.status, 'ready');
       expect(video.youtubeVideoId, isNotEmpty);
       expect(video.embeddable, isTrue);
+    },
+  );
+
+  // 建立上傳會在正式環境寫入影片並開雲端工作階段，不錄製，用規格範例確認解析得了。
+  test(
+    'api_spec/post_api_admin_videos_upload.json → AdminVideo＋UploadSession（規格範例，上傳影片檔）',
+    () {
+      final json = loadSpecFixtureMap('post_api_admin_videos_upload.json');
+      final video = AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
+      expect(video.source, 'hls');
+      expect(video.status, 'processing');
+      final session = UploadSession.fromJson(
+        json['upload'] as Map<String, dynamic>,
+      );
+      expect(session.sessionUrl.scheme, 'https');
+      expect(session.size, greaterThan(0));
+      expect(session.chunkMultiple, 262144);
     },
   );
 

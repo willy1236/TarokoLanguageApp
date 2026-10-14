@@ -12,6 +12,7 @@ import '../models/admin_video_meta.dart';
 import '../models/content_category.dart';
 import '../models/millet_transaction.dart';
 import '../models/page_info.dart';
+import '../models/video_upload.dart';
 import '../shared/utils/birth_date.dart';
 
 typedef AdminPage<T> = ({List<T> items, PageInfo pageInfo});
@@ -368,6 +369,25 @@ class AdminService {
       ...meta.toJson(),
     });
     return AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
+  }
+
+  /// 建立自家影片（影片是「處理中」），回傳影片與雲端上傳工作階段；之後由
+  /// `ResumableUploader` 對 `session_url` 分段上傳，檔案不經過主服務。[meta] 的標題必填。
+  /// 不是 mp4／mov 400 UNSUPPORTED_VIDEO_TYPE；超過 2GB 413 VIDEO_TOO_LARGE；
+  /// 雲端工作階段建不起來 502 UPLOAD_SESSION_FAILED（整筆不寫入）。
+  static Future<({AdminVideo video, UploadSession session})> createUploadVideo(
+    UploadFileInfo file,
+    AdminVideoMeta meta,
+  ) async {
+    final json = await ApiClient.post(ApiConfig.adminVideos, {
+      'source': 'upload',
+      ...file.toJson(),
+      ...meta.toJson(),
+    });
+    return (
+      video: AdminVideo.fromJson(json['video'] as Map<String, dynamic>),
+      session: UploadSession.fromJson(json['upload'] as Map<String, dynamic>),
+    );
   }
 
   /// 修改影片的標題、說明、分類、部落，回傳修改後的影片。[fields] 只放有改的欄位

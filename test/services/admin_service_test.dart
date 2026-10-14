@@ -5,7 +5,9 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:flutter_application_1/models/admin_video_meta.dart';
 import 'package:flutter_application_1/models/content_category.dart';
+import 'package:flutter_application_1/models/video_upload.dart';
 import 'package:flutter_application_1/services/admin_service.dart';
 
 import '../helpers/fixtures.dart';
@@ -311,6 +313,46 @@ void main() {
         '/api/admin/categories/events/%E9%87%A3%E9%AD%9A%2F%E7%8B%A9%E7%8D%B5',
       );
       expect(jsonDecode(requests[1].body), {'sort_order': 20});
+    });
+  });
+  group('createUploadVideo', () {
+    test('送 source: upload、檔案資訊與影片資訊，解析影片與上傳工作階段', () async {
+      final fixture = loadSpecFixtureMap('post_api_admin_videos_upload.json');
+      seen = [];
+      installMockClient({
+        '/api/admin/videos': jsonResponse(fixture, status: 201),
+      }, onRequest: seen.add);
+
+      final result = await AdminService.createUploadVideo(
+        const UploadFileInfo(
+          name: 'IMG_0001.MOV',
+          size: 431864320,
+          contentType: 'video/quicktime',
+        ),
+        const AdminVideoMeta(title: ' 部落祭典紀錄 ', category: 'cultural'),
+      );
+
+      expect(seen.single.method, 'POST');
+      expect(jsonDecode(seen.single.body), {
+        'source': 'upload',
+        'file_name': 'IMG_0001.MOV',
+        'file_size': 431864320,
+        'content_type': 'video/quicktime',
+        'title': '部落祭典紀錄',
+        'category': 'cultural',
+      });
+      expect(result.video.id, 107);
+      expect(result.video.status, 'processing');
+      expect(result.session.sessionUrl.host, 'storage.googleapis.com');
+      expect(result.session.size, 431864320);
+      expect(result.session.chunkMultiple, 262144);
+    });
+
+    test('UploadFileInfo.contentTypeOf 只認 mp4／mov（不分大小寫）', () {
+      expect(UploadFileInfo.contentTypeOf('a.mp4'), 'video/mp4');
+      expect(UploadFileInfo.contentTypeOf('IMG_0001.MOV'), 'video/quicktime');
+      expect(UploadFileInfo.contentTypeOf('a.webm'), isNull);
+      expect(UploadFileInfo.contentTypeOf('mp4'), isNull);
     });
   });
 }
