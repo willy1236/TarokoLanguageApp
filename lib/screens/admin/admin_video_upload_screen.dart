@@ -83,6 +83,10 @@ class _AdminVideoUploadScreenState extends State<AdminVideoUploadScreen> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _busy = false);
+      // 預覽之後才被別人上架：標成已上架，上架鍵停用、顯示提示。
+      if (e is ApiException && e.code == 'VIDEO_EXISTS') {
+        _previewer.markExists(_int(e.errorField('video_id')));
+      }
       handleAdminError(context, e);
     }
   }
@@ -382,6 +386,21 @@ class _YouTubePreviewer extends ChangeNotifier {
     if (_url.isNotEmpty) _run();
   }
 
+  /// 上架時後端回已上架（409 VIDEO_EXISTS）：把目前的預覽標成已上架。
+  /// [videoId] 是既有影片的 id，後端沒給時仍視為已上架。
+  void markExists(int? videoId) {
+    final p = _preview;
+    if (p == null || p.alreadyExists) return;
+    _preview = AdminYouTubePreview(
+      youtubeVideoId: p.youtubeVideoId,
+      title: p.title,
+      thumbnailUrl: p.thumbnailUrl,
+      embeddable: p.embeddable,
+      existsVideoId: videoId ?? 0,
+    );
+    _notify();
+  }
+
   Future<void> _run() async {
     final generation = ++_generation;
     final url = _url;
@@ -429,3 +448,5 @@ class _YouTubePreviewer extends ChangeNotifier {
     super.dispose();
   }
 }
+
+int? _int(Object? v) => v is num ? v.toInt() : int.tryParse('$v');
