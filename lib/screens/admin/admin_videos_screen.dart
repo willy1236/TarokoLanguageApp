@@ -534,7 +534,15 @@ class _ActiveUploadBanner extends StatelessWidget {
           '網路中斷，自動重試中',
           AppColors.dangerDark,
         ),
+        UploadState.uploading when progress.preparing => (
+          '準備續傳中…',
+          AppColors.goldDeep,
+        ),
         UploadState.uploading => ('上傳中', AppColors.goldDeep),
+        UploadState.interrupted when upload.storageNeeded != null => (
+          '手機空間不足，點這裡查看',
+          AppColors.dangerDark,
+        ),
         UploadState.interrupted => ('上傳中斷，點這裡重試或放棄', AppColors.dangerDark),
         UploadState.done => ('上傳完成，轉檔後會自動上架', AppColors.moss),
       };

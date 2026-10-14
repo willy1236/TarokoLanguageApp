@@ -9,6 +9,10 @@
 // 未完成清單（pending_uploads.dart）由這裡維護：[VideoUploadManager.start] 寫入（上傳、重新上傳
 // 都經過它，同一支影片覆蓋舊的），傳完、放棄、工作階段失效時刪除。App 重開後由影片管理列表
 // 呼叫 [VideoUploadManager.resume] 接著傳（後台影片 T-05）。
+//
+// 手機（iOS、Android 14 以上）用系統背景傳輸送檔（background_upload.dart），App 切到別的 App 或鎖螢幕時
+// 繼續傳；Android 13 以下、網頁版、桌面版用前景 http 分段送（後台影片 T-06）。
+// 放棄時先取消系統裡同一支影片的背景上傳，等它停下才刪暫存檔。
 
 import 'dart:async';
 
@@ -17,6 +21,7 @@ import 'package:flutter/foundation.dart';
 import '../../models/admin_models.dart';
 import '../../models/video_upload.dart';
 import '../user_service.dart';
+import 'background_upload.dart';
 import 'chunk_source.dart';
 import 'pending_uploads.dart';
 import 'resumable_uploader.dart';
@@ -33,22 +38,28 @@ class ActiveUpload {
   /// interrupted 時：雲端工作階段已失效（重試也沒用，只能放棄後重新上傳）。
   final bool sessionExpired;
 
+  /// interrupted 時：手機空間不足，大約需要這麼多可用空間（bytes）才能續傳；清出空間後可重試。
+  final int? storageNeeded;
+
   const ActiveUpload({
     required this.video,
     required this.progress,
     required this.state,
     this.sessionExpired = false,
+    this.storageNeeded,
   });
 
   ActiveUpload copyWith({
     UploadProgress? progress,
     UploadState? state,
     bool sessionExpired = false,
+    int? storageNeeded,
   }) => ActiveUpload(
     video: video,
     progress: progress ?? this.progress,
     state: state ?? this.state,
     sessionExpired: sessionExpired,
+    storageNeeded: storageNeeded,
   );
 }
 
@@ -87,14 +98,23 @@ class VideoUploadManager {
 
   static final VideoUploadManager instance = VideoUploadManager._();
 
-  /// 測試換成接假 http.Client 的上傳器。
+  /// 測試換成接假 http.Client 的上傳器；null 時用預設（手機背景送法，其他平台前景 http）。
   @visibleForTesting
-  static UploaderFactory uploaderFactory = _defaultFactory;
+  static UploaderFactory? uploaderFactory;
 
-  static ResumableUploader _defaultFactory(
+  static ResumableUploader _defaultUploader(
+    AdminVideo video,
     UploadSession session,
     ChunkSource source,
-  ) => ResumableUploader(session, source);
+  ) => ResumableUploader(
+    session,
+    source,
+    transport: backgroundTransportFor(
+      video: video,
+      session: session,
+      source: source,
+    ),
+  );
 
   /// 寫入未完成紀錄時的登入者；測試換掉。
   @visibleForTesting
@@ -129,7 +149,9 @@ class VideoUploadManager {
   }) {
     final current = _active.value;
     if (current != null && isBusy) throw UploadBusy(current.video);
-    _uploader = uploaderFactory(session, source);
+    _uploader =
+        uploaderFactory?.call(session, source) ??
+        _defaultUploader(video, session, source);
     _source = source;
     _active.value = ActiveUpload(
       video: video,
@@ -181,9 +203,11 @@ class VideoUploadManager {
         throw const PendingFileMismatch();
       }
       source = repicked.source;
-      // 原本的暫存複本（如果還在）用不到了。
+      // 原本的暫存複本（如果還在）用不到了。系統背景傳輸可能還開著它在傳（上一次 App 程序排的），
+      // 先取消並等它停下再刪。
       final old = upload.filePath;
       if (upload.temporaryFile && old != null && old != source.path) {
+        await _cancelBackground(upload.videoId);
         await deleteUploadFile(old);
       }
     } else {
@@ -222,6 +246,8 @@ class VideoUploadManager {
     // 先中止請求，再等上傳器真的停下（讀檔結束、關檔）才刪檔，不和進行中的讀取搶。
     uploader?.cancel();
     await subscription?.cancel();
+    // 系統背景傳輸裡還在跑的同一支（包括上一次 App 程序留下的）也取消，免得刪檔後仍被傳完。
+    if (videoId != null) await _cancelBackground(videoId);
     await _discardSource();
   }
 
@@ -249,6 +275,9 @@ class VideoUploadManager {
         _active.value = current.copyWith(
           state: UploadState.interrupted,
           sessionExpired: e is UploadSessionExpired,
+          storageNeeded: e is UploadStorageInsufficient
+              ? e.requiredBytes
+              : null,
         );
         // 工作階段失效就再也接不上了，清掉紀錄（暫存檔等放棄時刪，或下次啟動清孤兒檔）。
         if (e is UploadSessionExpired) {
@@ -267,6 +296,14 @@ class VideoUploadManager {
         _discardSource();
       },
     );
+  }
+
+  Future<void> _cancelBackground(int videoId) async {
+    try {
+      await cancelBackgroundUploads(videoId);
+    } catch (e) {
+      debugPrint('VideoUploadManager: 取消背景上傳失敗（忽略）：$e');
+    }
   }
 
   Future<void> _discardSource() async {
@@ -295,7 +332,7 @@ class VideoUploadManager {
     await cancel();
     // 不等寫入：widget 測試的 fake async 裡排的寫入在 tearDown 不會跑完。
     _pendingWrites = Future.value();
-    uploaderFactory = _defaultFactory;
+    uploaderFactory = null;
     currentUserId = () => UserService.currentUid;
   }
 }

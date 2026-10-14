@@ -14,6 +14,9 @@
     <uses-permission android:name="android.permission.VIBRATE"/>
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30"/>
     <uses-permission android:name="android.permission.BLUETOOTH_CONNECT"/>
+    <!-- 後台影片背景上傳（background_downloader）：Android 14+ 以使用者發起的資料傳輸（UIDT）執行，
+         沒有 WorkManager 的 9 分鐘上限。不用前景服務（dataSync），免得 Play 要求申報前景服務用途。 -->
+    <uses-permission android:name="android.permission.RUN_USER_INITIATED_JOBS"/>
     <!-- Places SDK 自帶定位權限；地圖選點不用 GPS，移除以免 Play 要求申報定位用途。 -->
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" tools:node="remove"/>
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" tools:node="remove"/>
@@ -63,6 +66,21 @@
         <service
             android:name="io.agora.rtc2.extensions.MediaProjectionMgr$LocalScreenSharingService"
             tools:node="remove" />
+        <!-- background_downloader 的 UIDT JobService 自帶 foregroundServiceType="dataSync"。
+             UIDT（Android 14+）用 JobService.setNotification 掛通知，不需要前景服務類型；
+             移除以免 Play 視為宣告 dataSync 前景服務而要求申報。 -->
+        <service
+            android:name="com.bbflight.background_downloader.UIDTJobService"
+            tools:remove="android:foregroundServiceType" />
+        <!-- 背景上傳設了 Config.runInForeground（UIDT 才不會 2 分鐘就被套件中止）。UIDT 排程失敗退回
+             WorkManager 時，套件會呼叫 WorkManager setForeground(dataSync)，由這個服務 startForeground；
+             App 沒有 dataSync 權限、服務也沒宣告 type，會在服務裡出錯，套件接不到。停用它讓 setForeground
+             什麼都不做（啟動停用的服務不會丟例外），App 不開前景服務。App 其他地方沒有用 WorkManager 前景工作。
+             副作用：WorkManager 仍會為這個 worker 拿 partial wakelock 到上傳結束（只在 UIDT 排不進去時發生）。 -->
+        <service
+            android:name="androidx.work.impl.foreground.SystemForegroundService"
+            android:enabled="false"
+            tools:replace="android:enabled" />
     </application>
     <!-- Required to query activities that can process text, see:
          https://developer.android.com/training/package-visibility and

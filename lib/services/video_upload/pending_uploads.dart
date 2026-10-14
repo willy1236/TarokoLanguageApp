@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../models/admin_models.dart';
 import '../../models/video_upload.dart';
+import 'background_upload.dart';
 import 'upload_files.dart';
 
 /// 雲端上傳工作階段的有效期限（GCS resumable 一週）。
@@ -203,6 +204,12 @@ class PendingUploads {
   /// 放棄一支不在傳的：刪紀錄，暫存複本一併刪掉。
   Future<void> discard(PendingUpload upload) async {
     await remove(upload.videoId);
+    // 系統背景傳輸可能還在傳這支（App 被關掉前排的），先取消並等它停下，免得刪檔後仍被傳完。
+    try {
+      await cancelBackgroundUploads(upload.videoId);
+    } catch (e) {
+      debugPrint('PendingUploads: 取消背景上傳失敗（忽略）：$e');
+    }
     final path = upload.filePath;
     if (upload.temporaryFile && path != null) await deleteUploadFile(path);
   }

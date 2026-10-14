@@ -14,6 +14,23 @@ import UIKit
       GMSServices.provideAPIKey(key)
     }
     GeneratedPluginRegistrant.register(with: self)
+    // 後台影片背景上傳從斷點續傳時，系統會先複製剩下的部分；排之前查剩餘空間（lib/services/video_upload/background_upload_io.dart）。
+    if let registrar = registrar(forPlugin: "TrukuStorage") {
+      FlutterMethodChannel(name: "truku/storage", binaryMessenger: registrar.messenger())
+        .setMethodCallHandler { call, result in
+          guard call.method == "freeBytes" else {
+            result(FlutterMethodNotImplemented)
+            return
+          }
+          let values = try? FileManager.default.temporaryDirectory
+            .resourceValues(forKeys: [.volumeAvailableCapacityForImportantUsageKey])
+          if let bytes = values?.volumeAvailableCapacityForImportantUsage {
+            result(NSNumber(value: bytes))
+          } else {
+            result(nil)
+          }
+        }
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 }

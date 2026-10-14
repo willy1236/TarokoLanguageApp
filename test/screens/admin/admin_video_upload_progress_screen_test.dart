@@ -1,5 +1,5 @@
 // 影片上傳進度頁（後台影片 T-04）：進度條與大小、中斷時重試／放棄、工作階段失效只能放棄、
-// 完成提示、離開後從列表上方移除。
+// 完成提示、離開後從列表上方移除；續傳準備中與手機空間不足（後台影片 T-06）。
 
 import 'dart:async';
 import 'dart:typed_data';
@@ -17,6 +17,7 @@ import 'package:flutter_application_1/screens/admin/admin_video_upload_progress_
 import 'package:flutter_application_1/services/video_upload/chunk_source.dart';
 import 'package:flutter_application_1/services/video_upload/pending_uploads.dart';
 import 'package:flutter_application_1/services/video_upload/resumable_uploader.dart';
+import 'package:flutter_application_1/services/video_upload/upload_transport.dart';
 import 'package:flutter_application_1/services/video_upload/video_upload_manager.dart';
 
 import '../../helpers/widget_test_helpers.dart';
@@ -44,6 +45,41 @@ class _FakeSource implements ChunkSource {
 
   @override
   Future<void> discard() async => discarded++;
+}
+
+/// 背景送法的替身：從斷點送時先回報準備中，接著卡在 [gate]；[storageNeeded] 有值時直接丟空間不足。
+class _PreparingTransport implements UploadTransport {
+  final int offset;
+  final int? storageNeeded;
+  final gate = Completer<void>();
+
+  _PreparingTransport({required this.offset, this.storageNeeded});
+
+  @override
+  bool get sendsWholeRemainder => true;
+
+  @override
+  Future<int> query() async => offset;
+
+  @override
+  Future<int?> send(
+    int start,
+    int end, {
+    void Function(int sent)? onProgress,
+    void Function()? onPreparing,
+  }) async {
+    final needed = storageNeeded;
+    if (needed != null) throw UploadStorageInsufficient(needed);
+    onPreparing?.call();
+    await gate.future;
+    return end;
+  }
+
+  @override
+  void cancel() {}
+
+  @override
+  void close() {}
 }
 
 const _video = AdminVideo(
@@ -200,6 +236,50 @@ void main() {
     await tester.pump(const Duration(seconds: 30));
     await tester.pumpAndSettle();
     expect(find.text('上傳完成'), findsOneWidget);
+  });
+
+  void startWith(_PreparingTransport transport, int size) {
+    VideoUploadManager.uploaderFactory = (session, src) =>
+        ResumableUploader(session, src, transport: transport);
+    manager.start(
+      _video,
+      UploadSession(
+        sessionUrl: Uri.parse('https://storage.googleapis.com/u?upload_id=x'),
+        size: size,
+        chunkMultiple: 256 * 1024,
+      ),
+      _FakeSource(size),
+      fileName: 'IMG_0001.MOV',
+    );
+  }
+
+  testWidgets('續傳準備中：顯示「準備續傳中…」，準備完回到上傳中', (tester) async {
+    final transport = _PreparingTransport(offset: 4 * _mb);
+    startWith(transport, 8 * _mb);
+    await open(tester);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('準備續傳中…'), findsOneWidget);
+    expect(find.textContaining('正在準備從中斷的地方接著傳'), findsOneWidget);
+
+    transport.gate.complete();
+    await tester.pumpAndSettle();
+    expect(find.text('上傳完成'), findsOneWidget);
+  });
+
+  testWidgets('手機空間不足：提示需要的空間，可以重試或放棄', (tester) async {
+    startWith(
+      _PreparingTransport(offset: 4 * _mb, storageNeeded: 3 * 1024 * _mb),
+      8 * _mb,
+    );
+    await open(tester);
+    await tester.pumpAndSettle();
+
+    expect(find.text('手機空間不足'), findsOneWidget);
+    expect(find.textContaining('需要約 3.0 GB 才能續傳'), findsOneWidget);
+    expect(find.text('重試'), findsOneWidget);
+    expect(find.text('放棄'), findsOneWidget);
   });
 
   testWidgets('放棄：確認後停止上傳、刪暫存檔並離開；取消確認不動', (tester) async {

@@ -3,6 +3,8 @@
 //
 // 傳送中：進度條、已傳／總大小、剩餘大小；不提供取消（後台影片 T-04 決定）。
 // 網路中斷時上傳器自動重試，這段期間顯示「網路中斷，自動重試中」（後台影片 T-05）。
+// 手機能在背景傳時（iOS、Android 14 以上）提示可以切到別的 App；iOS 從斷點續傳前複製剩下的部分時
+// 顯示「準備續傳中…」，空間不足時提示需要多少空間（後台影片 T-06）。
 // 中斷：「重試」（查雲端已收到多少後接著傳）與「放棄」。工作階段失效時只能放棄。
 // 完成：提示轉檔後會自動上架；離開這頁就把完成的上傳從列表上方移除。
 
@@ -12,6 +14,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_spacing.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/platform/platform_features.dart';
+import '../../services/video_upload/background_upload.dart';
 import '../../services/video_upload/video_upload_manager.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import 'widgets/admin_widgets.dart';
@@ -22,6 +25,13 @@ String formatUploadBytes(int bytes) {
   const gb = 1024 * mb;
   if (bytes >= gb) return '${(bytes / gb).toStringAsFixed(1)} GB';
   return '${(bytes / mb).toStringAsFixed(1)} MB';
+}
+
+/// 位元組顯示成 GB（一位小數，至少 0.1 GB）。
+String formatUploadGigabytes(int bytes) {
+  const gb = 1024 * 1024 * 1024;
+  final value = bytes / gb;
+  return '${(value < 0.1 ? 0.1 : value).toStringAsFixed(1)} GB';
 }
 
 class AdminVideoUploadProgressScreen extends StatefulWidget {
@@ -35,6 +45,17 @@ class AdminVideoUploadProgressScreen extends StatefulWidget {
 class _AdminVideoUploadProgressScreenState
     extends State<AdminVideoUploadProgressScreen> {
   final _manager = VideoUploadManager.instance;
+
+  /// 這台裝置的上傳能在背景繼續（提示文字用）。
+  bool _background = false;
+
+  @override
+  void initState() {
+    super.initState();
+    backgroundUploadSupported().then((supported) {
+      if (mounted && supported) setState(() => _background = true);
+    });
+  }
 
   Future<void> _abandon() async {
     final confirmed = await showConfirmDialog(
@@ -70,7 +91,11 @@ class _AdminVideoUploadProgressScreenState
               )
             : SingleChildScrollView(
                 padding: const EdgeInsets.all(AppSpacing.md),
-                child: _UploadStatusCard(upload: upload, seniorMode: senior),
+                child: _UploadStatusCard(
+                  upload: upload,
+                  background: _background,
+                  seniorMode: senior,
+                ),
               ),
         bottom: (context, senior) => switch (upload?.state) {
           UploadState.interrupted => AdminActionBar(
@@ -107,9 +132,16 @@ class _AdminVideoUploadProgressScreenState
 
 class _UploadStatusCard extends StatelessWidget {
   final ActiveUpload upload;
+
+  /// 上傳能在背景繼續。
+  final bool background;
   final bool seniorMode;
 
-  const _UploadStatusCard({required this.upload, required this.seniorMode});
+  const _UploadStatusCard({
+    required this.upload,
+    required this.background,
+    required this.seniorMode,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -119,7 +151,15 @@ class _UploadStatusCard extends StatelessWidget {
         '網路中斷，自動重試中',
         AppColors.dangerDark,
       ),
+      UploadState.uploading when progress.preparing => (
+        '準備續傳中…',
+        AppColors.goldDeep,
+      ),
       UploadState.uploading => ('上傳中', AppColors.goldDeep),
+      UploadState.interrupted when upload.storageNeeded != null => (
+        '手機空間不足',
+        AppColors.dangerDark,
+      ),
       UploadState.interrupted => ('上傳中斷', AppColors.dangerDark),
       UploadState.done => ('上傳完成', AppColors.moss),
     };
@@ -171,7 +211,7 @@ class _UploadStatusCard extends StatelessWidget {
             ),
           const SizedBox(height: AppSpacing.md),
           Text(
-            _hint(upload),
+            _hint(upload, background: background),
             style: AppTypography.bodyStyle(
               seniorMode: seniorMode,
               color: upload.state == UploadState.interrupted
@@ -184,17 +224,25 @@ class _UploadStatusCard extends StatelessWidget {
     );
   }
 
-  static String _hint(ActiveUpload upload) => switch (upload.state) {
-    UploadState.uploading when upload.progress.retrying =>
-      '網路恢復後會從中斷的地方接著傳；約 10 分鐘內沒有恢復，會停下來讓你按「重試」。',
-    UploadState.uploading =>
-      PlatformFeatures.isMobile
-          ? '可以離開這頁，影片管理列表上方會顯示進度。上傳完成前請讓 App 保持開啟。'
-          : '可以離開這頁，影片管理列表上方會顯示進度。上傳完成前請不要關閉或重新整理這個分頁。',
-    UploadState.interrupted =>
-      upload.sessionExpired
-          ? '上傳連結已失效，請放棄這次上傳，再用「重新上傳」補傳。'
-          : '網路中斷或雲端暫時沒有回應，請確認網路後按「重試」，會從中斷的地方接著傳。',
-    UploadState.done => '上傳完成，轉檔需要幾分鐘，完成後會自動上架。',
-  };
+  static String _hint(ActiveUpload upload, {required bool background}) =>
+      switch (upload.state) {
+        UploadState.uploading when upload.progress.retrying =>
+          '網路恢復後會從中斷的地方接著傳；約 10 分鐘內沒有恢復，會停下來讓你按「重試」。',
+        UploadState.uploading when upload.progress.preparing =>
+          '正在準備從中斷的地方接著傳，檔案較大時需要一點時間，請保持 App 開啟。',
+        UploadState.uploading when background =>
+          '可以離開這頁，也可以切到別的 App 或鎖螢幕，上傳會在背景繼續；影片管理列表上方會顯示進度。',
+        UploadState.uploading =>
+          PlatformFeatures.isMobile
+              ? '可以離開這頁，影片管理列表上方會顯示進度。上傳完成前請讓 App 保持開啟。'
+              : '可以離開這頁，影片管理列表上方會顯示進度。上傳完成前請不要關閉或重新整理這個分頁。',
+        UploadState.interrupted when upload.storageNeeded != null =>
+          '手機空間不足，需要約 ${formatUploadGigabytes(upload.storageNeeded!)} 才能續傳。'
+              '清出空間後按「重試」。',
+        UploadState.interrupted =>
+          upload.sessionExpired
+              ? '上傳連結已失效，請放棄這次上傳，再用「重新上傳」補傳。'
+              : '網路中斷或雲端暫時沒有回應，請確認網路後按「重試」，會從中斷的地方接著傳。',
+        UploadState.done => '上傳完成，轉檔需要幾分鐘，完成後會自動上架。',
+      };
 }
