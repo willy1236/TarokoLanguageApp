@@ -58,6 +58,9 @@ const _sources = <AdminStatusOption>[
   (label: 'YouTube', value: 'youtube'),
 ];
 
+/// 找不到原本的影片檔時的選擇。
+enum _MissingFileChoice { repick, discard }
+
 /// 列尾選單的一個項目；[onSelected] 為 null 時顯示但停用（例如請求進行中）。
 typedef _RowAction = ({String label, VoidCallback? onSelected});
 
@@ -197,19 +200,33 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
       return true;
     } on PendingFileMissing {
       if (!mounted) return false;
-      final repick = await showConfirmDialog(
-        context,
-        title: '找不到原本的影片檔',
-        message:
-            '檔案可能被刪除、搬走或被系統清掉。可以重新選擇同一個檔案'
-            '（${upload.fileName}，${formatUploadBytes(upload.size)}）從中斷的地方接著傳；'
-            '不想傳了就按「放棄」。\n'
-            '放棄後影片會停在「處理中」，超過 6 小時後會在每日維護時標成失敗，'
-            '之後可以用「重新上傳」補傳。',
-        confirmText: '重新選擇檔案',
+      final choice = await showDialog<_MissingFileChoice>(
+        context: context,
+        builder: (context) => AppDialog(
+          title: '找不到原本的影片檔',
+          message:
+              '檔案可能被刪除、搬走或被系統清掉。可以重新選擇同一個檔案'
+              '（${upload.fileName}，${formatUploadBytes(upload.size)}）從中斷的地方接著傳；'
+              '不想傳了就按「放棄」。\n'
+              '放棄後影片會停在「處理中」，超過 6 小時後會在每日維護時標成失敗，'
+              '之後可以用「重新上傳」補傳。',
+          primaryText: '重新選擇檔案',
+          onPrimary: () => Navigator.pop(context, _MissingFileChoice.repick),
+          secondary: [
+            ('放棄', () => Navigator.pop(context, _MissingFileChoice.discard)),
+          ],
+        ),
       );
-      if (!repick || !mounted) return false;
-      return _resumeWithRepick(upload);
+      if (!mounted) return false;
+      switch (choice) {
+        case _MissingFileChoice.repick:
+          return _resumeWithRepick(upload);
+        case _MissingFileChoice.discard:
+          await PendingUploads.instance.discard(upload);
+          return false;
+        case null: // 點外面關掉：維持原樣
+          return false;
+      }
     }
   }
 

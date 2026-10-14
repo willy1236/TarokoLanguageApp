@@ -22,6 +22,7 @@ import 'package:flutter_application_1/screens/admin/admin_video_upload_progress_
 import 'package:flutter_application_1/screens/admin/admin_video_upload_screen.dart';
 import 'package:flutter_application_1/screens/admin/admin_videos_screen.dart';
 import 'package:flutter_application_1/services/category_service.dart';
+import 'package:flutter_application_1/shared/widgets/confirm_dialog.dart';
 import 'package:flutter_application_1/services/user_service.dart';
 import 'package:flutter_application_1/services/video_upload/chunk_source.dart';
 import 'package:flutter_application_1/services/video_upload/pending_uploads.dart';
@@ -505,6 +506,25 @@ void main() {
       expect(find.byType(AdminVideoUploadProgressScreen), findsOneWidget);
       expect(VideoUploadManager.instance.active.value!.video.id, 107);
       await VideoUploadManager.instance.cancel();
+    });
+
+    testWidgets('手機：檔案不見 → 對話框按「放棄」直接清掉這筆', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      stored([record()]);
+      await _open(tester);
+
+      await tester.tap(find.text('繼續上傳'));
+      await tester.pumpAndSettle();
+      expect(find.text('找不到原本的影片檔'), findsOneWidget);
+      await tester.tap(
+        find.descendant(of: find.byType(AppDialog), matching: find.text('放棄')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('找不到原本的影片檔'), findsNothing);
+      expect(find.byKey(const ValueKey('admin-pending-uploads')), findsNothing);
+      expect(pending.items.value, isEmpty);
+      expect(VideoUploadManager.instance.active.value, isNull);
     });
 
     testWidgets('重選的檔案和原本的不同 → 擋下並提示要選哪個檔案', (tester) async {
