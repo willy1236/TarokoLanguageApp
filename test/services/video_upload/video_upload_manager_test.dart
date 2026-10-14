@@ -455,6 +455,29 @@ void main() {
       expect(pending.items.value, isEmpty);
     });
 
+    test('續傳時雲端回報早已收齊（查進度回 200）→ 直接顯示上傳完成，不再送任何段', () async {
+      final requests = <String>[];
+      VideoUploadManager.uploaderFactory = (session, source) =>
+          ResumableUploader(
+            session,
+            source,
+            client: MockClient((request) async {
+              requests.add(request.headers['Content-Range']!);
+              return http.Response('{}', 200);
+            }),
+          );
+      final file = tempFile('1_IMG_0001.MOV', _multiple * 2);
+      await pending.save(record(filePath: file.path));
+
+      await manager.resume(record(filePath: file.path));
+      await waitDone();
+
+      expect(manager.active.value!.state, UploadState.done);
+      expect(manager.active.value!.progress.fraction, 1);
+      expect(requests, ['bytes */${_multiple * 2}']);
+      expect(pending.items.value, isEmpty);
+    });
+
     test('手機續傳：檔案不見或大小不符 → PendingFileMissing，不開始上傳', () async {
       await expectLater(
         manager.resume(record(filePath: '${dir.path}/gone.mov')),
