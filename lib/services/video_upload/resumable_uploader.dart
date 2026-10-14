@@ -1,5 +1,6 @@
 // 雲端可續傳上傳（GCS resumable）的分段上傳器：查進度 → 從斷點一段一段送 → 失敗退避重試。
-// 實際怎麼送（前景 http.Client）交給 [UploadTransport]，協定細節見 upload_transport.dart。
+// 實際怎麼送交給 [UploadTransport]（前景 http.Client 分段，或手機背景一次送完剩下全部），
+// 協定細節見 upload_transport.dart。
 //
 // - 每段（最後一段除外）須為 `chunk_size_multiple`（256KiB）的倍數。
 // - 一次只讀一段、傳一段，記憶體不隨檔案大小成長。
@@ -160,11 +161,51 @@ class ResumableUploader {
           offset = _confirmed = confirmed;
           yield UploadProgress(sent: offset, total: _total);
           while (offset < _total) {
-            final end = offset + chunkSize < _total
-                ? offset + chunkSize
-                : _total;
-            final next = await _transport.send(offset, end);
+            final from = offset;
+            final end =
+                _transport.sendsWholeRemainder || from + chunkSize >= _total
+                ? _total
+                : from + chunkSize;
+            // 送的同時轉發段內進度（背景送法一次送完剩下全部，要靠它更新進度條）。
+            final inRequest = StreamController<int>();
+            final sending = _transport
+                .send(
+                  from,
+                  end,
+                  onProgress: (sent) {
+                    if (!inRequest.isClosed) inRequest.add(sent);
+                  },
+                )
+                .then<_SendResult>(
+                  _SendResult.new,
+                  onError: (Object e, StackTrace st) =>
+                      _SendResult.failed(e, st),
+                )
+                .whenComplete(inRequest.close);
+            // 段內進度只用來顯示；[offset] 仍是雲端確認過的位置（重試、查進度都以它為準）。
+            var shown = from;
+            await for (final sent in inRequest.stream) {
+              if (_cancelled) return;
+              final at = from + sent.clamp(0, end - from);
+              if (at > shown) {
+                shown = at;
+                yield UploadProgress(sent: at, total: _total);
+              }
+            }
+            final result = await sending;
             if (_cancelled) return;
+            result.rethrowIfFailed();
+            var next = result.next;
+            if (next == null) {
+              // 雲端沒說收到多少：查進度。沒有前進就當作中斷，退避後重試。
+              next = await queryOffset();
+              if (_cancelled) return;
+              if (next <= from) {
+                throw UploadInterrupted(
+                  cause: http.ClientException('送出後雲端沒有收到新的資料'),
+                );
+              }
+            }
             offset = _confirmed = next;
             failures = 0;
             failingSince = null;
@@ -225,5 +266,22 @@ class ResumableUploader {
     _transport.cancel();
     final wake = _wake;
     if (wake != null && !wake.isCompleted) wake.complete();
+  }
+}
+
+/// 一次 [UploadTransport.send] 的結果（成功或錯誤），等段內進度轉發完再處理。
+class _SendResult {
+  final int? next;
+  final Object? error;
+  final StackTrace? stackTrace;
+
+  _SendResult(this.next) : error = null, stackTrace = null;
+
+  _SendResult.failed(Object this.error, StackTrace this.stackTrace)
+    : next = null;
+
+  void rethrowIfFailed() {
+    final e = error;
+    if (e != null) Error.throwWithStackTrace(e, stackTrace!);
   }
 }

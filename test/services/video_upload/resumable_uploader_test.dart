@@ -11,6 +11,7 @@ import 'package:http/testing.dart';
 import 'package:flutter_application_1/models/video_upload.dart';
 import 'package:flutter_application_1/services/video_upload/chunk_source.dart';
 import 'package:flutter_application_1/services/video_upload/resumable_uploader.dart';
+import 'package:flutter_application_1/services/video_upload/upload_transport.dart';
 
 const _multiple = 256 * 1024;
 final _url = Uri.parse(
@@ -113,6 +114,59 @@ class _CountingClient extends http.BaseClient {
 
   @override
   void close() => closed++;
+}
+
+/// 假的送法：一次送完剩下全部、段內回報進度，可設定雲端回不回確認位置。
+class _FakeTransport implements UploadTransport {
+  final int size;
+  int received = 0;
+  final sends = <(int, int)>[];
+  int queries = 0;
+
+  /// 送完後回 null（像背景送法讀不到 308 的 Range）。
+  final bool unknownOffset;
+
+  /// 第 n 次送（從 0 起）雲端只收下這麼多位元組。
+  final Map<int, int> partial;
+
+  _FakeTransport(
+    this.size, {
+    this.unknownOffset = false,
+    this.partial = const {},
+  });
+
+  @override
+  bool get sendsWholeRemainder => true;
+
+  @override
+  Future<int?> send(
+    int start,
+    int end, {
+    void Function(int sent)? onProgress,
+  }) async {
+    final index = sends.length;
+    sends.add((start, end));
+    expect(start, received, reason: '要從雲端已收到的位置開始');
+    final keep = partial[index] ?? end - start;
+    for (var sent = 0; sent < keep; sent += 10) {
+      onProgress?.call(sent);
+      await Future<void>.delayed(Duration.zero);
+    }
+    received = start + keep;
+    return unknownOffset ? null : received;
+  }
+
+  @override
+  Future<int> query() async {
+    queries++;
+    return received;
+  }
+
+  @override
+  void cancel() {}
+
+  @override
+  void close() {}
 }
 
 UploadSession _session(int size) =>
@@ -633,5 +687,74 @@ void main() {
     await source.close();
     expect(await source.read(998, 1000), [230, 231]);
     await source.close();
+  });
+
+  group('一次送完剩下全部的送法', () {
+    test('不切段：查進度後送 [斷點, 總大小)，段內進度依序轉發', () async {
+      final transport = _FakeTransport(35);
+      final progress = await ResumableUploader(
+        _session(35),
+        _FakeSource(35),
+        chunkSize: _multiple,
+        transport: transport,
+      ).start().toList();
+
+      expect(transport.sends, [(0, 35)]);
+      expect(progress.map((p) => p.sent), [0, 10, 20, 30, 35]);
+      expect(progress.every((p) => !p.retrying), isTrue);
+    });
+
+    test('雲端沒說收到多少 → 查進度；只收到一部分就從那裡再送剩下的', () async {
+      final transport = _FakeTransport(
+        100,
+        unknownOffset: true,
+        partial: {0: 40},
+      );
+      final progress = await ResumableUploader(
+        _session(100),
+        _FakeSource(100),
+        transport: transport,
+        retryDelays: const [],
+      ).start().toList();
+
+      expect(transport.sends, [(0, 100), (40, 100)]);
+      // 開始前查一次，每次送完各查一次。
+      expect(transport.queries, 3);
+      expect(progress.last.sent, 100);
+    });
+
+    test('送完查進度沒有前進 → 當作中斷，退避後重試', () async {
+      final transport = _FakeTransport(
+        100,
+        unknownOffset: true,
+        partial: {0: 0},
+      );
+      final progress = await ResumableUploader(
+        _session(100),
+        _FakeSource(100),
+        transport: transport,
+        retryDelays: const [Duration.zero],
+      ).start().toList();
+
+      expect(transport.sends, [(0, 100), (0, 100)]);
+      expect(progress.where((p) => p.retrying).map((p) => p.sent), [0]);
+      expect(progress.last.sent, 100);
+    });
+
+    test('沒有前進且不重試 → 丟 UploadInterrupted', () async {
+      await expectLater(
+        ResumableUploader(
+          _session(100),
+          _FakeSource(100),
+          transport: _FakeTransport(
+            100,
+            unknownOffset: true,
+            partial: {0: 0},
+          ),
+          retryDelays: const [],
+        ).start(),
+        emitsThrough(emitsError(isA<UploadInterrupted>())),
+      );
+    });
   });
 }

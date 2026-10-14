@@ -39,11 +39,17 @@ class UploadSessionExpired implements Exception {
 
 /// 送資料到雲端工作階段的方式。一個上傳器用一個，同一時間只會有一個 [send] 或 [query] 在進行。
 abstract class UploadTransport {
-  /// 送 `[start, end)` 這一段。回雲端確認收到的下一個位元組位置（完成時是總大小）。
+  /// true：一次請求就送完剩下的全部（上傳器不切段，送 `[斷點, 總大小)`）；
+  /// false：照上傳器的每段大小一段一段送。
+  bool get sendsWholeRemainder;
+
+  /// 送 `[start, end)` 這一段。回雲端確認收到的下一個位元組位置（完成時是總大小）；
+  /// 回 null 代表雲端沒說收到多少（例如背景送法讀不到 308 的 `Range`），上傳器會再查進度。
+  /// [onProgress]：請求進行中已送出多少位元組（這一段之內，從 0 起），送法提供得到才會呼叫。
   /// 失敗丟 [UploadInterrupted]，工作階段失效丟 [UploadSessionExpired]。
   /// 網路類、換個時間再試可能會好的錯誤，[UploadInterrupted.cause] 是 [http.ClientException]
   /// 或 [TimeoutException]（上傳器據此決定要不要自動重試）。
-  Future<int> send(int start, int end);
+  Future<int?> send(int start, int end, {void Function(int sent)? onProgress});
 
   /// 問雲端已收到多少：回下一個要傳的位元組位置；已完成回總大小。錯誤同 [send]。
   Future<int> query();
@@ -83,7 +89,15 @@ class HttpUploadTransport implements UploadTransport {
   int get _total => session.size;
 
   @override
-  Future<int> send(int start, int end) async {
+  bool get sendsWholeRemainder => false;
+
+  /// 一段一段送，段內不回報進度（[onProgress] 不會被呼叫）。
+  @override
+  Future<int> send(
+    int start,
+    int end, {
+    void Function(int sent)? onProgress,
+  }) async {
     final bytes = await source.read(start, end);
     if (_cancelled) throw const UploadInterrupted(cause: 'cancelled');
     final response = await _put('bytes $start-${end - 1}/$_total', bytes);
