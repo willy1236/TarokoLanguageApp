@@ -751,6 +751,23 @@ class AdminVideo {
   bool get isFailed => status == 'failed';
   bool get isArchived => status == 'archived';
 
+  /// 只換狀態的複本。下架 API 不回影片資料，列表用它就地改成已下架。
+  AdminVideo withStatus(String status) => AdminVideo(
+    id: id,
+    title: title,
+    description: description,
+    category: category,
+    source: source,
+    status: status,
+    failReason: failReason,
+    durationSec: durationSec,
+    thumbnailUrl: thumbnailUrl,
+    youtubeVideoId: youtubeVideoId,
+    embeddable: embeddable,
+    tribeId: tribeId,
+    createdAt: createdAt,
+  );
+
   factory AdminVideo.fromJson(Map<String, dynamic> j) => AdminVideo(
     id: _int(j['id']) ?? 0,
     title: j['title'] as String? ?? '',

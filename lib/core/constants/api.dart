@@ -247,4 +247,5 @@ class ApiConfig {
   static const String adminVideoYouTubePreview =
       '/api/admin/videos/youtube/preview';
   static String adminVideo(int id) => '/api/admin/videos/$id';
+  static String adminVideoArchive(int id) => '/api/admin/videos/$id/archive';
 }

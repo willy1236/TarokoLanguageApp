@@ -381,6 +381,14 @@ class AdminService {
     return AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
   }
 
+  /// 下架影片（沒有 body），回傳檔案是否刪乾淨。自家影片連播放檔、母帶一起刪；
+  /// YouTube 只改狀態，永遠是 true。false＝狀態已是下架但刪檔失敗，
+  /// 再呼叫一次會重試刪檔（已下架的不改狀態、不重複記紀錄）。不存在 404 VIDEO_NOT_FOUND。
+  static Future<bool> archiveVideo(int id) async {
+    final json = await ApiClient.post(ApiConfig.adminVideoArchive(id));
+    return json['files_deleted'] as bool? ?? false;
+  }
+
   // ── 小米幣查帳（內部管理.md §4、§5）唯讀，不寫操作紀錄 ─────────────────
 
   /// 任一使用者的小米幣明細，形狀同使用者自己的明細。
