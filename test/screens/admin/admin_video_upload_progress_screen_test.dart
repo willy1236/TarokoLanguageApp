@@ -177,6 +177,7 @@ void main() {
     await tester.tap(find.text('放棄'));
     await tester.pumpAndSettle();
     expect(find.text('放棄這次上傳？'), findsOneWidget);
+    expect(find.textContaining('超過 6 小時後會在每日維護時標成失敗'), findsOneWidget);
     await tester.tap(find.text('取消'));
     await tester.pumpAndSettle();
     expect(manager.active.value!.state, UploadState.interrupted);

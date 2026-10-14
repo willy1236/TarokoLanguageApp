@@ -39,7 +39,7 @@ class _AdminVideoUploadProgressScreenState
     final confirmed = await showConfirmDialog(
       context,
       title: '放棄這次上傳？',
-      message: '影片會停在「處理中」，6 小時後變成失敗，之後可以用「重新上傳」補傳。',
+      message: '影片會停在「處理中」，超過 6 小時後會在每日維護時標成失敗，之後可以用「重新上傳」補傳。',
       confirmText: '放棄',
     );
     if (!confirmed || !mounted) return;
