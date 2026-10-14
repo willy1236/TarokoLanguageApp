@@ -703,6 +703,85 @@ String adminQuestionReportStatusLabel(String status) => switch (status) {
   _ => status,
 };
 
+// ── 影片管理（內部管理.md §6.2）──────────────────────────────────
+
+/// 後台影片列表的一筆（GET /api/admin/videos），含處理中、失敗、已下架。
+///
+/// 分類只有 value，顯示名稱用 `CategoryService.labelOf(CategoryModule.videos, …)`。
+class AdminVideo {
+  final int id;
+  final String title;
+  final String? description;
+  final String category;
+
+  /// `hls`（自家影片）或 `youtube`。
+  final String source;
+
+  /// `processing`／`ready`／`failed`／`archived`。
+  final String status;
+  final String? failReason;
+  final int? durationSec;
+
+  /// 自家影片轉檔完成前是 null。
+  final String? thumbnailUrl;
+  final String? youtubeVideoId;
+
+  /// 僅 YouTube：擁有者是否允許嵌入。
+  final bool? embeddable;
+  final int? tribeId;
+  final DateTime? createdAt;
+
+  const AdminVideo({
+    required this.id,
+    required this.title,
+    this.description,
+    required this.category,
+    required this.source,
+    required this.status,
+    this.failReason,
+    this.durationSec,
+    this.thumbnailUrl,
+    this.youtubeVideoId,
+    this.embeddable,
+    this.tribeId,
+    this.createdAt,
+  });
+
+  bool get isYouTube => source == 'youtube';
+  bool get isFailed => status == 'failed';
+  bool get isArchived => status == 'archived';
+
+  factory AdminVideo.fromJson(Map<String, dynamic> j) => AdminVideo(
+    id: _int(j['id']) ?? 0,
+    title: j['title'] as String? ?? '',
+    description: j['description'] as String?,
+    category: j['category'] as String? ?? '',
+    source: j['source'] as String? ?? 'hls',
+    status: j['status'] as String? ?? 'processing',
+    failReason: j['fail_reason'] as String?,
+    durationSec: _int(j['duration_sec']),
+    thumbnailUrl: j['thumbnail_url'] as String?,
+    youtubeVideoId: j['youtube_video_id'] as String?,
+    embeddable: j['embeddable'] as bool?,
+    tribeId: _int(j['tribe_id']),
+    createdAt: _date(j['created_at']),
+  );
+}
+
+String adminVideoStatusLabel(String status) => switch (status) {
+  'processing' => '處理中',
+  'ready' => '已上架',
+  'failed' => '失敗',
+  'archived' => '已下架',
+  _ => status,
+};
+
+String adminVideoSourceLabel(String source) => switch (source) {
+  'hls' => '自家',
+  'youtube' => 'YouTube',
+  _ => source,
+};
+
 /// 個人檔案可重設的欄位（後端 `reset_fields`／`fields` 的值與畫面標籤）。
 const adminProfileFields = <({String key, String label})>[
   (key: 'video_nickname', label: '暱稱'),

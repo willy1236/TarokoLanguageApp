@@ -972,6 +972,23 @@ void main() {
         shape: {'announcements': F.list},
       ),
     );
+    // 影片管理（後台影片 T-02）：只錄列表；POST／PATCH／archive 會真的上架、改資料或刪檔。
+    // 全部一支拿各種狀態；另外四支看正式資料有沒有處理中、失敗、下架、YouTube 的影片。
+    adminTest(
+      'GET /api/admin/videos',
+      (_) => _inspectAdminVideos('?limit=50', 'get_api_admin_videos.json'),
+    );
+    for (final filter in [
+      'status=processing',
+      'status=failed',
+      'status=archived',
+      'source=youtube',
+    ]) {
+      adminTest(
+        'GET /api/admin/videos?$filter',
+        (_) => _inspectAdminVideos('?$filter', null),
+      );
+    }
   });
 }
 
@@ -1720,6 +1737,39 @@ const Map<String, F> _articleSummaryOptional = {
 
 /// GET /api/{events,articles,videos}/categories 與 /api/admin/categories/:module 的每一筆
 /// → lib/models/content_category.dart ContentCategory.fromJson（T-21）
+/// GET /api/admin/videos → lib/models/admin_models.dart AdminVideo.fromJson
+Future<void> _inspectAdminVideos(String query, String? fixtureAs) => _inspect(
+  'GET',
+  '${ApiConfig.adminVideos}$query',
+  shape: const {'videos': F.list, 'page_info': F.object},
+  listKey: 'videos',
+  itemShape: const {
+    'id': F.number,
+    'title': F.string,
+    'description': F.string,
+    'category': F.string,
+    'source': F.string,
+    'status': F.string,
+    'fail_reason': F.string,
+    'duration_sec': F.number,
+    'thumbnail_url': F.string,
+    'youtube_video_id': F.string,
+    'embeddable': F.boolean,
+    'tribe_id': F.number,
+    'created_at': F.string,
+  },
+  itemNullable: const {
+    'description',
+    'fail_reason',
+    'duration_sec',
+    'thumbnail_url',
+    'youtube_video_id',
+    'embeddable',
+    'tribe_id',
+  },
+  fixtureAs: fixtureAs,
+);
+
 const Map<String, F> _categoryShape = {
   'value': F.string,
   'label': F.string,

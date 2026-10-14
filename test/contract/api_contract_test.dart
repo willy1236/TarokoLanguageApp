@@ -295,6 +295,14 @@ final List<_Contract> _contracts = [
 
 /// 後台端點一律用 uid 指定使用者，開關開啟後照舊回 uid，不做剝除回放。
 final List<_Contract> _adminContracts = [
+  for (final f in [
+    'get_api_admin_videos.json',
+    'get_api_admin_videos_status_processing.json',
+    'get_api_admin_videos_status_failed.json',
+    'get_api_admin_videos_status_archived.json',
+    'get_api_admin_videos_source_youtube.json',
+  ])
+    _Contract(f, 'AdminVideo', _paged(_each('videos', AdminVideo.fromJson))),
   _Contract(
     'get_api_admin_forum_reports.json',
     'AdminReport',
@@ -415,5 +423,27 @@ void main() {
       return;
     }
     expect(recorded, greaterThan(0));
+  });
+
+  // 正式資料不一定有處理中、失敗、已下架的影片，錄不到的狀態先用規格範例確認解析得了。
+  test('api_spec/get_api_admin_videos.json → AdminVideo（規格範例，各狀態與來源）', () {
+    final json = loadSpecFixtureMap('get_api_admin_videos.json');
+    _paged(_each('videos', AdminVideo.fromJson))(json);
+    final videos = [
+      for (final v in json['videos'] as List<dynamic>)
+        AdminVideo.fromJson(v as Map<String, dynamic>),
+    ];
+    expect(
+      videos.map((v) => v.status).toSet(),
+      containsAll(['processing', 'ready', 'failed', 'archived']),
+    );
+    expect(videos.where((v) => v.isYouTube), isNotEmpty);
+    final failed = videos.firstWhere((v) => v.isFailed);
+    expect(failed.failReason, isNotEmpty);
+    expect(
+      videos.firstWhere((v) => v.status == 'processing').thumbnailUrl,
+      isNull,
+    );
+    expect(videos.firstWhere((v) => v.isYouTube).embeddable, isNotNull);
   });
 }
