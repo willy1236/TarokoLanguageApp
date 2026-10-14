@@ -2,6 +2,7 @@
 // 上傳頁送出後、影片管理列表上方的進度列、重新上傳（後台影片 T-09）都開這頁。
 //
 // 傳送中：進度條、已傳／總大小、剩餘大小；不提供取消（後台影片 T-04 決定）。
+// 網路中斷時上傳器自動重試，這段期間顯示「網路中斷，自動重試中」（後台影片 T-05）。
 // 中斷：「重試」（查雲端已收到多少後接著傳）與「放棄」。工作階段失效時只能放棄。
 // 完成：提示轉檔後會自動上架；離開這頁就把完成的上傳從列表上方移除。
 
@@ -114,6 +115,10 @@ class _UploadStatusCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final progress = upload.progress;
     final (statusText, statusColor) = switch (upload.state) {
+      UploadState.uploading when progress.retrying => (
+        '網路中斷，自動重試中',
+        AppColors.dangerDark,
+      ),
       UploadState.uploading => ('上傳中', AppColors.goldDeep),
       UploadState.interrupted => ('上傳中斷', AppColors.dangerDark),
       UploadState.done => ('上傳完成', AppColors.moss),
@@ -180,6 +185,8 @@ class _UploadStatusCard extends StatelessWidget {
   }
 
   static String _hint(ActiveUpload upload) => switch (upload.state) {
+    UploadState.uploading when upload.progress.retrying =>
+      '網路恢復後會從中斷的地方接著傳；約 10 分鐘內沒有恢復，會停下來讓你按「重試」。',
     UploadState.uploading =>
       PlatformFeatures.isMobile
           ? '可以離開這頁，影片管理列表上方會顯示進度。上傳完成前請讓 App 保持開啟。'

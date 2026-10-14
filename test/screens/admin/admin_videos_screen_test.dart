@@ -96,14 +96,17 @@ class _FakeSource implements ChunkSource {
 }
 
 /// 讓 App 層級上傳服務開始傳一支；雲端照 [respond] 回應（預設卡住不回）。
-void _startUpload({Future<http.Response> Function()? respond}) {
+void _startUpload({
+  Future<http.Response> Function()? respond,
+  List<Duration> retryDelays = const [],
+}) {
   VideoUploadManager.uploaderFactory = (session, source) => ResumableUploader(
     session,
     source,
     client: MockClient(
       (_) => respond?.call() ?? Completer<http.Response>().future,
     ),
-    retryDelays: const [],
+    retryDelays: retryDelays,
   );
   VideoUploadManager.instance.start(
     const AdminVideo(
@@ -345,6 +348,17 @@ void main() {
       _startUpload(respond: () async => http.Response('', 503));
       await _open(tester);
       expect(find.textContaining('上傳中斷，點這裡重試或放棄'), findsOneWidget);
+    });
+
+    testWidgets('網路中斷自動重試中：顯示「網路中斷，自動重試中」', (tester) async {
+      mock((_) => _page([_video(1)], null));
+      _startUpload(
+        respond: () async => http.Response('', 503),
+        retryDelays: const [Duration(minutes: 1)],
+      );
+      await _open(tester);
+      expect(find.textContaining('網路中斷，自動重試中'), findsOneWidget);
+      await VideoUploadManager.instance.cancel();
     });
   });
 

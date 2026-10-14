@@ -345,6 +345,10 @@ class _ActiveUploadBanner extends StatelessWidget {
       if (upload == null) return const SizedBox.shrink();
       final progress = upload.progress;
       final (label, color) = switch (upload.state) {
+        UploadState.uploading when progress.retrying => (
+          '網路中斷，自動重試中',
+          AppColors.dangerDark,
+        ),
         UploadState.uploading => ('上傳中', AppColors.goldDeep),
         UploadState.interrupted => ('上傳中斷，點這裡重試或放棄', AppColors.dangerDark),
         UploadState.done => ('上傳完成，轉檔後會自動上架', AppColors.moss),

@@ -87,7 +87,7 @@ void main() {
   late _Gcs gcs;
   late _FakeSource source;
 
-  void startUpload(int size) {
+  void startUpload(int size, {List<Duration> retryDelays = const []}) {
     gcs = _Gcs(size);
     source = _FakeSource(size);
     VideoUploadManager.uploaderFactory = (session, src) => ResumableUploader(
@@ -95,7 +95,7 @@ void main() {
       src,
       chunkSize: 4 * _mb,
       client: gcs.client,
-      retryDelays: const [], // 中斷就停，測試重試與放棄
+      retryDelays: retryDelays, // 預設中斷就停，測試重試與放棄
     );
     manager.start(
       _video,
@@ -171,6 +171,25 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byType(AdminVideoUploadProgressScreen), findsNothing);
     expect(manager.active.value, isNull, reason: '看過完成畫面就從列表上方移除');
+  });
+
+  testWidgets('網路中斷：顯示自動重試中，網路恢復後自動接著傳完', (tester) async {
+    startUpload(8 * _mb, retryDelays: const [Duration(seconds: 30)]);
+    var offline = true;
+    gcs.respond = (n) => n == 2 && offline ? 503 : null;
+    await open(tester);
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('網路中斷，自動重試中'), findsOneWidget);
+    expect(find.textContaining('網路恢復後會從中斷的地方接著傳'), findsOneWidget);
+    expect(find.text('重試'), findsNothing, reason: '自動重試中不用按');
+    expect(manager.active.value!.state, UploadState.uploading);
+
+    offline = false;
+    await tester.pump(const Duration(seconds: 30));
+    await tester.pumpAndSettle();
+    expect(find.text('上傳完成'), findsOneWidget);
   });
 
   testWidgets('放棄：確認後停止上傳、刪暫存檔並離開；取消確認不動', (tester) async {
