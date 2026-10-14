@@ -138,12 +138,33 @@ void main() {
     expect(p.isExpiredAt(DateTime(2026, 10, 8)), isTrue);
   });
 
-  test('壞掉的紀錄當作沒有', () async {
+  test('整份壞掉：當作沒有，也不清暫存檔', () async {
+    final file = File('${dir.path}/1_a.mov')..writeAsBytesSync([1]);
     SharedPreferences.setMockInitialValues({
       'admin_video_pending_uploads': '{not json',
     });
     store.resetForTest();
     await store.load();
     expect(store.items.value, isEmpty);
+    expect(file.existsSync(), isTrue);
+  });
+
+  test('其中一筆壞掉：其他照常讀出，不清暫存檔；之後寫入保留好的那幾筆', () async {
+    final file = File('${dir.path}/9_unknown.mov')..writeAsBytesSync([1]);
+    SharedPreferences.setMockInitialValues({
+      'admin_video_pending_uploads': jsonEncode([
+        {'video_id': 'oops'},
+        _pending(videoId: 1).toJson(),
+      ]),
+    });
+    store.resetForTest();
+    await store.load();
+    expect(store.items.value.map((p) => p.videoId), [1]);
+    expect(file.existsSync(), isTrue, reason: '壞掉那筆可能用的是這個檔案');
+
+    await store.save(_pending(videoId: 2));
+    store.resetForTest();
+    await store.load();
+    expect(store.items.value.map((p) => p.videoId), [1, 2]);
   });
 }

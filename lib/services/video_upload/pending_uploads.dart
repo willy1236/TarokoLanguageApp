@@ -116,6 +116,9 @@ class PendingUploads {
   Future<void>? _loading;
   bool _cleanedOrphans = false;
 
+  /// 讀取時有紀錄讀不出來（整份或其中幾筆）。
+  bool _readIncomplete = false;
+
   /// 所有未完成的上傳（含其他帳號的；畫面用 [visibleTo] 過濾）。[load] 之前是空的。
   ValueListenable<List<PendingUpload>> get items => _items;
 
@@ -130,6 +133,8 @@ class PendingUploads {
     await _ensureLoaded();
     if (_cleanedOrphans) return;
     _cleanedOrphans = true;
+    // 有紀錄讀不出來時不清：不知道它用哪個檔案，清了可能刪掉還能續傳的暫存檔。
+    if (_readIncomplete) return;
     await deleteOrphanUploadFiles({
       for (final p in _items.value)
         if (p.filePath != null) p.filePath!,
@@ -138,17 +143,24 @@ class PendingUploads {
 
   Future<void> _ensureLoaded() => _loading ??= _read();
 
+  /// 每筆各自解析，壞掉的跳過，不連累其他紀錄。
   Future<void> _read() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final raw = prefs.getString(_prefsKey);
-      if (raw != null) {
-        _items.value = List.unmodifiable([
-          for (final j in jsonDecode(raw) as List)
-            PendingUpload.fromJson(j as Map<String, dynamic>),
-        ]);
+      if (raw == null) return;
+      final items = <PendingUpload>[];
+      for (final j in jsonDecode(raw) as List) {
+        try {
+          items.add(PendingUpload.fromJson(j as Map<String, dynamic>));
+        } catch (e) {
+          _readIncomplete = true;
+          debugPrint('PendingUploads: 跳過讀不出來的未完成上傳：$e');
+        }
       }
+      _items.value = List.unmodifiable(items);
     } catch (e) {
+      _readIncomplete = true;
       debugPrint('PendingUploads: 讀取未完成上傳失敗，當作沒有：$e');
     }
   }
@@ -206,5 +218,6 @@ class PendingUploads {
     _items.value = const [];
     _loading = null;
     _cleanedOrphans = false;
+    _readIncomplete = false;
   }
 }
