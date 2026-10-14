@@ -13,6 +13,7 @@ import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/screens/admin/admin_error.dart';
 import 'package:flutter_application_1/screens/admin/admin_video_upload_screen.dart';
+import 'package:flutter_application_1/screens/admin/widgets/admin_widgets.dart';
 import 'package:flutter_application_1/services/category_service.dart';
 import 'package:flutter_application_1/services/user_service.dart';
 
@@ -303,21 +304,61 @@ void main() {
     expect(titleText(tester), '自己的標題');
   });
 
-  testWidgets('上架時 409 VIDEO_EXISTS：顯示已上架提示，留在上傳頁', (tester) async {
+  testWidgets('上架時 409 VIDEO_EXISTS：提示並把預覽標成已上架，上架鍵停用', (tester) async {
     mock(
       previews: {_zooUrl: _preview()},
-      create: errorResponse('VIDEO_EXISTS', status: 409, message: '這支影片已經上架過'),
+      create: jsonResponse({
+        'error': {
+          'code': 'VIDEO_EXISTS',
+          'message': '這支影片已經上架過',
+          'video_id': 101,
+        },
+      }, status: 409),
     );
     await open(tester);
     await paste(tester, _zooUrl);
     await chooseCategory(tester, '文化紀錄');
+    expect(find.text('這支影片已經上架過'), findsNothing);
     await tester.tap(submitButton());
     await tester.pumpAndSettle();
 
-    expect(find.text('這支影片已經上架過'), findsOneWidget);
+    expect(
+      find.descendant(
+        of: find.byType(AdminCard),
+        matching: find.text('這支影片已經上架過'),
+      ),
+      findsOneWidget,
+      reason: '預覽卡顯示已上架',
+    );
+    expect(find.byType(SnackBar), findsOneWidget);
     expect(find.byType(AdminVideoUploadScreen), findsOneWidget);
     expect(popped, isNull);
-    expect(submitEnabled(tester), isTrue, reason: '解除忙碌狀態');
+    expect(submitEnabled(tester), isFalse);
+    expect(calls(_createPath), hasLength(1));
+  });
+
+  testWidgets('鍵盤整詞輸入不像網址：照樣等停止輸入才預覽', (tester) async {
+    mock();
+    await open(tester);
+    await tester.enterText(urlField(), 'w');
+    await tester.enterText(urlField(), 'watch?v=');
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(calls(_previewPath), isEmpty, reason: '一次多個字但不像網址，不立刻送');
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pumpAndSettle();
+    expect(calls(_previewPath), hasLength(1));
+    expect(jsonDecode(calls(_previewPath).single.body), {'url': 'watch?v='});
+  });
+
+  testWidgets('打到一半再貼上網址的其餘部分：像網址就立刻預覽', (tester) async {
+    mock(previews: {_zooUrl: _preview()});
+    await open(tester);
+    await tester.enterText(urlField(), 'h');
+    await tester.enterText(urlField(), _zooUrl);
+    await tester.pump();
+    expect(calls(_previewPath), hasLength(1));
+    await tester.pumpAndSettle();
+    expect(titleText(tester), 'Me at the zoo');
   });
 
   testWidgets('填新分類：上架後重抓影音分類清單；沒改標題時不送，由後端帶入', (tester) async {
