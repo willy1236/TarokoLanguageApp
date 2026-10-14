@@ -312,5 +312,63 @@ void main() {
       );
       expect(jsonDecode(requests[1].body), {'sort_order': 20});
     });
+
+    test('createCategory：有給 color 才送', () async {
+      final requests = <http.Request>[];
+      installMockClient({
+        '/api/admin/categories/events': jsonResponse({
+          'category': {
+            'value': '打獵',
+            'label': '打獵',
+            'sort_order': 100,
+            'count': 0,
+            'color': '#3D5A3D',
+          },
+        }, status: 201),
+      }, onRequest: requests.add);
+
+      final created = await AdminService.createCategory(
+        CategoryModule.events,
+        '打獵',
+        color: '#3D5A3D',
+      );
+
+      expect(jsonDecode(requests.single.body), {
+        'label': '打獵',
+        'color': '#3D5A3D',
+      });
+      expect(created.color, '#3D5A3D');
+    });
+
+    test('updateCategory：color 設值、clearColor 送 null、都不給不送', () async {
+      final requests = <http.Request>[];
+      installMockClient({
+        '/api/admin/categories/events/%E6%89%93%E7%8D%B5': {
+          'category': {'value': '打獵', 'label': '打獵', 'sort_order': 1},
+        },
+      }, onRequest: requests.add);
+
+      await AdminService.updateCategory(
+        CategoryModule.events,
+        '打獵',
+        color: '#1F3220',
+      );
+      await AdminService.updateCategory(
+        CategoryModule.events,
+        '打獵',
+        clearColor: true,
+      );
+      await AdminService.updateCategory(
+        CategoryModule.events,
+        '打獵',
+        label: '狩獵',
+      );
+
+      expect(jsonDecode(requests[0].body), {'color': '#1F3220'});
+      final cleared = jsonDecode(requests[1].body) as Map<String, dynamic>;
+      expect(cleared, {'color': null});
+      expect(cleared.containsKey('color'), isTrue);
+      expect(jsonDecode(requests[2].body), {'label': '狩獵'});
+    });
   });
 }
