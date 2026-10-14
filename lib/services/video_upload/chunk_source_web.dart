@@ -24,4 +24,7 @@ class WebChunkSource implements ChunkSource {
 
   @override
   Future<void> close() async {}
+
+  @override
+  Future<void> discard() async {}
 }

@@ -12,7 +12,9 @@ import 'chunk_source_io_stub.dart'
 
 abstract class ChunkSource {
   /// 本機檔案路徑（手機）。Web 上沒有 dart:io，呼叫會丟 [UnsupportedError]。
-  factory ChunkSource.io(String path) = platform.IoChunkSource;
+  /// [temporary]：檔案是選檔時複製出來的暫存複本，[discard] 時刪掉。
+  factory ChunkSource.io(String path, {bool temporary}) =
+      platform.IoChunkSource;
 
   /// 檔案總大小（bytes）。
   int get size;
@@ -22,4 +24,7 @@ abstract class ChunkSource {
 
   /// 釋放開著的檔案。之後再 [read] 會重新開檔。
   Future<void> close();
+
+  /// 這支不再上傳（完成或放棄）：關檔，暫存複本一併刪除。
+  Future<void> discard();
 }

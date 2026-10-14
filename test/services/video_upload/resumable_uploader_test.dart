@@ -33,6 +33,9 @@ class _FakeSource implements ChunkSource {
 
   @override
   Future<void> close() async => closed++;
+
+  @override
+  Future<void> discard() async {}
 }
 
 /// 假的雲端：照 GCS 協定收段，[persistLimit] 可讓某次只持久化部分位元組。

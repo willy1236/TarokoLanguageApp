@@ -7,13 +7,15 @@ import 'chunk_source.dart';
 
 class IoChunkSource implements ChunkSource {
   final String path;
+  final bool temporary;
 
   @override
   final int size;
 
   RandomAccessFile? _file;
 
-  IoChunkSource(this.path) : size = File(path).lengthSync();
+  IoChunkSource(this.path, {this.temporary = false})
+    : size = File(path).lengthSync();
 
   @override
   Future<Uint8List> read(int start, int end) async {
@@ -27,5 +29,14 @@ class IoChunkSource implements ChunkSource {
     final file = _file;
     _file = null;
     await file?.close();
+  }
+
+  @override
+  Future<void> discard() async {
+    await close();
+    if (temporary) {
+      final file = File(path);
+      if (await file.exists()) await file.delete();
+    }
   }
 }

@@ -5,7 +5,7 @@ import 'dart:typed_data';
 import 'chunk_source.dart';
 
 class IoChunkSource implements ChunkSource {
-  IoChunkSource(String path) {
+  IoChunkSource(String path, {bool temporary = false}) {
     throw UnsupportedError('ChunkSource.io 只能在手機使用，網頁版請用 pickAdminVideoFile()');
   }
 
@@ -18,4 +18,7 @@ class IoChunkSource implements ChunkSource {
 
   @override
   Future<void> close() async {}
+
+  @override
+  Future<void> discard() async {}
 }
