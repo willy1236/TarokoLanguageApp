@@ -5,6 +5,7 @@
 // 右上角「上傳影片」開上傳頁，上架成功回來重抓第一頁。
 // 列尾選單由之後的功能加項目（編輯、下架、重新上傳），見 _rowActions。
 // 下架回 files_deleted: false 時，「再刪一次檔案」只記在本次畫面（後端沒有欄位記錄）。
+// 失敗的自家影片有「重新上傳」（後台影片 T-09）：送出後該列就地變處理中，狀態已改變就重抓。
 // 上方顯示 App 正在傳的影片檔（VideoUploadManager），點它回進度頁；看過完成畫面後就移除。
 // 再下面是還沒傳完的影片（App 被關掉、網頁重新整理前沒傳完，PendingUploads）：手機按「繼續上傳」
 // 用原本的檔案接著傳，檔案不見時請管理員重選同一個檔案；網頁一律重選，檔名與大小相符才接著傳
@@ -32,6 +33,7 @@ import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import 'admin_error.dart';
 import 'admin_video_edit_screen.dart';
+import 'admin_video_reupload_screen.dart';
 import 'admin_video_upload_progress_screen.dart';
 import 'admin_video_upload_screen.dart';
 import 'widgets/admin_paged_list.dart';
@@ -343,12 +345,32 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
     }
   }
 
+  /// 重新上傳回來：已開始上傳就地換成處理中的那一列；狀態已改變或影片不存在就重抓第一頁。
+  Future<void> _reupload(AdminVideo video) async {
+    final result = await pushAdmin<AdminVideoReuploadResult>(
+      context,
+      AdminVideoReuploadScreen(video: video),
+    );
+    if (!mounted) return;
+    switch (result) {
+      case AdminVideoReuploaded(video: final updated):
+        _list.replace((v) => v.id == updated.id, updated);
+      case AdminVideoReuploadStale():
+        await _list.reload();
+      case null:
+        break;
+    }
+  }
+
   /// 每一列的選單項目；沒有項目時不顯示選單鈕。編輯不分狀態都能用（後端不限制）。
   /// 處理中的影片也能下架（後端不限制）。
   List<_RowAction> _rowActions(AdminVideo video) {
     final busy = _archiving.contains(video.id);
     return [
       (label: '編輯', onSelected: () => _edit(video)),
+      // 後端只讓失敗的自家影片重新上傳（其他回 409 VIDEO_NOT_FAILED）。
+      if (video.isFailed && video.isHls)
+        (label: '重新上傳', onSelected: () => _reupload(video)),
       if (!video.isArchived)
         busy
             ? (label: '下架中…', onSelected: null)

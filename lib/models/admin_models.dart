@@ -748,6 +748,9 @@ class AdminVideo {
   });
 
   bool get isYouTube => source == 'youtube';
+
+  /// 自家影片（上傳的影片檔，轉成 HLS 播放）。
+  bool get isHls => source == 'hls';
   bool get isFailed => status == 'failed';
   bool get isArchived => status == 'archived';
 
