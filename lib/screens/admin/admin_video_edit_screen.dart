@@ -81,7 +81,6 @@ class _AdminVideoEditScreenState extends State<AdminVideoEditScreen> {
         Navigator.of(context).pop(const AdminVideoGone());
         return;
       }
-      if (!mounted) return;
       setState(() => _busy = false);
       handleAdminError(context, e);
     }
