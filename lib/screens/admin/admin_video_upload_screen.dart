@@ -165,6 +165,7 @@ class _AdminVideoUploadScreenState extends State<AdminVideoUploadScreen> {
         created.video,
         created.session,
         picked.source,
+        fileName: picked.info.name,
       );
       // 交給上傳服務了，離開這頁時不能刪。
       _picked = null;

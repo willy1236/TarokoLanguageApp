@@ -8,12 +8,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:flutter_application_1/models/admin_models.dart';
 import 'package:flutter_application_1/models/video_upload.dart';
 import 'package:flutter_application_1/screens/admin/admin_error.dart';
 import 'package:flutter_application_1/screens/admin/admin_video_upload_progress_screen.dart';
 import 'package:flutter_application_1/services/video_upload/chunk_source.dart';
+import 'package:flutter_application_1/services/video_upload/pending_uploads.dart';
 import 'package:flutter_application_1/services/video_upload/resumable_uploader.dart';
 import 'package:flutter_application_1/services/video_upload/video_upload_manager.dart';
 
@@ -108,10 +110,15 @@ void main() {
         chunkMultiple: 256 * 1024,
       ),
       source,
+      fileName: 'IMG_0001.MOV',
     );
   }
 
-  setUp(stubCommonChannels);
+  setUp(() {
+    stubCommonChannels();
+    SharedPreferences.setMockInitialValues({});
+    PendingUploads.instance.resetForTest();
+  });
   tearDown(() => manager.resetForTest());
 
   Future<void> open(WidgetTester tester) async {

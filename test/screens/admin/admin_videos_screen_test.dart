@@ -125,6 +125,7 @@ void _startUpload({
       chunkMultiple: 256 * 1024,
     ),
     _FakeSource(8 * 1024 * 1024),
+    fileName: 'IMG_0001.MOV',
   );
 }
 

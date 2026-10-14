@@ -583,6 +583,7 @@ void main() {
           chunkMultiple: 262144,
         ),
         _FakeSource(1024),
+        fileName: 'IMG_0001.MOV',
       );
       await openFileTab(tester);
       await tester.tap(find.text('從檔案'));
