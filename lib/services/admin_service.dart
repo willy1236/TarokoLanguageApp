@@ -384,11 +384,30 @@ class AdminService {
       ...file.toJson(),
       ...meta.toJson(),
     });
-    return (
-      video: AdminVideo.fromJson(json['video'] as Map<String, dynamic>),
-      session: UploadSession.fromJson(json['upload'] as Map<String, dynamic>),
-    );
+    return _uploadCreated(json);
   }
+
+  /// 失敗（`failed`）的自家影片重新拿上傳網址：影片改回「處理中」，回傳影片與新的雲端上傳工作階段，
+  /// 標題、分類等資訊不變。不是失敗的自家影片 409 VIDEO_NOT_FAILED；不存在 404 VIDEO_NOT_FOUND；
+  /// 檔案錯誤同 [createUploadVideo]；工作階段建不起來 502 UPLOAD_SESSION_FAILED（影片維持失敗）。
+  static Future<({AdminVideo video, UploadSession session})> retryVideo(
+    int id,
+    UploadFileInfo file,
+  ) async {
+    final json = await ApiClient.post(
+      ApiConfig.adminVideoRetry(id),
+      file.toJson(),
+    );
+    return _uploadCreated(json);
+  }
+
+  /// 建立、重新上傳共用的回應 `{ video, upload }`。
+  static ({AdminVideo video, UploadSession session}) _uploadCreated(
+    Map<String, dynamic> json,
+  ) => (
+    video: AdminVideo.fromJson(json['video'] as Map<String, dynamic>),
+    session: UploadSession.fromJson(json['upload'] as Map<String, dynamic>),
+  );
 
   /// 修改影片的標題、說明、分類、部落，回傳修改後的影片。[fields] 只放有改的欄位
   /// （`title`／`description`／`category`／`tribe_id`），說明、部落清除傳 null 值；

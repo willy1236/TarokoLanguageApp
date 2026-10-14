@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 
+import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/models/admin_video_meta.dart';
 import 'package:flutter_application_1/models/content_category.dart';
 import 'package:flutter_application_1/models/video_upload.dart';
@@ -353,6 +354,61 @@ void main() {
       expect(UploadFileInfo.contentTypeOf('IMG_0001.MOV'), 'video/quicktime');
       expect(UploadFileInfo.contentTypeOf('a.webm'), isNull);
       expect(UploadFileInfo.contentTypeOf('mp4'), isNull);
+    });
+  });
+  group('retryVideo', () {
+    test('對 /api/admin/videos/:id/retry 送檔案資訊，解析影片（處理中）與新的上傳工作階段', () async {
+      final fixture = loadSpecFixtureMap('post_api_admin_videos_retry.json');
+      seen = [];
+      installMockClient({
+        '/api/admin/videos/98/retry': jsonResponse(fixture),
+      }, onRequest: seen.add);
+
+      final result = await AdminService.retryVideo(
+        98,
+        const UploadFileInfo(
+          name: 'weaving.mp4',
+          size: 299892736,
+          contentType: 'video/mp4',
+        ),
+      );
+
+      expect(seen.single.method, 'POST');
+      expect(jsonDecode(seen.single.body), {
+        'file_name': 'weaving.mp4',
+        'file_size': 299892736,
+        'content_type': 'video/mp4',
+      });
+      expect(result.video.id, 98);
+      expect(result.video.status, 'processing');
+      expect(result.video.failReason, isNull);
+      expect(result.session.sessionUrl.host, 'storage.googleapis.com');
+      expect(result.session.size, 299892736);
+      expect(result.session.chunkMultiple, 262144);
+    });
+
+    test('不是失敗的自家影片：409 VIDEO_NOT_FAILED 原樣丟出', () async {
+      installMockClient({
+        '/api/admin/videos/98/retry': errorResponse(
+          'VIDEO_NOT_FAILED',
+          status: 409,
+          message: '只有失敗的自家影片可以重新上傳',
+        ),
+      });
+
+      await expectLater(
+        AdminService.retryVideo(
+          98,
+          const UploadFileInfo(
+            name: 'weaving.mp4',
+            size: 1,
+            contentType: 'video/mp4',
+          ),
+        ),
+        throwsA(
+          isA<ApiException>().having((e) => e.code, 'code', 'VIDEO_NOT_FAILED'),
+        ),
+      );
     });
   });
 }

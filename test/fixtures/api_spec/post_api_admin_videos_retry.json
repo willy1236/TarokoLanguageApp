@@ -1,0 +1,5 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §6.2 POST /api/admin/videos/:id/retry（body 同影片檔的 file_name／file_size／content_type）回 200 { video, upload }，形狀同建立；video 欄位取自 backend/routes/admin-videos.ts 的 VIDEO_COLUMNS（L149–150），retry 路由（L313–336）把狀態改回 processing、清掉 fail_reason、original_size_mb 換成新檔大小，upload 取自 uploadInfo（L132–137）。重新上傳會在正式環境改影片狀態並開 GCS 上傳工作階段，不錄製，照實作手寫；session_url 是 GCS resumable 網址的形狀，upload_id 為假值。",
+  "video": { "id": 98, "title": "織布教學", "description": "外婆示範傳統織布", "category": "cultural", "source": "hls", "status": "processing", "fail_reason": null, "duration_sec": null, "thumbnail_url": null, "youtube_video_id": null, "embeddable": null, "tribe_id": 3, "view_count": 0, "like_count": 0, "original_size_mb": 286, "uploaded_by": "admin:20", "published_at": null, "created_at": "2026-10-13T02:00:00.000Z", "updated_at": "2026-10-14T07:30:00.000Z" },
+  "upload": { "session_url": "https://storage.googleapis.com/upload/storage/v1/b/truku-video-private/o?uploadType=resumable&name=uploads%2F1760427000000_98.mp4&upload_id=FAKE_RETRY_UPLOAD_ID", "method": "PUT", "content_type": "video/mp4", "size": 299892736, "chunk_size_multiple": 262144 }
+}

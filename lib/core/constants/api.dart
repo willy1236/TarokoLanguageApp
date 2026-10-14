@@ -248,4 +248,5 @@ class ApiConfig {
       '/api/admin/videos/youtube/preview';
   static String adminVideo(int id) => '/api/admin/videos/$id';
   static String adminVideoArchive(int id) => '/api/admin/videos/$id/archive';
+  static String adminVideoRetry(int id) => '/api/admin/videos/$id/retry';
 }
