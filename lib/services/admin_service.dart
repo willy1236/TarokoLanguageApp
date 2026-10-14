@@ -513,30 +513,43 @@ class AdminService {
   }
 
   /// 新增分類，`value` 由後端設成 [label]。[sortOrder] 不填由後端給預設值。
+  /// [color] 是 `#RRGGBB`，只有活動分類能帶（文章、影音帶了回 400）；null 不送＝App 預設色。
   /// 與既有分類同名回 409 `CATEGORY_EXISTS`。
   static Future<ContentCategory> createCategory(
     CategoryModule m,
     String label, {
     int? sortOrder,
+    String? color,
   }) async {
     final json = await ApiClient.post(ApiConfig.adminCategories(m.name), {
       'label': label.trim(),
       'sort_order': ?sortOrder,
+      'color': ?color,
     });
     return ContentCategory.fromJson(json['category'] as Map<String, dynamic>);
   }
 
-  /// 改顯示名稱或排序，`value` 不變。[value] 可能是中文或含 `/`，放進路徑前先編碼。
+  /// 改顯示名稱、排序或顏色，`value` 不變；null 的欄位不送＝不變。
+  /// 顏色只有活動分類能改：[color] 設成該 `#RRGGBB`，[clearColor] 送 `color: null`
+  /// 清除（App 改用預設色），兩者不可同時給。
+  /// [value] 可能是中文或含 `/`，放進路徑前先編碼。
   /// 改成別的分類的名稱回 409 `CATEGORY_EXISTS`，分類不存在回 404 `CATEGORY_NOT_FOUND`。
   static Future<void> updateCategory(
     CategoryModule m,
     String value, {
     String? label,
     int? sortOrder,
+    String? color,
+    bool clearColor = false,
   }) async {
+    assert(color == null || !clearColor, 'color 與 clearColor 不可同時給');
     await ApiClient.patch(
       '${ApiConfig.adminCategories(m.name)}/${Uri.encodeComponent(value)}',
-      {'label': ?label?.trim(), 'sort_order': ?sortOrder},
+      {
+        'label': ?label?.trim(),
+        'sort_order': ?sortOrder,
+        if (clearColor) 'color': null else 'color': ?color,
+      },
     );
   }
 

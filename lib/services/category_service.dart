@@ -1,9 +1,11 @@
 // 分類清單讀取與名稱對照（T-21）。活動頁、發起頁、文化頁、後台都從這裡拿，
 // 不各自寫死、不各自打 API。
 // 端點：GET /api/{events,articles,videos}/categories（需登入），
-// 回 { categories: [{ value, label, sort_order, count }] }，含 count 0、已排序。
+// 回 { categories: [{ value, label, sort_order, count, color }] }，含 count 0、已排序；
+// color 只有活動分類有。
 
 import 'package:flutter/foundation.dart';
+import 'package:flutter/painting.dart' show Color;
 
 import '../core/network/api_client.dart';
 import '../models/content_category.dart';
@@ -85,6 +87,15 @@ class CategoryService {
       if (fallback != null) return fallback;
     }
     return value;
+  }
+
+  /// 同步取後端設定的分類顏色：只查快取，清單沒抓到、沒這個分類、或沒設顏色都回 null。
+  /// 沒有預設對照：預設色屬於各畫面的視覺，由呼叫端決定。
+  static Color? colorOf(CategoryModule m, String value) {
+    for (final c in _cache[m] ?? const <ContentCategory>[]) {
+      if (c.value == value) return c.displayColor;
+    }
+    return null;
   }
 
   @visibleForTesting

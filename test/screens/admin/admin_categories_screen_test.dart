@@ -1,4 +1,4 @@
-// 分類管理頁：三分頁列出、新增、改名排序、同名與已不存在的處理、送出中不能連點。
+// 分類管理頁：三分頁列出、新增、改名排序、同名與已不存在的處理、送出中不能連點，活動分類選色。
 
 import 'dart:convert';
 
@@ -7,11 +7,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 
+import 'package:flutter_application_1/core/constants/app_colors.dart';
 import 'package:flutter_application_1/core/network/api_client.dart';
 import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/screens/admin/admin_categories_screen.dart';
 import 'package:flutter_application_1/screens/admin/admin_error.dart';
 import 'package:flutter_application_1/screens/admin/admin_home_screen.dart';
+import 'package:flutter_application_1/screens/events/widgets/event_cards.dart';
 import 'package:flutter_application_1/services/category_service.dart';
 
 import '../../helpers/fixtures.dart';
@@ -354,7 +356,224 @@ void main() {
     await tester.pumpAndSettle();
     expect(count('POST', _articles), 1);
   });
+
+  group('活動分類選色', () {
+    /// 活動分類清單：預設色、不在色票裡的色、沒設。
+    final eventList = {
+      'categories': [
+        _eventCat('族語', '#7A1F1A'),
+        _eventCat('打獵', '#123456'),
+        _eventCat('祭儀', null),
+      ],
+    };
+
+    /// 對話框加上選色會變高，拉高視窗讓整個對話框都在畫面內。
+    Future<void> openEvents(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      mock({_events: eventList});
+      await _open(tester);
+      await tester.tap(find.text('活動'));
+      await tester.pumpAndSettle();
+    }
+
+    /// 送出後成功的路由：活動清單、POST／PATCH、前台快取。
+    void respondOk(String method, String path) => _dispatchByMethod(requests, {
+      'GET $_events': eventList,
+      '$method $path': jsonResponse({
+        'category': _eventCat('x', null),
+      }, status: method == 'POST' ? 201 : 200),
+      'GET /api/events/categories': eventList,
+    });
+
+    Finder colorField() => find.widgetWithText(TextField, '色碼（選填）');
+    String colorText(WidgetTester tester) =>
+        tester.widget<TextField>(colorField()).controller!.text;
+    bool isSelected(String swatch) => find
+        .descendant(
+          of: find.byTooltip(swatch),
+          matching: find.byIcon(Icons.check),
+        )
+        .evaluate()
+        .isNotEmpty;
+    Map<String, dynamic> sentBody(String method) =>
+        jsonDecode(requests.singleWhere((r) => r.method == method).body)
+            as Map<String, dynamic>;
+
+    testWidgets('文章分頁的對話框沒有選色；活動分頁有六個色票、不指定與色碼欄', (tester) async {
+      tester.view.physicalSize = const Size(800, 2000);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      mock({_events: eventList});
+      await _open(tester);
+      await tester.tap(find.byTooltip('新增分類'));
+      await tester.pumpAndSettle();
+      expect(colorField(), findsNothing);
+      expect(find.text('不指定（用預設色）'), findsNothing);
+      await tester.tap(find.text('取消'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('活動'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('新增分類'));
+      await tester.pumpAndSettle();
+      for (final name in ['深紅', '暗紅', '苔綠', '深綠', '暗金', '墨褐']) {
+        expect(find.byTooltip(name), findsOneWidget, reason: name);
+      }
+      expect(find.text('不指定（用預設色）'), findsOneWidget);
+      expect(colorField(), findsOneWidget);
+      expect(find.byType(EventDateBox), findsOneWidget, reason: '預覽日期方塊');
+    });
+
+    testWidgets('列表列顯示目前顏色，沒設的標示預設', (tester) async {
+      await openEvents(tester);
+
+      expect(find.text('顏色 #7A1F1A'), findsOneWidget);
+      expect(find.text('顏色 #123456'), findsOneWidget);
+      expect(find.text('顏色 預設'), findsOneWidget);
+    });
+
+    testWidgets('新增：點色票同步色碼欄並送 color，預覽換成該色', (tester) async {
+      await openEvents(tester);
+      respondOk('POST', _events);
+      await tester.tap(find.byTooltip('新增分類'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, '名稱（必填）'), '舞蹈');
+      await tester.tap(find.byTooltip('苔綠'));
+      await tester.pump();
+
+      expect(colorText(tester), '#3D5A3D');
+      expect(isSelected('苔綠'), isTrue);
+      expect(
+        tester.widget<EventDateBox>(find.byType(EventDateBox)).color,
+        AppColors.moss,
+      );
+
+      await tester.tap(find.text('新增'));
+      await tester.pumpAndSettle();
+      expect(sentBody('POST'), {'label': '舞蹈', 'color': '#3D5A3D'});
+    });
+
+    testWidgets('新增：選不指定就不帶 color', (tester) async {
+      await openEvents(tester);
+      respondOk('POST', _events);
+      await tester.tap(find.byTooltip('新增分類'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, '名稱（必填）'), '舞蹈');
+      await tester.tap(find.byTooltip('暗金'));
+      await tester.pump();
+      await tester.tap(find.text('不指定（用預設色）'));
+      await tester.pump();
+      expect(colorText(tester), '');
+
+      await tester.tap(find.text('新增'));
+      await tester.pumpAndSettle();
+      expect(sentBody('POST'), {'label': '舞蹈'});
+    });
+
+    testWidgets('色碼欄輸入小寫的色票色：該色票選中，送出轉大寫', (tester) async {
+      await openEvents(tester);
+      respondOk('POST', _events);
+      await tester.tap(find.byTooltip('新增分類'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, '名稱（必填）'), '舞蹈');
+      await tester.enterText(colorField(), '#8e7234');
+      await tester.pump();
+
+      expect(isSelected('暗金'), isTrue);
+      await tester.tap(find.text('新增'));
+      await tester.pumpAndSettle();
+      expect(sentBody('POST')['color'], '#8E7234');
+    });
+
+    testWidgets('色碼格式不對顯示錯誤、不能送出', (tester) async {
+      await openEvents(tester);
+      await tester.tap(find.byTooltip('新增分類'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.widgetWithText(TextField, '名稱（必填）'), '舞蹈');
+      await tester.enterText(colorField(), '#FFF');
+      await tester.pump();
+
+      expect(find.text('須為 #RRGGBB 格式，例如 #7A1F1A'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextButton>(find.widgetWithText(TextButton, '新增'))
+            .onPressed,
+        isNull,
+      );
+    });
+
+    testWidgets('編輯：改顏色只送 color', (tester) async {
+      await openEvents(tester);
+      respondOk('PATCH', '$_events/${Uri.encodeComponent('族語')}');
+      await tester.tap(find.text('族語'));
+      await tester.pumpAndSettle();
+      expect(isSelected('深紅'), isTrue, reason: '帶出目前顏色');
+
+      await tester.tap(find.byTooltip('深綠'));
+      await tester.pump();
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+      expect(sentBody('PATCH'), {'color': '#1F3220'});
+    });
+
+    testWidgets('編輯：改成不指定送 color: null', (tester) async {
+      await openEvents(tester);
+      respondOk('PATCH', '$_events/${Uri.encodeComponent('族語')}');
+      await tester.tap(find.text('族語'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('不指定（用預設色）'));
+      await tester.pump();
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+
+      final body = sentBody('PATCH');
+      expect(body, {'color': null});
+      expect(body.containsKey('color'), isTrue);
+    });
+
+    testWidgets('編輯：現有顏色不在色票裡，帶進色碼欄；只改名不送 color', (tester) async {
+      await openEvents(tester);
+      respondOk('PATCH', '$_events/${Uri.encodeComponent('打獵')}');
+      await tester.tap(find.text('打獵'));
+      await tester.pumpAndSettle();
+
+      expect(colorText(tester), '#123456');
+      for (final s in ['深紅', '暗紅', '苔綠', '深綠', '暗金', '墨褐']) {
+        expect(isSelected(s), isFalse, reason: s);
+      }
+      await tester.enterText(find.widgetWithText(TextField, '名稱（必填）'), '狩獵');
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+      expect(sentBody('PATCH'), {'label': '狩獵'});
+    });
+
+    testWidgets('編輯：名稱、排序、顏色都沒變直接關閉，不送請求', (tester) async {
+      await openEvents(tester);
+      _dispatchByMethod(requests, {});
+      await tester.tap(find.text('祭儀'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('暗紅'));
+      await tester.pump();
+      await tester.tap(find.text('不指定（用預設色）'));
+      await tester.pump();
+      await tester.tap(find.text('儲存'));
+      await tester.pumpAndSettle();
+
+      expect(requests, isEmpty);
+      expect(find.text('編輯活動分類'), findsNothing);
+    });
+  });
 }
+
+Map<String, Object?> _eventCat(String value, String? color) => {
+  'value': value,
+  'label': value,
+  'sort_order': 10,
+  'count': 1,
+  'color': color,
+};
 
 /// 同一路徑依 method 回不同內容（GET 清單、POST 新增）。key 為 `METHOD path`。
 /// 會清空 [requests] 重新記錄，方便只看這之後送出的請求。
