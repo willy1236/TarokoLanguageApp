@@ -19,6 +19,7 @@ import '../../services/admin_service.dart';
 import '../../services/category_service.dart';
 import '../../shared/utils/utf16_length_limit.dart';
 import 'admin_error.dart';
+import 'admin_video_edit_screen.dart';
 import 'admin_video_upload_screen.dart';
 import 'widgets/admin_paged_list.dart';
 import 'widgets/admin_widgets.dart';
@@ -131,8 +132,28 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
     if ((created ?? false) && mounted) await _list.reload();
   }
 
-  /// 每一列的選單項目；沒有項目時不顯示選單鈕。
-  List<_RowAction> _rowActions(AdminVideo video) => const [];
+  /// 編輯完回來：已更新就地換掉那一列（不再符合篩選也先留著，下拉重整後才消失），
+  /// 影片已不存在就重抓第一頁。
+  Future<void> _edit(AdminVideo video) async {
+    final result = await pushAdmin<AdminVideoEditResult>(
+      context,
+      AdminVideoEditScreen(video: video),
+    );
+    if (!mounted) return;
+    switch (result) {
+      case AdminVideoUpdated(video: final updated):
+        _list.replace((v) => v.id == updated.id, updated);
+      case AdminVideoGone():
+        await _list.reload();
+      case null:
+        break;
+    }
+  }
+
+  /// 每一列的選單項目；沒有項目時不顯示選單鈕。編輯不分狀態都能用（後端不限制）。
+  List<_RowAction> _rowActions(AdminVideo video) => [
+    (label: '編輯', onSelected: () => _edit(video)),
+  ];
 
   @override
   Widget build(BuildContext context) => AdminScaffold(
