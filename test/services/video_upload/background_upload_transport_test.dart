@@ -427,6 +427,34 @@ void main() {
       expect(h.httpTransport.queries, 2);
     });
 
+    test('兩次檢查之間又前進 → 記下新進度繼續等；計時到時在背景就等回前景再查', () async {
+      final h = _Harness();
+      h.httpTransport.offset = 500;
+      final result = h.transport
+          .send(0, 1000)
+          .then<Object?>((v) => v, onError: (Object e) => e);
+      await _settle();
+      final id = h.engine.lastId;
+      h.engine.emit(BackgroundEvent.status(id, BackgroundTaskStatus.running));
+      h.engine.emit(BackgroundEvent.status(id, BackgroundTaskStatus.enqueued));
+      await _settle();
+      expect(h.httpTransport.queries, 1);
+
+      h.httpTransport.offset = 700;
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(h.httpTransport.queries, 2);
+      expect(h.engine.cancelled, isEmpty, reason: '500 → 700 有前進');
+
+      h.foreground.value = false;
+      await Future<void>.delayed(const Duration(milliseconds: 40));
+      expect(h.httpTransport.queries, 2, reason: '在背景不查');
+
+      h.foreground.value = true;
+      expect(await result, retryableInterruption);
+      expect(h.httpTransport.queries, 3);
+      expect(h.engine.cancelled, [id]);
+    });
+
     test('查進度有前進後又開始跑 → 不再檢查', () async {
       final h = _Harness();
       h.httpTransport.offset = 500;
