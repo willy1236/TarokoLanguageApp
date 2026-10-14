@@ -320,6 +320,30 @@ void main() {
     expect(submitEnabled(tester), isTrue, reason: '解除忙碌狀態');
   });
 
+  testWidgets('鍵盤整詞輸入不像網址：照樣等停止輸入才預覽', (tester) async {
+    mock();
+    await open(tester);
+    await tester.enterText(urlField(), 'w');
+    await tester.enterText(urlField(), 'watch?v=');
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(calls(_previewPath), isEmpty, reason: '一次多個字但不像網址，不立刻送');
+    await tester.pump(const Duration(milliseconds: 250));
+    await tester.pumpAndSettle();
+    expect(calls(_previewPath), hasLength(1));
+    expect(jsonDecode(calls(_previewPath).single.body), {'url': 'watch?v='});
+  });
+
+  testWidgets('打到一半再貼上網址的其餘部分：像網址就立刻預覽', (tester) async {
+    mock(previews: {_zooUrl: _preview()});
+    await open(tester);
+    await tester.enterText(urlField(), 'h');
+    await tester.enterText(urlField(), _zooUrl);
+    await tester.pump();
+    expect(calls(_previewPath), hasLength(1));
+    await tester.pumpAndSettle();
+    expect(titleText(tester), 'Me at the zoo');
+  });
+
   testWidgets('填新分類：上架後重抓影音分類清單；沒改標題時不送，由後端帶入', (tester) async {
     mock(previews: {_zooUrl: _preview()});
     await open(tester);

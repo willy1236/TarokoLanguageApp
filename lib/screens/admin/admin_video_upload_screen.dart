@@ -320,10 +320,11 @@ class _YouTubePreviewer extends ChangeNotifier {
   bool get canSubmit =>
       !_loading && _preview != null && !_preview!.alreadyExists;
 
-  /// 輸入框內容變了：一次放進兩個字以上（含選取後貼上取代）視為貼上，立刻預覽；
-  /// 否則等停止輸入。
+  /// 輸入框內容變了：一次放進的內容看起來像網址（含 `http` 或 `youtu`，含選取後貼上取代）
+  /// 視為貼上，立刻預覽；否則等停止輸入。手機鍵盤整詞輸入、選字也會一次放進多個字，
+  /// 只看字數會在網址打到一半時就送預覽。
   void onTextChanged(String text) {
-    final pasted = _insertedLength(_lastText, text) > 1;
+    final pasted = _looksLikeUrl(_inserted(_lastText, text));
     _lastText = text;
     final url = text.trim();
     if (url == _url) return;
@@ -345,8 +346,13 @@ class _YouTubePreviewer extends ChangeNotifier {
     }
   }
 
-  /// [after] 比 [before] 多放進幾個字：去掉前後相同的部分後，[after] 剩下的長度。
-  static int _insertedLength(String before, String after) {
+  static bool _looksLikeUrl(String inserted) {
+    final lower = inserted.toLowerCase();
+    return lower.contains('http') || lower.contains('youtu');
+  }
+
+  /// [after] 比 [before] 多放進的內容：去掉前後相同的部分後，[after] 剩下的那段。
+  static String _inserted(String before, String after) {
     var prefix = 0;
     while (prefix < before.length &&
         prefix < after.length &&
@@ -360,7 +366,7 @@ class _YouTubePreviewer extends ChangeNotifier {
             after[after.length - 1 - suffix]) {
       suffix++;
     }
-    return after.length - prefix - suffix;
+    return after.substring(prefix, after.length - suffix);
   }
 
   /// 按下鍵盤的完成鍵：不等計時器。
