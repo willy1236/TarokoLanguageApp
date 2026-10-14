@@ -110,11 +110,14 @@ class VideoUploadManager {
   /// 放棄目前這一支（只在中斷時由畫面提供）：停止上傳、刪掉 App 暫存的檔案複本。
   /// 後端的影片仍是「處理中」，超過 6 小時由後端標成失敗，可再用重新上傳補救。
   Future<void> cancel() async {
-    _subscription?.cancel();
-    _subscription = null;
-    _uploader?.cancel();
+    final uploader = _uploader;
+    final subscription = _subscription;
     _uploader = null;
+    _subscription = null;
     _active.value = null;
+    // 先中止請求，再等上傳器真的停下（讀檔結束、關檔）才刪檔，不和進行中的讀取搶。
+    uploader?.cancel();
+    await subscription?.cancel();
     await _discardSource();
   }
 
@@ -127,7 +130,8 @@ class VideoUploadManager {
     final uploader = _uploader;
     if (uploader == null) return;
     _subscription?.cancel();
-    _subscription = uploader.start().listen(
+    late final StreamSubscription<UploadProgress> subscription;
+    subscription = _subscription = uploader.start().listen(
       (progress) {
         final current = _active.value;
         if (current != null) {
@@ -144,6 +148,8 @@ class VideoUploadManager {
         );
       },
       onDone: () {
+        // 串流結束（傳完或中斷）就沒有東西可取消了，放棄時不必再等它。
+        if (identical(_subscription, subscription)) _subscription = null;
         final current = _active.value;
         if (current == null || current.state != UploadState.uploading) return;
         if (current.progress.sent < current.progress.total) return;

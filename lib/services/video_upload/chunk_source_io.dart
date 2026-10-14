@@ -34,10 +34,14 @@ class IoChunkSource implements ChunkSource {
 
   @override
   Future<void> discard() async {
-    await close();
-    if (temporary) {
-      final file = File(path);
-      if (await file.exists()) await file.delete();
+    // 關檔失敗（例如還有讀取在進行）也要刪暫存複本，不然 2GB 檔案會留在 App 裡。
+    try {
+      await close();
+    } finally {
+      if (temporary) {
+        final file = File(path);
+        if (await file.exists()) await file.delete();
+      }
     }
   }
 }

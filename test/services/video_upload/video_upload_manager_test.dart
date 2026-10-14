@@ -35,6 +35,29 @@ class _FakeSource implements ChunkSource {
   Future<void> discard() async => discarded++;
 }
 
+/// 讀檔卡在 [gate]，記下刪檔時是否還在讀。
+class _GatedSource extends _FakeSource {
+  final gate = Completer<void>();
+  bool reading = false;
+  bool discardedWhileReading = false;
+
+  _GatedSource(super.size);
+
+  @override
+  Future<Uint8List> read(int start, int end) async {
+    reading = true;
+    await gate.future;
+    reading = false;
+    return Uint8List(end - start);
+  }
+
+  @override
+  Future<void> discard() async {
+    if (reading) discardedWhileReading = true;
+    await super.discard();
+  }
+}
+
 const _video = AdminVideo(
   id: 107,
   title: '部落祭典紀錄',
@@ -196,6 +219,23 @@ void main() {
     await manager.cancel();
     expect(manager.active.value, isNull);
     expect(manager.isBusy, isFalse);
+    expect(source.discarded, 1);
+  });
+
+  test('讀檔進行中放棄：等讀完、關檔後才刪暫存檔', () async {
+    useGcs(_multiple * 2);
+    final source = _GatedSource(_multiple * 2);
+    manager.start(_video, _session(_multiple * 2), source);
+    await settle();
+    expect(source.reading, isTrue, reason: '卡在讀第一段');
+
+    final cancelling = manager.cancel();
+    await Future<void>.delayed(Duration.zero);
+    expect(source.discarded, 0, reason: '讀取還沒結束，不能刪');
+
+    source.gate.complete();
+    await cancelling;
+    expect(source.discardedWhileReading, isFalse);
     expect(source.discarded, 1);
   });
 
