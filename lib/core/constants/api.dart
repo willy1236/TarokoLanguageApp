@@ -137,7 +137,6 @@ class ApiConfig {
   static String forumPostLike(int id) => '/api/forum/posts/$id/like';
   static String forumCommentLike(int id) => '/api/forum/comments/$id/like';
   static const String forumSearch = '/api/forum/search';
-  static const String forumTags = '/api/forum/tags';
   static const String forumReports = '/api/forum/reports';
   // 書籤端點由後端另行補上，前端依規格 §9 的約定先行實作。
   static String forumPostBookmark(int id) => '/api/forum/posts/$id/bookmark';

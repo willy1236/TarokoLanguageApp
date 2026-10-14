@@ -103,14 +103,13 @@ void main() {
     expect(comment.parentCommentId, 5);
   });
 
-  test('createPost 有附圖時走 multipart，標籤以逗號分隔傳遞', () async {
+  test('createPost 有附圖時走 multipart', () async {
     respondWith({'post': postJson()}, status: 201);
 
     await ForumService.createPost(
       boardId: 2,
       title: 't',
       body: 'b',
-      tags: ['族語', '走讀'],
       images: [
         const MultipartFileData(
           field: 'images',
@@ -132,23 +131,15 @@ void main() {
       'name="board_id"\r\n\r\n([^\r]*)',
     ).firstMatch(bodyText);
     expect(boardIdMatch?.group(1), '2');
-    // tags 欄位在 name 與值之間多帶了 content-type / content-transfer-encoding
-    // 標頭列，因此用非貪婪比對跳過剩餘標頭列，直到分隔用的空白行為止。
-    final tagsMatch = RegExp(
-      'name="tags"[\\s\\S]*?\r\n\r\n([^\r]*)',
-    ).firstMatch(bodyText);
-    // multipart 下後端以逗號分隔解析（後端 API 文件 §3.1），不是 JSON。
-    expect(tagsMatch!.group(1), '族語,走讀');
   });
 
-  test('updatePost 只送 title 與 body，不送 tags', () async {
+  test('updatePost 只送 title 與 body', () async {
     respondWith({'post': postJson()});
 
     await ForumService.updatePost(1, title: 't2', body: 'b2');
 
     final body = jsonDecode((seen.single as http.Request).body);
     expect(body, {'title': 't2', 'body': 'b2'});
-    expect(body.containsKey('tags'), isFalse);
     expect(seen.single.method, 'PATCH');
   });
 
