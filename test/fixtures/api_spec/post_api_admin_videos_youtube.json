@@ -1,0 +1,4 @@
+{
+  "_source": "Truku_backend 說明文件/API/內部管理.md §6.2 POST /api/admin/videos（source: youtube）回 201 { video }；欄位取自 backend/routes/admin-videos.ts 的 VIDEO_COLUMNS（L149–150、INSERT … RETURNING L192–207）。上架會寫正式資料，不錄製，照實作手寫；duration_sec 由背景補，剛上架是 null。",
+  "video": { "id": 106, "title": "太魯閣族口簧琴", "description": null, "category": "cultural", "source": "youtube", "status": "ready", "fail_reason": null, "duration_sec": null, "thumbnail_url": "https://i.ytimg.com/vi/jNQXAC9IVRw/hqdefault.jpg", "youtube_video_id": "jNQXAC9IVRw", "embeddable": true, "tribe_id": null, "view_count": 0, "like_count": 0, "original_size_mb": null, "uploaded_by": "admin:20", "published_at": "2026-10-14T03:00:00.000Z", "created_at": "2026-10-14T03:00:00.000Z", "updated_at": "2026-10-14T03:00:00.000Z" }
+}

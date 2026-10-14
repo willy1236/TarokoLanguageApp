@@ -8,6 +8,7 @@
 import '../core/constants/api.dart';
 import '../core/network/api_client.dart';
 import '../models/admin_models.dart';
+import '../models/admin_video_meta.dart';
 import '../models/content_category.dart';
 import '../models/millet_transaction.dart';
 import '../models/page_info.dart';
@@ -343,6 +344,30 @@ class AdminService {
       items: _list(json, 'videos', AdminVideo.fromJson),
       pageInfo: PageInfo.fromResponse(json),
     );
+  }
+
+  /// 貼上 YouTube 網址先預覽：標題、縮圖、能不能嵌入、是否已上架。
+  /// 不是 YouTube 網址 400 INVALID_YOUTUBE_URL；私人或受限 422 YOUTUBE_UNAVAILABLE；
+  /// 不存在 422 YOUTUBE_NOT_FOUND；YouTube 暫時查不到 502 YOUTUBE_CHECK_FAILED。
+  static Future<AdminYouTubePreview> previewYouTube(String url) async {
+    final json = await ApiClient.post(ApiConfig.adminVideoYouTubePreview, {
+      'url': url,
+    });
+    return AdminYouTubePreview.fromJson(json);
+  }
+
+  /// 上架 YouTube 影片，直接是「已上架」。[meta] 沒填標題時後端用 YouTube 的標題。
+  /// 錯誤同 [previewYouTube]，另有已上架 409 VIDEO_EXISTS。
+  static Future<AdminVideo> createYouTubeVideo(
+    String url,
+    AdminVideoMeta meta,
+  ) async {
+    final json = await ApiClient.post(ApiConfig.adminVideos, {
+      'source': 'youtube',
+      'url': url,
+      ...meta.toJson(),
+    });
+    return AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
   }
 
   // ── 小米幣查帳（內部管理.md §4、§5）唯讀，不寫操作紀錄 ─────────────────

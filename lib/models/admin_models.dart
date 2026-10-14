@@ -768,6 +768,41 @@ class AdminVideo {
   );
 }
 
+/// 貼上 YouTube 網址後的預覽（`POST /api/admin/videos/youtube/preview`）。
+/// 私人、不存在、查不到的影片後端直接回錯誤，不會走到這裡。
+class AdminYouTubePreview {
+  final String youtubeVideoId;
+
+  /// 擁有者關閉嵌入時是 null（oEmbed 不給標題），可嵌入時也可能缺。
+  final String? title;
+  final String thumbnailUrl;
+
+  /// false：不允許在 App 內播放，上架後改開 YouTube，標題必須自己填。
+  final bool embeddable;
+
+  /// 已經上架過時是那支影片的 id。
+  final int? existsVideoId;
+
+  const AdminYouTubePreview({
+    required this.youtubeVideoId,
+    this.title,
+    required this.thumbnailUrl,
+    required this.embeddable,
+    this.existsVideoId,
+  });
+
+  bool get alreadyExists => existsVideoId != null;
+
+  factory AdminYouTubePreview.fromJson(Map<String, dynamic> j) =>
+      AdminYouTubePreview(
+        youtubeVideoId: j['youtube_video_id'] as String,
+        title: j['title'] as String?,
+        thumbnailUrl: j['thumbnail_url'] as String? ?? '',
+        embeddable: j['embeddable'] as bool? ?? false,
+        existsVideoId: _int(j['exists_video_id']),
+      );
+}
+
 String adminVideoStatusLabel(String status) => switch (status) {
   'processing' => '處理中',
   'ready' => '已上架',

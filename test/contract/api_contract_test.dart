@@ -303,6 +303,11 @@ final List<_Contract> _adminContracts = [
     'get_api_admin_videos_source_youtube.json',
   ])
     _Contract(f, 'AdminVideo', _paged(_each('videos', AdminVideo.fromJson))),
+  for (final f in [
+    'post_api_admin_videos_youtube_preview.json',
+    'post_api_admin_videos_youtube_preview_new.json',
+  ])
+    _Contract(f, 'AdminYouTubePreview', AdminYouTubePreview.fromJson),
   _Contract(
     'get_api_admin_forum_reports.json',
     'AdminReport',
@@ -424,6 +429,19 @@ void main() {
     }
     expect(recorded, greaterThan(0));
   });
+
+  // 上架 YouTube 會寫正式資料，不錄製，用規格範例確認解析得了。
+  test(
+    'api_spec/post_api_admin_videos_youtube.json → AdminVideo（規格範例，上架 YouTube）',
+    () {
+      final json = loadSpecFixtureMap('post_api_admin_videos_youtube.json');
+      final video = AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
+      expect(video.isYouTube, isTrue);
+      expect(video.status, 'ready');
+      expect(video.youtubeVideoId, isNotEmpty);
+      expect(video.embeddable, isTrue);
+    },
+  );
 
   // 正式資料不一定有處理中、失敗、已下架的影片，錄不到的狀態先用規格範例確認解析得了。
   test('api_spec/get_api_admin_videos.json → AdminVideo（規格範例，各狀態與來源）', () {
