@@ -111,19 +111,9 @@ class ForumPostCard extends StatelessWidget {
               onImageTap: onImageTap,
             ),
           ],
-          // 精簡模式隱藏標籤列：任務8.1「資訊密度也是精簡的一環」，標籤對是否
-          // 點開貼文的判斷幫助不大，卻會多佔一整排視覺雜訊。
           if (post.tribe case final tribe?) ...[
             const SizedBox(height: 8),
             RelatedTribeLabel(name: tribe.name, seniorMode: seniorMode),
-          ],
-          if (post.tags.isNotEmpty && !seniorMode) ...[
-            const SizedBox(height: 10),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [for (final tag in post.tags) _tagChip(tag)],
-            ),
           ],
           const SizedBox(height: 6),
           _footer(seniorMode),
@@ -259,23 +249,6 @@ class ForumPostCard extends StatelessWidget {
           ),
         ),
     ],
-  );
-
-  Widget _tagChip(ForumTag tag) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
-    decoration: BoxDecoration(
-      color: AppColors.primary.withValues(alpha: 0.08),
-      borderRadius: BorderRadius.circular(12),
-    ),
-    child: Text(
-      '#${tag.name}',
-      style: AppTypography.latin(
-        fontStyle: FontStyle.italic,
-        fontSize: AppTypography.caption,
-        color: AppColors.primary,
-        letterSpacing: 1.2,
-      ),
-    ),
   );
 
   Widget _footer(bool seniorMode) => Row(
