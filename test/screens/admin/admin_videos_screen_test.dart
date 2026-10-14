@@ -103,6 +103,7 @@ void _startUpload({Future<http.Response> Function()? respond}) {
     client: MockClient(
       (_) => respond?.call() ?? Completer<http.Response>().future,
     ),
+    retryDelays: const [],
   );
   VideoUploadManager.instance.start(
     const AdminVideo(

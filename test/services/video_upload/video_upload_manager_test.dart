@@ -114,6 +114,7 @@ void main() {
       source,
       chunkSize: _multiple,
       client: gcs.client,
+      retryDelays: const [], // 中斷就停，測試 interrupted
     );
   }
 
@@ -210,6 +211,7 @@ void main() {
       session,
       source,
       client: MockClient((_) async => http.Response('', 503)),
+      retryDelays: const [],
     );
     final source = _FakeSource(_multiple);
     manager.start(_video, _session(_multiple), source);

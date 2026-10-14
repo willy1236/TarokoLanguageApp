@@ -90,8 +90,13 @@ void main() {
   void startUpload(int size) {
     gcs = _Gcs(size);
     source = _FakeSource(size);
-    VideoUploadManager.uploaderFactory = (session, src) =>
-        ResumableUploader(session, src, chunkSize: 4 * _mb, client: gcs.client);
+    VideoUploadManager.uploaderFactory = (session, src) => ResumableUploader(
+      session,
+      src,
+      chunkSize: 4 * _mb,
+      client: gcs.client,
+      retryDelays: const [], // 中斷就停，測試重試與放棄
+    );
     manager.start(
       _video,
       UploadSession(

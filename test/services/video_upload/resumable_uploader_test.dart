@@ -42,6 +42,15 @@ class _FakeSource implements ChunkSource {
   Future<void> discard() async {}
 }
 
+/// 讀檔一定失敗（檔案被刪或搬走）。
+class _BrokenSource extends _FakeSource {
+  _BrokenSource(super.size);
+
+  @override
+  Future<Uint8List> read(int start, int end) async =>
+      throw const FileSystemException('檔案不見了');
+}
+
 /// 假的雲端：照 GCS 協定收段，[persistLimit] 可讓某次只持久化部分位元組。
 class _FakeGcs {
   final int size;
@@ -57,7 +66,10 @@ class _FakeGcs {
 
   _FakeGcs(this.size, {this.partial = const {}, this.failAt = const {}});
 
-  MockClient get client => MockClient((request) async {
+  MockClient get client => MockClient(handle);
+
+  /// 收一個請求並照 GCS 協定回應（測試可以在前面插入失敗）。
+  Future<http.Response> handle(http.Request request) async {
     final index = requests.length;
     requests.add(request);
     final forced = failAt[index];
@@ -73,7 +85,7 @@ class _FakeGcs {
     final keep = partial[_chunkIndex++];
     received = keep == null ? end : start + keep;
     return _status();
-  });
+  }
 
   http.Response _status() {
     if (received >= size) return http.Response('{}', 200);
@@ -144,6 +156,7 @@ void main() {
       _FakeSource(size),
       chunkSize: _multiple,
       client: client,
+      retryDelays: const [],
     );
     await expectLater(uploader.start().drain<void>(), throwsA(anything));
     expect(client.closed, 0);
@@ -261,7 +274,7 @@ void main() {
     });
   });
 
-  test('上傳中雲端回 503 → 串流丟 UploadInterrupted，重新 start 從已收到處接著傳', () async {
+  test('不自動重試時，上傳中雲端回 503 → 串流丟 UploadInterrupted，重新 start 從已收到處接著傳', () async {
     final size = _multiple * 4;
     // 請求序號：0 查進度、1 第一段、2 第二段（失敗）
     final gcs = _FakeGcs(size, failAt: {2: 503});
@@ -271,6 +284,7 @@ void main() {
       source,
       chunkSize: _multiple * 2,
       client: gcs.client,
+      retryDelays: const [],
     );
 
     await expectLater(
@@ -296,6 +310,7 @@ void main() {
       _session(100),
       _FakeSource(100),
       client: MockClient((_) async => throw http.ClientException('offline')),
+      retryDelays: const [],
     );
     await expectLater(
       uploader.start(),
@@ -314,6 +329,7 @@ void main() {
       _session(100),
       _FakeSource(100),
       requestTimeout: const Duration(milliseconds: 20),
+      retryDelays: const [],
       client: MockClient((_) => Completer<http.Response>().future),
     );
     await expectLater(
@@ -340,6 +356,145 @@ void main() {
     uploader.cancel();
     expect(await done, isEmpty);
     expect(source.closed, 1);
+  });
+
+  group('自動重試', () {
+    const fast = [Duration.zero, Duration.zero, Duration.zero];
+
+    test('網路錯誤、5xx 時送 retrying 進度，查進度後從雲端已收到處接著傳完', () async {
+      final size = _multiple * 4;
+      // 請求序號：0 查進度、1 第一段、2 第二段（網路錯誤）、3 查進度（503）、4 查進度、5 第二段
+      var index = 0;
+      final gcs = _FakeGcs(size);
+      final client = MockClient((request) async {
+        final n = index++;
+        if (n == 2) throw http.ClientException('offline');
+        if (n == 3) return http.Response('', 503);
+        return gcs.handle(request);
+      });
+      final progress = await ResumableUploader(
+        _session(size),
+        _FakeSource(size),
+        chunkSize: _multiple * 2,
+        client: client,
+        retryDelays: fast,
+      ).start().toList();
+
+      expect(progress, [
+        UploadProgress(sent: 0, total: size),
+        UploadProgress(sent: _multiple * 2, total: size),
+        UploadProgress(sent: _multiple * 2, total: size, retrying: true),
+        UploadProgress(sent: _multiple * 2, total: size, retrying: true),
+        UploadProgress(sent: _multiple * 2, total: size),
+        UploadProgress(sent: size, total: size),
+      ]);
+      expect(gcs.received, size);
+    });
+
+    test('傳成功一段就重新計算重試次數；連續失敗用完才丟 UploadInterrupted', () async {
+      final size = _multiple * 3;
+      var index = 0;
+      final gcs = _FakeGcs(size);
+      // 每段之間都連續失敗兩次（上限 3 次），累計 6 次仍傳得完。
+      final client = MockClient((request) async {
+        final n = index++;
+        if (n % 4 == 1 || n % 4 == 2) return http.Response('', 503);
+        return gcs.handle(request);
+      });
+      final progress = await ResumableUploader(
+        _session(size),
+        _FakeSource(size),
+        chunkSize: _multiple,
+        client: client,
+        retryDelays: fast,
+      ).start().toList();
+      expect(progress.last.sent, size);
+      expect(progress.where((p) => p.retrying), hasLength(6));
+
+      var requests = 0;
+      await expectLater(
+        ResumableUploader(
+          _session(size),
+          _FakeSource(size),
+          client: MockClient((_) async {
+            requests++;
+            return http.Response('', 503);
+          }),
+          retryDelays: fast,
+        ).start().where((p) => !p.retrying),
+        emitsError(isA<UploadInterrupted>()),
+      );
+      expect(requests, 4, reason: '第一次＋重試 3 次');
+    });
+
+    test('404／410、其他 4xx、讀檔失敗不重試', () async {
+      for (final (status, matcher) in [
+        (404, isA<UploadSessionExpired>()),
+        (400, isA<UploadInterrupted>()),
+      ]) {
+        var requests = 0;
+        await expectLater(
+          ResumableUploader(
+            _session(100),
+            _FakeSource(100),
+            client: MockClient((_) async {
+              requests++;
+              return http.Response('', status);
+            }),
+            retryDelays: fast,
+          ).start(),
+          emitsError(matcher),
+        );
+        expect(requests, 1, reason: '$status 不重試');
+      }
+
+      var requests = 0;
+      await expectLater(
+        ResumableUploader(
+          _session(_multiple),
+          _BrokenSource(_multiple),
+          client: MockClient((_) async {
+            requests++;
+            return http.Response('', 308);
+          }),
+          retryDelays: fast,
+        ).start(),
+        emitsInOrder([
+          isA<UploadProgress>(),
+          emitsError(isA<UploadInterrupted>()),
+        ]),
+      );
+      expect(requests, 1, reason: '只查了一次進度');
+    });
+
+    test('等待重試時 cancel → 立刻安靜結束', () async {
+      final uploader = ResumableUploader(
+        _session(100),
+        _FakeSource(100),
+        client: MockClient((_) async => http.Response('', 503)),
+        retryDelays: const [Duration(hours: 1)],
+      );
+      final events = <UploadProgress>[];
+      final done = uploader.start().forEach(events.add);
+      await pumpEventQueue();
+      expect(events.single.retrying, isTrue);
+      uploader.cancel();
+      await done;
+    });
+
+    test('預設重試間隔：1、2、4、8、16 秒後每 30 秒，合計約 10 分鐘', () {
+      final delays = ResumableUploader.defaultRetryDelays;
+      expect(delays.take(6), const [
+        Duration(seconds: 1),
+        Duration(seconds: 2),
+        Duration(seconds: 4),
+        Duration(seconds: 8),
+        Duration(seconds: 16),
+        Duration(seconds: 30),
+      ]);
+      final total = delays.fold(Duration.zero, (a, b) => a + b);
+      expect(total.inMinutes, 10);
+    });
   });
 
   test('ChunkSource.io 依位移讀檔案的一段', () async {

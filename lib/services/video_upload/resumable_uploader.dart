@@ -9,6 +9,9 @@
 // - 一次只讀一段、傳一段，記憶體不隨檔案大小成長。
 //
 // 用獨立的 http.Client，不經 ApiClient：目標是雲端網址，不能帶 App 的 token。
+// 網路錯誤、逾時、雲端 5xx／408／429 時自動退避重試（[ResumableUploader.retryDelays]，
+// 預設 1、2、4、8、16 秒後每 30 秒一次，合計約 10 分鐘），每次重試都先查進度再接著傳；
+// 有一段傳成功就重新計算。重試用完才丟 [UploadInterrupted]。
 // 每個請求有逾時（[ResumableUploader.requestTimeout]）：手機切網路時連線可能不報錯也不回應，
 // 逾時就中止請求、丟 [UploadInterrupted]，不會一直卡在上傳中。
 // 不要改 followRedirects：網頁版 fetch 設成 false 會把 308 當網路錯誤；
@@ -26,7 +29,14 @@ class UploadProgress {
   final int sent;
   final int total;
 
-  const UploadProgress({required this.sent, required this.total});
+  /// 網路中斷，正在等待自動重試（[sent] 是中斷前雲端確認收到的位置）。
+  final bool retrying;
+
+  const UploadProgress({
+    required this.sent,
+    required this.total,
+    this.retrying = false,
+  });
 
   int get remaining => total - sent;
 
@@ -35,13 +45,17 @@ class UploadProgress {
 
   @override
   bool operator ==(Object other) =>
-      other is UploadProgress && other.sent == sent && other.total == total;
+      other is UploadProgress &&
+      other.sent == sent &&
+      other.total == total &&
+      other.retrying == retrying;
 
   @override
-  int get hashCode => Object.hash(sent, total);
+  int get hashCode => Object.hash(sent, total, retrying);
 
   @override
-  String toString() => 'UploadProgress($sent/$total)';
+  String toString() =>
+      'UploadProgress($sent/$total${retrying ? ', retrying' : ''})';
 }
 
 /// 上傳中斷（網路錯誤、雲端回非預期狀態碼）。同一個工作階段可以 [ResumableUploader.queryOffset] 後接著傳。
@@ -70,6 +84,12 @@ class ResumableUploader {
   /// 預設每個請求最多等 2 分鐘（8MiB 在約 0.5Mbps 的慢速網路也傳得完）。
   static const defaultRequestTimeout = Duration(minutes: 2);
 
+  /// 預設的自動重試間隔：1、2、4、8、16 秒，之後每 30 秒，合計約 10 分鐘。
+  static final List<Duration> defaultRetryDelays = List.unmodifiable([
+    for (final seconds in [1, 2, 4, 8, 16]) Duration(seconds: seconds),
+    for (var i = 0; i < 19; i++) const Duration(seconds: 30),
+  ]);
+
   final UploadSession session;
   final ChunkSource source;
 
@@ -79,19 +99,27 @@ class ResumableUploader {
   /// 一個請求（送出一段到收到回應）最多等多久，超過就中止、丟 [UploadInterrupted]。
   final Duration requestTimeout;
 
+  /// 連續失敗時第 n 次重試前等多久；用完就丟 [UploadInterrupted]。空清單＝不自動重試。
+  final List<Duration> retryDelays;
+
   final http.Client _client;
   bool _cancelled = false;
 
   /// 進行中的請求：[cancel] 時立刻中止並讓它以錯誤結束。
   void Function()? _stopRequest;
 
+  /// 重試等待中：[cancel] 時提早叫醒。
+  Completer<void>? _wake;
+
   ResumableUploader(
     this.session,
     this.source, {
     int chunkSize = defaultChunkSize,
     this.requestTimeout = defaultRequestTimeout,
+    List<Duration>? retryDelays,
     http.Client? client,
   }) : chunkSize = _alignChunk(chunkSize, session.chunkMultiple),
+       retryDelays = retryDelays ?? defaultRetryDelays,
        _client = client ?? http.Client();
 
   static int _alignChunk(int size, int multiple) {
@@ -103,31 +131,73 @@ class ResumableUploader {
   int get _total => session.size;
 
   /// 從雲端已收到的位置接著傳到完成。先查進度再傳，所以中斷後重新呼叫即是續傳。
-  /// 每傳完一段送一次進度；完成時關閉串流並關掉 http.Client（之後不能再用）。失敗丟 [UploadInterrupted]／[UploadSessionExpired]；
-  /// [cancel] 後安靜關閉。
+  /// 每傳完一段送一次進度；網路中斷時送 `retrying: true` 的進度並自動重試。
+  /// 完成時關閉串流並關掉 http.Client（之後不能再用）。重試用完丟 [UploadInterrupted]，
+  /// 工作階段失效丟 [UploadSessionExpired]；[cancel] 後安靜關閉。
   Stream<UploadProgress> start() async* {
+    var offset = 0;
+    var failures = 0;
     try {
-      var offset = await queryOffset();
-      if (_cancelled) return;
-      yield UploadProgress(sent: offset, total: _total);
-      while (offset < _total) {
-        final end = offset + chunkSize < _total ? offset + chunkSize : _total;
-        final bytes = await source.read(offset, end);
-        if (_cancelled) return;
-        final response = await _put('bytes $offset-${end - 1}/$_total', bytes);
-        if (_cancelled) return;
-        offset = _offsetFrom(response);
-        yield UploadProgress(sent: offset, total: _total);
+      while (true) {
+        try {
+          offset = await queryOffset();
+          if (_cancelled) return;
+          yield UploadProgress(sent: offset, total: _total);
+          while (offset < _total) {
+            final end = offset + chunkSize < _total
+                ? offset + chunkSize
+                : _total;
+            final bytes = await source.read(offset, end);
+            if (_cancelled) return;
+            final response = await _put(
+              'bytes $offset-${end - 1}/$_total',
+              bytes,
+            );
+            if (_cancelled) return;
+            offset = _offsetFrom(response);
+            failures = 0;
+            yield UploadProgress(sent: offset, total: _total);
+          }
+          // 傳完了，這個上傳器不會再送請求，釋放連線。
+          _client.close();
+          return;
+        } catch (e) {
+          if (_cancelled) return;
+          if (e is UploadSessionExpired) rethrow;
+          final interrupted = e is UploadInterrupted
+              ? e
+              : UploadInterrupted(cause: e);
+          if (!_retryable(interrupted) || failures >= retryDelays.length) {
+            throw interrupted;
+          }
+          yield UploadProgress(sent: offset, total: _total, retrying: true);
+          await _sleep(retryDelays[failures++]);
+          if (_cancelled) return;
+        }
       }
-      // 傳完了，這個上傳器不會再送請求，釋放連線。
-      _client.close();
-    } catch (e) {
-      if (_cancelled) return;
-      if (e is UploadInterrupted || e is UploadSessionExpired) rethrow;
-      throw UploadInterrupted(cause: e);
     } finally {
       await source.close();
     }
+  }
+
+  /// 換個時間再試可能會好的錯誤：網路錯誤、逾時、雲端 5xx／408／429。
+  /// 讀檔失敗（檔案被刪）、其他 4xx、看不懂的回應不重試。
+  static bool _retryable(UploadInterrupted e) {
+    final status = e.statusCode;
+    if (status != null) return status >= 500 || status == 408 || status == 429;
+    final cause = e.cause;
+    return cause is http.ClientException || cause is TimeoutException;
+  }
+
+  Future<void> _sleep(Duration delay) {
+    final wake = _wake = Completer<void>();
+    final timer = Timer(delay, () {
+      if (!wake.isCompleted) wake.complete();
+    });
+    return wake.future.whenComplete(() {
+      timer.cancel();
+      _wake = null;
+    });
   }
 
   /// 問雲端已收到多少：回下一個要傳的位元組位置；已完成回總大小。
@@ -149,6 +219,8 @@ class ResumableUploader {
   void cancel() {
     _cancelled = true;
     _stopRequest?.call();
+    final wake = _wake;
+    if (wake != null && !wake.isCompleted) wake.complete();
     _client.close();
   }
 
