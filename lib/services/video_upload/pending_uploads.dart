@@ -66,6 +66,9 @@ class PendingUpload {
   bool isExpiredAt(DateTime now) =>
       now.difference(createdAt) >= uploadSessionLifetime;
 
+  /// 存進本機的內容。`session_url` 本身就是寫入權限（GCS resumable 的網址帶著憑證，
+  /// 拿到就能對這支影片的上傳寫入，一週後失效）；有意存放，續傳少不了它，
+  /// 且只存在這台裝置的 App 資料（網頁版是這個網域的 localStorage）。
   Map<String, Object?> toJson() => {
     'user_id': userId,
     'video_id': videoId,
@@ -129,6 +132,9 @@ class PendingUploads {
   /// 讀出本機紀錄（只讀一次）。App 啟動後第一次由畫面呼叫時，順便刪掉上傳暫存目錄裡
   /// 沒有紀錄的檔案（App 在選檔後、送出前被關掉留下的）。上傳服務寫紀錄時只讀不清，
   /// 免得清掉正要寫進紀錄的檔案。
+  ///
+  /// 前提：影片管理是選檔與上傳的唯一入口，它第一次呼叫這裡時，這次啟動還沒有任何
+  /// 選好但未寫進紀錄的檔案。T-06 若讓背景工作在 App 啟動時就接手上傳，要重新檢查這個前提。
   Future<void> load() async {
     await _ensureLoaded();
     if (_cleanedOrphans) return;
