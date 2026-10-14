@@ -595,6 +595,41 @@ void main() {
       await VideoUploadManager.instance.cancel();
     });
 
+    testWidgets('選好檔後才有別支開始上傳：送出時擋下，不建立影片（免得建好處理中卻沒人傳）', (tester) async {
+      mock(create: loadSpecFixtureMap('post_api_admin_videos_upload.json'));
+      fakePicker();
+      await openFileTab(tester);
+      await tester.tap(find.text('從相簿'));
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(TextField).first, '部落祭典紀錄');
+      await chooseCategory(tester, '文化紀錄');
+      VideoUploadManager.instance.start(
+        const AdminVideo(
+          id: 99,
+          title: '上一支',
+          category: 'cultural',
+          source: 'hls',
+          status: 'processing',
+        ),
+        UploadSession(
+          sessionUrl: Uri.parse('https://storage.googleapis.com/u'),
+          size: 1024,
+          chunkMultiple: 262144,
+        ),
+        _FakeSource(1024),
+        fileName: 'other.mp4',
+      );
+      await tester.tap(uploadButton());
+      await tester.pumpAndSettle();
+
+      expect(calls(_createPath), isEmpty);
+      expect(find.text('已有一支影片正在上傳，請等它傳完再上傳下一支'), findsOneWidget);
+      expect(find.byType(AdminVideoUploadScreen), findsOneWidget);
+      expect(source.discarded, 0, reason: '還在這頁，選好的檔案留著');
+      // 雲端卡住不回：停掉上傳，請求逾時的計時器才不會留到測試結束。
+      await VideoUploadManager.instance.cancel();
+    });
+
     for (final (code, status, message) in [
       ('UPLOAD_SESSION_FAILED', 502, '暫時無法建立上傳，請稍後再試'),
       ('UNSUPPORTED_VIDEO_TYPE', 400, '只能上傳 mp4、mov 影片檔'),
