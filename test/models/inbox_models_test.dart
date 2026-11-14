@@ -106,17 +106,9 @@ void main() {
     });
 
     test('活動已刪除／下架：看 kind 或 target_state，不開頁', () {
-      String message(String kind, String state) =>
-          (inboxTargetFor(
-                    _item(
-                      category: 'event',
-                      kind: kind,
-                      eventId: 55,
-                      targetState: state,
-                    ),
-                  )
-                  as InboxGone)
-              .message;
+      String message(String kind, String state) => (inboxTargetFor(
+        _item(category: 'event', kind: kind, eventId: 55, targetState: state),
+      ) as InboxGone).message;
 
       expect(message('event_deleted', 'deleted'), '該活動已被刪除');
       expect(message('event_removed', 'removed'), '該活動已被下架');

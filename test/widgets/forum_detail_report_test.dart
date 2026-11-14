@@ -95,9 +95,8 @@ Future<void> _openDetail(WidgetTester tester, List<Object?> popped) async {
           body: TextButton(
             onPressed: () async {
               popped.add(
-                await Navigator.of(
-                  context,
-                ).push(ForumDetailScreen.route(postId: _postId)),
+                await Navigator.of(context)
+                    .push(ForumDetailScreen.route(postId: _postId)),
               );
             },
             child: const Text('開貼文'),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import 'truku_painters.dart';
 import '../../core/constants/app_typography.dart';

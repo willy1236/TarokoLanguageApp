@@ -7,10 +7,12 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
+
 import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
+
 import '../constants/api.dart';
 import '../utils/date_format.dart';
 import '../../main.dart';
@@ -166,9 +168,8 @@ class ApiClient {
     Map<String, String>? query,
   }) async {
     final token = await AuthService.currentToken();
-    final uri = Uri.parse(
-      ApiConfig.baseUrl + path,
-    ).replace(queryParameters: query);
+    final uri = Uri.parse(ApiConfig.baseUrl + path)
+        .replace(queryParameters: query);
     final resp = await _sendGet(uri, token);
     return _handle(resp);
   }

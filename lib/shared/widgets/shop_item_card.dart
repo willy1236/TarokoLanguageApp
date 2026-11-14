@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import 'millet_coin_icon.dart';
 import 'pressable.dart';
@@ -294,9 +295,8 @@ class ShopItemGrid extends StatelessWidget {
         final columns = fit < _minColumns ? _minColumns : fit;
         final cellWidth = (constraints.maxWidth - 8 * (columns - 1)) / columns;
         // 窄螢幕時等比例高度塞不下圖示＋名稱＋價格＋按鈕，保底一個內容高度。
-        final minExtent = MediaQuery.textScalerOf(
-          context,
-        ).scale(_minCellHeight);
+        final minExtent = MediaQuery.textScalerOf(context)
+            .scale(_minCellHeight);
         final ratioExtent = cellWidth / 0.66;
         return GridView(
           shrinkWrap: true,

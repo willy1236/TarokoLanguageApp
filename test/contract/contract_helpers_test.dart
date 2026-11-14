@@ -119,17 +119,15 @@ void main() {
 
   group('maskPii', () {
     test('遮罩個資但保留型別與結構', () {
-      final masked =
-          maskPii({
-                'uid': 7,
-                'email': 'real@gmail.com',
-                'display_name': '真實姓名',
-                'friend_code': 'ABCD1234',
-                'nested': [
-                  {'email': 'other@gmail.com', 'keep': 'ok'},
-                ],
-              })
-              as Map<String, dynamic>;
+      final masked = maskPii({
+        'uid': 7,
+        'email': 'real@gmail.com',
+        'display_name': '真實姓名',
+        'friend_code': 'ABCD1234',
+        'nested': [
+          {'email': 'other@gmail.com', 'keep': 'ok'},
+        ],
+      }) as Map<String, dynamic>;
 
       expect(masked['uid'], 7);
       expect(masked['email'], 'redacted@example.com');
@@ -145,13 +143,11 @@ void main() {
     });
 
     test('使用者產生的內容整欄換掉，不留真實發文', () {
-      final masked =
-          maskPii({
-                'title': '官方活動整理｜布洛灣景觀復原行動',
-                'body': '這是某位使用者真的發過的內文。',
-                'content_md': '# 服務條款\n\n如有問題請來信 someone@gmail.com。',
-              })
-              as Map<String, dynamic>;
+      final masked = maskPii({
+        'title': '官方活動整理｜布洛灣景觀復原行動',
+        'body': '這是某位使用者真的發過的內文。',
+        'content_md': '# 服務條款\n\n如有問題請來信 someone@gmail.com。',
+      }) as Map<String, dynamic>;
 
       expect(masked['title'], '測試標題');
       expect(masked['body'], '測試內文');
@@ -161,9 +157,9 @@ void main() {
     // 下面兩支用不在名單裡的欄位名，測的是兜底那層：
     // 後端哪天多回一個沒人想到的欄位，個資也不該漏出去。
     test('沒列在名單裡的欄位，內文裡的 email 仍會被遮', () {
-      final masked =
-          maskPii({'some_new_field': '有問題請來信 someone@gmail.com 與我們聯繫。'})
-              as Map<String, dynamic>;
+      final masked = maskPii({
+        'some_new_field': '有問題請來信 someone@gmail.com 與我們聯繫。',
+      }) as Map<String, dynamic>;
 
       expect(masked['some_new_field'], contains('redacted@example.com'));
       expect(masked['some_new_field'], isNot(contains('someone@gmail.com')));
@@ -172,9 +168,9 @@ void main() {
     });
 
     test('沒列在名單裡的欄位，內文裡的電話仍會被遮', () {
-      final masked =
-          maskPii({'some_new_field': '報名請撥 0912-345678'})
-              as Map<String, dynamic>;
+      final masked = maskPii({
+        'some_new_field': '報名請撥 0912-345678',
+      }) as Map<String, dynamic>;
       expect(masked['some_new_field'], '報名請撥 0900000000');
     });
 

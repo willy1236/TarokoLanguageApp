@@ -1,6 +1,7 @@
 // 活動列表的精選大卡與一般列表列。
 
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../models/content_category.dart';

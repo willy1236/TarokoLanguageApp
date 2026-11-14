@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/network/api_client.dart';
 import '../../models/listening_models.dart';
 import '../../services/listening_service.dart';
@@ -86,9 +87,8 @@ class _ListeningQuizScreenState extends State<ListeningQuizScreen> {
       final message =
           _listeningErrorMessage(e) ??
           apiErrorMessage(e, fallback: '儲存答案失敗，請稍後再試');
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     },
   );
 

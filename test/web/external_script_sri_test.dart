@@ -7,9 +7,10 @@ import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   test('web/*.html 的外部 script 都帶 integrity 與 crossorigin', () {
-    final pages = Directory(
-      'web',
-    ).listSync().whereType<File>().where((f) => f.path.endsWith('.html'));
+    final pages = Directory('web')
+        .listSync()
+        .whereType<File>()
+        .where((f) => f.path.endsWith('.html'));
     final externalScript = RegExp(
       r'''<script\b[^>]*\bsrc=["']https?://[^>]*>''',
     );

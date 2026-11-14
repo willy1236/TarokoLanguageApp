@@ -4,6 +4,7 @@
 // 情況下驅動分頁與回滾，同一個元件也能被「我的收藏」與搜尋結果重複使用。
 
 import 'package:flutter/material.dart';
+
 import '../../shared/widgets/async_state_view.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -18,15 +19,18 @@ import '../../shared/widgets/truku_empty_state.dart';
 import 'widgets/forum_post_card.dart';
 import '../../shared/widgets/app_toast.dart';
 
-typedef ForumPageLoader =
-    Future<ForumPostPage> Function({String? cursor, int? after});
-typedef ForumLikeToggler =
-    Future<({bool liked, int likeCount})> Function(
-      int postId, {
-      required bool like,
-    });
-typedef ForumBookmarkToggler =
-    Future<bool> Function(int postId, {required bool add});
+typedef ForumPageLoader = Future<ForumPostPage> Function({
+  String? cursor,
+  int? after,
+});
+typedef ForumLikeToggler = Future<({bool liked, int likeCount})> Function(
+  int postId, {
+  required bool like,
+});
+typedef ForumBookmarkToggler = Future<bool> Function(
+  int postId, {
+  required bool add,
+});
 
 class ForumBoardView extends StatefulWidget {
   final ForumPageLoader loadPage;

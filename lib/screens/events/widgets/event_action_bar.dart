@@ -1,6 +1,7 @@
 // 活動詳情頁底部行動列：依身分（發起人／已報名／其他）與活動狀態切換按鈕。
 
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';

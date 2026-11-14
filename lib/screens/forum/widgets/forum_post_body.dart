@@ -1,6 +1,7 @@
 // 貼文詳情頁的貼文本體：標題、作者與時間、內文、圖片、讚與收藏。
 
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/forum_models.dart';

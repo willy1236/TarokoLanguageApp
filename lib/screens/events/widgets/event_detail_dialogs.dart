@@ -1,6 +1,7 @@
 // 活動詳情頁的輸入對話框：報名聯絡 email、取消活動理由。
 
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/utils/utf16_length_limit.dart';

@@ -17,6 +17,7 @@ import 'package:flutter_application_1/main.dart' show scaffoldMessengerKey;
 import 'package:flutter_application_1/screens/culture/article_detail_screen.dart';
 import 'package:flutter_application_1/screens/culture/widgets/culture_article_section.dart';
 import 'package:flutter_application_1/services/category_service.dart';
+
 import '../helpers/fixtures.dart';
 
 import '../helpers/flow_test_helpers.dart';

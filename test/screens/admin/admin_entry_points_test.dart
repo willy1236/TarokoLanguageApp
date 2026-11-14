@@ -76,9 +76,8 @@ Widget _app({List<Object?>? popped}) => MaterialApp(
     builder: (context) => Scaffold(
       body: TextButton(
         onPressed: () async {
-          final result = await Navigator.of(
-            context,
-          ).push(ForumDetailScreen.route(postId: 7));
+          final result = await Navigator.of(context)
+              .push(ForumDetailScreen.route(postId: 7));
           popped?.add(result);
         },
         child: const Text('開貼文'),

@@ -9,12 +9,8 @@ import 'package:flutter/foundation.dart';
 import '../../models/page_info.dart';
 
 class CursorPager<T> extends ChangeNotifier {
-  /// [fetch] 取一頁；cursor 為 null 代表第一頁。[idOf] 是去重用的 key。
-  CursorPager({
-    required Future<(List<T>, PageInfo)> Function(String? cursor) fetch,
-    required Object Function(T item) idOf,
-  }) : _fetch = fetch,
-       _idOf = idOf;
+  /// [_fetch] 取一頁；cursor 為 null 代表第一頁。[_idOf] 是去重用的 key。
+  CursorPager({required this._fetch, required this._idOf});
 
   final Future<(List<T>, PageInfo)> Function(String? cursor) _fetch;
   final Object Function(T item) _idOf;

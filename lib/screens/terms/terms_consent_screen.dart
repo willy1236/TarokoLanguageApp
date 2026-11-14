@@ -15,6 +15,7 @@
 //   不必捲到底、也不必先同意（後端這兩支不擋 CONSENT_REQUIRED）。
 
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/terms_models.dart';
@@ -195,9 +196,9 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
       return;
     }
     final current = _documents[_step];
-    final latest = TermsStatus.fromJson(
-      body,
-    ).documents.where((d) => d.docType == current.docType).firstOrNull;
+    final latest = TermsStatus.fromJson(body).documents
+        .where((d) => d.docType == current.docType)
+        .firstOrNull;
     if (latest == null || latest.consented) {
       _showError(e.message);
       _load();
@@ -211,9 +212,8 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -442,8 +442,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
   );
 
   void _openDeleteAccount() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const AccountDeleteScreen()));
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const AccountDeleteScreen()));
   }
 }

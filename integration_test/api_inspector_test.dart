@@ -1553,9 +1553,8 @@ Future<void> _inspectEventImages() async {
 void _printResponse(String method, String path, http.Response response) {
   String prettyBody;
   try {
-    prettyBody = const JsonEncoder.withIndent(
-      '  ',
-    ).convert(jsonDecode(response.body));
+    prettyBody = const JsonEncoder.withIndent('  ')
+        .convert(jsonDecode(response.body));
   } catch (_) {
     prettyBody = response.body;
   }

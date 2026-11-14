@@ -60,11 +60,29 @@ abstract class AppTheme {
         selectionColor: AppColors.mist,
         selectionHandleColor: AppColors.primary,
       ),
-      textTheme: useGoogleFonts
-          ? GoogleFonts.notoSansTcTextTheme(_textTheme)
-          : _textTheme,
+      textTheme: useGoogleFonts ? _withNotoSansTc(_textTheme) : _textTheme,
     );
   }
+
+  /// google_fonts 9 的 `notoSansTcTextTheme` 回傳 material_ui 的 TextTheme，與框架
+  /// material 的型別不同，無法直接放進 ThemeData；這裡逐角色套字體，結果與原函式相同。
+  static TextTheme _withNotoSansTc(TextTheme base) => TextTheme(
+    displayLarge: GoogleFonts.notoSansTc(textStyle: base.displayLarge),
+    displayMedium: GoogleFonts.notoSansTc(textStyle: base.displayMedium),
+    displaySmall: GoogleFonts.notoSansTc(textStyle: base.displaySmall),
+    headlineLarge: GoogleFonts.notoSansTc(textStyle: base.headlineLarge),
+    headlineMedium: GoogleFonts.notoSansTc(textStyle: base.headlineMedium),
+    headlineSmall: GoogleFonts.notoSansTc(textStyle: base.headlineSmall),
+    titleLarge: GoogleFonts.notoSansTc(textStyle: base.titleLarge),
+    titleMedium: GoogleFonts.notoSansTc(textStyle: base.titleMedium),
+    titleSmall: GoogleFonts.notoSansTc(textStyle: base.titleSmall),
+    bodyLarge: GoogleFonts.notoSansTc(textStyle: base.bodyLarge),
+    bodyMedium: GoogleFonts.notoSansTc(textStyle: base.bodyMedium),
+    bodySmall: GoogleFonts.notoSansTc(textStyle: base.bodySmall),
+    labelLarge: GoogleFonts.notoSansTc(textStyle: base.labelLarge),
+    labelMedium: GoogleFonts.notoSansTc(textStyle: base.labelMedium),
+    labelSmall: GoogleFonts.notoSansTc(textStyle: base.labelSmall),
+  );
 
   static const _textTheme = TextTheme(
     bodySmall: TextStyle(fontSize: AppTypography.caption, color: AppColors.ink),

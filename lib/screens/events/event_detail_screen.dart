@@ -3,6 +3,7 @@ import '../../shared/widgets/async_state_view.dart';
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/navigation/refreshable_route.dart';
 import '../../core/network/api_client.dart';
@@ -396,9 +397,8 @@ class _EventDetailScreenState extends State<EventDetailScreen>
     String message,
   ) {
     if (!mounted) return null;
-    return ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    return ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   // ── 按讚 / 收藏（任何活動狀態皆可） ────────────────────────────

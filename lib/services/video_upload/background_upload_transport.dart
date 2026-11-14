@@ -189,14 +189,13 @@ class BackgroundUploadTransport implements UploadTransport {
     required this.taskPrefix,
     required this.displayName,
     required this.foreground,
-    required UploadTransport http,
+    required this._http,
     required this.fallbackChunkSize,
     this.contentType,
     this.cancelWait = const Duration(seconds: 10),
     this.requeueRecheck = const Duration(minutes: 1),
     @visibleForTesting DateTime Function()? clock,
-  }) : _http = http,
-       _now = clock ?? DateTime.now;
+  }) : _now = clock ?? DateTime.now;
 
   /// 背景時一次送到檔尾；不支援背景時由 [send] 自己切段（回雲端確認的位置，上傳器照樣接著送）。
   @override

@@ -1,4 +1,5 @@
 import 'dart:convert';
+
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -127,9 +128,8 @@ void main() {
     // 轉成一份新的 http.Request 再交給 handler（見 package:http/src/mock_client.dart），
     // 因此這裡拿不回原本的 MultipartRequest，只能改由原始 body bytes 解析欄位。
     final bodyText = utf8.decode((request as http.Request).bodyBytes);
-    final boardIdMatch = RegExp(
-      'name="board_id"\r\n\r\n([^\r]*)',
-    ).firstMatch(bodyText);
+    final boardIdMatch = RegExp('name="board_id"\r\n\r\n([^\r]*)')
+        .firstMatch(bodyText);
     expect(boardIdMatch?.group(1), '2');
   });
 

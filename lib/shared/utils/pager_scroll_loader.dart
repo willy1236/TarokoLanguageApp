@@ -11,11 +11,10 @@ import 'cursor_pager.dart';
 class PagerScrollLoader {
   /// [nearEndExtent]：距離底部多少以內就翻頁。
   PagerScrollLoader({
-    required ScrollController controller,
-    required CursorPager<Object?> pager,
+    required this._controller,
+    required this._pager,
     this.nearEndExtent = 300,
-  }) : _controller = controller,
-       _pager = pager {
+  }) {
     _controller.addListener(_check);
     _pager.addListener(_scheduleCheck);
   }

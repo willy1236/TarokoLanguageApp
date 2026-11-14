@@ -1,6 +1,7 @@
 // 活動詳情頁內文：發起人、讚／收藏、時間地點、名額、介紹、提醒紀錄、聯絡資訊。
 
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';

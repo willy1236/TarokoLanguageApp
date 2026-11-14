@@ -17,13 +17,12 @@ import '../../shared/widgets/search_suggestions.dart';
 typedef CultureSearchPage<T> = ({List<T> items, PageInfo pageInfo});
 
 /// [cursor] 為 null 代表第一頁。
-typedef CultureSearchFetch<T> =
-    Future<CultureSearchPage<T>> Function({
-      String? q,
-      String? range,
-      int? tribeId,
-      String? cursor,
-    });
+typedef CultureSearchFetch<T> = Future<CultureSearchPage<T>> Function({
+  String? q,
+  String? range,
+  int? tribeId,
+  String? cursor,
+});
 
 class CultureSearchScreen<T> extends StatefulWidget {
   const CultureSearchScreen({

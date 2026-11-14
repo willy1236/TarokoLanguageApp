@@ -90,8 +90,10 @@ class PendingFileMismatch implements Exception {
   String toString() => 'PendingFileMismatch';
 }
 
-typedef UploaderFactory =
-    ResumableUploader Function(UploadSession session, ChunkSource source);
+typedef UploaderFactory = ResumableUploader Function(
+  UploadSession session,
+  ChunkSource source,
+);
 
 class VideoUploadManager {
   VideoUploadManager._();

@@ -166,9 +166,8 @@ class _InboxScreenState extends State<InboxScreen>
             indicatorColor: AppColors.primary,
             dividerColor: AppColors.creamDeep,
             labelPadding: EdgeInsets.zero,
-            labelStyle: AppTypography.bodyStyle(
-              seniorMode: seniorMode,
-            ).copyWith(fontWeight: FontWeight.w600),
+            labelStyle: AppTypography.bodyStyle(seniorMode: seniorMode)
+                .copyWith(fontWeight: FontWeight.w600),
             tabs: [
               for (final tab in _tabs)
                 Tab(
@@ -332,9 +331,8 @@ class _InboxTabState extends State<_InboxTab> {
       final i = _items.indexOf(item);
       if (i >= 0) setState(() => _items[i] = item.markedRead());
       // 標記失敗不該擋住導頁，紅點下次進來會再對齊。
-      InboxService.markRead([
-        item.id,
-      ]).catchError((Object e) => debugPrint('InboxScreen: 標記已讀失敗：$e'));
+      InboxService.markRead([item.id])
+          .catchError((Object e) => debugPrint('InboxScreen: 標記已讀失敗：$e'));
     }
     switch (inboxTargetFor(item)) {
       case InboxOpenPost(:final postId, :final commentId):

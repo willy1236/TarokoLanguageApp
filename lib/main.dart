@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_typography.dart';
 import 'core/theme/app_theme.dart';
@@ -456,19 +457,16 @@ class _MainContainerState extends State<MainContainer>
       if (e.code == 'ALREADY_CHECKED_IN') {
         _checkinVersion++;
         setState(() => _checkedInToday = true);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('今日已簽到')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('今日已簽到')));
         return;
       }
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     } catch (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('簽到失敗，請稍後再試')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('簽到失敗，請稍後再試')));
     }
   }
 

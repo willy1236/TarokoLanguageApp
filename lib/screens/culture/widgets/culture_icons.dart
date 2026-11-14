@@ -1,6 +1,7 @@
 // 文化頁用到的小圖示與 hero 背景條紋 painter。
 
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/app_colors.dart';
 
 class CultureStripePainter extends CustomPainter {

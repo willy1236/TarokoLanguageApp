@@ -624,9 +624,8 @@ class _DataSourcesSectionState extends State<_DataSourcesSection> {
       }
     }
     if (!launched && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('無法開啟連結')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('無法開啟連結')));
     }
   }
 }

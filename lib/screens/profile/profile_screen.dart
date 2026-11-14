@@ -1,8 +1,10 @@
 import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_spacing.dart';
@@ -179,9 +181,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// 更新後的 UserModel，因此回到本頁後一律重新呼叫 fetchMe() 以取得最新的
   /// avatarId/frameId。
   Future<void> _openBackpack() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const BackpackScreen()));
+    await Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const BackpackScreen()));
     if (!mounted) return;
     _loadUser();
   }
@@ -358,9 +359,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
   /// 前往商店頁面兌換新道具；商店頁不會 pop 回更新後的 UserModel，
   /// 因此回到本頁後一律重新呼叫 fetchMe() 以取得最新的 millet/owned 清單。
   Future<void> _openShop() async {
-    await Navigator.of(
-      context,
-    ).push(MaterialPageRoute<void>(builder: (_) => const ShopScreen()));
+    await Navigator.of(context)
+        .push(MaterialPageRoute<void>(builder: (_) => const ShopScreen()));
     if (!mounted) return;
     _loadUser();
   }
@@ -470,9 +470,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
         icon: Icons.event_note_outlined,
         label: '我發起的活動',
         seniorMode: seniorMode,
-        onTap: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const MyEventsScreen())),
+        onTap: () => Navigator.of(context)
+            .push(MaterialPageRoute(builder: (_) => const MyEventsScreen())),
       ),
       const Divider(height: 1, color: AppColors.creamDeep),
       profileNavRow(
@@ -488,18 +487,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
         icon: Icons.favorite_border,
         label: '我按讚的內容',
         seniorMode: seniorMode,
-        onTap: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const MyLikesScreen())),
+        onTap: () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const MyLikesScreen())),
       ),
       const Divider(height: 1, color: AppColors.creamDeep),
       profileNavRow(
         icon: Icons.history,
         label: '測驗紀錄',
         seniorMode: seniorMode,
-        onTap: () => Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (_) => const HistoryScreen())),
+        onTap: () =>
+            Navigator.of(context)
+                .push(MaterialPageRoute(builder: (_) => const HistoryScreen())),
       ),
       if (isAdmin) ...[
         const Divider(height: 1, color: AppColors.creamDeep),
@@ -602,15 +601,13 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   void _openAboutApp() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const AboutAppScreen()));
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const AboutAppScreen()));
   }
 
   void _openDeleteAccount() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const AccountDeleteScreen()));
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const AccountDeleteScreen()));
   }
 
   void _openHiddenPosts() {
@@ -635,9 +632,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
     );
     final launched = await launchUrl(uri);
     if (!launched && mounted) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('無法開啟郵件應用程式')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('無法開啟郵件應用程式')));
     }
   }
 }

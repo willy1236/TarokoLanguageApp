@@ -34,9 +34,11 @@
 // Web/桌面版不支援推播（見 PlatformFeatures.supportsPush），三個入口都直接略過。
 
 import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 import '../core/platform/platform_features.dart';
 import '../main.dart';
 import '../models/friend_model.dart';
@@ -225,6 +227,10 @@ class FcmService {
     _pendingInitialMessage = await _fm.getInitialMessage();
 
     // token 會定期更換，換了要重新上傳
+    // firebase_messaging 17 把 getToken／onTokenRefresh／deleteToken 標為 deprecated，改推 FID
+    // （register／onRegistered）。FID 與後端 firebase-admin 目前使用的 FCM token 不同，
+    // 改用需後端一併調整，故這幾處繼續使用 FCM token API。
+    // ignore: deprecated_member_use
     _fm.onTokenRefresh.listen((token) {
       _lastToken = token;
       _uploadIfLoggedIn(token);
@@ -311,6 +317,7 @@ class FcmService {
   /// 登入成功後呼叫：取得 FCM token 並上傳後端。
   static Future<void> registerDevice() async {
     if (!PlatformFeatures.supportsPush) return;
+    // ignore: deprecated_member_use
     final token = await _fm.getToken();
     if (token == null) return;
     _lastToken = token;
@@ -322,6 +329,7 @@ class FcmService {
     if (!PlatformFeatures.supportsPush) return;
     // 取 token 或向後端註銷失敗都不阻斷登出流程，本機 token 照樣刪除。
     try {
+      // ignore: deprecated_member_use
       final token = _lastToken ?? await _fm.getToken();
       if (token != null) await EventService.unregisterDevice(token);
     } catch (e) {
@@ -336,6 +344,7 @@ class FcmService {
     if (!PlatformFeatures.supportsPush) return;
     _lastToken = null;
     try {
+      // ignore: deprecated_member_use
       await _fm.deleteToken();
     } catch (e) {
       debugPrint('FcmService: 刪除本機 token 失敗（忽略）：$e');

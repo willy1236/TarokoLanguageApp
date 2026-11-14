@@ -7,6 +7,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show ScrollCacheExtent;
+
 import '../../shared/widgets/async_state_view.dart';
 
 import '../../core/constants/app_colors.dart';
@@ -27,6 +28,7 @@ import '../../services/user_service.dart';
 import '../admin/admin_error.dart';
 import '../admin/widgets/admin_reason_dialog.dart';
 import 'forum_compose_screen.dart';
+
 import 'package:cached_network_image/cached_network_image.dart';
 
 import 'widgets/forum_comment_input_bar.dart';
