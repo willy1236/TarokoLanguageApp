@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/constants/picker_themes.dart';
+
 /// 依序跳出日期、時間選擇器，回傳合起來的本地時間；任一步取消回 null。
 ///
 /// [initial] 的日期超出 [firstDate]～[lastDate] 時，日曆停在最近的邊界那天；
@@ -21,6 +23,7 @@ Future<DateTime?> pickDateTime(
     firstDate: firstDate,
     lastDate: lastDate,
     helpText: dateHelp,
+    builder: PickerThemes.builder,
   );
   if (date == null || !context.mounted) return null;
   final time = await showTimePicker(
@@ -29,7 +32,7 @@ Future<DateTime?> pickDateTime(
     helpText: timeHelp,
     builder: (context, child) => MediaQuery(
       data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-      child: child!,
+      child: PickerThemes.builder(context, child),
     ),
   );
   if (time == null) return null;

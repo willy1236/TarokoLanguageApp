@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/main.dart'
     show navigatorKey, scaffoldMessengerKey, MainContainer, appLocale;
 import 'package:flutter_application_1/core/constants/app_colors.dart';
+import 'package:flutter_application_1/core/theme/app_theme.dart';
 import 'package:flutter_application_1/screens/account/account_pending_screen.dart';
 import 'package:flutter_application_1/screens/auth/birth_date_screen.dart';
 import 'package:flutter_application_1/screens/auth/complete_profile_screen.dart';
@@ -32,7 +33,7 @@ const String readOnlyBannerText = '帳號目前為唯讀狀態';
 ///
 /// 與 lib/main.dart 的差異（都是刻意的）：
 ///   - 不呼叫 main()，所以沒有 Firebase.initializeApp / FcmService.init
-///   - 不掛 GoogleFonts textTheme，避免測試期間去抓字型
+///   - 主題與正式版同一份（AppTheme），只是不掛 GoogleFonts textTheme，避免測試期間去抓字型
 ///   - [overrides] 可以把任一具名路由換成假畫面，測導流時不必真的 render 目的頁
 ///
 /// navigatorKey / scaffoldMessengerKey 用的是 main.dart 的同一把全域 key，
@@ -48,16 +49,7 @@ Widget buildTestApp({
     locale: appLocale,
     supportedLocales: const [appLocale],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    theme: ThemeData(
-      brightness: Brightness.dark,
-      scaffoldBackgroundColor: AppColors.background,
-      useMaterial3: true,
-      colorScheme: const ColorScheme.dark(
-        primary: AppColors.primary,
-        secondary: AppColors.surfaceVariant,
-        surface: AppColors.surface,
-      ),
-    ),
+    theme: AppTheme.build(useGoogleFonts: false),
     builder: (context, child) => TestReadOnlyBannerFrame(child: child!),
     initialRoute: initialRoute,
     routes: {

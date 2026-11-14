@@ -4,10 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_typography.dart';
-import 'core/constants/picker_themes.dart';
+import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'screens/account/account_pending_screen.dart';
 import 'core/navigation/route_stack.dart';
@@ -165,47 +164,7 @@ class KariTrukuApp extends StatelessWidget {
       locale: appLocale,
       supportedLocales: const [appLocale],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppColors.background,
-        primaryColor: AppColors.primary,
-        useMaterial3: true,
-        colorScheme: const ColorScheme.dark(
-          primary: AppColors.primary,
-          secondary: AppColors.surfaceVariant,
-          surface: AppColors.surface,
-        ),
-        datePickerTheme: PickerThemes.date,
-        timePickerTheme: PickerThemes.time,
-        textTheme: GoogleFonts.notoSansTcTextTheme(
-          const TextTheme(
-            bodySmall: TextStyle(
-              fontSize: AppTypography.caption,
-              color: AppColors.creamLight,
-            ),
-            bodyMedium: TextStyle(
-              fontSize: AppTypography.body,
-              color: AppColors.creamLight,
-            ),
-            bodyLarge: TextStyle(
-              fontSize: AppTypography.bodyLarge,
-              color: AppColors.creamLight,
-            ),
-            titleSmall: TextStyle(
-              fontSize: AppTypography.subtitle,
-              color: AppColors.creamLight,
-            ),
-            titleMedium: TextStyle(
-              fontSize: AppTypography.title,
-              color: AppColors.creamLight,
-            ),
-            titleLarge: TextStyle(
-              fontSize: AppTypography.headline,
-              color: AppColors.creamLight,
-            ),
-          ),
-        ),
-      ),
+      theme: AppTheme.light,
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
         final seniorMode = seniorModeController.enabled;

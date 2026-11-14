@@ -105,6 +105,7 @@ class _BirthDateScreenState extends State<BirthDateScreen> {
     return PopScope(
       canPop: false,
       child: Scaffold(
+        backgroundColor: AppColors.midnight,
         body: Stack(
           children: [
             Positioned.fill(

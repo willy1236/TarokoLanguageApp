@@ -131,7 +131,7 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
           ),
         ),
         leading: IconButton(
-          icon: const Icon(Icons.close),
+          icon: const Icon(Icons.close, color: AppColors.cream),
           iconSize: AppIconSize.action(seniorMode),
           onPressed: () => Navigator.pop(context),
         ),
@@ -201,7 +201,10 @@ class _AvatarCropScreenState extends State<AvatarCropScreen> {
                           color: AppColors.cream,
                         ),
                       )
-                    : const Icon(Icons.rotate_90_degrees_cw),
+                    : const Icon(
+                        Icons.rotate_90_degrees_cw,
+                        color: AppColors.cream,
+                      ),
               ),
             ),
             if (seniorMode)
