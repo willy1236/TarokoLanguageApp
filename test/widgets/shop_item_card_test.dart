@@ -11,6 +11,8 @@ Widget _card({
   String? actionLabel,
   ShopActionKind kind = ShopActionKind.equip,
   VoidCallback? onAction,
+  bool isGold = false,
+  String? lockedText,
 }) => MaterialApp(
   home: Scaffold(
     body: SizedBox(
@@ -19,7 +21,8 @@ Widget _card({
       child: ShopItemCard(
         name: '頭像（紅）1',
         price: 50,
-        isGold: false,
+        isGold: isGold,
+        lockedText: lockedText,
         icon: Icons.face_rounded,
         owned: owned,
         actionLabel: actionLabel,
@@ -71,5 +74,18 @@ void main() {
     expect(_buttonDecoration(tester, '已配戴').color, AppColors.creamDeep);
     await tester.tap(find.text('已配戴'));
     expect(taps, 0);
+  });
+
+  testWidgets('金色卡（深底）的解鎖條件文字用淺底以外的 fog，不用 inkMuted', (tester) async {
+    await tester.pumpWidget(_card(isGold: true, lockedText: '連續簽到 30 天'));
+    expect(
+      tester.widget<Text>(find.text('連續簽到 30 天')).style!.color,
+      AppColors.fog,
+    );
+    await tester.pumpWidget(_card(lockedText: '連續簽到 30 天'));
+    expect(
+      tester.widget<Text>(find.text('連續簽到 30 天')).style!.color,
+      AppColors.inkMuted,
+    );
   });
 }

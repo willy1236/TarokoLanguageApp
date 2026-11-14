@@ -144,7 +144,8 @@ class ShopItemCard extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: AppTypography.caption,
-                      color: AppColors.inkMuted,
+                      // 金色卡是深底，淺底專用的 inkMuted 在這裡對比不夠。
+                      color: isGold ? AppColors.fog : AppColors.inkMuted,
                       letterSpacing: 0.5,
                     ),
                   ),
