@@ -450,6 +450,7 @@ class _ShopScreenState extends State<ShopScreen> {
       imageUrl: item.imageUrl,
       icon: item.type == 'frame' ? Icons.circle_outlined : Icons.face_rounded,
       actionLabel: busy ? '處理中…' : actionLabel,
+      actionKind: owned ? ShopActionKind.equip : ShopActionKind.purchase,
       onAction: busy ? null : onAction,
     );
   }
