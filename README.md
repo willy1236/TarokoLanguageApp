@@ -40,7 +40,7 @@
 
 ## 技術架構
 
-- **Flutter** 3.44 / Dart SDK `^3.11.0`
+- **Flutter** 3.47 / Dart SDK `^3.11.0`
 - **登入**：Google Sign-In／Apple → Firebase Auth 取得 ID token → `POST /api/auth/login` 換發後端 JWT，存在 `flutter_secure_storage`
 - **網路**：`http` + 自訂 `ApiClient`；聊天用 `web_socket_channel`
 - **影音**：`better_player_plus`（行動版 HLS）、Web 版用 `<video>` + hls.js、`youtube_player_iframe`、`audioplayers`（測驗音檔）
@@ -94,7 +94,7 @@ docs/                       # 開發文件；tickets/ 是任務卡
 
 ### 需求
 
-- Flutter 3.44 以上（stable channel）
+- Flutter 3.47 以上（stable channel）
 - Android Studio 或 Xcode（視目標平台）
 - 能連到後端 API 的網路
 
