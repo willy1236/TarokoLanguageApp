@@ -10,6 +10,7 @@ import '../../shared/widgets/truku_painters.dart';
 import '../shop/shop_screen.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 /// 統一查看已擁有頭像／頭像框的背包頁，並可在此直接配戴。
 /// 取代原本散落在個人資料頁的頭像/頭像框選擇區塊。
@@ -115,18 +116,20 @@ class _BackpackScreenState extends State<BackpackScreen> {
     final avatarList = ownedItems.where((i) => i.type == 'avatar').toList();
     final frameList = ownedItems.where((i) => i.type == 'frame').toList();
 
-    return Scaffold(
-      backgroundColor: AppColors.creamLight,
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: _buildHero(context)),
-          SliverToBoxAdapter(child: _buildCategories()),
-          if (showAvatars)
-            SliverToBoxAdapter(child: _buildAvatarSection(avatarList)),
-          if (showFrames)
-            SliverToBoxAdapter(child: _buildFrameSection(frameList)),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
+    return StatusBarScope.onDark(
+      child: Scaffold(
+        backgroundColor: AppColors.creamLight,
+        body: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: _buildHero(context)),
+            SliverToBoxAdapter(child: _buildCategories()),
+            if (showAvatars)
+              SliverToBoxAdapter(child: _buildAvatarSection(avatarList)),
+            if (showFrames)
+              SliverToBoxAdapter(child: _buildFrameSection(frameList)),
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
       ),
     );
   }
