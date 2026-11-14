@@ -20,6 +20,7 @@ import '../../friends/public_profile_screen.dart';
 import 'forum_image_grid.dart';
 import '../../../shared/widgets/nickname_text.dart';
 import '../forum_author_code.dart';
+import '../../../shared/widgets/pressable.dart';
 
 class ForumPostCard extends StatelessWidget {
   final ForumPost post;
@@ -57,7 +58,7 @@ class ForumPostCard extends StatelessWidget {
     builder: (context, _) => _build(seniorModeController.enabled),
   );
 
-  Widget _build(bool seniorMode) => GestureDetector(
+  Widget _build(bool seniorMode) => Pressable(
     onTap: onTap,
     child: Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 14, 10),
@@ -186,15 +187,16 @@ class ForumPostCard extends StatelessWidget {
   Widget _header(bool seniorMode) => Row(
     children: [
       Builder(
-        builder: (context) => GestureDetector(
+        builder: (context) => Pressable(
           onTap: () => _openAuthorProfile(context),
+          semanticLabel: '查看作者個人頁',
           child: _avatar(seniorMode),
         ),
       ),
       const SizedBox(width: 10),
       Expanded(
         child: Builder(
-          builder: (context) => GestureDetector(
+          builder: (context) => Pressable(
             onTap: () => _openAuthorProfile(context),
             behavior: HitTestBehavior.opaque,
             child: Column(

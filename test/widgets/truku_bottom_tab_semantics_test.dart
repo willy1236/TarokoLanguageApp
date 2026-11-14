@@ -27,7 +27,7 @@ void main() {
 
     expect(
       tester.getSemantics(find.text('好友')),
-      containsSemantics(
+      isSemantics(
         label: '好友，5 則未讀',
         isButton: true,
         isSelected: true,
@@ -36,7 +36,7 @@ void main() {
     );
     expect(
       tester.getSemantics(find.text('首頁')),
-      containsSemantics(
+      isSemantics(
         label: '首頁',
         isButton: true,
         isSelected: false,

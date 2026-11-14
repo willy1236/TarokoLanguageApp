@@ -7,6 +7,7 @@ import '../../../models/event_model.dart';
 import '../../../services/account_lock_controller.dart';
 import '../reminder_compose_screen.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/widgets/pressable.dart';
 
 class EventActionBar extends StatelessWidget {
   final EventDetail event;
@@ -90,7 +91,7 @@ class EventActionBar extends StatelessWidget {
 
   // 發起人：發送提醒 + 取消活動
   Widget _hostActions(BuildContext context, EventDetail e, bool seniorMode) {
-    final sendReminderButton = GestureDetector(
+    final sendReminderButton = Pressable(
       onTap: () async {
         if (blockIfReadOnly()) return;
         final sent = await Navigator.push<bool>(
@@ -136,7 +137,7 @@ class EventActionBar extends StatelessWidget {
         ),
       ),
     );
-    final cancelButton = GestureDetector(
+    final cancelButton = Pressable(
       onTap: acting ? null : onCancel,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 15),
@@ -247,7 +248,7 @@ class EventActionBar extends StatelessWidget {
     final borderColor = (danger ? AppColors.danger : AppColors.primary)
         .withValues(alpha: 0.5);
     final disabled = onTap == null;
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Opacity(
         opacity: disabled ? 0.4 : 1.0,
@@ -318,7 +319,7 @@ class EventActionBar extends StatelessWidget {
         ],
       ),
     );
-    final leaveButton = GestureDetector(
+    final leaveButton = Pressable(
       onTap: acting ? null : onLeave,
       child: Container(
         padding: EdgeInsets.symmetric(
@@ -365,7 +366,7 @@ class EventActionBar extends StatelessWidget {
   }
 
   Widget _primaryButton(String label, VoidCallback? onTap, bool seniorMode) {
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 15),

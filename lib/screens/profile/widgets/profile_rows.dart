@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_icon_size.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/widgets/pressable.dart';
 
 Widget profileStatDivider() => const SizedBox(
   height: 32,
@@ -65,7 +66,7 @@ Widget profileQuickLinkCard(
   required bool seniorMode,
   int badgeCount = 0,
 }) {
-  return GestureDetector(
+  return Pressable(
     onTap: link.onTap,
     child: Container(
       padding: const EdgeInsets.all(14),
@@ -118,7 +119,7 @@ Widget profileNavRow({
   required VoidCallback onTap,
   bool seniorMode = false,
 }) {
-  return GestureDetector(
+  return Pressable(
     behavior: HitTestBehavior.opaque,
     onTap: onTap,
     child: Padding(
@@ -217,7 +218,7 @@ Widget profileSettingRow(
 }) {
   return Column(
     children: [
-      GestureDetector(
+      Pressable(
         onTap: editable ? onTap : null,
         child: Padding(
           padding: EdgeInsets.symmetric(
@@ -365,8 +366,9 @@ Widget profileSwitchRow(
                 ],
               ),
             ),
-            GestureDetector(
+            Pressable(
               onTap: locked ? null : () => onChanged(!on),
+              toggled: on,
               child: Container(
                 width: trackWidth,
                 height: trackHeight,

@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../shared/widgets/truku_painters.dart';
 import '../../../shared/widgets/truku_widgets.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/widgets/pressable.dart';
 
 class LearnPlacementOptionTile extends StatelessWidget {
   final IconData icon;
@@ -24,7 +25,7 @@ class LearnPlacementOptionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         width: double.infinity,
@@ -248,7 +249,7 @@ class LearnPlacementSummaryCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         width: double.infinity,
@@ -386,7 +387,7 @@ class _PillButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
@@ -443,7 +444,7 @@ class LearnQuizEntryCard extends StatelessWidget {
     final subtitleColor = isDark
         ? AppColors.mist
         : AppColors.creamLight.withValues(alpha: 0.75);
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         width: double.infinity,

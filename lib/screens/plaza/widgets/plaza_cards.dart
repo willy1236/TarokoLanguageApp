@@ -7,6 +7,7 @@ import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
 import '../../../shared/widgets/truku_widgets.dart';
 import '../../events/widgets/event_cover.dart';
+import '../../../shared/widgets/pressable.dart';
 
 class PlazaEventMessageCard extends StatelessWidget {
   final IconData icon;
@@ -73,7 +74,7 @@ class PlazaBoardTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = selected ? AppColors.primary : AppColors.inkMuted;
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
@@ -127,7 +128,7 @@ class PlazaMiniEventCard extends StatelessWidget {
     final month = monthLabel(d);
     final day = dayLabel(d);
     final content = _buildContent(month, day);
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: EventCover(
         url: event.coverImageUrl,

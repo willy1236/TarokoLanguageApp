@@ -9,6 +9,7 @@ import '../../../services/category_service.dart';
 import '../../../shared/widgets/truku_painters.dart';
 import '../../../core/constants/app_typography.dart';
 import 'event_cover.dart';
+import '../../../shared/widgets/pressable.dart';
 
 // 依分類配色，純視覺區隔用。先用後端分類表設定的顏色（決策紀錄 A56）；
 // 清單還沒抓到、抓取失敗或沒設顏色時，退回 [eventCategoryFallbackColor]。
@@ -73,7 +74,7 @@ class EventFeaturedCard extends StatelessWidget {
   Widget _buildFeaturedCard(EventSummary e, bool seniorMode) {
     final d = e.startsAt.toLocal();
     final label = _statusLabel(e);
-    return GestureDetector(
+    return Pressable(
       onTap: () => onTap(e),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 0, 20, 14),
@@ -341,7 +342,7 @@ class EventFeaturedCard extends StatelessWidget {
     } else {
       text = '查看';
     }
-    return GestureDetector(
+    return Pressable(
       onTap: () => onTap(e),
       child: Container(
         padding: EdgeInsets.symmetric(
@@ -428,7 +429,7 @@ class EventList extends StatelessWidget {
     final capacityText = e.maxParticipants == null
         ? '${e.participantCount} 人報名'
         : '${e.participantCount}/${e.maxParticipants}';
-    return GestureDetector(
+    return Pressable(
       onTap: () => onTap(e),
       child: Container(
         padding: EdgeInsets.all(seniorMode ? 16 : 12),

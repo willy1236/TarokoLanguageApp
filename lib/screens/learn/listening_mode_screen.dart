@@ -14,6 +14,7 @@ import 'listening_quiz_screen.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/utils/date_format.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/pressable.dart';
 
 Color _levelColor(String level) {
   if (level.contains('高')) {
@@ -316,7 +317,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
 
   Widget _buildStartButton() {
     final enabled = _selectedMode != null && _selectedLevel != null;
-    return GestureDetector(
+    return Pressable(
       onTap: enabled ? _start : null,
       child: Container(
         width: double.infinity,
@@ -367,7 +368,7 @@ class _ModeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         width: double.infinity,
@@ -419,9 +420,13 @@ class _LevelChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _levelColor(level.level);
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
+      selected: selected,
+      // 「推薦」只有星號圖示，沒有文字；補進語意讓讀屏聽得到。
+      semanticLabel: isRecommended ? '${level.level}，推薦' : level.level,
       child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: selected ? color : AppColors.creamLight,
@@ -489,7 +494,7 @@ class _RecentPracticeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompleted = record.isCompleted;
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
@@ -602,7 +607,7 @@ class _PlacementBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         width: double.infinity,
