@@ -171,7 +171,7 @@ class ReviewCard extends StatelessWidget {
                       Text(
                         _singleAudio ? '發音' : '原題發音',
                         style: TextStyle(
-                          fontSize: AppTypography.micro,
+                          fontSize: AppTypography.caption,
                           color: AppColors.inkMuted,
                         ),
                       ),
@@ -257,7 +257,7 @@ class ReviewCard extends StatelessWidget {
                       const Text(
                         '標準發音',
                         style: TextStyle(
-                          fontSize: AppTypography.micro,
+                          fontSize: AppTypography.caption,
                           color: AppColors.inkMuted,
                         ),
                       ),

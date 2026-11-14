@@ -397,7 +397,7 @@ class _SmtrungLabel extends StatelessWidget {
       'SMTRUNG · 配對中',
       style: AppTypography.latin(
         fontStyle: FontStyle.italic,
-        fontSize: AppTypography.micro,
+        fontSize: AppTypography.caption,
         color: AppColors.gold,
         letterSpacing: 6.0,
       ),

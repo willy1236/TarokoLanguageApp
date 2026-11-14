@@ -69,7 +69,7 @@ void main() {
     testWidgets('字級放大', (tester) async {
       await tester.pumpWidget(MaterialApp(home: _screen()));
       final size = tester.widget<Text>(find.text('建議起始等級')).style!.fontSize!;
-      expect(size, 14);
+      expect(size, 16);
     });
   });
 }

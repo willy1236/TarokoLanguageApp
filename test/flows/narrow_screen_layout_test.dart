@@ -138,7 +138,10 @@ void main() {
   Future<void> startApp(
     WidgetTester tester, {
     Size size = _narrowSurface,
+    double textScale = 1.0,
   }) async {
+    tester.platformDispatcher.textScaleFactorTestValue = textScale;
+    addTearDown(tester.platformDispatcher.clearTextScaleFactorTestValue);
     installMockClient(routes());
     usePhoneSurface(tester, size: size);
     await tester.pumpWidget(buildTestApp(initialRoute: '/home'));
@@ -166,6 +169,31 @@ void main() {
     expect(sort.left, greaterThan(title.right));
     expect(sort.top, lessThan(title.bottom));
   });
+
+  // 系統字級開到上限 1.3：首頁改為可捲動，其他頁面放大後也不能 overflow。
+  for (final senior in [false, true]) {
+    group('${senior ? '精簡模式' : '一般模式'} 系統字級 1.3', () {
+      setUp(() => seniorModeController.setEnabled(senior));
+
+      testWidgets('五個分頁與常用子頁面都不 overflow', (tester) async {
+        await startApp(tester, size: const Size(360, 740), textScale: 1.3);
+
+        for (final label in ['學習影音', '廣場活動', '好友', '我的', '首頁']) {
+          await tapText(tester, label, within: find.byType(TrukuBottomTab));
+        }
+        await tapText(tester, '學習影音', within: find.byType(TrukuBottomTab));
+        await tapText(tester, '影音');
+        await tapText(tester, '文章');
+        await tapText(tester, '廣場活動', within: find.byType(TrukuBottomTab));
+        await tapText(tester, '活動');
+
+        await visit(tester, const EventDetailScreen(eventId: 41));
+        await visit(tester, const EventSearchScreen());
+        await visit(tester, const ShopScreen());
+        await visit(tester, const BackpackScreen());
+      });
+    });
+  }
 
   for (final senior in [false, true]) {
     final mode = senior ? '精簡模式' : '一般模式';

@@ -14,10 +14,7 @@ import '../helpers/widget_test_helpers.dart';
 
 RemoteMessage _updatedMessage({Object? eventId = 7}) => RemoteMessage(
   data: {'type': 'event_updated', 'event_id': ?eventId?.toString()},
-  notification: const RemoteNotification(
-    title: '活動有更新',
-    body: '豐年祭的集合地點改了',
-  ),
+  notification: const RemoteNotification(title: '活動有更新', body: '豐年祭的集合地點改了'),
 );
 
 void main() {
@@ -35,10 +32,10 @@ void main() {
     });
 
     test('event_id 壞掉時 eventId 為 null，不丟例外', () {
-      expect(
-        FcmService.parseReminderPayload({'type': 'event_updated'}),
-        ('event_updated', null),
-      );
+      expect(FcmService.parseReminderPayload({'type': 'event_updated'}), (
+        'event_updated',
+        null,
+      ));
     });
 
     test('既有的 event_reminder／event_cancelled 照舊，其他類型不算', () {

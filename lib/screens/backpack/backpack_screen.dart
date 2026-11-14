@@ -161,13 +161,18 @@ class _BackpackScreenState extends State<BackpackScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 const AppBackButton(onDark: true),
-                Text(
-                  'PATAS · 我的背包',
-                  style: AppTypography.latin(
-                    fontStyle: FontStyle.italic,
-                    fontSize: AppTypography.caption,
-                    color: AppColors.gold,
-                    letterSpacing: 4,
+                Flexible(
+                  child: FittedBox(
+                    fit: BoxFit.scaleDown,
+                    child: Text(
+                      'PATAS · 我的背包',
+                      style: AppTypography.latin(
+                        fontStyle: FontStyle.italic,
+                        fontSize: AppTypography.caption,
+                        color: AppColors.gold,
+                        letterSpacing: 4,
+                      ),
+                    ),
                   ),
                 ),
                 GestureDetector(
@@ -224,7 +229,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
             'lukus · 共 ${items.length + 1} 款',
             style: AppTypography.latin(
               fontStyle: FontStyle.italic,
-              fontSize: AppTypography.micro,
+              fontSize: AppTypography.caption,
               color: AppColors.inkMuted,
               letterSpacing: 2,
             ),
@@ -278,7 +283,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
             'rangi · 共 ${items.length + 1} 款',
             style: AppTypography.latin(
               fontStyle: FontStyle.italic,
-              fontSize: AppTypography.micro,
+              fontSize: AppTypography.caption,
               color: AppColors.inkMuted,
               letterSpacing: 2,
             ),

@@ -314,7 +314,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: AppTypography.micro,
+                  fontSize: AppTypography.caption,
                   color: AppColors.cream.withValues(alpha: 0.8),
                   letterSpacing: 0.8,
                 ),

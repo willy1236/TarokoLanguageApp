@@ -52,10 +52,7 @@ void main() {
     ApiClient.httpClient = MockClient((r) async {
       if (r.url.path == '/api/articles/categories') {
         return jsonResponse({
-          'categories': [
-            _cat('language', '族語教學'),
-            _cat('cultural', '文化記錄（新）'),
-          ],
+          'categories': [_cat('language', '族語教學'), _cat('cultural', '文化記錄（新）')],
         });
       }
       return jsonResponse({

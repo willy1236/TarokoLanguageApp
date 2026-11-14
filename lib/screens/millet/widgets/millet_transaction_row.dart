@@ -110,7 +110,7 @@ class MilletTransactionRow extends StatelessWidget {
               Text(
                 '餘額 ${transaction.balanceAfter}',
                 style: const TextStyle(
-                  fontSize: AppTypography.micro,
+                  fontSize: AppTypography.caption,
                   color: AppColors.inkMuted,
                 ),
               ),

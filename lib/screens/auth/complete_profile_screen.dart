@@ -360,7 +360,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             labelTriku,
             style: TextStyle(
               fontSize: AppTypography.size(
-                AppTypography.micro,
+                AppTypography.caption,
                 seniorMode: seniorMode,
               ),
               color: AppColors.cream.withValues(alpha: 0.65),
@@ -535,7 +535,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               '部落',
               style: TextStyle(
                 fontSize: AppTypography.size(
-                  AppTypography.micro,
+                  AppTypography.caption,
                   seniorMode: seniorMode,
                 ),
                 color: AppColors.cream.withValues(alpha: 0.65),

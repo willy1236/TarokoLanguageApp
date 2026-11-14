@@ -167,9 +167,9 @@ class KariTrukuApp extends StatelessWidget {
         final seniorMode = seniorModeController.enabled;
         return MediaQuery(
           data: mediaQuery.copyWith(
-            textScaler: mediaQuery.textScaler.clamp(
-              minScaleFactor: 1.0,
-              maxScaleFactor: seniorMode ? 1.5 : 1.15,
+            textScaler: AppTypography.clampTextScaler(
+              mediaQuery.textScaler,
+              seniorMode: seniorMode,
             ),
           ),
           child: AppUpdatePromptLayer(

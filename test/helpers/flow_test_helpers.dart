@@ -13,6 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_application_1/main.dart'
     show navigatorKey, scaffoldMessengerKey, MainContainer, appLocale;
 import 'package:flutter_application_1/core/constants/app_colors.dart';
+import 'package:flutter_application_1/core/constants/app_typography.dart';
 import 'package:flutter_application_1/core/theme/app_theme.dart';
 import 'package:flutter_application_1/screens/account/account_pending_screen.dart';
 import 'package:flutter_application_1/screens/auth/birth_date_screen.dart';
@@ -24,6 +25,7 @@ import 'package:flutter_application_1/screens/splash/splash_screen.dart';
 import 'package:flutter_application_1/screens/terms/terms_consent_screen.dart';
 import 'package:flutter_application_1/services/account_lock_controller.dart';
 import 'package:flutter_application_1/services/notification_summary_service.dart';
+import 'package:flutter_application_1/services/senior_mode_controller.dart';
 import 'package:flutter_application_1/services/user_service.dart';
 
 /// 唯讀橫幅的文字。與 main.dart 的 _ReadOnlyBannerFrame 同一份字串。
@@ -50,7 +52,19 @@ Widget buildTestApp({
     supportedLocales: const [appLocale],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
     theme: AppTheme.build(useGoogleFonts: false),
-    builder: (context, child) => TestReadOnlyBannerFrame(child: child!),
+    // 與 lib/main.dart 的 MaterialApp.builder 一樣限制系統字級。
+    builder: (context, child) {
+      final mediaQuery = MediaQuery.of(context);
+      return MediaQuery(
+        data: mediaQuery.copyWith(
+          textScaler: AppTypography.clampTextScaler(
+            mediaQuery.textScaler,
+            seniorMode: seniorModeController.enabled,
+          ),
+        ),
+        child: TestReadOnlyBannerFrame(child: child!),
+      );
+    },
     initialRoute: initialRoute,
     routes: {
       '/splash': (_) => const SplashScreen(),

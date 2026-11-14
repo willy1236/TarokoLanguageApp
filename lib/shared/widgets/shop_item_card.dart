@@ -100,7 +100,7 @@ class ShopItemCard extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: TextStyle(
-                      fontSize: AppTypography.micro,
+                      fontSize: AppTypography.caption,
                       color: isGold ? AppColors.gold : accentColor,
                       letterSpacing: 1,
                     ),
@@ -130,7 +130,7 @@ class ShopItemCard extends StatelessWidget {
                     lockedText!,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: AppTypography.micro,
+                      fontSize: AppTypography.caption,
                       color: AppColors.inkMuted,
                       letterSpacing: 0.5,
                     ),
@@ -153,7 +153,7 @@ class ShopItemCard extends StatelessWidget {
                         actionLabel!,
                         textAlign: TextAlign.center,
                         style: TextStyle(
-                          fontSize: AppTypography.micro,
+                          fontSize: AppTypography.caption,
                           fontWeight: FontWeight.w700,
                           color: onAction != null
                               ? AppColors.ink
@@ -247,7 +247,7 @@ class ShopItemGrid extends StatelessWidget {
 
   static const int _minColumns = 3;
   static const double _targetCellWidth = 130;
-  static const double _minCellHeight = 190;
+  static const double _minCellHeight = 210;
 
   @override
   Widget build(BuildContext context) {

@@ -701,9 +701,7 @@ void main() {
       expect(find.text('無法連線到伺服器，請檢查網路'), findsOneWidget);
     });
 
-    testWidgets('排隊中的重整失敗提示被 clearSnackBars 清掉後，之後的失敗仍會提示', (
-      tester,
-    ) async {
+    testWidgets('排隊中的重整失敗提示被 clearSnackBars 清掉後，之後的失敗仍會提示', (tester) async {
       _fakePicker();
       var offline = false;
       installMockClient(

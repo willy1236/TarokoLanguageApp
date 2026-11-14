@@ -262,7 +262,7 @@ class CultureArticleSectionState extends State<CultureArticleSection> {
                   style: AppTypography.latin(
                     fontStyle: FontStyle.italic,
                     fontSize: AppTypography.size(
-                      AppTypography.micro,
+                      AppTypography.caption,
                       seniorMode: seniorMode,
                     ),
                     color: AppColors.fog,

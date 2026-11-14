@@ -196,13 +196,13 @@ void main() {
         final step = senior ? 2.0 : 0.0;
 
         expect(_fontSizeOf(tester, '單字分級測驗'), 12 + step);
-        expect(_fontSizeOf(tester, '建議起始等級'), 12 + step);
+        expect(_fontSizeOf(tester, '建議起始等級'), 14 + step);
         expect(
           _fontSizeOf(tester, PlacementResultScreen.backToLearnLabel),
           16 + step,
         );
         expect(_fontSizeOf(tester, '第 1 題'), 12 + step);
-        expect(_fontSizeOf(tester, '正確答案'), 12 + step);
+        expect(_fontSizeOf(tester, '正確答案'), 14 + step);
       });
 
       testWidgets('320dp 寬度不 overflow', (tester) async {

@@ -185,8 +185,9 @@ class PlazaMiniEventCard extends StatelessWidget {
         Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              // 日期方塊最小 44，字級放大時跟著長高，不固定高度以免溢位。
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               decoration: BoxDecoration(
                 color: event.isJoined ? AppColors.primary : AppColors.moss,
                 borderRadius: BorderRadius.circular(8),
@@ -236,7 +237,7 @@ class PlazaMiniEventCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: AppTypography.micro,
+                      fontSize: AppTypography.caption,
                       color: AppColors.creamLight.withValues(alpha: 0.65),
                       letterSpacing: 0.8,
                     ),
@@ -250,14 +251,19 @@ class PlazaMiniEventCard extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              '● ${event.participantCount} 人報名',
-              style: const TextStyle(
-                fontSize: AppTypography.micro,
-                color: AppColors.gold,
-                letterSpacing: 1.5,
+            Flexible(
+              child: Text(
+                '● ${event.participantCount} 人報名',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: AppTypography.caption,
+                  color: AppColors.gold,
+                  letterSpacing: 1.5,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(

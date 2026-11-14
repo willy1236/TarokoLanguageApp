@@ -54,7 +54,7 @@ class CallControlButton extends StatelessWidget {
           Text(
             label,
             style: TextStyle(
-              fontSize: AppTypography.micro,
+              fontSize: AppTypography.caption,
               color: AppColors.creamLight.withValues(alpha: 0.85),
               letterSpacing: 2.0,
             ),

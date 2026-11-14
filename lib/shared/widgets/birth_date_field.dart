@@ -88,7 +88,7 @@ class BirthDateField extends StatelessWidget {
                   '出生日期',
                   style: TextStyle(
                     fontSize: AppTypography.size(
-                      AppTypography.micro,
+                      AppTypography.caption,
                       seniorMode: seniorMode,
                     ),
                     color: AppColors.cream.withValues(alpha: 0.65),

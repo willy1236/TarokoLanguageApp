@@ -149,7 +149,7 @@ class EventDetailBody extends StatelessWidget {
                     '發起人',
                     style: TextStyle(
                       fontSize: AppTypography.size(
-                        AppTypography.micro,
+                        AppTypography.caption,
                         seniorMode: seniorMode,
                       ),
                       color: AppColors.inkMuted,

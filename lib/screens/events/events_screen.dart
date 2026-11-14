@@ -425,7 +425,7 @@ class _EventsScreenState extends State<EventsScreen> {
               '更多活動',
               style: AppTypography.latin(
                 fontStyle: FontStyle.italic,
-                fontSize: AppTypography.micro,
+                fontSize: AppTypography.caption,
                 color: AppColors.inkMuted,
                 letterSpacing: 3.0,
               ),

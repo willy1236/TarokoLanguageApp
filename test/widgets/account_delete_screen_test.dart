@@ -66,6 +66,8 @@ void main() {
     await tester.enterText(find.byType(TextField), '不想用了');
     await tester.tap(find.byType(CheckboxListTile));
     await tester.pump();
+    await tester.ensureVisible(find.widgetWithText(ElevatedButton, '刪除帳號'));
+    await tester.pump();
     await tester.tap(find.widgetWithText(ElevatedButton, '刪除帳號'));
     await tester.pumpAndSettle();
 
@@ -87,6 +89,8 @@ void main() {
 
     await tester.pumpWidget(_app(const AccountDeleteScreen()));
     await tester.tap(find.byType(CheckboxListTile));
+    await tester.pump();
+    await tester.ensureVisible(find.widgetWithText(ElevatedButton, '刪除帳號'));
     await tester.pump();
     await tester.tap(find.widgetWithText(ElevatedButton, '刪除帳號'));
     await tester.pumpAndSettle();

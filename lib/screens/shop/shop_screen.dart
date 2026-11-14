@@ -397,7 +397,7 @@ class _ShopScreenState extends State<ShopScreen> {
             subtitle,
             style: AppTypography.latin(
               fontStyle: FontStyle.italic,
-              fontSize: AppTypography.micro,
+              fontSize: AppTypography.caption,
               color: AppColors.inkMuted,
               letterSpacing: 2,
             ),

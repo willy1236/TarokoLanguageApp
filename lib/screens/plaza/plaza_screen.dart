@@ -391,7 +391,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
             'SMRATUC · 近期活動',
             style: AppTypography.latin(
               fontStyle: FontStyle.italic,
-              fontSize: AppTypography.micro,
+              fontSize: AppTypography.caption,
               color: AppColors.inkMuted,
               letterSpacing: 3.0,
             ),
@@ -431,7 +431,8 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
           EventCoverRefresher(
             onRefresh: _refreshEventCovers,
             child: SizedBox(
-              height: 120,
+              // 小卡內容隨系統字級變高，固定 120 在放大字級下會溢位。
+              height: MediaQuery.textScalerOf(context).scale(120),
               child: ListView.separated(
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.fromLTRB(20, 0, 20, 4),
