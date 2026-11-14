@@ -25,82 +25,102 @@ import 'widgets/admin_widgets.dart';
 
 typedef _Entry = ({IconData icon, String label, Widget Function() screen});
 
-/// 後台功能入口，依顯示順序排列。
-final List<_Entry> _entries = [
+/// 後台功能入口，依用途分四組，組內依顯示順序排列。
+final List<({String title, List<_Entry> entries})> _groups = [
   (
-    icon: Icons.flag_outlined,
-    label: '檢舉佇列',
-    screen: () => const AdminReportsScreen(),
+    title: '管理 · 審核',
+    entries: [
+      (
+        icon: Icons.flag_outlined,
+        label: '檢舉佇列',
+        screen: () => const AdminReportsScreen(),
+      ),
+      (
+        icon: Icons.gavel_outlined,
+        label: '違規區',
+        screen: () => const AdminCasesScreen(),
+      ),
+      (
+        icon: Icons.balance_outlined,
+        label: '申訴',
+        screen: () => const AdminAppealsScreen(),
+      ),
+      (
+        icon: Icons.help_outline,
+        label: '題目回報',
+        screen: () => const AdminQuestionReportsScreen(),
+      ),
+      (
+        icon: Icons.block_outlined,
+        label: '髒話詞庫',
+        screen: () => const AdminBannedWordsScreen(),
+      ),
+    ],
   ),
   (
-    icon: Icons.gavel_outlined,
-    label: '違規區',
-    screen: () => const AdminCasesScreen(),
+    title: '管理 · 內容',
+    entries: [
+      (
+        icon: Icons.campaign_outlined,
+        label: '官方公告',
+        screen: () => const AdminAnnouncementsScreen(),
+      ),
+      (
+        icon: Icons.post_add_outlined,
+        label: '新增文章',
+        screen: () => const AdminArticleFormScreen(),
+      ),
+      (
+        icon: Icons.video_library_outlined,
+        label: '影片管理',
+        screen: () => const AdminVideosScreen(),
+      ),
+      (
+        icon: Icons.label_outline,
+        label: '分類管理',
+        screen: () => const AdminCategoriesScreen(),
+      ),
+    ],
   ),
   (
-    icon: Icons.balance_outlined,
-    label: '申訴',
-    screen: () => const AdminAppealsScreen(),
+    title: '管理 · 帳號',
+    entries: [
+      (
+        icon: Icons.volume_off_outlined,
+        label: '禁言',
+        screen: () => const AdminMutesScreen(),
+      ),
+      (
+        icon: Icons.manage_accounts_outlined,
+        label: '角色管理',
+        screen: () => const AdminRolesScreen(),
+      ),
+      (
+        icon: Icons.cake_outlined,
+        label: '更正出生日期',
+        screen: () => const AdminBirthDateScreen(),
+      ),
+      (
+        icon: Icons.diversity_3_outlined,
+        label: '更正族群／部落',
+        screen: () => const AdminIdentityScreen(),
+      ),
+      (
+        icon: Icons.savings_outlined,
+        label: '小米幣查帳',
+        screen: () => const AdminMilletScreen(),
+      ),
+    ],
   ),
   (
-    icon: Icons.volume_off_outlined,
-    label: '禁言',
-    screen: () => const AdminMutesScreen(),
-  ),
-  (
-    icon: Icons.manage_accounts_outlined,
-    label: '角色管理',
-    screen: () => const AdminRolesScreen(),
-  ),
-  (
-    icon: Icons.cake_outlined,
-    label: '更正出生日期',
-    screen: () => const AdminBirthDateScreen(),
-  ),
-  (
-    icon: Icons.diversity_3_outlined,
-    label: '更正族群／部落',
-    screen: () => const AdminIdentityScreen(),
-  ),
-  (
-    icon: Icons.savings_outlined,
-    label: '小米幣查帳',
-    screen: () => const AdminMilletScreen(),
-  ),
-  (
-    icon: Icons.block_outlined,
-    label: '髒話詞庫',
-    screen: () => const AdminBannedWordsScreen(),
-  ),
-  (
-    icon: Icons.help_outline,
-    label: '題目回報',
-    screen: () => const AdminQuestionReportsScreen(),
-  ),
-  (
-    icon: Icons.campaign_outlined,
-    label: '官方公告',
-    screen: () => const AdminAnnouncementsScreen(),
-  ),
-  (
-    icon: Icons.post_add_outlined,
-    label: '新增文章',
-    screen: () => const AdminArticleFormScreen(),
-  ),
-  (
-    icon: Icons.video_library_outlined,
-    label: '影片管理',
-    screen: () => const AdminVideosScreen(),
-  ),
-  (
-    icon: Icons.label_outline,
-    label: '分類管理',
-    screen: () => const AdminCategoriesScreen(),
-  ),
-  (
-    icon: Icons.description_outlined,
-    label: '發布條款',
-    screen: () => const AdminTermsPublishScreen(),
+    title: '管理 · 系統',
+    entries: [
+      (
+        icon: Icons.description_outlined,
+        label: '發布條款',
+        screen: () => const AdminTermsPublishScreen(),
+      ),
+    ],
   ),
 ];
 
@@ -112,19 +132,20 @@ class AdminHomeScreen extends StatelessWidget {
     title: '管理後台',
     body: (context, senior) => ListView(
       children: [
-        profileSection('管理 · 功能', [
-          for (var i = 0; i < _entries.length; i++) ...[
-            if (i > 0) const Divider(height: 1, color: AppColors.creamDeep),
-            profileNavRow(
-              icon: _entries[i].icon,
-              label: _entries[i].label,
-              seniorMode: senior,
-              onTap: () => pushAdmin(context, _entries[i].screen()),
-            ),
-          ],
-        ], seniorMode: senior),
+        for (final group in _groups)
+          profileSection(group.title, [
+            for (var i = 0; i < group.entries.length; i++) ...[
+              if (i > 0) const Divider(height: 1, color: AppColors.creamDeep),
+              profileNavRow(
+                icon: group.entries[i].icon,
+                label: group.entries[i].label,
+                seniorMode: senior,
+                onTap: () => pushAdmin(context, group.entries[i].screen()),
+              ),
+            ],
+          ], seniorMode: senior),
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
           child: Text(
             '操作會記錄是哪一位管理員做的。',
             style: AppTypography.captionStyle(
