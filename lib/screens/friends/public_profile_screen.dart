@@ -361,7 +361,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
             '加入 ${profile.joinedDays} 天',
             style: AppTypography.subtitleStyle(
               seniorMode: seniorMode,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
           const SizedBox(height: 20),
@@ -390,7 +390,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
                         '好友碼',
                         style: AppTypography.captionStyle(
                           seniorMode: seniorMode,
-                          color: AppColors.fog,
+                          color: AppColors.inkMuted,
                         ),
                       ),
                       const SizedBox(height: 2),
@@ -488,7 +488,7 @@ class _PublicProfileScreenState extends State<PublicProfileScreen> {
               '羈絆好友',
               style: AppTypography.captionStyle(
                 seniorMode: seniorMode,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
               ),
             ),
             // 每筆要帶出是誰，只放等級徽章會被讀成「檢視者與此人的羈絆」。

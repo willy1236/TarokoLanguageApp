@@ -65,7 +65,7 @@ class ProfileCoinBanner extends StatelessWidget {
                     '小米幣',
                     style: AppTypography.bodyStyle(
                       seniorMode: seniorMode,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ],

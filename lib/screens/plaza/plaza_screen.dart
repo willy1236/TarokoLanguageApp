@@ -239,7 +239,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
               style: AppTypography.latin(
                 fontStyle: FontStyle.italic,
                 fontSize: AppTypography.caption,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
                 letterSpacing: 3.0,
               ),
             ),
@@ -392,7 +392,7 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
             style: AppTypography.latin(
               fontStyle: FontStyle.italic,
               fontSize: AppTypography.micro,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
               letterSpacing: 3.0,
             ),
           ),

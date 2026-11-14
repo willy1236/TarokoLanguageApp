@@ -355,7 +355,7 @@ class _HistoryRow extends StatelessWidget {
                     '${record.statusLabel} · ${_timeLabel()}',
                     style: const TextStyle(
                       fontSize: AppTypography.caption,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ],
@@ -369,11 +369,15 @@ class _HistoryRow extends StatelessWidget {
                   style: AppTypography.serif(
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
-                    color: isCompleted ? AppColors.primary : AppColors.fog,
+                    color: isCompleted ? AppColors.primary : AppColors.inkMuted,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Icon(Icons.chevron_right, color: AppColors.fog, size: 18),
+                const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.inkMuted,
+                  size: 18,
+                ),
               ],
             ),
           ],

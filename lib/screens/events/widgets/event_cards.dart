@@ -493,7 +493,7 @@ class EventList extends StatelessWidget {
                         AppTypography.caption,
                         seniorMode: seniorMode,
                       ),
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                       letterSpacing: 0.8,
                     ),
                   ),

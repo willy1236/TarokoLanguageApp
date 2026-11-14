@@ -220,7 +220,7 @@ class ForumPostCard extends StatelessWidget {
                       AppTypography.caption,
                       seniorMode: seniorMode,
                     ),
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                     letterSpacing: 0.8,
                   ),
                 ),
@@ -256,7 +256,7 @@ class ForumPostCard extends StatelessWidget {
       EngagementIconButton(
         key: const ValueKey('forum-post-like'),
         icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
-        color: post.isLiked ? AppColors.primary : AppColors.fog,
+        color: post.isLiked ? AppColors.primary : AppColors.inkMuted,
         count: post.likeCount,
         onTap: onLike,
         seniorMode: seniorMode,
@@ -265,7 +265,7 @@ class ForumPostCard extends StatelessWidget {
       EngagementIconButton(
         key: const ValueKey('forum-post-comment'),
         icon: Icons.mode_comment_outlined,
-        color: AppColors.fog,
+        color: AppColors.inkMuted,
         count: post.commentCount,
         onTap: onTap,
         seniorMode: seniorMode,
@@ -281,7 +281,7 @@ class ForumPostCard extends StatelessWidget {
         icon: Icon(
           post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
           size: AppIconSize.inline(seniorMode),
-          color: post.isBookmarked ? AppColors.primary : AppColors.fog,
+          color: post.isBookmarked ? AppColors.primary : AppColors.inkMuted,
         ),
       ),
     ],

@@ -129,7 +129,7 @@ class AdminHomeScreen extends StatelessWidget {
             '操作會記錄是哪一位管理員做的。',
             style: AppTypography.captionStyle(
               seniorMode: senior,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
         ),

@@ -225,7 +225,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
             style: AppTypography.latin(
               fontStyle: FontStyle.italic,
               fontSize: AppTypography.micro,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
               letterSpacing: 2,
             ),
           ),
@@ -279,7 +279,7 @@ class _BackpackScreenState extends State<BackpackScreen> {
             style: AppTypography.latin(
               fontStyle: FontStyle.italic,
               fontSize: AppTypography.micro,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
               letterSpacing: 2,
             ),
           ),

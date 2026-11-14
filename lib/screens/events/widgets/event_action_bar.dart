@@ -327,7 +327,7 @@ class EventActionBar extends StatelessWidget {
         ),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(color: AppColors.fog),
+          border: Border.all(color: AppColors.inkMuted),
         ),
         child: Center(
           heightFactor: 1.0,

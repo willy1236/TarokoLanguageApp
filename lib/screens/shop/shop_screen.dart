@@ -398,7 +398,7 @@ class _ShopScreenState extends State<ShopScreen> {
             style: AppTypography.latin(
               fontStyle: FontStyle.italic,
               fontSize: AppTypography.micro,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
               letterSpacing: 2,
             ),
           ),

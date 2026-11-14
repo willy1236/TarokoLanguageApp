@@ -152,7 +152,7 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
                 Text(
                   '預定刪除日期：${formatDate(purgeAt)}',
                   textAlign: TextAlign.center,
-                  style: AppTypography.bodyStyle(color: AppColors.fog),
+                  style: AppTypography.bodyStyle(color: AppColors.inkMuted),
                 ),
               ],
               const SizedBox(height: 24),
@@ -191,7 +191,9 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
                 onPressed: _submitting ? null : _keepDeletedAndSignOut,
                 child: Text(
                   '維持刪除並登出',
-                  style: AppTypography.bodyLargeStyle(color: AppColors.fog),
+                  style: AppTypography.bodyLargeStyle(
+                    color: AppColors.inkMuted,
+                  ),
                 ),
               ),
             ],

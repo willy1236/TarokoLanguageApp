@@ -204,7 +204,7 @@ class _CommentListItem extends StatelessWidget {
                 Text(
                   '${item.comment.likeCount}',
                   style: TextStyle(
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                     fontSize: AppTypography.size(
                       AppTypography.caption,
                       seniorMode: seniorMode,

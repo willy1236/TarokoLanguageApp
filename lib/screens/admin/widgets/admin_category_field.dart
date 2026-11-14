@@ -264,7 +264,7 @@ class _AdminCategoryFieldState extends State<AdminCategoryField> {
               '分類載入中…',
               style: AppTypography.bodyStyle(
                 seniorMode: senior,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
               ),
             ),
     );

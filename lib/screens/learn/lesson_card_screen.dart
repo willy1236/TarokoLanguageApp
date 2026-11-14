@@ -115,7 +115,7 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
               style: AppTypography.latin(
                 fontSize: AppTypography.caption,
                 fontStyle: FontStyle.italic,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
                 letterSpacing: 2.0,
               ),
             ),

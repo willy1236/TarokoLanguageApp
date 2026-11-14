@@ -103,7 +103,7 @@ class _UnderageSheet extends StatelessWidget {
                 '知道了',
                 style: AppTypography.bodyStyle(
                   seniorMode: seniorMode,
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                 ),
               ),
             ),

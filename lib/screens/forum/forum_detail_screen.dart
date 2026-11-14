@@ -1071,7 +1071,7 @@ class _ForumDetailScreenState extends State<ForumDetailScreen>
               child: Text(
                 '還沒有人留言，來說第一句吧。',
                 style: TextStyle(
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                   fontSize: seniorMode
                       ? AppTypography.bodyLarge + AppTypography.seniorStep
                       : null,

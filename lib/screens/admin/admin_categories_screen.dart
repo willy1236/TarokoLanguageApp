@@ -250,14 +250,14 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen>
                   '代碼 ${c.value}',
                   style: AppTypography.captionStyle(
                     seniorMode: senior,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
               Text(
                 '排序 ${c.sortOrder}',
                 style: AppTypography.captionStyle(
                   seniorMode: senior,
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                 ),
               ),
               if (m == CategoryModule.events)
@@ -265,7 +265,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen>
                   c.displayColor == null ? '顏色 預設' : '顏色 ${c.color}',
                   style: AppTypography.captionStyle(
                     seniorMode: senior,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
             ],
@@ -279,7 +279,7 @@ class _AdminCategoriesScreenState extends State<AdminCategoriesScreen>
           ),
         ),
         const SizedBox(width: AppSpacing.xs),
-        const Icon(Icons.edit_outlined, size: 18, color: AppColors.fog),
+        const Icon(Icons.edit_outlined, size: 18, color: AppColors.inkMuted),
       ],
     ),
   );
@@ -500,7 +500,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                 '活動列表上的日期方塊',
                 style: AppTypography.captionStyle(
                   seniorMode: senior,
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                 ),
               ),
             ),
@@ -540,7 +540,7 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                     '代碼 ${widget.editing!.value} 不會改變，已使用這個分類的內容不受影響。',
                     style: AppTypography.captionStyle(
                       seniorMode: senior,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ),

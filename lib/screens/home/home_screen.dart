@@ -324,7 +324,7 @@ class HomeScreen extends StatelessWidget {
                         style: AppTypography.latin(
                           fontStyle: FontStyle.italic,
                           fontSize: AppTypography.body,
-                          color: AppColors.fog,
+                          color: AppColors.inkMuted,
                           letterSpacing: 2.0,
                         ),
                       ),

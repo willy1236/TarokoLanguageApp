@@ -208,7 +208,7 @@ class AdminInfoRow extends StatelessWidget {
             text: '$label：',
             style: AppTypography.bodyStyle(
               seniorMode: seniorMode,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
           TextSpan(

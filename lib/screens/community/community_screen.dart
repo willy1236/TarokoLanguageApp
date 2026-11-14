@@ -154,7 +154,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               style: AppTypography.latin(
                 fontStyle: FontStyle.italic,
                 fontSize: AppTypography.caption,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
                 letterSpacing: 3.0,
               ),
             ),
@@ -299,7 +299,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
               Icon(
                 Icons.shield_outlined,
                 size: seniorMode ? 20 : 14,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
               ),
               const SizedBox(width: 6),
               Text(
@@ -309,9 +309,9 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     AppTypography.caption,
                     seniorMode: seniorMode,
                   ),
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                   decoration: TextDecoration.underline,
-                  decorationColor: AppColors.fog,
+                  decorationColor: AppColors.inkMuted,
                 ),
               ),
             ],
@@ -574,7 +574,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     AppTypography.caption,
                     seniorMode: seniorMode,
                   ),
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                 ),
               ),
             )
@@ -672,7 +672,7 @@ class _FriendTile extends StatelessWidget {
                     friend.bondLevel.name,
                     style: AppTypography.bodyStyle(
                       seniorMode: seniorMode,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ).copyWith(letterSpacing: 1.2),
                   ),
                 ],

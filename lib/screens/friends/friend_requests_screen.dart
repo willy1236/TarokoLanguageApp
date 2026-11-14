@@ -207,7 +207,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.captionStyle(
                       seniorMode: seniorMode,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ],
@@ -230,7 +230,7 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
             IconButton(
               onPressed: () => _decline(r),
               iconSize: AppIconSize.action(seniorMode),
-              icon: const Icon(Icons.close, color: AppColors.fog),
+              icon: const Icon(Icons.close, color: AppColors.inkMuted),
               tooltip: '拒絕',
             ),
             IconButton(

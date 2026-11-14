@@ -209,7 +209,7 @@ class _ResultItemCard extends StatelessWidget {
                 '第 ${item.order} 題',
                 style: AppTypography.mono(
                   fontSize: _size(AppTypography.caption),
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                   letterSpacing: 1.0,
                 ),
               ),
@@ -265,7 +265,7 @@ class _ResultItemCard extends StatelessWidget {
             label,
             style: AppTypography.bodyStyle(
               seniorMode: seniorMode,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
         ),

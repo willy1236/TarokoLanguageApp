@@ -147,7 +147,7 @@ class _AccountDeleteScreenState extends State<AccountDeleteScreen> {
               style: AppTypography.bodyLargeStyle(color: AppColors.ink),
               decoration: InputDecoration(
                 labelText: '想告訴我們離開的原因嗎？（選填）',
-                labelStyle: AppTypography.bodyStyle(color: AppColors.fog),
+                labelStyle: AppTypography.bodyStyle(color: AppColors.inkMuted),
                 border: const OutlineInputBorder(),
               ),
             ),
@@ -286,7 +286,9 @@ class AccountDeletedScreen extends StatelessWidget {
                     children: [
                       Text(
                         '永久刪除日期',
-                        style: AppTypography.bodyStyle(color: AppColors.fog),
+                        style: AppTypography.bodyStyle(
+                          color: AppColors.inkMuted,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Text(

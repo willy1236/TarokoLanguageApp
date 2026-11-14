@@ -251,7 +251,7 @@ class _BirthDateWheelSheetState extends State<_BirthDateWheelSheet> {
                     '取消',
                     style: AppTypography.bodyStyle(
                       seniorMode: seniorMode,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ),

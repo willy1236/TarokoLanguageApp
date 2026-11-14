@@ -131,7 +131,7 @@ class ShopItemCard extends StatelessWidget {
                     textAlign: TextAlign.center,
                     style: TextStyle(
                       fontSize: AppTypography.micro,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                       letterSpacing: 0.5,
                     ),
                   ),
@@ -157,7 +157,7 @@ class ShopItemCard extends StatelessWidget {
                           fontWeight: FontWeight.w700,
                           color: onAction != null
                               ? AppColors.ink
-                              : AppColors.fog,
+                              : AppColors.inkMuted,
                         ),
                       ),
                     ),
@@ -220,7 +220,7 @@ class ShopItemCard extends StatelessWidget {
       return Icon(
         icon,
         size: 44,
-        color: isGold ? AppColors.gold : AppColors.fog,
+        color: isGold ? AppColors.gold : AppColors.inkMuted,
       );
     }
     return Image.network(
@@ -228,8 +228,11 @@ class ShopItemCard extends StatelessWidget {
       width: 64,
       height: 64,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) =>
-          Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog),
+      errorBuilder: (_, _, _) => Icon(
+        icon,
+        size: 44,
+        color: isGold ? AppColors.gold : AppColors.inkMuted,
+      ),
     );
   }
 }

@@ -45,7 +45,7 @@ class MyLikesScreen extends StatelessWidget {
           ),
           bottom: const TabBar(
             labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.fog,
+            unselectedLabelColor: AppColors.inkMuted,
             indicatorColor: AppColors.primary,
             tabs: [
               Tab(text: '影音'),

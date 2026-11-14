@@ -239,7 +239,7 @@ class _ProgressBar extends StatelessWidget {
             '${index + 1} / $total',
             style: AppTypography.mono(
               fontSize: AppTypography.caption,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
               letterSpacing: 1.2,
             ),
           ),
@@ -273,7 +273,7 @@ class QuizUnitLabel extends StatelessWidget {
             style: AppTypography.latin(
               fontSize: AppTypography.caption,
               fontStyle: FontStyle.italic,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
               letterSpacing: 2.4,
             ),
           ),

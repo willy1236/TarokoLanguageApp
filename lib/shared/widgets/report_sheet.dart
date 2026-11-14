@@ -70,11 +70,11 @@ ThemeData _sheetTheme(BuildContext context) {
       bodyColor: AppColors.inkSoft,
       displayColor: AppColors.ink,
     ),
-    hintColor: AppColors.fog,
+    hintColor: AppColors.inkMuted,
     inputDecorationTheme: const InputDecorationTheme(
-      hintStyle: TextStyle(color: AppColors.fog),
+      hintStyle: TextStyle(color: AppColors.inkMuted),
       counterStyle: TextStyle(
-        color: AppColors.fog,
+        color: AppColors.inkMuted,
         fontSize: AppTypography.caption,
       ),
     ),
@@ -187,7 +187,7 @@ class _ReportSheetState extends State<_ReportSheet> {
                 AppTypography.body,
                 seniorMode: seniorMode,
               ),
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
           const SizedBox(height: 14),

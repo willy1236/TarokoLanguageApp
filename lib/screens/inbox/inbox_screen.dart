@@ -150,7 +150,7 @@ class _InboxScreenState extends State<InboxScreen>
       actions: [
         IconButton(
           tooltip: '推播設定',
-          icon: const Icon(Icons.settings_outlined, color: AppColors.fog),
+          icon: const Icon(Icons.settings_outlined, color: AppColors.inkMuted),
           iconSize: AppIconSize.action(seniorMode),
           onPressed: () => showTribeEventPushSheet(context),
         ),
@@ -162,7 +162,7 @@ class _InboxScreenState extends State<InboxScreen>
           builder: (context, summary, _) => TabBar(
             controller: _tabController,
             labelColor: AppColors.ink,
-            unselectedLabelColor: AppColors.fog,
+            unselectedLabelColor: AppColors.inkMuted,
             indicatorColor: AppColors.primary,
             dividerColor: AppColors.creamDeep,
             labelPadding: EdgeInsets.zero,
@@ -422,7 +422,7 @@ class _InboxTabState extends State<_InboxTab> {
                     unread > 0 ? '未讀 ${badgeLabel(unread)} 則' : '沒有未讀通知',
                     style: AppTypography.captionStyle(
                       seniorMode: seniorMode,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ),
@@ -432,7 +432,9 @@ class _InboxTabState extends State<_InboxTab> {
                     '全部已讀',
                     style: AppTypography.bodyStyle(
                       seniorMode: seniorMode,
-                      color: unread == 0 ? AppColors.fog : AppColors.primary,
+                      color: unread == 0
+                          ? AppColors.inkMuted
+                          : AppColors.primary,
                     ),
                   ),
                 ),
@@ -571,7 +573,7 @@ class _InboxTile extends StatelessWidget {
                       formatRelativeTime(item.createdAt),
                       style: AppTypography.captionStyle(
                         seniorMode: seniorMode,
-                        color: AppColors.fog,
+                        color: AppColors.inkMuted,
                       ),
                     ),
                   ],

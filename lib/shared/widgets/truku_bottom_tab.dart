@@ -64,7 +64,9 @@ class TrukuBottomTab extends StatelessWidget {
                 Builder(
                   builder: (context) {
                     final isActive = i == currentIndex;
-                    final color = isActive ? AppColors.primary : AppColors.fog;
+                    final color = isActive
+                        ? AppColors.primary
+                        : AppColors.inkMuted;
                     return GestureDetector(
                       onTap: () => onTap(i),
                       behavior: HitTestBehavior.opaque,

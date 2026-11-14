@@ -228,7 +228,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
                       AppTypography.caption,
                       seniorMode: seniorMode,
                     ),
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                     letterSpacing: 0.5,
                   ),
                 ),
@@ -318,7 +318,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
             decoration: InputDecoration(
               hintText: '輸入要提醒參加者的內容…',
               hintStyle: TextStyle(
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
                 fontSize: AppTypography.size(
                   AppTypography.body,
                   seniorMode: seniorMode,
@@ -335,7 +335,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
                 AppTypography.caption,
                 seniorMode: seniorMode,
               ),
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
         ],
@@ -466,7 +466,7 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
               AppTypography.caption,
               seniorMode: seniorMode,
             ),
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
             height: 1.5,
           ),
         ),

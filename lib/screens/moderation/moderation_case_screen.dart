@@ -212,7 +212,7 @@ class _ModerationCaseScreenState extends State<ModerationCaseScreen>
           '被重設前的內容',
           style: AppTypography.captionStyle(
             seniorMode: seniorMode,
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
         for (final entry in preview.profileBefore.entries)
@@ -365,7 +365,7 @@ class _ModerationCaseScreenState extends State<ModerationCaseScreen>
             text: '$label：',
             style: AppTypography.bodyStyle(
               seniorMode: seniorMode,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
           TextSpan(

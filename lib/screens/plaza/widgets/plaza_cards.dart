@@ -33,14 +33,14 @@ class PlazaEventMessageCard extends StatelessWidget {
     ),
     child: Row(
       children: [
-        Icon(icon, size: 18, color: AppColors.fog),
+        Icon(icon, size: 18, color: AppColors.inkMuted),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             message,
             style: AppTypography.serif(
               fontSize: AppTypography.body,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
               letterSpacing: 0.8,
             ),
           ),
@@ -72,7 +72,7 @@ class PlazaBoardTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColors.fog;
+    final color = selected ? AppColors.primary : AppColors.inkMuted;
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,

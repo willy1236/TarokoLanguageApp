@@ -58,13 +58,16 @@ class EphemeralNetworkImage extends StatelessWidget {
         : Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.broken_image_outlined, color: AppColors.fog),
+              const Icon(
+                Icons.broken_image_outlined,
+                color: AppColors.inkMuted,
+              ),
               if (failedHint != null) ...[
                 const SizedBox(height: 4),
                 Text(
                   failedHint!,
                   textAlign: TextAlign.center,
-                  style: AppTypography.captionStyle(color: AppColors.fog),
+                  style: AppTypography.captionStyle(color: AppColors.inkMuted),
                 ),
               ],
             ],

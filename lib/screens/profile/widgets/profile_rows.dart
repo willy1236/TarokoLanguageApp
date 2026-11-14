@@ -40,7 +40,7 @@ Widget profileStatCell(bool seniorMode, String value, String label) {
           label,
           style: AppTypography.bodyLargeStyle(
             seniorMode: seniorMode,
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
       ],
@@ -156,7 +156,7 @@ Widget profileNavRow({
             children: [
               Icon(
                 Icons.chevron_right,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
                 size: AppIconSize.chevron(seniorMode),
               ),
             ],
@@ -185,7 +185,7 @@ Widget profileSection(
               AppTypography.micro,
               seniorMode: seniorMode,
             ),
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
             letterSpacing: 3,
           ),
         ),
@@ -239,7 +239,7 @@ Widget profileSettingRow(
                           AppTypography.caption,
                           seniorMode: seniorMode,
                         ),
-                        color: AppColors.fog,
+                        color: AppColors.inkMuted,
                         letterSpacing: 1,
                       ),
                     ),
@@ -277,7 +277,7 @@ Widget profileSettingRow(
                         hint,
                         style: AppTypography.captionStyle(
                           seniorMode: seniorMode,
-                          color: AppColors.fog,
+                          color: AppColors.inkMuted,
                         ),
                       ),
                     ],
@@ -358,7 +358,7 @@ Widget profileSwitchRow(
                           AppTypography.caption,
                           seniorMode: seniorMode,
                         ),
-                        color: AppColors.fog,
+                        color: AppColors.inkMuted,
                       ),
                     ),
                   ],

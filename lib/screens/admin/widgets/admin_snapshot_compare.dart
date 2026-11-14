@@ -163,7 +163,7 @@ class _SnapshotAvatarState extends State<_SnapshotAvatar> {
             avatarUrl: s.avatarUrl,
             itemCatalogById: _catalog,
             size: _avatarSize,
-            fallbackIconColor: AppColors.fog,
+            fallbackIconColor: AppColors.inkMuted,
           ),
         ),
       );
@@ -175,7 +175,7 @@ class _SnapshotAvatarState extends State<_SnapshotAvatar> {
           caption,
           style: AppTypography.bodyStyle(
             seniorMode: widget.seniorMode,
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
         const SizedBox(height: 4),
@@ -187,7 +187,7 @@ class _SnapshotAvatarState extends State<_SnapshotAvatar> {
               '圖片約 15 分鐘後過期，看不到時下拉重新整理。',
               style: AppTypography.captionStyle(
                 seniorMode: widget.seniorMode,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
               ),
             ),
           ),

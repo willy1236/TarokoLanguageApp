@@ -75,7 +75,7 @@ class ProfileLogoutButton extends StatelessWidget {
                 '${version}MHUWAY SU',
                 style: AppTypography.mono(
                   fontSize: AppTypography.micro,
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                   letterSpacing: 2,
                 ),
               );

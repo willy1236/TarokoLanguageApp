@@ -118,7 +118,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
               child: Text(
                 _hint!,
                 style: TextStyle(
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                   fontSize: seniorMode
                       ? AppTypography.bodyLarge + AppTypography.seniorStep
                       : null,

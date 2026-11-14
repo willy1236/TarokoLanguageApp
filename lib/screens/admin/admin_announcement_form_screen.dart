@@ -206,7 +206,7 @@ class _AdminAnnouncementFormScreenState
             '關閉時只進收件匣。',
             style: AppTypography.captionStyle(
               seniorMode: senior,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
         ),

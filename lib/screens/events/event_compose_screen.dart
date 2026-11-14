@@ -760,7 +760,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                       AppTypography.caption,
                       seniorMode: seniorMode,
                     ),
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                     letterSpacing: 1.0,
                   ),
                 ),
@@ -775,7 +775,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                   seniorMode: seniorMode,
                 ),
                 fontWeight: FontWeight.w600,
-                color: value == null ? AppColors.fog : AppColors.ink,
+                color: value == null ? AppColors.inkMuted : AppColors.ink,
               ),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
@@ -828,7 +828,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     AppTypography.caption,
                     seniorMode: seniorMode,
                   ),
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                   letterSpacing: 1.0,
                 ),
               ),
@@ -856,7 +856,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               hintText: '門牌或描述，例如：秀林鄉富世村 12 號／部落活動中心',
               hintMaxLines: 3,
               hintStyle: TextStyle(
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
                 fontSize: AppTypography.size(
                   AppTypography.body,
                   seniorMode: seniorMode,
@@ -943,7 +943,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
               decoration: InputDecoration(
                 hintText: '留空 = 不限名額',
                 hintStyle: TextStyle(
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                   fontSize: AppTypography.size(
                     AppTypography.body,
                     seniorMode: seniorMode,
@@ -1044,7 +1044,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     AppTypography.caption,
                     seniorMode: seniorMode,
                   ),
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                 ),
               ),
             ),
@@ -1092,7 +1092,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
         decoration: InputDecoration(
           hintText: hint,
           hintStyle: TextStyle(
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
             fontSize: AppTypography.size(
               AppTypography.body,
               seniorMode: seniorMode,
@@ -1112,7 +1112,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
       text,
       style: AppTypography.captionStyle(
         seniorMode: seniorMode,
-        color: AppColors.fog,
+        color: AppColors.inkMuted,
       ),
     ),
   );
@@ -1149,7 +1149,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
                     AppTypography.body,
                     seniorMode: seniorMode,
                   ),
-                  color: value == null ? AppColors.fog : AppColors.ink,
+                  color: value == null ? AppColors.inkMuted : AppColors.ink,
                   letterSpacing: 0.5,
                 ),
               ),
@@ -1214,7 +1214,7 @@ class _EventComposeScreenState extends State<EventComposeScreen> {
           '載入分類中…',
           style: AppTypography.bodyStyle(
             seniorMode: seniorMode,
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
       ],
@@ -1354,7 +1354,7 @@ class _NewCategoryDialogState extends State<_NewCategoryDialog> {
           hintText: '分類名稱（1～$_maxLength 字）',
           hintStyle: AppTypography.bodyLargeStyle(
             seniorMode: seniorMode,
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
       ),

@@ -767,7 +767,7 @@ class _PendingUploadRow extends StatelessWidget {
 Color _statusColor(String status) => switch (status) {
   'ready' => AppColors.moss,
   'failed' => AppColors.dangerDark,
-  'archived' => AppColors.fog,
+  'archived' => AppColors.inkMuted,
   _ => AppColors.goldDeep,
 };
 
@@ -880,7 +880,7 @@ class _Thumbnail extends StatelessWidget {
       child: const Icon(
         Icons.movie_outlined,
         key: ValueKey('admin-video-thumbnail-placeholder'),
-        color: AppColors.fog,
+        color: AppColors.inkMuted,
       ),
     );
     final src = url;

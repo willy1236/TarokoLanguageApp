@@ -49,7 +49,7 @@ class LearnPlacementOptionTile extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     done ? '已完成' : subtitle,
-                    style: AppTypography.bodyStyle(color: AppColors.fog),
+                    style: AppTypography.bodyStyle(color: AppColors.inkMuted),
                   ),
                 ],
               ),
@@ -281,7 +281,7 @@ class LearnPlacementSummaryCard extends StatelessWidget {
                   const SizedBox(height: 4),
                   Text(
                     '單字 ${quizLevel ?? "尚未測驗"}．聽力 ${listeningLevel ?? "尚未測驗"}',
-                    style: AppTypography.bodyStyle(color: AppColors.fog),
+                    style: AppTypography.bodyStyle(color: AppColors.inkMuted),
                   ),
                 ],
               ),
@@ -349,7 +349,7 @@ class LearnPlacementQuizCard extends StatelessWidget {
                   style: AppTypography.sans(
                     fontSize: AppTypography.body,
                     height: 1.5,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
                 const SizedBox(height: 18),

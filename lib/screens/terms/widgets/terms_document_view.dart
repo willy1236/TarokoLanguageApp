@@ -57,7 +57,7 @@ class TermsDocumentView extends StatelessWidget {
             '第 $version 版',
             style: TextStyle(
               fontSize: AppTypography.caption,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
         const SizedBox(height: 12),

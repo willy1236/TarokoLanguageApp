@@ -36,7 +36,7 @@ class _MyBookmarksScreenState extends State<MyBookmarksScreen> {
           title: const Text('我的收藏'),
           bottom: const TabBar(
             labelColor: AppColors.primary,
-            unselectedLabelColor: AppColors.fog,
+            unselectedLabelColor: AppColors.inkMuted,
             indicatorColor: AppColors.primary,
             tabs: [
               Tab(text: '影音'),

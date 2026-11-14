@@ -559,7 +559,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     Icon(
                       Icons.chevron_right,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                       size: AppIconSize.chevron(seniorMode),
                     ),
                   ],

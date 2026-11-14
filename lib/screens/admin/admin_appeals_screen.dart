@@ -157,7 +157,7 @@ class _AppealCardState extends State<_AppealCard> {
                   formatDateTime(a.createdAt!),
                   style: AppTypography.captionStyle(
                     seniorMode: senior,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
             ],

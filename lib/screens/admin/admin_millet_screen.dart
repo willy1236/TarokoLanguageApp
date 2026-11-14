@@ -154,7 +154,7 @@ class _AdminMilletScreenState extends State<AdminMilletScreen> {
                   '沒有小米幣明細',
                   style: AppTypography.bodyStyle(
                     seniorMode: senior,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
               ),

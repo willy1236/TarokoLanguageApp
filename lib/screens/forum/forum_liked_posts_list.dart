@@ -194,13 +194,13 @@ class _PostListItem extends StatelessWidget {
                 Icon(
                   post.isLiked ? Icons.favorite : Icons.favorite_border,
                   size: seniorMode ? 22 : 14,
-                  color: post.isLiked ? AppColors.primary : AppColors.fog,
+                  color: post.isLiked ? AppColors.primary : AppColors.inkMuted,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${post.likeCount}',
                   style: TextStyle(
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                     fontSize: AppTypography.size(
                       AppTypography.caption,
                       seniorMode: seniorMode,
@@ -211,13 +211,13 @@ class _PostListItem extends StatelessWidget {
                 Icon(
                   Icons.mode_comment_outlined,
                   size: seniorMode ? 22 : 14,
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                 ),
                 const SizedBox(width: 4),
                 Text(
                   '${post.commentCount}',
                   style: TextStyle(
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                     fontSize: AppTypography.size(
                       AppTypography.caption,
                       seniorMode: seniorMode,
