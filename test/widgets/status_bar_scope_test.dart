@@ -31,4 +31,38 @@ void main() {
     expect(style.statusBarIconBrightness, Brightness.light);
     expect(style.statusBarBrightness, Brightness.dark);
   });
+
+  group('樹上有多個 StatusBarScope 時，畫面上最內層、有畫出來的那個生效', () {
+    SystemUiOverlayStyle? styleAtTop(WidgetTester tester) => tester
+        .binding
+        .renderViews
+        .first
+        .debugLayer!
+        .find<SystemUiOverlayStyle>(const Offset(100, 10));
+
+    Widget app(int index) => MaterialApp(
+      home: StatusBarScope.onLight(
+        child: Scaffold(
+          body: IndexedStack(
+            index: index,
+            children: const [
+              SizedBox.expand(),
+              StatusBarScope.onDark(child: SizedBox.expand()),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    testWidgets('顯示深色分頁：淺色圖示', (tester) async {
+      await tester.pumpWidget(app(1));
+      expect(styleAtTop(tester), StatusBarScope.darkBackgroundStyle);
+    });
+
+    testWidgets('切到沒有 scope 的分頁：落回外層預設的深色圖示，不殘留', (tester) async {
+      await tester.pumpWidget(app(1));
+      await tester.pumpWidget(app(0));
+      expect(styleAtTop(tester), StatusBarScope.lightBackgroundStyle);
+    });
+  });
 }

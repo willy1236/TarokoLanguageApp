@@ -172,8 +172,13 @@ class KariTrukuApp extends StatelessWidget {
               seniorMode: seniorMode,
             ),
           ),
-          child: AppUpdatePromptLayer(
-            child: _ReadOnlyBannerFrame(child: child!),
+          // 全域預設的狀態列樣式放在樹的最外層：畫面上沒有任何 StatusBarScope 時
+          // （例如從深色頂端的分頁切到米白底分頁），才會落回這個預設；不放的話
+          // Flutter 不會重設，上一個畫面的圖示顏色會一直殘留。
+          child: StatusBarScope.onLight(
+            child: AppUpdatePromptLayer(
+              child: _ReadOnlyBannerFrame(child: child!),
+            ),
           ),
         );
       },
