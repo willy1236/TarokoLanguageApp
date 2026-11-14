@@ -5,6 +5,7 @@ import '../../shared/widgets/swipe_segment_switcher.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../culture/culture_screen.dart';
 import 'learn_screen.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 /// 「學習」「影音」「文章」合併分頁：底部導航列只佔一格，內部用膠囊三格切換。
 /// 影音/文章原本是文化頁內的第二層 tab，實機回報要點兩次才到文章，故把那一層
@@ -60,36 +61,38 @@ class _LearnCultureScreenState extends State<LearnCultureScreen> {
   Widget build(BuildContext context) {
     final isLearn = _tabIndex == 0;
     WidgetsBinding.instance.addPostFrameCallback((_) => _measureHeader());
-    return Scaffold(
-      backgroundColor: isLearn ? AppColors.primary : AppColors.midnight,
-      body: Column(
-        children: [
-          _buildHeader(isLearn),
-          Expanded(
-            child: SwipeSegmentSwitcher(
-              index: _tabIndex,
-              count: 3,
-              onChanged: _select,
-              onDragProgress: (p) => _dragProgress.value = p,
-              // 影音(1)與文章(2)同屬 CultureScreen，只是把子分頁索引往下傳。
-              child: IndexedStack(
-                index: isLearn ? 0 : 1,
-                sizing: StackFit.expand,
-                children: [
-                  LearnScreen(
-                    reselectSignal: isLearn ? widget.reselectSignal : null,
-                    weaveOffsetY: _headerHeight,
-                  ),
-                  CultureScreen(
-                    cultureTabIndex: isLearn ? 0 : _tabIndex - 1,
-                    reselectSignal: isLearn ? null : widget.reselectSignal,
-                    active: widget.active && !isLearn,
-                  ),
-                ],
+    return StatusBarScope.onDark(
+      child: Scaffold(
+        backgroundColor: isLearn ? AppColors.primary : AppColors.midnight,
+        body: Column(
+          children: [
+            _buildHeader(isLearn),
+            Expanded(
+              child: SwipeSegmentSwitcher(
+                index: _tabIndex,
+                count: 3,
+                onChanged: _select,
+                onDragProgress: (p) => _dragProgress.value = p,
+                // 影音(1)與文章(2)同屬 CultureScreen，只是把子分頁索引往下傳。
+                child: IndexedStack(
+                  index: isLearn ? 0 : 1,
+                  sizing: StackFit.expand,
+                  children: [
+                    LearnScreen(
+                      reselectSignal: isLearn ? widget.reselectSignal : null,
+                      weaveOffsetY: _headerHeight,
+                    ),
+                    CultureScreen(
+                      cultureTabIndex: isLearn ? 0 : _tabIndex - 1,
+                      reselectSignal: isLearn ? null : widget.reselectSignal,
+                      active: widget.active && !isLearn,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

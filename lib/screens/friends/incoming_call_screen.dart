@@ -23,6 +23,7 @@ import '../../shared/widgets/user_avatar.dart';
 import '../community/video_call_screen.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/nickname_text.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 class IncomingCallScreen extends StatefulWidget {
   final IncomingCall call;
@@ -252,69 +253,71 @@ class _IncomingCallScreenState extends State<IncomingCallScreen> {
 
   Widget _buildBody() {
     final call = widget.call;
-    return Scaffold(
-      backgroundColor: AppColors.ink,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Opacity(
-            opacity: 0.08,
-            child: CustomPaint(
-              painter: TrukuWeavePainter(
-                color: AppColors.gold,
-                opacity: 1.0,
-                scale: 1.2,
-              ),
-            ),
-          ),
-          Container(
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0, -0.2),
-                radius: 0.7,
-                colors: [Color(0x304A0F0C), Colors.transparent],
-              ),
-            ),
-          ),
-          Column(
-            children: [
-              const SizedBox(height: 100),
-              Expanded(
-                child: Center(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      _avatar(),
-                      const SizedBox(height: 24),
-                      NicknameText(
-                        call.callerNickname?.isNotEmpty == true
-                            ? call.callerNickname!
-                            : '未命名旅人',
-                        friendCode: call.callerFriendCode,
-                        style: AppTypography.serif(
-                          fontSize: AppTypography.display24,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.creamLight,
-                          letterSpacing: 1.2,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        _errorMessage ?? '來電中…',
-                        style: TextStyle(
-                          fontSize: AppTypography.body,
-                          color: AppColors.creamLight.withValues(alpha: 0.7),
-                        ),
-                      ),
-                    ],
-                  ),
+    return StatusBarScope.onDark(
+      child: Scaffold(
+        backgroundColor: AppColors.ink,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            Opacity(
+              opacity: 0.08,
+              child: CustomPaint(
+                painter: TrukuWeavePainter(
+                  color: AppColors.gold,
+                  opacity: 1.0,
+                  scale: 1.2,
                 ),
               ),
-              _buildActions(),
-              const SizedBox(height: 60),
-            ],
-          ),
-        ],
+            ),
+            Container(
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -0.2),
+                  radius: 0.7,
+                  colors: [Color(0x304A0F0C), Colors.transparent],
+                ),
+              ),
+            ),
+            Column(
+              children: [
+                const SizedBox(height: 100),
+                Expanded(
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _avatar(),
+                        const SizedBox(height: 24),
+                        NicknameText(
+                          call.callerNickname?.isNotEmpty == true
+                              ? call.callerNickname!
+                              : '未命名旅人',
+                          friendCode: call.callerFriendCode,
+                          style: AppTypography.serif(
+                            fontSize: AppTypography.display24,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.creamLight,
+                            letterSpacing: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _errorMessage ?? '來電中…',
+                          style: TextStyle(
+                            fontSize: AppTypography.body,
+                            color: AppColors.creamLight.withValues(alpha: 0.7),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                _buildActions(),
+                const SizedBox(height: 60),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

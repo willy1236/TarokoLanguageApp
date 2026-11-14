@@ -13,6 +13,7 @@ import '../../shared/widgets/truku_widgets.dart';
 import 'video_call_screen.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/confirm_dialog.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 class VideoWaitingScreen extends StatefulWidget {
   const VideoWaitingScreen({super.key});
@@ -227,44 +228,46 @@ class _VideoWaitingScreenState extends State<VideoWaitingScreen>
   }
 
   Widget _buildBody() {
-    return Scaffold(
-      backgroundColor: AppColors.ink,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // Weave background
-          Opacity(
-            opacity: 0.08,
-            child: CustomPaint(
-              painter: TrukuWeavePainter(
-                color: AppColors.gold,
-                opacity: 1.0,
-                scale: 1.2,
+    return StatusBarScope.onDark(
+      child: Scaffold(
+        backgroundColor: AppColors.ink,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            // Weave background
+            Opacity(
+              opacity: 0.08,
+              child: CustomPaint(
+                painter: TrukuWeavePainter(
+                  color: AppColors.gold,
+                  opacity: 1.0,
+                  scale: 1.2,
+                ),
               ),
             ),
-          ),
-          // Radial gradient overlay
-          Container(
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0, -0.2),
-                radius: 0.7,
-                colors: [
-                  Color(0x304A0F0C), // primary 30%
-                  Colors.transparent,
-                ],
+            // Radial gradient overlay
+            Container(
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -0.2),
+                  radius: 0.7,
+                  colors: [
+                    Color(0x304A0F0C), // primary 30%
+                    Colors.transparent,
+                  ],
+                ),
               ),
             ),
-          ),
-          // Content
-          Column(
-            children: [
-              _buildTopBar(context),
-              Expanded(child: _buildCenter()),
-              _buildCancelButton(context),
-            ],
-          ),
-        ],
+            // Content
+            Column(
+              children: [
+                _buildTopBar(context),
+                Expanded(child: _buildCenter()),
+                _buildCancelButton(context),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -43,6 +43,7 @@ import 'services/user_service.dart';
 import 'services/video_call_service.dart';
 import 'shared/widgets/app_update_prompt.dart';
 import 'shared/widgets/scroll_to_top_scope.dart';
+import 'shared/widgets/status_bar_scope.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 import 'shared/widgets/confirm_dialog.dart';
 
@@ -58,12 +59,8 @@ const appLocale = Locale('zh', 'TW');
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
+  // 預設給米白底畫面用深色圖示；深色頂端的畫面用 StatusBarScope.onDark 個別改。
+  SystemChrome.setSystemUIOverlayStyle(StatusBarScope.lightBackgroundStyle);
 
   // 點提醒/取消通知 → 導到該活動詳情頁（用全域 routeStack，不依賴當下 context）。
   FcmService.onReminderTapped = (eventId) {

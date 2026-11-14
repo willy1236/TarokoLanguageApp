@@ -37,6 +37,7 @@ import '../millet/millet_ledger_screen.dart';
 import 'my_bookmarks_screen.dart';
 import 'my_likes_screen.dart';
 import '../terms/terms_consent_screen.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 // 頭像檔案限制（後端規則：≤8MB，僅接受 JPEG/PNG/WebP/GIF），前端先擋掉明顯無效
 // 的檔案以減少無效上傳。裁切後由 AvatarCropScreen 縮到邊長 1024，後端再縮成
@@ -121,34 +122,45 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildScaffold(bool seniorMode) {
-    // 頂部是深色 hero，狀態列圖示改用淺色。
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+    // 頂部是深色 hero，狀態列圖示改用淺色；往下捲時內容會跑到透明狀態列底下，
+    // 所以狀態列區域另外蓋一條 hero 同色的底，圖示才不會疊在內容上。
+    return StatusBarScope.onDark(
       child: Scaffold(
         backgroundColor: AppColors.creamLight,
-        body: ListView(
-          padding: EdgeInsets.zero,
+        body: Stack(
           children: [
-            ProfileHero(
-              user: _user,
-              itemCatalogById: _itemCatalogById,
-              seniorMode: seniorMode,
-              onAvatarTap: _openAvatarOptions,
-              onTribalNameTap: () => _openProfileInfo(editTribalName: true),
-              topToggle: widget.topToggle,
+            ListView(
+              padding: EdgeInsets.zero,
+              children: [
+                ProfileHero(
+                  user: _user,
+                  itemCatalogById: _itemCatalogById,
+                  seniorMode: seniorMode,
+                  onAvatarTap: _openAvatarOptions,
+                  onTribalNameTap: () => _openProfileInfo(editTribalName: true),
+                  topToggle: widget.topToggle,
+                ),
+                ProfileCoinBanner(
+                  user: _user,
+                  seniorMode: seniorMode,
+                  onTap: _openMilletLedger,
+                ),
+                ProfileStatsRow(user: _user, seniorMode: seniorMode),
+                _buildQuickLinksGrid(seniorMode: seniorMode),
+                _buildMoreSection(seniorMode: seniorMode),
+                _buildAppSettingsSection(seniorMode: seniorMode),
+                _buildOtherSection(seniorMode: seniorMode),
+                const ProfileLogoutButton(),
+                const SizedBox(height: 40),
+              ],
             ),
-            ProfileCoinBanner(
-              user: _user,
-              seniorMode: seniorMode,
-              onTap: _openMilletLedger,
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: MediaQuery.paddingOf(context).top,
+              child: const ColoredBox(color: AppColors.midnight),
             ),
-            ProfileStatsRow(user: _user, seniorMode: seniorMode),
-            _buildQuickLinksGrid(seniorMode: seniorMode),
-            _buildMoreSection(seniorMode: seniorMode),
-            _buildAppSettingsSection(seniorMode: seniorMode),
-            _buildOtherSection(seniorMode: seniorMode),
-            const ProfileLogoutButton(),
-            const SizedBox(height: 40),
           ],
         ),
       ),

@@ -17,6 +17,7 @@ import '../../services/user_service.dart';
 import '../../shared/widgets/birth_date_field.dart';
 import '../../shared/widgets/truku_painters.dart';
 import 'entry_route.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 class BirthDateScreen extends StatefulWidget {
   const BirthDateScreen({super.key});
@@ -104,51 +105,53 @@ class _BirthDateScreenState extends State<BirthDateScreen> {
   Widget build(BuildContext context) {
     return PopScope(
       canPop: false,
-      child: Scaffold(
-        backgroundColor: AppColors.midnight,
-        body: Stack(
-          children: [
-            Positioned.fill(
-              child: Container(
-                decoration: const BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      AppColors.midnight,
-                      AppColors.primaryDeep,
-                      AppColors.primary,
-                    ],
-                    stops: [0.0, 0.55, 1.0],
-                  ),
-                ),
-              ),
-            ),
-            Positioned.fill(
-              child: CustomPaint(
-                painter: TrukuWeavePainter(
-                  color: AppColors.gold,
-                  opacity: 0.12,
-                ),
-              ),
-            ),
-            SafeArea(
-              child: ListenableBuilder(
-                listenable: seniorModeController,
-                builder: (context, _) => LayoutBuilder(
-                  builder: (context, constraints) => SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight - 64, // 扣掉上下 padding
-                      ),
-                      child: _buildForm(seniorModeController.enabled),
+      child: StatusBarScope.onDark(
+        child: Scaffold(
+          backgroundColor: AppColors.midnight,
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        AppColors.midnight,
+                        AppColors.primaryDeep,
+                        AppColors.primary,
+                      ],
+                      stops: [0.0, 0.55, 1.0],
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: TrukuWeavePainter(
+                    color: AppColors.gold,
+                    opacity: 0.12,
+                  ),
+                ),
+              ),
+              SafeArea(
+                child: ListenableBuilder(
+                  listenable: seniorModeController,
+                  builder: (context, _) => LayoutBuilder(
+                    builder: (context, constraints) => SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight - 64, // 扣掉上下 padding
+                        ),
+                        child: _buildForm(seniorModeController.enabled),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

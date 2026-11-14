@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/user_model.dart';
@@ -13,6 +12,7 @@ import '../auth/entry_route.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -33,12 +33,6 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    SystemChrome.setSystemUIOverlayStyle(
-      const SystemUiOverlayStyle(
-        statusBarColor: Colors.transparent,
-        statusBarIconBrightness: Brightness.light,
-      ),
-    );
     Future.delayed(const Duration(milliseconds: 2500), () {
       if (mounted) _start();
     });
@@ -165,175 +159,177 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
-    return Scaffold(
-      backgroundColor: AppColors.midnight,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          // 漸層背景（midnight → primaryDeep → primary）
-          const DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                stops: [0.0, 0.6, 1.0],
-                colors: [
-                  AppColors.midnight,
-                  AppColors.primaryDeep,
-                  AppColors.primary,
-                ],
-              ),
-            ),
-          ),
-
-          // 織紋紋理
-          Positioned.fill(
-            child: Opacity(
-              opacity: 0.18,
-              child: CustomPaint(
-                painter: const TrukuWeavePainter(
-                  color: AppColors.gold,
-                  opacity: 1.0,
-                ),
-              ),
-            ),
-          ),
-
-          // 山脈剪影（後層）
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            child: Opacity(
-              opacity: 0.85,
-              child: CustomPaint(
-                size: Size(size.width, 180),
-                painter: const TrukuMountainsPainter(
-                  color: Color(0xFF0E0604),
-                  opacity: 0.7,
-                ),
-              ),
-            ),
-          ),
-
-          // 山脈剪影（前層）
-          Positioned(
-            bottom: 30,
-            left: 0,
-            right: 0,
-            child: Opacity(
-              opacity: 0.6,
-              child: CustomPaint(
-                size: Size(size.width, 120),
-                painter: const TrukuMountainsPainter(
-                  color: Color(0xFF0E0604),
-                  opacity: 0.5,
-                ),
-              ),
-            ),
-          ),
-
-          // 頂部菱形鏈（top: 90）
-          const Positioned(
-            top: 90,
-            left: 0,
-            right: 0,
-            child: Center(
-              child: TrukuChain(
-                count: 9,
-                size: 10,
-                color: AppColors.gold,
-                gap: 6,
-              ),
-            ),
-          ),
-
-          // 中央 logo 區（top: 32%）。顯示重試區時上移到 22%，騰出下方空間，
-          // 320×568 這類小螢幕才放得下。
-          AnimatedPositioned(
-            duration: const Duration(milliseconds: 300),
-            curve: Curves.easeOutCubic,
-            top: size.height * (_showRetryArea ? 0.22 : 0.32),
-            left: 0,
-            right: 0,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Container(
-                      width: 220,
-                      height: 220,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [
-                            AppColors.gold.withValues(alpha: 0.19),
-                            Colors.transparent,
-                          ],
-                          stops: const [0.0, 0.7],
-                        ),
-                      ),
-                    ),
-                    Image.asset(
-                      'assets/icon/logo.png',
-                      width: 120,
-                      height: 120,
-                      color: AppColors.cream,
-                      colorBlendMode: BlendMode.srcIn,
-                    ),
+    return StatusBarScope.onDark(
+      child: Scaffold(
+        backgroundColor: AppColors.midnight,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            // 漸層背景（midnight → primaryDeep → primary）
+            const DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  stops: [0.0, 0.6, 1.0],
+                  colors: [
+                    AppColors.midnight,
+                    AppColors.primaryDeep,
+                    AppColors.primary,
                   ],
                 ),
-                const SizedBox(height: 18),
-                Text(
-                  'Kari Truku · Lnglungan',
-                  style: AppTypography.latin(
-                    fontStyle: FontStyle.italic,
-                    fontSize: AppTypography.bodyLarge,
-                    color: AppColors.gold,
-                    letterSpacing: 3.2,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                const TrukuChain(
-                  count: 5,
-                  size: 8,
-                  color: AppColors.gold,
-                  gap: 5,
-                ),
-                // 離線重試接在 logo 下方跟著內容排，小螢幕、字體放大時也不會壓到上面。
-                if (_showRetryArea) ...[
-                  const SizedBox(height: 20),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 24),
-                    child: _retrying
-                        ? _buildRetrying()
-                        : _buildRetryPrompt(_retryMessage!),
-                  ),
-                ],
-              ],
+              ),
             ),
-          ),
 
-          // 底部 tagline（bottom: 70）。重試區會往下長到這裡，顯示時先收起。
-          if (!_showRetryArea)
-            Positioned(
-              bottom: 70,
-              left: 0,
-              right: 0,
-              child: Text(
-                '說我們的話 · 走我們的山',
-                textAlign: TextAlign.center,
-                style: AppTypography.sans(
-                  fontSize: AppTypography.body,
-                  color: AppColors.cream.withValues(alpha: 0.7),
-                  letterSpacing: 3.9,
+            // 織紋紋理
+            Positioned.fill(
+              child: Opacity(
+                opacity: 0.18,
+                child: CustomPaint(
+                  painter: const TrukuWeavePainter(
+                    color: AppColors.gold,
+                    opacity: 1.0,
+                  ),
                 ),
               ),
             ),
-        ],
+
+            // 山脈剪影（後層）
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              child: Opacity(
+                opacity: 0.85,
+                child: CustomPaint(
+                  size: Size(size.width, 180),
+                  painter: const TrukuMountainsPainter(
+                    color: Color(0xFF0E0604),
+                    opacity: 0.7,
+                  ),
+                ),
+              ),
+            ),
+
+            // 山脈剪影（前層）
+            Positioned(
+              bottom: 30,
+              left: 0,
+              right: 0,
+              child: Opacity(
+                opacity: 0.6,
+                child: CustomPaint(
+                  size: Size(size.width, 120),
+                  painter: const TrukuMountainsPainter(
+                    color: Color(0xFF0E0604),
+                    opacity: 0.5,
+                  ),
+                ),
+              ),
+            ),
+
+            // 頂部菱形鏈（top: 90）
+            const Positioned(
+              top: 90,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: TrukuChain(
+                  count: 9,
+                  size: 10,
+                  color: AppColors.gold,
+                  gap: 6,
+                ),
+              ),
+            ),
+
+            // 中央 logo 區（top: 32%）。顯示重試區時上移到 22%，騰出下方空間，
+            // 320×568 這類小螢幕才放得下。
+            AnimatedPositioned(
+              duration: const Duration(milliseconds: 300),
+              curve: Curves.easeOutCubic,
+              top: size.height * (_showRetryArea ? 0.22 : 0.32),
+              left: 0,
+              right: 0,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      Container(
+                        width: 220,
+                        height: 220,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              AppColors.gold.withValues(alpha: 0.19),
+                              Colors.transparent,
+                            ],
+                            stops: const [0.0, 0.7],
+                          ),
+                        ),
+                      ),
+                      Image.asset(
+                        'assets/icon/logo.png',
+                        width: 120,
+                        height: 120,
+                        color: AppColors.cream,
+                        colorBlendMode: BlendMode.srcIn,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  Text(
+                    'Kari Truku · Lnglungan',
+                    style: AppTypography.latin(
+                      fontStyle: FontStyle.italic,
+                      fontSize: AppTypography.bodyLarge,
+                      color: AppColors.gold,
+                      letterSpacing: 3.2,
+                      fontWeight: FontWeight.w400,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  const TrukuChain(
+                    count: 5,
+                    size: 8,
+                    color: AppColors.gold,
+                    gap: 5,
+                  ),
+                  // 離線重試接在 logo 下方跟著內容排，小螢幕、字體放大時也不會壓到上面。
+                  if (_showRetryArea) ...[
+                    const SizedBox(height: 20),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 24),
+                      child: _retrying
+                          ? _buildRetrying()
+                          : _buildRetryPrompt(_retryMessage!),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // 底部 tagline（bottom: 70）。重試區會往下長到這裡，顯示時先收起。
+            if (!_showRetryArea)
+              Positioned(
+                bottom: 70,
+                left: 0,
+                right: 0,
+                child: Text(
+                  '說我們的話 · 走我們的山',
+                  textAlign: TextAlign.center,
+                  style: AppTypography.sans(
+                    fontSize: AppTypography.body,
+                    color: AppColors.cream.withValues(alpha: 0.7),
+                    letterSpacing: 3.9,
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

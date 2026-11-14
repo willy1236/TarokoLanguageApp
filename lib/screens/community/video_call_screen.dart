@@ -19,6 +19,7 @@ import 'video_call/widgets/call_controls.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/confirm_dialog.dart';
 import '../../shared/widgets/report_sheet.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 enum _CallMenuAction { addFriend, report, block }
 
@@ -376,21 +377,23 @@ class _VideoCallScreenState extends State<VideoCallScreen>
         if (didPop || _call.leaving) return;
         _call.hangUp();
       },
-      child: Scaffold(
-        backgroundColor: AppColors.ink,
-        body: ListenableBuilder(
-          listenable: _call,
-          builder: (context, _) => Stack(
-            fit: StackFit.expand,
-            children: [
-              _buildFullScreenVideo(),
-              _buildTopBar(),
-              _buildPersonName(),
-              _buildSelfView(),
-              _buildControlBar(),
-              if (_call.joinError != null) _buildErrorOverlay(),
-              if (_call.leaving) _buildLeavingOverlay(),
-            ],
+      child: StatusBarScope.onDark(
+        child: Scaffold(
+          backgroundColor: AppColors.ink,
+          body: ListenableBuilder(
+            listenable: _call,
+            builder: (context, _) => Stack(
+              fit: StackFit.expand,
+              children: [
+                _buildFullScreenVideo(),
+                _buildTopBar(),
+                _buildPersonName(),
+                _buildSelfView(),
+                _buildControlBar(),
+                if (_call.joinError != null) _buildErrorOverlay(),
+                if (_call.leaving) _buildLeavingOverlay(),
+              ],
+            ),
           ),
         ),
       ),
