@@ -21,6 +21,7 @@ import '../../shared/utils/utf16_length_limit.dart';
 import '../../shared/widgets/async_state_view.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../events/widgets/event_cards.dart';
+import '../../shared/widgets/filter_pill.dart';
 import 'admin_error.dart';
 import 'widgets/admin_widgets.dart';
 
@@ -455,16 +456,11 @@ class _CategoryDialogState extends State<_CategoryDialog> {
                 selected: value == _hexOf(s.color),
                 onTap: _busy ? null : () => _setColor(_hexOf(s.color)),
               ),
-            ChoiceChip(
-              label: Text(
-                '不指定（用預設色）',
-                style: AppTypography.captionStyle(
-                  seniorMode: senior,
-                  color: AppColors.ink,
-                ),
-              ),
+            FilterPill(
+              label: '不指定（用預設色）',
               selected: value == null,
-              onSelected: _busy ? null : (_) => _setColor(null),
+              seniorMode: senior,
+              onTap: _busy ? () {} : () => _setColor(null),
             ),
           ],
         ),
