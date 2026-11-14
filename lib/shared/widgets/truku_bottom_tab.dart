@@ -67,51 +67,63 @@ class TrukuBottomTab extends StatelessWidget {
                     final color = isActive
                         ? AppColors.primary
                         : AppColors.inkMuted;
-                    return GestureDetector(
+                    final unread = badges[i] ?? 0;
+                    return Semantics(
+                      button: true,
+                      selected: isActive,
+                      label: unread > 0
+                          ? '${_labels[i]}，$unread 則未讀'
+                          : _labels[i],
                       onTap: () => onTap(i),
-                      behavior: HitTestBehavior.opaque,
-                      child: ConstrainedBox(
-                        constraints: seniorMode
-                            ? const BoxConstraints(minWidth: 56, minHeight: 56)
-                            : const BoxConstraints(),
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: horizontalPadding,
+                      excludeSemantics: true,
+                      child: GestureDetector(
+                        onTap: () => onTap(i),
+                        behavior: HitTestBehavior.opaque,
+                        child: ConstrainedBox(
+                          // 觸控範圍：一般模式至少 48×48dp，精簡模式 56。
+                          constraints: BoxConstraints(
+                            minWidth: seniorMode ? 56 : 48,
+                            minHeight: seniorMode ? 56 : 48,
                           ),
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  CustomPaint(
-                                    size: Size(iconSize, iconSize),
-                                    painter: _TabIconPainter(_keys[i], color),
-                                  ),
-                                  if ((badges[i] ?? 0) > 0)
-                                    Positioned(
-                                      top: -4,
-                                      right: seniorMode ? -12 : -10,
-                                      child: _TabBadge(
-                                        count: badges[i]!,
-                                        seniorMode: seniorMode,
-                                      ),
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: horizontalPadding,
+                            ),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Stack(
+                                  clipBehavior: Clip.none,
+                                  children: [
+                                    CustomPaint(
+                                      size: Size(iconSize, iconSize),
+                                      painter: _TabIconPainter(_keys[i], color),
                                     ),
-                                ],
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                _labels[i],
-                                style: labelStyle.copyWith(
-                                  letterSpacing: 1.0,
-                                  fontWeight: isActive
-                                      ? FontWeight.w600
-                                      : FontWeight.w400,
-                                  color: color,
+                                    if ((badges[i] ?? 0) > 0)
+                                      Positioned(
+                                        top: -4,
+                                        right: seniorMode ? -12 : -10,
+                                        child: _TabBadge(
+                                          count: badges[i]!,
+                                          seniorMode: seniorMode,
+                                        ),
+                                      ),
+                                  ],
                                 ),
-                              ),
-                            ],
+                                const SizedBox(height: 3),
+                                Text(
+                                  _labels[i],
+                                  style: labelStyle.copyWith(
+                                    letterSpacing: 1.0,
+                                    fontWeight: isActive
+                                        ? FontWeight.w600
+                                        : FontWeight.w400,
+                                    color: color,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),
