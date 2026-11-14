@@ -33,14 +33,14 @@ dependencies:
   flutter_localizations: # 繁體中文語系：日期時間選擇器、系統內建文字
     sdk: flutter
 
-  cupertino_icons: ^1.0.9
-  google_fonts: ^8.2.0
+  cupertino_icons: ^2.0.0
+  google_fonts: ^9.0.0
 
   # Firebase + Google Sign-In（後端用 firebase-admin 驗 ID token 換系統 JWT）
-  firebase_core: ^4.12.1
-  firebase_auth: ^6.5.6
-  firebase_messaging: ^16.0.4 # FCM 推播（活動提醒）
-  flutter_local_notifications: ^22.3.1 # 前景收到推播時顯示系統通知列
+  firebase_core: ^5.1.0
+  firebase_auth: ^7.0.1
+  firebase_messaging: ^17.0.1 # FCM 推播（活動提醒）
+  flutter_local_notifications: ^23.0.2 # 前景收到推播時顯示系統通知列
   google_sign_in: ^7.2.0
 
   # Backend 通訊與 token 儲存
@@ -55,13 +55,12 @@ dependencies:
   flutter_markdown_plus: ^1.0.12
 
   # 影音模組：HLS 串流播放（better_player 已停止維護，改用維護中的 fork）
-  better_player_plus: ^1.3.4
+  better_player_plus: ^2.0.1
   web: ^1.1.0 # Web 版影音以 <video> + hls.js 內嵌播放（better_player_plus 無 Web 實作）
   image_picker: ^1.2.3
   file_picker: ^13.1.0 # 後台上傳影片「從檔案」選 mp4／mov（image_picker 只開相簿）
   # 後台上傳影片切到背景或鎖螢幕時繼續傳（iOS 背景 URLSession、Android UIDT／WorkManager）。
-  # 鎖 9.5.9：9.6 起要求 Flutter 3.47 以上。
-  background_downloader: 9.5.9
+  background_downloader: ^9.6.6
   crop_your_image: ^2.0.0
   image: ^4.10.1 # 頭像裁切後縮圖、旋轉（純 Dart，Web 也能用）
 
@@ -86,7 +85,7 @@ dependencies:
   vibration: ^3.2.1 # 好友來電響鈴時依鈴聲節奏震動（HapticFeedback 只有短促觸覺回饋）
   app_badge_plus: ^1.3.5
   youtube_player_iframe: ^6.0.2
-  firebase_remote_config: ^6.7.0
+  firebase_remote_config: ^7.0.1
   package_info_plus: ^10.2.1
   add_2_calendar: ^3.1.1 # 活動「加入日曆」開系統日曆新增畫面（Web 改開 Google Calendar 網址）
   # 活動發布的地圖選點：地圖、地點搜尋（原生 Places SDK，Web 走 Maps JS）、
