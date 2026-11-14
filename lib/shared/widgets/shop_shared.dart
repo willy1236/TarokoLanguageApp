@@ -3,7 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
 import '../../models/user_model.dart';
-import '../../core/constants/app_typography.dart';
+import 'filter_pill.dart';
 
 /// 商店與背包共用的稀有度、分類 chip 與配戴動作。兩頁原本各自複製一份，
 /// 改稀有度或錯誤文案時容易只改到其中一邊。
@@ -79,36 +79,12 @@ class ShopCategoryChips extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 64,
-      child: ListView.separated(
-        scrollDirection: Axis.horizontal,
-        padding: const EdgeInsets.fromLTRB(20, 18, 20, 10),
-        itemCount: labels.length,
-        separatorBuilder: (_, _) => const SizedBox(width: 8),
-        itemBuilder: (_, i) {
-          final active = i == selected;
-          return GestureDetector(
-            onTap: () => onSelected(i),
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: active ? AppColors.ink : Colors.transparent,
-                border: active ? null : Border.all(color: AppColors.creamDeep),
-              ),
-              child: Text(
-                labels[i],
-                style: TextStyle(
-                  fontSize: AppTypography.caption,
-                  color: active ? AppColors.creamLight : AppColors.inkSoft,
-                  fontWeight: active ? FontWeight.w600 : FontWeight.w400,
-                  letterSpacing: 1,
-                ),
-              ),
-            ),
-          );
-        },
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(0, 14, 0, 8),
+      child: FilterPillRow(
+        labels: labels,
+        selectedIndex: selected,
+        onSelected: onSelected,
       ),
     );
   }

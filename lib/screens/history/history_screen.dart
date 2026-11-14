@@ -14,6 +14,7 @@ import '../../shared/widgets/truku_empty_state.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/utils/date_format.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/filter_pill.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -206,7 +207,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Row(
         children: [
           for (final option in options) ...[
-            _FilterChip(
+            FilterPill(
               label: option.label,
               selected: _typeFilter == option.value,
               onTap: () => _setFilter(option.value),
@@ -256,43 +257,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.cream,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.creamDeep,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: AppTypography.body,
-            fontWeight: FontWeight.w600,
-            color: selected ? AppColors.creamLight : AppColors.inkSoft,
-          ),
-        ),
       ),
     );
   }

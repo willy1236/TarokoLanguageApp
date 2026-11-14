@@ -21,6 +21,7 @@ import '../inbox/inbox_screen.dart';
 import '../../shared/widgets/module_header_actions.dart';
 import 'widgets/plaza_cards.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/filter_pill.dart';
 
 class PlazaScreen extends StatefulWidget {
   /// 由外層（合併分頁的膠囊切換）注入，顯示在標題與近期活動之間。
@@ -336,48 +337,21 @@ class _PlazaScreenState extends State<PlazaScreen> with WidgetsBindingObserver {
     seniorMode: seniorMode,
   );
 
-  /// 看板 tab，併入 [_buildScrollingHeader] 隨頁首一起捲動，接在近期活動
-  /// 小卡之後、貼文列表之前。名稱短時平均分佈填滿整列，多到放不下才變成
-  /// 可捲動——固定間距在只有六個兩字看板時會全部擠在左半邊，右邊留一大片空白。
-  Widget _buildTabBar(bool seniorMode) => Container(
-    decoration: const BoxDecoration(
-      border: Border(bottom: BorderSide(color: AppColors.creamDeep)),
-    ),
-    child: LayoutBuilder(
-      builder: (context, constraints) => SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: ConstrainedBox(
-          constraints: BoxConstraints(minWidth: constraints.maxWidth),
-          // IntrinsicWidth 讓 Row 先量出自己的寬度，ConstrainedBox 再把它撐到
-          // 至少一個螢幕寬，spaceEvenly 才有東西可以分佈。
-          child: IntrinsicWidth(
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: [
-                  // slug 為 null 代表「全部」，排在最前面且是預設。
-                  PlazaBoardTab(
-                    label: '全部',
-                    selected: _boardSlug == null,
-                    seniorMode: seniorMode,
-                    onTap: () => setState(() => _boardSlug = null),
-                  ),
-                  for (final board in _boards)
-                    PlazaBoardTab(
-                      label: board.name,
-                      selected: board.slug == _boardSlug,
-                      seniorMode: seniorMode,
-                      onTap: () => setState(() => _boardSlug = board.slug),
-                    ),
-                ],
-              ),
-            ),
-          ),
-        ),
+  /// 看板篩選，併入 [_buildScrollingHeader] 隨頁首一起捲動，接在近期活動
+  /// 小卡之後、貼文列表之前。與其他篩選列同一個元件（[FilterPillRow]），橫向可捲動。
+  Widget _buildTabBar(bool seniorMode) {
+    // slug 為 null 代表「全部」，排在最前面且是預設。
+    final slugs = <String?>[null, for (final b in _boards) b.slug];
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8),
+      child: FilterPillRow(
+        labels: ['全部', for (final b in _boards) b.name],
+        selectedIndex: slugs.indexOf(_boardSlug).clamp(0, slugs.length - 1),
+        seniorMode: seniorMode,
+        onSelected: (i) => setState(() => _boardSlug = slugs[i]),
       ),
-    ),
-  );
+    );
+  }
 
   /// 近期活動區塊一律顯示，沒有活動時給一句話而不是整塊消失——
   /// 區塊時有時無會讓下面的看板 tab 跟著上下跳。

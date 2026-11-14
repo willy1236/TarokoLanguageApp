@@ -53,63 +53,6 @@ class PlazaEventMessageCard extends StatelessWidget {
   );
 }
 
-// ── 看板 Tab 元件 ──────────────────────────────────────────────
-
-class PlazaBoardTab extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  /// 精簡模式：字級放大、上下留白加大，讓 tab 熱區至少 48 高。
-  final bool seniorMode;
-
-  const PlazaBoardTab({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.seniorMode = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColors.inkMuted;
-    return Pressable(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: seniorMode ? 10 : 6),
-        child: Stack(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: seniorMode ? 14 : 10),
-              child: Text(
-                label,
-                style: AppTypography.serif(
-                  fontSize: AppTypography.size(
-                    AppTypography.body,
-                    seniorMode: seniorMode,
-                  ),
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ),
-            if (selected)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(height: 2, color: AppColors.primary),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // ── 近期活動小卡 ─────────────────────────────────────────────
 
 class PlazaMiniEventCard extends StatelessWidget {

@@ -38,6 +38,7 @@ import 'admin_video_upload_progress_screen.dart';
 import 'admin_video_upload_screen.dart';
 import 'widgets/admin_paged_list.dart';
 import 'widgets/admin_widgets.dart';
+import '../../shared/widgets/filter_pill.dart';
 
 /// 標題搜尋上限，同後端 `q`（UTF-16 單位）。
 const adminVideoSearchMax = 80;
@@ -496,19 +497,11 @@ class _AdminVideosScreenState extends State<AdminVideosScreen> {
         runSpacing: AppSpacing.xs,
         children: [
           for (final option in options)
-            ChoiceChip(
-              label: Text(
-                option.label,
-                style: AppTypography.bodyStyle(
-                  seniorMode: senior,
-                  color: option.value == selected
-                      ? AppColors.creamLight
-                      : AppColors.ink,
-                ),
-              ),
+            FilterPill(
+              label: option.label,
               selected: option.value == selected,
-              selectedColor: AppColors.primary,
-              onSelected: (_) => onSelected(option.value),
+              seniorMode: senior,
+              onTap: () => onSelected(option.value),
             ),
         ],
       ),
