@@ -101,23 +101,15 @@ class QuizFlowController<R> extends ChangeNotifier {
   final void Function(Object error)? onSaveFailed;
 
   QuizFlowController({
-    required Future<QuizFlowSession> Function() start,
-    required Future<void> Function(
-      String sessionId,
-      String questionId,
-      int optionId,
-    )
-    saveAnswer,
-    required Future<R> Function(String sessionId, List<QuizFlowAnswer> answers)
-    submit,
+    required this._start,
+    required this._saveAnswer,
+    required this._submit,
     this.confirmConflict,
     this.abandon,
     this.onAbandonNotice,
     this.emptyMessage,
     this.onSaveFailed,
-  }) : _start = start,
-       _saveAnswer = saveAnswer,
-       _submit = submit;
+  });
 
   QuizFlowPhase _phase = QuizFlowPhase.loading;
   Object? _error;

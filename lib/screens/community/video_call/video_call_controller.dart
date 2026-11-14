@@ -44,24 +44,18 @@ class VideoCallController extends ChangeNotifier {
 
   VideoCallController({
     required this.session,
-    AgoraCallCredentials? credentials,
-    required VideoRtc rtc,
-    required Future<CallPermissionResult> Function() requestPermissions,
-    required Future<RefreshedTokenResult> Function(int sessionId) refreshToken,
-    required Future<void> Function() notifyEnded,
-    required Future<bool> Function() isEndedOnServer,
+    this._credentials,
+    required this._rtc,
+    required this._requestPermissions,
+    required this._refreshToken,
+    required this._notifyEnded,
+    required this._isEndedOnServer,
     DateTime Function()? now,
     this.joinTimeout = const Duration(seconds: 15),
     this.backendNotifyTimeout = const Duration(seconds: 5),
     this.peerDropGrace = const Duration(seconds: 15),
     this.peerQuitRecheck = const Duration(seconds: 5),
-  }) : _credentials = credentials,
-       _rtc = rtc,
-       _requestPermissions = requestPermissions,
-       _refreshToken = refreshToken,
-       _notifyEnded = notifyEnded,
-       _isEndedOnServer = isEndedOnServer,
-       _now = now ?? DateTime.now;
+  }) : _now = now ?? DateTime.now;
 
   bool _joining = true;
   String? _joinError;
