@@ -32,7 +32,7 @@ class EventStatusTile extends StatelessWidget {
       case 'cancelled':
         return (text: '已取消', color: AppColors.dangerDark);
       case 'ended':
-        return (text: '已結束', color: AppColors.fog);
+        return (text: '已結束', color: AppColors.inkMuted);
       case 'ongoing':
         return (text: '進行中', color: AppColors.mossDeep);
       default:

@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_icon_size.dart';
 import '../../../core/constants/app_spacing.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/widgets/pressable.dart';
 
 Widget profileStatDivider() => const SizedBox(
   height: 32,
@@ -40,7 +41,7 @@ Widget profileStatCell(bool seniorMode, String value, String label) {
           label,
           style: AppTypography.bodyLargeStyle(
             seniorMode: seniorMode,
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
       ],
@@ -65,7 +66,7 @@ Widget profileQuickLinkCard(
   required bool seniorMode,
   int badgeCount = 0,
 }) {
-  return GestureDetector(
+  return Pressable(
     onTap: link.onTap,
     child: Container(
       padding: const EdgeInsets.all(14),
@@ -118,7 +119,7 @@ Widget profileNavRow({
   required VoidCallback onTap,
   bool seniorMode = false,
 }) {
-  return GestureDetector(
+  return Pressable(
     behavior: HitTestBehavior.opaque,
     onTap: onTap,
     child: Padding(
@@ -156,12 +157,63 @@ Widget profileNavRow({
             children: [
               Icon(
                 Icons.chevron_right,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
                 size: AppIconSize.chevron(seniorMode),
               ),
             ],
           ),
         ],
+      ),
+    ),
+  );
+}
+
+/// 不可逆操作（刪除帳號）的入口：獨立在一般設定之外，紅色外框與文字，
+/// 避免和「關於」「服務條款」這類一般列混在一起被誤點。
+Widget profileDangerRow({
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+  bool seniorMode = false,
+}) {
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
+    child: Pressable(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: seniorMode ? AppSpacing.lg : 14,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: AppColors.dangerDark.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: AppIconSize.inline(seniorMode),
+              color: AppColors.dangerDark,
+            ),
+            SizedBox(width: seniorMode ? AppSpacing.md : 8),
+            Text(
+              label,
+              style: AppTypography.serif(
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
+                fontWeight: FontWeight.w600,
+                color: AppColors.dangerDark,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
       ),
     ),
   );
@@ -182,10 +234,10 @@ Widget profileSection(
           style: AppTypography.latin(
             fontStyle: FontStyle.italic,
             fontSize: AppTypography.size(
-              AppTypography.micro,
+              AppTypography.caption,
               seniorMode: seniorMode,
             ),
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
             letterSpacing: 3,
           ),
         ),
@@ -217,7 +269,7 @@ Widget profileSettingRow(
 }) {
   return Column(
     children: [
-      GestureDetector(
+      Pressable(
         onTap: editable ? onTap : null,
         child: Padding(
           padding: EdgeInsets.symmetric(
@@ -239,7 +291,7 @@ Widget profileSettingRow(
                           AppTypography.caption,
                           seniorMode: seniorMode,
                         ),
-                        color: AppColors.fog,
+                        color: AppColors.inkMuted,
                         letterSpacing: 1,
                       ),
                     ),
@@ -277,7 +329,7 @@ Widget profileSettingRow(
                         hint,
                         style: AppTypography.captionStyle(
                           seniorMode: seniorMode,
-                          color: AppColors.fog,
+                          color: AppColors.inkMuted,
                         ),
                       ),
                     ],
@@ -358,15 +410,16 @@ Widget profileSwitchRow(
                           AppTypography.caption,
                           seniorMode: seniorMode,
                         ),
-                        color: AppColors.fog,
+                        color: AppColors.inkMuted,
                       ),
                     ),
                   ],
                 ],
               ),
             ),
-            GestureDetector(
+            Pressable(
               onTap: locked ? null : () => onChanged(!on),
+              toggled: on,
               child: Container(
                 width: trackWidth,
                 height: trackHeight,

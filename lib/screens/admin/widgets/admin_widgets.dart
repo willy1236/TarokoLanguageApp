@@ -12,6 +12,7 @@ import '../../../shared/widgets/app_back_button.dart';
 import '../../../shared/widgets/confirm_dialog.dart';
 import '../admin_error.dart';
 import 'admin_paged_list.dart';
+import '../../../shared/widgets/filter_pill.dart';
 
 /// 後台畫面骨架：返回鍵、標題、精簡模式連動。[body] 拿到目前是否精簡模式。
 class AdminScaffold extends StatelessWidget {
@@ -208,7 +209,7 @@ class AdminInfoRow extends StatelessWidget {
             text: '$label：',
             style: AppTypography.bodyStyle(
               seniorMode: seniorMode,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
           TextSpan(
@@ -338,19 +339,11 @@ class _AdminStatusListScreenState<T> extends State<AdminStatusListScreen<T>> {
         spacing: AppSpacing.sm,
         children: [
           for (final option in widget.statuses)
-            ChoiceChip(
-              label: Text(
-                option.label,
-                style: AppTypography.bodyStyle(
-                  seniorMode: senior,
-                  color: option.value == _status
-                      ? AppColors.creamLight
-                      : AppColors.ink,
-                ),
-              ),
+            FilterPill(
+              label: option.label,
               selected: option.value == _status,
-              selectedColor: AppColors.primary,
-              onSelected: (_) => _selectStatus(option.value),
+              seniorMode: senior,
+              onTap: () => _selectStatus(option.value),
             ),
         ],
       ),

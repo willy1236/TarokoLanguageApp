@@ -114,7 +114,9 @@ class _AdminRolesScreenState extends State<AdminRolesScreen> {
                 if (role == currentRole)
                   Text(
                     '目前',
-                    style: AppTypography.captionStyle(color: AppColors.fog),
+                    style: AppTypography.captionStyle(
+                      color: AppColors.inkMuted,
+                    ),
                   ),
               ],
             ),
@@ -172,7 +174,7 @@ class _AdminRolesScreenState extends State<AdminRolesScreen> {
       text,
       style: AppTypography.captionStyle(
         seniorMode: senior,
-        color: AppColors.fog,
+        color: AppColors.inkMuted,
       ),
     ),
   );

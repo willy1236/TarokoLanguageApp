@@ -613,7 +613,9 @@ class _EventDetailScreenState extends State<EventDetailScreen>
                     onPressed: _report,
                     icon: const Icon(Icons.flag_outlined, size: 18),
                     label: const Text('檢舉此活動'),
-                    style: TextButton.styleFrom(foregroundColor: AppColors.fog),
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.inkMuted,
+                    ),
                   ),
                 ),
               ),

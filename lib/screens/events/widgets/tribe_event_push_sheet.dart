@@ -141,7 +141,7 @@ class _TribeEventPushSheetState extends State<TribeEventPushSheet> {
                     '活動提醒不受影響',
                     style: AppTypography.captionStyle(
                       seniorMode: seniorMode,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ],

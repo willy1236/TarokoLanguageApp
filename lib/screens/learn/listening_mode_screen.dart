@@ -14,10 +14,11 @@ import 'listening_quiz_screen.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/utils/date_format.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/pressable.dart';
 
 Color _levelColor(String level) {
   if (level.contains('高')) {
-    return level.contains('中') ? AppColors.primary : AppColors.fog;
+    return level.contains('中') ? AppColors.primary : AppColors.inkMuted;
   }
   if (level.contains('中')) return AppColors.gold;
   return AppColors.moss;
@@ -187,7 +188,9 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
                   if (levels.isEmpty)
                     Text(
                       '目前沒有可用的級別',
-                      style: AppTypography.bodyLargeStyle(color: AppColors.fog),
+                      style: AppTypography.bodyLargeStyle(
+                        color: AppColors.inkMuted,
+                      ),
                     )
                   else
                     Wrap(
@@ -245,7 +248,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
         if (records.isEmpty) {
           return Text(
             '尚無練習紀錄',
-            style: AppTypography.bodyLargeStyle(color: AppColors.fog),
+            style: AppTypography.bodyLargeStyle(color: AppColors.inkMuted),
           );
         }
         return Column(
@@ -314,7 +317,7 @@ class _ListeningModeScreenState extends State<ListeningModeScreen> {
 
   Widget _buildStartButton() {
     final enabled = _selectedMode != null && _selectedLevel != null;
-    return GestureDetector(
+    return Pressable(
       onTap: enabled ? _start : null,
       child: Container(
         width: double.infinity,
@@ -365,7 +368,7 @@ class _ModeCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         width: double.infinity,
@@ -392,7 +395,7 @@ class _ModeCard extends StatelessWidget {
             const SizedBox(height: 4),
             Text(
               option.subtitle,
-              style: AppTypography.bodyStyle(color: AppColors.fog),
+              style: AppTypography.bodyStyle(color: AppColors.inkMuted),
             ),
           ],
         ),
@@ -417,9 +420,13 @@ class _LevelChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = _levelColor(level.level);
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
+      selected: selected,
+      // 「推薦」只有星號圖示，沒有文字；補進語意讓讀屏聽得到。
+      semanticLabel: isRecommended ? '${level.level}，推薦' : level.level,
       child: Container(
+        constraints: const BoxConstraints(minHeight: 48),
         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: selected ? color : AppColors.creamLight,
@@ -487,7 +494,7 @@ class _RecentPracticeRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isCompleted = record.isCompleted;
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
@@ -521,7 +528,7 @@ class _RecentPracticeRow extends StatelessWidget {
                     _timeLabel(),
                     style: const TextStyle(
                       fontSize: AppTypography.caption,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ],
@@ -535,11 +542,15 @@ class _RecentPracticeRow extends StatelessWidget {
                   style: AppTypography.serif(
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
-                    color: isCompleted ? AppColors.primary : AppColors.fog,
+                    color: isCompleted ? AppColors.primary : AppColors.inkMuted,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Icon(Icons.chevron_right, color: AppColors.fog, size: 18),
+                const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.inkMuted,
+                  size: 18,
+                ),
               ],
             ),
           ],
@@ -596,7 +607,7 @@ class _PlacementBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: Container(
         width: double.infinity,

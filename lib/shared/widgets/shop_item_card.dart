@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../core/constants/app_colors.dart';
 import 'millet_coin_icon.dart';
+import 'pressable.dart';
 import '../../core/constants/app_typography.dart';
 
 /// 共用道具卡片：頭像與頭像框在商店頁、背包頁都用這個 widget 呈現
@@ -11,8 +12,18 @@ import '../../core/constants/app_typography.dart';
 /// - [lockedText] 非 null：整張卡片降低透明度、右上角顯示鎖頭圖示、底部顯示解鎖條件文字，不可互動。
 /// - 未擁有（含鎖定與可兌換兩種情況）：圖片維持原色（避免灰階讓真實圖案看不清楚），
 ///   改用外圈綠框（僅已擁有）＋卡片邊框顏色差異來區隔，不只靠右上角標籤文字。
-/// - [showPrice] 為 false 時不顯示價格列（背包頁只列出已擁有道具，不需要價格）。
+/// - [showPrice] 為 false 時不顯示價格列（背包頁只列出已擁有道具，不需要價格）；
+///   已擁有的道具不論 [showPrice] 都不顯示價格。
 /// - [rarityColor] 非 null 時（頭像才有）依六色稀有度上色副標；頭像框無此欄位。
+/// 卡片底部按鈕的性質：兌換會扣小米幣，配戴不會，外觀要能一眼分辨。
+enum ShopActionKind {
+  /// 兌換：實心酒紅，會花小米幣。
+  purchase,
+
+  /// 配戴：外框線，不花錢。
+  equip,
+}
+
 class ShopItemCard extends StatelessWidget {
   final String name;
   final String? subtitle;
@@ -25,6 +36,7 @@ class ShopItemCard extends StatelessWidget {
   final IconData icon;
   final String? actionLabel;
   final VoidCallback? onAction;
+  final ShopActionKind actionKind;
   final bool showPrice;
 
   const ShopItemCard({
@@ -40,6 +52,7 @@ class ShopItemCard extends StatelessWidget {
     this.imageUrl,
     this.actionLabel,
     this.onAction,
+    this.actionKind = ShopActionKind.equip,
     this.showPrice = true,
   });
 
@@ -100,13 +113,13 @@ class ShopItemCard extends StatelessWidget {
                   Text(
                     subtitle!,
                     style: TextStyle(
-                      fontSize: AppTypography.micro,
+                      fontSize: AppTypography.caption,
                       color: isGold ? AppColors.gold : accentColor,
                       letterSpacing: 1,
                     ),
                   ),
                 ],
-                if (showPrice) ...[
+                if (showPrice && !owned) ...[
                   const SizedBox(height: 2),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -130,38 +143,16 @@ class ShopItemCard extends StatelessWidget {
                     lockedText!,
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      fontSize: AppTypography.micro,
-                      color: AppColors.fog,
+                      fontSize: AppTypography.caption,
+                      // 金色卡是深底，淺底專用的 inkMuted 在這裡對比不夠。
+                      color: isGold ? AppColors.fog : AppColors.inkMuted,
                       letterSpacing: 0.5,
                     ),
                   ),
                 ],
                 if (lockedText == null && actionLabel != null) ...[
                   const SizedBox(height: 4),
-                  GestureDetector(
-                    onTap: onAction,
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(vertical: 4),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(10),
-                        color: onAction != null
-                            ? AppColors.gold
-                            : AppColors.creamDeep,
-                      ),
-                      child: Text(
-                        actionLabel!,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: AppTypography.micro,
-                          fontWeight: FontWeight.w700,
-                          color: onAction != null
-                              ? AppColors.ink
-                              : AppColors.fog,
-                        ),
-                      ),
-                    ),
-                  ),
+                  _buildActionButton(),
                 ],
               ],
             ),
@@ -213,6 +204,52 @@ class ShopItemCard extends StatelessWidget {
     );
   }
 
+  /// 兌換：實心酒紅；配戴：外框線；停用（已配戴、處理中）：灰底。
+  Widget _buildActionButton() {
+    final enabled = onAction != null;
+    final purchase = actionKind == ShopActionKind.purchase;
+    final Color background;
+    final Color foreground;
+    final Border? border;
+    if (!enabled) {
+      background = AppColors.creamDeep;
+      foreground = AppColors.inkMuted;
+      border = null;
+    } else if (purchase) {
+      background = AppColors.primary;
+      foreground = AppColors.creamLight;
+      border = null;
+    } else {
+      background = Colors.transparent;
+      foreground = isGold ? AppColors.gold : AppColors.inkSoft;
+      border = Border.all(
+        color: isGold ? AppColors.gold : AppColors.inkSoft,
+        width: 1.2,
+      );
+    }
+    return Pressable(
+      onTap: onAction,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 6),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(10),
+          color: background,
+          border: border,
+        ),
+        child: Text(
+          actionLabel!,
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: AppTypography.caption,
+            fontWeight: FontWeight.w700,
+            color: foreground,
+          ),
+        ),
+      ),
+    );
+  }
+
   // image_url 理論上一律有值（真實 GCS 網址）；errorBuilder 只是網路載入失敗時的
   // 防禦性 fallback，不是本地素材 fallback。
   Widget _buildItemImage() {
@@ -220,7 +257,7 @@ class ShopItemCard extends StatelessWidget {
       return Icon(
         icon,
         size: 44,
-        color: isGold ? AppColors.gold : AppColors.fog,
+        color: isGold ? AppColors.gold : AppColors.inkMuted,
       );
     }
     return Image.network(
@@ -228,8 +265,11 @@ class ShopItemCard extends StatelessWidget {
       width: 64,
       height: 64,
       fit: BoxFit.cover,
-      errorBuilder: (_, _, _) =>
-          Icon(icon, size: 44, color: isGold ? AppColors.gold : AppColors.fog),
+      errorBuilder: (_, _, _) => Icon(
+        icon,
+        size: 44,
+        color: isGold ? AppColors.gold : AppColors.inkMuted,
+      ),
     );
   }
 }
@@ -244,7 +284,7 @@ class ShopItemGrid extends StatelessWidget {
 
   static const int _minColumns = 3;
   static const double _targetCellWidth = 130;
-  static const double _minCellHeight = 190;
+  static const double _minCellHeight = 210;
 
   @override
   Widget build(BuildContext context) {

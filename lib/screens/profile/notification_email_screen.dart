@@ -203,7 +203,7 @@ class _NotificationEmailScreenState extends State<NotificationEmailScreen> {
       style: AppTypography.bodyLargeStyle(color: AppColors.ink),
       decoration: InputDecoration(
         labelText: '電子信箱',
-        labelStyle: AppTypography.bodyStyle(color: AppColors.fog),
+        labelStyle: AppTypography.bodyStyle(color: AppColors.inkMuted),
         border: const OutlineInputBorder(),
       ),
       onSubmitted: (_) => _sendCode(),
@@ -231,7 +231,7 @@ class _NotificationEmailScreenState extends State<NotificationEmailScreen> {
       style: AppTypography.headlineStyle(color: AppColors.ink),
       decoration: InputDecoration(
         labelText: '6 位數驗證碼',
-        labelStyle: AppTypography.bodyStyle(color: AppColors.fog),
+        labelStyle: AppTypography.bodyStyle(color: AppColors.inkMuted),
         border: const OutlineInputBorder(),
       ),
       onSubmitted: (_) => _verify(),
@@ -246,7 +246,7 @@ class _NotificationEmailScreenState extends State<NotificationEmailScreen> {
           onPressed: _submitting ? null : _editEmail,
           child: Text(
             '修改信箱',
-            style: AppTypography.bodyStyle(color: AppColors.fog),
+            style: AppTypography.bodyStyle(color: AppColors.inkMuted),
           ),
         ),
         TextButton(

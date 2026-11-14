@@ -415,7 +415,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
                   Icon(
                     Icons.language,
                     size: seniorMode ? 16 : 11,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                   const SizedBox(width: 4),
                   Text(
@@ -425,7 +425,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
                         AppTypography.caption,
                         seniorMode: seniorMode,
                       ),
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                       letterSpacing: 0.8,
                     ),
                   ),
@@ -481,7 +481,7 @@ class _ForumComposeScreenState extends State<ForumComposeScreen> {
               seniorMode: seniorMode,
             ),
             fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-            color: selected ? AppColors.primary : AppColors.fog,
+            color: selected ? AppColors.primary : AppColors.inkMuted,
           ),
         ),
       ),

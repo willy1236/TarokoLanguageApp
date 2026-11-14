@@ -41,8 +41,7 @@ RtcCallbacks _callbacks() => RtcCallbacks(
 
 void main() {
   test('initialize 還沒完成就掛斷、leaveChannel 丟例外時仍會 release 引擎', () async {
-    final engine = _FakeEngine()
-      ..leaveError = AgoraRtcException(code: -7);
+    final engine = _FakeEngine()..leaveError = AgoraRtcException(code: -7);
     final rtc = AgoraVideoRtc(createEngine: () => engine);
 
     final started = rtc.start(appId: 'app', callbacks: _callbacks());

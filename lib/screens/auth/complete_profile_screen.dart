@@ -15,6 +15,7 @@ import '../../shared/widgets/birth_date_field.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/tribe_picker_sheet.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 // 目前僅太魯閣族一個族群，勾選「是否原住民」時固定送這個族群，見
 // profile_screen.dart 的 _defaultEthnicGroup 同款規則。
@@ -166,173 +167,178 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      body: Stack(
-        children: [
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.midnight,
-                    AppColors.primaryDeep,
-                    AppColors.primary,
-                  ],
-                  stops: [0.0, 0.55, 1.0],
+    return StatusBarScope.onDark(
+      child: Scaffold(
+        resizeToAvoidBottomInset: true,
+        body: Stack(
+          children: [
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppColors.midnight,
+                      AppColors.primaryDeep,
+                      AppColors.primary,
+                    ],
+                    stops: [0.0, 0.55, 1.0],
+                  ),
                 ),
               ),
             ),
-          ),
-          Positioned.fill(
-            child: CustomPaint(
-              painter: TrukuWeavePainter(color: AppColors.gold, opacity: 0.12),
-            ),
-          ),
-          SafeArea(
-            child: ListenableBuilder(
-              listenable: seniorModeController,
-              builder: (context, _) => LayoutBuilder(
-                builder: (context, constraints) {
-                  final seniorMode = seniorModeController.enabled;
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight - 64, // 扣掉上下 padding
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(
-                            'MHUWAY SU · 歡迎加入',
-                            style: AppTypography.latin(
-                              fontStyle: FontStyle.italic,
-                              fontSize: AppTypography.size(
-                                AppTypography.caption,
-                                seniorMode: seniorMode,
-                              ),
-                              color: AppColors.gold,
-                              letterSpacing: 3.5,
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '完善你的個人資料',
-                            style: AppTypography.serif(
-                              fontSize: AppTypography.size(
-                                AppTypography.title,
-                                seniorMode: seniorMode,
-                              ),
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.creamLight,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            '這些資料會用於配對語伴與活動報名資格判斷',
-                            style: TextStyle(
-                              fontSize: AppTypography.size(
-                                AppTypography.caption,
-                                seniorMode: seniorMode,
-                              ),
-                              color: AppColors.cream.withValues(alpha: 0.7),
-                            ),
-                          ),
-                          const SizedBox(height: 24),
-                          _buildTextField(
-                            controller: _displayNameController,
-                            labelTriku: 'HANGAN · 中文姓名',
-                            hint: '請輸入姓名',
-                            maxLength: ProfileFieldLimits.displayName,
-                            seniorMode: seniorMode,
-                          ),
-                          const SizedBox(height: 16),
-                          _buildTextField(
-                            controller: _videoNicknameController,
-                            labelTriku: 'NGALAN · 公開暱稱',
-                            hint: '論壇、視訊、好友都會顯示這個名字',
-                            maxLength: ProfileFieldLimits.videoNickname,
-                            seniorMode: seniorMode,
-                            errorText: _nicknameError,
-                            onChanged: (_) {
-                              if (_nicknameError != null) {
-                                setState(() => _nicknameError = null);
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 16),
-                          BirthDateField(
-                            value: _birthDate,
-                            onChanged: (d) => setState(() => _birthDate = d),
-                            seniorMode: seniorMode,
-                          ),
-                          const SizedBox(height: 16),
-                          _buildSwitchRow(seniorMode),
-                          if (_isIndigenous) ...[
-                            const SizedBox(height: 16),
-                            _buildTribeRow(seniorMode),
-                            const SizedBox(height: 16),
-                            _buildTextField(
-                              controller: _tribalNameController,
-                              labelTriku: '族語名字（選填）',
-                              hint: '例如 Apyang Imiq',
-                              maxLength: ProfileFieldLimits.tribalName,
-                              seniorMode: seniorMode,
-                            ),
-                          ],
-                          const SizedBox(height: 16),
-                          _buildSeniorModeRow(),
-                          const SizedBox(height: 28),
-                          SizedBox(
-                            width: double.infinity,
-                            height: seniorMode ? 60 : 52,
-                            child: ElevatedButton(
-                              onPressed: _submitting ? null : _submit,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: AppColors.gold,
-                                foregroundColor: AppColors.ink,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(14),
-                                ),
-                                elevation: 0,
-                              ),
-                              child: _submitting
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: AppColors.ink,
-                                      ),
-                                    )
-                                  : Text(
-                                      '完　成',
-                                      style: AppTypography.serif(
-                                        fontSize: AppTypography.size(
-                                          AppTypography.bodyLarge,
-                                          seniorMode: seniorMode,
-                                        ),
-                                        fontWeight: FontWeight.w600,
-                                        letterSpacing: 4,
-                                        color: AppColors.ink,
-                                      ),
-                                    ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
+            Positioned.fill(
+              child: CustomPaint(
+                painter: TrukuWeavePainter(
+                  color: AppColors.gold,
+                  opacity: 0.12,
+                ),
               ),
             ),
-          ),
-        ],
+            SafeArea(
+              child: ListenableBuilder(
+                listenable: seniorModeController,
+                builder: (context, _) => LayoutBuilder(
+                  builder: (context, constraints) {
+                    final seniorMode = seniorModeController.enabled;
+                    return SingleChildScrollView(
+                      padding: const EdgeInsets.fromLTRB(24, 32, 24, 32),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: constraints.maxHeight - 64, // 扣掉上下 padding
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              'MHUWAY SU · 歡迎加入',
+                              style: AppTypography.latin(
+                                fontStyle: FontStyle.italic,
+                                fontSize: AppTypography.size(
+                                  AppTypography.caption,
+                                  seniorMode: seniorMode,
+                                ),
+                                color: AppColors.gold,
+                                letterSpacing: 3.5,
+                              ),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              '完善你的個人資料',
+                              style: AppTypography.serif(
+                                fontSize: AppTypography.size(
+                                  AppTypography.title,
+                                  seniorMode: seniorMode,
+                                ),
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.creamLight,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              '這些資料會用於配對語伴與活動報名資格判斷',
+                              style: TextStyle(
+                                fontSize: AppTypography.size(
+                                  AppTypography.caption,
+                                  seniorMode: seniorMode,
+                                ),
+                                color: AppColors.cream.withValues(alpha: 0.7),
+                              ),
+                            ),
+                            const SizedBox(height: 24),
+                            _buildTextField(
+                              controller: _displayNameController,
+                              labelTriku: 'HANGAN · 中文姓名',
+                              hint: '請輸入姓名',
+                              maxLength: ProfileFieldLimits.displayName,
+                              seniorMode: seniorMode,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _videoNicknameController,
+                              labelTriku: 'NGALAN · 公開暱稱',
+                              hint: '論壇、視訊、好友都會顯示這個名字',
+                              maxLength: ProfileFieldLimits.videoNickname,
+                              seniorMode: seniorMode,
+                              errorText: _nicknameError,
+                              onChanged: (_) {
+                                if (_nicknameError != null) {
+                                  setState(() => _nicknameError = null);
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 16),
+                            BirthDateField(
+                              value: _birthDate,
+                              onChanged: (d) => setState(() => _birthDate = d),
+                              seniorMode: seniorMode,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildSwitchRow(seniorMode),
+                            if (_isIndigenous) ...[
+                              const SizedBox(height: 16),
+                              _buildTribeRow(seniorMode),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: _tribalNameController,
+                                labelTriku: '族語名字（選填）',
+                                hint: '例如 Apyang Imiq',
+                                maxLength: ProfileFieldLimits.tribalName,
+                                seniorMode: seniorMode,
+                              ),
+                            ],
+                            const SizedBox(height: 16),
+                            _buildSeniorModeRow(),
+                            const SizedBox(height: 28),
+                            SizedBox(
+                              width: double.infinity,
+                              height: seniorMode ? 60 : 52,
+                              child: ElevatedButton(
+                                onPressed: _submitting ? null : _submit,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.gold,
+                                  foregroundColor: AppColors.ink,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(14),
+                                  ),
+                                  elevation: 0,
+                                ),
+                                child: _submitting
+                                    ? const SizedBox(
+                                        width: 20,
+                                        height: 20,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: AppColors.ink,
+                                        ),
+                                      )
+                                    : Text(
+                                        '完　成',
+                                        style: AppTypography.serif(
+                                          fontSize: AppTypography.size(
+                                            AppTypography.bodyLarge,
+                                            seniorMode: seniorMode,
+                                          ),
+                                          fontWeight: FontWeight.w600,
+                                          letterSpacing: 4,
+                                          color: AppColors.ink,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -360,7 +366,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
             labelTriku,
             style: TextStyle(
               fontSize: AppTypography.size(
-                AppTypography.micro,
+                AppTypography.caption,
                 seniorMode: seniorMode,
               ),
               color: AppColors.cream.withValues(alpha: 0.65),
@@ -438,6 +444,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               Switch(
                 value: _isIndigenous,
                 activeThumbColor: AppColors.gold,
+                inactiveThumbColor: AppColors.fog,
+                inactiveTrackColor: AppColors.inkSoft,
+                trackOutlineColor: const WidgetStatePropertyAll(AppColors.fog),
                 onChanged: (v) => setState(() {
                   _isIndigenous = v;
                   if (!v) {
@@ -495,6 +504,9 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               Switch(
                 value: seniorMode,
                 activeThumbColor: AppColors.gold,
+                inactiveThumbColor: AppColors.fog,
+                inactiveTrackColor: AppColors.inkSoft,
+                trackOutlineColor: const WidgetStatePropertyAll(AppColors.fog),
                 onChanged: (v) => seniorModeController.setEnabled(v),
               ),
             ],
@@ -535,7 +547,7 @@ class _CompleteProfileScreenState extends State<CompleteProfileScreen> {
               '部落',
               style: TextStyle(
                 fontSize: AppTypography.size(
-                  AppTypography.micro,
+                  AppTypography.caption,
                   seniorMode: seniorMode,
                 ),
                 color: AppColors.cream.withValues(alpha: 0.65),

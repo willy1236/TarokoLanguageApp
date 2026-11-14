@@ -5,7 +5,8 @@ import 'package:google_fonts/google_fonts.dart';
 ///
 /// 字級規則：
 /// - 字級常數（`micro`/`caption`/.../`headline`）一律是**一般模式**字級，
-///   全部為偶數、級距 2，一般模式最小 10。
+///   全部為偶數、級距 2。內文最小 14（[body]）、輔助文字最小 12（[caption]）；
+///   只有 [micro]（10）例外，限徽章、標籤、日期方塊月份這類極小標籤。
 /// - 精簡模式 = 一般模式 + [seniorStep]（2），因此精簡模式最小 12。
 ///   用 [size] 取得依模式換算後的字級，不要再手寫 `seniorMode ? 16 : 13`。
 ///
@@ -16,7 +17,7 @@ import 'package:google_fonts/google_fonts.dart';
 ///    `GoogleFonts.notoSerifTc(fontSize: ..., fontWeight: ...)` 的重複組合。
 abstract class AppTypography {
   // ── 一般模式字級（由小到大，偶數、級距 2）──────────────────────
-  static const double micro = 10; // 徽章、日期方塊等極小標籤
+  static const double micro = 10; // 僅限徽章、標籤、日期方塊月份等極小標籤
   static const double caption = 12; // 輔助說明文字
   static const double body = 14; // 內文次要
   static const double bodyLarge = 16; // 內文主要
@@ -36,6 +37,19 @@ abstract class AppTypography {
 
   /// 精簡模式相對一般模式放大的字級
   static const double seniorStep = 2;
+
+  /// 系統字級放大的上限：一般模式 1.3，精簡模式本來字就大，放寬到 1.5。
+  static const double maxTextScale = 1.3;
+  static const double maxSeniorTextScale = 1.5;
+
+  /// 把系統字級限制在 [1.0, 上限]，掛在 MaterialApp.builder 用。
+  static TextScaler clampTextScaler(
+    TextScaler scaler, {
+    bool seniorMode = false,
+  }) => scaler.clamp(
+    minScaleFactor: 1.0,
+    maxScaleFactor: seniorMode ? maxSeniorTextScale : maxTextScale,
+  );
 
   /// 依模式換算字級：精簡模式 = [base] + [seniorStep]
   static double size(double base, {bool seniorMode = false}) =>
@@ -146,31 +160,31 @@ abstract class AppTypography {
         color: color,
       );
 
-  // notoSansTc, regular：內文主要（14）
+  // notoSansTc, regular：內文主要（14，與 bodyStyle 同級，以字色區分）
   static TextStyle bodyLargeStyle({bool seniorMode = false, Color? color}) =>
       GoogleFonts.notoSansTc(
         fontSize: size(body, seniorMode: seniorMode),
         color: color,
       );
 
-  // notoSansTc, regular：內文次要（12）
+  // notoSansTc, regular：內文次要（14）
   static TextStyle bodyStyle({bool seniorMode = false, Color? color}) =>
+      GoogleFonts.notoSansTc(
+        fontSize: size(body, seniorMode: seniorMode),
+        color: color,
+      );
+
+  // notoSansTc, regular（更小字）：輔助說明文字（12）
+  static TextStyle captionStyle({bool seniorMode = false, Color? color}) =>
       GoogleFonts.notoSansTc(
         fontSize: size(caption, seniorMode: seniorMode),
         color: color,
       );
 
-  // notoSansTc, regular（更小字）：輔助說明文字（10）
-  static TextStyle captionStyle({bool seniorMode = false, Color? color}) =>
-      GoogleFonts.notoSansTc(
-        fontSize: size(micro, seniorMode: seniorMode),
-        color: color,
-      );
-
-  // crimsonPro + italic：族語拉丁拼音專用（10）
+  // crimsonPro + italic：族語拉丁拼音專用（12）
   static TextStyle romanized({bool seniorMode = false, Color? color}) =>
       GoogleFonts.crimsonPro(
-        fontSize: size(micro, seniorMode: seniorMode),
+        fontSize: size(caption, seniorMode: seniorMode),
         fontStyle: FontStyle.italic,
         color: color,
       );

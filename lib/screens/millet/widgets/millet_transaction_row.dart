@@ -89,7 +89,7 @@ class MilletTransactionRow extends StatelessWidget {
                       : _timeLabel(),
                   style: const TextStyle(
                     fontSize: AppTypography.caption,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
               ],
@@ -110,8 +110,8 @@ class MilletTransactionRow extends StatelessWidget {
               Text(
                 '餘額 ${transaction.balanceAfter}',
                 style: const TextStyle(
-                  fontSize: AppTypography.micro,
-                  color: AppColors.fog,
+                  fontSize: AppTypography.caption,
+                  color: AppColors.inkMuted,
                 ),
               ),
             ],

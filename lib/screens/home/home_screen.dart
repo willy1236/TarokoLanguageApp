@@ -164,8 +164,9 @@ class HomeScreen extends StatelessWidget {
   }
 
   // 一般模式首頁永遠一頁完整顯示、不捲動，並讓不同長寬比的畫面看起來一致：
-  // - 畫面太矮（web 矮視窗、橫向、分割畫面、放大字級）：以 _designMinHeight
+  // - 畫面太矮（web 矮視窗、橫向、分割畫面）：以 _designMinHeight
   //   為基準排版後整頁等比縮小，版面比例不變、不會出現半截捲動區。
+  // - 系統字級放大（textScale > 1）：不縮小，改為整頁可捲動，字才真的放大。
   // - 畫面太高（細長手機）：模式卡列高封頂，多出的空間平均分到進度卡與模式卡
   //   之間、以及模式卡下方，避免卡片被拉得過長。
   static const _designMinHeight = 680.0;
@@ -179,7 +180,14 @@ class HomeScreen extends StatelessWidget {
         final minHeight = _designMinHeight * textScale;
         final page = _buildPageColumn(context, textScale);
         if (constraints.maxHeight >= minHeight) return page;
-        // 以 minHeight 排版，寬度同比例放大，再由 FittedBox 等比縮回可用空間。
+        // 系統字級放大時不縮小整頁（縮小會把放大的字抵銷掉），改成以 minHeight 排版、
+        // 超出畫面的部分上下捲動。
+        if (textScale > 1.0) {
+          return SingleChildScrollView(
+            child: SizedBox(height: minHeight, child: page),
+          );
+        }
+        // 一般字級：以 minHeight 排版，寬度同比例放大，再由 FittedBox 等比縮回可用空間。
         final scale = constraints.maxHeight / minHeight;
         return FittedBox(
           fit: BoxFit.contain,
@@ -324,7 +332,7 @@ class HomeScreen extends StatelessWidget {
                         style: AppTypography.latin(
                           fontStyle: FontStyle.italic,
                           fontSize: AppTypography.body,
-                          color: AppColors.fog,
+                          color: AppColors.inkMuted,
                           letterSpacing: 2.0,
                         ),
                       ),

@@ -58,13 +58,13 @@ class ForumPostBody extends StatelessWidget {
               AppTypography.caption,
               seniorMode: seniorMode,
             ),
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
           children: [
             nicknameSpan(
               post.author.displayName,
               post.author.othersFriendCode,
-              style: const TextStyle(color: AppColors.fog),
+              style: const TextStyle(color: AppColors.inkMuted),
             ),
             TextSpan(
               text:
@@ -110,7 +110,7 @@ class ForumPostBody extends StatelessWidget {
                 Icon(
                   post.isLiked ? Icons.favorite : Icons.favorite_border,
                   size: seniorMode ? 30 : 18,
-                  color: post.isLiked ? AppColors.primary : AppColors.fog,
+                  color: post.isLiked ? AppColors.primary : AppColors.inkMuted,
                 ),
                 const SizedBox(width: 6),
                 Text(
@@ -120,7 +120,7 @@ class ForumPostBody extends StatelessWidget {
                       AppTypography.body,
                       seniorMode: seniorMode,
                     ),
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
               ],
@@ -133,7 +133,7 @@ class ForumPostBody extends StatelessWidget {
             child: Icon(
               post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
               size: seniorMode ? 30 : 18,
-              color: post.isBookmarked ? AppColors.primary : AppColors.fog,
+              color: post.isBookmarked ? AppColors.primary : AppColors.inkMuted,
             ),
           ),
         ],

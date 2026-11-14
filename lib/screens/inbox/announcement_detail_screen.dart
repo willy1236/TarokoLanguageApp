@@ -56,7 +56,7 @@ class AnnouncementDetailScreen extends StatelessWidget {
               formatDateTime(item.createdAt),
               style: AppTypography.captionStyle(
                 seniorMode: seniorMode,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
               ),
             ),
             if (imageUrl != null && imageUrl.isNotEmpty) ...[

@@ -117,7 +117,7 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
                     hintText: '搜尋部落、縣市或鄉鎮',
                     hintStyle: AppTypography.serif(
                       fontSize: AppTypography.body,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                     isDense: true,
                     filled: true,
@@ -146,7 +146,7 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
     if (_error != null) {
       return Padding(
         padding: const EdgeInsets.all(24),
-        child: Text(_error!, style: TextStyle(color: AppColors.fog)),
+        child: Text(_error!, style: TextStyle(color: AppColors.inkMuted)),
       );
     }
     if (_tribes == null) {
@@ -159,7 +159,7 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
     if (tribes.isEmpty) {
       return Padding(
         padding: const EdgeInsets.all(24),
-        child: Text('找不到符合的部落', style: TextStyle(color: AppColors.fog)),
+        child: Text('找不到符合的部落', style: TextStyle(color: AppColors.inkMuted)),
       );
     }
     final clearOptionCount = widget.allowClear ? 1 : 0;
@@ -179,7 +179,7 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
               widget.clearLabel,
               style: AppTypography.serif(
                 fontSize: AppTypography.body,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
                 letterSpacing: 0.5,
               ),
             ),
@@ -210,7 +210,7 @@ class _TribePickerSheetState extends State<TribePickerSheet> {
             '${tribe.county}${tribe.township} · ${tribe.nameTruku}',
             style: TextStyle(
               fontSize: AppTypography.caption,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
           onTap: () => Navigator.pop(context, tribe),

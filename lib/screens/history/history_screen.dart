@@ -14,6 +14,7 @@ import '../../shared/widgets/truku_empty_state.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/utils/date_format.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/filter_pill.dart';
 
 class HistoryScreen extends StatefulWidget {
   const HistoryScreen({super.key});
@@ -206,7 +207,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: Row(
         children: [
           for (final option in options) ...[
-            _FilterChip(
+            FilterPill(
               label: option.label,
               selected: _typeFilter == option.value,
               onTap: () => _setFilter(option.value),
@@ -256,43 +257,6 @@ class _HistoryScreenState extends State<HistoryScreen> {
             ),
           );
         },
-      ),
-    );
-  }
-}
-
-class _FilterChip extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  const _FilterChip({
-    required this.label,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppColors.primary : AppColors.cream,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? AppColors.primary : AppColors.creamDeep,
-          ),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            fontSize: AppTypography.body,
-            fontWeight: FontWeight.w600,
-            color: selected ? AppColors.creamLight : AppColors.inkSoft,
-          ),
-        ),
       ),
     );
   }
@@ -355,7 +319,7 @@ class _HistoryRow extends StatelessWidget {
                     '${record.statusLabel} · ${_timeLabel()}',
                     style: const TextStyle(
                       fontSize: AppTypography.caption,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ],
@@ -369,11 +333,15 @@ class _HistoryRow extends StatelessWidget {
                   style: AppTypography.serif(
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
-                    color: isCompleted ? AppColors.primary : AppColors.fog,
+                    color: isCompleted ? AppColors.primary : AppColors.inkMuted,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Icon(Icons.chevron_right, color: AppColors.fog, size: 18),
+                const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.inkMuted,
+                  size: 18,
+                ),
               ],
             ),
           ],

@@ -4,10 +4,9 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'core/constants/app_colors.dart';
 import 'core/constants/app_typography.dart';
-import 'core/constants/picker_themes.dart';
+import 'core/theme/app_theme.dart';
 import 'firebase_options.dart';
 import 'screens/account/account_pending_screen.dart';
 import 'core/navigation/route_stack.dart';
@@ -44,6 +43,7 @@ import 'services/user_service.dart';
 import 'services/video_call_service.dart';
 import 'shared/widgets/app_update_prompt.dart';
 import 'shared/widgets/scroll_to_top_scope.dart';
+import 'shared/widgets/status_bar_scope.dart';
 import 'shared/widgets/truku_bottom_tab.dart';
 import 'shared/widgets/confirm_dialog.dart';
 
@@ -59,12 +59,8 @@ const appLocale = Locale('zh', 'TW');
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  SystemChrome.setSystemUIOverlayStyle(
-    const SystemUiOverlayStyle(
-      statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
-    ),
-  );
+  // 預設給米白底畫面用深色圖示；深色頂端的畫面用 StatusBarScope.onDark 個別改。
+  SystemChrome.setSystemUIOverlayStyle(StatusBarScope.lightBackgroundStyle);
 
   // 點提醒/取消通知 → 導到該活動詳情頁（用全域 routeStack，不依賴當下 context）。
   FcmService.onReminderTapped = (eventId) {
@@ -165,59 +161,24 @@ class KariTrukuApp extends StatelessWidget {
       locale: appLocale,
       supportedLocales: const [appLocale],
       localizationsDelegates: GlobalMaterialLocalizations.delegates,
-      theme: ThemeData(
-        brightness: Brightness.dark,
-        scaffoldBackgroundColor: AppColors.background,
-        primaryColor: AppColors.primary,
-        useMaterial3: true,
-        colorScheme: const ColorScheme.dark(
-          primary: AppColors.primary,
-          secondary: AppColors.surfaceVariant,
-          surface: AppColors.surface,
-        ),
-        datePickerTheme: PickerThemes.date,
-        timePickerTheme: PickerThemes.time,
-        textTheme: GoogleFonts.notoSansTcTextTheme(
-          const TextTheme(
-            bodySmall: TextStyle(
-              fontSize: AppTypography.caption,
-              color: AppColors.creamLight,
-            ),
-            bodyMedium: TextStyle(
-              fontSize: AppTypography.body,
-              color: AppColors.creamLight,
-            ),
-            bodyLarge: TextStyle(
-              fontSize: AppTypography.bodyLarge,
-              color: AppColors.creamLight,
-            ),
-            titleSmall: TextStyle(
-              fontSize: AppTypography.subtitle,
-              color: AppColors.creamLight,
-            ),
-            titleMedium: TextStyle(
-              fontSize: AppTypography.title,
-              color: AppColors.creamLight,
-            ),
-            titleLarge: TextStyle(
-              fontSize: AppTypography.headline,
-              color: AppColors.creamLight,
-            ),
-          ),
-        ),
-      ),
+      theme: AppTheme.light,
       builder: (context, child) {
         final mediaQuery = MediaQuery.of(context);
         final seniorMode = seniorModeController.enabled;
         return MediaQuery(
           data: mediaQuery.copyWith(
-            textScaler: mediaQuery.textScaler.clamp(
-              minScaleFactor: 1.0,
-              maxScaleFactor: seniorMode ? 1.5 : 1.15,
+            textScaler: AppTypography.clampTextScaler(
+              mediaQuery.textScaler,
+              seniorMode: seniorMode,
             ),
           ),
-          child: AppUpdatePromptLayer(
-            child: _ReadOnlyBannerFrame(child: child!),
+          // 全域預設的狀態列樣式放在樹的最外層：畫面上沒有任何 StatusBarScope 時
+          // （例如從深色頂端的分頁切到米白底分頁），才會落回這個預設；不放的話
+          // Flutter 不會重設，上一個畫面的圖示顏色會一直殘留。
+          child: StatusBarScope.onLight(
+            child: AppUpdatePromptLayer(
+              child: _ReadOnlyBannerFrame(child: child!),
+            ),
           ),
         );
       },

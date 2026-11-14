@@ -300,7 +300,7 @@ class _EventImagesFieldState extends State<EventImagesField> {
           '${_c.count}/${EventService.imageMaxCount} 張・第一張是封面',
           style: AppTypography.bodyStyle(
             seniorMode: seniorMode,
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
         if (_c.canReorder)
@@ -308,7 +308,7 @@ class _EventImagesFieldState extends State<EventImagesField> {
             '長按照片可拖曳調整順序',
             style: AppTypography.bodyStyle(
               seniorMode: seniorMode,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
       ],

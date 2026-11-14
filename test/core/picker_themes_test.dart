@@ -1,10 +1,12 @@
 // 日期選擇器的「今天」配色：未選中要有看得到的底色，選中時與其他日子一樣是酒紅底。
 
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'package:flutter_application_1/core/constants/app_colors.dart';
 import 'package:flutter_application_1/core/constants/picker_themes.dart';
+import 'package:flutter_application_1/core/theme/app_theme.dart';
 
 void main() {
   final theme = PickerThemes.date;
@@ -29,5 +31,33 @@ void main() {
     const disabled = {WidgetState.disabled};
     expect(theme.todayBackgroundColor!.resolve(disabled), isNull);
     expect(theme.todayForegroundColor!.resolve(disabled), isNull);
+  });
+
+  testWidgets('鍵盤輸入模式：輸入字是淺色，不吃 light 主題的 ink', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.build(useGoogleFonts: false),
+        locale: const Locale('zh', 'TW'),
+        supportedLocales: const [Locale('zh', 'TW')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showDatePicker(
+              context: context,
+              initialDate: DateTime(2026, 6, 1),
+              firstDate: DateTime(2026),
+              lastDate: DateTime(2027),
+              initialEntryMode: DatePickerEntryMode.input,
+              builder: PickerThemes.builder,
+            ),
+            child: const Text('開'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('開'));
+    await tester.pumpAndSettle();
+    final editable = tester.widget<EditableText>(find.byType(EditableText));
+    expect(editable.style.color, AppColors.creamLight);
   });
 }

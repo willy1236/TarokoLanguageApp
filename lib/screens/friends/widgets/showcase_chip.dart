@@ -27,10 +27,10 @@ class ShowcaseChip extends StatelessWidget {
       color = AppColors.primary;
     } else if (showcase.mine) {
       label = '等待對方同意';
-      color = AppColors.fog;
+      color = AppColors.inkMuted;
     } else {
       label = '顯示在檔案上';
-      color = AppColors.fog;
+      color = AppColors.inkMuted;
     }
     return GestureDetector(
       onTap: onTap,

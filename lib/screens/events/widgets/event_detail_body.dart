@@ -149,10 +149,10 @@ class EventDetailBody extends StatelessWidget {
                     '發起人',
                     style: TextStyle(
                       fontSize: AppTypography.size(
-                        AppTypography.micro,
+                        AppTypography.caption,
                         seniorMode: seniorMode,
                       ),
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                       letterSpacing: 1.5,
                     ),
                   ),
@@ -196,7 +196,7 @@ class EventDetailBody extends StatelessWidget {
               const Spacer(),
               EngagementIconButton(
                 icon: e.isLiked ? Icons.favorite : Icons.favorite_border,
-                color: e.isLiked ? AppColors.primary : AppColors.fog,
+                color: e.isLiked ? AppColors.primary : AppColors.inkMuted,
                 count: e.likeCount,
                 onTap: onToggleLike,
                 seniorMode: seniorMode,
@@ -204,7 +204,7 @@ class EventDetailBody extends StatelessWidget {
               const SizedBox(width: 6),
               EngagementIconButton(
                 icon: e.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
-                color: e.isBookmarked ? AppColors.primary : AppColors.fog,
+                color: e.isBookmarked ? AppColors.primary : AppColors.inkMuted,
                 onTap: onToggleBookmark,
                 seniorMode: seniorMode,
               ),
@@ -395,7 +395,7 @@ class EventDetailBody extends StatelessWidget {
               AppTypography.caption,
               seniorMode: seniorMode,
             ),
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
             letterSpacing: 1.0,
           ),
         ),
@@ -493,7 +493,7 @@ class EventDetailBody extends StatelessWidget {
           AppTypography.caption,
           seniorMode: seniorMode,
         ),
-        color: AppColors.fog,
+        color: AppColors.inkMuted,
         letterSpacing: 1.5,
       ),
     );
@@ -507,7 +507,7 @@ class EventDetailBody extends StatelessWidget {
       ),
       'processing' => ('派送中', AppColors.goldDeep),
       'failed' => ('發送失敗', AppColors.dangerDark),
-      'cancelled' => ('已取消', AppColors.fog),
+      'cancelled' => ('已取消', AppColors.inkMuted),
       _ => (
         '排定於 ${formatDateTime(r.scheduledAt.toLocal())}',
         AppColors.primary,

@@ -7,6 +7,7 @@ import '../../../core/utils/date_format.dart';
 import '../../../models/event_model.dart';
 import '../../../shared/widgets/truku_widgets.dart';
 import '../../events/widgets/event_cover.dart';
+import '../../../shared/widgets/pressable.dart';
 
 class PlazaEventMessageCard extends StatelessWidget {
   final IconData icon;
@@ -33,14 +34,14 @@ class PlazaEventMessageCard extends StatelessWidget {
     ),
     child: Row(
       children: [
-        Icon(icon, size: 18, color: AppColors.fog),
+        Icon(icon, size: 18, color: AppColors.inkMuted),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
             message,
             style: AppTypography.serif(
               fontSize: AppTypography.body,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
               letterSpacing: 0.8,
             ),
           ),
@@ -50,63 +51,6 @@ class PlazaEventMessageCard extends StatelessWidget {
       ],
     ),
   );
-}
-
-// ── 看板 Tab 元件 ──────────────────────────────────────────────
-
-class PlazaBoardTab extends StatelessWidget {
-  final String label;
-  final bool selected;
-  final VoidCallback onTap;
-
-  /// 精簡模式：字級放大、上下留白加大，讓 tab 熱區至少 48 高。
-  final bool seniorMode;
-
-  const PlazaBoardTab({
-    super.key,
-    required this.label,
-    required this.selected,
-    required this.onTap,
-    this.seniorMode = false,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final color = selected ? AppColors.primary : AppColors.fog;
-    return GestureDetector(
-      onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: seniorMode ? 10 : 6),
-        child: Stack(
-          children: [
-            Padding(
-              padding: EdgeInsets.symmetric(vertical: seniorMode ? 14 : 10),
-              child: Text(
-                label,
-                style: AppTypography.serif(
-                  fontSize: AppTypography.size(
-                    AppTypography.body,
-                    seniorMode: seniorMode,
-                  ),
-                  fontWeight: FontWeight.w600,
-                  color: color,
-                  letterSpacing: 1.5,
-                ),
-              ),
-            ),
-            if (selected)
-              Positioned(
-                bottom: 0,
-                left: 0,
-                right: 0,
-                child: Container(height: 2, color: AppColors.primary),
-              ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // ── 近期活動小卡 ─────────────────────────────────────────────
@@ -127,7 +71,7 @@ class PlazaMiniEventCard extends StatelessWidget {
     final month = monthLabel(d);
     final day = dayLabel(d);
     final content = _buildContent(month, day);
-    return GestureDetector(
+    return Pressable(
       onTap: onTap,
       child: EventCover(
         url: event.coverImageUrl,
@@ -185,8 +129,9 @@ class PlazaMiniEventCard extends StatelessWidget {
         Row(
           children: [
             Container(
-              width: 44,
-              height: 44,
+              // 日期方塊最小 44，字級放大時跟著長高，不固定高度以免溢位。
+              constraints: const BoxConstraints(minWidth: 44, minHeight: 44),
+              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
               decoration: BoxDecoration(
                 color: event.isJoined ? AppColors.primary : AppColors.moss,
                 borderRadius: BorderRadius.circular(8),
@@ -236,7 +181,7 @@ class PlazaMiniEventCard extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
-                      fontSize: AppTypography.micro,
+                      fontSize: AppTypography.caption,
                       color: AppColors.creamLight.withValues(alpha: 0.65),
                       letterSpacing: 0.8,
                     ),
@@ -250,14 +195,19 @@ class PlazaMiniEventCard extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              '● ${event.participantCount} 人報名',
-              style: const TextStyle(
-                fontSize: AppTypography.micro,
-                color: AppColors.gold,
-                letterSpacing: 1.5,
+            Flexible(
+              child: Text(
+                '● ${event.participantCount} 人報名',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: AppTypography.caption,
+                  color: AppColors.gold,
+                  letterSpacing: 1.5,
+                ),
               ),
             ),
+            const SizedBox(width: 8),
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
               decoration: BoxDecoration(

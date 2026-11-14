@@ -16,6 +16,7 @@ import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import '../community/video_call_screen.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 class DirectedCallWaitingScreen extends StatefulWidget {
   final String calleeFriendCode;
@@ -210,38 +211,40 @@ class _DirectedCallWaitingScreenState extends State<DirectedCallWaitingScreen>
   }
 
   Widget _buildScaffold() {
-    return Scaffold(
-      backgroundColor: AppColors.ink,
-      body: Stack(
-        fit: StackFit.expand,
-        children: [
-          Opacity(
-            opacity: 0.08,
-            child: CustomPaint(
-              painter: TrukuWeavePainter(
-                color: AppColors.gold,
-                opacity: 1.0,
-                scale: 1.2,
+    return StatusBarScope.onDark(
+      child: Scaffold(
+        backgroundColor: AppColors.ink,
+        body: Stack(
+          fit: StackFit.expand,
+          children: [
+            Opacity(
+              opacity: 0.08,
+              child: CustomPaint(
+                painter: TrukuWeavePainter(
+                  color: AppColors.gold,
+                  opacity: 1.0,
+                  scale: 1.2,
+                ),
               ),
             ),
-          ),
-          Container(
-            decoration: const BoxDecoration(
-              gradient: RadialGradient(
-                center: Alignment(0, -0.2),
-                radius: 0.7,
-                colors: [Color(0x304A0F0C), Colors.transparent],
+            Container(
+              decoration: const BoxDecoration(
+                gradient: RadialGradient(
+                  center: Alignment(0, -0.2),
+                  radius: 0.7,
+                  colors: [Color(0x304A0F0C), Colors.transparent],
+                ),
               ),
             ),
-          ),
-          Column(
-            children: [
-              _buildTopBar(),
-              Expanded(child: _buildCenter()),
-              _buildCancelButton(),
-            ],
-          ),
-        ],
+            Column(
+              children: [
+                _buildTopBar(),
+                Expanded(child: _buildCenter()),
+                _buildCancelButton(),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

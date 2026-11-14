@@ -32,6 +32,7 @@ import 'package:flutter_application_1/services/video_upload/pending_uploads.dart
 import 'package:flutter_application_1/services/video_upload/resumable_uploader.dart';
 import 'package:flutter_application_1/services/video_upload/video_file_picker.dart';
 import 'package:flutter_application_1/services/video_upload/video_upload_manager.dart';
+import 'package:flutter_application_1/shared/widgets/filter_pill.dart';
 
 import '../../helpers/fixtures.dart';
 import '../../helpers/widget_test_helpers.dart';
@@ -210,11 +211,11 @@ void main() {
     mock((_) => _page([_video(1)], null));
     await _open(tester);
 
-    await tester.tap(find.widgetWithText(ChoiceChip, '失敗'));
+    await tester.tap(find.widgetWithText(FilterPill, '失敗'));
     await tester.pumpAndSettle();
     expect(listRequests.last.queryParameters, {'status': 'failed'});
 
-    await tester.tap(find.widgetWithText(ChoiceChip, 'YouTube'));
+    await tester.tap(find.widgetWithText(FilterPill, 'YouTube'));
     await tester.pumpAndSettle();
     expect(listRequests.last.queryParameters, {
       'status': 'failed',
@@ -232,8 +233,8 @@ void main() {
       'q': '織布',
     });
 
-    await tester.tap(find.widgetWithText(ChoiceChip, '全部'));
-    await tester.tap(find.widgetWithText(ChoiceChip, '全部來源'));
+    await tester.tap(find.widgetWithText(FilterPill, '全部'));
+    await tester.tap(find.widgetWithText(FilterPill, '全部來源'));
     await tester.pumpAndSettle();
     expect(listRequests.last.queryParameters, {'q': '織布'});
   });
@@ -296,7 +297,7 @@ void main() {
   testWidgets('右上角上傳影片：上架成功回來重抓第一頁並保留篩選，取消回來不重抓', (tester) async {
     mock((_) => _page([_video(1)], null));
     await _open(tester);
-    await tester.tap(find.widgetWithText(ChoiceChip, 'YouTube'));
+    await tester.tap(find.widgetWithText(FilterPill, 'YouTube'));
     await tester.pumpAndSettle();
     expect(listRequests, hasLength(2));
 

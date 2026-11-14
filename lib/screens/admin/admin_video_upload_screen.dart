@@ -307,7 +307,7 @@ class _AdminVideoUploadScreenState extends State<AdminVideoUploadScreen> {
                     alignment: Alignment.center,
                     child: const Icon(
                       Icons.movie_outlined,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ),

@@ -228,7 +228,7 @@ class AdminCaseCard extends StatelessWidget {
                   formatDateTime(c.openedAt!),
                   style: AppTypography.captionStyle(
                     seniorMode: seniorMode,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
             ],

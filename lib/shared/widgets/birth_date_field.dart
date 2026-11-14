@@ -88,7 +88,7 @@ class BirthDateField extends StatelessWidget {
                   '出生日期',
                   style: TextStyle(
                     fontSize: AppTypography.size(
-                      AppTypography.micro,
+                      AppTypography.caption,
                       seniorMode: seniorMode,
                     ),
                     color: AppColors.cream.withValues(alpha: 0.65),
@@ -251,7 +251,7 @@ class _BirthDateWheelSheetState extends State<_BirthDateWheelSheet> {
                     '取消',
                     style: AppTypography.bodyStyle(
                       seniorMode: seniorMode,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ),

@@ -119,7 +119,7 @@ class _EventListItem extends StatelessWidget {
             Icon(
               Icons.access_time,
               size: seniorMode ? 20 : 13,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
             const SizedBox(width: 4),
             Text(
@@ -141,7 +141,7 @@ class _EventListItem extends StatelessWidget {
               Icon(
                 Icons.location_on_outlined,
                 size: seniorMode ? 20 : 13,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
               ),
               const SizedBox(width: 4),
               Expanded(
@@ -167,13 +167,13 @@ class _EventListItem extends StatelessWidget {
             Icon(
               event.isLiked ? Icons.favorite : Icons.favorite_border,
               size: seniorMode ? 22 : 14,
-              color: event.isLiked ? AppColors.primary : AppColors.fog,
+              color: event.isLiked ? AppColors.primary : AppColors.inkMuted,
             ),
             const SizedBox(width: 4),
             Text(
               '${event.likeCount}',
               style: TextStyle(
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
                 fontSize: AppTypography.size(
                   AppTypography.caption,
                   seniorMode: seniorMode,

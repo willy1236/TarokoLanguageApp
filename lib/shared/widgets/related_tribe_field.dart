@@ -57,7 +57,7 @@ class RelatedTribeField extends StatelessWidget {
             Icon(
               Icons.place_outlined,
               size: seniorMode ? 22 : 18,
-              color: selected != null ? AppColors.primary : AppColors.fog,
+              color: selected != null ? AppColors.primary : AppColors.inkMuted,
             ),
             const SizedBox(width: 8),
             Text(
@@ -84,7 +84,9 @@ class RelatedTribeField extends StatelessWidget {
                   fontWeight: selected != null
                       ? FontWeight.w600
                       : FontWeight.w400,
-                  color: selected != null ? AppColors.primary : AppColors.fog,
+                  color: selected != null
+                      ? AppColors.primary
+                      : AppColors.inkMuted,
                 ),
               ),
             ),
@@ -95,12 +97,12 @@ class RelatedTribeField extends StatelessWidget {
                 icon: Icon(
                   Icons.close,
                   size: seniorMode ? 22 : 16,
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                 ),
                 onPressed: () => onChanged(null),
               )
             else
-              Icon(Icons.chevron_right, color: AppColors.fog),
+              Icon(Icons.chevron_right, color: AppColors.inkMuted),
           ],
         ),
       ),
@@ -126,7 +128,7 @@ class RelatedTribeLabel extends StatelessWidget {
       Icon(
         Icons.place_outlined,
         size: seniorMode ? 18 : 13,
-        color: AppColors.fog,
+        color: AppColors.inkMuted,
       ),
       const SizedBox(width: 3),
       Flexible(
@@ -138,7 +140,7 @@ class RelatedTribeLabel extends StatelessWidget {
               AppTypography.caption,
               seniorMode: seniorMode,
             ),
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
       ),

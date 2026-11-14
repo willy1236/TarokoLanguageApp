@@ -16,6 +16,7 @@ import '../../services/data_source_service.dart';
 import '../../services/senior_mode_controller.dart';
 import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 class AboutAppScreen extends StatelessWidget {
   const AboutAppScreen({super.key});
@@ -28,16 +29,18 @@ class AboutAppScreen extends StatelessWidget {
   );
 
   Widget _buildScaffold(BuildContext context, bool seniorMode) {
-    return Scaffold(
-      backgroundColor: AppColors.creamLight,
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: _buildHero(context, seniorMode)),
-          SliverSafeArea(
-            top: false,
-            sliver: SliverToBoxAdapter(child: _buildBody(seniorMode)),
-          ),
-        ],
+    return StatusBarScope.onDark(
+      child: Scaffold(
+        backgroundColor: AppColors.creamLight,
+        body: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: _buildHero(context, seniorMode)),
+            SliverSafeArea(
+              top: false,
+              sliver: SliverToBoxAdapter(child: _buildBody(seniorMode)),
+            ),
+          ],
+        ),
       ),
     );
   }

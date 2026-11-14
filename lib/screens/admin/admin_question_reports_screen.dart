@@ -103,7 +103,7 @@ class _QuestionReportCardState extends State<_QuestionReportCard> {
                   formatDateTime(report.createdAt!),
                   style: AppTypography.captionStyle(
                     seniorMode: seniorMode,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
             ],

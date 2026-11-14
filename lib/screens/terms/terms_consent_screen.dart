@@ -269,7 +269,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
               '目前沒有條款內容',
               style: TextStyle(
                 fontSize: AppTypography.body,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
               ),
             ),
             if (!readOnly)
@@ -295,7 +295,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
         children: [
           TabBar(
             labelColor: AppColors.ink,
-            unselectedLabelColor: AppColors.fog,
+            unselectedLabelColor: AppColors.inkMuted,
             indicatorColor: AppColors.gold,
             labelStyle: AppTypography.serif(
               fontSize: AppTypography.body,
@@ -331,7 +331,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
             alignment: Alignment.centerLeft,
             child: Text(
               '第 ${_step + 1} 份／共 ${_documents.length} 份',
-              style: AppTypography.captionStyle(color: AppColors.fog),
+              style: AppTypography.captionStyle(color: AppColors.inkMuted),
             ),
           ),
         ),
@@ -376,7 +376,7 @@ class _TermsConsentScreenState extends State<TermsConsentScreen> {
               Text(
                 '請先閱讀至《${doc.title}》最下方',
                 textAlign: TextAlign.center,
-                style: AppTypography.captionStyle(color: AppColors.fog),
+                style: AppTypography.captionStyle(color: AppColors.inkMuted),
               ),
               const SizedBox(height: 8),
             ],

@@ -186,7 +186,7 @@ class _PlacementDoneViewState extends State<PlacementDoneView> {
                   '建議起始等級',
                   style: AppTypography.bodyStyle(
                     seniorMode: seniorMode,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -212,7 +212,7 @@ class _PlacementDoneViewState extends State<PlacementDoneView> {
           textAlign: TextAlign.center,
           style: AppTypography.bodyStyle(
             seniorMode: seniorMode,
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
       ],

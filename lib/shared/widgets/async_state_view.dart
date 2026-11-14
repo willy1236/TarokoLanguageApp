@@ -63,7 +63,7 @@ class TrukuErrorView extends StatelessWidget {
         Icon(
           unauthorized ? Icons.lock_outline : Icons.cloud_off_outlined,
           size: seniorMode ? 56 : 40,
-          color: AppColors.fog,
+          color: AppColors.inkMuted,
         ),
         const SizedBox(height: 12),
         Text(

@@ -32,6 +32,11 @@ abstract class AppColors {
   static const Color fog = Color(0xFFA89C88);
   static const Color mist = Color(0xFFD4C9B5);
 
+  /// 淺底（cream／creamLight／creamDeep）上的次要文字與 icon。
+  /// 對 creamLight 5.85:1、cream 5.23:1、creamDeep 4.64:1。
+  /// 深底上的次要色仍用 [fog]（對 midnight 6.9:1）；fog 放在米白底只有 2.48:1，不可用。
+  static const Color inkMuted = Color(0xFF6B5D4F);
+
   // ── 相容別名（暗色主題佈局用）───────────────────────────────
   static const Color background = midnight;
   static const Color surface = midnightSoft;

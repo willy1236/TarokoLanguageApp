@@ -52,7 +52,7 @@ class SeniorModeToggleIcon extends StatelessWidget {
                       : Icons.grid_view_rounded,
                   key: ValueKey(enabled),
                   size: 22,
-                  color: enabled ? AppColors.gold : AppColors.fog,
+                  color: enabled ? AppColors.gold : AppColors.inkMuted,
                 ),
               ),
             ),

@@ -77,7 +77,7 @@ class TrukuEmptyState extends StatelessWidget {
             fontSize: seniorMode
                 ? AppTypography.body + AppTypography.seniorStep
                 : null,
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
       ],

@@ -76,7 +76,7 @@ class _JoinEmailDialogState extends State<JoinEmailDialog> {
             ),
             decoration: InputDecoration(
               hintText: 'name@example.com',
-              hintStyle: TextStyle(color: AppColors.fog),
+              hintStyle: TextStyle(color: AppColors.inkMuted),
               errorText: _error,
               border: const OutlineInputBorder(),
             ),
@@ -146,7 +146,7 @@ class _CancelReasonDialogState extends State<CancelReasonDialog> {
             ),
             decoration: InputDecoration(
               hintText: '例如：因天候因素順延…',
-              hintStyle: TextStyle(color: AppColors.fog),
+              hintStyle: TextStyle(color: AppColors.inkMuted),
               border: const OutlineInputBorder(),
             ),
           ),

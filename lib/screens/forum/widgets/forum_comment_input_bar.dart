@@ -60,7 +60,7 @@ class ForumCommentInputBar extends StatelessWidget {
                         AppTypography.caption,
                         seniorMode: seniorMode,
                       ),
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ),
@@ -69,7 +69,7 @@ class ForumCommentInputBar extends StatelessWidget {
                   child: Icon(
                     Icons.close,
                     size: seniorMode ? 24 : 16,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
               ],

@@ -17,6 +17,7 @@ import '../../shared/widgets/module_search_bar.dart';
 import '../../shared/widgets/search_suggestions.dart';
 import 'forum_board_view.dart';
 import 'forum_detail_screen.dart';
+import '../../shared/widgets/filter_pill.dart';
 
 class ForumSearchScreen extends StatefulWidget {
   final List<ForumBoard> boards;
@@ -118,7 +119,7 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
               child: Text(
                 _hint!,
                 style: TextStyle(
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                   fontSize: seniorMode
                       ? AppTypography.bodyLarge + AppTypography.seniorStep
                       : null,
@@ -185,33 +186,13 @@ class _ForumSearchScreenState extends State<ForumSearchScreen> {
     );
   }
 
-  /// 選中態刻意只用淡淡的酒紅底加同色文字與邊框：整片深色會蓋掉文字，
-  /// 太淡又看不出選了哪一個，所以底色壓在 0.16、靠邊框與文字顏色補足對比。
-  Widget _chip(String label, String? slug, bool seniorMode) {
-    final selected = _boardSlug == slug;
-    return Padding(
-      padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
-      child: ChoiceChip(
-        label: Text(label),
-        selected: selected,
-        showCheckmark: false,
-        backgroundColor: AppColors.cream,
-        selectedColor: AppColors.primary.withValues(alpha: 0.16),
-        labelStyle: TextStyle(
-          fontSize: AppTypography.size(
-            AppTypography.body,
-            seniorMode: seniorMode,
-          ),
-          color: selected ? AppColors.primary : AppColors.inkSoft,
-          fontWeight: selected ? FontWeight.w600 : FontWeight.w400,
-        ),
-        side: BorderSide(
-          color: selected
-              ? AppColors.primary.withValues(alpha: 0.45)
-              : AppColors.creamDeep,
-        ),
-        onSelected: (_) => setState(() => _boardSlug = slug),
-      ),
-    );
-  }
+  Widget _chip(String label, String? slug, bool seniorMode) => Padding(
+    padding: const EdgeInsets.only(right: 8, top: 6, bottom: 6),
+    child: FilterPill(
+      label: label,
+      selected: _boardSlug == slug,
+      seniorMode: seniorMode,
+      onTap: () => setState(() => _boardSlug = slug),
+    ),
+  );
 }

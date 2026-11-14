@@ -168,7 +168,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
               child: Text(
                 _error!,
                 style: TextStyle(
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                   fontSize: seniorMode
                       ? AppTypography.bodyLarge + AppTypography.seniorStep
                       : null,
@@ -210,7 +210,7 @@ class _EventSearchScreenState extends State<EventSearchScreen> {
         child: Text(
           '找不到符合的活動',
           style: TextStyle(
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
             fontSize: seniorMode
                 ? AppTypography.bodyLarge + AppTypography.seniorStep
                 : null,
@@ -326,7 +326,7 @@ class _EventResultTile extends StatelessWidget {
                         AppTypography.caption,
                         seniorMode: seniorMode,
                       ),
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ],

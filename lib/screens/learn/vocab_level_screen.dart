@@ -121,7 +121,9 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
                   if (levels.isEmpty)
                     Text(
                       '目前沒有可學習的級別',
-                      style: AppTypography.bodyLargeStyle(color: AppColors.fog),
+                      style: AppTypography.bodyLargeStyle(
+                        color: AppColors.inkMuted,
+                      ),
                     )
                   else
                     for (int i = 0; i < levels.length; i++) ...[
@@ -170,7 +172,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
         if (records.isEmpty) {
           return Text(
             '尚無練習紀錄',
-            style: AppTypography.bodyLargeStyle(color: AppColors.fog),
+            style: AppTypography.bodyLargeStyle(color: AppColors.inkMuted),
           );
         }
         return Column(
@@ -252,7 +254,7 @@ class _VocabLevelScreenState extends State<VocabLevelScreen> {
 
 Color _levelColor(String level) {
   if (level.contains('高')) {
-    return level.contains('中') ? AppColors.primary : AppColors.fog;
+    return level.contains('中') ? AppColors.primary : AppColors.inkMuted;
   }
   if (level.contains('中')) return AppColors.gold;
   return AppColors.moss;
@@ -332,7 +334,7 @@ class _LevelRow extends StatelessWidget {
             fontSize: AppTypography.caption,
             color: isRecommended
                 ? AppColors.creamLight.withValues(alpha: 0.7)
-                : AppColors.fog,
+                : AppColors.inkMuted,
             letterSpacing: 0.55,
           ),
         ),
@@ -419,7 +421,7 @@ class _RecentPracticeRow extends StatelessWidget {
                     _timeLabel(),
                     style: const TextStyle(
                       fontSize: AppTypography.caption,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                 ],
@@ -433,11 +435,15 @@ class _RecentPracticeRow extends StatelessWidget {
                   style: AppTypography.serif(
                     fontSize: AppTypography.bodyLarge,
                     fontWeight: FontWeight.w700,
-                    color: isCompleted ? AppColors.primary : AppColors.fog,
+                    color: isCompleted ? AppColors.primary : AppColors.inkMuted,
                   ),
                 ),
                 const SizedBox(height: 4),
-                const Icon(Icons.chevron_right, color: AppColors.fog, size: 18),
+                const Icon(
+                  Icons.chevron_right,
+                  color: AppColors.inkMuted,
+                  size: 18,
+                ),
               ],
             ),
           ],

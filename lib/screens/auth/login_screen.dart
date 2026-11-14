@@ -11,6 +11,7 @@ import '../../shared/widgets/truku_painters.dart';
 import '../../shared/widgets/truku_widgets.dart';
 import 'entry_route.dart';
 import '../../core/constants/app_typography.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -103,81 +104,87 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      resizeToAvoidBottomInset: true,
-      body: Stack(
-        children: [
-          // 漸層背景：midnight → primaryDeep → primary
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    AppColors.midnight,
-                    AppColors.primaryDeep,
-                    AppColors.primary,
-                  ],
-                  stops: [0.0, 0.55, 1.0],
+    return StatusBarScope.onDark(
+      child: Scaffold(
+        backgroundColor: AppColors.midnight,
+        resizeToAvoidBottomInset: true,
+        body: Stack(
+          children: [
+            // 漸層背景：midnight → primaryDeep → primary
+            Positioned.fill(
+              child: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      AppColors.midnight,
+                      AppColors.primaryDeep,
+                      AppColors.primary,
+                    ],
+                    stops: [0.0, 0.55, 1.0],
+                  ),
                 ),
               ),
             ),
-          ),
 
-          // 織紋紋理
-          Positioned.fill(
-            child: CustomPaint(
-              painter: TrukuWeavePainter(color: AppColors.gold, opacity: 0.12),
-            ),
-          ),
-
-          // 山脈剪影（底部）
-          Positioned(
-            bottom: 0,
-            left: 0,
-            right: 0,
-            height: 200,
-            child: Opacity(
-              opacity: 0.7,
+            // 織紋紋理
+            Positioned.fill(
               child: CustomPaint(
-                painter: TrukuMountainsPainter(
-                  color: const Color(0xFF0E0604),
-                  opacity: 0.8,
+                painter: TrukuWeavePainter(
+                  color: AppColors.gold,
+                  opacity: 0.12,
                 ),
               ),
             ),
-          ),
 
-          // 主要內容
-          SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                return SingleChildScrollView(
-                  padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      minHeight: constraints.maxHeight,
-                    ),
-                    child: IntrinsicHeight(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          // Logo 區
-                          _buildLogoSection(),
-                          const SizedBox(height: 48),
+            // 山脈剪影（底部）
+            Positioned(
+              bottom: 0,
+              left: 0,
+              right: 0,
+              height: 200,
+              child: Opacity(
+                opacity: 0.7,
+                child: CustomPaint(
+                  painter: TrukuMountainsPainter(
+                    color: const Color(0xFF0E0604),
+                    opacity: 0.8,
+                  ),
+                ),
+              ),
+            ),
 
-                          // 表單區
-                          _buildFormSection(),
-                        ],
+            // 主要內容
+            SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(24, 0, 24, 0),
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        minHeight: constraints.maxHeight,
+                      ),
+                      child: IntrinsicHeight(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // Logo 區
+                            _buildLogoSection(),
+                            const SizedBox(height: 48),
+
+                            // 表單區
+                            _buildFormSection(),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                );
-              },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -307,7 +314,7 @@ class _LoginScreenState extends State<LoginScreen> {
               Text(
                 label,
                 style: TextStyle(
-                  fontSize: AppTypography.micro,
+                  fontSize: AppTypography.caption,
                   color: AppColors.cream.withValues(alpha: 0.8),
                   letterSpacing: 0.8,
                 ),

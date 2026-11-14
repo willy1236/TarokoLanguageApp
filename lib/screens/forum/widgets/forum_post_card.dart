@@ -20,6 +20,7 @@ import '../../friends/public_profile_screen.dart';
 import 'forum_image_grid.dart';
 import '../../../shared/widgets/nickname_text.dart';
 import '../forum_author_code.dart';
+import '../../../shared/widgets/pressable.dart';
 
 class ForumPostCard extends StatelessWidget {
   final ForumPost post;
@@ -57,8 +58,10 @@ class ForumPostCard extends StatelessWidget {
     builder: (context, _) => _build(seniorModeController.enabled),
   );
 
-  Widget _build(bool seniorMode) => GestureDetector(
+  Widget _build(bool seniorMode) => Pressable(
     onTap: onTap,
+    // 卡片裡還有作者、按讚、留言、收藏等各自的按鈕，不能併成同一個語意節點。
+    mergeChildren: false,
     child: Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 14, 10),
       decoration: BoxDecoration(
@@ -186,15 +189,16 @@ class ForumPostCard extends StatelessWidget {
   Widget _header(bool seniorMode) => Row(
     children: [
       Builder(
-        builder: (context) => GestureDetector(
+        builder: (context) => Pressable(
           onTap: () => _openAuthorProfile(context),
+          semanticLabel: '查看作者個人頁',
           child: _avatar(seniorMode),
         ),
       ),
       const SizedBox(width: 10),
       Expanded(
         child: Builder(
-          builder: (context) => GestureDetector(
+          builder: (context) => Pressable(
             onTap: () => _openAuthorProfile(context),
             behavior: HitTestBehavior.opaque,
             child: Column(
@@ -220,7 +224,7 @@ class ForumPostCard extends StatelessWidget {
                       AppTypography.caption,
                       seniorMode: seniorMode,
                     ),
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                     letterSpacing: 0.8,
                   ),
                 ),
@@ -256,7 +260,7 @@ class ForumPostCard extends StatelessWidget {
       EngagementIconButton(
         key: const ValueKey('forum-post-like'),
         icon: post.isLiked ? Icons.favorite : Icons.favorite_border,
-        color: post.isLiked ? AppColors.primary : AppColors.fog,
+        color: post.isLiked ? AppColors.primary : AppColors.inkMuted,
         count: post.likeCount,
         onTap: onLike,
         seniorMode: seniorMode,
@@ -265,7 +269,7 @@ class ForumPostCard extends StatelessWidget {
       EngagementIconButton(
         key: const ValueKey('forum-post-comment'),
         icon: Icons.mode_comment_outlined,
-        color: AppColors.fog,
+        color: AppColors.inkMuted,
         count: post.commentCount,
         onTap: onTap,
         seniorMode: seniorMode,
@@ -281,7 +285,7 @@ class ForumPostCard extends StatelessWidget {
         icon: Icon(
           post.isBookmarked ? Icons.bookmark : Icons.bookmark_border,
           size: AppIconSize.inline(seniorMode),
-          color: post.isBookmarked ? AppColors.primary : AppColors.fog,
+          color: post.isBookmarked ? AppColors.primary : AppColors.inkMuted,
         ),
       ),
     ],

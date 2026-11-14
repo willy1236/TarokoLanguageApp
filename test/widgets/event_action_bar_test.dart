@@ -111,9 +111,7 @@ void main() {
     expect(find.text('退出'), findsNothing);
   });
 
-  testWidgets('頁面停留跨過開始時間：後端狀態仍是 active，也不再顯示「退出」', (
-    tester,
-  ) async {
+  testWidgets('頁面停留跨過開始時間：後端狀態仍是 active，也不再顯示「退出」', (tester) async {
     final started = DateTime.now().subtract(const Duration(minutes: 1));
     await tester.pumpWidget(
       _app(_bar(_event(isJoined: true, startsAt: started))),

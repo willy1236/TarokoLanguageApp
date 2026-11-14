@@ -22,6 +22,7 @@ import '../../core/constants/app_typography.dart';
 import '../../shared/utils/cursor_pager.dart';
 import '../../shared/utils/pager_scroll_loader.dart';
 import '../../shared/widgets/load_more_retry.dart';
+import '../../shared/widgets/filter_pill.dart';
 
 /// 活動列表 —— 真資料版（GET /api/events，往下捲帶游標翻頁）。
 /// 活動有異動（[EventService.eventsChanged]）或從詳情帶著變動返回時安靜重抓；
@@ -298,7 +299,7 @@ class _EventsScreenState extends State<EventsScreen> {
               style: AppTypography.latin(
                 fontStyle: FontStyle.italic,
                 fontSize: AppTypography.caption,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
                 letterSpacing: 3.0,
               ),
             ),
@@ -370,45 +371,11 @@ class _EventsScreenState extends State<EventsScreen> {
     ];
     return Padding(
       padding: const EdgeInsets.only(bottom: 14),
-      child: SizedBox(
-        height: seniorMode ? 48 : 36,
-        child: ListView.separated(
-          scrollDirection: Axis.horizontal,
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          itemCount: chips.length,
-          separatorBuilder: (context, i) => const SizedBox(width: 8),
-          itemBuilder: (_, i) {
-            final (value, label) = chips[i];
-            final active = _category == value;
-            return GestureDetector(
-              onTap: () => _selectCategory(value),
-              child: Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: seniorMode ? 18 : 14,
-                  vertical: seniorMode ? 12 : 7,
-                ),
-                decoration: BoxDecoration(
-                  color: active ? AppColors.ink : Colors.transparent,
-                  borderRadius: BorderRadius.circular(20),
-                  border: active
-                      ? null
-                      : Border.all(color: AppColors.creamDeep),
-                ),
-                child: Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: AppTypography.size(
-                      AppTypography.caption,
-                      seniorMode: seniorMode,
-                    ),
-                    color: active ? AppColors.creamLight : AppColors.inkSoft,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-            );
-          },
-        ),
+      child: FilterPillRow(
+        labels: [for (final c in chips) c.$2],
+        selectedIndex: chips.indexWhere((c) => c.$1 == _category),
+        seniorMode: seniorMode,
+        onSelected: (i) => _selectCategory(chips[i].$1),
       ),
     );
   }
@@ -425,8 +392,8 @@ class _EventsScreenState extends State<EventsScreen> {
               '更多活動',
               style: AppTypography.latin(
                 fontStyle: FontStyle.italic,
-                fontSize: AppTypography.micro,
-                color: AppColors.fog,
+                fontSize: AppTypography.caption,
+                color: AppColors.inkMuted,
                 letterSpacing: 3.0,
               ),
             ),

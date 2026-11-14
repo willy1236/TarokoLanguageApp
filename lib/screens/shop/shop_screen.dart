@@ -13,6 +13,7 @@ import '../../shared/widgets/truku_painters.dart';
 import '../millet/millet_ledger_screen.dart';
 import '../../core/constants/app_typography.dart';
 import '../../shared/widgets/app_back_button.dart';
+import '../../shared/widgets/status_bar_scope.dart';
 
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
@@ -193,30 +194,32 @@ class _ShopScreenState extends State<ShopScreen> {
       frameList = frameList.where((i) => i.isOwned).toList();
     }
 
-    return Scaffold(
-      backgroundColor: AppColors.creamLight,
-      body: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: _buildHero(context, user)),
-          SliverToBoxAdapter(child: _buildCategories()),
-          if (showAvatars && avatarList.isNotEmpty)
-            SliverToBoxAdapter(
-              child: _buildItemSection(
-                '頭像 Lukus',
-                'lukus · 共 ${avatarList.length} 款',
-                avatarList,
+    return StatusBarScope.onDark(
+      child: Scaffold(
+        backgroundColor: AppColors.creamLight,
+        body: CustomScrollView(
+          slivers: [
+            SliverToBoxAdapter(child: _buildHero(context, user)),
+            SliverToBoxAdapter(child: _buildCategories()),
+            if (showAvatars && avatarList.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _buildItemSection(
+                  '頭像 Lukus',
+                  'lukus · 共 ${avatarList.length} 款',
+                  avatarList,
+                ),
               ),
-            ),
-          if (showFrames && frameList.isNotEmpty)
-            SliverToBoxAdapter(
-              child: _buildItemSection(
-                '頭像框',
-                'rangi · 共 ${frameList.length} 款',
-                frameList,
+            if (showFrames && frameList.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _buildItemSection(
+                  '頭像框',
+                  'rangi · 共 ${frameList.length} 款',
+                  frameList,
+                ),
               ),
-            ),
-          const SliverToBoxAdapter(child: SizedBox(height: 100)),
-        ],
+            const SliverToBoxAdapter(child: SizedBox(height: 100)),
+          ],
+        ),
       ),
     );
   }
@@ -397,8 +400,8 @@ class _ShopScreenState extends State<ShopScreen> {
             subtitle,
             style: AppTypography.latin(
               fontStyle: FontStyle.italic,
-              fontSize: AppTypography.micro,
-              color: AppColors.fog,
+              fontSize: AppTypography.caption,
+              color: AppColors.inkMuted,
               letterSpacing: 2,
             ),
           ),
@@ -450,6 +453,7 @@ class _ShopScreenState extends State<ShopScreen> {
       imageUrl: item.imageUrl,
       icon: item.type == 'frame' ? Icons.circle_outlined : Icons.face_rounded,
       actionLabel: busy ? '處理中…' : actionLabel,
+      actionKind: owned ? ShopActionKind.equip : ShopActionKind.purchase,
       onAction: busy ? null : onAction,
     );
   }

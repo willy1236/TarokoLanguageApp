@@ -16,6 +16,7 @@ import '../../friends/public_profile_screen.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../shared/widgets/nickname_text.dart';
 import '../forum_author_code.dart';
+import '../../../shared/widgets/pressable.dart';
 
 class ForumCommentTile extends StatelessWidget {
   final ForumComment comment;
@@ -76,7 +77,7 @@ class ForumCommentTile extends StatelessWidget {
               seniorMode: seniorMode,
             ),
             fontStyle: FontStyle.italic,
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
       ],
@@ -93,7 +94,7 @@ class ForumCommentTile extends StatelessWidget {
           children: [
             Expanded(
               child: Builder(
-                builder: (context) => GestureDetector(
+                builder: (context) => Pressable(
                   behavior: HitTestBehavior.opaque,
                   onTap: () => _openAuthorProfile(context),
                   child: Row(
@@ -132,7 +133,7 @@ class ForumCommentTile extends StatelessWidget {
                   AppTypography.caption,
                   seniorMode: seniorMode,
                 ),
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
               ),
             ),
           ],
@@ -160,9 +161,11 @@ class ForumCommentTile extends StatelessWidget {
             runSpacing: 8,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              GestureDetector(
+              Pressable(
                 behavior: HitTestBehavior.opaque,
                 onTap: onLike,
+                selected: comment.isLiked,
+                semanticLabel: '按讚，${comment.likeCount} 個',
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -171,7 +174,7 @@ class ForumCommentTile extends StatelessWidget {
                       size: seniorMode ? 24 : 14,
                       color: comment.isLiked
                           ? AppColors.primary
-                          : AppColors.fog,
+                          : AppColors.inkMuted,
                     ),
                     const SizedBox(width: 4),
                     Text(
@@ -181,7 +184,7 @@ class ForumCommentTile extends StatelessWidget {
                           AppTypography.caption,
                           seniorMode: seniorMode,
                         ),
-                        color: AppColors.fog,
+                        color: AppColors.inkMuted,
                       ),
                     ),
                   ],
@@ -251,7 +254,7 @@ class ForumCommentTile extends StatelessWidget {
   }
 
   Widget _action(String label, VoidCallback onTap, bool seniorMode) =>
-      GestureDetector(
+      Pressable(
         behavior: HitTestBehavior.opaque,
         onTap: onTap,
         child: Text(
@@ -261,7 +264,7 @@ class ForumCommentTile extends StatelessWidget {
               AppTypography.caption,
               seniorMode: seniorMode,
             ),
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
       );

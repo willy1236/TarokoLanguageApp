@@ -110,9 +110,7 @@ void main() {
 
   group('不通知', () {
     test('發起被後端拒絕', () async {
-      installMockClient({
-        '/api/events': errorResponse('CATEGORY_REQUIRED'),
-      });
+      installMockClient({'/api/events': errorResponse('CATEGORY_REQUIRED')});
       await expectLater(EventService.createEvent(draft), throwsA(anything));
       expect(fired, 0);
     });

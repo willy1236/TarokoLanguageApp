@@ -422,7 +422,9 @@ class _ChatScreenState extends State<ChatScreen>
       frameId: _frameId,
       itemCatalogById: _itemCatalogById,
       size: seniorMode ? 40 : 32,
-      fallbackIconColor: _partnerUnavailable ? AppColors.fog : AppColors.gold,
+      fallbackIconColor: _partnerUnavailable
+          ? AppColors.inkMuted
+          : AppColors.gold,
     ),
   );
 
@@ -450,7 +452,7 @@ class _ChatScreenState extends State<ChatScreen>
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.titleStyle(
                     seniorMode: seniorMode,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 )
               : GestureDetector(
@@ -475,7 +477,7 @@ class _ChatScreenState extends State<ChatScreen>
           icon: Icon(
             Icons.videocam_outlined,
             color: accountLockController.locked || _partnerUnavailable
-                ? AppColors.fog
+                ? AppColors.inkMuted
                 : AppColors.primary,
           ),
           tooltip: '視訊通話',
@@ -647,14 +649,14 @@ class _ChatScreenState extends State<ChatScreen>
             '已讀',
             style: AppTypography.captionStyle(
               seniorMode: seniorMode,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
           ),
         Text(
           formatTime(at),
           style: AppTypography.captionStyle(
             seniorMode: seniorMode,
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
       ],
@@ -721,7 +723,7 @@ class _ChatScreenState extends State<ChatScreen>
                     : '傳送訊息…',
                 hintStyle: AppTypography.bodyLargeStyle(
                   seniorMode: seniorMode,
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                 ),
                 filled: true,
                 fillColor: AppColors.cream,

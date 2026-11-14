@@ -151,7 +151,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
           '輸入對方的好友碼',
           style: AppTypography.bodyLargeStyle(
             seniorMode: seniorMode,
-            color: AppColors.fog,
+            color: AppColors.inkMuted,
           ),
         ),
         const SizedBox(height: 12),
@@ -169,7 +169,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
             hintText: '例如 A7C9K2XZ',
             hintStyle: AppTypography.headlineStyle(
               seniorMode: seniorMode,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
             ),
             errorText: _error,
             filled: true,
@@ -234,7 +234,7 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                     '我的好友碼（點擊複製，分享給朋友）',
                     style: AppTypography.captionStyle(
                       seniorMode: seniorMode,
-                      color: AppColors.fog,
+                      color: AppColors.inkMuted,
                     ),
                   ),
                   const SizedBox(height: 4),

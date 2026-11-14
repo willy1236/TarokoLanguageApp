@@ -322,7 +322,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
         IconButton(
           onPressed: _openBlockedUsers,
           iconSize: AppIconSize.action(seniorMode),
-          icon: const Icon(Icons.block, color: AppColors.fog),
+          icon: const Icon(Icons.block, color: AppColors.inkMuted),
           tooltip: '已封鎖名單',
         ),
         IconButton(
@@ -437,7 +437,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
             if (conversation != null) ..._activity(conversation, seniorMode),
             Icon(
               Icons.chevron_right,
-              color: AppColors.fog,
+              color: AppColors.inkMuted,
               size: AppIconSize.chevron(seniorMode),
             ),
           ],
@@ -451,7 +451,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   List<Widget> _preview(Conversation c, bool seniorMode) {
     final message = c.lastMessage;
     final String text;
-    var color = AppColors.fog;
+    var color = AppColors.inkMuted;
     if (c.lastIsCall) {
       final missed = c.lastCall!.kind == FriendCallKind.missed;
       text = missed ? '未接視訊通話' : '[視訊通話]';
@@ -486,7 +486,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
               formatActivityTime(at),
               style: AppTypography.captionStyle(
                 seniorMode: seniorMode,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
               ),
             ),
           if (c.unreadCount > 0) ...[
@@ -551,7 +551,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   nickname,
                   style: AppTypography.bodyLargeStyle(
                     seniorMode: seniorMode,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -559,7 +559,7 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
                   '對方帳號目前無法使用',
                   style: AppTypography.bodyStyle(
                     seniorMode: seniorMode,
-                    color: AppColors.fog,
+                    color: AppColors.inkMuted,
                   ),
                 ),
               ],

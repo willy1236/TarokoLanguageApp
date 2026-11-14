@@ -152,7 +152,9 @@ void main() {
       ]);
     });
 
-    testWidgets('lookup 找得到登記的 State，registeredRoute 是所在的 route', (tester) async {
+    testWidgets('lookup 找得到登記的 State，registeredRoute 是所在的 route', (
+      tester,
+    ) async {
       await start(tester);
       await push(tester, _pageRoute('a'));
       final top = routes.topPage!;

@@ -375,7 +375,7 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
               hintText: '搜尋地點，例如：富世部落',
               hintStyle: AppTypography.bodyStyle(
                 seniorMode: seniorMode,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
               ),
               prefixIcon: const Icon(Icons.search, color: AppColors.inkSoft),
               suffixIcon: _search.text.isEmpty
@@ -484,7 +484,7 @@ class _EventLocationPickerScreenState extends State<EventLocationPickerScreen> {
               '拖曳、點或長按地圖都能移動大頭針',
               style: AppTypography.captionStyle(
                 seniorMode: seniorMode,
-                color: AppColors.fog,
+                color: AppColors.inkMuted,
               ),
             ),
             const SizedBox(height: 12),

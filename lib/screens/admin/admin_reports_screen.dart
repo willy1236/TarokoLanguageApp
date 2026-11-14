@@ -175,7 +175,7 @@ class AdminReportCard extends StatelessWidget {
                 formatDateTime(report.createdAt!),
                 style: AppTypography.captionStyle(
                   seniorMode: seniorMode,
-                  color: AppColors.fog,
+                  color: AppColors.inkMuted,
                 ),
               ),
           ],
