@@ -6,7 +6,7 @@
 // window.firebase_*；firebase_core_web 看到 window.firebase_core 就不再注入。
 // 版本要與 firebase_core_web 的 supportedFirebaseJsSdkVersion 一致
 // （test/web/firebase_sdk_preload_test.dart 會檢查）。
-const firebaseJsSdkVersion = '12.19.0';
+const firebaseJsSdkVersion = '13.1.0';
 
 async function loadFirebaseSdk() {
   const base = `https://www.gstatic.com/firebasejs/${firebaseJsSdkVersion}/`;
