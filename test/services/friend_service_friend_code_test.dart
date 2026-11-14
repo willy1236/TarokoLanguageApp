@@ -128,9 +128,8 @@ void main() {
       ),
     });
 
-    final error = await FriendService.sendRequest(
-      'BBBB2345',
-    ).then<Object?>((_) => null, onError: (Object e) => e);
+    final error = await FriendService.sendRequest('BBBB2345')
+        .then<Object?>((_) => null, onError: (Object e) => e);
 
     expect(error, isA<ApiException>());
     expect(apiErrorMessage(error), '請改用好友碼指定對象（請更新 App）');

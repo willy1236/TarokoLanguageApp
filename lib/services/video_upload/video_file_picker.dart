@@ -40,11 +40,10 @@ class VideoFileRejected implements Exception {
 /// 平台選檔的原始結果（還沒檢查）。
 typedef RawPickedVideo = ({String name, int size, ChunkSource source});
 
-typedef AdminVideoPicker =
-    Future<PickedVideoFile?> Function(
-      VideoPickSource from, {
-      VoidCallback? onPreparing,
-    });
+typedef AdminVideoPicker = Future<PickedVideoFile?> Function(
+  VideoPickSource from, {
+  VoidCallback? onPreparing,
+});
 
 /// 測試換成假的選檔。
 @visibleForTesting

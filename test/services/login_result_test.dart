@@ -52,17 +52,13 @@ void main() {
 
   test('reactivate 的 consent_required：true 才要先同意條款，缺欄位當作不用', () {
     expect(
-      AccountStatus.fromJson({
-        'status': 'active',
-        'consent_required': true,
-      }).consentRequired,
+      AccountStatus.fromJson({'status': 'active', 'consent_required': true})
+          .consentRequired,
       isTrue,
     );
     expect(
-      AccountStatus.fromJson({
-        'status': 'active',
-        'consent_required': false,
-      }).consentRequired,
+      AccountStatus.fromJson({'status': 'active', 'consent_required': false})
+          .consentRequired,
       isFalse,
     );
     expect(

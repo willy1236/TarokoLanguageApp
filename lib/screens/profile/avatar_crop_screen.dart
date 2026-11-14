@@ -1,8 +1,10 @@
 import 'dart:math';
+
 import 'package:crop_your_image/crop_your_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
+
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icon_size.dart';
 import '../../core/constants/app_typography.dart';

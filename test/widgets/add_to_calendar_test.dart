@@ -69,31 +69,27 @@ void main() {
 
     test('舊活動地點與地址互不包含時兩個都帶；都沒有就不帶', () {
       expect(
-        googleCalendarUri(
-          _event(location: '部落廣場', address: '秀林鄉中正路 1 號'),
-        ).queryParameters['location'],
+        googleCalendarUri(_event(location: '部落廣場', address: '秀林鄉中正路 1 號'))
+            .queryParameters['location'],
         '部落廣場 秀林鄉中正路 1 號',
       );
       expect(
-        googleCalendarUri(
-          _event(location: null, address: null),
-        ).queryParameters.containsKey('location'),
+        googleCalendarUri(_event(location: null, address: null)).queryParameters
+            .containsKey('location'),
         isFalse,
       );
     });
 
     test('說明太長時截斷，活動編號仍在', () {
-      final details = googleCalendarUri(
-        _event(description: '長' * 2000),
-      ).queryParameters['details']!;
+      final details = googleCalendarUri(_event(description: '長' * 2000))
+          .queryParameters['details']!;
       expect(details, startsWith('${'長' * 500}…\n\n'));
       expect(details, contains('活動編號 42'));
     });
 
     test('截斷不會把 emoji 切成一半', () {
-      final details = googleCalendarUri(
-        _event(description: '${'長' * 499}😀😀'),
-      ).queryParameters['details']!;
+      final details = googleCalendarUri(_event(description: '${'長' * 499}😀😀'))
+          .queryParameters['details']!;
       expect(details, startsWith('${'長' * 499}😀…'));
     });
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../models/shop_item.dart';
@@ -115,20 +116,17 @@ class _ShopScreenState extends State<ShopScreen> {
         // 不同步這裡的話買完仍顯示「兌換」且可以再點一次。
         _markOwnedLocally(item.id);
       });
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('兌換成功')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('兌換成功')));
     } on ApiException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       debugPrint('ShopScreen._purchaseItem failed: $e');
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('兌換失敗，請稍後再試')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('兌換失敗，請稍後再試')));
     } finally {
       if (mounted) setState(() => _busyItemIds.remove(item.id));
     }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../shared/widgets/truku_empty_state.dart';
 import '../../models/content_category.dart';

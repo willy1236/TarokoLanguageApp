@@ -1,6 +1,7 @@
 // 廣場頁的小元件：活動訊息卡、看板 Tab、近期活動小卡。
 
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/utils/date_format.dart';

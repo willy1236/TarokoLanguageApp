@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart'
     show openAppSettings;
+
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../main.dart' show scaffoldMessengerKey;
@@ -204,9 +205,8 @@ class _VideoCallScreenState extends State<VideoCallScreen>
 
   void _onTokenRenewFailed() {
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('連線憑證更新失敗，通話可能即將中斷')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('連線憑證更新失敗，通話可能即將中斷')));
   }
 
   Future<void> _onLeft() async {

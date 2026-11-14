@@ -233,9 +233,8 @@ class AppUpdateService {
     });
     final res = await http.get(uri).timeout(_timeout);
     if (res.statusCode != 200) return null;
-    final match = RegExp(
-      r'\[\[\["(\d+(?:\.\d+)+)"\]\],\[\[\[',
-    ).firstMatch(res.body);
+    final match = RegExp(r'\[\[\["(\d+(?:\.\d+)+)"\]\],\[\[\[')
+        .firstMatch(res.body);
     return AppVersion.tryParse(match?.group(1));
   }
 }

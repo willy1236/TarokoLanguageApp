@@ -445,21 +445,18 @@ void main() {
   );
 
   // 建立上傳會在正式環境寫入影片並開雲端工作階段，不錄製，用規格範例確認解析得了。
-  test(
-    'api_spec/post_api_admin_videos_upload.json → AdminVideo＋UploadSession（規格範例，上傳影片檔）',
-    () {
-      final json = loadSpecFixtureMap('post_api_admin_videos_upload.json');
-      final video = AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
-      expect(video.source, 'hls');
-      expect(video.status, 'processing');
-      final session = UploadSession.fromJson(
-        json['upload'] as Map<String, dynamic>,
-      );
-      expect(session.sessionUrl.scheme, 'https');
-      expect(session.size, greaterThan(0));
-      expect(session.chunkMultiple, 262144);
-    },
-  );
+  test('api_spec/post_api_admin_videos_upload.json → AdminVideo＋UploadSession（規格範例，上傳影片檔）', () {
+    final json = loadSpecFixtureMap('post_api_admin_videos_upload.json');
+    final video = AdminVideo.fromJson(json['video'] as Map<String, dynamic>);
+    expect(video.source, 'hls');
+    expect(video.status, 'processing');
+    final session = UploadSession.fromJson(
+      json['upload'] as Map<String, dynamic>,
+    );
+    expect(session.sessionUrl.scheme, 'https');
+    expect(session.size, greaterThan(0));
+    expect(session.chunkMultiple, 262144);
+  });
 
   // 修改影片會寫正式資料，不錄製，用規格範例確認解析得了。
   test('api_spec/patch_api_admin_video.json → AdminVideo（規格範例，修改影片）', () {

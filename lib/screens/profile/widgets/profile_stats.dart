@@ -1,6 +1,7 @@
 // 個人頁小米幣橫幅與學習統計列。
 
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/user_model.dart';

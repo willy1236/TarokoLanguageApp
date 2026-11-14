@@ -72,10 +72,8 @@ void main() {
     };
     expect(EventSummary.fromJson(base).coverImageUrl, isNull);
     expect(
-      EventSummary.fromJson({
-        ...base,
-        'cover_image_url': 'https://a/c.jpg',
-      }).coverImageUrl,
+      EventSummary.fromJson({...base, 'cover_image_url': 'https://a/c.jpg'})
+          .coverImageUrl,
       'https://a/c.jpg',
     );
   });

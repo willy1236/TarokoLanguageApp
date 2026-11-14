@@ -4,6 +4,7 @@
 // 規格參考：Truku_backend docs/superpowers/specs/2026-08-17-quiz-listening-placement-design.md
 
 import 'package:flutter/material.dart';
+
 import '../../models/placement_models.dart';
 import '../../services/placement_service.dart';
 import 'placement_done_screen.dart';
@@ -46,9 +47,8 @@ class _ListeningPlacementScreenState extends State<ListeningPlacementScreen> {
         ]),
     onSaveFailed: (_) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('儲存答案失敗，請稍後再試')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('儲存答案失敗，請稍後再試')));
     },
   );
 

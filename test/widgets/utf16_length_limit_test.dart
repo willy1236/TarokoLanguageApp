@@ -136,9 +136,8 @@ void main() {
         selection: TextSelection.collapsed(offset: -1),
       );
       final typed = _value('😃😀');
-      final out = const Utf16LengthLimitingTextInputFormatter(
-        3,
-      ).formatEditUpdate(old, typed);
+      final out = const Utf16LengthLimitingTextInputFormatter(3)
+          .formatEditUpdate(old, typed);
       expect(out.text, '😃');
       expect(out.selection.baseOffset, 2);
     });

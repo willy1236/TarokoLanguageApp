@@ -1,6 +1,7 @@
 // 個人頁頂部：頭像（含配戴外框）、名稱、族群／部落資訊。
 
 import 'package:flutter/material.dart';
+
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../models/shop_item.dart';

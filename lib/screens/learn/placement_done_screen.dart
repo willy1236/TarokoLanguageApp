@@ -6,6 +6,7 @@
 // 內容不多，不套結果頁的酒紅頂部（下方會大片留白），改成整頁置中＋按鈕貼底。
 
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../models/user_model.dart';

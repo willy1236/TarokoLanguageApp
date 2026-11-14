@@ -107,9 +107,8 @@ class _NotificationEmailScreenState extends State<NotificationEmailScreen> {
     try {
       final updated = await UserService.verifyEmail(code);
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('通知信箱已驗證')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('通知信箱已驗證')));
       Navigator.of(context).pop(updated);
     } on ApiException catch (e) {
       if (!mounted) return;

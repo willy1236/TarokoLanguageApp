@@ -56,12 +56,12 @@ void main() {
     final versionFile = File(
       '${roots['firebase_core_web']!.path}/lib/src/firebase_sdk_version.dart',
     );
-    final supported = RegExp(
-      r"supportedFirebaseJsSdkVersion = '([^']+)'",
-    ).firstMatch(versionFile.readAsStringSync())!.group(1);
-    final preloaded = RegExp(
-      r"firebaseJsSdkVersion = '([^']+)'",
-    ).firstMatch(bootstrap)!.group(1);
+    final supported = RegExp(r"supportedFirebaseJsSdkVersion = '([^']+)'")
+        .firstMatch(versionFile.readAsStringSync())!
+        .group(1);
+    final preloaded = RegExp(r"firebaseJsSdkVersion = '([^']+)'")
+        .firstMatch(bootstrap)!
+        .group(1);
 
     expect(preloaded, supported);
   });

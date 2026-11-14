@@ -147,9 +147,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   }
 
   Future<void> _openAddFriend() async {
-    final added = await Navigator.of(
-      context,
-    ).push<bool>(MaterialPageRoute(builder: (_) => const AddFriendScreen()));
+    final added = await Navigator.of(context)
+        .push<bool>(MaterialPageRoute(builder: (_) => const AddFriendScreen()));
     if (added == true) _load();
   }
 
@@ -161,9 +160,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
   }
 
   void _openBlockedUsers() {
-    Navigator.of(
-      context,
-    ).push(MaterialPageRoute(builder: (_) => const BlockedUsersScreen()));
+    Navigator.of(context)
+        .push(MaterialPageRoute(builder: (_) => const BlockedUsersScreen()));
   }
 
   /// 聊天室裡可以再進對方的公開檔案，在那邊封鎖或刪好友都會改變這份清單，
@@ -523,9 +521,8 @@ class _FriendsListScreenState extends State<FriendsListScreen> {
 
   /// 對方的暱稱、頭像已被後端換成替代值，不帶進聊天室，由聊天室自己讀 partner。
   Future<void> _chatWithUnavailable(Friendship f) async {
-    await Navigator.of(
-      context,
-    ).push(ChatScreen.route(friendCode: f.friendCode));
+    await Navigator.of(context)
+        .push(ChatScreen.route(friendCode: f.friendCode));
     if (mounted) _load();
   }
 

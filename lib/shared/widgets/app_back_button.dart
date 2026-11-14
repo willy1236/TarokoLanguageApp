@@ -4,6 +4,7 @@
 // 長輩模式放大由元件自己讀 seniorModeController，呼叫端不用傳。
 
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_icon_size.dart';
 import '../../services/senior_mode_controller.dart';

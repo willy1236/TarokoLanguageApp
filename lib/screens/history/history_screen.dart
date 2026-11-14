@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../models/history_models.dart';
 import '../../models/page_info.dart';
@@ -148,9 +149,8 @@ class _HistoryScreenState extends State<HistoryScreen> {
     if (record.isListening) {
       final mode = record.mode;
       if (mode == null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('測驗資料異常，請重新開始聽力測驗')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('測驗資料異常，請重新開始聽力測驗')));
         return;
       }
       Navigator.push(

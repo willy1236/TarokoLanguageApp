@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
@@ -67,9 +68,8 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
         ? endsAt
         : yearLater;
     if (lastDate.isBefore(now)) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('活動已結束，無法排定發送時間')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('活動已結束，無法排定發送時間')));
       return;
     }
     final picked = await pickDateTime(
@@ -83,9 +83,8 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
     if (picked == null || !mounted) return;
     final error = ReminderComposeScreen.sendTimeAfterEndError(picked, endsAt);
     if (error != null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(error)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(error)));
       return;
     }
     setState(() {
@@ -98,24 +97,21 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
     if (_submitting) return;
     final msg = _controller.text.trim();
     if (msg.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('請先輸入提醒訊息')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('請先輸入提醒訊息')));
       return;
     }
     if (!withinUtf16Limit(context, msg, _maxLen, label: '提醒訊息')) return;
     if (!_sendNow && _scheduledAt == null) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('請選擇發送時間')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('請選擇發送時間')));
       return;
     }
     if (!_sendNow &&
         _scheduledAt != null &&
         _scheduledAt!.isBefore(DateTime.now())) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('發送時間不能早於現在')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('發送時間不能早於現在')));
       return;
     }
     if (!_sendNow && _scheduledAt != null) {
@@ -124,9 +120,8 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
         widget.eventEndsAt?.toLocal(),
       );
       if (error != null) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(error)));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(SnackBar(content: Text(error)));
         return;
       }
     }
@@ -142,22 +137,19 @@ class _ReminderComposeScreenState extends State<ReminderComposeScreen> {
       final whenText = _sendNow
           ? '立即發送'
           : '排定於 ${formatDateTime(_scheduledAt!)}';
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('提醒已建立 — $whenText')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('提醒已建立 — $whenText')));
       Navigator.pop(context, true);
     } on ApiException catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       if (!mounted) return;
       setState(() => _submitting = false);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('建立提醒失敗：$e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('建立提醒失敗：$e')));
     }
   }
 

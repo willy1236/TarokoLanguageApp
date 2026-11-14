@@ -97,9 +97,8 @@ void main() {
         '活動時間需為未來',
       );
       expect(
-        valid(
-          deadline: future.add(const Duration(hours: 1)),
-        ).validate(creating: true, now: now),
+        valid(deadline: future.add(const Duration(hours: 1)))
+            .validate(creating: true, now: now),
         '報名截止時間不能晚於活動開始時間',
       );
     });
@@ -119,9 +118,8 @@ void main() {
         '活動結束時間需晚於開始時間',
       );
       expect(
-        withTimes(
-          ends: future.add(const Duration(days: 31)),
-        ).validate(creating: true, now: now),
+        withTimes(ends: future.add(const Duration(days: 31)))
+            .validate(creating: true, now: now),
         '活動最長 30 天',
       );
       expect(

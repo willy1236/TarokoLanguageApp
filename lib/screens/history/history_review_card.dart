@@ -1,6 +1,7 @@
 // 測驗紀錄詳解共用的逐題卡片，供 quiz / listening 詳解畫面共用。
 import 'package:audioplayers/audioplayers.dart';
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../core/utils/audio_url.dart';
@@ -74,9 +75,8 @@ class ReviewCard extends StatelessWidget {
     } catch (e) {
       debugPrint('HistoryReviewCard._play failed: $e');
       if (!context.mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('發音播放失敗，請稍後再試')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('發音播放失敗，請稍後再試')));
     }
   }
 

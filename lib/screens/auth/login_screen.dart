@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/network/api_client.dart';
 import '../../services/account_lock_controller.dart';
@@ -48,9 +49,8 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!result.isActive && !result.isLocked) {
         await SessionService.signOut(unregisterDevice: false);
         if (!mounted) return;
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('此帳號目前無法使用，如有疑問請聯絡我們')));
+        ScaffoldMessenger.of(context)
+            .showSnackBar(const SnackBar(content: Text('此帳號目前無法使用，如有疑問請聯絡我們')));
         return;
       }
       // 登入成功才上傳 FCM token（需 JWT）。失敗不阻斷進首頁，故獨立 try/catch。
@@ -78,19 +78,16 @@ class _LoginScreenState extends State<LoginScreen> {
       // 未同意條款：ApiClient 已導去同意畫面，同意後由該畫面接續導頁，這裡不再報錯。
       if (e.isConsentRequired) return;
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     } on AuthException catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(e.message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(e.message)));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('登入發生未預期錯誤：$e')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text('登入發生未預期錯誤：$e')));
     } finally {
       if (mounted) setState(() => _loggingProvider = null);
     }

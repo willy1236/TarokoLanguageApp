@@ -60,9 +60,8 @@ class _SearchSuggestionsState extends State<SearchSuggestions> {
     } catch (_) {
       if (!mounted) return;
       setState(() => _history = previous);
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('清除失敗，請稍後再試')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('清除失敗，請稍後再試')));
     }
   }
 

@@ -322,9 +322,8 @@ class _ProfileInfoScreenState extends State<ProfileInfoScreen> {
     if (code == null) return;
     await Clipboard.setData(ClipboardData(text: code));
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('已複製好友碼')));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(const SnackBar(content: Text('已複製好友碼')));
   }
 
   Future<void> _editTribe() async {

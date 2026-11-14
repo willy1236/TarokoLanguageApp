@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../models/quiz_models.dart';
 import '../../services/learn_service.dart';
@@ -57,9 +58,8 @@ class _LessonCardScreenState extends State<LessonCardScreen> {
     onSaveFailed: (e) {
       debugPrint('LessonCardScreen: 儲存答案失敗：$e');
       if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('儲存答案失敗，請稍後再試')));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(const SnackBar(content: Text('儲存答案失敗，請稍後再試')));
     },
   );
 

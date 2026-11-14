@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/network/api_client.dart';
@@ -696,9 +697,8 @@ class _FriendTile extends StatelessWidget {
                         seniorMode: true,
                         color: AppColors.primary,
                       ).copyWith(letterSpacing: 2.0)
-                    : AppTypography.bodyStyle(
-                        color: AppColors.primary,
-                      ).copyWith(letterSpacing: 2.0),
+                    : AppTypography.bodyStyle(color: AppColors.primary)
+                          .copyWith(letterSpacing: 2.0),
               ),
             ),
           ],

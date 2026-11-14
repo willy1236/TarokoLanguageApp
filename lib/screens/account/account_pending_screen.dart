@@ -86,9 +86,8 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
         entryRouteFor(user, allConsented: true),
         (_) => false,
       );
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text(message)));
+      ScaffoldMessenger.of(context)
+          .showSnackBar(SnackBar(content: Text(message)));
     } on ApiException catch (e) {
       if (!mounted || e.isAccountPurged) return;
       _showError(e.message);
@@ -109,9 +108,8 @@ class _AccountPendingScreenState extends State<AccountPendingScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override

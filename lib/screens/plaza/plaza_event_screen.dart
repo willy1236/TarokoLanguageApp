@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../../core/constants/app_colors.dart';
 import '../../shared/widgets/pill_segmented_toggle.dart';
 import '../../shared/widgets/swipe_segment_switcher.dart';

@@ -83,9 +83,8 @@ class _AccountDeleteScreenState extends State<AccountDeleteScreen> {
   }
 
   void _showError(String message) {
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text(message)));
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -312,9 +311,9 @@ class AccountDeletedScreen extends StatelessWidget {
               SizedBox(
                 height: 52,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(
-                    context,
-                  ).pushNamedAndRemoveUntil('/login', (_) => false),
+                  onPressed: () =>
+                      Navigator.of(context)
+                          .pushNamedAndRemoveUntil('/login', (_) => false),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.gold,
                     foregroundColor: AppColors.ink,
