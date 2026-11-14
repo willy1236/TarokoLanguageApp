@@ -151,6 +151,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 _buildAppSettingsSection(seniorMode: seniorMode),
                 _buildOtherSection(seniorMode: seniorMode),
                 const ProfileLogoutButton(),
+                profileDangerRow(
+                  icon: Icons.delete_forever_outlined,
+                  label: '刪除帳號',
+                  seniorMode: seniorMode,
+                  onTap: _openDeleteAccount,
+                ),
                 const SizedBox(height: 40),
               ],
             ),
@@ -527,7 +533,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       ('已隱藏的貼文', _openHiddenPosts),
       ('服務條款與隱私權政策', _openTermsView),
       ('下載我的資料', () => exportMyData(context)),
-      ('刪除帳號', _openDeleteAccount),
     ];
     return profileSection(
       'DUMA · 其他',

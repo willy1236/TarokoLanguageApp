@@ -168,6 +168,57 @@ Widget profileNavRow({
   );
 }
 
+/// 不可逆操作（刪除帳號）的入口：獨立在一般設定之外，紅色外框與文字，
+/// 避免和「關於」「服務條款」這類一般列混在一起被誤點。
+Widget profileDangerRow({
+  required IconData icon,
+  required String label,
+  required VoidCallback onTap,
+  bool seniorMode = false,
+}) {
+  return Padding(
+    padding: const EdgeInsets.fromLTRB(20, 32, 20, 0),
+    child: Pressable(
+      onTap: onTap,
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: seniorMode ? AppSpacing.lg : 14,
+        ),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: AppColors.dangerDark.withValues(alpha: 0.5),
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: AppIconSize.inline(seniorMode),
+              color: AppColors.dangerDark,
+            ),
+            SizedBox(width: seniorMode ? AppSpacing.md : 8),
+            Text(
+              label,
+              style: AppTypography.serif(
+                fontSize: AppTypography.size(
+                  AppTypography.body,
+                  seniorMode: seniorMode,
+                ),
+                fontWeight: FontWeight.w600,
+                color: AppColors.dangerDark,
+                letterSpacing: 0.5,
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
+}
+
 Widget profileSection(
   String label,
   List<Widget> children, {
