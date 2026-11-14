@@ -40,7 +40,7 @@ dependencies:
   firebase_core: ^5.1.0
   firebase_auth: ^7.0.1
   firebase_messaging: ^17.0.1 # FCM 推播（活動提醒）
-  flutter_local_notifications: ^23.0.2 # 前景收到推播時顯示系統通知列
+  flutter_local_notifications: ^22.3.1 # 前景收到推播時顯示系統通知列；23.x 起要求 androidx.core 1.19（AGP 9.1 以上），升 AGP 前維持 22.x
   google_sign_in: ^7.2.0
 
   # Backend 通訊與 token 儲存
