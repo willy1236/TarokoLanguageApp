@@ -75,4 +75,48 @@ void main() {
       1,
     );
   });
+
+  testWidgets('mergeChildren: false：內層按鈕仍有獨立語意節點', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Pressable(
+            onTap: () {},
+            mergeChildren: false,
+            child: Column(
+              children: [
+                const Text('貼文標題'),
+                IconButton(
+                  tooltip: '收藏',
+                  onPressed: () {},
+                  icon: const Icon(Icons.bookmark_border),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    final inner = tester.getSemantics(find.byIcon(Icons.bookmark_border));
+    final outer = tester.getSemantics(find.text('貼文標題'));
+    expect(inner.id, isNot(outer.id));
+    expect(
+      inner,
+      isSemantics(tooltip: '收藏', isButton: true, hasTapAction: true),
+    );
+    handle.dispose();
+  });
+
+  testWidgets('沒有任何動作時不宣告成 button（純資訊列）', (tester) async {
+    final handle = tester.ensureSemantics();
+    await tester.pumpWidget(
+      const MaterialApp(home: Pressable(onTap: null, child: Text('帳號'))),
+    );
+    expect(
+      tester.getSemantics(find.text('帳號')),
+      isSemantics(label: '帳號', isButton: false),
+    );
+    handle.dispose();
+  });
 }

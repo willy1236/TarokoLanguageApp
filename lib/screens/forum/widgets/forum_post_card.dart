@@ -60,6 +60,8 @@ class ForumPostCard extends StatelessWidget {
 
   Widget _build(bool seniorMode) => Pressable(
     onTap: onTap,
+    // 卡片裡還有作者、按讚、留言、收藏等各自的按鈕，不能併成同一個語意節點。
+    mergeChildren: false,
     child: Container(
       padding: const EdgeInsets.fromLTRB(16, 14, 14, 10),
       decoration: BoxDecoration(
